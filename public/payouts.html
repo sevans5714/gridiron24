@@ -9,152 +9,103 @@
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/site.css?v=5" />
   <style>
-    .summary {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr 1fr;
-      gap: 0.85rem;
-      margin-bottom: 1.25rem;
-    }
-    .stat {
-      position: relative;
-      border: 1px solid var(--line);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.04), transparent 50%),
-        var(--panel);
-      padding: 1.1rem 1.15rem;
-      overflow: hidden;
-    }
-    .stat.pool {
-      border-color: rgba(239, 215, 130, 0.35);
-      background:
-        radial-gradient(ellipse at 20% 0%, rgba(239, 215, 130, 0.14), transparent 55%),
-        linear-gradient(180deg, #18160f, #111111);
-    }
-    .stat span {
-      display: block;
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+    .pool-line {
+      margin: 0 0 1.25rem;
       color: var(--muted);
+      font-size: var(--fs-md);
+      line-height: 1.45;
     }
-    .stat strong {
-      display: block;
-      margin-top: 0.45rem;
-      font-family: var(--display);
-      font-size: clamp(1.25rem, 2.8vw, 1.7rem);
+    .pool-line strong {
+      color: #fff;
       font-weight: 600;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      line-height: 1.15;
     }
-    .stat.pool strong { color: var(--gold); }
 
-    .ladder {
+    .payout-table {
+      width: 100%;
+      max-width: 44rem;
+      border-collapse: collapse;
       border: 1px solid var(--line);
       background: var(--panel);
-      overflow: hidden;
     }
-    .ladder-head {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 0.75rem;
-      padding: 0.75rem 1.15rem;
-      border-bottom: 1px solid var(--line);
-      background: #0a0a0a;
+
+    .payout-table thead th {
+      padding: 0.7rem 1rem;
+      text-align: left;
       font-family: var(--body);
       font-size: var(--fs-xs);
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--muted);
-    }
-    .ladder-head .amt { text-align: right; }
-
-    .prize {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 0.75rem;
-      align-items: center;
-      padding: 1rem 1.15rem;
+      background: #0c0c0c;
       border-bottom: 1px solid var(--line);
-      transition: background 0.15s ease;
     }
-    .prize:last-child { border-bottom: 0; }
-    .prize:hover { background: rgba(255,255,255,0.03); }
-
-    .prize.champ {
-      background:
-        linear-gradient(90deg, rgba(239, 215, 130, 0.12), transparent 55%),
-        #14120c;
-      border-bottom-color: rgba(239, 215, 130, 0.18);
-    }
-    .prize.runner {
-      background:
-        linear-gradient(90deg, rgba(47, 109, 255, 0.1), transparent 50%),
-        transparent;
-    }
-    .prize.detail-tone {
-      box-shadow: inset 3px 0 0 var(--detail);
-    }
-    .prize.overtime-tone {
-      box-shadow: inset 3px 0 0 var(--overtime);
+    .payout-table thead th:last-child {
+      text-align: right;
     }
 
-    .prize .label {
-      font-weight: 600;
+    .payout-table tbody tr:nth-child(odd) {
+      background: #111111;
+    }
+    .payout-table tbody tr:nth-child(even) {
+      background: #171717;
+    }
+    .payout-table tbody tr:hover {
+      background: #1c1c1c;
+    }
+
+    .payout-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    .payout-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .payout-table td.award {
+      width: 100%;
+    }
+
+    .award-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      min-width: 0;
+    }
+
+    .award-cell img {
+      width: 2.75rem;
+      height: 2.75rem;
+      object-fit: contain;
+      flex: 0 0 2.75rem;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+    }
+
+    .award-cell span {
       font-size: 0.98rem;
-      letter-spacing: 0;
+      font-weight: 600;
       line-height: 1.3;
       color: #eee;
     }
 
-    .prize .amount {
-      font-family: var(--display);
-      font-size: 1.3rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+    .payout-table td.amount {
       text-align: right;
       white-space: nowrap;
-      line-height: 1;
-    }
-    .prize.champ .amount { color: var(--gold); }
-
-    .bar-wrap {
-      grid-column: 1 / -1;
-      height: 3px;
-      background: rgba(255,255,255,0.06);
-      margin-top: 0.55rem;
-      overflow: hidden;
-    }
-    .bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--gold), var(--blue));
-      transform-origin: left;
-      animation: fill-bar 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-    .prize.champ .bar { background: var(--gold); }
-    .prize.runner .bar { background: var(--blue); }
-    .prize.detail-tone .bar { background: var(--detail); }
-    .prize.overtime-tone .bar { background: var(--overtime); }
-
-    @keyframes fill-bar {
-      from { transform: scaleX(0); }
-      to { transform: scaleX(1); }
+      font-family: var(--display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #fff;
+      padding-left: 1.5rem;
     }
 
     .note {
       margin-top: 1rem;
+      max-width: 44rem;
       color: var(--muted);
       font-size: var(--fs-sm);
-      font-weight: 400;
       line-height: 1.55;
-      max-width: 48rem;
-    }
-
-    @media (max-width: 800px) {
-      .summary { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -169,7 +120,7 @@
   <section class="page-hero shell reveal">
     <p class="eyebrow">Prize Money</p>
     <h1>League Payouts</h1>
-    <p>$100 buy-in. $2,400 on the line. Finish matters.</p>
+    <p>Entry fees from all 24 franchises fund the season prize pool.</p>
   </section>
 
   <main class="page-main shell">
@@ -196,47 +147,49 @@
       }
     }
 
-    function toneClass(label = '', idx = 0) {
-      if (idx === 0) return 'champ';
-      if (idx === 1) return 'runner';
+    function prizeLogo(label = '') {
       const l = label.toLowerCase();
-      if (l.includes('detail')) return 'detail-tone';
-      if (l.includes('overtime')) return 'overtime-tone';
-      return '';
+      if (l.includes('bowl') || (l.includes('gridiron') && !l.includes('conference'))) {
+        return '/assets/gridiron-bowl.png';
+      }
+      if (l.includes('detail') && l.includes('championship')) return '/assets/detail-conf-champ.png';
+      if (l.includes('overtime') && l.includes('championship')) return '/assets/overtime-conf-champ.png';
+      if (l.includes('detail')) return '/assets/detail-conference.png';
+      if (l.includes('overtime')) return '/assets/overtime-conference.png';
+      return '/assets/gridiron-bowl.png';
     }
 
     function render(data) {
       const p = data.payouts || {};
       const currency = p.currency || 'USD';
       const buyIn = money(p.buyInPerTeam, currency);
-      const poolNum = p.buyInPerTeam != null && p.teamCount
-        ? Number(p.buyInPerTeam) * Number(p.teamCount)
-        : null;
-      const pool = poolNum != null ? money(poolNum, currency) : 'TBD';
-      const maxAmt = Math.max(1, ...(p.prizes || []).map((x) => Number(x.amount) || 0));
+      const pool = p.buyInPerTeam != null && p.teamCount
+        ? money(Number(p.buyInPerTeam) * Number(p.teamCount), currency)
+        : 'TBD';
 
-      const rows = (p.prizes || []).map((prize, idx) => {
-        const amt = Number(prize.amount) || 0;
-        const pct = Math.max(8, Math.round((amt / maxAmt) * 100));
-        const tone = toneClass(prize.label, idx);
-        return `
-          <div class="prize ${tone} reveal reveal-delay-${Math.min(idx + 1, 4)}">
-            <div class="label">${esc(prize.label)}</div>
-            <div class="amount">${money(prize.amount, currency)}</div>
-            <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
-          </div>`;
-      }).join('');
+      const rows = (p.prizes || []).map((prize) => `
+        <tr>
+          <td class="award">
+            <div class="award-cell">
+              <img src="${esc(prizeLogo(prize.label))}" alt="" />
+              <span>${esc(prize.label)}</span>
+            </div>
+          </td>
+          <td class="amount">${money(prize.amount, currency)}</td>
+        </tr>`).join('');
 
       document.getElementById('content').innerHTML = `
-        <div class="summary reveal">
-          <div class="stat pool"><span>Total Prize Pool</span><strong>${pool}</strong></div>
-          <div class="stat"><span>Buy-In / Team</span><strong>${buyIn}</strong></div>
-          <div class="stat"><span>Season</span><strong>${esc(p.seasonLabel || data.season)}</strong></div>
-        </div>
-        <div class="ladder reveal reveal-delay-1">
-          <div class="ladder-head"><span>Award</span><span class="amt">Payout</span></div>
-          ${rows || '<div class="msg">No payouts configured.</div>'}
-        </div>
+        <p class="pool-line reveal">
+          <strong>${buyIn}</strong> buy-in · <strong>${pool}</strong> total prize pool · ${esc(p.seasonLabel || data.season)}
+        </p>
+        <table class="payout-table reveal reveal-delay-1">
+          <thead>
+            <tr><th>Award</th><th>Payout</th></tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="2">No payouts configured.</td></tr>'}
+          </tbody>
+        </table>
         <p class="note reveal reveal-delay-2">${esc(p.notes || '')}</p>`;
     }
 
