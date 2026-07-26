@@ -80,8 +80,10 @@
     .conf-head .wk {
       margin-left: auto;
       color: var(--muted);
-      font-size: 0.7rem;
-      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      white-space: nowrap;
     }
 
     .rounds {
@@ -181,18 +183,20 @@
 
     .slot .seed {
       font-family: var(--display);
-      font-size: 1rem;
+      font-size: 0.92rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
       color: #fff;
+      line-height: 1.2;
     }
 
     .slot .sub {
-      margin-top: 0.2rem;
+      margin-top: 0.25rem;
       color: var(--muted);
       font-size: 0.74rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: none;
     }
 
     .slot.winner-line::after {
@@ -340,14 +344,14 @@
   <section class="page-hero shell reveal">
     <p class="eyebrow">Road to the Bowl</p>
     <h1>Playoff Structure</h1>
-    <p>Six teams qualify from each conference. Both champions collide in GridIron Bowl I.</p>
+    <p>Six teams qualify from each conference. Both champions meet in GridIron Bowl I.</p>
   </section>
 
   <main class="page-main shell">
     <div class="legend reveal reveal-delay-1">
-      <span><b>6</b> teams / conference</span>
-      <span><b>#1–#2</b> first-round byes</span>
-      <span><b>Reseed</b> after Wild Card</span>
+      <span><b>6</b> playoff teams per conference</span>
+      <span><b>1 and 2 seeds</b> earn first-round byes</span>
+      <span><b>Reseed</b> after the Wild Card round</span>
       <span><b>Week 17</b> GridIron Bowl I</span>
     </div>
 
@@ -355,24 +359,24 @@
       <section class="conf-tree detail reveal reveal-delay-2">
         <div class="conf-head">
           <img src="/assets/detail-conference.png" alt="" />
-          Detail
-          <span class="wk">Wks 14–16</span>
+          Detail Conference
+          <span class="wk">Weeks 14–16</span>
         </div>
         <div class="rounds">
           <div class="round-col">
             <div class="round-label">Week 14 · Wild Card</div>
-            <div class="slot bye"><div class="seed">#1 Detail</div><div class="sub">BYE</div></div>
-            <div class="slot winner-line"><div class="seed">#4 vs #5</div><div class="sub">Wild Card</div></div>
-            <div class="slot winner-line"><div class="seed">#3 vs #6</div><div class="sub">Wild Card</div></div>
-            <div class="slot bye"><div class="seed">#2 Detail</div><div class="sub">BYE</div></div>
+            <div class="slot bye"><div class="seed">1 Seed</div><div class="sub">Bye</div></div>
+            <div class="slot winner-line"><div class="seed">4 Seed vs 5 Seed</div><div class="sub">Winner advances</div></div>
+            <div class="slot winner-line"><div class="seed">3 Seed vs 6 Seed</div><div class="sub">Winner advances</div></div>
+            <div class="slot bye"><div class="seed">2 Seed</div><div class="sub">Bye</div></div>
           </div>
           <div class="round-col">
-            <div class="round-label">Week 15 · Semis</div>
-            <div class="slot winner-line"><div class="seed">#1 vs Lower Seed</div><div class="sub">Reseeded semifinal</div></div>
-            <div class="slot winner-line"><div class="seed">#2 vs Highest Seed</div><div class="sub">Reseeded semifinal</div></div>
+            <div class="round-label">Week 15 · Semifinals</div>
+            <div class="slot winner-line"><div class="seed">1 Seed vs Lower Seed</div><div class="sub">Reseeded</div></div>
+            <div class="slot winner-line"><div class="seed">2 Seed vs Highest Seed</div><div class="sub">Reseeded</div></div>
           </div>
           <div class="round-col">
-            <div class="round-label">Week 16</div>
+            <div class="round-label">Week 16 · Championship</div>
             <div class="slot title-slot">
               <img src="/assets/detail-conf-champ.png" alt="Detail Conference Championship" />
               <span class="sr-only">Detail Conference Championship</span>
@@ -387,7 +391,7 @@
           <img src="/assets/gridiron-bowl.png" alt="GridIron Bowl I" />
           <div class="vs">
             <span class="d">Detail Champion</span>
-            <span class="mid-vs">VS</span>
+            <span class="mid-vs">vs</span>
             <span class="o">Overtime Champion</span>
           </div>
         </div>
@@ -396,24 +400,24 @@
       <section class="conf-tree overtime reveal reveal-delay-3">
         <div class="conf-head">
           <img src="/assets/overtime-conference.png" alt="" />
-          Overtime
-          <span class="wk">Wks 14–16</span>
+          Overtime Conference
+          <span class="wk">Weeks 14–16</span>
         </div>
         <div class="rounds">
           <div class="round-col">
             <div class="round-label">Week 14 · Wild Card</div>
-            <div class="slot bye"><div class="seed">#1 Overtime</div><div class="sub">BYE</div></div>
-            <div class="slot winner-line"><div class="seed">#4 vs #5</div><div class="sub">Wild Card</div></div>
-            <div class="slot winner-line"><div class="seed">#3 vs #6</div><div class="sub">Wild Card</div></div>
-            <div class="slot bye"><div class="seed">#2 Overtime</div><div class="sub">BYE</div></div>
+            <div class="slot bye"><div class="seed">1 Seed</div><div class="sub">Bye</div></div>
+            <div class="slot winner-line"><div class="seed">4 Seed vs 5 Seed</div><div class="sub">Winner advances</div></div>
+            <div class="slot winner-line"><div class="seed">3 Seed vs 6 Seed</div><div class="sub">Winner advances</div></div>
+            <div class="slot bye"><div class="seed">2 Seed</div><div class="sub">Bye</div></div>
           </div>
           <div class="round-col">
-            <div class="round-label">Week 15 · Semis</div>
-            <div class="slot winner-line"><div class="seed">#1 vs Lower Seed</div><div class="sub">Reseeded semifinal</div></div>
-            <div class="slot winner-line"><div class="seed">#2 vs Highest Seed</div><div class="sub">Reseeded semifinal</div></div>
+            <div class="round-label">Week 15 · Semifinals</div>
+            <div class="slot winner-line"><div class="seed">1 Seed vs Lower Seed</div><div class="sub">Reseeded</div></div>
+            <div class="slot winner-line"><div class="seed">2 Seed vs Highest Seed</div><div class="sub">Reseeded</div></div>
           </div>
           <div class="round-col">
-            <div class="round-label">Week 16</div>
+            <div class="round-label">Week 16 · Championship</div>
             <div class="slot title-slot">
               <img src="/assets/overtime-conf-champ.png" alt="Overtime Conference Championship" />
               <span class="sr-only">Overtime Conference Championship</span>
@@ -426,11 +430,11 @@
     <div class="notes">
       <div class="note reveal reveal-delay-3">
         <h3>Conference Playoffs</h3>
-        <p>Weeks 14–16 play inside each ESPN league. Seeds #1 and #2 sit Wild Card weekend. Semifinals reseed so #1 draws the lower remaining seed and #2 draws the higher remaining seed.</p>
+        <p>Weeks 14 through 16 are played inside each ESPN league. The 1 and 2 seeds earn byes in the Wild Card round. Semifinals are reseeded: the 1 seed plays the lower remaining seed, and the 2 seed plays the higher remaining seed.</p>
       </div>
       <div class="note reveal reveal-delay-4">
         <h3>GridIron Bowl</h3>
-        <p>Week 17 is cross-conference. GridIron builds the championship from both conference champions’ ESPN lineups and scoring — no shared ESPN league required.</p>
+        <p>Week 17 is the cross-conference championship. GridIron scores both conference champions from their ESPN starting lineups — no shared ESPN league required.</p>
       </div>
     </div>
   </main>
