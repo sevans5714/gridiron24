@@ -4,25 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GridIron 24</title>
-  <meta name="description" content="24 Teams. Two Conferences. One Champion. GridIron 24 fantasy football league headquarters." />
+  <meta name="description" content="24 Teams. Two Conferences. One Champion." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #050b1a;
-      --bg-elevated: #0a1430;
-      --surface: #0d1a3a;
-      --text: #eef2ff;
-      --muted: #8b97b8;
-      --line: rgba(255, 255, 255, 0.08);
+      --bg: #06080f;
+      --panel: #0c101c;
+      --text: #f4f6fb;
+      --muted: #8e97ab;
+      --line: rgba(255,255,255,0.07);
       --detail: #ff7a18;
       --overtime: #e2232a;
       --blue: #3b82ff;
-      --good: #34d399;
-      --bad: #f87171;
-      --display: "Syne", system-ui, sans-serif;
-      --body: "Manrope", system-ui, sans-serif;
+      --good: #3ecf8e;
+      --bad: #ff6b6b;
+      --font: "Plus Jakarta Sans", system-ui, sans-serif;
     }
 
     * { box-sizing: border-box; }
@@ -31,329 +29,227 @@
       margin: 0;
       min-height: 100vh;
       color: var(--text);
-      font-family: var(--body);
-      background:
-        radial-gradient(ellipse 70% 45% at 50% 0%, rgba(59, 130, 255, 0.18), transparent 60%),
-        radial-gradient(ellipse 35% 30% at 8% 55%, rgba(255, 122, 24, 0.1), transparent 55%),
-        radial-gradient(ellipse 35% 30% at 92% 55%, rgba(226, 35, 42, 0.1), transparent 55%),
-        var(--bg);
+      font-family: var(--font);
+      background: var(--bg);
+    }
+
+    .shell {
+      width: 100%;
+      padding: 0 clamp(1rem, 3.5vw, 3rem);
     }
 
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 40;
+      z-index: 20;
       border-bottom: 1px solid var(--line);
-      background: rgba(5, 11, 26, 0.85);
-      backdrop-filter: blur(16px);
+      background: rgba(6, 8, 15, 0.9);
+      backdrop-filter: blur(12px);
     }
 
-    .topbar-inner {
+    .topbar .shell {
+      min-height: 3.75rem;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 1rem;
-      padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
     }
 
-    .brand-small {
+    .brand {
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      font-size: 0.95rem;
     }
 
-    .brand-mark {
-      width: 2.25rem;
-      height: 2.25rem;
+    .brand img {
+      width: 2rem;
+      height: 2rem;
       object-fit: contain;
     }
 
-    .brand-small b {
-      font-family: var(--display);
-      font-size: 1.15rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-    }
-
-    .brand-small span {
-      display: block;
-      margin-top: 0.15rem;
+    .sync {
       color: var(--muted);
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-
-    .nav-meta {
-      color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
     }
 
-    .nav-meta .live {
-      color: var(--good);
-      margin-right: 0.4rem;
-    }
+    .sync .on { color: var(--good); }
 
     .hero {
-      display: grid;
-      place-items: center;
+      padding: clamp(2.5rem, 8vh, 5.5rem) 0 clamp(2rem, 5vh, 3.5rem);
       text-align: center;
-      padding: clamp(2rem, 6vw, 4.5rem) clamp(1rem, 3vw, 2.5rem) clamp(2rem, 5vw, 3.5rem);
     }
 
-    .hero-inner {
-      width: min(34rem, 100%);
-      animation: rise 0.7s ease-out both;
-    }
-
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(1rem); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .league-logo {
-      width: min(22rem, 72vw);
+    .hero img {
+      width: min(280px, 58vw);
       height: auto;
       display: block;
       margin: 0 auto;
-      filter: drop-shadow(0 1.5rem 3rem rgba(0, 0, 0, 0.45));
+      filter: drop-shadow(0 24px 48px rgba(0,0,0,0.55));
     }
 
-    .tagline {
-      margin: 1.4rem 0 0;
+    .hero p {
+      margin: 1.5rem 0 0;
       color: var(--muted);
-      font-size: clamp(0.95rem, 2vw, 1.1rem);
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+      font-weight: 500;
     }
 
-    .hero-meta {
-      margin-top: 1.75rem;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 0.75rem;
-      align-items: stretch;
-    }
-
-    .conf-chip,
-    .bowl-mark {
-      padding: 0.85rem 0.75rem;
-      border: 1px solid var(--line);
-      border-radius: 0.85rem;
-      background: rgba(13, 26, 58, 0.7);
-    }
-
-    .conf-chip strong {
-      display: block;
-      font-family: var(--display);
-      font-size: 1.15rem;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-    }
-
-    .conf-chip.detail strong { color: var(--detail); }
-    .conf-chip.overtime strong { color: var(--overtime); }
-
-    .conf-chip span,
-    .bowl-mark small {
-      display: block;
-      margin-top: 0.2rem;
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .bowl-mark {
-      display: grid;
-      place-items: center;
-      min-width: 6.5rem;
-      background: rgba(59, 130, 255, 0.12);
-      border-color: rgba(59, 130, 255, 0.28);
-      font-family: var(--display);
-      font-size: 1rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-    }
-
-    main {
-      width: 100%;
-      padding: 0 clamp(1rem, 3vw, 2.5rem) 4rem;
-    }
-
-    .section-head {
+    .section-label {
       display: flex;
+      align-items: baseline;
       justify-content: space-between;
-      align-items: end;
-      gap: 0.75rem;
-      margin: 0 0 1rem;
+      gap: 1rem;
+      margin: 0 0 0.85rem;
     }
 
-    .section-head h2 {
+    .section-label h2 {
       margin: 0;
-      font-family: var(--display);
-      font-size: clamp(1.6rem, 3vw, 2rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .section-head p {
-      margin: 0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
       color: var(--muted);
-      font-size: 0.85rem;
-      font-weight: 600;
     }
 
-    .conferences {
+    .boards {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
     }
 
-    .conference {
+    .board {
+      background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 1rem;
-      background: rgba(10, 20, 48, 0.85);
+      border-radius: 12px;
       overflow: hidden;
     }
 
-    .conference-header {
+    .board-head {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 0.75rem;
       padding: 1rem 1.1rem;
       border-bottom: 1px solid var(--line);
     }
 
-    .conference-header.detail { box-shadow: inset 3px 0 0 var(--detail); }
-    .conference-header.overtime { box-shadow: inset 3px 0 0 var(--overtime); }
+    .board-head.detail { border-left: 3px solid var(--detail); }
+    .board-head.overtime { border-left: 3px solid var(--overtime); }
 
-    .conference-title {
-      font-family: var(--display);
-      font-size: 1.35rem;
+    .board-head h3 {
+      margin: 0;
+      font-size: 1.15rem;
       font-weight: 800;
-      letter-spacing: -0.01em;
-      line-height: 1.1;
+      letter-spacing: -0.02em;
     }
 
-    .conference-header.detail .conference-title { color: var(--detail); }
-    .conference-header.overtime .conference-title { color: var(--overtime); }
+    .board-head.detail h3 { color: var(--detail); }
+    .board-head.overtime h3 { color: var(--overtime); }
 
-    .espn-name {
-      margin-top: 0.3rem;
+    .board-head .meta {
+      margin-top: 0.2rem;
       color: var(--muted);
       font-size: 0.72rem;
-      font-weight: 600;
+      font-weight: 500;
     }
 
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.4rem 0.6rem;
+    .pill {
+      color: var(--muted);
       border: 1px solid var(--line);
       border-radius: 999px;
-      color: var(--muted);
+      padding: 0.3rem 0.55rem;
       font-size: 0.68rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       white-space: nowrap;
     }
 
-    .dot {
-      width: 0.4rem;
-      height: 0.4rem;
+    .pill .dot {
+      display: inline-block;
+      width: 0.35rem;
+      height: 0.35rem;
+      margin-right: 0.35rem;
       border-radius: 50%;
       background: var(--good);
-      box-shadow: 0 0 0.6rem rgba(52, 211, 153, 0.7);
+      vertical-align: middle;
     }
 
-    .dot.bad { background: var(--bad); box-shadow: none; }
+    .pill .dot.off { background: var(--bad); }
 
-    .standings { width: 100%; }
-
-    .standings-row {
+    .row {
       display: grid;
       grid-template-columns:
         2rem
         minmax(0, 1.5fr)
         minmax(0, 1fr)
-        2.2rem
-        2.2rem
-        2.2rem
-        minmax(3rem, 0.5fr)
-        minmax(3rem, 0.5fr);
-      gap: 0.35rem 0.5rem;
+        2.1rem 2.1rem 2.1rem
+        minmax(2.8rem, 0.45fr)
+        minmax(2.8rem, 0.45fr);
+      gap: 0.35rem 0.45rem;
       align-items: center;
-      padding: 0.7rem 1rem;
+      padding: 0.65rem 1rem;
       border-bottom: 1px solid var(--line);
       font-variant-numeric: tabular-nums;
     }
 
-    .standings-row.head {
+    .row:last-child { border-bottom: 0; }
+    .row.head {
       color: var(--muted);
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      background: rgba(0, 0, 0, 0.2);
+      background: rgba(255,255,255,0.02);
     }
-
-    .standings-row:not(.head):hover {
-      background: rgba(59, 130, 255, 0.06);
-    }
-
-    .standings-row:last-child { border-bottom: 0; }
-    .standings-row.seed-cut { box-shadow: inset 0 -1px 0 rgba(59, 130, 255, 0.5); }
-    .standings-row .num { text-align: right; }
-    .standings-row .center { text-align: center; }
+    .row.body:hover { background: rgba(255,255,255,0.025); }
+    .row.cut { box-shadow: inset 0 -1px 0 rgba(59,130,255,0.45); }
+    .num { text-align: right; font-weight: 650; font-size: 0.86rem; }
+    .center { text-align: center; }
 
     .rank {
       text-align: center;
       color: var(--muted);
-      font-weight: 800;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 700;
     }
 
-    .franchise {
+    .team {
       display: flex;
       align-items: center;
       gap: 0.55rem;
       min-width: 0;
     }
 
-    .logo,
-    .logo-fallback {
-      width: 1.9rem;
-      height: 1.9rem;
-      flex: 0 0 1.9rem;
-      border-radius: 0.35rem;
+    .team img,
+    .fallback {
+      width: 1.75rem;
+      height: 1.75rem;
+      flex: 0 0 1.75rem;
+      border-radius: 4px;
       object-fit: contain;
-      background: #111827;
+      background: #f3f4f6;
       border: 1px solid var(--line);
     }
 
-    .logo { background: #f8fafc; padding: 0.1rem; }
-
-    .logo-fallback {
+    .fallback {
       display: grid;
       place-items: center;
-      color: var(--blue);
-      font-family: var(--display);
-      font-size: 0.8rem;
+      background: #151a28;
+      color: var(--muted);
+      font-size: 0.65rem;
       font-weight: 800;
     }
 
-    .team-name {
+    .name {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 700;
     }
 
@@ -363,272 +259,209 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 500;
     }
 
-    .wl { font-size: 0.88rem; font-weight: 700; }
-    .pts { color: #c6d0ea; font-size: 0.85rem; font-weight: 600; }
+    .pts { color: #b7c0d4; font-weight: 600; }
 
-    .loading,
-    .error,
-    .empty {
+    .msg {
       padding: 2rem 1rem;
-      color: var(--muted);
       text-align: center;
-      font-size: 0.9rem;
+      color: var(--muted);
+      font-size: 0.88rem;
     }
 
-    .error strong {
+    .msg strong {
       display: block;
       margin-bottom: 0.35rem;
       color: var(--bad);
     }
 
-    .road-section { margin-top: 2.5rem; }
+    .path {
+      margin-top: 2.25rem;
+      padding-bottom: 2.5rem;
+    }
 
-    .season-strip {
+    .steps {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 0.65rem;
+      gap: 0.6rem;
     }
 
-    .stage {
-      padding: 1rem 0.85rem;
+    .step {
+      padding: 0.95rem 0.8rem;
       border: 1px solid var(--line);
-      border-radius: 0.85rem;
-      background: rgba(10, 20, 48, 0.75);
+      border-radius: 10px;
+      background: var(--panel);
     }
 
-    .stage small {
+    .step span {
       display: block;
       color: var(--muted);
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       font-weight: 700;
       letter-spacing: 0.12em;
     }
 
-    .stage strong {
+    .step strong {
       display: block;
-      margin-top: 0.4rem;
-      font-family: var(--display);
-      font-size: 1.15rem;
-      font-weight: 800;
+      margin-top: 0.35rem;
+      font-size: 0.95rem;
+      font-weight: 750;
       letter-spacing: -0.01em;
     }
 
-    .stage.final {
-      border-color: rgba(59, 130, 255, 0.4);
-      background: rgba(59, 130, 255, 0.12);
+    .step.final {
+      border-color: rgba(59,130,255,0.35);
+      background: rgba(59,130,255,0.08);
     }
-
-    .stage.final strong { color: #93c5fd; }
 
     footer {
-      padding: 0 clamp(1rem, 3vw, 2.5rem) 2rem;
-      color: #667394;
-      font-size: 0.75rem;
+      padding: 0 0 2rem;
       text-align: center;
+      color: #667089;
+      font-size: 0.72rem;
     }
 
-    @media (max-width: 980px) {
-      .conferences { grid-template-columns: 1fr; }
-      .season-strip { grid-template-columns: 1fr 1fr; }
-      .stage.final { grid-column: 1 / -1; }
+    @media (max-width: 960px) {
+      .boards { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr 1fr; }
+      .step.final { grid-column: 1 / -1; }
     }
 
-    @media (max-width: 720px) {
-      .standings-row {
-        grid-template-columns: 1.7rem minmax(0, 1fr) 2rem 2rem minmax(2.6rem, 0.45fr);
+    @media (max-width: 700px) {
+      .row {
+        grid-template-columns: 1.7rem minmax(0,1fr) 2rem 2rem minmax(2.5rem,0.4fr);
       }
-      .col-owner,
-      .col-ties,
-      .col-pa { display: none; }
-    }
-
-    @media (max-width: 640px) {
-      .hero-meta { grid-template-columns: 1fr; }
-      .bowl-mark { order: -1; }
-      .section-head { flex-direction: column; align-items: start; }
-      .season-strip { grid-template-columns: 1fr; }
-      .stage.final { grid-column: auto; }
+      .col-owner, .col-t, .col-pa { display: none; }
+      .steps { grid-template-columns: 1fr; }
+      .step.final { grid-column: auto; }
     }
   </style>
 </head>
 <body>
   <header class="topbar">
-    <div class="topbar-inner">
-      <div class="brand-small">
-        <img class="brand-mark" src="/assets/gridiron24-logo.png" alt="GridIron 24" />
-        <div>
-          <b>GRIDIRON 24</b>
-          <span>2026 Inaugural Season</span>
-        </div>
+    <div class="shell">
+      <div class="brand">
+        <img src="/assets/gridiron24-logo.png" alt="" />
+        <span>GRIDIRON 24</span>
       </div>
-      <div class="nav-meta" id="lastUpdated"><span class="live">●</span>Connecting to ESPN…</div>
+      <div class="sync" id="lastUpdated">Connecting…</div>
     </div>
   </header>
 
-  <section class="hero">
-    <div class="hero-inner">
-      <img class="league-logo" src="/assets/gridiron24-logo.png" alt="GridIron 24" />
-      <p class="tagline">24 Teams • Two Conferences • One Champion</p>
-      <div class="hero-meta">
-        <div class="conf-chip detail">
-          <strong>DETAIL</strong>
-          <span>Conference</span>
-        </div>
-        <div class="bowl-mark">
-          BOWL I
-          <small>WEEK 17</small>
-        </div>
-        <div class="conf-chip overtime">
-          <strong>OVERTIME</strong>
-          <span>Conference</span>
-        </div>
-      </div>
-    </div>
+  <section class="hero shell">
+    <img src="/assets/gridiron24-logo.png" alt="GridIron 24" />
+    <p>24 Teams · Two Conferences · One Champion</p>
   </section>
 
-  <main>
-    <div class="section-head">
-      <div><h2>Standings</h2></div>
-      <p>Live conference tables from ESPN</p>
+  <main class="shell">
+    <div class="section-label">
+      <h2>Standings</h2>
     </div>
-
-    <section class="conferences">
-      <div class="conference" id="detail"></div>
-      <div class="conference" id="overtime"></div>
+    <section class="boards">
+      <div class="board" id="detail"></div>
+      <div class="board" id="overtime"></div>
     </section>
 
-    <div class="road-section">
-      <div class="section-head">
-        <div><h2>Road to the Bowl</h2></div>
-        <p>GridIron 24 postseason format</p>
+    <section class="path">
+      <div class="section-label"><h2>Road to the Bowl</h2></div>
+      <div class="steps">
+        <div class="step"><span>WEEKS 1–13</span><strong>Regular Season</strong></div>
+        <div class="step"><span>WEEK 14</span><strong>Wild Card</strong></div>
+        <div class="step"><span>WEEK 15</span><strong>Semifinals</strong></div>
+        <div class="step"><span>WEEK 16</span><strong>Conf. Title</strong></div>
+        <div class="step final"><span>WEEK 17</span><strong>GridIron Bowl I</strong></div>
       </div>
-      <section class="season-strip">
-        <div class="stage"><small>WEEKS 1–13</small><strong>Regular Season</strong></div>
-        <div class="stage"><small>WEEK 14</small><strong>Wild Card</strong></div>
-        <div class="stage"><small>WEEK 15</small><strong>Semifinals</strong></div>
-        <div class="stage"><small>WEEK 16</small><strong>Conf. Title</strong></div>
-        <div class="stage final"><small>WEEK 17</small><strong>GridIron Bowl I</strong></div>
-      </section>
-    </div>
+    </section>
   </main>
 
-  <footer>GridIron 24 league headquarters. ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <footer class="shell">ESPN remains the system of record for league operations and scoring.</footer>
 
   <script>
-    const escapeHtml = (value = '') => String(value)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
-    function fmtPts(value) {
-      return Number(value || 0).toFixed(1);
-    }
+    const pts = (n) => Number(n || 0).toFixed(1);
 
-    function logoMarkup(team) {
+    function teamLogo(team) {
       if (team.logo) {
-        return `<img class="logo" src="${escapeHtml(team.logo)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;logo-fallback&quot;>24</div>'">`;
+        return `<img src="${esc(team.logo)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;fallback&quot;>24</div>'">`;
       }
-      return `<div class="logo-fallback">24</div>`;
+      return `<div class="fallback">24</div>`;
     }
 
-    function conferenceMarkup(conf) {
-      const cls = conf.key === 'detail' ? 'detail' : 'overtime';
-
+    function board(conf) {
+      const tone = conf.key === 'detail' ? 'detail' : 'overtime';
       if (!conf.ok) {
         return `
-          <div class="conference-header ${cls}">
-            <div>
-              <div class="conference-title">${escapeHtml(conf.name)}</div>
-              <div class="espn-name">ESPN League ${conf.leagueId}</div>
-            </div>
-            <div class="status"><span class="dot bad"></span>OFFLINE</div>
+          <div class="board-head ${tone}">
+            <div><h3>${esc(conf.name)}</h3><div class="meta">ESPN ${conf.leagueId}</div></div>
+            <div class="pill"><span class="dot off"></span>OFFLINE</div>
           </div>
-          <div class="error">
-            <strong>ESPN connection failed</strong>
-            ${escapeHtml(conf.error || 'Unknown error')}
-          </div>`;
+          <div class="msg"><strong>ESPN connection failed</strong>${esc(conf.error || 'Unknown error')}</div>`;
       }
 
       const teams = conf.teams || [];
       if (!teams.length) {
         return `
-          <div class="conference-header ${cls}">
-            <div>
-              <div class="conference-title">${escapeHtml(conf.name)}</div>
-              <div class="espn-name">ESPN ${conf.leagueId}</div>
-            </div>
-            <div class="status"><span class="dot"></span>0 TEAMS</div>
+          <div class="board-head ${tone}">
+            <div><h3>${esc(conf.name)}</h3><div class="meta">ESPN ${conf.leagueId}</div></div>
+            <div class="pill"><span class="dot"></span>0 TEAMS</div>
           </div>
-          <div class="empty">No teams have joined this conference yet.</div>`;
+          <div class="msg">No teams yet.</div>`;
       }
 
-      const rows = teams.map((team, index) => {
-        const rank = index + 1;
+      const rows = teams.map((t, i) => {
+        const rank = i + 1;
         return `
-          <div class="standings-row ${rank === 6 ? 'seed-cut' : ''}">
+          <div class="row body ${rank === 6 ? 'cut' : ''}">
             <div class="rank">${rank}</div>
-            <div class="franchise">
-              ${logoMarkup(team)}
-              <div class="team-name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
-            </div>
-            <div class="owner col-owner" title="${escapeHtml(team.owner)}">${escapeHtml(team.owner)}</div>
-            <div class="num wl">${team.wins || 0}</div>
-            <div class="num wl">${team.losses || 0}</div>
-            <div class="num wl col-ties">${team.ties || 0}</div>
-            <div class="num pts">${fmtPts(team.pointsFor)}</div>
-            <div class="num pts col-pa">${fmtPts(team.pointsAgainst)}</div>
+            <div class="team">${teamLogo(t)}<div class="name" title="${esc(t.name)}">${esc(t.name)}</div></div>
+            <div class="owner col-owner" title="${esc(t.owner)}">${esc(t.owner)}</div>
+            <div class="num">${t.wins || 0}</div>
+            <div class="num">${t.losses || 0}</div>
+            <div class="num col-t">${t.ties || 0}</div>
+            <div class="num pts">${pts(t.pointsFor)}</div>
+            <div class="num pts col-pa">${pts(t.pointsAgainst)}</div>
           </div>`;
       }).join('');
 
       return `
-        <div class="conference-header ${cls}">
+        <div class="board-head ${tone}">
           <div>
-            <div class="conference-title">${escapeHtml(conf.name)}</div>
-            <div class="espn-name">ESPN ${conf.leagueId} · Week ${conf.currentMatchupPeriod ?? '—'}</div>
+            <h3>${esc(conf.name)}</h3>
+            <div class="meta">ESPN ${conf.leagueId} · Week ${conf.currentMatchupPeriod ?? '—'}</div>
           </div>
-          <div class="status"><span class="dot"></span>${conf.teamCount} TEAMS</div>
+          <div class="pill"><span class="dot"></span>${conf.teamCount} TEAMS</div>
         </div>
-        <div class="standings">
-          <div class="standings-row head">
-            <div class="center">#</div>
-            <div>Team</div>
-            <div class="col-owner">Owner</div>
-            <div class="num">W</div>
-            <div class="num">L</div>
-            <div class="num col-ties">T</div>
-            <div class="num">PF</div>
-            <div class="num col-pa">PA</div>
-          </div>
-          ${rows}
-        </div>`;
+        <div class="row head">
+          <div class="center">#</div><div>Team</div><div class="col-owner">Owner</div>
+          <div class="num">W</div><div class="num">L</div><div class="num col-t">T</div>
+          <div class="num">PF</div><div class="num col-pa">PA</div>
+        </div>
+        ${rows}`;
     }
 
     async function load() {
-      document.getElementById('detail').innerHTML = '<div class="loading">Loading Detail Conference…</div>';
-      document.getElementById('overtime').innerHTML = '<div class="loading">Loading Overtime Conference…</div>';
-
+      document.getElementById('detail').innerHTML = '<div class="msg">Loading…</div>';
+      document.getElementById('overtime').innerHTML = '<div class="msg">Loading…</div>';
       try {
-        const response = await fetch('/api/leagues', { cache: 'no-store' });
-        if (!response.ok) throw new Error(`Server returned ${response.status}`);
-        const data = await response.json();
-
+        const res = await fetch('/api/leagues', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
         for (const conf of data.conferences) {
-          const target = document.getElementById(conf.key);
-          if (target) target.innerHTML = conferenceMarkup(conf);
+          const el = document.getElementById(conf.key);
+          if (el) el.innerHTML = board(conf);
         }
-
-        const time = new Date(data.generatedAt);
+        const t = new Date(data.generatedAt);
         document.getElementById('lastUpdated').innerHTML =
-          `<span class="live">●</span>ESPN sync · ${time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
-      } catch (error) {
+          `<span class="on">●</span> ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+      } catch (err) {
         document.getElementById('lastUpdated').textContent = 'Connection error';
-        const msg = `<div class="error"><strong>Dashboard error</strong>${escapeHtml(error.message)}</div>`;
+        const msg = `<div class="msg"><strong>Dashboard error</strong>${esc(err.message)}</div>`;
         document.getElementById('detail').innerHTML = msg;
         document.getElementById('overtime').innerHTML = msg;
       }
