@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=4" />
+  <link rel="stylesheet" href="/css/site.css?v=5" />
   <style>
     .hero {
       text-align: center;
@@ -28,23 +28,22 @@
     }
 
     .ad-line {
-      margin: 0.45rem 0 0;
+      margin: 0.55rem 0 0;
       font-family: var(--display);
-      font-weight: 700;
+      font-weight: 600;
       text-transform: uppercase;
-      line-height: 1;
-      letter-spacing: 0.08em;
-      font-size: clamp(0.78rem, 3.1vw, 1.65rem);
+      line-height: 1.15;
+      letter-spacing: 0.04em;
+      font-size: clamp(0.82rem, 2.8vw, 1.35rem);
       white-space: nowrap;
       color: #fff;
-      text-shadow: 0 2px 0 rgba(0,0,0,0.55);
     }
 
     .ad-line .detail { color: var(--detail); }
     .ad-line .champ { color: var(--blue); }
     .ad-line .sep {
       color: #666;
-      margin: 0 0.4em;
+      margin: 0 0.35em;
       font-weight: 500;
     }
 
@@ -53,11 +52,11 @@
     }
 
     .section-label {
-      margin: 0 0 0.75rem;
-      font-family: var(--display);
-      font-size: 0.95rem;
+      margin: 0 0 0.85rem;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
       font-weight: 600;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
     }
@@ -105,21 +104,22 @@
     .board-head h2 {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      line-height: 1;
+      line-height: 1.15;
     }
 
     .board-head.detail h2 { color: var(--detail); }
     .board-head.overtime h2 { color: var(--overtime); }
 
     .board-head .meta {
-      margin-top: 0.25rem;
+      margin-top: 0.2rem;
       color: var(--muted);
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: var(--fs-xs);
+      font-weight: 500;
+      letter-spacing: 0;
     }
 
     .standings { width: 100%; }
@@ -148,10 +148,10 @@
     .row.head {
       background: #0c0c0c;
       color: var(--muted);
-      font-family: var(--display);
-      font-size: 0.72rem;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
       font-weight: 600;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
     }
 
@@ -164,9 +164,10 @@
     .rank {
       text-align: center;
       font-family: var(--display);
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 0.95rem;
+      font-weight: 600;
       color: #cfcfcf;
+      letter-spacing: 0;
     }
 
     .team {
@@ -206,8 +207,9 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 0.92rem;
-      font-weight: 700;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0;
     }
 
     .owner {
@@ -217,20 +219,22 @@
       white-space: nowrap;
       color: var(--muted);
       font-size: 0.8rem;
-      font-weight: 500;
+      font-weight: 400;
     }
 
     .wl {
       font-family: var(--display);
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 600;
+      letter-spacing: 0.01em;
     }
 
     .pts {
       font-family: var(--display);
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 600;
       color: #d0d0d0;
+      letter-spacing: 0;
     }
 
     .path {
@@ -251,10 +255,10 @@
 
     .step span {
       display: block;
-      font-family: var(--display);
-      font-size: 0.7rem;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
       font-weight: 600;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--muted);
     }
@@ -263,10 +267,11 @@
       display: block;
       margin-top: 0.35rem;
       font-family: var(--display);
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
+      line-height: 1.2;
     }
 
     .step.final {

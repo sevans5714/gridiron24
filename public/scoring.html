@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=4" />
+  <link rel="stylesheet" href="/css/site.css?v=5" />
   <style>
     .grid-2 {
       display: grid;
@@ -25,33 +25,40 @@
       background: rgba(255, 255, 255, 0.03);
     }
     .matrix th, .matrix td {
-      padding: 0.7rem 1.1rem;
+      padding: 0.72rem 1.15rem;
       border-bottom: 1px solid var(--line);
       text-align: left;
-      font-size: 0.92rem;
+      font-size: var(--fs-sm);
+      line-height: 1.35;
     }
     .matrix th {
-      font-family: var(--display);
-      font-size: 0.7rem;
-      letter-spacing: 0.14em;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--muted);
       background: #0a0a0a;
     }
+    .matrix td {
+      font-weight: 500;
+      color: #e8e8e8;
+    }
     .matrix td.pts {
       text-align: right;
       font-family: var(--display);
-      font-weight: 700;
-      font-size: 1.25rem;
-      letter-spacing: 0.04em;
+      font-weight: 600;
+      font-size: 1.1rem;
+      letter-spacing: 0.01em;
       color: #fff;
     }
     .section-label {
       margin: 0;
-      padding: 0.75rem 1.1rem 0.35rem;
-      font-family: var(--display);
-      font-size: 0.7rem;
-      letter-spacing: 0.16em;
+      padding: 0.85rem 1.15rem 0.4rem;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
       color: var(--muted);
       border-top: 1px solid var(--line);
@@ -61,19 +68,20 @@
       display: flex;
       flex-wrap: wrap;
       gap: 0.45rem;
-      padding: 0.75rem 1.1rem 1.15rem;
+      padding: 0.7rem 1.15rem 1.15rem;
     }
     .chip {
       border: 1px solid var(--line);
       background: linear-gradient(180deg, #151515, #0c0c0c);
       padding: 0.4rem 0.7rem;
-      font-family: var(--display);
-      font-size: 0.82rem;
-      letter-spacing: 0.08em;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
     }
-    .chip strong { color: #fff; margin-right: 0.3rem; }
-    .chip span { color: var(--muted); }
+    .chip strong { color: #fff; margin-right: 0.3rem; font-weight: 700; }
+    .chip span { color: var(--muted); font-weight: 500; }
     @media (max-width: 900px) {
       .grid-2 { grid-template-columns: 1fr; }
     }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=4" />
+  <link rel="stylesheet" href="/css/site.css?v=5" />
   <style>
     .summary {
       display: grid;
@@ -32,9 +32,10 @@
     }
     .stat span {
       display: block;
-      font-family: var(--display);
-      font-size: 0.7rem;
-      letter-spacing: 0.16em;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--muted);
     }
@@ -42,10 +43,11 @@
       display: block;
       margin-top: 0.45rem;
       font-family: var(--display);
-      font-size: clamp(1.35rem, 3vw, 1.85rem);
-      letter-spacing: 0.04em;
+      font-size: clamp(1.25rem, 2.8vw, 1.7rem);
+      font-weight: 600;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      line-height: 1;
+      line-height: 1.15;
     }
     .stat.pool strong { color: var(--gold); }
 
@@ -61,9 +63,10 @@
       padding: 0.75rem 1.15rem;
       border-bottom: 1px solid var(--line);
       background: #0a0a0a;
-      font-family: var(--display);
-      font-size: 0.7rem;
-      letter-spacing: 0.14em;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--muted);
     }
@@ -100,18 +103,21 @@
     }
 
     .prize .label {
-      font-weight: 700;
-      font-size: 1rem;
-      letter-spacing: 0.01em;
+      font-weight: 600;
+      font-size: 0.98rem;
+      letter-spacing: 0;
+      line-height: 1.3;
+      color: #eee;
     }
 
     .prize .amount {
       font-family: var(--display);
-      font-size: 1.45rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
       text-align: right;
       white-space: nowrap;
+      line-height: 1;
     }
     .prize.champ .amount { color: var(--gold); }
 
@@ -141,8 +147,9 @@
     .note {
       margin-top: 1rem;
       color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.5;
+      font-size: var(--fs-sm);
+      font-weight: 400;
+      line-height: 1.55;
       max-width: 48rem;
     }
 
@@ -214,7 +221,6 @@
         const tone = toneClass(prize.label, idx);
         return `
           <div class="prize ${tone} reveal reveal-delay-${Math.min(idx + 1, 4)}">
-            <div class="place">${esc(prize.place ?? idx + 1)}</div>
             <div class="label">${esc(prize.label)}</div>
             <div class="amount">${money(prize.amount, currency)}</div>
             <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
@@ -228,7 +234,7 @@
           <div class="stat"><span>Season</span><strong>${esc(p.seasonLabel || data.season)}</strong></div>
         </div>
         <div class="ladder reveal reveal-delay-1">
-          <div class="ladder-head"><span>#</span><span>Award</span><span class="amt">Payout</span></div>
+          <div class="ladder-head"><span>Award</span><span class="amt">Payout</span></div>
           ${rows || '<div class="msg">No payouts configured.</div>'}
         </div>
         <p class="note reveal reveal-delay-2">${esc(p.notes || '')}</p>`;

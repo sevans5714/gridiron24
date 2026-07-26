@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=4" />
+  <link rel="stylesheet" href="/css/site.css?v=5" />
   <style>
     .toolbar {
       display: flex;
@@ -22,24 +22,24 @@
     .week-control label {
       display: block;
       margin-bottom: 0.4rem;
-      font-family: var(--display);
-      font-size: 0.7rem;
-      letter-spacing: 0.16em;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
       color: var(--muted);
     }
     .week-control select {
       appearance: none;
-      background:
-        linear-gradient(180deg, #1a1a1a, #101010);
       color: #fff;
-      border: 1px solid rgba(47, 109, 255, 0.45);
-      padding: 0.7rem 2.4rem 0.7rem 1rem;
+      border: 1px solid rgba(47, 109, 255, 0.4);
+      padding: 0.65rem 2.4rem 0.65rem 1rem;
       font-family: var(--display);
-      font-size: 1.35rem;
-      letter-spacing: 0.08em;
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
-      box-shadow: 0 0 0 1px rgba(47, 109, 255, 0.12), inset 0 1px 0 rgba(255,255,255,0.04);
+      box-shadow: 0 0 0 1px rgba(47, 109, 255, 0.1), inset 0 1px 0 rgba(255,255,255,0.04);
       background-image:
         linear-gradient(45deg, transparent 50%, var(--blue) 50%),
         linear-gradient(135deg, var(--blue) 50%, transparent 50%),
@@ -116,32 +116,36 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 0.92rem;
-      font-weight: 700;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0;
     }
     .score {
       font-family: var(--display);
-      font-size: 1.45rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
       text-align: center;
       min-width: 5.2rem;
-      line-height: 1;
+      line-height: 1.1;
     }
     .score .vs {
       display: block;
-      margin: 0.2rem 0;
-      font-size: 0.65rem;
-      letter-spacing: 0.16em;
+      margin: 0.25rem 0;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.1em;
       color: var(--blue);
     }
     .score small {
       display: block;
-      margin-top: 0.25rem;
+      margin-top: 0.3rem;
       color: var(--muted);
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
+      font-family: var(--body);
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
     }
     @media (max-width: 900px) {
       .grid-2 { grid-template-columns: 1fr; }
