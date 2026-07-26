@@ -238,7 +238,7 @@
         const tone = toneClass(prize.label, idx);
         return `
           <div class="prize ${tone} reveal reveal-delay-${Math.min(idx + 1, 4)}">
-            <div class="place">#${esc(prize.place ?? idx + 1)}</div>
+            <div class="place">${esc(prize.place ?? idx + 1)}</div>
             <div class="label">${esc(prize.label)}</div>
             <div class="amount">${money(prize.amount, currency)}</div>
             <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
