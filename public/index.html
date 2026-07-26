@@ -139,7 +139,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      padding: 0.85rem 1rem;
+      padding: 0.65rem 1rem;
       border-bottom: 1px solid var(--line);
       background: var(--panel-2);
     }
@@ -147,10 +147,25 @@
     .board-head.detail { border-left: 4px solid var(--detail); }
     .board-head.overtime { border-left: 4px solid var(--overtime); }
 
+    .board-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+
+    .conf-logo {
+      width: clamp(3.5rem, 8vw, 5rem);
+      height: auto;
+      display: block;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55));
+    }
+
     .board-head h2 {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.45rem;
+      font-size: 1.35rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -161,7 +176,7 @@
     .board-head.overtime h2 { color: var(--overtime); }
 
     .board-head .meta {
-      margin-top: 0.3rem;
+      margin-top: 0.25rem;
       color: var(--muted);
       font-size: 0.75rem;
       font-weight: 600;
@@ -390,7 +405,8 @@
       .col-pa { display: none; }
       .steps { grid-template-columns: 1fr; }
       .step.final { grid-column: auto; }
-      .board-head h2 { font-size: 1.25rem; }
+      .board-head h2 { font-size: 1.1rem; }
+      .conf-logo { width: 3.25rem; }
     }
   </style>
 </head>
@@ -450,18 +466,33 @@
       return `<div class="fallback">24</div>`;
     }
 
-    function conferenceMarkup(conf) {
-      const tone = conf.key === 'detail' ? 'detail' : 'overtime';
+    function confLogo(key, name) {
+      const src = key === 'detail'
+        ? '/assets/detail-conference.png'
+        : '/assets/overtime-conference.png';
+      return `<img class="conf-logo" src="${src}" alt="${escapeHtml(name)}" />`;
+    }
 
-      if (!conf.ok) {
-        return `
-          <div class="board-head ${tone}">
+    function boardHead(conf, statusHtml) {
+      const tone = conf.key === 'detail' ? 'detail' : 'overtime';
+      const week = conf.currentMatchupPeriod != null ? ` · Week ${conf.currentMatchupPeriod}` : '';
+      return `
+        <div class="board-head ${tone}">
+          <div class="board-brand">
+            ${confLogo(conf.key, conf.name)}
             <div>
               <h2>${escapeHtml(conf.name)}</h2>
-              <div class="meta">ESPN ${conf.leagueId}</div>
+              <div class="meta">ESPN ${conf.leagueId}${week}</div>
             </div>
-            <div class="status"><span class="dot off"></span>Offline</div>
           </div>
+          ${statusHtml}
+        </div>`;
+    }
+
+    function conferenceMarkup(conf) {
+      if (!conf.ok) {
+        return `
+          ${boardHead(conf, `<div class="status"><span class="dot off"></span>Offline</div>`)}
           <div class="msg">
             <strong>ESPN connection failed</strong>
             ${escapeHtml(conf.error || 'Unknown error')}
@@ -471,13 +502,7 @@
       const teams = conf.teams || [];
       if (!teams.length) {
         return `
-          <div class="board-head ${tone}">
-            <div>
-              <h2>${escapeHtml(conf.name)}</h2>
-              <div class="meta">ESPN ${conf.leagueId}</div>
-            </div>
-            <div class="status"><span class="dot"></span>0 Teams</div>
-          </div>
+          ${boardHead(conf, `<div class="status"><span class="dot"></span>0 Teams</div>`)}
           <div class="msg">No teams have joined this conference yet.</div>`;
       }
 
@@ -500,13 +525,7 @@
       }).join('');
 
       return `
-        <div class="board-head ${tone}">
-          <div>
-            <h2>${escapeHtml(conf.name)}</h2>
-            <div class="meta">ESPN ${conf.leagueId} · Week ${conf.currentMatchupPeriod ?? '—'}</div>
-          </div>
-          <div class="status"><span class="dot"></span>${conf.teamCount} Teams</div>
-        </div>
+        ${boardHead(conf, `<div class="status"><span class="dot"></span>${conf.teamCount} Teams</div>`)}
         <div class="standings">
           <div class="row head">
             <div class="center">#</div>

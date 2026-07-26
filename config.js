@@ -9,13 +9,15 @@ module.exports = {
       key: 'detail',
       name: 'Detail Conference',
       shortName: 'DETAIL',
-      espnLeagueId: 559054421
+      espnLeagueId: 559054421,
+      logo: '/assets/detail-conference.png'
     },
     {
       key: 'overtime',
       name: 'Overtime Conference',
       shortName: 'OVERTIME',
-      espnLeagueId: 236438046
+      espnLeagueId: 236438046,
+      logo: '/assets/overtime-conference.png'
     }
   ]
 };
