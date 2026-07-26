@@ -150,16 +150,33 @@
     }
 
     .slot.title-slot {
-      border-color: rgba(255,255,255,0.18);
-      box-shadow: inset 0 0 24px rgba(255,255,255,0.03);
+      border: 0;
+      background: transparent;
+      padding: 0.35rem 0.25rem;
+      text-align: center;
+      box-shadow: none;
     }
-    .conf-tree.detail .slot.title-slot {
-      border-color: rgba(255, 122, 24, 0.45);
-      box-shadow: inset 0 0 28px rgba(255, 122, 24, 0.08);
-    }
+    .conf-tree.detail .slot.title-slot,
     .conf-tree.overtime .slot.title-slot {
-      border-color: rgba(226, 35, 42, 0.45);
-      box-shadow: inset 0 0 28px rgba(226, 35, 42, 0.08);
+      border-color: transparent;
+      box-shadow: none;
+    }
+    .slot.title-slot img {
+      width: min(100%, 9.5rem);
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.55));
+    }
+    .slot.title-slot .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
     }
 
     .slot .seed {
@@ -365,7 +382,10 @@
           </div>
           <div class="round-col">
             <div class="round-label">Week 16</div>
-            <div class="slot title-slot"><div class="seed">Detail Champ</div><div class="sub">Conference title</div></div>
+            <div class="slot title-slot">
+              <img src="/assets/detail-conf-champ.png" alt="Detail Conference Championship" />
+              <span class="sr-only">Detail Conference Championship</span>
+            </div>
           </div>
         </div>
       </section>
@@ -403,7 +423,10 @@
           </div>
           <div class="round-col">
             <div class="round-label">Week 16</div>
-            <div class="slot title-slot"><div class="seed">Overtime Champ</div><div class="sub">Conference title</div></div>
+            <div class="slot title-slot">
+              <img src="/assets/overtime-conf-champ.png" alt="Overtime Conference Championship" />
+              <span class="sr-only">Overtime Conference Championship</span>
+            </div>
           </div>
         </div>
       </section>
