@@ -31,7 +31,7 @@
       font-size: var(--fs-sm);
       line-height: 1.35;
     }
-    .matrix th {
+    .matrix thead th {
       font-family: var(--body);
       font-size: var(--fs-xs);
       font-weight: 600;
@@ -39,6 +39,17 @@
       text-transform: uppercase;
       color: var(--muted);
       background: #0a0a0a;
+    }
+    .matrix th.group {
+      background: #141414;
+      color: #fff;
+      font-family: var(--display);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding-top: 0.85rem;
+      padding-bottom: 0.55rem;
     }
     .matrix td {
       font-weight: 500;
@@ -119,17 +130,34 @@
       return Number.isInteger(x) ? String(x) : x.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
     }
 
+    function groupedRows(items) {
+      const order = [];
+      const buckets = new Map();
+      for (const item of items || []) {
+        const g = item.group || 'Other';
+        if (!buckets.has(g)) {
+          buckets.set(g, []);
+          order.push(g);
+        }
+        buckets.get(g).push(item);
+      }
+      return order.map((group) => {
+        const rows = buckets.get(group).map((item) => `
+          <tr>
+            <td>${esc(item.label)}</td>
+            <td class="pts">${fmt(item.points)}</td>
+          </tr>`).join('');
+        return `<tr><th class="group" colspan="2">${esc(group)}</th></tr>${rows}`;
+      }).join('');
+    }
+
     function board(conf, idx) {
       if (!conf.ok) {
         return `<div class="panel reveal reveal-delay-${idx + 1}"><div class="panel-title">${esc(conf.name || 'Conference')}</div><div class="msg"><strong>Unavailable</strong>${esc(conf.error || '')}</div></div>`;
       }
       const tone = conf.key === 'detail' ? 'detail' : 'overtime';
       const logo = conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
-      const rows = (conf.scoringItems || []).map((item) => `
-        <tr>
-          <td>${esc(item.label)}</td>
-          <td class="pts">${fmt(item.points)}</td>
-        </tr>`).join('');
+      const rows = groupedRows(conf.scoringItems);
       const lineup = (conf.lineup || []).map((s) => `
         <div class="chip"><strong>${esc(s.label)}</strong><span>×${s.count}</span></div>`).join('');
       return `
@@ -137,7 +165,7 @@
           <div class="panel-title ${tone}">
             ${logo}
             <span>${esc(conf.shortName || conf.name)}</span>
-            <span class="meta">${esc(conf.playerRankType || 'PPR')}</span>
+            <span class="meta">${esc(conf.playerRankType || 'PPR')} · ${(conf.scoringItems || []).length} categories</span>
           </div>
           <table class="matrix">
             <thead><tr><th>Category</th><th style="text-align:right">Points</th></tr></thead>
