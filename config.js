@@ -20,20 +20,21 @@ module.exports = {
       logo: '/assets/overtime-conference.png'
     }
   ],
-  // Set real dollar amounts when ready — null shows as TBD on the site.
   payouts: {
     seasonLabel: '2026 Inaugural Season',
-    buyInPerTeam: null,
+    buyInPerTeam: 100,
     teamCount: 24,
     currency: 'USD',
-    notes: 'Prize pool is funded by entry fees from all 24 franchises. Amounts update once buy-in is finalized.',
+    notes: 'Prize pool is $2,400 from all 24 franchises at $100 buy-in. Conference championship losers are paid; conference winners advance to the GridIron Bowl for the top two prizes.',
     prizes: [
-      { place: 1, label: 'GridIron Bowl Champion', amount: null },
-      { place: 2, label: 'GridIron Bowl Runner-Up', amount: null },
-      { place: 3, label: 'Detail Conference Champion', amount: null },
-      { place: 4, label: 'Overtime Conference Champion', amount: null },
-      { place: 5, label: 'Detail Regular Season Champion', amount: null },
-      { place: 6, label: 'Overtime Regular Season Champion', amount: null }
+      { place: 1, label: 'GridIron 24 Champion', amount: 1000 },
+      { place: 2, label: 'GridIron Bowl Runner-Up', amount: 500 },
+      { place: 3, label: 'Detail Conference Championship Loser', amount: 200 },
+      { place: 4, label: 'Overtime Conference Championship Loser', amount: 200 },
+      { place: 5, label: 'Detail Regular-Season Champion', amount: 150 },
+      { place: 6, label: 'Overtime Regular-Season Champion', amount: 150 },
+      { place: 7, label: 'Detail Points Champion', amount: 100 },
+      { place: 8, label: 'Overtime Points Champion', amount: 100 }
     ]
   }
 };

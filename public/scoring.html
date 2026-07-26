@@ -7,53 +7,72 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css" />
+  <link rel="stylesheet" href="/css/site.css?v=4" />
   <style>
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.85rem;
+      gap: 1rem;
     }
     .matrix {
       width: 100%;
       border-collapse: collapse;
     }
+    .matrix tr {
+      transition: background 0.15s ease;
+    }
+    .matrix tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+    }
     .matrix th, .matrix td {
-      padding: 0.55rem 0.9rem;
+      padding: 0.7rem 1.1rem;
       border-bottom: 1px solid var(--line);
       text-align: left;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
     }
     .matrix th {
       font-family: var(--display);
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--muted);
-      background: #0c0c0c;
+      background: #0a0a0a;
     }
     .matrix td.pts {
       text-align: right;
       font-family: var(--display);
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+    .section-label {
+      margin: 0;
+      padding: 0.75rem 1.1rem 0.35rem;
+      font-family: var(--display);
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      background: rgba(0,0,0,0.25);
     }
     .chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem;
-      padding: 0.85rem 1rem 1rem;
+      gap: 0.45rem;
+      padding: 0.75rem 1.1rem 1.15rem;
     }
     .chip {
       border: 1px solid var(--line);
-      background: #0c0c0c;
-      padding: 0.35rem 0.55rem;
+      background: linear-gradient(180deg, #151515, #0c0c0c);
+      padding: 0.4rem 0.7rem;
       font-family: var(--display);
-      font-size: 0.8rem;
-      letter-spacing: 0.06em;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
-    .chip strong { color: #fff; margin-right: 0.25rem; }
+    .chip strong { color: #fff; margin-right: 0.3rem; }
     .chip span { color: var(--muted); }
     @media (max-width: 900px) {
       .grid-2 { grid-template-columns: 1fr; }
@@ -68,9 +87,10 @@
     </div>
   </header>
 
-  <section class="page-hero shell">
+  <section class="page-hero shell reveal">
+    <p class="eyebrow">Official Rules</p>
     <h1>Scoring Matrix</h1>
-    <p>Official GridIron 24 fantasy scoring pulled from both ESPN conferences.</p>
+    <p>Every point category and starting slot — identical across both conferences.</p>
   </section>
 
   <main class="page-main shell">
@@ -91,11 +111,12 @@
       return Number.isInteger(x) ? String(x) : x.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
     }
 
-    function board(conf) {
+    function board(conf, idx) {
       if (!conf.ok) {
-        return `<div class="panel"><div class="panel-title">${esc(conf.name || 'Conference')}</div><div class="msg"><strong>Unavailable</strong>${esc(conf.error || '')}</div></div>`;
+        return `<div class="panel reveal reveal-delay-${idx + 1}"><div class="panel-title">${esc(conf.name || 'Conference')}</div><div class="msg"><strong>Unavailable</strong>${esc(conf.error || '')}</div></div>`;
       }
       const tone = conf.key === 'detail' ? 'detail' : 'overtime';
+      const logo = conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
       const rows = (conf.scoringItems || []).map((item) => `
         <tr>
           <td>${esc(item.label)}</td>
@@ -104,13 +125,17 @@
       const lineup = (conf.lineup || []).map((s) => `
         <div class="chip"><strong>${esc(s.label)}</strong><span>×${s.count}</span></div>`).join('');
       return `
-        <div class="panel">
-          <div class="panel-title ${tone}">${esc(conf.name)} · ${esc(conf.playerRankType || 'PPR')}</div>
+        <div class="panel reveal reveal-delay-${idx + 1}">
+          <div class="panel-title ${tone}">
+            ${logo}
+            <span>${esc(conf.shortName || conf.name)}</span>
+            <span class="meta">${esc(conf.playerRankType || 'PPR')}</span>
+          </div>
           <table class="matrix">
             <thead><tr><th>Category</th><th style="text-align:right">Points</th></tr></thead>
             <tbody>${rows || '<tr><td colspan="2">No scoring items returned.</td></tr>'}</tbody>
           </table>
-          <div class="panel-title" style="border-top:1px solid var(--line)">Starting Lineup</div>
+          <p class="section-label">Starting Lineup</p>
           <div class="chips">${lineup || '<div class="msg">No lineup data.</div>'}</div>
         </div>`;
     }

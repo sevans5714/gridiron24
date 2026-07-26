@@ -7,61 +7,97 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css" />
+  <link rel="stylesheet" href="/css/site.css?v=4" />
   <style>
     .legend {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.75rem 1.25rem;
-      margin-bottom: 1.25rem;
-      color: var(--muted);
-      font-size: 0.88rem;
+      gap: 0.55rem;
+      margin-bottom: 1.35rem;
     }
-    .legend b { color: #fff; font-weight: 700; }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.75rem;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #151515, #0d0d0d);
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .legend b {
+      color: #fff;
+      font-weight: 700;
+    }
 
     .tree {
       display: grid;
-      grid-template-columns: 1fr minmax(9rem, 12rem) 1fr;
-      gap: 0.75rem;
+      grid-template-columns: 1fr minmax(10rem, 13rem) 1fr;
+      gap: 0.85rem;
       align-items: stretch;
     }
 
     .conf-tree {
       border: 1px solid var(--line);
-      background: var(--panel);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 35%),
+        var(--panel);
       overflow: hidden;
     }
 
-    .conf-tree.detail { border-top: 3px solid var(--detail); }
-    .conf-tree.overtime { border-top: 3px solid var(--overtime); }
+    .conf-tree.detail {
+      border-top: 3px solid var(--detail);
+      box-shadow: inset 0 0 60px rgba(255, 122, 24, 0.05);
+    }
+    .conf-tree.overtime {
+      border-top: 3px solid var(--overtime);
+      box-shadow: inset 0 0 60px rgba(226, 35, 42, 0.05);
+    }
 
     .conf-head {
       display: flex;
       align-items: center;
-      gap: 0.55rem;
-      padding: 0.75rem 0.9rem;
+      gap: 0.65rem;
+      padding: 0.9rem 1rem;
       border-bottom: 1px solid var(--line);
       background: var(--panel-2);
       font-family: var(--display);
-      font-size: 1.05rem;
-      letter-spacing: 0.06em;
+      font-size: 1.2rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       font-weight: 700;
     }
     .conf-tree.detail .conf-head { color: var(--detail); }
     .conf-tree.overtime .conf-head { color: var(--overtime); }
     .conf-head img {
-      width: 2.6rem;
+      width: 3rem;
       height: auto;
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    }
+    .conf-head .wk {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
     }
 
     .rounds {
       display: grid;
       grid-template-columns: 1.1fr 1fr 0.9fr;
       gap: 0;
-      padding: 0.85rem 0.55rem 1rem;
+      padding: 1.1rem 0.55rem 1.15rem;
       min-height: 28rem;
+    }
+
+    /* Mirror Overtime so it feeds the Bowl from the right */
+    .conf-tree.overtime .rounds {
+      direction: rtl;
+    }
+    .conf-tree.overtime .round-col {
+      direction: ltr;
     }
 
     .round-col {
@@ -69,17 +105,21 @@
       flex-direction: column;
       justify-content: space-around;
       gap: 0.75rem;
-      padding: 0 0.35rem;
+      padding: 0 0.4rem;
       position: relative;
     }
 
     .round-col + .round-col {
-      border-left: 1px solid rgba(255,255,255,0.06);
+      border-left: 1px dashed rgba(255,255,255,0.08);
+    }
+    .conf-tree.overtime .round-col + .round-col {
+      border-left: 0;
+      border-right: 1px dashed rgba(255,255,255,0.08);
     }
 
     .round-label {
       position: absolute;
-      top: -0.15rem;
+      top: -0.2rem;
       left: 0.35rem;
       right: 0.35rem;
       text-align: center;
@@ -92,29 +132,50 @@
 
     .slot {
       border: 1px solid var(--line);
-      background: #0c0c0c;
-      padding: 0.55rem 0.6rem;
+      background: linear-gradient(180deg, #141414, #0a0a0a);
+      padding: 0.65rem 0.7rem;
       position: relative;
+      transition: border-color 0.2s ease, transform 0.2s ease;
     }
+    .slot:hover {
+      border-color: rgba(255,255,255,0.2);
+      transform: translateX(2px);
+    }
+    .conf-tree.overtime .slot:hover { transform: translateX(-2px); }
 
     .slot.bye {
       border-style: dashed;
-      opacity: 0.85;
+      opacity: 0.78;
+      background: transparent;
+    }
+
+    .slot.title-slot {
+      border-color: rgba(255,255,255,0.18);
+      box-shadow: inset 0 0 24px rgba(255,255,255,0.03);
+    }
+    .conf-tree.detail .slot.title-slot {
+      border-color: rgba(255, 122, 24, 0.45);
+      box-shadow: inset 0 0 28px rgba(255, 122, 24, 0.08);
+    }
+    .conf-tree.overtime .slot.title-slot {
+      border-color: rgba(226, 35, 42, 0.45);
+      box-shadow: inset 0 0 28px rgba(226, 35, 42, 0.08);
     }
 
     .slot .seed {
       font-family: var(--display);
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       color: #fff;
     }
 
     .slot .sub {
-      margin-top: 0.15rem;
+      margin-top: 0.2rem;
       color: var(--muted);
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       font-weight: 600;
+      letter-spacing: 0.04em;
     }
 
     .slot.winner-line::after {
@@ -124,7 +185,11 @@
       top: 50%;
       width: 0.55rem;
       height: 1px;
-      background: rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.28);
+    }
+    .conf-tree.overtime .slot.winner-line::after {
+      right: auto;
+      left: -0.55rem;
     }
 
     .mid {
@@ -135,84 +200,118 @@
     }
 
     .bowl {
-      border: 1px solid rgba(47, 109, 255, 0.5);
+      position: relative;
+      border: 1px solid rgba(47, 109, 255, 0.55);
       background:
-        radial-gradient(ellipse at center, rgba(47,109,255,0.2), transparent 70%),
-        var(--panel);
+        radial-gradient(ellipse at 50% 30%, rgba(47,109,255,0.28), transparent 60%),
+        linear-gradient(180deg, #141820, #0a0c10);
       text-align: center;
-      padding: 1.4rem 0.85rem;
-      min-height: 14rem;
+      padding: 1.75rem 1rem;
+      min-height: 15rem;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      overflow: hidden;
+      animation: bowl-glow 3.5s ease-in-out infinite;
+    }
+
+    @keyframes bowl-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(47,109,255,0.15), inset 0 0 40px rgba(47,109,255,0.08); }
+      50% { box-shadow: 0 0 28px 0 rgba(47,109,255,0.28), inset 0 0 50px rgba(47,109,255,0.14); }
+    }
+
+    .bowl::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(47, 109, 255, 0.2);
+      pointer-events: none;
     }
 
     .bowl .eyebrow {
       font-family: var(--display);
       font-size: 0.72rem;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--muted);
     }
 
     .bowl h2 {
-      margin: 0.4rem 0 0;
+      margin: 0.45rem 0 0;
       font-family: var(--display);
-      font-size: clamp(1.4rem, 3vw, 1.9rem);
-      letter-spacing: 0.08em;
+      font-size: clamp(1.55rem, 3.2vw, 2.15rem);
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #8eb6ff;
+      color: #9ec0ff;
+      line-height: 1;
     }
 
     .bowl .vs {
-      margin-top: 1rem;
+      margin-top: 1.25rem;
       font-family: var(--display);
       font-size: 0.95rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      line-height: 1.45;
+      line-height: 1.55;
     }
 
     .bowl .vs .d { color: var(--detail); }
     .bowl .vs .o { color: var(--overtime); }
+    .bowl .vs .mid-vs {
+      display: block;
+      margin: 0.25rem 0;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+    }
 
     .notes {
-      margin-top: 1.1rem;
+      margin-top: 1.25rem;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
+      gap: 0.85rem;
     }
 
     .note {
       border: 1px solid var(--line);
-      background: var(--panel);
-      padding: 0.85rem 1rem;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 40%),
+        var(--panel);
+      padding: 1.1rem 1.15rem;
     }
 
     .note h3 {
-      margin: 0 0 0.35rem;
+      margin: 0 0 0.4rem;
       font-family: var(--display);
-      font-size: 0.9rem;
-      letter-spacing: 0.08em;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
 
     .note p {
       margin: 0;
       color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.45;
+      font-size: 0.9rem;
+      line-height: 1.5;
     }
 
     @media (max-width: 1100px) {
       .rounds { grid-template-columns: 1fr; min-height: 0; }
+      .conf-tree.overtime .rounds {
+        direction: ltr;
+        grid-template-columns: 1fr;
+      }
+      .conf-tree.overtime .round-col + .round-col {
+        border-right: 0;
+      }
       .round-col {
         border-left: 0 !important;
-        border-top: 1px solid rgba(255,255,255,0.06);
-        padding-top: 1.4rem;
+        border-top: 1px dashed rgba(255,255,255,0.08);
+        padding-top: 1.5rem;
       }
       .round-col:first-child { border-top: 0; }
       .slot.winner-line::after { display: none; }
+      .slot:hover, .conf-tree.overtime .slot:hover { transform: none; }
     }
 
     @media (max-width: 900px) {
@@ -230,25 +329,26 @@
     </div>
   </header>
 
-  <section class="page-hero shell">
+  <section class="page-hero shell reveal">
+    <p class="eyebrow">Road to the Bowl</p>
     <h1>Playoff Structure</h1>
-    <p>Six teams qualify from each conference. Both champions meet in GridIron Bowl I.</p>
+    <p>Six teams qualify from each conference. Both champions collide in GridIron Bowl I.</p>
   </section>
 
   <main class="page-main shell">
-    <div class="legend">
-      <div><b>6</b> playoff teams / conference</div>
-      <div><b>#1–#2</b> first-round byes</div>
-      <div><b>Reseed</b> after Wild Card</div>
-      <div><b>Week 17</b> GridIron Bowl I</div>
+    <div class="legend reveal reveal-delay-1">
+      <span><b>6</b> teams / conference</span>
+      <span><b>#1–#2</b> first-round byes</span>
+      <span><b>Reseed</b> after Wild Card</span>
+      <span><b>Week 17</b> GridIron Bowl I</span>
     </div>
 
     <div class="tree">
-      <!-- Detail -->
-      <section class="conf-tree detail">
+      <section class="conf-tree detail reveal reveal-delay-2">
         <div class="conf-head">
           <img src="/assets/detail-conference.png" alt="" />
           Detail
+          <span class="wk">Wks 14–16</span>
         </div>
         <div class="rounds">
           <div class="round-col">
@@ -265,26 +365,28 @@
           </div>
           <div class="round-col">
             <div class="round-label">Week 16</div>
-            <div class="slot"><div class="seed">Detail Champ</div><div class="sub">Conference title</div></div>
+            <div class="slot title-slot"><div class="seed">Detail Champ</div><div class="sub">Conference title</div></div>
           </div>
         </div>
       </section>
 
-      <div class="mid">
+      <div class="mid reveal reveal-delay-1">
         <div class="bowl">
           <div class="eyebrow">Week 17</div>
           <h2>GridIron Bowl I</h2>
           <div class="vs">
-            <span class="d">Detail Champion</span><br>vs<br><span class="o">Overtime Champion</span>
+            <span class="d">Detail Champion</span>
+            <span class="mid-vs">VS</span>
+            <span class="o">Overtime Champion</span>
           </div>
         </div>
       </div>
 
-      <!-- Overtime -->
-      <section class="conf-tree overtime">
+      <section class="conf-tree overtime reveal reveal-delay-3">
         <div class="conf-head">
           <img src="/assets/overtime-conference.png" alt="" />
           Overtime
+          <span class="wk">Wks 14–16</span>
         </div>
         <div class="rounds">
           <div class="round-col">
@@ -301,20 +403,20 @@
           </div>
           <div class="round-col">
             <div class="round-label">Week 16</div>
-            <div class="slot"><div class="seed">Overtime Champ</div><div class="sub">Conference title</div></div>
+            <div class="slot title-slot"><div class="seed">Overtime Champ</div><div class="sub">Conference title</div></div>
           </div>
         </div>
       </section>
     </div>
 
     <div class="notes">
-      <div class="note">
+      <div class="note reveal reveal-delay-3">
         <h3>Conference Playoffs</h3>
-        <p>Weeks 14–16 are played inside each ESPN league. Six teams qualify. Seeds #1 and #2 sit Wild Card weekend. Semifinals reseed so the top remaining seed always plays the lowest remaining seed.</p>
+        <p>Weeks 14–16 play inside each ESPN league. Seeds #1 and #2 sit Wild Card weekend. Semifinals reseed so the top remaining seed always draws the lowest remaining seed.</p>
       </div>
-      <div class="note">
+      <div class="note reveal reveal-delay-4">
         <h3>GridIron Bowl</h3>
-        <p>Week 17 is cross-conference. GridIron 24 builds the championship matchup from both conference champions’ ESPN starting lineups and fantasy scoring — no shared ESPN league required.</p>
+        <p>Week 17 is cross-conference. GridIron builds the championship from both conference champions’ ESPN lineups and scoring — no shared ESPN league required.</p>
       </div>
     </div>
   </main>
