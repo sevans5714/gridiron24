@@ -8,67 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css" />
   <style>
-    :root {
-      --bg: #050505;
-      --panel: #111111;
-      --panel-2: #171717;
-      --text: #f5f5f5;
-      --muted: #9a9a9a;
-      --line: rgba(255, 255, 255, 0.08);
-      --detail: #ff7a18;
-      --overtime: #e2232a;
-      --blue: #2f6dff;
-      --good: #22c55e;
-      --bad: #ef4444;
-      --display: "Oswald", Impact, sans-serif;
-      --body: "Source Sans 3", system-ui, sans-serif;
-    }
-
-    * { box-sizing: border-box; }
-    html, body { overflow-x: hidden; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--text);
-      font-family: var(--body);
-      background: var(--bg);
-    }
-
-    .shell {
-      width: 100%;
-      padding-left: clamp(1rem, 3vw, 2.75rem);
-      padding-right: clamp(1rem, 3vw, 2.75rem);
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 30;
-      border-bottom: 1px solid var(--line);
-      background: rgba(5, 5, 5, 0.92);
-      backdrop-filter: blur(10px);
-    }
-
-    .topbar-inner {
-      min-height: 2.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-    }
-
-    .sync {
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-    }
-
-    .sync .live {
-      color: var(--good);
-      margin-right: 0.35rem;
-    }
-
     .hero {
       text-align: center;
       padding: 0.55rem 0 0.65rem;
@@ -100,7 +41,6 @@
     }
 
     .ad-line .detail { color: var(--detail); }
-    .ad-line .overtime { color: var(--overtime); }
     .ad-line .champ { color: var(--blue); }
     .ad-line .sep {
       color: #666;
@@ -293,22 +233,6 @@
       color: #d0d0d0;
     }
 
-    .msg {
-      padding: 2rem 1rem;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .msg strong {
-      display: block;
-      margin-bottom: 0.35rem;
-      color: var(--bad);
-      font-family: var(--display);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
     .path {
       padding: 1.75rem 0 2.5rem;
     }
@@ -352,13 +276,6 @@
 
     .step.final strong { color: #8eb6ff; }
 
-    footer {
-      padding: 0 0 1.75rem;
-      text-align: center;
-      color: #6f6f6f;
-      font-size: 0.75rem;
-    }
-
     @media (max-width: 980px) {
       .boards { grid-template-columns: 1fr; }
       .steps { grid-template-columns: 1fr 1fr; }
@@ -384,9 +301,10 @@
     }
   </style>
 </head>
-<body>
+<body data-page="standings">
   <header class="topbar">
     <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
       <div class="sync" id="lastUpdated">Connecting to ESPN…</div>
     </div>
   </header>
@@ -421,6 +339,7 @@
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
 
+  <script src="/js/nav.js"></script>
   <script>
     const escapeHtml = (value = '') => String(value)
       .replaceAll('&', '&amp;')
@@ -529,10 +448,15 @@
         }
 
         const time = new Date(data.generatedAt);
-        document.getElementById('lastUpdated').innerHTML =
-          `<span class="live">●</span>ESPN sync · ${time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+        if (window.GridIronNav) {
+          window.GridIronNav.setSync(`ESPN sync · ${time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+        } else {
+          document.getElementById('lastUpdated').innerHTML =
+            `<span class="live">●</span>ESPN sync · ${time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+        }
       } catch (error) {
-        document.getElementById('lastUpdated').textContent = 'Connection error';
+        if (window.GridIronNav) window.GridIronNav.setSync('Connection error', false);
+        else document.getElementById('lastUpdated').textContent = 'Connection error';
         const msg = `<div class="msg"><strong>Dashboard error</strong>${escapeHtml(error.message)}</div>`;
         document.getElementById('detail').innerHTML = msg;
         document.getElementById('overtime').innerHTML = msg;

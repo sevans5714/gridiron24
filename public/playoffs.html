@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Playoff Structure · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css" />
+  <style>
+    .path {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.65rem;
+      margin-bottom: 1.25rem;
+    }
+    .step {
+      padding: 1rem 0.85rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .step span {
+      display: block;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .step strong {
+      display: block;
+      margin-top: 0.4rem;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .step.final {
+      border-color: rgba(47, 109, 255, 0.45);
+      background: rgba(47, 109, 255, 0.1);
+    }
+    .step.final strong { color: #8eb6ff; }
+
+    .bracket {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+    }
+    .side .panel-title img {
+      width: 2.5rem;
+      height: auto;
+      vertical-align: middle;
+      margin-right: 0.45rem;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    }
+    .round {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .round:last-child { border-bottom: 0; }
+    .round h3 {
+      margin: 0 0 0.35rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .round p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+    .center-bowl {
+      min-width: 11rem;
+      text-align: center;
+      padding: 1.25rem 0.85rem;
+      border: 1px solid rgba(47, 109, 255, 0.45);
+      background: rgba(47, 109, 255, 0.1);
+    }
+    .center-bowl strong {
+      display: block;
+      font-family: var(--display);
+      font-size: 1.35rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+    }
+    .center-bowl span {
+      display: block;
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    @media (max-width: 980px) {
+      .path { grid-template-columns: 1fr 1fr; }
+      .step.final { grid-column: 1 / -1; }
+      .bracket { grid-template-columns: 1fr; }
+      .center-bowl { order: -1; }
+    }
+    @media (max-width: 640px) {
+      .path { grid-template-columns: 1fr; }
+      .step.final { grid-column: auto; }
+    }
+  </style>
+</head>
+<body data-page="playoffs">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated"><span class="live">●</span>2026 format</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell">
+    <h1>Playoff Structure</h1>
+    <p>Six teams per conference. Seeds #1 and #2 earn byes. Both sides meet in GridIron Bowl I.</p>
+  </section>
+
+  <main class="page-main shell">
+    <div class="path">
+      <div class="step"><span>Weeks 1–13</span><strong>Regular Season</strong></div>
+      <div class="step"><span>Week 14</span><strong>Wild Card</strong></div>
+      <div class="step"><span>Week 15</span><strong>Semifinals</strong></div>
+      <div class="step"><span>Week 16</span><strong>Conf. Title</strong></div>
+      <div class="step final"><span>Week 17</span><strong>GridIron Bowl I</strong></div>
+    </div>
+
+    <div class="bracket">
+      <div class="side panel">
+        <div class="panel-title detail">
+          <img src="/assets/detail-conference.png" alt="" />
+          Detail Conference
+        </div>
+        <div class="round">
+          <h3>Week 14 · Wild Card</h3>
+          <p>#3 vs #6<br>#4 vs #5<br>Seeds #1 and #2 receive byes.</p>
+        </div>
+        <div class="round">
+          <h3>Week 15 · Semifinals</h3>
+          <p>Reseeding: #1 plays the lowest remaining seed. The other two winners meet.</p>
+        </div>
+        <div class="round">
+          <h3>Week 16 · Conference Championship</h3>
+          <p>Detail Conference champion is crowned inside ESPN.</p>
+        </div>
+      </div>
+
+      <div class="center-bowl">
+        <strong>GridIron Bowl I</strong>
+        <span>Week 17</span>
+        <span style="margin-top:0.85rem;display:block;color:#fff;font-family:var(--display);letter-spacing:0.06em;text-transform:uppercase;">Detail Champ<br>vs<br>Overtime Champ</span>
+      </div>
+
+      <div class="side panel">
+        <div class="panel-title overtime">
+          <img src="/assets/overtime-conference.png" alt="" />
+          Overtime Conference
+        </div>
+        <div class="round">
+          <h3>Week 14 · Wild Card</h3>
+          <p>#3 vs #6<br>#4 vs #5<br>Seeds #1 and #2 receive byes.</p>
+        </div>
+        <div class="round">
+          <h3>Week 15 · Semifinals</h3>
+          <p>Reseeding: #1 plays the lowest remaining seed. The other two winners meet.</p>
+        </div>
+        <div class="round">
+          <h3>Week 16 · Conference Championship</h3>
+          <p>Overtime Conference champion is crowned inside ESPN.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <script src="/js/nav.js"></script>
+</body>
+</html>
