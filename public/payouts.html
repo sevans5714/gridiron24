@@ -56,7 +56,7 @@
     }
     .ladder-head {
       display: grid;
-      grid-template-columns: 3.2rem 1fr auto;
+      grid-template-columns: 1fr auto;
       gap: 0.75rem;
       padding: 0.75rem 1.15rem;
       border-bottom: 1px solid var(--line);
@@ -71,7 +71,7 @@
 
     .prize {
       display: grid;
-      grid-template-columns: 3.2rem 1fr auto;
+      grid-template-columns: 1fr auto;
       gap: 0.75rem;
       align-items: center;
       padding: 1rem 1.15rem;
@@ -99,25 +99,10 @@
       box-shadow: inset 3px 0 0 var(--overtime);
     }
 
-    .prize .place {
-      font-family: var(--display);
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--blue);
-    }
-    .prize.champ .place { color: var(--gold); }
-
     .prize .label {
       font-weight: 700;
       font-size: 1rem;
       letter-spacing: 0.01em;
-    }
-    .prize .label small {
-      display: block;
-      margin-top: 0.15rem;
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 500;
     }
 
     .prize .amount {
@@ -163,15 +148,6 @@
 
     @media (max-width: 800px) {
       .summary { grid-template-columns: 1fr; }
-      .prize, .ladder-head {
-        grid-template-columns: 2.4rem 1fr;
-      }
-      .prize .amount, .ladder-head .amt {
-        grid-column: 2;
-        text-align: left;
-        margin-top: -0.25rem;
-      }
-      .ladder-head .amt { display: none; }
     }
   </style>
 </head>
