@@ -137,28 +137,49 @@
     .board-head {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 0.85rem 1rem 0.55rem;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.65rem 1rem;
       border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #1a1a1a 0%, var(--panel-2) 100%);
+      background: var(--panel-2);
     }
 
     .board-head.detail { border-left: 4px solid var(--detail); }
     .board-head.overtime { border-left: 4px solid var(--overtime); }
 
+    .board-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+
     .conf-logo {
-      width: clamp(7.5rem, 18vw, 11rem);
+      width: clamp(3.5rem, 8vw, 5rem);
       height: auto;
       display: block;
-      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.65)) contrast(1.08) saturate(1.1) brightness(1.03);
+      flex: 0 0 auto;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) contrast(1.06) saturate(1.08);
     }
+
+    .board-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .board-head.detail h2 { color: var(--detail); }
+    .board-head.overtime h2 { color: var(--overtime); }
 
     .board-head .meta {
-      display: none;
-    }
-
-    .status {
-      display: none;
+      margin-top: 0.25rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 600;
     }
 
     .standings { width: 100%; }
@@ -358,7 +379,8 @@
       .col-pa { display: none; }
       .steps { grid-template-columns: 1fr; }
       .step.final { grid-column: auto; }
-      .conf-logo { width: clamp(6.5rem, 42vw, 9rem); }
+      .board-head h2 { font-size: 1.1rem; }
+      .conf-logo { width: 3.25rem; }
     }
   </style>
 </head>
@@ -422,14 +444,21 @@
       const src = key === 'detail'
         ? '/assets/detail-conference.png'
         : '/assets/overtime-conference.png';
-      return `<img class="conf-logo" src="${src}" alt="${escapeHtml(name)}" width="176" height="176" decoding="async" />`;
+      return `<img class="conf-logo" src="${src}" alt="${escapeHtml(name)}" width="80" height="80" decoding="async" />`;
     }
 
     function boardHead(conf) {
       const tone = conf.key === 'detail' ? 'detail' : 'overtime';
+      const week = conf.currentMatchupPeriod != null ? ` · Week ${conf.currentMatchupPeriod}` : '';
       return `
         <div class="board-head ${tone}">
-          ${confLogo(conf.key, conf.name)}
+          <div class="board-brand">
+            ${confLogo(conf.key, conf.name)}
+            <div>
+              <h2>${escapeHtml(conf.name)}</h2>
+              <div class="meta">ESPN ${conf.leagueId}${week}</div>
+            </div>
+          </div>
         </div>`;
     }
 
