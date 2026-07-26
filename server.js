@@ -35,9 +35,15 @@ function sendFile(res, filePath) {
       '.png': 'image/png'
     }[ext] || 'application/octet-stream';
 
+    const cacheControl = ext === '.html'
+      ? 'no-cache'
+      : (ext === '.png' || ext === '.css' || ext === '.js')
+        ? 'public, max-age=300'
+        : 'public, max-age=3600';
+
     res.writeHead(200, {
       'Content-Type': contentType,
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600'
+      'Cache-Control': cacheControl
     });
     res.end(data);
   });
