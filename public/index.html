@@ -35,10 +35,16 @@
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      scrollbar-width: none;
+    }
+    html::-webkit-scrollbar { display: none; }
     body {
       margin: 0;
       min-height: 100vh;
+      overflow-x: hidden;
       color: var(--text);
       font-family: var(--body);
       background:
@@ -90,9 +96,10 @@
     }
 
     .topbar-inner {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 12px 22px;
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 12px clamp(14px, 2.5vw, 36px);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -254,7 +261,6 @@
     }
 
     .bowl-mark {
-      min-width: 120px;
       display: grid;
       place-items: center;
       padding: 10px 14px;
@@ -280,9 +286,10 @@
     }
 
     main {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 0 22px 72px;
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 0 clamp(14px, 2.5vw, 36px) 72px;
     }
 
     .section-head {
@@ -390,62 +397,74 @@
       box-shadow: none;
     }
 
-    .standings-wrap {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
     .standings {
       width: 100%;
-      border-collapse: collapse;
-      min-width: 620px;
+      overflow: hidden;
     }
 
-    .standings th,
-    .standings td {
-      padding: 11px 10px;
-      text-align: left;
+    .standings-row {
+      display: grid;
+      grid-template-columns:
+        2.2rem
+        minmax(0, 1.6fr)
+        minmax(0, 1fr)
+        2.4rem
+        2.4rem
+        2.4rem
+        minmax(3.2rem, 0.55fr)
+        minmax(3.2rem, 0.55fr);
+      gap: 0.4rem 0.55rem;
+      align-items: center;
+      width: 100%;
+      padding: 0.7rem 0.85rem;
       border-bottom: 1px solid rgba(215, 222, 232, 0.08);
-      white-space: nowrap;
       font-variant-numeric: tabular-nums;
+      transition: background 0.15s ease;
     }
 
-    .standings th {
+    .standings-row.head {
       color: var(--chrome-dim);
       font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
       background: rgba(0, 0, 0, 0.28);
+      border-bottom-color: var(--line);
     }
 
-    .standings th.num,
-    .standings td.num { text-align: right; }
-    .standings th.center,
-    .standings td.center { text-align: center; }
+    .standings-row:not(.head):hover {
+      background: rgba(47, 109, 255, 0.08);
+    }
 
-    .standings tbody tr { transition: background 0.15s ease; }
-    .standings tbody tr:hover { background: rgba(47, 109, 255, 0.08); }
-    .standings tbody tr:last-child td { border-bottom: 0; }
+    .standings-row:last-child {
+      border-bottom: 0;
+    }
+
+    .standings-row.seed-cut {
+      box-shadow: inset 0 -1px 0 rgba(47, 109, 255, 0.55);
+    }
+
+    .standings-row .num {
+      text-align: right;
+    }
+
+    .standings-row .center {
+      text-align: center;
+    }
 
     .rank {
       color: var(--chrome-dim);
       font-weight: 800;
-      width: 36px;
-      text-align: center !important;
+      text-align: center;
       font-family: var(--display);
       font-size: 16px;
-    }
-
-    .seed-cut td {
-      box-shadow: inset 0 -1px 0 rgba(47, 109, 255, 0.55);
     }
 
     .franchise {
       display: flex;
       align-items: center;
-      gap: 10px;
-      min-width: 180px;
+      gap: 0.55rem;
+      min-width: 0;
     }
 
     .logo,
@@ -473,18 +492,20 @@
     .team-name {
       font-size: 14px;
       font-weight: 700;
-      max-width: 180px;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .owner {
       color: var(--muted);
       font-size: 12px;
       font-weight: 500;
-      max-width: 140px;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .wl {
@@ -561,13 +582,30 @@
     }
 
     footer {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 0 22px 36px;
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 0 clamp(14px, 2.5vw, 36px) 36px;
       color: #6f7d99;
       font-size: 11px;
       text-align: center;
       letter-spacing: 0.03em;
+    }
+
+    @media (max-width: 1100px) {
+      .standings-row {
+        grid-template-columns:
+          2rem
+          minmax(0, 1.5fr)
+          minmax(0, 0.9fr)
+          2.1rem
+          2.1rem
+          2.1rem
+          minmax(2.8rem, 0.5fr)
+          minmax(2.8rem, 0.5fr);
+        gap: 0.35rem 0.4rem;
+        padding: 0.65rem 0.7rem;
+      }
     }
 
     @media (max-width: 980px) {
@@ -576,20 +614,41 @@
       .stage.final { grid-column: 1 / -1; }
     }
 
+    @media (max-width: 720px) {
+      .standings-row {
+        grid-template-columns:
+          1.8rem
+          minmax(0, 1fr)
+          2rem
+          2rem
+          minmax(2.6rem, 0.45fr);
+      }
+      .col-owner,
+      .col-ties,
+      .col-pa { display: none; }
+      .team-name { font-size: 13px; }
+      .logo, .logo-fallback { width: 28px; height: 28px; flex-basis: 28px; }
+    }
+
     @media (max-width: 640px) {
       .hero { min-height: auto; padding: 24px 14px 36px; }
-      .topbar-inner,
-      main,
-      footer { padding-left: 14px; padding-right: 14px; }
       .hero-meta { grid-template-columns: 1fr; }
       .bowl-mark { order: -1; }
       .section-head { flex-direction: column; align-items: start; }
       .section-head h2 { font-size: 30px; }
-      .owner-col,
-      .owner { display: none; }
-      .standings { min-width: 520px; }
       .season-strip { grid-template-columns: 1fr; }
       .stage.final { grid-column: auto; }
+      .conference-title { font-size: 26px; }
+      .status { padding: 6px 8px; font-size: 9px; }
+    }
+
+    @media (max-width: 420px) {
+      .standings-row {
+        grid-template-columns: 1.6rem minmax(0, 1fr) 1.8rem 1.8rem minmax(2.4rem, 0.4fr);
+        padding: 0.55rem 0.55rem;
+      }
+      .pts { font-size: 12px; }
+      .wl { font-size: 12px; }
     }
   </style>
 </head>
@@ -712,21 +771,19 @@
         const rank = index + 1;
         const cutClass = rank === 6 ? 'seed-cut' : '';
         return `
-          <tr class="${cutClass}">
-            <td class="rank">${rank}</td>
-            <td>
-              <div class="franchise">
-                ${logoMarkup(team)}
-                <div class="team-name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
-              </div>
-            </td>
-            <td class="owner-col"><div class="owner" title="${escapeHtml(team.owner)}">${escapeHtml(team.owner)}</div></td>
-            <td class="num wl">${team.wins || 0}</td>
-            <td class="num wl">${team.losses || 0}</td>
-            <td class="num wl">${team.ties || 0}</td>
-            <td class="num pts">${fmtPts(team.pointsFor)}</td>
-            <td class="num pts">${fmtPts(team.pointsAgainst)}</td>
-          </tr>`;
+          <div class="standings-row ${cutClass}">
+            <div class="rank">${rank}</div>
+            <div class="franchise">
+              ${logoMarkup(team)}
+              <div class="team-name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
+            </div>
+            <div class="owner col-owner" title="${escapeHtml(team.owner)}">${escapeHtml(team.owner)}</div>
+            <div class="num wl">${team.wins || 0}</div>
+            <div class="num wl">${team.losses || 0}</div>
+            <div class="num wl col-ties">${team.ties || 0}</div>
+            <div class="num pts">${fmtPts(team.pointsFor)}</div>
+            <div class="num pts col-pa">${fmtPts(team.pointsAgainst)}</div>
+          </div>`;
       }).join('');
 
       return `
@@ -737,22 +794,18 @@
           </div>
           <div class="status"><span class="dot"></span>${conf.teamCount} TEAMS</div>
         </div>
-        <div class="standings-wrap">
-          <table class="standings">
-            <thead>
-              <tr>
-                <th class="center">#</th>
-                <th>Team</th>
-                <th class="owner-col">Owner</th>
-                <th class="num">W</th>
-                <th class="num">L</th>
-                <th class="num">T</th>
-                <th class="num">PF</th>
-                <th class="num">PA</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
+        <div class="standings">
+          <div class="standings-row head">
+            <div class="center">#</div>
+            <div>Team</div>
+            <div class="col-owner">Owner</div>
+            <div class="num">W</div>
+            <div class="num">L</div>
+            <div class="num col-ties">T</div>
+            <div class="num">PF</div>
+            <div class="num col-pa">PA</div>
+          </div>
+          ${rows}
         </div>`;
     }
 
