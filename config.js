@@ -6,16 +6,16 @@ module.exports = {
   },
   conferences: [
     {
-      key: 'overtime',
-      name: 'Overtime Conference',
-      shortName: 'OVERTIME',
-      espnLeagueId: 236438046
-    },
-    {
       key: 'detail',
       name: 'Detail Conference',
       shortName: 'DETAIL',
       espnLeagueId: 559054421
+    },
+    {
+      key: 'overtime',
+      name: 'Overtime Conference',
+      shortName: 'OVERTIME',
+      espnLeagueId: 236438046
     }
   ]
 };
