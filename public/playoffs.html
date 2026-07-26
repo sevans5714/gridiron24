@@ -218,15 +218,16 @@
 
     .bowl {
       position: relative;
-      border: 1px solid rgba(47, 109, 255, 0.55);
+      border: 1px solid rgba(47, 109, 255, 0.45);
       background:
-        radial-gradient(ellipse at 50% 30%, rgba(47,109,255,0.28), transparent 60%),
-        linear-gradient(180deg, #141820, #0a0c10);
+        radial-gradient(ellipse at 50% 40%, rgba(47,109,255,0.22), transparent 65%),
+        linear-gradient(180deg, #10141c, #080a0e);
       text-align: center;
-      padding: 1.75rem 1rem;
+      padding: 1.15rem 0.75rem 1.25rem;
       min-height: 15rem;
       display: flex;
       flex-direction: column;
+      align-items: center;
       justify-content: center;
       overflow: hidden;
       animation: bowl-glow 3.5s ease-in-out infinite;
@@ -237,48 +238,38 @@
       50% { box-shadow: 0 0 28px 0 rgba(47,109,255,0.28), inset 0 0 50px rgba(47,109,255,0.14); }
     }
 
-    .bowl::before {
-      content: "";
-      position: absolute;
-      inset: 8px;
-      border: 1px solid rgba(47, 109, 255, 0.2);
-      pointer-events: none;
-    }
-
     .bowl .eyebrow {
       font-family: var(--display);
       font-size: 0.72rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--muted);
+      margin-bottom: 0.55rem;
     }
 
-    .bowl h2 {
-      margin: 0.45rem 0 0;
-      font-family: var(--display);
-      font-size: clamp(1.55rem, 3.2vw, 2.15rem);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #9ec0ff;
-      line-height: 1;
+    .bowl img {
+      width: min(100%, 13.5rem);
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 10px 22px rgba(0,0,0,0.65));
     }
 
     .bowl .vs {
-      margin-top: 1.25rem;
+      margin-top: 0.85rem;
       font-family: var(--display);
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      line-height: 1.55;
+      line-height: 1.45;
     }
 
     .bowl .vs .d { color: var(--detail); }
     .bowl .vs .o { color: var(--overtime); }
     .bowl .vs .mid-vs {
       display: block;
-      margin: 0.25rem 0;
+      margin: 0.2rem 0;
       color: var(--muted);
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       letter-spacing: 0.2em;
     }
 
@@ -393,7 +384,7 @@
       <div class="mid reveal reveal-delay-1">
         <div class="bowl">
           <div class="eyebrow">Week 17</div>
-          <h2>GridIron Bowl I</h2>
+          <img src="/assets/gridiron-bowl.png" alt="GridIron Bowl I" />
           <div class="vs">
             <span class="d">Detail Champion</span>
             <span class="mid-vs">VS</span>
