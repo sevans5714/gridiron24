@@ -9,10 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/site.css?v=5" />
   <style>
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+    .scoring-wrap {
+      max-width: 44rem;
     }
     .matrix {
       width: 100%;
@@ -62,6 +60,7 @@
       font-size: 1.1rem;
       letter-spacing: 0.01em;
       color: #fff;
+      white-space: nowrap;
     }
     .section-label {
       margin: 0;
@@ -93,8 +92,14 @@
     }
     .chip strong { color: #fff; margin-right: 0.3rem; font-weight: 700; }
     .chip span { color: var(--muted); font-weight: 500; }
-    @media (max-width: 900px) {
-      .grid-2 { grid-template-columns: 1fr; }
+    .warn {
+      margin: 0 0 1rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(239, 215, 130, 0.35);
+      background: rgba(239, 215, 130, 0.08);
+      color: #efd782;
+      font-size: var(--fs-sm);
+      line-height: 1.45;
     }
   </style>
 </head>
@@ -109,11 +114,11 @@
   <section class="page-hero shell reveal">
     <p class="eyebrow">Official Rules</p>
     <h1>Scoring Matrix</h1>
-    <p>Every point category and starting slot — identical across both conferences.</p>
+    <p>One scoring system for all 24 GridIron franchises across both conferences.</p>
   </section>
 
   <main class="page-main shell">
-    <div class="grid-2" id="boards">
+    <div class="scoring-wrap" id="content">
       <div class="msg">Loading scoring settings…</div>
     </div>
   </main>
@@ -128,6 +133,14 @@
     function fmt(n) {
       const x = Number(n);
       return Number.isInteger(x) ? String(x) : x.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+    }
+
+    function scoringSig(conf) {
+      return JSON.stringify({
+        playerRankType: conf.playerRankType || null,
+        scoring: (conf.scoringItems || []).map((i) => [i.statId, i.points]),
+        lineup: (conf.lineup || []).map((s) => [s.id, s.count])
+      });
     }
 
     function groupedRows(items) {
@@ -151,21 +164,31 @@
       }).join('');
     }
 
-    function board(conf, idx) {
-      if (!conf.ok) {
-        return `<div class="panel reveal reveal-delay-${idx + 1}"><div class="panel-title">${esc(conf.name || 'Conference')}</div><div class="msg"><strong>Unavailable</strong>${esc(conf.error || '')}</div></div>`;
+    function render(data) {
+      const ok = (data.conferences || []).filter((c) => c.ok);
+      if (!ok.length) {
+        const err = (data.conferences || []).map((c) => c.error).filter(Boolean).join(' · ') || 'No conference settings available.';
+        document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>${esc(err)}</div>`;
+        return;
       }
-      const tone = conf.key === 'detail' ? 'detail' : 'overtime';
-      const logo = conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
-      const rows = groupedRows(conf.scoringItems);
-      const lineup = (conf.lineup || []).map((s) => `
+
+      const primary = ok[0];
+      const matched = ok.every((c) => scoringSig(c) === scoringSig(primary));
+      const warn = matched
+        ? ''
+        : `<p class="warn">Detail and Overtime settings differ on ESPN. Showing Detail Conference as the GridIron source of truth — fix Overtime so both match.</p>`;
+
+      const rows = groupedRows(primary.scoringItems);
+      const lineup = (primary.lineup || []).map((s) => `
         <div class="chip"><strong>${esc(s.label)}</strong><span>×${s.count}</span></div>`).join('');
-      return `
-        <div class="panel reveal reveal-delay-${idx + 1}">
-          <div class="panel-title ${tone}">
-            ${logo}
-            <span>${esc(conf.shortName || conf.name)}</span>
-            <span class="meta">${esc(conf.playerRankType || 'PPR')} · ${(conf.scoringItems || []).length} categories</span>
+
+      document.getElementById('content').innerHTML = `
+        ${warn}
+        <div class="panel reveal">
+          <div class="panel-title bowl">
+            <img src="/assets/gridiron-bowl.png" alt="">
+            <span>GridIron 24</span>
+            <span class="meta">${esc(primary.playerRankType || 'PPR')} · ${(primary.scoringItems || []).length} categories</span>
           </div>
           <table class="matrix">
             <thead><tr><th>Category</th><th style="text-align:right">Points</th></tr></thead>
@@ -181,11 +204,11 @@
         const res = await fetch('/api/settings', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
-        document.getElementById('boards').innerHTML = data.conferences.map(board).join('');
+        render(data);
         const t = new Date(data.generatedAt);
         window.GridIronNav?.setSync(`ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
-        document.getElementById('boards').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        document.getElementById('content').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
         window.GridIronNav?.setSync('Connection error', false);
       }
     }
