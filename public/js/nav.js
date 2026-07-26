@@ -3,7 +3,8 @@
     { href: '/', label: 'Standings', key: 'standings' },
     { href: '/scoring.html', label: 'Scoring Matrix', key: 'scoring' },
     { href: '/schedules.html', label: 'Schedules', key: 'schedules' },
-    { href: '/playoffs.html', label: 'Playoff Structure', key: 'playoffs' }
+    { href: '/playoffs.html', label: 'Playoff Structure', key: 'playoffs' },
+    { href: '/payouts.html', label: 'League Payouts', key: 'payouts' }
   ];
 
   const active = document.body.dataset.page || 'standings';

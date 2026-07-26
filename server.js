@@ -369,6 +369,15 @@ const server = http.createServer(async (req, res) => {
       return await apiSchedule(res, requestUrl.searchParams.get('week'));
     }
 
+    if (requestUrl.pathname === '/api/payouts') {
+      return sendJson(res, 200, {
+        season: config.season,
+        brand: config.brand,
+        payouts: config.payouts || null,
+        generatedAt: new Date().toISOString()
+      });
+    }
+
     const requested = requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname;
     const safePath = path.normalize(requested).replace(/^(\.\.[/\\])+/, '');
     const filePath = path.join(PUBLIC_DIR, safePath);

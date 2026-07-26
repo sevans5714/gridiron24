@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>League Payouts · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css" />
+  <style>
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 0.9rem 1rem;
+    }
+    .stat span {
+      display: block;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .stat strong {
+      display: block;
+      margin-top: 0.35rem;
+      font-family: var(--display);
+      font-size: 1.45rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .payouts {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+    .payouts th, .payouts td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+    .payouts tr:last-child td { border-bottom: 0; }
+    .payouts th {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--panel-2);
+    }
+    .payouts td.place {
+      width: 3rem;
+      font-family: var(--display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--blue);
+    }
+    .payouts td.label {
+      font-weight: 700;
+      font-size: 0.98rem;
+    }
+    .payouts td.amount {
+      text-align: right;
+      font-family: var(--display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .payouts tr.champ td.amount { color: #efd782; }
+    .note {
+      margin-top: 0.85rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+    @media (max-width: 700px) {
+      .summary { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-page="payouts">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Loading…</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell">
+    <h1>League Payouts</h1>
+    <p>Prize structure for the GridIron 24 championship season.</p>
+  </section>
+
+  <main class="page-main shell">
+    <div id="content"><div class="msg">Loading payouts…</div></div>
+  </main>
+
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <script src="/js/nav.js"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    function money(amount, currency = 'USD') {
+      if (amount == null || amount === '') return 'TBD';
+      try {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency,
+          maximumFractionDigits: 0
+        }).format(Number(amount));
+      } catch {
+        return `$${amount}`;
+      }
+    }
+
+    function render(data) {
+      const p = data.payouts || {};
+      const currency = p.currency || 'USD';
+      const buyIn = money(p.buyInPerTeam, currency);
+      const pool = p.buyInPerTeam != null && p.teamCount
+        ? money(Number(p.buyInPerTeam) * Number(p.teamCount), currency)
+        : 'TBD';
+
+      const rows = (p.prizes || []).map((prize, idx) => `
+        <tr class="${idx === 0 ? 'champ' : ''}">
+          <td class="place">${esc(prize.place ?? idx + 1)}</td>
+          <td class="label">${esc(prize.label)}</td>
+          <td class="amount">${money(prize.amount, currency)}</td>
+        </tr>`).join('');
+
+      document.getElementById('content').innerHTML = `
+        <div class="summary">
+          <div class="stat"><span>Season</span><strong>${esc(p.seasonLabel || data.season)}</strong></div>
+          <div class="stat"><span>Buy-In / Team</span><strong>${buyIn}</strong></div>
+          <div class="stat"><span>Total Prize Pool</span><strong>${pool}</strong></div>
+        </div>
+        <table class="payouts">
+          <thead>
+            <tr><th>#</th><th>Award</th><th style="text-align:right">Payout</th></tr>
+          </thead>
+          <tbody>${rows || '<tr><td colspan="3">No payouts configured.</td></tr>'}</tbody>
+        </table>
+        <p class="note">${esc(p.notes || '')}</p>`;
+    }
+
+    async function load() {
+      try {
+        const res = await fetch('/api/payouts', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        render(data);
+        window.GridIronNav?.setSync(data.payouts?.seasonLabel || 'Payouts', true);
+      } catch (err) {
+        document.getElementById('content').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        window.GridIronNav?.setSync('Connection error', false);
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
