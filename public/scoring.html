@@ -9,24 +9,97 @@
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/site.css?v=5" />
   <style>
-    .scoring-wrap {
-      max-width: 44rem;
+    .conf-bar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.35rem;
+      padding: 1rem 1.15rem;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 55%),
+        var(--panel);
     }
+
+    .conf-side {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      min-width: 0;
+    }
+    .conf-side.overtime { justify-content: flex-end; text-align: right; }
+    .conf-side img {
+      width: clamp(3.25rem, 7vw, 4.5rem);
+      height: auto;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5));
+    }
+    .conf-side .name {
+      font-family: var(--display);
+      font-size: clamp(1.05rem, 2.4vw, 1.45rem);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      line-height: 1.15;
+    }
+    .conf-side.detail .name { color: var(--detail); }
+    .conf-side.overtime .name { color: var(--overtime); }
+    .conf-side .sub {
+      margin-top: 0.2rem;
+      color: var(--muted);
+      font-size: var(--fs-xs);
+      font-weight: 500;
+    }
+
+    .sync-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      min-width: 9rem;
+      padding: 0.65rem 1rem;
+      border: 1px solid var(--line);
+      background: #0c0c0c;
+      text-align: center;
+    }
+    .sync-pill .status {
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .sync-pill .status.on { color: var(--good); }
+    .sync-pill .status.off { color: #efd782; }
+    .sync-pill .hint {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+
+    .rules-layout {
+      display: grid;
+      grid-template-columns: 1.4fr 0.85fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
     .matrix {
       width: 100%;
       border-collapse: collapse;
-    }
-    .matrix tr {
-      transition: background 0.15s ease;
     }
     .matrix tr:hover td {
       background: rgba(255, 255, 255, 0.03);
     }
     .matrix th, .matrix td {
-      padding: 0.72rem 1.15rem;
+      padding: 0.78rem 1.2rem;
       border-bottom: 1px solid var(--line);
       text-align: left;
-      font-size: var(--fs-sm);
+      font-size: 0.95rem;
       line-height: 1.35;
     }
     .matrix thead th {
@@ -42,12 +115,12 @@
       background: #141414;
       color: #fff;
       font-family: var(--display);
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      padding-top: 0.85rem;
-      padding-bottom: 0.55rem;
+      padding-top: 0.95rem;
+      padding-bottom: 0.6rem;
     }
     .matrix td {
       font-weight: 500;
@@ -57,49 +130,60 @@
       text-align: right;
       font-family: var(--display);
       font-weight: 600;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       letter-spacing: 0.01em;
       color: #fff;
       white-space: nowrap;
+      width: 6.5rem;
     }
+
     .section-label {
       margin: 0;
-      padding: 0.85rem 1.15rem 0.4rem;
+      padding: 0.9rem 1.2rem 0.45rem;
       font-family: var(--body);
       font-size: var(--fs-xs);
       font-weight: 600;
       letter-spacing: 0.07em;
       text-transform: uppercase;
       color: var(--muted);
-      border-top: 1px solid var(--line);
-      background: rgba(0,0,0,0.25);
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
     }
     .chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.45rem;
-      padding: 0.7rem 1.15rem 1.15rem;
+      gap: 0.5rem;
+      padding: 1rem 1.2rem 1.2rem;
     }
     .chip {
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, #151515, #0c0c0c);
-      padding: 0.4rem 0.7rem;
+      background: #0c0c0c;
+      padding: 0.5rem 0.8rem;
       font-family: var(--body);
-      font-size: var(--fs-xs);
+      font-size: 0.8rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
     .chip strong { color: #fff; margin-right: 0.3rem; font-weight: 700; }
     .chip span { color: var(--muted); font-weight: 500; }
-    .warn {
+
+    .meta-line {
       margin: 0 0 1rem;
-      padding: 0.75rem 1rem;
-      border: 1px solid rgba(239, 215, 130, 0.35);
-      background: rgba(239, 215, 130, 0.08);
-      color: #efd782;
+      color: var(--muted);
       font-size: var(--fs-sm);
-      line-height: 1.45;
+    }
+    .meta-line strong { color: #fff; font-weight: 600; }
+
+    @media (max-width: 980px) {
+      .rules-layout { grid-template-columns: 1fr; }
+      .conf-bar {
+        grid-template-columns: 1fr;
+        justify-items: stretch;
+      }
+      .conf-side.overtime { justify-content: flex-start; text-align: left; }
+      .conf-side.overtime { order: 3; }
+      .sync-pill { order: 2; width: 100%; }
     }
   </style>
 </head>
@@ -118,7 +202,7 @@
   </section>
 
   <main class="page-main shell">
-    <div class="scoring-wrap" id="content">
+    <div id="content">
       <div class="msg">Loading scoring settings…</div>
     </div>
   </main>
@@ -164,38 +248,71 @@
       }).join('');
     }
 
+    function confSide(conf, side) {
+      const logo = conf?.logo
+        ? `<img src="${esc(conf.logo)}" alt="">`
+        : '';
+      const name = conf?.name || (side === 'detail' ? 'Detail Conference' : 'Overtime Conference');
+      const inner = side === 'overtime'
+        ? `<div><div class="name">${esc(name)}</div><div class="sub">${esc(conf?.playerRankType || 'PPR')}</div></div>${logo}`
+        : `${logo}<div><div class="name">${esc(name)}</div><div class="sub">${esc(conf?.playerRankType || 'PPR')}</div></div>`;
+      return `<div class="conf-side ${side}">${inner}</div>`;
+    }
+
     function render(data) {
-      const ok = (data.conferences || []).filter((c) => c.ok);
+      const conferences = data.conferences || [];
+      const detail = conferences.find((c) => c.key === 'detail') || conferences[0];
+      const overtime = conferences.find((c) => c.key === 'overtime') || conferences[1];
+      const ok = conferences.filter((c) => c.ok);
+
       if (!ok.length) {
-        const err = (data.conferences || []).map((c) => c.error).filter(Boolean).join(' · ') || 'No conference settings available.';
+        const err = conferences.map((c) => c.error).filter(Boolean).join(' · ') || 'No conference settings available.';
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>${esc(err)}</div>`;
         return;
       }
 
-      const primary = ok[0];
-      const matched = ok.every((c) => scoringSig(c) === scoringSig(primary));
-      const warn = matched
-        ? ''
-        : `<p class="warn">Detail and Overtime settings differ on ESPN. Showing Detail Conference as the GridIron source of truth — fix Overtime so both match.</p>`;
+      const primary = (detail?.ok ? detail : ok[0]);
+      const bothOk = detail?.ok && overtime?.ok;
+      const matched = bothOk && scoringSig(detail) === scoringSig(overtime);
+      const syncStatus = !bothOk
+        ? { cls: 'off', label: 'Incomplete', hint: 'Could not load both conferences' }
+        : matched
+          ? { cls: 'on', label: 'Rules Synced', hint: 'Detail = Overtime' }
+          : { cls: 'off', label: 'Out of Sync', hint: 'Fix Overtime to match Detail' };
 
       const rows = groupedRows(primary.scoringItems);
       const lineup = (primary.lineup || []).map((s) => `
         <div class="chip"><strong>${esc(s.label)}</strong><span>×${s.count}</span></div>`).join('');
 
       document.getElementById('content').innerHTML = `
-        ${warn}
-        <div class="panel reveal">
-          <div class="panel-title bowl">
-            <img src="/assets/gridiron-bowl.png" alt="">
-            <span>GridIron 24</span>
-            <span class="meta">${esc(primary.playerRankType || 'PPR')} · ${(primary.scoringItems || []).length} categories</span>
+        <div class="conf-bar reveal">
+          ${confSide(detail, 'detail')}
+          <div class="sync-pill">
+            <div class="status ${syncStatus.cls}">${esc(syncStatus.label)}</div>
+            <div class="hint">${esc(syncStatus.hint)}</div>
           </div>
-          <table class="matrix">
-            <thead><tr><th>Category</th><th style="text-align:right">Points</th></tr></thead>
-            <tbody>${rows || '<tr><td colspan="2">No scoring items returned.</td></tr>'}</tbody>
-          </table>
-          <p class="section-label">Starting Lineup</p>
-          <div class="chips">${lineup || '<div class="msg">No lineup data.</div>'}</div>
+          ${confSide(overtime, 'overtime')}
+        </div>
+        <p class="meta-line reveal reveal-delay-1">
+          <strong>${esc(primary.playerRankType || 'PPR')}</strong>
+          · ${(primary.scoringItems || []).length} scoring categories
+          · shared across all 24 teams
+        </p>
+        <div class="rules-layout reveal reveal-delay-1">
+          <div class="panel">
+            <div class="panel-title bowl">
+              <img src="/assets/gridiron-bowl.png" alt="">
+              <span>Scoring Rules</span>
+            </div>
+            <table class="matrix">
+              <thead><tr><th>Category</th><th style="text-align:right">Points</th></tr></thead>
+              <tbody>${rows || '<tr><td colspan="2">No scoring items returned.</td></tr>'}</tbody>
+            </table>
+          </div>
+          <div class="panel">
+            <p class="section-label">Starting Lineup</p>
+            <div class="chips">${lineup || '<div class="msg">No lineup data.</div>'}</div>
+          </div>
         </div>`;
     }
 
