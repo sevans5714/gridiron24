@@ -1,0 +1,12 @@
+{
+  "name": "gridiron24-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GridIron 24 proof-of-concept dashboard using two ESPN Fantasy Football leagues",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
