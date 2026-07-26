@@ -91,37 +91,21 @@
       font-family: var(--display);
       font-weight: 700;
       text-transform: uppercase;
-      line-height: 0.92;
+      line-height: 1;
       letter-spacing: 0.08em;
-    }
-
-    .ad-line .row1,
-    .ad-line .row2,
-    .ad-line .row3 {
-      display: block;
-    }
-
-    .ad-line .row1 {
-      font-size: clamp(1.7rem, 5.5vw, 3.1rem);
+      font-size: clamp(0.78rem, 3.1vw, 1.65rem);
+      white-space: nowrap;
       color: #fff;
       text-shadow: 0 2px 0 rgba(0,0,0,0.55);
     }
 
-    .ad-line .row2 {
-      margin-top: 0.15rem;
-      font-size: clamp(1.15rem, 3.4vw, 1.85rem);
-      color: #d8d8d8;
-    }
-
-    .ad-line .row2 .detail { color: var(--detail); }
-    .ad-line .row2 .overtime { color: var(--overtime); }
-
-    .ad-line .row3 {
-      margin-top: 0.28rem;
-      font-size: clamp(1.55rem, 4.8vw, 2.55rem);
-      color: var(--blue);
-      letter-spacing: 0.12em;
-      text-shadow: 0 0 24px rgba(47, 109, 255, 0.35);
+    .ad-line .detail { color: var(--detail); }
+    .ad-line .overtime { color: var(--overtime); }
+    .ad-line .champ { color: var(--blue); }
+    .ad-line .sep {
+      color: #666;
+      margin: 0 0.4em;
+      font-weight: 500;
     }
 
     .section {
@@ -420,9 +404,7 @@
   <section class="hero shell">
     <img src="/assets/gridiron24-logo.png" alt="GridIron 24" />
     <p class="ad-line">
-      <span class="row1">24 Teams</span>
-      <span class="row2"><span class="detail">Two</span> Conferences</span>
-      <span class="row3">One Champion</span>
+      24 Teams<span class="sep">·</span><span class="detail">Two Conferences</span><span class="sep">·</span><span class="champ">One Champion</span>
     </p>
   </section>
 
