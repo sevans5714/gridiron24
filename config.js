@@ -2,7 +2,7 @@ module.exports = {
   season: 2026,
   brand: {
     name: 'GridIron 24',
-    tagline: 'Two Conferences. One Champion.'
+    tagline: '24 Teams. Two Conferences. One Champion.'
   },
   conferences: [
     {
