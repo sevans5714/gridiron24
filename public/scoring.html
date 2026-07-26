@@ -14,7 +14,7 @@
       grid-template-columns: 1fr auto 1fr;
       gap: 1rem;
       align-items: center;
-      margin-bottom: 1.35rem;
+      margin-bottom: 1.25rem;
       padding: 1rem 1.15rem;
       border: 1px solid var(--line);
       background:
@@ -81,13 +81,63 @@
       line-height: 1.3;
     }
 
-    .rules-layout {
-      display: grid;
-      grid-template-columns: 1.4fr 0.85fr;
-      gap: 1rem;
-      align-items: start;
+    .diff-panel {
+      margin-bottom: 1.25rem;
+      border: 1px solid rgba(239, 215, 130, 0.35);
+      background: rgba(239, 215, 130, 0.06);
+      overflow: hidden;
     }
+    .diff-panel .head {
+      padding: 0.85rem 1.15rem;
+      border-bottom: 1px solid rgba(239, 215, 130, 0.25);
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .diff-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .diff-table th, .diff-table td {
+      padding: 0.7rem 1.15rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 0.92rem;
+    }
+    .diff-table th {
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: rgba(0,0,0,0.35);
+    }
+    .diff-table td.num {
+      font-family: var(--display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .diff-table td.num.detail { color: var(--detail); }
+    .diff-table td.num.overtime { color: var(--overtime); }
+    .diff-table tr:last-child td { border-bottom: 0; }
+    .diff-table .label { font-weight: 600; color: #eee; }
 
+    .meta-line {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+    }
+    .meta-line strong { color: #fff; font-weight: 600; }
+
+    .matrix-wrap {
+      max-width: none;
+    }
     .matrix {
       width: 100%;
       border-collapse: collapse;
@@ -137,28 +187,27 @@
       width: 6.5rem;
     }
 
-    .section-label {
-      margin: 0;
-      padding: 0.9rem 1.2rem 0.45rem;
+    .lineup-block {
+      margin-top: 1.5rem;
+    }
+    .lineup-block .section-label {
+      margin: 0 0 0.75rem;
       font-family: var(--body);
       font-size: var(--fs-xs);
       font-weight: 600;
       letter-spacing: 0.07em;
       text-transform: uppercase;
       color: var(--muted);
-      border-bottom: 1px solid var(--line);
-      background: var(--panel-2);
     }
     .chips {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-      padding: 1rem 1.2rem 1.2rem;
     }
     .chip {
       border: 1px solid var(--line);
-      background: #0c0c0c;
-      padding: 0.5rem 0.8rem;
+      background: var(--panel);
+      padding: 0.55rem 0.85rem;
       font-family: var(--body);
       font-size: 0.8rem;
       font-weight: 600;
@@ -168,21 +217,12 @@
     .chip strong { color: #fff; margin-right: 0.3rem; font-weight: 700; }
     .chip span { color: var(--muted); font-weight: 500; }
 
-    .meta-line {
-      margin: 0 0 1rem;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-    }
-    .meta-line strong { color: #fff; font-weight: 600; }
-
-    @media (max-width: 980px) {
-      .rules-layout { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
       .conf-bar {
         grid-template-columns: 1fr;
         justify-items: stretch;
       }
-      .conf-side.overtime { justify-content: flex-start; text-align: left; }
-      .conf-side.overtime { order: 3; }
+      .conf-side.overtime { justify-content: flex-start; text-align: left; order: 3; }
       .sync-pill { order: 2; width: 100%; }
     }
   </style>
@@ -215,16 +255,82 @@
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
     function fmt(n) {
+      if (n == null || n === '') return '—';
       const x = Number(n);
+      if (!Number.isFinite(x)) return '—';
       return Number.isInteger(x) ? String(x) : x.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
     }
 
-    function scoringSig(conf) {
-      return JSON.stringify({
-        playerRankType: conf.playerRankType || null,
-        scoring: (conf.scoringItems || []).map((i) => [i.statId, i.points]),
-        lineup: (conf.lineup || []).map((s) => [s.id, s.count])
-      });
+    function mapByStat(items = []) {
+      const map = new Map();
+      for (const item of items) map.set(item.statId, item);
+      return map;
+    }
+
+    function mapBySlot(lineup = []) {
+      const map = new Map();
+      for (const slot of lineup) map.set(slot.id, slot);
+      return map;
+    }
+
+    function findDiffs(detail, overtime) {
+      const diffs = [];
+      const settings = [
+        ['Scoring type', 'playerRankType'],
+        ['Playoff teams', 'playoffTeamCount'],
+        ['Playoff reseed', 'playoffReseed'],
+        ['Regular-season weeks', 'matchupPeriodCount']
+      ];
+      for (const [label, key] of settings) {
+        const dVal = detail[key];
+        const oVal = overtime[key];
+        if (dVal !== oVal) {
+          diffs.push({
+            kind: 'Setting',
+            label,
+            detail: dVal == null ? '—' : String(dVal),
+            overtime: oVal == null ? '—' : String(oVal)
+          });
+        }
+      }
+
+      const dScore = mapByStat(detail.scoringItems);
+      const oScore = mapByStat(overtime.scoringItems);
+      const ids = new Set([...dScore.keys(), ...oScore.keys()]);
+      for (const id of [...ids].sort((a, b) => a - b)) {
+        const d = dScore.get(id);
+        const o = oScore.get(id);
+        const dPts = d ? Number(d.points) : null;
+        const oPts = o ? Number(o.points) : null;
+        if (dPts !== oPts) {
+          diffs.push({
+            kind: 'Scoring',
+            label: (d || o).label || `Stat ${id}`,
+            detail: d ? fmt(dPts) : 'missing',
+            overtime: o ? fmt(oPts) : 'missing'
+          });
+        }
+      }
+
+      const dLine = mapBySlot(detail.lineup);
+      const oLine = mapBySlot(overtime.lineup);
+      const slots = new Set([...dLine.keys(), ...oLine.keys()]);
+      for (const id of [...slots].sort((a, b) => a - b)) {
+        const d = dLine.get(id);
+        const o = oLine.get(id);
+        const dCount = d ? Number(d.count) : null;
+        const oCount = o ? Number(o.count) : null;
+        if (dCount !== oCount) {
+          diffs.push({
+            kind: 'Lineup',
+            label: (d || o).label || `Slot ${id}`,
+            detail: d ? String(dCount) : 'missing',
+            overtime: o ? String(oCount) : 'missing'
+          });
+        }
+      }
+
+      return diffs;
     }
 
     function groupedRows(items) {
@@ -249,20 +355,19 @@
     }
 
     function confSide(conf, side) {
-      const logo = conf?.logo
-        ? `<img src="${esc(conf.logo)}" alt="">`
-        : '';
+      const logo = conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
       const name = conf?.name || (side === 'detail' ? 'Detail Conference' : 'Overtime Conference');
+      const rank = conf?.ok ? (conf.playerRankType || 'PPR') : 'Unavailable';
       const inner = side === 'overtime'
-        ? `<div><div class="name">${esc(name)}</div><div class="sub">${esc(conf?.playerRankType || 'PPR')}</div></div>${logo}`
-        : `${logo}<div><div class="name">${esc(name)}</div><div class="sub">${esc(conf?.playerRankType || 'PPR')}</div></div>`;
+        ? `<div><div class="name">${esc(name)}</div><div class="sub">${esc(rank)}</div></div>${logo}`
+        : `${logo}<div><div class="name">${esc(name)}</div><div class="sub">${esc(rank)}</div></div>`;
       return `<div class="conf-side ${side}">${inner}</div>`;
     }
 
     function render(data) {
       const conferences = data.conferences || [];
-      const detail = conferences.find((c) => c.key === 'detail') || conferences[0];
-      const overtime = conferences.find((c) => c.key === 'overtime') || conferences[1];
+      const detail = conferences.find((c) => c.key === 'detail');
+      const overtime = conferences.find((c) => c.key === 'overtime');
       const ok = conferences.filter((c) => c.ok);
 
       if (!ok.length) {
@@ -271,14 +376,40 @@
         return;
       }
 
-      const primary = (detail?.ok ? detail : ok[0]);
-      const bothOk = detail?.ok && overtime?.ok;
-      const matched = bothOk && scoringSig(detail) === scoringSig(overtime);
+      const primary = detail?.ok ? detail : ok[0];
+      const bothOk = !!(detail?.ok && overtime?.ok);
+      const diffs = bothOk ? findDiffs(detail, overtime) : [];
+      const matched = bothOk && diffs.length === 0;
+
       const syncStatus = !bothOk
         ? { cls: 'off', label: 'Incomplete', hint: 'Could not load both conferences' }
         : matched
           ? { cls: 'on', label: 'Rules Synced', hint: 'Detail = Overtime' }
-          : { cls: 'off', label: 'Out of Sync', hint: 'Fix Overtime to match Detail' };
+          : { cls: 'off', label: 'Out of Sync', hint: `${diffs.length} difference${diffs.length === 1 ? '' : 's'}` };
+
+      const diffBlock = (!bothOk || matched) ? '' : `
+        <div class="diff-panel reveal reveal-delay-1">
+          <div class="head">What’s different</div>
+          <table class="diff-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Setting</th>
+                <th style="text-align:right">Detail</th>
+                <th style="text-align:right">Overtime</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${diffs.map((d) => `
+                <tr>
+                  <td>${esc(d.kind)}</td>
+                  <td class="label">${esc(d.label)}</td>
+                  <td class="num detail">${esc(d.detail)}</td>
+                  <td class="num overtime">${esc(d.overtime)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
 
       const rows = groupedRows(primary.scoringItems);
       const lineup = (primary.lineup || []).map((s) => `
@@ -293,27 +424,26 @@
           </div>
           ${confSide(overtime, 'overtime')}
         </div>
+        ${diffBlock}
         <p class="meta-line reveal reveal-delay-1">
-          <strong>${esc(primary.playerRankType || 'PPR')}</strong>
+          Showing <strong>${matched || !bothOk ? 'shared' : 'Detail Conference'}</strong> rules
+          · <strong>${esc(primary.playerRankType || 'PPR')}</strong>
           · ${(primary.scoringItems || []).length} scoring categories
-          · shared across all 24 teams
         </p>
-        <div class="rules-layout reveal reveal-delay-1">
-          <div class="panel">
-            <div class="panel-title bowl">
-              <img src="/assets/gridiron-bowl.png" alt="">
-              <span>Scoring Rules</span>
-            </div>
-            <table class="matrix">
-              <thead><tr><th>Category</th><th style="text-align:right">Points</th></tr></thead>
-              <tbody>${rows || '<tr><td colspan="2">No scoring items returned.</td></tr>'}</tbody>
-            </table>
+        <div class="panel matrix-wrap reveal reveal-delay-1">
+          <div class="panel-title bowl">
+            <img src="/assets/gridiron-bowl.png" alt="">
+            <span>Scoring Rules</span>
           </div>
-          <div class="panel">
-            <p class="section-label">Starting Lineup</p>
-            <div class="chips">${lineup || '<div class="msg">No lineup data.</div>'}</div>
-          </div>
-        </div>`;
+          <table class="matrix">
+            <thead><tr><th>Category</th><th style="text-align:right">Points</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="2">No scoring items returned.</td></tr>'}</tbody>
+          </table>
+        </div>
+        <section class="lineup-block reveal reveal-delay-2">
+          <div class="section-label">Starting Lineup</div>
+          <div class="chips">${lineup || '<div class="msg">No lineup data.</div>'}</div>
+        </section>`;
     }
 
     async function load() {
