@@ -25,18 +25,16 @@ module.exports = {
     buyInPerTeam: 100,
     teamCount: 24,
     currency: 'USD',
-    notes: 'Prize pool is $2,400 from all 24 franchises at $100 buy-in. Each conference championship runner-up earns $200. In Week 16, each conference’s semifinal losers play a third-place game — the winner gets their $100 buy-in back. Conference champions meet in Week 17’s GridIron Bowl for the top two prizes.',
+    notes: 'Prize pool is $2,400 from all 24 franchises at $100 buy-in. Conference championship runners-up earn $200 each. Week 16 third-place game winners earn $100 each. Season points champions earn $100 each. Conference champions meet in Week 17’s GridIron Bowl for the top two prizes.',
     prizes: [
-      { place: 1, label: 'GridIron 24 Champion', amount: 1200 },
+      { place: 1, label: 'GridIron 24 Champion', amount: 1000 },
       { place: 2, label: 'GridIron Bowl Runner-Up', amount: 500 },
       { place: 3, label: 'Detail Conference 2nd Place', amount: 200 },
       { place: 4, label: 'Overtime Conference 2nd Place', amount: 200 },
-      { place: 5, label: 'Detail Third Place Game Winner (buy-in refund)', amount: 100 },
-      { place: 6, label: 'Overtime Third Place Game Winner (buy-in refund)', amount: 100 },
-      { place: 7, label: 'Detail Regular-Season Champion', amount: 150 },
-      { place: 8, label: 'Overtime Regular-Season Champion', amount: 150 },
-      { place: 9, label: 'Detail Points Champion', amount: 100 },
-      { place: 10, label: 'Overtime Points Champion', amount: 100 }
+      { place: 5, label: 'Detail Third Place Game Winner', amount: 100 },
+      { place: 6, label: 'Overtime Third Place Game Winner', amount: 100 },
+      { place: 7, label: 'Detail Points Champion', amount: 100 },
+      { place: 8, label: 'Overtime Points Champion', amount: 100 }
     ]
   }
 };
