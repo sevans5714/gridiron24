@@ -561,6 +561,280 @@ footer.shell {
   line-height: var(--lh-snug);
 }
 
+/* Shared form + action chrome */
+.field {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  background: #0c0c0c;
+  color: #fff;
+  font-family: var(--body);
+  font-size: var(--fs-sm);
+  line-height: 1.35;
+  transition: border-color 0.15s ease;
+}
+.field:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.32);
+}
+.field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.field-label {
+  display: block;
+  margin: 0 0 0.35rem;
+  font-family: var(--display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.field-area {
+  min-height: 4.75rem;
+  resize: vertical;
+}
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid #fff;
+  background: #fff;
+  color: #050505;
+  font-family: var(--display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.btn:hover:not(:disabled) {
+  background: transparent;
+  color: #fff;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.btn-ghost {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--text);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+}
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+.toolbar .field {
+  flex: 1;
+  min-width: 12rem;
+}
+.stack-form {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+.status-note {
+  display: none;
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.7rem;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  border: 1px solid var(--line);
+}
+.status-note.show { display: block; }
+.status-note.ok {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+  color: #86efac;
+}
+.status-note.err {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+}
+.link-action {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.link-action:hover { color: #fff; }
+
+.admin-block {
+  margin-top: 1.75rem;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.02), transparent 42%),
+    var(--panel);
+}
+.admin-block h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.admin-block .help {
+  margin: 0 0 0.95rem;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  max-width: 42rem;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table th,
+.data-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: var(--fs-sm);
+  vertical-align: middle;
+}
+.data-table th {
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.02);
+}
+.data-table tr:last-child td { border-bottom: 0; }
+.data-table select {
+  max-width: 100%;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--line);
+  background: #0c0c0c;
+  color: #fff;
+  font-family: var(--body);
+  font-size: 0.82rem;
+}
+
+/* Auth surfaces */
+body.auth-page {
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.75rem 1rem;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, rgba(47, 109, 255, 0.08), transparent 55%),
+    #050505;
+}
+.auth-card {
+  width: min(100%, 22rem);
+  padding: 0.35rem 0.25rem 0.5rem;
+  animation: gi-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.auth-card.wide { width: min(100%, 26rem); }
+.auth-crest {
+  display: block;
+  width: min(70vw, 13.5rem);
+  height: auto;
+  margin: 0 auto 0.85rem;
+}
+.auth-crest.hero {
+  width: min(92vw, 34rem);
+  margin-bottom: -2.75rem;
+}
+.auth-title {
+  margin: 0 0 0.85rem;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.auth-help {
+  margin: -0.35rem 0 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+.auth-fields {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 15.5rem);
+  margin: 0 auto;
+}
+.auth-card .field { margin-bottom: 0.7rem; }
+.auth-card .field-label { margin-bottom: 0.28rem; }
+.auth-card .btn { width: 100%; margin-top: 0.15rem; }
+.auth-section {
+  margin: 0.45rem 0 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--line);
+  font-family: var(--display);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.auth-links {
+  margin: 0.95rem 0 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.55;
+}
+.auth-links a {
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+}
+.auth-links a:hover { text-decoration: underline; text-underline-offset: 2px; }
+.auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.15rem 0 0.75rem;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  user-select: none;
+}
+.auth-remember input {
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: #fff;
+}
+
 @media (max-width: 760px) {
   .topbar-inner {
     flex-direction: column;
@@ -579,4 +853,6 @@ footer.shell {
   .sync { align-self: flex-end; }
   .panel-title .meta { display: none; }
   .page-hero h1 { font-size: clamp(1.65rem, 8vw, 2.2rem); }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar .btn { width: 100%; }
 }

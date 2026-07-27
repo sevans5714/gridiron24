@@ -82,10 +82,6 @@ function sessionSecret() {
   return process.env.SESSION_SECRET || gate?.leaguePassword || 'gridiron24-dev-secret';
 }
 
-function normalizeLeagueName(value) {
-  return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
-}
-
 function timingSafeEqualString(a, b) {
   const left = Buffer.from(String(a));
   const right = Buffer.from(String(b));
@@ -93,15 +89,11 @@ function timingSafeEqualString(a, b) {
   return crypto.timingSafeEqual(left, right);
 }
 
-function leagueGateOk(leagueName, leaguePassword) {
+function leagueGateOk(_leagueName, leaguePassword) {
   const gate = activeGate();
   if (!gate?.leaguePassword) return false;
-  const nameOk = timingSafeEqualString(
-    normalizeLeagueName(leagueName),
-    normalizeLeagueName(gate.leagueName)
-  );
-  const passOk = timingSafeEqualString(String(leaguePassword || ''), gate.leaguePassword);
-  return nameOk && passOk;
+  // Password-only site gate — GridIron 24 is the existing HQ, not a new league to create.
+  return timingSafeEqualString(String(leaguePassword || ''), gate.leaguePassword);
 }
 
 const PUBLIC_PATHS = new Set([
@@ -810,8 +802,8 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 409, {
           ok: false,
           error: process.env.LEAGUE_PASSWORD
-            ? 'League access is already configured on the server.'
-            : 'League access is already set up. Go to Create Account.'
+            ? 'Site access is already configured on the server.'
+            : 'Site access is already set up. Go to Create Account.'
         });
       }
       let body;
@@ -833,7 +825,7 @@ const server = http.createServer(async (req, res) => {
       if (!leagueGate.isConfigured()) {
         return sendJson(res, 503, {
           ok: false,
-          error: 'League access is not configured. Open /setup first.'
+          error: 'Site access is not configured. Open /setup first.'
         });
       }
       let body;
@@ -855,7 +847,7 @@ const server = http.createServer(async (req, res) => {
         }
         body.email = body.email || inviteEmail;
       } else if (!leagueGateOk(body.leagueName, body.leaguePassword)) {
-        return sendJson(res, 401, { ok: false, error: 'Incorrect league name or league password' });
+        return sendJson(res, 401, { ok: false, error: 'Incorrect access password' });
       }
       if (body.password !== body.confirmPassword) {
         return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
@@ -980,6 +972,15 @@ const server = http.createServer(async (req, res) => {
       return sendFile(res, path.join(PUBLIC_DIR, 'register.html'));
     }
     if (pathname === '/setup' || pathname === '/setup.html') {
+      // Site access is already set — never show a "create league" style page.
+      if (leagueGate.isConfigured()) {
+        res.writeHead(302, {
+          Location: '/enter',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache'
+        });
+        return res.end();
+      }
       return sendFile(res, path.join(PUBLIC_DIR, 'setup.html'));
     }
     if (pathname === '/api/invites/peek' && req.method === 'GET') {
@@ -1404,7 +1405,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`\nGridIron 24 is running.`);
   console.log(`Open: http://localhost:${PORT}`);
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
-  console.log(`Auth: ${leagueGate.isConfigured() ? `accounts enabled (league gate "${activeGate().leagueName}" via ${activeGate().source})` : 'not configured — open /setup'}`);
+  console.log(`Auth: ${leagueGate.isConfigured() ? `accounts enabled (site gate via ${activeGate().source})` : 'not configured — open /setup'}`);
   console.log(`Users: ${users.DATA_DIR}`);
   if (process.env.COMMISSIONER_LOGIN) {
     console.log(`Commissioner login: ${process.env.COMMISSIONER_LOGIN}`);

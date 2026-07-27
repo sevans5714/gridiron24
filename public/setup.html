@@ -4,115 +4,26 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <title>League Setup · GridIron 24</title>
+  <title>Site Access · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=10" />
-  <style>
-    body.login-page {
-      min-height: 100vh;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #000;
-      padding: 1.5rem 0;
-    }
-    .login-card {
-      width: min(100%, 22rem);
-      padding: 0.5rem 1rem 1.5rem;
-    }
-    .crest {
-      display: block;
-      width: min(70vw, 14rem);
-      height: auto;
-      margin: 0 auto 0.75rem;
-    }
-    h1 {
-      margin: 0 0 0.5rem;
-      text-align: center;
-      font-family: var(--display);
-      font-size: 1.15rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .help {
-      margin: 0 0 1rem;
-      text-align: center;
-      color: rgba(255,255,255,0.55);
-      font-size: 0.82rem;
-      line-height: 1.4;
-    }
-    label {
-      display: block;
-      margin-bottom: 0.28rem;
-      font-family: var(--display);
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.72);
-    }
-    input {
-      width: 100%;
-      padding: 0.45rem 0.65rem;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: #0d0d0d;
-      color: #fff;
-      font-family: var(--body);
-      font-size: 0.88rem;
-      margin-bottom: 0.7rem;
-    }
-    input:focus { outline: none; border-color: rgba(255, 255, 255, 0.4); }
-    button {
-      width: 100%;
-      margin-top: 0.2rem;
-      padding: 0.55rem 0.65rem;
-      border: 1px solid #fff;
-      background: #fff;
-      color: #050505;
-      font-family: var(--display);
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
-    .msg {
-      margin: 0.75rem 0 0;
-      min-height: 1.2rem;
-      text-align: center;
-      font-size: 0.82rem;
-      color: #ef4444;
-    }
-    .msg.ok { color: #22c55e; }
-    a.back {
-      display: block;
-      margin-top: 1rem;
-      text-align: center;
-      color: rgba(255,255,255,0.45);
-      font-size: 0.8rem;
-    }
-  </style>
+  <link rel="stylesheet" href="/css/site.css?v=12" />
 </head>
-<body class="login-page">
-  <div class="login-card">
-    <img class="crest" src="/assets/login-crest.png" alt="GridIron 24" />
-    <h1>League Setup</h1>
-    <p class="help">One-time setup for this server. Sets the shared league name and password used to create accounts.</p>
+<body class="auth-page">
+  <div class="auth-card">
+    <img class="auth-crest" src="/assets/login-crest.png" alt="GridIron 24" />
+    <h1 class="auth-title">Site Access</h1>
+    <p class="auth-help">One-time password for this GridIron 24 HQ. Does not create an ESPN league — only controls who can make member accounts here.</p>
     <form id="form">
-      <label for="leagueName">League name</label>
-      <input id="leagueName" name="leagueName" required autocomplete="off" value="4to12" />
-      <label for="leaguePassword">League password</label>
-      <input id="leaguePassword" name="leaguePassword" type="password" required autocomplete="new-password" />
-      <label for="commissionerLogin">Your login name (commissioner)</label>
-      <input id="commissionerLogin" name="commissionerLogin" required autocomplete="username" value="sevans" />
-      <button type="submit">Save &amp; Continue</button>
-      <p class="msg" id="msg" role="status"></p>
+      <label class="field-label" for="leaguePassword">Site access password</label>
+      <input class="field" id="leaguePassword" name="leaguePassword" type="password" required autocomplete="new-password" />
+      <label class="field-label" for="commissionerLogin">Your login name (commissioner)</label>
+      <input class="field" id="commissionerLogin" name="commissionerLogin" required autocomplete="username" value="sevans" />
+      <button class="btn" type="submit">Save &amp; Continue</button>
+      <p class="status-note" id="msg" role="status"></p>
     </form>
-    <a class="back" href="/enter">Back to sign in</a>
+    <p class="auth-links"><a href="/enter">Back to sign in</a></p>
   </div>
   <script>
     const msg = document.getElementById('msg');
@@ -120,7 +31,7 @@
       const res = await fetch('/api/auth', { cache: 'no-store' });
       const data = await res.json();
       if (data.authConfigured) {
-        msg.className = 'msg ok';
+        msg.className = 'status-note show ok';
         msg.textContent = 'Already configured. Redirecting…';
         setTimeout(() => { location.href = '/register'; }, 700);
       }
@@ -129,10 +40,9 @@
 
     document.getElementById('form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      msg.className = 'msg';
+      msg.className = 'status-note show';
       msg.textContent = 'Saving…';
       const body = {
-        leagueName: document.getElementById('leagueName').value,
         leaguePassword: document.getElementById('leaguePassword').value,
         commissionerLogin: document.getElementById('commissionerLogin').value
       };
@@ -144,11 +54,11 @@
         });
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || 'Setup failed');
-        msg.className = 'msg ok';
+        msg.className = 'status-note show ok';
         msg.textContent = 'Saved. Create your account next…';
         setTimeout(() => { location.href = '/register'; }, 600);
       } catch (err) {
-        msg.className = 'msg';
+        msg.className = 'status-note show err';
         msg.textContent = err.message || 'Setup failed';
       }
     });

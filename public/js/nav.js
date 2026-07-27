@@ -2,10 +2,10 @@
   const allLinks = [
     { href: '/home.html', label: 'Home', key: 'home' },
     { href: '/standings.html', label: 'Standings', key: 'standings' },
-    { href: '/scoring.html', label: 'Scoring Matrix', key: 'scoring' },
+    { href: '/scoring.html', label: 'Scoring', key: 'scoring' },
     { href: '/schedules.html', label: 'Schedules', key: 'schedules' },
-    { href: '/playoffs.html', label: 'Playoff Structure', key: 'playoffs' },
-    { href: '/payouts.html', label: 'League Payouts', key: 'payouts' },
+    { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
+    { href: '/payouts.html', label: 'Payouts', key: 'payouts' },
     { href: '/commissioner.html', label: 'Commissioner', key: 'commissioner', staffOnly: true }
   ];
 

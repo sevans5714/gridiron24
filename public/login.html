@@ -8,139 +8,24 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=10" />
-  <style>
-    body.login-page {
-      min-height: 100vh;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #000;
-    }
-    .login-card {
-      width: min(100%, 42rem);
-      padding: 0.75rem 1rem 1.75rem;
-      animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-    .crest {
-      display: block;
-      width: min(96vw, 39rem);
-      max-width: 100%;
-      height: auto;
-      margin: 0 auto -3.75rem;
-      object-fit: contain;
-    }
-    .fields {
-      position: relative;
-      z-index: 1;
-      width: min(100%, 15.5rem);
-      margin: 0 auto;
-    }
-    label {
-      display: block;
-      margin-bottom: 0.28rem;
-      font-family: var(--display);
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.72);
-    }
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 0.45rem 0.65rem;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: #0d0d0d;
-      color: #fff;
-      font-family: var(--body);
-      font-size: 0.88rem;
-      margin-bottom: 0.7rem;
-    }
-    input:focus {
-      outline: none;
-      border-color: rgba(255, 255, 255, 0.4);
-    }
-    .remember {
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-      margin: 0 0 0.75rem;
-      cursor: pointer;
-      user-select: none;
-    }
-    .remember input { width: auto; margin: 0; accent-color: #fff; }
-    .remember span {
-      font-family: var(--body);
-      font-size: 0.8rem;
-      font-weight: 500;
-      letter-spacing: 0;
-      text-transform: none;
-      color: rgba(255, 255, 255, 0.7);
-    }
-    button {
-      width: 100%;
-      padding: 0.5rem 0.65rem;
-      border: 1px solid #fff;
-      background: #fff;
-      color: #050505;
-      font-family: var(--display);
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
-    button:hover:not(:disabled) { background: transparent; color: #fff; }
-    button:disabled { opacity: 0.55; cursor: wait; }
-    .err {
-      display: none;
-      margin: 0 0 0.7rem;
-      padding: 0.45rem 0.6rem;
-      border: 1px solid rgba(239, 68, 68, 0.35);
-      background: rgba(239, 68, 68, 0.08);
-      color: #fca5a5;
-      font-size: 0.78rem;
-      line-height: 1.35;
-    }
-    .err.show { display: block; }
-    .links {
-      margin: 0.85rem 0 0;
-      text-align: center;
-      font-size: 0.78rem;
-      line-height: 1.5;
-      color: rgba(255, 255, 255, 0.55);
-    }
-    .links a {
-      color: rgba(255, 255, 255, 0.85);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-    .links a:hover { color: #fff; }
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/site.css?v=12" />
 </head>
-<body class="login-page" data-page="login">
-  <form class="login-card" id="login-form" autocomplete="on">
-    <img class="crest" src="/assets/login-crest.png" alt="GridIron 24" width="1024" height="1024" decoding="async" />
-    <div class="fields">
-      <div class="err" id="err" role="alert"></div>
-      <label for="loginName">Login Name</label>
-      <input id="loginName" name="loginName" type="text" required autofocus autocomplete="username" />
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" required autocomplete="current-password" />
-      <label class="remember" for="remember">
-        <input id="remember" name="remember" type="checkbox" />
+<body class="auth-page">
+  <form class="auth-card wide" id="login-form" autocomplete="on">
+    <img class="auth-crest hero" src="/assets/login-crest.png" alt="GridIron 24" width="1024" height="1024" />
+    <div class="auth-fields">
+      <div class="status-note err" id="err" role="alert"></div>
+      <label class="field-label" for="loginName">Login Name</label>
+      <input class="field" id="loginName" name="loginName" type="text" required autofocus autocomplete="username" />
+      <label class="field-label" for="password">Password</label>
+      <input class="field" id="password" name="password" type="password" required autocomplete="current-password" />
+      <label class="auth-remember">
+        <input id="remember" type="checkbox" />
         <span>Save credentials</span>
       </label>
-      <button type="submit" id="submit">Sign In</button>
-      <p class="links">
+      <button class="btn" type="submit" id="submit">Sign In</button>
+      <p class="auth-links">
         <a href="/register">Create account</a><br />
-        <a href="/setup">League setup</a><br />
         <a href="/forgot">Forgot password?</a>
       </p>
     </div>
@@ -156,16 +41,20 @@
     const next = new URLSearchParams(window.location.search).get('next') || '/home.html';
 
     function showErr(msg) {
-      errEl.textContent = msg;
-      errEl.classList.add('show');
+      errEl.textContent = msg || '';
+      errEl.classList.toggle('show', Boolean(msg));
     }
-    function setBusy(busy) {
-      submit.disabled = busy;
-      rememberInput.disabled = busy;
+    function setBusy(on) {
+      submit.disabled = on;
+      loginInput.disabled = on;
+      passwordInput.disabled = on;
+      rememberInput.disabled = on;
     }
     function readSaved() {
       try {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '');
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
         if (!data?.loginName || !data?.password) return null;
         return data;
       } catch { return null; }
@@ -185,40 +74,19 @@
       if (!res.ok || !data.ok) throw new Error(data.error || 'Sign in failed');
       return data;
     }
-
     async function checkExisting() {
-      try {
-        const res = await fetch('/api/auth', { cache: 'no-store' });
-        const data = await res.json();
-        if (data.authenticated) {
-          window.location.replace(next);
-          return true;
-        }
-      } catch { /* stay */ }
-      return false;
-    }
-
-    async function tryAutoLogin() {
-      const saved = readSaved();
-      if (!saved) return;
-      loginInput.value = saved.loginName;
-      passwordInput.value = saved.password;
-      rememberInput.checked = true;
-      setBusy(true);
-      try {
-        await login(saved.loginName, saved.password);
-        window.location.href = next;
-      } catch {
-        clearSaved();
-        setBusy(false);
-        passwordInput.value = '';
-        rememberInput.checked = false;
+      const res = await fetch('/api/auth', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (data.authenticated) {
+        window.location.replace(next);
+        return true;
       }
+      return false;
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      errEl.classList.remove('show');
+      showErr('');
       const loginName = loginInput.value.trim();
       const password = passwordInput.value;
       setBusy(true);
@@ -238,11 +106,25 @@
         const res = await fetch('/api/auth', { cache: 'no-store' });
         const data = await res.json();
         if (!data.authConfigured) {
-          showErr('League not set up yet — use League setup, then Create account.');
+          showErr('Site access is not configured on the server yet. Ask the commissioner.');
         }
       } catch {}
       if (await checkExisting()) return;
-      await tryAutoLogin();
+      const saved = readSaved();
+      if (!saved) return;
+      loginInput.value = saved.loginName;
+      passwordInput.value = saved.password;
+      rememberInput.checked = true;
+      setBusy(true);
+      try {
+        await login(saved.loginName, saved.password);
+        window.location.href = next;
+      } catch {
+        clearSaved();
+        setBusy(false);
+        passwordInput.value = '';
+        rememberInput.checked = false;
+      }
     })();
   </script>
 </body>

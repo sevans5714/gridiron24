@@ -48,19 +48,14 @@ function isConfigured() {
 
 function writeGate({ leagueName, leaguePassword, commissionerLogin }) {
   if (process.env.LEAGUE_PASSWORD) {
-    const err = new Error('League access is already set via server environment variables.');
+    const err = new Error('Site access is already set via server environment variables.');
     err.status = 409;
     throw err;
   }
-  const name = String(leagueName || '').trim();
+  const name = String(leagueName || 'GridIron 24').trim() || 'GridIron 24';
   const password = String(leaguePassword || '');
-  if (!name || name.length < 2) {
-    const err = new Error('League name must be at least 2 characters.');
-    err.status = 400;
-    throw err;
-  }
   if (!password || password.length < 4) {
-    const err = new Error('League password must be at least 4 characters.');
+    const err = new Error('Access password must be at least 4 characters.');
     err.status = 400;
     throw err;
   }

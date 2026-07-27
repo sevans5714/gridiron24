@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=10" />
+  <link rel="stylesheet" href="/css/site.css?v=12" />
   <style>
     .hq-hero {
       text-align: center;
@@ -36,29 +36,13 @@
       color: #fff;
     }
     .hq-hero .tag .t { color: var(--blue); }
-    .hq-hero .tag .d {
-      color: #c5cedb;
-      text-shadow:
-        0 0 6px rgba(200, 215, 240, 0.45),
-        0 0 14px rgba(170, 190, 220, 0.25);
-    }
+    .hq-hero .tag .d { color: #c8d0dc; }
     .hq-hero .tag .c {
       color: #f2f5fa;
-      background: linear-gradient(
-        180deg,
-        #ffffff 0%,
-        #e8eef6 28%,
-        #a8b4c4 58%,
-        #dde4ee 78%,
-        #8e9aab 100%
-      );
+      background: linear-gradient(180deg, #ffffff 0%, #c5cedb 52%, #9aa8ba 100%);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
-      filter:
-        drop-shadow(0 0 6px rgba(230, 240, 255, 0.85))
-        drop-shadow(0 0 14px rgba(190, 210, 240, 0.55))
-        drop-shadow(0 0 28px rgba(160, 185, 230, 0.35));
     }
     .hq-hero .tag .sep { color: #666; margin: 0 0.3em; }
 
@@ -586,7 +570,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=5"></script>
+  <script src="/js/nav.js?v=6"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')

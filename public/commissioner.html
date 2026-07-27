@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=10" />
+  <link rel="stylesheet" href="/css/site.css?v=12" />
   <style>
     .status-bar {
       display: grid;
@@ -19,18 +19,9 @@
       border: 1px solid var(--line);
       background: var(--panel);
     }
-    .conf {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      min-width: 0;
-    }
+    .conf { display: flex; align-items: center; gap: 0.85rem; min-width: 0; }
     .conf.right { justify-content: flex-end; text-align: right; }
-    .conf img {
-      width: 3.5rem;
-      height: auto;
-      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
-    }
+    .conf img { width: 3.5rem; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45)); }
     .conf .name {
       font-family: var(--display);
       font-size: 1.15rem;
@@ -41,12 +32,7 @@
     }
     .conf.detail .name { color: var(--detail); }
     .conf.overtime .name { color: var(--overtime); }
-    .conf .meta {
-      margin-top: 0.2rem;
-      color: var(--muted);
-      font-size: var(--fs-xs);
-    }
-
+    .conf .meta { margin-top: 0.2rem; color: var(--muted); font-size: var(--fs-xs); }
     .sync-badge {
       text-align: center;
       padding: 0.65rem 1.1rem;
@@ -62,13 +48,8 @@
       text-transform: uppercase;
     }
     .sync-badge .label.ok { color: var(--good); }
-    .sync-badge .label.warn { color: #efd782; }
-    .sync-badge .sub {
-      margin-top: 0.25rem;
-      color: var(--muted);
-      font-size: 0.75rem;
-    }
-
+    .sync-badge .label.warn { color: var(--gold); }
+    .sync-badge .sub { margin-top: 0.25rem; color: var(--muted); font-size: 0.75rem; }
     .summary {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -98,10 +79,7 @@
     }
     .stat strong.detail { color: var(--detail); }
     .stat strong.overtime { color: var(--overtime); }
-
-    .diff-section {
-      margin-bottom: 1.25rem;
-    }
+    .diff-section { margin-bottom: 1.25rem; }
     .diff-section h2 {
       margin: 0 0 0.65rem;
       font-family: var(--display);
@@ -140,47 +118,15 @@
     }
     .diff-table td.num.detail { color: var(--detail); }
     .diff-table td.num.overtime { color: var(--overtime); }
-    .diff-table td.action {
-      color: #efd782;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .sync-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.65rem;
-      margin-bottom: 1rem;
-    }
-    .sync-actions button {
-      padding: 0.55rem 0.95rem;
-      border: 1px solid #fff;
-      background: #fff;
-      color: #050505;
-      font-family: var(--display);
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
-    .sync-actions button:disabled {
-      opacity: 0.55;
-      cursor: wait;
-    }
-    .sync-actions button.secondary {
-      border-color: var(--line);
-      background: transparent;
-      color: var(--text);
-    }
-
+    .diff-table td.action { color: var(--gold); font-weight: 600; white-space: nowrap; }
+    .diff-table tr:last-child td { border-bottom: 0; }
+    .diff-table .item { font-weight: 600; color: #eee; }
+    .sync-actions { margin-bottom: 1rem; }
     .sync-box {
       margin-bottom: 1.25rem;
       padding: 1.1rem 1.15rem;
-      border: 1px solid rgba(239, 215, 130, 0.35);
-      background:
-        linear-gradient(180deg, rgba(239,215,130,0.08), transparent 55%),
-        var(--panel);
+      border: 1px solid rgba(239, 215, 130, 0.28);
+      background: linear-gradient(180deg, rgba(239,215,130,0.07), transparent 55%), var(--panel);
     }
     .sync-box strong {
       display: block;
@@ -189,29 +135,12 @@
       font-size: 0.95rem;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #efd782;
+      color: var(--gold);
     }
-    .sync-box p {
-      margin: 0 0 0.75rem;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-      line-height: 1.5;
-    }
-    .sync-box ol {
-      margin: 0;
-      padding-left: 1.2rem;
-      color: #eee;
-      font-size: 0.9rem;
-      line-height: 1.55;
-    }
+    .sync-box p { margin: 0 0 0.75rem; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
+    .sync-box ol { margin: 0; padding-left: 1.2rem; color: #eee; font-size: 0.9rem; line-height: 1.55; }
     .sync-box li { margin: 0.35rem 0; }
-    .sync-box a {
-      color: #8eb6ff;
-      font-weight: 600;
-    }
-    .diff-table tr:last-child td { border-bottom: 0; }
-    .diff-table .item { font-weight: 600; color: #eee; }
-
+    .sync-box a { color: #8eb6ff; font-weight: 600; }
     .ok-box {
       padding: 2rem 1.5rem;
       text-align: center;
@@ -229,13 +158,7 @@
       text-transform: uppercase;
       margin-bottom: 0.35rem;
     }
-
-    .links {
-      margin-top: 1.5rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.65rem;
-    }
+    .links { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.65rem; }
     .links a {
       display: inline-block;
       padding: 0.55rem 0.9rem;
@@ -250,56 +173,6 @@
       text-transform: uppercase;
     }
     .links a:hover { border-color: var(--blue); }
-
-    .members {
-      margin-top: 2rem;
-      padding-top: 1.25rem;
-      border-top: 1px solid var(--line);
-    }
-    .members h2 {
-      margin: 0 0 0.35rem;
-      font-family: var(--display);
-      font-size: 1.05rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .members .help {
-      margin: 0 0 1rem;
-      color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.4;
-    }
-    .members-table {
-      width: 100%;
-      border-collapse: collapse;
-      border: 1px solid var(--line);
-      background: var(--panel);
-    }
-    .members-table th, .members-table td {
-      padding: 0.7rem 0.85rem;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      vertical-align: middle;
-      font-size: 0.88rem;
-    }
-    .members-table th {
-      font-size: var(--fs-xs);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 600;
-    }
-    .members-table tr:last-child td { border-bottom: 0; }
-    .members-table select {
-      max-width: 100%;
-      padding: 0.35rem 0.45rem;
-      border: 1px solid var(--line);
-      background: #0c0c0c;
-      color: #fff;
-      font-family: var(--body);
-      font-size: 0.82rem;
-    }
     .role-pill {
       display: inline-block;
       padding: 0.15rem 0.45rem;
@@ -311,33 +184,18 @@
     }
     .role-pill.commissioner { color: var(--gold); border-color: rgba(239, 215, 130, 0.35); }
     .role-pill.conference_admin { color: var(--blue); border-color: rgba(47, 109, 255, 0.35); }
-    .members-msg {
-      display: none;
-      margin: 0 0 0.85rem;
-      padding: 0.55rem 0.75rem;
-      font-size: 0.82rem;
-    }
-    .members-msg.show { display: block; }
-    .members-msg.ok {
-      border: 1px solid rgba(34, 197, 94, 0.35);
-      background: rgba(34, 197, 94, 0.08);
-      color: #86efac;
-    }
-    .members-msg.err {
-      border: 1px solid rgba(239, 68, 68, 0.35);
-      background: rgba(239, 68, 68, 0.08);
-      color: #fca5a5;
-    }
-
+    .admin-grid { display: grid; gap: 1rem; margin-top: 1.75rem; }
+    .muted-sm { color: var(--muted); font-size: 0.78rem; }
+    .data-table { border: 1px solid var(--line); background: var(--panel); }
     @media (max-width: 900px) {
-      .status-bar { grid-template-columns: 1fr; }
-      .conf.right { justify-content: flex-start; text-align: left; }
+      .status-bar { grid-template-columns: 1fr; text-align: center; }
+      .conf, .conf.right { justify-content: center; text-align: center; }
       .summary { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 560px) {
       .summary { grid-template-columns: 1fr; }
-      .members-table th:nth-child(2),
-      .members-table td:nth-child(2) { display: none; }
+      .data-table th:nth-child(2),
+      .data-table td:nth-child(2) { display: none; }
     }
   </style>
 </head>
@@ -352,74 +210,69 @@
   <section class="page-hero shell reveal">
     <p class="eyebrow">League HQ</p>
     <h1>Commissioner</h1>
-    <p>Compare Detail and Overtime ESPN settings. Both conferences must match for a fair GridIron season.</p>
+    <p>Keep Detail and Overtime aligned, manage members, and run league communications.</p>
   </section>
 
   <main class="page-main shell">
-    <div class="sync-actions">
-      <button type="button" id="check-sync">Check Rules Sync</button>
+    <div class="sync-actions btn-row">
+      <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
     </div>
     <div id="content"><div class="msg">Loading conference settings…</div></div>
 
-    <section class="members" id="news-admin" hidden>
-      <h2>League News</h2>
-      <p class="help">Posts appear on the Home page for all members.</p>
-      <div class="members-msg" id="news-msg" role="status"></div>
-      <div style="display:grid; gap:0.5rem; margin-bottom:0.85rem;">
-        <input id="news-title" type="text" maxlength="120" placeholder="Headline"
-          style="padding:0.5rem 0.65rem; border:1px solid var(--line); background:#0c0c0c; color:#fff; font-family:var(--body); font-size:0.88rem;" />
-        <textarea id="news-body" maxlength="4000" placeholder="News details…"
-          style="min-height:4.5rem; padding:0.5rem 0.65rem; border:1px solid var(--line); background:#0c0c0c; color:#fff; font-family:var(--body); font-size:0.88rem; resize:vertical;"></textarea>
-        <div>
-          <button type="button" id="news-add"
-            style="padding:0.5rem 0.85rem; border:1px solid #fff; background:#fff; color:#050505; font-family:var(--display); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;">
-            Post League News
-          </button>
+    <div class="admin-grid">
+      <section class="admin-block" id="news-admin" hidden>
+        <h2>League News</h2>
+        <p class="help">Posts appear on the Home page for all members.</p>
+        <div class="status-note" id="news-msg" role="status"></div>
+        <div class="stack-form">
+          <div>
+            <label class="field-label" for="news-title">Headline</label>
+            <input class="field" id="news-title" type="text" maxlength="120" placeholder="Headline" />
+          </div>
+          <div>
+            <label class="field-label" for="news-body">Details</label>
+            <textarea class="field field-area" id="news-body" maxlength="4000" placeholder="News details…"></textarea>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn" id="news-add">Post News</button>
+          </div>
         </div>
-      </div>
-      <div id="news-admin-list"><div class="msg">Loading news…</div></div>
-    </section>
+        <div id="news-admin-list"><div class="msg">Loading news…</div></div>
+      </section>
 
-    <section class="members" id="ticker-admin" hidden>
-      <h2>Ticker Messages</h2>
-      <p class="help">Custom league lines appear in the HQ ticker alongside live ESPN NFL headlines.</p>
-      <div class="members-msg" id="ticker-msg" role="status"></div>
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.85rem; flex-wrap:wrap;">
-        <input id="ticker-input" type="text" maxlength="240" placeholder="Add a custom ticker message"
-          style="flex:1; min-width:12rem; padding:0.5rem 0.65rem; border:1px solid var(--line); background:#0c0c0c; color:#fff; font-family:var(--body); font-size:0.88rem;" />
-        <button type="button" id="ticker-add"
-          style="padding:0.5rem 0.85rem; border:1px solid #fff; background:#fff; color:#050505; font-family:var(--display); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;">
-          Add to Ticker
-        </button>
-      </div>
-      <div id="ticker-list"><div class="msg">Loading ticker…</div></div>
-    </section>
+      <section class="admin-block" id="ticker-admin" hidden>
+        <h2>Ticker</h2>
+        <p class="help">Custom lines run in the HQ ticker with live ESPN NFL headlines.</p>
+        <div class="status-note" id="ticker-msg" role="status"></div>
+        <div class="toolbar">
+          <input class="field" id="ticker-input" type="text" maxlength="240" placeholder="Add a custom ticker message" />
+          <button type="button" class="btn" id="ticker-add">Add</button>
+        </div>
+        <div id="ticker-list"><div class="msg">Loading ticker…</div></div>
+      </section>
 
-    <section class="members" id="invites-admin" hidden>
-      <h2>Email Invites</h2>
-      <p class="help">Send registration invites. Recipients get a link that skips the league password. Requires <code style="color:#ccc;">RESEND_API_KEY</code> + <code style="color:#ccc;">MAIL_FROM</code> on the server for delivery — otherwise you’ll get a copyable link.</p>
-      <div class="members-msg" id="invites-msg" role="status"></div>
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.85rem; flex-wrap:wrap;">
-        <input id="invite-emails" type="text" maxlength="500" placeholder="email@example.com, another@example.com"
-          style="flex:1; min-width:14rem; padding:0.5rem 0.65rem; border:1px solid var(--line); background:#0c0c0c; color:#fff; font-family:var(--body); font-size:0.88rem;" />
-        <button type="button" id="invite-send"
-          style="padding:0.5rem 0.85rem; border:1px solid #fff; background:#fff; color:#050505; font-family:var(--display); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;">
-          Send Invites
-        </button>
-      </div>
-      <div id="invites-list"><div class="msg">Loading invites…</div></div>
-    </section>
+      <section class="admin-block" id="invites-admin" hidden>
+        <h2>Email Invites</h2>
+        <p class="help">Send a registration link that skips the site access password. Recipients only create their own account.</p>
+        <div class="status-note" id="invites-msg" role="status"></div>
+        <div class="toolbar">
+          <input class="field" id="invite-emails" type="text" maxlength="500" placeholder="email@example.com, another@example.com" />
+          <button type="button" class="btn" id="invite-send">Send Invites</button>
+        </div>
+        <div id="invites-list"><div class="msg">Loading invites…</div></div>
+      </section>
 
-    <section class="members" id="members" hidden>
-      <h2>Member Access</h2>
-      <p class="help">Promote members to conference admin or overall commissioner. Regular users can access HQ pages only.</p>
-      <div class="members-msg" id="members-msg" role="status"></div>
-      <div id="members-list"><div class="msg">Loading members…</div></div>
-    </section>
+      <section class="admin-block" id="members" hidden>
+        <h2>Member Access</h2>
+        <p class="help">Promote members to conference admin or overall commissioner.</p>
+        <div class="status-note" id="members-msg" role="status"></div>
+        <div id="members-list"><div class="msg">Loading members…</div></div>
+      </section>
+    </div>
   </main>
 
-  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=5"></script>
+<footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <script src="/js/nav.js?v=6"></script>
   <script src="/js/conference-diff.js?v=3"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -543,7 +396,7 @@
     function showMembersMsg(text, ok) {
       const el = document.getElementById('members-msg');
       el.textContent = text;
-      el.className = `members-msg show ${ok ? 'ok' : 'err'}`;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
     }
 
     function renderMembers(payload) {
@@ -554,7 +407,7 @@
         return;
       }
       document.getElementById('members-list').innerHTML = `
-        <table class="members-table">
+        <table class="data-table">
           <thead>
             <tr>
               <th>Member</th>
@@ -568,7 +421,7 @@
               <tr data-user-id="${esc(u.id)}">
                 <td>
                   <strong>${esc(u.name)}</strong><br>
-                  <span style="color:var(--muted);font-size:0.78rem">${esc(u.email)}</span>
+                  <span class="muted-sm">${esc(u.email)}</span>
                 </td>
                 <td>${esc(u.loginName)}</td>
                 <td><span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span></td>
@@ -668,14 +521,14 @@
         return;
       }
       list.innerHTML = `
-        <table class="members-table">
+        <table class="data-table">
           <thead><tr><th>Message</th><th>Added</th><th></th></tr></thead>
           <tbody>
             ${custom.map((t) => `
               <tr>
                 <td>${esc(t.text)}</td>
                 <td style="color:var(--muted);white-space:nowrap">${esc(new Date(t.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</td>
-                <td><button type="button" data-del-ticker="${esc(t.id)}" style="padding:0;border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;">Delete</button></td>
+                <td><button type="button" data-del-ticker="${esc(t.id)}" class="link-action">Delete</button></td>
               </tr>`).join('')}
           </tbody>
         </table>`;
@@ -684,7 +537,7 @@
     function showTickerMsg(text, ok) {
       const el = document.getElementById('ticker-msg');
       el.textContent = text;
-      el.className = `members-msg show ${ok ? 'ok' : 'err'}`;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
     }
 
     function wireTickerAdmin() {
@@ -730,7 +583,7 @@
     function showNewsMsg(text, ok) {
       const el = document.getElementById('news-msg');
       el.textContent = text;
-      el.className = `members-msg show ${ok ? 'ok' : 'err'}`;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
     }
 
     function fmtWhen(iso) {
@@ -754,7 +607,7 @@
         return;
       }
       list.innerHTML = `
-        <table class="members-table">
+        <table class="data-table">
           <thead><tr><th>Post</th><th>By</th><th></th></tr></thead>
           <tbody>
             ${news.map((n) => `
@@ -764,7 +617,7 @@
                   <span style="color:var(--muted);font-size:0.82rem">${esc(n.body)}</span>
                 </td>
                 <td style="color:var(--muted);white-space:nowrap">${esc(n.authorName)}<br>${esc(fmtWhen(n.createdAt))}</td>
-                <td><button type="button" data-del-news="${esc(n.id)}" style="padding:0;border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;">Delete</button></td>
+                <td><button type="button" data-del-news="${esc(n.id)}" class="link-action">Delete</button></td>
               </tr>`).join('')}
           </tbody>
         </table>`;
@@ -814,7 +667,7 @@
     function showInvitesMsg(text, ok) {
       const el = document.getElementById('invites-msg');
       el.textContent = text;
-      el.className = `members-msg show ${ok ? 'ok' : 'err'}`;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
     }
 
     async function loadInvitesAdmin() {
@@ -830,7 +683,7 @@
         return;
       }
       list.innerHTML = `
-        <table class="members-table">
+        <table class="data-table">
           <thead><tr><th>Email</th><th>Status</th><th>Sent</th><th></th></tr></thead>
           <tbody>
             ${rows.map((inv) => `
@@ -839,7 +692,7 @@
                 <td>${esc(inv.status)}</td>
                 <td>${esc((inv.createdAt || '').slice(0, 10))}</td>
                 <td>${inv.status === 'pending'
-                  ? `<button type="button" data-revoke-invite="${esc(inv.id)}" style="padding:0;border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;">Revoke</button>`
+                  ? `<button type="button" data-revoke-invite="${esc(inv.id)}" class="link-action">Revoke</button>`
                   : ''}</td>
               </tr>`).join('')}
           </tbody>
