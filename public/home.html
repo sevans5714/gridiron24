@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=15" />
+  <link rel="stylesheet" href="/css/site.css?v=16" />
   <style>
     .hq-hero {
       text-align: center;
@@ -19,7 +19,7 @@
         #050505;
     }
     .hq-hero img {
-      width: min(380px, 68vw);
+      width: min(520px, 82vw);
       height: auto;
       display: block;
       margin: 0 auto;
@@ -106,7 +106,7 @@
     .board-head.detail { border-left: 3px solid var(--detail); }
     .board-head.overtime { border-left: 3px solid var(--overtime); }
     .board-head img {
-      width: 2.75rem;
+      width: 3.75rem;
       height: auto;
       filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
     }
@@ -179,8 +179,8 @@
     }
     .mini-table .team-logo-sm,
     .mini-table .team-logo-fallback {
-      width: 1.4rem;
-      height: 1.4rem;
+      width: 2rem;
+      height: 2rem;
     }
     .mini-table th:nth-child(2),
     .mini-table td.team {
@@ -219,7 +219,7 @@
       background: rgba(255,255,255,0.06);
       flex: 0 0 auto;
     }
-    .motw-side .logo-fallback { width: 5.25rem; height: 5.25rem; }
+    .motw-side .logo-fallback { width: 7rem; height: 7rem; }
 
     .pulse-row {
       display: grid;
@@ -251,8 +251,8 @@
       min-width: 0;
     }
     .motw-side img {
-      width: 5.25rem;
-      height: 5.25rem;
+      width: 7rem;
+      height: 7rem;
       object-fit: contain;
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
       background: rgba(255,255,255,0.03);
@@ -323,8 +323,8 @@
       min-width: 0;
     }
     .hotnot-team img {
-      width: 4rem;
-      height: 4rem;
+      width: 5.5rem;
+      height: 5.5rem;
       object-fit: contain;
       flex: 0 0 auto;
       filter: drop-shadow(0 3px 8px rgba(0,0,0,0.4));
@@ -332,8 +332,8 @@
       border-radius: 0.5rem;
     }
     .hotnot-team .logo-fallback {
-      width: 4rem;
-      height: 4rem;
+      width: 5.5rem;
+      height: 5.5rem;
       flex: 0 0 auto;
     }
     .hotnot-team .nm {
@@ -505,9 +505,9 @@
     @media (max-width: 640px) {
       .standings-preview { grid-template-columns: 1fr; }
       .motw-side img,
-      .motw-side .logo-fallback { width: 4.25rem; height: 4.25rem; }
+      .motw-side .logo-fallback { width: 5.5rem; height: 5.5rem; }
       .hotnot-team img,
-      .hotnot-team .logo-fallback { width: 3.5rem; height: 3.5rem; }
+      .hotnot-team .logo-fallback { width: 4.5rem; height: 4.5rem; }
       .motw-side .nm,
       .hotnot-team .nm { font-size: 1.05rem; }
       .hq-main { font-size: 1rem; }
@@ -635,7 +635,7 @@
             <td class="team" title="${esc(t.name)}">
               <span class="team-cell">
                 ${t.logo
-                  ? `<img class="team-logo-sm" src="${esc(t.logo)}" alt="" width="22" height="22" loading="lazy" referrerpolicy="no-referrer" />`
+                  ? `<img class="team-logo-sm" src="${esc(t.logo)}" alt="" width="32" height="32" loading="lazy" referrerpolicy="no-referrer" />`
                   : `<span class="team-logo-fallback" aria-hidden="true"></span>`}
                 <span class="team-name">${esc(t.name)}</span>
               </span>

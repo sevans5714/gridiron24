@@ -763,7 +763,7 @@ body.auth-page {
   align-items: center;
   animation: gi-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.auth-card.wide { width: min(100%, 22rem); }
+.auth-card.wide { width: min(100%, 32rem); }
 .auth-crest {
   display: block;
   width: min(70vw, 13.5rem);
@@ -771,8 +771,8 @@ body.auth-page {
   margin: 0 auto 0.85rem;
 }
 .auth-crest.hero {
-  width: min(86vw, 18rem);
-  margin: 0 auto 0.35rem;
+  width: min(92vw, 28rem);
+  margin: 0 auto 0.15rem;
 }
 .auth-title {
   margin: 0 0 0.85rem;
