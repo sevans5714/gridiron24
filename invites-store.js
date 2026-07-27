@@ -161,11 +161,47 @@ function revokeInvite(id) {
   return publicInvite(store.invites[idx]);
 }
 
+/** Refresh a pending invite token so the commissioner can resend / copy a new link. */
+function refreshInvite(id, invitedBy) {
+  const store = readStore();
+  const idx = store.invites.findIndex((i) => i.id === id);
+  if (idx === -1) {
+    const err = new Error('Invite not found');
+    err.status = 404;
+    throw err;
+  }
+  const invite = store.invites[idx];
+  if (invite.status !== 'pending') {
+    const err = new Error('Only pending invites can be resent');
+    err.status = 400;
+    throw err;
+  }
+  if (Date.parse(invite.expiresAt) < Date.now()) {
+    invite.status = 'expired';
+    writeStore(store);
+    const err = new Error('Invite has expired — create a new one');
+    err.status = 400;
+    throw err;
+  }
+
+  const token = crypto.randomBytes(24).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  invite.tokenHash = tokenHash;
+  invite.expiresAt = new Date(Date.now() + INVITE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  if (invitedBy) {
+    invite.invitedById = invitedBy.id || invite.invitedById;
+    invite.invitedByName = invitedBy.name || invitedBy.loginName || invite.invitedByName;
+  }
+  writeStore(store);
+  return { invite: publicInvite(invite), token };
+}
+
 module.exports = {
   listInvites,
   createInvite,
   findByToken,
   acceptInvite,
   revokeInvite,
+  refreshInvite,
   publicInvite
 };

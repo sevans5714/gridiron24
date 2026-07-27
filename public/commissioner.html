@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=17" />
+  <link rel="stylesheet" href="/css/site.css?v=18" />
   <style>
     .status-bar {
       display: grid;
@@ -197,6 +197,61 @@
       .data-table th:nth-child(2),
       .data-table td:nth-child(2) { display: none; }
     }
+    .invite-links {
+      margin: 0.85rem 0 1rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--line);
+      background: #0c0c0c;
+      display: grid;
+      gap: 0.85rem;
+    }
+    .invite-links-head {
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .invite-link-row {
+      display: grid;
+      gap: 0.45rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--line);
+    }
+    .invite-link-row:first-of-type { border-top: 0; padding-top: 0; }
+    .invite-link-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem 0.75rem;
+      align-items: baseline;
+    }
+    .invite-link-meta strong { color: #fff; }
+    .invite-link-meta span { color: var(--muted); font-size: var(--fs-sm); }
+    .invite-url {
+      display: block;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid var(--line);
+      background: #111;
+      color: #d7e2ff;
+      font-size: 0.82rem;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    .invite-link-actions,
+    .invite-row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 0.85rem;
+      align-items: center;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: #fff;
+      border-color: rgba(255,255,255,0.35);
+    }
+    .btn-secondary:hover {
+      border-color: #fff;
+    }
   </style>
 </head>
 <body data-page="commissioner">
@@ -253,12 +308,14 @@
 
       <section class="admin-block" id="invites-admin" hidden>
         <h2>Email Invites</h2>
-        <p class="help">Invite members by email. Their link opens account creation — once they register, they’re in GridIron 24.</p>
+        <p class="help">Invite members by email. They open the link, create an account, and join GridIron 24. If email isn’t configured on the server, copy the invite link and send it yourself.</p>
+        <div class="status-note" id="invites-mail-status" role="status"></div>
         <div class="status-note" id="invites-msg" role="status"></div>
         <div class="toolbar">
-          <input class="field" id="invite-emails" type="text" maxlength="500" placeholder="email@example.com, another@example.com" />
+          <input class="field" id="invite-emails" type="text" maxlength="800" placeholder="email@example.com, another@example.com" />
           <button type="button" class="btn" id="invite-send">Send Invites</button>
         </div>
+        <div id="invite-links" class="invite-links" hidden></div>
         <div id="invites-list"><div class="msg">Loading invites…</div></div>
       </section>
 
@@ -670,12 +727,60 @@
       el.className = `status-note show ${ok ? 'ok' : 'err'}`;
     }
 
+    function setMailStatus(mail) {
+      const el = document.getElementById('invites-mail-status');
+      if (!el) return;
+      if (mail?.configured) {
+        el.className = 'status-note show ok';
+        el.textContent = `Email delivery on (${mail.from || 'configured sender'}).`;
+      } else {
+        el.className = 'status-note show';
+        el.textContent = 'Email delivery is offline. Invites still work — copy the link and send it yourself, or set RESEND_API_KEY + MAIL_FROM on Render.';
+      }
+    }
+
+    function renderInviteLinks(results = []) {
+      const wrap = document.getElementById('invite-links');
+      const rows = (results || []).filter((r) => r.ok && r.inviteUrl);
+      if (!rows.length) {
+        wrap.hidden = true;
+        wrap.innerHTML = '';
+        return;
+      }
+      wrap.hidden = false;
+      wrap.innerHTML = `
+        <div class="invite-links-head">Invite links</div>
+        ${rows.map((r) => `
+          <div class="invite-link-row">
+            <div class="invite-link-meta">
+              <strong>${esc(r.email)}</strong>
+              <span>${r.sent ? 'Emailed' : (r.mailError ? `Email failed: ${esc(r.mailError)}` : 'Copy & share')}</span>
+            </div>
+            <code class="invite-url">${esc(r.inviteUrl)}</code>
+            <div class="invite-link-actions">
+              <button type="button" class="btn btn-secondary" data-copy-invite="${esc(r.inviteUrl)}">Copy link</button>
+              <a class="btn btn-secondary" href="mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent('GridIron 24 invite')}&body=${encodeURIComponent(`You're invited to GridIron 24. Create your account here:\n${r.inviteUrl}`)}">Open mail app</a>
+            </div>
+          </div>
+        `).join('')}`;
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
     async function loadInvitesAdmin() {
       const wrap = document.getElementById('invites-admin');
       wrap.hidden = false;
       const res = await fetch('/api/invites', { cache: 'no-store' });
       if (!res.ok) throw new Error(`Could not load invites (${res.status})`);
       const data = await res.json();
+      setMailStatus(data.mail);
       const list = document.getElementById('invites-list');
       const rows = data.invites || [];
       if (!rows.length) {
@@ -691,9 +796,12 @@
                 <td>${esc(inv.email)}</td>
                 <td>${esc(inv.status)}</td>
                 <td>${esc((inv.createdAt || '').slice(0, 10))}</td>
-                <td>${inv.status === 'pending'
-                  ? `<button type="button" data-revoke-invite="${esc(inv.id)}" class="link-action">Revoke</button>`
-                  : ''}</td>
+                <td class="invite-row-actions">
+                  ${inv.status === 'pending' ? `
+                    <button type="button" data-resend-invite="${esc(inv.id)}" class="link-action">Resend / copy link</button>
+                    <button type="button" data-revoke-invite="${esc(inv.id)}" class="link-action">Revoke</button>
+                  ` : ''}
+                </td>
               </tr>`).join('')}
           </tbody>
         </table>`;
@@ -703,8 +811,11 @@
       document.getElementById('invite-send').addEventListener('click', async () => {
         const input = document.getElementById('invite-emails');
         const btn = document.getElementById('invite-send');
-        const emails = input.value.trim();
-        if (!emails) {
+        const emails = input.value
+          .split(/[,;\n]+/)
+          .map((e) => e.trim())
+          .filter(Boolean);
+        if (!emails.length) {
           showInvitesMsg('Enter at least one email.', false);
           return;
         }
@@ -717,12 +828,9 @@
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.ok) throw new Error(data.error || data.message || 'Could not send invites');
-          const links = (data.results || [])
-            .filter((r) => r.inviteUrl)
-            .map((r) => `${r.email}: ${r.inviteUrl}`);
-          let msg = data.message || 'Invites processed.';
-          if (links.length) msg += ` Copy link(s): ${links.join(' | ')}`;
-          showInvitesMsg(msg, true);
+          setMailStatus(data.mail);
+          showInvitesMsg(data.message || 'Invites processed.', true);
+          renderInviteLinks(data.results || []);
           input.value = '';
           await loadInvitesAdmin();
         } catch (err) {
@@ -732,7 +840,41 @@
         }
       });
 
+      document.getElementById('invite-links').addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-copy-invite]');
+        if (!btn) return;
+        const url = btn.getAttribute('data-copy-invite');
+        const ok = await copyText(url);
+        showInvitesMsg(ok ? 'Invite link copied.' : 'Could not copy — select the link and copy manually.', ok);
+      });
+
       document.getElementById('invites-list').addEventListener('click', async (e) => {
+        const resendBtn = e.target.closest('[data-resend-invite]');
+        if (resendBtn) {
+          const id = resendBtn.getAttribute('data-resend-invite');
+          resendBtn.disabled = true;
+          try {
+            const res = await fetch(`/api/invites/${encodeURIComponent(id)}/resend`, { method: 'POST' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not resend invite');
+            setMailStatus(data.mail);
+            showInvitesMsg(data.message || 'Invite refreshed.', true);
+            renderInviteLinks([{
+              ok: true,
+              email: data.invite?.email,
+              inviteUrl: data.inviteUrl,
+              sent: data.sent,
+              mailError: data.mailError
+            }]);
+            await loadInvitesAdmin();
+          } catch (err) {
+            showInvitesMsg(err.message || 'Could not resend invite', false);
+          } finally {
+            resendBtn.disabled = false;
+          }
+          return;
+        }
+
         const btn = e.target.closest('[data-revoke-invite]');
         if (!btn) return;
         const id = btn.getAttribute('data-revoke-invite');

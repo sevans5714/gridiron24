@@ -31,7 +31,7 @@ const users = require('./users-store');
 const board = require('./board-store');
 const logos = require('./logos-store');
 const invites = require('./invites-store');
-const { sendPasswordResetEmail, sendInviteEmail } = require('./mail');
+const { sendPasswordResetEmail, sendInviteEmail, mailConfig } = require('./mail');
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -1004,7 +1004,11 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/invites' && req.method === 'GET') {
       if (!requireCommissioner(req, res)) return;
-      return sendJson(res, 200, { ok: true, invites: invites.listInvites() });
+      return sendJson(res, 200, {
+        ok: true,
+        invites: invites.listInvites(),
+        mail: mailConfig()
+      });
     }
 
     if (pathname === '/api/invites' && req.method === 'POST') {
@@ -1017,9 +1021,9 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
       }
       const emails = Array.isArray(body.emails)
-        ? body.emails
+        ? body.emails.map((e) => String(e || '').trim()).filter(Boolean)
         : String(body.email || body.emails || '')
-          .split(/[,;\s]+/)
+          .split(/[,;\n]+/)
           .map((e) => e.trim())
           .filter(Boolean);
       if (!emails.length) {
@@ -1030,19 +1034,29 @@ const server = http.createServer(async (req, res) => {
         try {
           const created = invites.createInvite({ email, invitedBy: user });
           const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(created.token)}`;
-          const mailResult = await sendInviteEmail({
-            to: created.invite.email,
-            inviteUrl,
-            invitedByName: user.name || user.loginName,
-            leagueName: config.brand.name
-          });
+          let mailResult = { sent: false, method: 'none' };
+          try {
+            mailResult = await sendInviteEmail({
+              to: created.invite.email,
+              inviteUrl,
+              invitedByName: user.name || user.loginName,
+              leagueName: config.brand.name
+            });
+          } catch (mailErr) {
+            mailResult = {
+              sent: false,
+              method: 'error',
+              error: mailErr.message || 'Email send failed'
+            };
+          }
           results.push({
             ok: true,
             email: created.invite.email,
             invite: created.invite,
             sent: Boolean(mailResult.sent),
             method: mailResult.method,
-            inviteUrl: mailResult.sent ? undefined : inviteUrl
+            mailError: mailResult.error || null,
+            inviteUrl
           });
         } catch (err) {
           results.push({ ok: false, email, error: err.message || 'Could not invite' });
@@ -1050,20 +1064,72 @@ const server = http.createServer(async (req, res) => {
       }
       const sentCount = results.filter((r) => r.ok && r.sent).length;
       const okCount = results.filter((r) => r.ok).length;
+      const mailReady = mailConfig().configured;
+      let message;
+      if (sentCount && sentCount === okCount) {
+        message = `Emailed ${sentCount} invite${sentCount === 1 ? '' : 's'}.`;
+      } else if (sentCount) {
+        message = `Emailed ${sentCount} of ${okCount}. Copy the remaining invite links below.`;
+      } else if (okCount) {
+        message = mailReady
+          ? 'Invites created, but email delivery failed. Copy the invite links below and share them manually.'
+          : 'Invites created. Email is not configured yet — copy the invite links below (or set RESEND_API_KEY + MAIL_FROM on the server).';
+      } else {
+        message = 'No invites were created.';
+      }
       return sendJson(res, 200, {
         ok: okCount > 0,
         results,
-        message: sentCount
-          ? `Sent ${sentCount} invite${sentCount === 1 ? '' : 's'}.`
-          : okCount
-            ? 'Invite saved. Email delivery is not configured (set RESEND_API_KEY + MAIL_FROM) — copy the invite link from results.'
-            : 'No invites were created.'
+        mail: mailConfig(),
+        message
       });
+    }
+
+    if (pathname.match(/^\/api\/invites\/[^/]+\/resend$/) && req.method === 'POST') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      const id = pathname.split('/')[3];
+      try {
+        const refreshed = invites.refreshInvite(id, user);
+        const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(refreshed.token)}`;
+        let mailResult = { sent: false, method: 'none' };
+        try {
+          mailResult = await sendInviteEmail({
+            to: refreshed.invite.email,
+            inviteUrl,
+            invitedByName: user.name || user.loginName,
+            leagueName: config.brand.name
+          });
+        } catch (mailErr) {
+          mailResult = {
+            sent: false,
+            method: 'error',
+            error: mailErr.message || 'Email send failed'
+          };
+        }
+        return sendJson(res, 200, {
+          ok: true,
+          invite: refreshed.invite,
+          inviteUrl,
+          sent: Boolean(mailResult.sent),
+          method: mailResult.method,
+          mailError: mailResult.error || null,
+          mail: mailConfig(),
+          message: mailResult.sent
+            ? `Invite resent to ${refreshed.invite.email}.`
+            : `Invite link refreshed for ${refreshed.invite.email}. Copy and share it manually.`
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not resend invite' });
+      }
     }
 
     if (pathname.startsWith('/api/invites/') && req.method === 'DELETE') {
       if (!requireCommissioner(req, res)) return;
       const id = pathname.slice('/api/invites/'.length);
+      if (id.includes('/')) {
+        return sendJson(res, 404, { ok: false, error: 'Not found' });
+      }
       try {
         const invite = invites.revokeInvite(id);
         return sendJson(res, 200, { ok: true, invite });

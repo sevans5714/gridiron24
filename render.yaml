@@ -21,3 +21,7 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
