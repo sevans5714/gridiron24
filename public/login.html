@@ -106,7 +106,8 @@
         const res = await fetch('/api/auth', { cache: 'no-store' });
         const data = await res.json();
         if (!data.authConfigured) {
-          showErr('Site access is not configured on the server yet. Ask the commissioner.');
+          // Free-tier redeploys can clear the gate file; accounts can still be created.
+          showErr('');
         }
       } catch {}
       if (await checkExisting()) return;

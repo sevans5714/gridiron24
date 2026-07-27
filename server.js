@@ -822,12 +822,6 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/register' && req.method === 'POST') {
-      if (!leagueGate.isConfigured()) {
-        return sendJson(res, 503, {
-          ok: false,
-          error: 'Site access is not configured. Open /setup first.'
-        });
-      }
       let body;
       try {
         body = await readJsonBody(req);
@@ -846,9 +840,13 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 400, { ok: false, error: 'Use the email address this invite was sent to' });
         }
         body.email = body.email || inviteEmail;
-      } else if (!leagueGateOk(body.leagueName, body.leaguePassword)) {
-        return sendJson(res, 401, { ok: false, error: 'Incorrect access password' });
+      } else if (leagueGate.isConfigured()) {
+        if (!leagueGateOk(body.leagueName, body.leaguePassword)) {
+          return sendJson(res, 401, { ok: false, error: 'Incorrect access password' });
+        }
       }
+      // If site access is not configured (e.g. free-tier disk wipe), allow account
+      // creation without a shared password so nobody is sent to a "create league" flow.
       if (body.password !== body.confirmPassword) {
         return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
       }
@@ -972,16 +970,13 @@ const server = http.createServer(async (req, res) => {
       return sendFile(res, path.join(PUBLIC_DIR, 'register.html'));
     }
     if (pathname === '/setup' || pathname === '/setup.html') {
-      // Site access is already set — never show a "create league" style page.
-      if (leagueGate.isConfigured()) {
-        res.writeHead(302, {
-          Location: '/enter',
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          Pragma: 'no-cache'
-        });
-        return res.end();
-      }
-      return sendFile(res, path.join(PUBLIC_DIR, 'setup.html'));
+      // Never show a league/site setup form — GridIron 24 already exists.
+      res.writeHead(302, {
+        Location: '/enter',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        Pragma: 'no-cache'
+      });
+      return res.end();
     }
     if (pathname === '/api/invites/peek' && req.method === 'GET') {
       const token = String(requestUrl.searchParams.get('token') || '').trim();

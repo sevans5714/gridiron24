@@ -49,13 +49,13 @@
 
     async function boot() {
       const auth = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
-      if (!auth.authConfigured && !inviteToken) {
-        errEl.textContent = 'Site access is not configured on the server yet. Ask the commissioner, or use an invite link.';
-        errEl.classList.add('show');
-        return;
-      }
       if (!inviteToken) {
-        document.getElementById('leaguePassword').required = true;
+        if (auth.authConfigured) {
+          document.getElementById('leaguePassword').required = true;
+        } else {
+          document.getElementById('access-section').hidden = true;
+          document.getElementById('access-fields').hidden = true;
+        }
         return;
       }
       const peek = await fetch(`/api/invites/peek?token=${encodeURIComponent(inviteToken)}`, { cache: 'no-store' })
