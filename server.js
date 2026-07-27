@@ -1002,6 +1002,24 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/invites/preview-email' && req.method === 'GET') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      const { buildInviteEmail } = require('./mail');
+      const origin = requestOrigin(req);
+      const content = buildInviteEmail({
+        inviteUrl: `${origin}/register?invite=preview-sample-token`,
+        invitedByName: user.name || user.loginName || 'Commissioner',
+        leagueName: config.brand.name,
+        baseUrl: origin
+      });
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      return res.end(content.html);
+    }
+
     if (pathname === '/api/invites' && req.method === 'GET') {
       if (!requireCommissioner(req, res)) return;
       return sendJson(res, 200, {
@@ -1040,7 +1058,8 @@ const server = http.createServer(async (req, res) => {
               to: created.invite.email,
               inviteUrl,
               invitedByName: user.name || user.loginName,
-              leagueName: config.brand.name
+              leagueName: config.brand.name,
+              baseUrl: requestOrigin(req)
             });
           } catch (mailErr) {
             mailResult = {
@@ -1098,7 +1117,8 @@ const server = http.createServer(async (req, res) => {
             to: refreshed.invite.email,
             inviteUrl,
             invitedByName: user.name || user.loginName,
-            leagueName: config.brand.name
+            leagueName: config.brand.name,
+            baseUrl: requestOrigin(req)
           });
         } catch (mailErr) {
           mailResult = {
