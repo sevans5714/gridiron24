@@ -31,7 +31,8 @@ const users = require('./users-store');
 const board = require('./board-store');
 const logos = require('./logos-store');
 const leagueGate = require('./league-gate');
-const { sendPasswordResetEmail } = require('./mail');
+const invites = require('./invites-store');
+const { sendPasswordResetEmail, sendInviteEmail } = require('./mail');
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -121,6 +122,7 @@ const PUBLIC_PATHS = new Set([
   '/api/login',
   '/api/register',
   '/api/setup',
+  '/api/invites/peek',
   '/api/forgot-password',
   '/api/reset-password',
   '/api/logout',
@@ -840,7 +842,19 @@ const server = http.createServer(async (req, res) => {
       } catch {
         return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
       }
-      if (!leagueGateOk(body.leagueName, body.leaguePassword)) {
+      const inviteToken = String(body.inviteToken || '').trim();
+      let inviteEmail = null;
+      if (inviteToken) {
+        const invite = invites.findByToken(inviteToken);
+        if (!invite) {
+          return sendJson(res, 400, { ok: false, error: 'Invite link is invalid or expired' });
+        }
+        inviteEmail = invite.email;
+        if (body.email && String(body.email).trim().toLowerCase() !== inviteEmail) {
+          return sendJson(res, 400, { ok: false, error: 'Use the email address this invite was sent to' });
+        }
+        body.email = body.email || inviteEmail;
+      } else if (!leagueGateOk(body.leagueName, body.leaguePassword)) {
         return sendJson(res, 401, { ok: false, error: 'Incorrect league name or league password' });
       }
       if (body.password !== body.confirmPassword) {
@@ -853,6 +867,9 @@ const server = http.createServer(async (req, res) => {
           loginName: body.loginName,
           password: body.password
         });
+        if (inviteToken) {
+          try { invites.acceptInvite(inviteToken, user.email); } catch { /* non-fatal */ }
+        }
         const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
         const token = signSession(user.id, expiresAt);
         return sendJson(res, 201, { ok: true, user }, { 'Set-Cookie': sessionCookieHeader(token) });
@@ -965,6 +982,20 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/setup' || pathname === '/setup.html') {
       return sendFile(res, path.join(PUBLIC_DIR, 'setup.html'));
     }
+    if (pathname === '/api/invites/peek' && req.method === 'GET') {
+      const token = String(requestUrl.searchParams.get('token') || '').trim();
+      const invite = invites.findByToken(token);
+      if (!invite) {
+        return sendJson(res, 404, { ok: false, error: 'Invite link is invalid or expired' });
+      }
+      return sendJson(res, 200, {
+        ok: true,
+        email: invite.email,
+        invitedByName: invite.invitedByName || null,
+        expiresAt: invite.expiresAt
+      });
+    }
+
     if (pathname === '/forgot' || pathname === '/forgot.html') {
       return sendFile(res, path.join(PUBLIC_DIR, 'forgot.html'));
     }
@@ -997,6 +1028,77 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true, user: updated });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not update role' });
+      }
+    }
+
+    if (pathname === '/api/invites' && req.method === 'GET') {
+      if (!requireCommissioner(req, res)) return;
+      return sendJson(res, 200, { ok: true, invites: invites.listInvites() });
+    }
+
+    if (pathname === '/api/invites' && req.method === 'POST') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      const emails = Array.isArray(body.emails)
+        ? body.emails
+        : String(body.email || body.emails || '')
+          .split(/[,;\s]+/)
+          .map((e) => e.trim())
+          .filter(Boolean);
+      if (!emails.length) {
+        return sendJson(res, 400, { ok: false, error: 'Enter at least one email address' });
+      }
+      const gate = activeGate();
+      const results = [];
+      for (const email of emails) {
+        try {
+          const created = invites.createInvite({ email, invitedBy: user });
+          const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(created.token)}`;
+          const mailResult = await sendInviteEmail({
+            to: created.invite.email,
+            inviteUrl,
+            invitedByName: user.name || user.loginName,
+            leagueName: gate?.leagueName || config.brand.name
+          });
+          results.push({
+            ok: true,
+            email: created.invite.email,
+            invite: created.invite,
+            sent: Boolean(mailResult.sent),
+            method: mailResult.method,
+            inviteUrl: mailResult.sent ? undefined : inviteUrl
+          });
+        } catch (err) {
+          results.push({ ok: false, email, error: err.message || 'Could not invite' });
+        }
+      }
+      const sentCount = results.filter((r) => r.ok && r.sent).length;
+      const okCount = results.filter((r) => r.ok).length;
+      return sendJson(res, 200, {
+        ok: okCount > 0,
+        results,
+        message: sentCount
+          ? `Sent ${sentCount} invite${sentCount === 1 ? '' : 's'}.`
+          : okCount
+            ? 'Invite saved. Email delivery is not configured (set RESEND_API_KEY + MAIL_FROM) — copy the invite link from results.'
+            : 'No invites were created.'
+      });
+    }
+
+    if (pathname.startsWith('/api/invites/') && req.method === 'DELETE') {
+      if (!requireCommissioner(req, res)) return;
+      const id = pathname.slice('/api/invites/'.length);
+      try {
+        const invite = invites.revokeInvite(id);
+        return sendJson(res, 200, { ok: true, invite });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not revoke invite' });
       }
     }
 

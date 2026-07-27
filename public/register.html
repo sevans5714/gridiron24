@@ -121,11 +121,14 @@
     <label for="email">Email</label>
     <input id="email" name="email" type="email" required autocomplete="email" />
 
-    <div class="section">League access</div>
-    <label for="leagueName">League Name</label>
-    <input id="leagueName" name="leagueName" type="text" required autocomplete="off" />
-    <label for="leaguePassword">League Password</label>
-    <input id="leaguePassword" name="leaguePassword" type="password" required autocomplete="off" />
+    <div class="section" id="league-section">League access</div>
+    <div id="league-fields">
+      <label for="leagueName">League Name</label>
+      <input id="leagueName" name="leagueName" type="text" autocomplete="off" />
+      <label for="leaguePassword">League Password</label>
+      <input id="leaguePassword" name="leaguePassword" type="password" autocomplete="off" />
+    </div>
+    <p class="section" id="invite-banner" hidden style="color:#22c55e;border-color:rgba(34,197,94,0.25);">You're invited — no league name or league password needed</p>
 
     <div class="section">Your login</div>
     <label for="loginName">Login Name</label>
@@ -143,17 +146,36 @@
     const errEl = document.getElementById('err');
     const submit = document.getElementById('submit');
     const next = new URLSearchParams(window.location.search).get('next') || '/home.html';
+    const inviteToken = new URLSearchParams(window.location.search).get('invite') || '';
 
-    fetch('/api/auth', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.authConfigured) {
-          errEl.textContent = 'League access is not set up yet. Redirecting to setup…';
-          errEl.classList.add('show');
-          setTimeout(() => { location.href = '/setup'; }, 600);
-        }
-      })
-      .catch(() => {});
+    async function boot() {
+      const auth = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
+      if (!auth.authConfigured && !inviteToken) {
+        errEl.textContent = 'League access is not set up yet. Redirecting to setup…';
+        errEl.classList.add('show');
+        setTimeout(() => { location.href = '/setup'; }, 600);
+        return;
+      }
+      if (!inviteToken) {
+        document.getElementById('leagueName').required = true;
+        document.getElementById('leaguePassword').required = true;
+        return;
+      }
+      const peek = await fetch(`/api/invites/peek?token=${encodeURIComponent(inviteToken)}`, { cache: 'no-store' })
+        .then((r) => r.json())
+        .catch(() => ({}));
+      if (!peek.ok) {
+        errEl.textContent = peek.error || 'Invite link is invalid or expired';
+        errEl.classList.add('show');
+        return;
+      }
+      document.getElementById('email').value = peek.email || '';
+      document.getElementById('email').readOnly = true;
+      document.getElementById('league-section').hidden = true;
+      document.getElementById('league-fields').hidden = true;
+      document.getElementById('invite-banner').hidden = false;
+    }
+    boot().catch(() => {});
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -166,7 +188,8 @@
         leaguePassword: document.getElementById('leaguePassword').value,
         loginName: document.getElementById('loginName').value.trim(),
         password: document.getElementById('password').value,
-        confirmPassword: document.getElementById('confirmPassword').value
+        confirmPassword: document.getElementById('confirmPassword').value,
+        inviteToken: inviteToken || undefined
       };
       try {
         const res = await fetch('/api/register', {

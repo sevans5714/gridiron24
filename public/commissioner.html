@@ -395,6 +395,21 @@
       <div id="ticker-list"><div class="msg">Loading ticker…</div></div>
     </section>
 
+    <section class="members" id="invites-admin" hidden>
+      <h2>Email Invites</h2>
+      <p class="help">Send registration invites. Recipients get a link that skips the league password. Requires <code style="color:#ccc;">RESEND_API_KEY</code> + <code style="color:#ccc;">MAIL_FROM</code> on the server for delivery — otherwise you’ll get a copyable link.</p>
+      <div class="members-msg" id="invites-msg" role="status"></div>
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.85rem; flex-wrap:wrap;">
+        <input id="invite-emails" type="text" maxlength="500" placeholder="email@example.com, another@example.com"
+          style="flex:1; min-width:14rem; padding:0.5rem 0.65rem; border:1px solid var(--line); background:#0c0c0c; color:#fff; font-family:var(--body); font-size:0.88rem;" />
+        <button type="button" id="invite-send"
+          style="padding:0.5rem 0.85rem; border:1px solid #fff; background:#fff; color:#050505; font-family:var(--display); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;">
+          Send Invites
+        </button>
+      </div>
+      <div id="invites-list"><div class="msg">Loading invites…</div></div>
+    </section>
+
     <section class="members" id="members" hidden>
       <h2>Member Access</h2>
       <p class="help">Promote members to conference admin or overall commissioner. Regular users can access HQ pages only.</p>
@@ -796,6 +811,90 @@
       });
     }
 
+    function showInvitesMsg(text, ok) {
+      const el = document.getElementById('invites-msg');
+      el.textContent = text;
+      el.className = `members-msg show ${ok ? 'ok' : 'err'}`;
+    }
+
+    async function loadInvitesAdmin() {
+      const wrap = document.getElementById('invites-admin');
+      wrap.hidden = false;
+      const res = await fetch('/api/invites', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load invites (${res.status})`);
+      const data = await res.json();
+      const list = document.getElementById('invites-list');
+      const rows = data.invites || [];
+      if (!rows.length) {
+        list.innerHTML = `<div class="msg">No invites yet.</div>`;
+        return;
+      }
+      list.innerHTML = `
+        <table class="members-table">
+          <thead><tr><th>Email</th><th>Status</th><th>Sent</th><th></th></tr></thead>
+          <tbody>
+            ${rows.map((inv) => `
+              <tr>
+                <td>${esc(inv.email)}</td>
+                <td>${esc(inv.status)}</td>
+                <td>${esc((inv.createdAt || '').slice(0, 10))}</td>
+                <td>${inv.status === 'pending'
+                  ? `<button type="button" data-revoke-invite="${esc(inv.id)}" style="padding:0;border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;">Revoke</button>`
+                  : ''}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function wireInvitesAdmin() {
+      document.getElementById('invite-send').addEventListener('click', async () => {
+        const input = document.getElementById('invite-emails');
+        const btn = document.getElementById('invite-send');
+        const emails = input.value.trim();
+        if (!emails) {
+          showInvitesMsg('Enter at least one email.', false);
+          return;
+        }
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/invites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emails })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || data.message || 'Could not send invites');
+          const links = (data.results || [])
+            .filter((r) => r.inviteUrl)
+            .map((r) => `${r.email}: ${r.inviteUrl}`);
+          let msg = data.message || 'Invites processed.';
+          if (links.length) msg += ` Copy link(s): ${links.join(' | ')}`;
+          showInvitesMsg(msg, true);
+          input.value = '';
+          await loadInvitesAdmin();
+        } catch (err) {
+          showInvitesMsg(err.message || 'Could not send invites', false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('invites-list').addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-revoke-invite]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-revoke-invite');
+        if (!confirm('Revoke this invite?')) return;
+        const res = await fetch(`/api/invites/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          showInvitesMsg(data.error || 'Could not revoke', false);
+          return;
+        }
+        showInvitesMsg('Invite revoked.', true);
+        await loadInvitesAdmin();
+      });
+    }
+
     window.GridIronNav?.authReady?.then(async ({ user }) => {
       if (!user || (user.role !== 'commissioner' && user.role !== 'conference_admin')) {
         window.location.replace('/home.html');
@@ -813,6 +912,11 @@
         document.getElementById('ticker-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
       if (user.role === 'commissioner') {
+        wireInvitesAdmin();
+        try { await loadInvitesAdmin(); } catch (err) {
+          document.getElementById('invites-admin').hidden = false;
+          document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        }
         try { await loadMembers(); } catch (err) {
           document.getElementById('members').hidden = false;
           document.getElementById('members-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
