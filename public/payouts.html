@@ -100,6 +100,22 @@
       padding-left: 1.5rem;
     }
 
+    .payout-table tr.total-row td {
+      background: #0c0c0c;
+      border-top: 2px solid rgba(255,255,255,0.16);
+      font-weight: 700;
+    }
+    .payout-table tr.total-row .award-cell span {
+      color: #fff;
+      font-family: var(--display);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+    }
+    .payout-table tr.total-row td.amount {
+      color: #efd782;
+    }
+
     .note {
       margin-top: 1rem;
       max-width: 44rem;
@@ -119,7 +135,7 @@
 
   <section class="page-hero shell reveal">
     <p class="eyebrow">Prize Money</p>
-    <h1>Payouts</h1>
+    <h1>Payout Schedule</h1>
     <p>Entry fees from all 24 franchises fund the season prize pool.</p>
   </section>
 
@@ -140,23 +156,28 @@
         return new Intl.NumberFormat('en-US', {
           style: 'currency',
           currency,
-          maximumFractionDigits: 0
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
         }).format(Number(amount));
       } catch {
-        return `$${amount}`;
+        return `$${Number(amount).toFixed(2)}`;
       }
     }
 
     function prizeLogo(label = '') {
       const l = label.toLowerCase();
-      if (l.includes('third place') && l.includes('detail')) return '/assets/detail-3rd-place.png';
-      if (l.includes('third place') && l.includes('overtime')) return '/assets/overtime-3rd-place.png';
-      if (l.includes('third place')) return '/assets/detail-3rd-place.png';
-      if (l.includes('bowl') || (l.includes('gridiron') && !l.includes('conference'))) {
+      if ((l.includes('third') || l.includes('3rd')) && l.includes('detail')) return '/assets/detail-3rd-place.png';
+      if ((l.includes('third') || l.includes('3rd')) && l.includes('overtime')) return '/assets/overtime-3rd-place.png';
+      if (l.includes('third') || l.includes('3rd')) return '/assets/detail-3rd-place.png';
+      if (l.includes('winner') || l.includes('bowl') || (l.includes('gridiron') && !l.includes('conference'))) {
         return '/assets/gridiron-bowl.png';
       }
-      if (l.includes('detail') && l.includes('championship')) return '/assets/detail-conf-champ.png';
-      if (l.includes('overtime') && l.includes('championship')) return '/assets/overtime-conf-champ.png';
+      if (l.includes('detail') && (l.includes('championship') || l.includes('2nd') || l.includes('most'))) {
+        return '/assets/detail-conference.png';
+      }
+      if (l.includes('overtime') && (l.includes('championship') || l.includes('2nd') || l.includes('most'))) {
+        return '/assets/overtime-conference.png';
+      }
       if (l.includes('detail')) return '/assets/detail-conference.png';
       if (l.includes('overtime')) return '/assets/overtime-conference.png';
       return '/assets/gridiron-bowl.png';
@@ -165,12 +186,15 @@
     function render(data) {
       const p = data.payouts || {};
       const currency = p.currency || 'USD';
+      const prizes = p.prizes || [];
       const buyIn = money(p.buyInPerTeam, currency);
-      const pool = p.buyInPerTeam != null && p.teamCount
-        ? money(Number(p.buyInPerTeam) * Number(p.teamCount), currency)
-        : 'TBD';
+      const poolAmount = p.buyInPerTeam != null && p.teamCount
+        ? Number(p.buyInPerTeam) * Number(p.teamCount)
+        : null;
+      const pool = poolAmount != null ? money(poolAmount, currency) : 'TBD';
+      const prizesTotal = prizes.reduce((sum, prize) => sum + Number(prize.amount || 0), 0);
 
-      const rows = (p.prizes || []).map((prize) => `
+      const rows = prizes.map((prize) => `
         <tr>
           <td class="award">
             <div class="award-cell">
@@ -191,6 +215,10 @@
           </thead>
           <tbody>
             ${rows || '<tr><td colspan="2">No payouts configured.</td></tr>'}
+            <tr class="total-row">
+              <td class="award"><div class="award-cell"><span>Total</span></div></td>
+              <td class="amount">${money(prizesTotal, currency)}</td>
+            </tr>
           </tbody>
         </table>
         <p class="note reveal reveal-delay-2">${esc(p.notes || '')}</p>`;
