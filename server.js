@@ -1396,11 +1396,12 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  users.ensureCommissionerFromEnv();
+  leagueGate.ensureBootstrapGate();
+  users.ensureBootstrapCommissioner();
   console.log(`\nGridIron 24 is running.`);
   console.log(`Open: http://localhost:${PORT}`);
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
-  console.log(`Auth: ${leagueGate.isConfigured() ? `accounts enabled (site gate via ${activeGate().source})` : 'not configured — open /setup'}`);
+  console.log(`Auth: ${leagueGate.isConfigured() ? `accounts enabled (site gate via ${activeGate().source})` : 'not configured'}`);
   console.log(`Users: ${users.DATA_DIR}`);
   if (process.env.COMMISSIONER_LOGIN) {
     console.log(`Commissioner login: ${process.env.COMMISSIONER_LOGIN}`);

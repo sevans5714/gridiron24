@@ -230,6 +230,60 @@ function ensureCommissionerFromEnv() {
   return publicUser(store.users[idx]);
 }
 
+/**
+ * Free Render disks wipe users.json on every deploy. Recreate the commissioner
+ * account from env (with safe defaults) whenever that login is missing.
+ */
+function ensureBootstrapCommissioner() {
+  if (!process.env.COMMISSIONER_LOGIN) {
+    process.env.COMMISSIONER_LOGIN = 'sevans';
+  }
+  const login = normalizeLoginName(process.env.COMMISSIONER_LOGIN);
+  const password = String(process.env.COMMISSIONER_PASSWORD || 'ChangeMe123!');
+  const email = normalizeEmail(process.env.COMMISSIONER_EMAIL || 'sevans5714@gmail.com');
+  const name = String(process.env.COMMISSIONER_NAME || 'Steve Evans').trim() || 'Steve Evans';
+
+  const existing = findByLoginName(login);
+  if (existing) {
+    // Keep password in sync when COMMISSIONER_PASSWORD is explicitly set in env.
+    if (process.env.COMMISSIONER_PASSWORD) {
+      const store = readStore();
+      const idx = store.users.findIndex((u) => normalizeLoginName(u.loginName) === login);
+      if (idx !== -1) {
+        const { salt, hash } = hashPassword(password);
+        store.users[idx].passwordSalt = salt;
+        store.users[idx].passwordHash = hash;
+        store.users[idx].role = ROLES.COMMISSIONER;
+        store.users[idx].conference = null;
+        writeStore(store);
+        return publicUser(store.users[idx]);
+      }
+    }
+    return ensureCommissionerFromEnv() || publicUser(existing);
+  }
+
+  const emailOwner = findByEmail(email);
+  if (emailOwner && normalizeLoginName(emailOwner.loginName) !== login) {
+    console.warn(`Bootstrap commissioner skipped: email ${email} belongs to ${emailOwner.loginName}`);
+    return ensureCommissionerFromEnv();
+  }
+
+  try {
+    const user = createUser({
+      name,
+      email,
+      loginName: login,
+      password,
+      role: ROLES.COMMISSIONER
+    });
+    console.log(`Bootstrap commissioner created: ${login}`);
+    return user;
+  } catch (err) {
+    console.warn(`Bootstrap commissioner failed: ${err.message}`);
+    return ensureCommissionerFromEnv();
+  }
+}
+
 function authenticate(loginName, password) {
   const user = findByLoginName(loginName);
   if (!user) return null;
@@ -285,6 +339,7 @@ module.exports = {
   listUsers,
   setUserRole,
   ensureCommissionerFromEnv,
+  ensureBootstrapCommissioner,
   isStaff,
   isCommissioner,
   publicUser

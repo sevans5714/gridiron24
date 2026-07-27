@@ -14,8 +14,12 @@ services:
         value: "4to12"
       - key: COMMISSIONER_LOGIN
         value: "sevans"
+      - key: COMMISSIONER_EMAIL
+        value: "sevans5714@gmail.com"
       - key: APP_BASE_URL
         value: "https://www.gridiron24.com"
-      # Set this value in the Render Dashboard (Environment). Do not commit the password.
+      # Optional overrides in the Render Dashboard. Bootstraps recreate after free-tier wipes.
       - key: LEAGUE_PASSWORD
+        sync: false
+      - key: COMMISSIONER_PASSWORD
         sync: false

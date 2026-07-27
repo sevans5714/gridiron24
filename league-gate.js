@@ -83,10 +83,28 @@ function writeGate({ leagueName, leaguePassword, commissionerLogin }) {
   };
 }
 
+/** Restore site access after free-tier disk wipes when no env password is set. */
+function ensureBootstrapGate() {
+  if (isConfigured()) return getGate();
+  try {
+    const result = writeGate({
+      leagueName: process.env.LEAGUE_NAME || 'GridIron 24',
+      leaguePassword: process.env.BOOTSTRAP_LEAGUE_PASSWORD || 'fantasy',
+      commissionerLogin: process.env.COMMISSIONER_LOGIN || 'sevans'
+    });
+    console.log('Bootstrap site access gate created');
+    return result;
+  } catch (err) {
+    console.warn(`Bootstrap gate failed: ${err.message}`);
+    return null;
+  }
+}
+
 module.exports = {
   DATA_DIR,
   GATE_FILE,
   getGate,
   isConfigured,
-  writeGate
+  writeGate,
+  ensureBootstrapGate
 };
