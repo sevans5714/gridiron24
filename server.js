@@ -881,7 +881,8 @@ const server = http.createServer(async (req, res) => {
         const mailResult = await sendPasswordResetEmail({
           to: created.user.email,
           name: created.user.name,
-          resetUrl
+          resetUrl,
+          baseUrl: requestOrigin(req)
         });
         const payload = { ...generic };
         if (!mailResult.sent && process.env.NODE_ENV !== 'production') {
