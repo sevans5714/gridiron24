@@ -10,3 +10,12 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+      - key: LEAGUE_NAME
+        value: "4to12"
+      - key: COMMISSIONER_LOGIN
+        value: "sevans"
+      - key: APP_BASE_URL
+        value: "https://www.gridiron24.com"
+      # Set this value in the Render Dashboard (Environment). Do not commit the password.
+      - key: LEAGUE_PASSWORD
+        sync: false
