@@ -364,7 +364,7 @@ body {
   color: var(--muted);
   text-decoration: none;
   font-family: var(--display);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: var(--track-label);
   text-transform: uppercase;
