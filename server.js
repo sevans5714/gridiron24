@@ -30,6 +30,7 @@ const config = require('./config');
 const users = require('./users-store');
 const board = require('./board-store');
 const logos = require('./logos-store');
+const leagueGate = require('./league-gate');
 const { sendPasswordResetEmail } = require('./mail');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -67,12 +68,18 @@ async function fetchEspnNflNews(limit = 10) {
   }
 }
 
-const LEAGUE_PASSWORD = process.env.LEAGUE_PASSWORD || '';
-const LEAGUE_NAME = (process.env.LEAGUE_NAME || config.brand?.name || 'GridIron 24').trim();
-const SESSION_SECRET = process.env.SESSION_SECRET || LEAGUE_PASSWORD || 'gridiron24-dev-secret';
 const SESSION_COOKIE = 'gi24_session';
 const SESSION_DAYS = 30;
 const APP_BASE_URL = (process.env.APP_BASE_URL || '').replace(/\/$/, '');
+
+function activeGate() {
+  return leagueGate.getGate();
+}
+
+function sessionSecret() {
+  const gate = activeGate();
+  return process.env.SESSION_SECRET || gate?.leaguePassword || 'gridiron24-dev-secret';
+}
 
 function normalizeLeagueName(value) {
   return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
@@ -86,12 +93,13 @@ function timingSafeEqualString(a, b) {
 }
 
 function leagueGateOk(leagueName, leaguePassword) {
-  if (!LEAGUE_PASSWORD) return false;
+  const gate = activeGate();
+  if (!gate?.leaguePassword) return false;
   const nameOk = timingSafeEqualString(
     normalizeLeagueName(leagueName),
-    normalizeLeagueName(LEAGUE_NAME)
+    normalizeLeagueName(gate.leagueName)
   );
-  const passOk = timingSafeEqualString(String(leaguePassword || ''), LEAGUE_PASSWORD);
+  const passOk = timingSafeEqualString(String(leaguePassword || ''), gate.leaguePassword);
   return nameOk && passOk;
 }
 
@@ -107,9 +115,12 @@ const PUBLIC_PATHS = new Set([
   '/forgot',
   '/reset.html',
   '/reset',
+  '/setup',
+  '/setup.html',
   '/api/health',
   '/api/login',
   '/api/register',
+  '/api/setup',
   '/api/forgot-password',
   '/api/reset-password',
   '/api/logout',
@@ -141,7 +152,7 @@ function parseCookies(header = '') {
 
 function signSession(userId, expiresAt) {
   const payload = `u.${userId}.${expiresAt}`;
-  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
+  const sig = crypto.createHmac('sha256', sessionSecret()).update(payload).digest('hex');
   return `${payload}.${sig}`;
 }
 
@@ -286,7 +297,7 @@ function sendFile(res, filePath) {
     }[ext] || 'application/octet-stream';
 
     const fileName = path.basename(filePath);
-    const isAuthPage = ['login.html', 'register.html', 'forgot.html', 'reset.html'].includes(fileName);
+    const isAuthPage = ['login.html', 'register.html', 'forgot.html', 'reset.html', 'setup.html'].includes(fileName);
     const cacheControl = isAuthPage
       ? 'no-store, no-cache, must-revalidate'
       : ext === '.html'
@@ -779,7 +790,7 @@ const server = http.createServer(async (req, res) => {
         app: config.brand.name,
         season: config.season,
         conferenceLeagueIds: config.conferences.map((c) => c.espnLeagueId),
-        authConfigured: Boolean(LEAGUE_PASSWORD)
+        authConfigured: leagueGate.isConfigured()
       });
     }
 
@@ -787,16 +798,40 @@ const server = http.createServer(async (req, res) => {
       const user = getSessionUser(req);
       return sendJson(res, 200, {
         authenticated: Boolean(user),
-        authConfigured: Boolean(LEAGUE_PASSWORD),
+        authConfigured: leagueGate.isConfigured(),
         user
       });
     }
 
+    if (pathname === '/api/setup' && req.method === 'POST') {
+      if (leagueGate.isConfigured()) {
+        return sendJson(res, 409, {
+          ok: false,
+          error: process.env.LEAGUE_PASSWORD
+            ? 'League access is already configured on the server.'
+            : 'League access is already set up. Go to Create Account.'
+        });
+      }
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const result = leagueGate.writeGate(body);
+        users.ensureCommissionerFromEnv();
+        return sendJson(res, 201, result);
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Setup failed' });
+      }
+    }
+
     if (pathname === '/api/register' && req.method === 'POST') {
-      if (!LEAGUE_PASSWORD) {
+      if (!leagueGate.isConfigured()) {
         return sendJson(res, 503, {
           ok: false,
-          error: 'League access is not configured. Set LEAGUE_PASSWORD on the server.'
+          error: 'League access is not configured. Open /setup first.'
         });
       }
       let body;
@@ -926,6 +961,9 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/register' || pathname === '/register.html') {
       return sendFile(res, path.join(PUBLIC_DIR, 'register.html'));
+    }
+    if (pathname === '/setup' || pathname === '/setup.html') {
+      return sendFile(res, path.join(PUBLIC_DIR, 'setup.html'));
     }
     if (pathname === '/forgot' || pathname === '/forgot.html') {
       return sendFile(res, path.join(PUBLIC_DIR, 'forgot.html'));
@@ -1264,7 +1302,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`\nGridIron 24 is running.`);
   console.log(`Open: http://localhost:${PORT}`);
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
-  console.log(`Auth: ${LEAGUE_PASSWORD ? `accounts enabled (league gate "${LEAGUE_NAME}")` : 'set LEAGUE_PASSWORD to enable signup'}`);
+  console.log(`Auth: ${leagueGate.isConfigured() ? `accounts enabled (league gate "${activeGate().leagueName}" via ${activeGate().source})` : 'not configured — open /setup'}`);
   console.log(`Users: ${users.DATA_DIR}`);
   if (process.env.COMMISSIONER_LOGIN) {
     console.log(`Commissioner login: ${process.env.COMMISSIONER_LOGIN}`);

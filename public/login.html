@@ -140,6 +140,7 @@
       <button type="submit" id="submit">Sign In</button>
       <p class="links">
         <a href="/register">Create account</a><br />
+        <a href="/setup">League setup</a><br />
         <a href="/forgot">Forgot password?</a>
       </p>
     </div>
@@ -233,6 +234,13 @@
     });
 
     (async () => {
+      try {
+        const res = await fetch('/api/auth', { cache: 'no-store' });
+        const data = await res.json();
+        if (!data.authConfigured) {
+          showErr('League not set up yet — use League setup, then Create account.');
+        }
+      } catch {}
       if (await checkExisting()) return;
       await tryAutoLogin();
     })();

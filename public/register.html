@@ -136,13 +136,24 @@
     <input id="confirmPassword" name="confirmPassword" type="password" required minlength="6" autocomplete="new-password" />
 
     <button type="submit" id="submit">Create Account</button>
-    <p class="links">Already have an account? <a href="/enter">Sign in</a></p>
+    <p class="links">Already have an account? <a href="/enter">Sign in</a> · <a href="/setup">League setup</a></p>
   </form>
   <script>
     const form = document.getElementById('form');
     const errEl = document.getElementById('err');
     const submit = document.getElementById('submit');
     const next = new URLSearchParams(window.location.search).get('next') || '/home.html';
+
+    fetch('/api/auth', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.authConfigured) {
+          errEl.textContent = 'League access is not set up yet. Redirecting to setup…';
+          errEl.classList.add('show');
+          setTimeout(() => { location.href = '/setup'; }, 600);
+        }
+      })
+      .catch(() => {});
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
