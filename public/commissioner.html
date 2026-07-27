@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Commissioner · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=10" />
+  <style>
+    .status-bar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding: 1.1rem 1.2rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .conf {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      min-width: 0;
+    }
+    .conf.right { justify-content: flex-end; text-align: right; }
+    .conf img {
+      width: 3.5rem;
+      height: auto;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+    }
+    .conf .name {
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      line-height: 1.15;
+    }
+    .conf.detail .name { color: var(--detail); }
+    .conf.overtime .name { color: var(--overtime); }
+    .conf .meta {
+      margin-top: 0.2rem;
+      color: var(--muted);
+      font-size: var(--fs-xs);
+    }
+
+    .sync-badge {
+      text-align: center;
+      padding: 0.65rem 1.1rem;
+      border: 1px solid var(--line);
+      background: #0c0c0c;
+      min-width: 10rem;
+    }
+    .sync-badge .label {
+      font-family: var(--display);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .sync-badge .label.ok { color: var(--good); }
+    .sync-badge .label.warn { color: #efd782; }
+    .sync-badge .sub {
+      margin-top: 0.25rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat {
+      padding: 0.9rem 1rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .stat span {
+      display: block;
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .stat strong {
+      display: block;
+      margin-top: 0.35rem;
+      font-family: var(--display);
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .stat strong.detail { color: var(--detail); }
+    .stat strong.overtime { color: var(--overtime); }
+
+    .diff-section {
+      margin-bottom: 1.25rem;
+    }
+    .diff-section h2 {
+      margin: 0 0 0.65rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .diff-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .diff-table th, .diff-table td {
+      padding: 0.75rem 1.1rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 0.92rem;
+    }
+    .diff-table th {
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: #0a0a0a;
+    }
+    .diff-table th.num, .diff-table td.num { text-align: right; }
+    .diff-table td.num {
+      font-family: var(--display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .diff-table td.num.detail { color: var(--detail); }
+    .diff-table td.num.overtime { color: var(--overtime); }
+    .diff-table td.action {
+      color: #efd782;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .sync-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .sync-actions button {
+      padding: 0.55rem 0.95rem;
+      border: 1px solid #fff;
+      background: #fff;
+      color: #050505;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .sync-actions button:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+    .sync-actions button.secondary {
+      border-color: var(--line);
+      background: transparent;
+      color: var(--text);
+    }
+
+    .sync-box {
+      margin-bottom: 1.25rem;
+      padding: 1.1rem 1.15rem;
+      border: 1px solid rgba(239, 215, 130, 0.35);
+      background:
+        linear-gradient(180deg, rgba(239,215,130,0.08), transparent 55%),
+        var(--panel);
+    }
+    .sync-box strong {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .sync-box p {
+      margin: 0 0 0.75rem;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+      line-height: 1.5;
+    }
+    .sync-box ol {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: #eee;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+    .sync-box li { margin: 0.35rem 0; }
+    .sync-box a {
+      color: #8eb6ff;
+      font-weight: 600;
+    }
+    .diff-table tr:last-child td { border-bottom: 0; }
+    .diff-table .item { font-weight: 600; color: #eee; }
+
+    .ok-box {
+      padding: 2rem 1.5rem;
+      text-align: center;
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      background: rgba(34, 197, 94, 0.08);
+      color: var(--good);
+      font-size: var(--fs-md);
+      line-height: 1.5;
+    }
+    .ok-box strong {
+      display: block;
+      font-family: var(--display);
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+
+    .links {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+    }
+    .links a {
+      display: inline-block;
+      padding: 0.55rem 0.9rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: #fff;
+      text-decoration: none;
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .links a:hover { border-color: var(--blue); }
+
+    .members {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+    }
+    .members h2 {
+      margin: 0 0 0.35rem;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .members .help {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .members-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .members-table th, .members-table td {
+      padding: 0.7rem 0.85rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      font-size: 0.88rem;
+    }
+    .members-table th {
+      font-size: var(--fs-xs);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .members-table tr:last-child td { border-bottom: 0; }
+    .members-table select {
+      max-width: 100%;
+      padding: 0.35rem 0.45rem;
+      border: 1px solid var(--line);
+      background: #0c0c0c;
+      color: #fff;
+      font-family: var(--body);
+      font-size: 0.82rem;
+    }
+    .role-pill {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border: 1px solid var(--line);
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .role-pill.commissioner { color: var(--gold); border-color: rgba(239, 215, 130, 0.35); }
+    .role-pill.conference_admin { color: var(--blue); border-color: rgba(47, 109, 255, 0.35); }
+    .members-msg {
+      display: none;
+      margin: 0 0 0.85rem;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.82rem;
+    }
+    .members-msg.show { display: block; }
+    .members-msg.ok {
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      background: rgba(34, 197, 94, 0.08);
+      color: #86efac;
+    }
+    .members-msg.err {
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      background: rgba(239, 68, 68, 0.08);
+      color: #fca5a5;
+    }
+
+    @media (max-width: 900px) {
+      .status-bar { grid-template-columns: 1fr; }
+      .conf.right { justify-content: flex-start; text-align: left; }
+      .summary { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .summary { grid-template-columns: 1fr; }
+      .members-table th:nth-child(2),
+      .members-table td:nth-child(2) { display: none; }
+    }
+  </style>
+</head>
+<body data-page="commissioner">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Loading…</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell reveal">
+    <p class="eyebrow">League HQ</p>
+    <h1>Commissioner</h1>
+    <p>Compare Detail and Overtime ESPN settings. Both conferences must match for a fair GridIron season.</p>
+  </section>
+
+  <main class="page-main shell">
+    <div class="sync-actions">
+      <button type="button" id="check-sync">Check Rules Sync</button>
+    </div>
+    <div id="content"><div class="msg">Loading conference settings…</div></div>
+
+    <section class="members" id="news-admin" hidden>
+      <h2>League News</h2>
+      <p class="help">Posts appear on the Home page for all members.</p>
+      <div class="members-msg" id="news-msg" role="status"></div>
+      <div style="display:grid; gap:0.5rem; margin-bottom:0.85rem;">
+        <input id="news-title" type="text" maxlength="120" placeholder="Headline"
+          style="padding:0.5rem 0.65rem; border:1px solid var(--line); background:#0c0c0c; color:#fff; font-family:var(--body); font-size:0.88rem;" />
+        <textarea id="news-body" maxlength="4000" placeholder="News details…"
+          style="min-height:4.5rem; padding:0.5rem 0.65rem; border:1px solid var(--line); background:#0c0c0c; color:#fff; font-family:var(--body); font-size:0.88rem; resize:vertical;"></textarea>
+        <div>
+          <button type="button" id="news-add"
+            style="padding:0.5rem 0.85rem; border:1px solid #fff; background:#fff; color:#050505; font-family:var(--display); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;">
+            Post League News
+          </button>
+        </div>
+      </div>
+      <div id="news-admin-list"><div class="msg">Loading news…</div></div>
+    </section>
+
+    <section class="members" id="ticker-admin" hidden>
+      <h2>Ticker Messages</h2>
+      <p class="help">Custom league lines appear in the HQ ticker alongside live ESPN NFL headlines.</p>
+      <div class="members-msg" id="ticker-msg" role="status"></div>
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.85rem; flex-wrap:wrap;">
+        <input id="ticker-input" type="text" maxlength="240" placeholder="Add a custom ticker message"
+          style="flex:1; min-width:12rem; padding:0.5rem 0.65rem; border:1px solid var(--line); background:#0c0c0c; color:#fff; font-family:var(--body); font-size:0.88rem;" />
+        <button type="button" id="ticker-add"
+          style="padding:0.5rem 0.85rem; border:1px solid #fff; background:#fff; color:#050505; font-family:var(--display); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;">
+          Add to Ticker
+        </button>
+      </div>
+      <div id="ticker-list"><div class="msg">Loading ticker…</div></div>
+    </section>
+
+    <section class="members" id="members" hidden>
+      <h2>Member Access</h2>
+      <p class="help">Promote members to conference admin or overall commissioner. Regular users can access HQ pages only.</p>
+      <div class="members-msg" id="members-msg" role="status"></div>
+      <div id="members-list"><div class="msg">Loading members…</div></div>
+    </section>
+  </main>
+
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <script src="/js/nav.js?v=5"></script>
+  <script src="/js/conference-diff.js?v=3"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    const ESPN = {
+      detail: 'https://fantasy.espn.com/football/league/settings?leagueId=559054421&seasonId=2026',
+      overtime: 'https://fantasy.espn.com/football/league/settings?leagueId=236438046&seasonId=2026'
+    };
+
+    const ROLE_LABELS = {
+      user: 'User',
+      conference_admin: 'Conference Admin',
+      commissioner: 'Commissioner'
+    };
+
+    function confBlock(conf, side) {
+      const logo = conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
+      const name = conf?.name || (side === 'detail' ? 'Detail' : 'Overtime');
+      const count = conf?.ok ? `${(conf.scoringItems || []).length} categories` : 'Unavailable';
+      const inner = side === 'overtime'
+        ? `<div><div class="name">${esc(name)}</div><div class="meta">${esc(count)}</div></div>${logo}`
+        : `${logo}<div><div class="name">${esc(name)}</div><div class="meta">${esc(count)}</div></div>`;
+      return `<div class="conf ${side}">${inner}</div>`;
+    }
+
+    function diffTable(rows, { withAction = false } = {}) {
+      if (!rows.length) return '';
+      return `
+        <table class="diff-table">
+          <thead>
+            <tr>
+              <th>Setting</th>
+              <th class="num">Detail</th>
+              <th class="num">Overtime</th>
+              ${withAction ? '<th class="action">Set Overtime to</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((d) => `
+              <tr>
+                <td class="item">${esc(d.label)}</td>
+                <td class="num detail">${esc(d.detail)}</td>
+                <td class="num overtime">${esc(d.overtime)}</td>
+                ${withAction ? `<td class="action">${esc(d.target || d.detail)}</td>` : ''}
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function syncChecklist(scoringDiffs) {
+      if (!scoringDiffs.length) return '';
+      return `
+        <div class="sync-box reveal reveal-delay-1">
+          <strong>Sync Overtime to Detail</strong>
+          <p>Detail Conference is the source of truth. Open Overtime ESPN settings and match each value in the rightmost column. Numbers match ESPN’s scoring fields (e.g. <strong>0.4</strong> pass yards).</p>
+          <ol>
+            <li>Open <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings</a> as commissioner</li>
+            <li>Go to <strong>Scoring</strong> and apply the ${scoringDiffs.length} change${scoringDiffs.length === 1 ? '' : 's'} below</li>
+            <li>Save on ESPN, then click <strong>Check Rules Sync</strong> — status should flip to Rules Synced</li>
+          </ol>
+        </div>`;
+    }
+
+    function render(data) {
+      const detail = (data.conferences || []).find((c) => c.key === 'detail');
+      const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
+      const cmp = GridIronDiff.compare(detail, overtime);
+
+      if (!detail?.ok && !overtime?.ok) {
+        document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load either conference from ESPN.</div>`;
+        return;
+      }
+
+      const syncLabel = !cmp.bothOk ? 'Incomplete' : cmp.matched ? 'Rules Synced' : 'Out of Sync';
+      const syncCls = cmp.matched ? 'ok' : 'warn';
+      const syncSub = !cmp.bothOk
+        ? 'One or both leagues failed to load'
+        : cmp.matched
+          ? 'Overtime matches Detail'
+          : `${cmp.diffs.length} difference${cmp.diffs.length === 1 ? '' : 's'} — match Overtime to Detail`;
+
+      const diffSections = cmp.matched ? `
+        <div class="ok-box reveal reveal-delay-1">
+          <strong>All Clear</strong>
+          Overtime matches Detail Conference scoring, lineup, and playoff settings.
+        </div>` : `
+        ${syncChecklist(cmp.byKind.Scoring)}
+        ${cmp.byKind.Setting.length ? `<section class="diff-section reveal reveal-delay-1"><h2>League Settings (${cmp.byKind.Setting.length})</h2>${diffTable(cmp.byKind.Setting)}</section>` : ''}
+        ${cmp.byKind.Scoring.length ? `<section class="diff-section reveal reveal-delay-2"><h2>Scoring (${cmp.byKind.Scoring.length})</h2>${diffTable(cmp.byKind.Scoring, { withAction: true })}</section>` : ''}
+        ${cmp.byKind.Lineup.length ? `<section class="diff-section reveal reveal-delay-3"><h2>Lineup (${cmp.byKind.Lineup.length})</h2>${diffTable(cmp.byKind.Lineup, { withAction: true })}</section>` : ''}`;
+
+      document.getElementById('content').innerHTML = `
+        <div class="status-bar reveal">
+          ${confBlock(detail, 'detail')}
+          <div class="sync-badge">
+            <div class="label ${syncCls}">${esc(syncLabel)}</div>
+            <div class="sub">${esc(syncSub)}</div>
+          </div>
+          ${confBlock(overtime, 'overtime')}
+        </div>
+        <div class="summary reveal reveal-delay-1">
+          <div class="stat"><span>Detail categories</span><strong class="detail">${detail?.ok ? (detail.scoringItems || []).length : '—'}</strong></div>
+          <div class="stat"><span>Overtime categories</span><strong class="overtime">${overtime?.ok ? (overtime.scoringItems || []).length : '—'}</strong></div>
+          <div class="stat"><span>Playoff reseed</span><strong>${detail?.playoffReseed ? 'On' : 'Off'} / ${overtime?.playoffReseed ? 'On' : 'Off'}</strong></div>
+          <div class="stat"><span>Differences</span><strong>${cmp.bothOk ? cmp.diffs.length : '—'}</strong></div>
+        </div>
+        ${diffSections}
+        <div class="links reveal">
+          <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings</a>
+          <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings</a>
+        </div>`;
+    }
+
+    function roleValue(user) {
+      if (user.role === 'conference_admin') return `conference_admin:${user.conference || ''}`;
+      return user.role || 'user';
+    }
+
+    function showMembersMsg(text, ok) {
+      const el = document.getElementById('members-msg');
+      el.textContent = text;
+      el.className = `members-msg show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function renderMembers(payload) {
+      const list = payload.users || [];
+      const conferences = payload.conferences || [];
+      if (!list.length) {
+        document.getElementById('members-list').innerHTML = `<div class="msg">No member accounts yet.</div>`;
+        return;
+      }
+      document.getElementById('members-list').innerHTML = `
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Login</th>
+              <th>Current</th>
+              <th>Access Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map((u) => `
+              <tr data-user-id="${esc(u.id)}">
+                <td>
+                  <strong>${esc(u.name)}</strong><br>
+                  <span style="color:var(--muted);font-size:0.78rem">${esc(u.email)}</span>
+                </td>
+                <td>${esc(u.loginName)}</td>
+                <td><span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span></td>
+                <td>
+                  <select class="role-select" data-user-id="${esc(u.id)}">
+                    <option value="user" ${roleValue(u) === 'user' ? 'selected' : ''}>User</option>
+                    ${conferences.map((c) => `
+                      <option value="conference_admin:${esc(c.key)}" ${roleValue(u) === `conference_admin:${c.key}` ? 'selected' : ''}>
+                        ${esc(c.name)} Admin
+                      </option>`).join('')}
+                    <option value="commissioner" ${roleValue(u) === 'commissioner' ? 'selected' : ''}>Overall Commissioner</option>
+                  </select>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+
+      document.querySelectorAll('.role-select').forEach((select) => {
+        select.addEventListener('change', async () => {
+          const userId = select.dataset.userId;
+          const raw = select.value;
+          let role = raw;
+          let conference = null;
+          if (raw.startsWith('conference_admin:')) {
+            role = 'conference_admin';
+            conference = raw.slice('conference_admin:'.length);
+          }
+          select.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/role`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ role, conference })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
+            showMembersMsg(`Updated ${data.user.loginName} to ${ROLE_LABELS[data.user.role]}${data.user.conference ? ` (${data.user.conference})` : ''}.`, true);
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            await loadMembers();
+          } finally {
+            select.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function loadMembers() {
+      const res = await fetch('/api/users', { cache: 'no-store' });
+      if (res.status === 403) {
+        document.getElementById('members').hidden = true;
+        return;
+      }
+      if (!res.ok) throw new Error(`Could not load members (${res.status})`);
+      const data = await res.json();
+      document.getElementById('members').hidden = false;
+      renderMembers(data);
+    }
+
+    async function load() {
+      const btn = document.getElementById('check-sync');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Checking…';
+      }
+      try {
+        const res = await fetch('/api/settings', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        render(data);
+        const t = new Date(data.generatedAt);
+        window.GridIronNav?.setSync(`ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        document.getElementById('content').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        window.GridIronNav?.setSync('Connection error', false);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Check Rules Sync';
+        }
+      }
+    }
+
+    document.getElementById('check-sync')?.addEventListener('click', () => { load(); });
+
+    async function loadTickerAdmin() {
+      const wrap = document.getElementById('ticker-admin');
+      wrap.hidden = false;
+      const res = await fetch('/api/ticker', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load ticker (${res.status})`);
+      const data = await res.json();
+      const custom = data.custom || [];
+      const list = document.getElementById('ticker-list');
+      if (!custom.length) {
+        list.innerHTML = `<div class="msg">No custom ticker messages yet. ESPN NFL headlines still run automatically.</div>`;
+        return;
+      }
+      list.innerHTML = `
+        <table class="members-table">
+          <thead><tr><th>Message</th><th>Added</th><th></th></tr></thead>
+          <tbody>
+            ${custom.map((t) => `
+              <tr>
+                <td>${esc(t.text)}</td>
+                <td style="color:var(--muted);white-space:nowrap">${esc(new Date(t.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</td>
+                <td><button type="button" data-del-ticker="${esc(t.id)}" style="padding:0;border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;">Delete</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function showTickerMsg(text, ok) {
+      const el = document.getElementById('ticker-msg');
+      el.textContent = text;
+      el.className = `members-msg show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function wireTickerAdmin() {
+      document.getElementById('ticker-add').addEventListener('click', async () => {
+        const input = document.getElementById('ticker-input');
+        const btn = document.getElementById('ticker-add');
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/ticker', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: input.value })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not add ticker message');
+          input.value = '';
+          showTickerMsg('Ticker message added.', true);
+          await loadTickerAdmin();
+          window.GridIronNav?.reloadTicker?.();
+        } catch (err) {
+          showTickerMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('ticker-list').addEventListener('click', async (e) => {
+        const id = e.target?.dataset?.delTicker;
+        if (!id) return;
+        if (!confirm('Remove this ticker message?')) return;
+        const res = await fetch(`/api/ticker/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          showTickerMsg(data.error || 'Could not delete', false);
+          return;
+        }
+        showTickerMsg('Ticker message removed.', true);
+        await loadTickerAdmin();
+        window.GridIronNav?.reloadTicker?.();
+      });
+    }
+
+    function showNewsMsg(text, ok) {
+      const el = document.getElementById('news-msg');
+      el.textContent = text;
+      el.className = `members-msg show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function fmtWhen(iso) {
+      try {
+        return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      } catch {
+        return '';
+      }
+    }
+
+    async function loadNewsAdmin() {
+      const wrap = document.getElementById('news-admin');
+      wrap.hidden = false;
+      const res = await fetch('/api/news', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load news (${res.status})`);
+      const data = await res.json();
+      const news = data.news || [];
+      const list = document.getElementById('news-admin-list');
+      if (!news.length) {
+        list.innerHTML = `<div class="msg">No league news posted yet.</div>`;
+        return;
+      }
+      list.innerHTML = `
+        <table class="members-table">
+          <thead><tr><th>Post</th><th>By</th><th></th></tr></thead>
+          <tbody>
+            ${news.map((n) => `
+              <tr>
+                <td>
+                  <strong>${esc(n.title)}</strong><br>
+                  <span style="color:var(--muted);font-size:0.82rem">${esc(n.body)}</span>
+                </td>
+                <td style="color:var(--muted);white-space:nowrap">${esc(n.authorName)}<br>${esc(fmtWhen(n.createdAt))}</td>
+                <td><button type="button" data-del-news="${esc(n.id)}" style="padding:0;border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;">Delete</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function wireNewsAdmin() {
+      document.getElementById('news-add').addEventListener('click', async () => {
+        const btn = document.getElementById('news-add');
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/news', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: document.getElementById('news-title').value,
+              body: document.getElementById('news-body').value
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not post news');
+          document.getElementById('news-title').value = '';
+          document.getElementById('news-body').value = '';
+          showNewsMsg('League news posted.', true);
+          await loadNewsAdmin();
+        } catch (err) {
+          showNewsMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('news-admin-list').addEventListener('click', async (e) => {
+        const id = e.target?.dataset?.delNews;
+        if (!id) return;
+        if (!confirm('Delete this news post?')) return;
+        const res = await fetch(`/api/news/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          showNewsMsg(data.error || 'Could not delete', false);
+          return;
+        }
+        showNewsMsg('News post deleted.', true);
+        await loadNewsAdmin();
+      });
+    }
+
+    window.GridIronNav?.authReady?.then(async ({ user }) => {
+      if (!user || (user.role !== 'commissioner' && user.role !== 'conference_admin')) {
+        window.location.replace('/home.html');
+        return;
+      }
+      await load();
+      wireNewsAdmin();
+      wireTickerAdmin();
+      try { await loadNewsAdmin(); } catch (err) {
+        document.getElementById('news-admin').hidden = false;
+        document.getElementById('news-admin-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
+      try { await loadTickerAdmin(); } catch (err) {
+        document.getElementById('ticker-admin').hidden = false;
+        document.getElementById('ticker-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
+      if (user.role === 'commissioner') {
+        try { await loadMembers(); } catch (err) {
+          document.getElementById('members').hidden = false;
+          document.getElementById('members-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

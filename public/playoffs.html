@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=5" />
+  <link rel="stylesheet" href="/css/site.css?v=10" />
   <style>
     .legend {
       display: flex;
@@ -181,7 +181,8 @@
       margin: 0 auto;
       filter: drop-shadow(0 8px 18px rgba(0,0,0,0.55));
     }
-    .slot.title-slot .sr-only {
+    .slot.title-slot .sr-only,
+    .slot.third-slot .sr-only {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -190,6 +191,26 @@
       overflow: hidden;
       clip: rect(0,0,0,0);
       border: 0;
+    }
+
+    .slot.third-slot {
+      border: 0;
+      background: transparent;
+      padding: 0.35rem 0.25rem;
+      text-align: center;
+      box-shadow: none;
+    }
+    .slot.third-slot img {
+      width: min(100%, 8.55rem);
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.55));
+    }
+
+    .round-col.finale-col {
+      justify-content: center;
+      gap: 1rem;
     }
 
     .slot .seed {
@@ -295,6 +316,61 @@
       text-transform: uppercase;
     }
 
+    .third-place {
+      border: 1px solid rgba(239, 215, 130, 0.35);
+      background:
+        radial-gradient(ellipse at 50% 30%, rgba(239,215,130,0.12), transparent 70%),
+        linear-gradient(180deg, #14110a, #0a0906);
+      text-align: center;
+      padding: 0.95rem 0.75rem 1.05rem;
+    }
+    .third-place .eyebrow {
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+    .third-place h3 {
+      margin: 0 0 0.55rem;
+      font-family: var(--display);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .third-place .vs {
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      line-height: 1.4;
+    }
+    .third-place .vs .d { color: var(--detail); }
+    .third-place .vs .o { color: var(--overtime); }
+    .third-place .vs .mid-vs {
+      display: block;
+      margin: 0.15rem 0;
+      color: var(--muted);
+      font-family: var(--body);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .third-place .prize {
+      margin-top: 0.55rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 500;
+      line-height: 1.35;
+    }
+    .third-place .prize strong { color: #efd782; font-weight: 700; }
+
     .notes {
       margin-top: 1.25rem;
       display: grid;
@@ -364,7 +440,7 @@
   <section class="page-hero shell reveal">
     <p class="eyebrow">Road to the Bowl</p>
     <h1>Playoff Structure</h1>
-    <p>Six teams qualify from each conference. Both champions meet in GridIron Bowl I.</p>
+    <p>Six teams qualify from each conference. Week 15 semifinal losers play for third in Week 16; champions meet in GridIron Bowl I.</p>
   </section>
 
   <main class="page-main shell">
@@ -372,6 +448,7 @@
       <span><b>6</b> playoff teams per conference</span>
       <span><b>#1 and #2 seeds</b> earn first-round byes</span>
       <span><b>Reseed</b> after the Wild Card round</span>
+      <span><b>Week 16</b> Conf. Title + Third Place</span>
       <span><b>Week 17</b> GridIron Bowl I</span>
     </div>
 
@@ -392,14 +469,18 @@
           </div>
           <div class="round-col">
             <div class="round-label">Week 15 · Semifinals</div>
-            <div class="slot winner-line"><div class="seed">#1 Seed vs Lower Seed</div><div class="sub">Reseeded</div></div>
-            <div class="slot winner-line"><div class="seed">#2 Seed vs Highest Seed</div><div class="sub">Reseeded</div></div>
+            <div class="slot winner-line"><div class="seed">#1 Seed vs Lower Seed</div><div class="sub">Winner → title · Loser → 3rd place</div></div>
+            <div class="slot winner-line"><div class="seed">#2 Seed vs Highest Seed</div><div class="sub">Winner → title · Loser → 3rd place</div></div>
           </div>
-          <div class="round-col">
-            <div class="round-label">Week 16 · Championship</div>
+          <div class="round-col finale-col">
+            <div class="round-label">Week 16 · Title + 3rd</div>
             <div class="slot title-slot">
               <img src="/assets/detail-conf-champ.png" alt="Detail Conference Championship" />
               <span class="sr-only">Detail Conference Championship</span>
+            </div>
+            <div class="slot third-slot">
+              <img src="/assets/detail-3rd-place.png" alt="Detail Conference 3rd Place Game" />
+              <span class="sr-only">Detail Conference 3rd Place Game</span>
             </div>
           </div>
         </div>
@@ -433,14 +514,18 @@
           </div>
           <div class="round-col">
             <div class="round-label">Week 15 · Semifinals</div>
-            <div class="slot winner-line"><div class="seed">#1 Seed vs Lower Seed</div><div class="sub">Reseeded</div></div>
-            <div class="slot winner-line"><div class="seed">#2 Seed vs Highest Seed</div><div class="sub">Reseeded</div></div>
+            <div class="slot winner-line"><div class="seed">#1 Seed vs Lower Seed</div><div class="sub">Winner → title · Loser → 3rd place</div></div>
+            <div class="slot winner-line"><div class="seed">#2 Seed vs Highest Seed</div><div class="sub">Winner → title · Loser → 3rd place</div></div>
           </div>
-          <div class="round-col">
-            <div class="round-label">Week 16 · Championship</div>
+          <div class="round-col finale-col">
+            <div class="round-label">Week 16 · Title + 3rd</div>
             <div class="slot title-slot">
               <img src="/assets/overtime-conf-champ.png" alt="Overtime Conference Championship" />
               <span class="sr-only">Overtime Conference Championship</span>
+            </div>
+            <div class="slot third-slot">
+              <img src="/assets/overtime-3rd-place.png" alt="Overtime Conference 3rd Place Game" />
+              <span class="sr-only">Overtime Conference 3rd Place Game</span>
             </div>
           </div>
         </div>
@@ -450,7 +535,7 @@
     <div class="notes">
       <div class="note reveal reveal-delay-3">
         <h3>Conference Playoffs</h3>
-        <p>Weeks 14 through 16 are played inside each ESPN league. The #1 and #2 seeds earn byes in the Wild Card round. Semifinals are reseeded: the #1 seed plays the lower remaining seed, and the #2 seed plays the higher remaining seed.</p>
+        <p>Weeks 14 through 16 are played inside each ESPN league. The #1 and #2 seeds earn byes in the Wild Card round. Semifinals are reseeded: the #1 seed plays the lower remaining seed, and the #2 seed plays the higher remaining seed. Week 15 losers meet in a third-place game in Week 16 while the winners play for the conference title.</p>
       </div>
       <div class="note reveal reveal-delay-4">
         <h3>GridIron Bowl</h3>
@@ -460,6 +545,6 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js"></script>
+  <script src="/js/nav.js?v=5"></script>
 </body>
 </html>

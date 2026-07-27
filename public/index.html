@@ -8,468 +8,289 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=5" />
+  <link rel="stylesheet" href="/css/site.css?v=10" />
   <style>
-    .hero {
-      text-align: center;
-      padding-top: 0.55rem;
-      padding-bottom: 0.65rem;
-      border-bottom: 1px solid var(--line);
-      background: #050505;
+    body.landing {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(ellipse 80% 55% at 50% 0%, rgba(47, 109, 255, 0.14), transparent 55%),
+        radial-gradient(ellipse 40% 40% at 12% 80%, rgba(255, 122, 24, 0.08), transparent 50%),
+        radial-gradient(ellipse 40% 40% at 88% 75%, rgba(226, 35, 42, 0.08), transparent 50%),
+        #050505;
     }
 
-    .hero img {
-      width: min(340px, 68vw);
-      height: auto;
-      display: block;
-      margin: 0 auto;
-      background: transparent;
-      filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.75));
+    .landing-top {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding-top: 1.1rem;
+      padding-bottom: 0.5rem;
+      position: relative;
+      z-index: 2;
     }
 
-    .ad-line {
-      margin: 0.55rem 0 0;
+    .landing-top a {
+      color: var(--muted);
+      text-decoration: none;
       font-family: var(--display);
-      font-weight: 600;
-      text-transform: uppercase;
-      line-height: 1.15;
-      letter-spacing: 0.04em;
-      font-size: clamp(0.82rem, 2.8vw, 1.35rem);
-      white-space: nowrap;
-      color: #fff;
-    }
-
-    .ad-line .detail { color: var(--detail); }
-    .ad-line .champ { color: var(--blue); }
-    .ad-line .sep {
-      color: #666;
-      margin: 0 0.35em;
-      font-weight: 500;
-    }
-
-    .section {
-      padding: 1.75rem 0 0;
-    }
-
-    .section-label {
-      margin: 0 0 0.85rem;
-      font-family: var(--body);
-      font-size: var(--fs-xs);
+      font-size: 0.82rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--muted);
+      padding: 0.45rem 0.2rem;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s ease, border-color 0.2s ease;
     }
+    .landing-top a:hover { color: #fff; border-bottom-color: var(--blue); }
 
-    .boards {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.85rem;
-    }
-
-    .board {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      overflow: hidden;
-    }
-
-    .board-head {
+    .landing-hero {
+      flex: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 0.65rem 1rem;
-      border-bottom: 1px solid var(--line);
-      background: var(--panel-2);
+      justify-content: center;
+      text-align: center;
+      padding-top: 1rem;
+      padding-bottom: 3rem;
+      position: relative;
+      min-height: min(72vh, 640px);
     }
 
-    .board-head.detail { border-left: 4px solid var(--detail); }
-    .board-head.overtime { border-left: 4px solid var(--overtime); }
-
-    .board-brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      min-width: 0;
+    .landing-hero::before {
+      content: "";
+      position: absolute;
+      inset: 8% 10% auto;
+      height: 55%;
+      background:
+        repeating-linear-gradient(
+          -12deg,
+          transparent 0 14px,
+          rgba(255,255,255,0.012) 14px 15px
+        );
+      pointer-events: none;
+      mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
     }
 
-    .conf-logo {
-      width: clamp(3.5rem, 8vw, 5rem);
-      height: auto;
-      display: block;
-      flex: 0 0 auto;
-      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) contrast(1.06) saturate(1.08);
-    }
-
-    .board-head h2 {
+    .wordmark {
+      position: relative;
       margin: 0;
       font-family: var(--display);
-      font-size: 1.2rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      font-size: clamp(2.6rem, 9vw, 4.75rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      line-height: 1.15;
+      line-height: 0.95;
+      color: #fff;
+      animation: crest-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .wordmark span {
+      display: block;
+      margin-top: 0.18em;
+      font-size: 0.38em;
+      letter-spacing: 0.32em;
+      color: var(--blue);
+      font-weight: 600;
     }
 
-    .board-head.detail h2 { color: var(--detail); }
-    .board-head.overtime h2 { color: var(--overtime); }
-
-    .board-head .meta {
-      margin-top: 0.2rem;
-      color: var(--muted);
-      font-size: var(--fs-xs);
-      font-weight: 500;
-      letter-spacing: 0;
-    }
-
-    .standings { width: 100%; }
-
-    .row {
-      display: grid;
-      grid-template-columns:
-        2rem
-        minmax(0, 1.55fr)
-        minmax(0, 1fr)
-        2.1rem
-        2.1rem
-        2.1rem
-        minmax(2.8rem, 0.45fr)
-        minmax(2.8rem, 0.45fr);
-      gap: 0.3rem 0.45rem;
-      align-items: center;
-      width: 100%;
-      padding: 0.55rem 0.9rem;
-      border-bottom: 1px solid var(--line);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .row:last-child { border-bottom: 0; }
-
-    .row.head {
-      background: #0c0c0c;
-      color: var(--muted);
-      font-family: var(--body);
-      font-size: var(--fs-xs);
+    .tag {
+      position: relative;
+      margin: 1.35rem 0 0;
+      max-width: 28rem;
+      font-family: var(--display);
+      font-size: clamp(1rem, 3.2vw, 1.55rem);
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
+      line-height: 1.25;
+      color: #fff;
+      animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+    }
+    .tag .t { color: var(--blue); }
+    .tag .d {
+      color: #c5cedb;
+      text-shadow:
+        0 0 6px rgba(200, 215, 240, 0.45),
+        0 0 14px rgba(170, 190, 220, 0.25);
+    }
+    .tag .c {
+      color: #f2f5fa;
+      background: linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #e8eef6 28%,
+        #a8b4c4 58%,
+        #dde4ee 78%,
+        #8e9aab 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter:
+        drop-shadow(0 0 6px rgba(230, 240, 255, 0.85))
+        drop-shadow(0 0 14px rgba(190, 210, 240, 0.55))
+        drop-shadow(0 0 28px rgba(160, 185, 230, 0.35));
+    }
+    .tag .sep { color: #666; margin: 0 0.35em; font-weight: 500; }
+
+    .lead {
+      position: relative;
+      margin: 0.75rem 0 0;
+      max-width: 26rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+      font-weight: 400;
+      line-height: 1.45;
+      animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
     }
 
-    .row.body:hover { background: rgba(255, 255, 255, 0.03); }
-    .row.cut { box-shadow: inset 0 -1px 0 rgba(47, 109, 255, 0.55); }
+    .cta {
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-top: 1.75rem;
+      animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+    }
 
-    .row .num { text-align: right; }
-    .row .center { text-align: center; }
-
-    .rank {
-      text-align: center;
+    .cta a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 10.5rem;
+      padding: 0.85rem 1.4rem;
       font-family: var(--display);
       font-size: 0.95rem;
       font-weight: 600;
-      color: #cfcfcf;
-      letter-spacing: 0;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    .cta a.primary {
+      background: var(--blue);
+      color: #fff;
+      border: 1px solid var(--blue);
+    }
+    .cta a.primary:hover {
+      background: #3d79ff;
+      transform: translateY(-2px);
+    }
+    .cta a.ghost {
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.28);
+    }
+    .cta a.ghost:hover {
+      border-color: #fff;
+      transform: translateY(-2px);
     }
 
-    .team {
+    .conf-strip {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      min-width: 0;
+      justify-content: center;
+      gap: clamp(1.5rem, 6vw, 3.5rem);
+      padding: 1.5rem 0 2.25rem;
+      border-top: 1px solid var(--line);
+      animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
     }
-
-    .logo,
-    .fallback {
-      width: 1.7rem;
-      height: 1.7rem;
-      flex: 0 0 1.7rem;
-      border-radius: 2px;
-      object-fit: contain;
-      border: 1px solid var(--line);
+    .conf-strip .side {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
-
-    .logo {
-      background: #f3f3f3;
-      padding: 1px;
+    .conf-strip img {
+      width: clamp(2.75rem, 6vw, 3.5rem);
+      height: auto;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5));
     }
-
-    .fallback {
-      display: grid;
-      place-items: center;
-      background: #1a1a1a;
-      color: var(--muted);
+    .conf-strip .label {
+      font-family: var(--display);
+      font-size: clamp(0.85rem, 2vw, 1.05rem);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .conf-strip .detail { color: var(--detail); }
+    .conf-strip .overtime { color: var(--overtime); }
+    .conf-strip .vs {
       font-family: var(--display);
       font-size: 0.75rem;
-      font-weight: 700;
-    }
-
-    .name {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 0.9rem;
       font-weight: 600;
-      letter-spacing: 0;
-    }
-
-    .owner {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      letter-spacing: 0.16em;
       color: var(--muted);
-      font-size: 0.8rem;
-      font-weight: 400;
-    }
-
-    .wl {
-      font-family: var(--display);
-      font-size: 0.92rem;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-    }
-
-    .pts {
-      font-family: var(--display);
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: #d0d0d0;
-      letter-spacing: 0;
-    }
-
-    .path {
-      padding: 1.75rem 0 2.5rem;
-    }
-
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 0.55rem;
-    }
-
-    .step {
-      padding: 0.85rem 0.75rem;
-      border: 1px solid var(--line);
-      background: var(--panel);
-    }
-
-    .step span {
-      display: block;
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--muted);
     }
 
-    .step strong {
-      display: block;
-      margin-top: 0.35rem;
-      font-family: var(--display);
-      font-size: 1rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      line-height: 1.2;
+    @keyframes crest-in {
+      from { opacity: 0; transform: translateY(24px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .step.final {
-      border-color: rgba(47, 109, 255, 0.45);
-      background: rgba(47, 109, 255, 0.1);
-    }
-
-    .step.final strong { color: #8eb6ff; }
-
-    @media (max-width: 980px) {
-      .boards { grid-template-columns: 1fr; }
-      .steps { grid-template-columns: 1fr 1fr; }
-      .step.final { grid-column: 1 / -1; }
-    }
-
-    @media (max-width: 700px) {
-      .row {
-        grid-template-columns:
-          1.7rem
-          minmax(0, 1fr)
-          2rem
-          2rem
-          minmax(2.5rem, 0.4fr);
-      }
-      .col-owner,
-      .col-ties,
-      .col-pa { display: none; }
-      .steps { grid-template-columns: 1fr; }
-      .step.final { grid-column: auto; }
-      .board-head h2 { font-size: 1.1rem; }
-      .conf-logo { width: 3.25rem; }
+    @media (max-width: 560px) {
+      .cta { flex-direction: column; width: min(100%, 18rem); }
+      .cta a { width: 100%; }
+      .conf-strip { flex-direction: column; gap: 1rem; }
+      .conf-strip .vs { display: none; }
     }
   </style>
 </head>
-<body data-page="standings">
-  <header class="topbar">
-    <div class="shell topbar-inner">
-      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
-      <div class="sync" id="lastUpdated">Connecting to ESPN…</div>
-    </div>
-  </header>
+<body class="landing" data-page="home">
+  <div class="shell landing-top">
+    <a href="/enter" id="auth-link">Member Login</a>
+  </div>
 
-  <section class="hero shell">
-    <img src="/assets/gridiron24-logo.png?v=3" alt="GridIron 24" />
-    <p class="ad-line">
-      24 Teams<span class="sep">·</span><span class="detail">Two Conferences</span><span class="sep">·</span><span class="champ">One Champion</span>
+  <section class="shell landing-hero">
+    <h1 class="wordmark">GridIron<span>24</span></h1>
+    <p class="tag">
+      <span class="t">24 Teams</span><span class="sep">·</span><span class="d">Two Conferences</span><span class="sep">·</span><span class="c">One Champion</span>
     </p>
+    <p class="lead">Fantasy football headquarters for Detail and Overtime — standings, schedules, playoffs, and the GridIron Bowl.</p>
+    <div class="cta">
+      <a class="primary" href="/enter" id="cta-enter">Enter League HQ</a>
+      <a class="ghost" href="/register">Create Account</a>
+    </div>
   </section>
 
-  <main class="shell">
-    <section class="section">
-      <div class="section-label">Standings</div>
-      <div class="boards">
-        <div class="board" id="detail"></div>
-        <div class="board" id="overtime"></div>
-      </div>
-    </section>
+  <div class="shell conf-strip">
+    <div class="side detail">
+      <span class="label detail">Detail Conference</span>
+    </div>
+    <span class="vs">vs</span>
+    <div class="side overtime">
+      <span class="label overtime">Overtime Conference</span>
+    </div>
+  </div>
 
-    <section class="path">
-      <div class="section-label">Road to the Bowl</div>
-      <div class="steps">
-        <div class="step"><span>Weeks 1–13</span><strong>Regular Season</strong></div>
-        <div class="step"><span>Week 14</span><strong>Wild Card</strong></div>
-        <div class="step"><span>Week 15</span><strong>Semifinals</strong></div>
-        <div class="step"><span>Week 16</span><strong>Conf. Title</strong></div>
-        <div class="step final"><span>Week 17</span><strong>GridIron Bowl I</strong></div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-
-  <script src="/js/nav.js"></script>
   <script>
-    const escapeHtml = (value = '') => String(value)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-
-    function fmtPts(value) {
-      return Number(value || 0).toFixed(1);
-    }
-
-    function logoMarkup(team) {
-      if (team.logo) {
-        return `<img class="logo" src="${escapeHtml(team.logo)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;fallback&quot;>24</div>'">`;
-      }
-      return `<div class="fallback">24</div>`;
-    }
-
-    function confLogo(key, name) {
-      const src = key === 'detail'
-        ? '/assets/detail-conference.png'
-        : '/assets/overtime-conference.png';
-      return `<img class="conf-logo" src="${src}" alt="${escapeHtml(name)}" width="80" height="80" decoding="async" />`;
-    }
-
-    function boardHead(conf) {
-      const tone = conf.key === 'detail' ? 'detail' : 'overtime';
-      const week = conf.currentMatchupPeriod != null ? ` · Week ${conf.currentMatchupPeriod}` : '';
-      return `
-        <div class="board-head ${tone}">
-          <div class="board-brand">
-            ${confLogo(conf.key, conf.name)}
-            <div>
-              <h2>${escapeHtml(conf.name)}</h2>
-              <div class="meta">ESPN ${conf.leagueId}${week}</div>
-            </div>
-          </div>
-        </div>`;
-    }
-
-    function conferenceMarkup(conf) {
-      if (!conf.ok) {
-        return `
-          ${boardHead(conf)}
-          <div class="msg">
-            <strong>ESPN connection failed</strong>
-            ${escapeHtml(conf.error || 'Unknown error')}
-          </div>`;
-      }
-
-      const teams = conf.teams || [];
-      if (!teams.length) {
-        return `
-          ${boardHead(conf)}
-          <div class="msg">No teams have joined this conference yet.</div>`;
-      }
-
-      const rows = teams.map((team, index) => {
-        const rank = index + 1;
-        return `
-          <div class="row body ${rank === 6 ? 'cut' : ''}">
-            <div class="rank">${rank}</div>
-            <div class="team">
-              ${logoMarkup(team)}
-              <div class="name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
-            </div>
-            <div class="owner col-owner" title="${escapeHtml(team.owner)}">${escapeHtml(team.owner)}</div>
-            <div class="num wl">${team.wins || 0}</div>
-            <div class="num wl">${team.losses || 0}</div>
-            <div class="num wl col-ties">${team.ties || 0}</div>
-            <div class="num pts">${fmtPts(team.pointsFor)}</div>
-            <div class="num pts col-pa">${fmtPts(team.pointsAgainst)}</div>
-          </div>`;
-      }).join('');
-
-      return `
-        ${boardHead(conf)}
-        <div class="standings">
-          <div class="row head">
-            <div class="center">#</div>
-            <div>Team</div>
-            <div class="col-owner">Owner</div>
-            <div class="num">W</div>
-            <div class="num">L</div>
-            <div class="num col-ties">T</div>
-            <div class="num">PF</div>
-            <div class="num col-pa">PA</div>
-          </div>
-          ${rows}
-        </div>`;
-    }
-
-    async function load() {
-      document.getElementById('detail').innerHTML = '<div class="msg">Loading Detail Conference…</div>';
-      document.getElementById('overtime').innerHTML = '<div class="msg">Loading Overtime Conference…</div>';
-
+    async function hydrateAuth() {
       try {
-        const response = await fetch('/api/leagues', { cache: 'no-store' });
-        if (!response.ok) throw new Error(`Server returned ${response.status}`);
-        const data = await response.json();
-
-        for (const conf of data.conferences) {
-          const target = document.getElementById(conf.key);
-          if (target) target.innerHTML = conferenceMarkup(conf);
+        const res = await fetch('/api/auth', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.authenticated) return;
+        const enter = document.getElementById('cta-enter');
+        const link = document.getElementById('auth-link');
+        if (enter) {
+          enter.href = '/home.html';
+          enter.textContent = 'Open League HQ';
         }
-
-        const time = new Date(data.generatedAt);
-        if (window.GridIronNav) {
-          window.GridIronNav.setSync(`ESPN sync · ${time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
-        } else {
-          document.getElementById('lastUpdated').innerHTML =
-            `<span class="live">●</span>ESPN sync · ${time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+        if (link) {
+          link.href = '/home.html';
+          link.textContent = 'League HQ';
         }
-      } catch (error) {
-        if (window.GridIronNav) window.GridIronNav.setSync('Connection error', false);
-        else document.getElementById('lastUpdated').textContent = 'Connection error';
-        const msg = `<div class="msg"><strong>Dashboard error</strong>${escapeHtml(error.message)}</div>`;
-        document.getElementById('detail').innerHTML = msg;
-        document.getElementById('overtime').innerHTML = msg;
+      } catch {
+        /* landing still works without auth check */
       }
     }
-
-    load();
-    setInterval(load, 60_000);
+    hydrateAuth();
   </script>
 </body>
 </html>

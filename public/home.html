@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Home · GridIron 24</title>
+  <meta name="description" content="GridIron 24 league headquarters." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=10" />
+  <style>
+    .hq-hero {
+      text-align: center;
+      padding: 1.2rem 0 1.05rem;
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(ellipse 70% 80% at 50% 25%, rgba(47, 109, 255, 0.12), transparent 60%),
+        #050505;
+    }
+    .hq-hero img {
+      width: min(320px, 61vw);
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.75));
+    }
+    .hq-hero .tag {
+      margin: 0.8rem 0 0;
+      font-family: var(--display);
+      font-size: clamp(0.72rem, 2.24vw, 1.08rem);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      line-height: 1.25;
+      color: #fff;
+    }
+    .hq-hero .tag .t { color: var(--blue); }
+    .hq-hero .tag .d {
+      color: #c5cedb;
+      text-shadow:
+        0 0 6px rgba(200, 215, 240, 0.45),
+        0 0 14px rgba(170, 190, 220, 0.25);
+    }
+    .hq-hero .tag .c {
+      color: #f2f5fa;
+      background: linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #e8eef6 28%,
+        #a8b4c4 58%,
+        #dde4ee 78%,
+        #8e9aab 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter:
+        drop-shadow(0 0 6px rgba(230, 240, 255, 0.85))
+        drop-shadow(0 0 14px rgba(190, 210, 240, 0.55))
+        drop-shadow(0 0 28px rgba(160, 185, 230, 0.35));
+    }
+    .hq-hero .tag .sep { color: #666; margin: 0 0.3em; }
+
+    .hq-main {
+      padding-top: 0.85rem;
+      padding-bottom: 1.75rem;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      align-items: start;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin: 0 0 0.4rem;
+    }
+    .section-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .section-head a {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-decoration: none;
+    }
+    .section-head a:hover { color: #fff; }
+
+    .standings-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+    }
+
+    .board {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .board-head {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.45rem 0.65rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+    .board-head.detail { border-left: 3px solid var(--detail); }
+    .board-head.overtime { border-left: 3px solid var(--overtime); }
+    .board-head img {
+      width: 2.35rem;
+      height: auto;
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
+    }
+    .board-head h3 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .board-head.detail h3 { color: var(--detail); }
+    .board-head.overtime h3 { color: var(--overtime); }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+    }
+    .mini-table th {
+      padding: 0.22rem 0.4rem;
+      text-align: left;
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--line);
+    }
+    .mini-table th.num,
+    .mini-table td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .mini-table td {
+      padding: 0.18rem 0.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+    .mini-table tr:last-child td { border-bottom: 0; }
+    .mini-table .rank {
+      width: 1.1rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .mini-table .team {
+      width: 100%;
+      max-width: none;
+      overflow: hidden;
+      color: #fff;
+      font-weight: 500;
+    }
+    .mini-table .team-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      max-width: 100%;
+      min-width: 0;
+      width: 100%;
+    }
+    .mini-table .team-name {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mini-table .team-logo-sm,
+    .mini-table .team-logo-fallback {
+      width: 1.15rem;
+      height: 1.15rem;
+    }
+    .mini-table th:nth-child(2),
+    .mini-table td.team {
+      width: auto;
+    }
+    .mini-table th.num,
+    .mini-table td.num {
+      width: 2.6rem;
+    }
+    .mini-table th:nth-child(3),
+    .mini-table td.num:nth-child(3) {
+      width: 3.4rem;
+    }
+    .mini-table .cut td { border-top: 1px dashed rgba(255,255,255,0.18); }
+    .mini-table .out td { opacity: 0.7; }
+    .mini-table tr.cut-line td {
+      padding: 0.28rem 0.4rem;
+      border-top: 2px solid rgba(47, 109, 255, 0.75);
+      border-bottom: 1px solid var(--line);
+      background: rgba(47, 109, 255, 0.08);
+      text-align: center;
+      font-family: var(--display);
+      font-size: 0.55rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+      opacity: 1;
+    }
+
+    .logo-fallback {
+      display: inline-block;
+      width: 2.1rem;
+      height: 2.1rem;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.06);
+      flex: 0 0 auto;
+    }
+    .motw-side .logo-fallback { width: 4.75rem; height: 4.75rem; }
+
+    .pulse-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .pulse-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .pulse-card .board-head { margin: 0; }
+
+    .motw {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.65rem;
+      align-items: center;
+      padding: 0.9rem 0.85rem;
+    }
+    .motw-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      text-align: center;
+      min-width: 0;
+    }
+    .motw-side img {
+      width: 4.75rem;
+      height: 4.75rem;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+      background: rgba(255,255,255,0.03);
+      border-radius: 0.55rem;
+    }
+    .motw-side .nm {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+      max-width: 100%;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    .motw-mid {
+      text-align: center;
+      font-family: var(--display);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .motw-mid .vs {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-bottom: 0.2rem;
+    }
+    .motw-mid .score {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+    .motw-mid .proj {
+      margin-top: 0.15rem;
+      font-size: 0.62rem;
+      color: var(--muted-2);
+      letter-spacing: 0.04em;
+    }
+
+    .hotnot {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    .hotnot-col {
+      padding: 0.75rem 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .hotnot-col + .hotnot-col { border-left: 1px solid var(--line); }
+    .hotnot-col .label {
+      font-family: var(--display);
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .hotnot-col.hot .label { color: var(--good); }
+    .hotnot-col.not .label { color: var(--bad); }
+    .hotnot-team {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+    .hotnot-team img {
+      width: 3.75rem;
+      height: 3.75rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,0.4));
+      background: rgba(255,255,255,0.03);
+      border-radius: 0.5rem;
+    }
+    .hotnot-team .logo-fallback {
+      width: 3.75rem;
+      height: 3.75rem;
+      flex: 0 0 auto;
+    }
+    .hotnot-team .nm {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    .hotnot-team .sub {
+      margin-top: 0.18rem;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .panel-body {
+      flex: 1;
+      padding: 0.55rem 0.65rem;
+      overflow: auto;
+      max-height: 14.5rem;
+    }
+    .panel-foot {
+      padding: 0.45rem 0.65rem;
+      border-top: 1px solid var(--line);
+      background: #0c0c0c;
+    }
+
+    .board-panel .panel-body { max-height: 9.5rem; }
+
+    .empty {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.35;
+      padding: 0.2rem 0;
+    }
+
+    .news-item + .news-item,
+    .msg-item + .msg-item {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--line);
+    }
+    .news-item h4 {
+      margin: 0 0 0.15rem;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #fff;
+      line-height: 1.2;
+    }
+    .news-item p,
+    .msg-item p {
+      margin: 0;
+      color: rgba(255,255,255,0.82);
+      font-size: 0.78rem;
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+    .meta {
+      margin: 0.2rem 0 0;
+      color: var(--muted-2);
+      font-size: 0.65rem;
+    }
+    .meta button {
+      margin-left: 0.4rem;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--muted);
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .meta button:hover { color: #fca5a5; }
+
+    .composer label {
+      display: block;
+      margin-bottom: 0.18rem;
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .composer input,
+    .composer textarea {
+      width: 100%;
+      margin-bottom: 0.35rem;
+      padding: 0.35rem 0.45rem;
+      border: 1px solid var(--line);
+      background: #0a0a0a;
+      color: #fff;
+      font-family: var(--body);
+      font-size: 0.78rem;
+    }
+    .composer textarea {
+      min-height: 2.6rem;
+      resize: vertical;
+    }
+    .composer input:focus,
+    .composer textarea:focus {
+      outline: none;
+      border-color: rgba(255,255,255,0.35);
+    }
+    .composer button {
+      padding: 0.32rem 0.6rem;
+      border: 1px solid #fff;
+      background: #fff;
+      color: #050505;
+      font-family: var(--display);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .composer button:hover:not(:disabled) {
+      background: transparent;
+      color: #fff;
+    }
+    .composer button:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+    .composer-err {
+      display: none;
+      margin: 0 0 0.35rem;
+      color: #fca5a5;
+      font-size: 0.72rem;
+    }
+    .composer-err.show { display: block; }
+
+    .msg {
+      padding: 0.55rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .msg strong { display: block; color: #fff; margin-bottom: 0.15rem; }
+
+    footer.shell {
+      padding-top: 0.75rem;
+      padding-bottom: 1rem;
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 980px) {
+      .top-row,
+      .pulse-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .standings-preview { grid-template-columns: 1fr; }
+      .motw-side img,
+      .motw-side .logo-fallback { width: 3.75rem; height: 3.75rem; }
+      .hotnot-team img,
+      .hotnot-team .logo-fallback { width: 3.1rem; height: 3.1rem; }
+      .motw-side .nm,
+      .hotnot-team .nm { font-size: 0.88rem; }
+    }
+  </style>
+</head>
+<body data-page="home">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">League HQ</div>
+    </div>
+  </header>
+
+  <section class="hq-hero shell">
+    <img src="/assets/gridiron24-logo.png?v=3" alt="GridIron 24" />
+    <p class="tag">
+      <span class="t">24 Teams</span><span class="sep">·</span><span class="d">Two Conferences</span><span class="sep">·</span><span class="c">One Champion</span>
+    </p>
+  </section>
+
+  <main class="hq-main shell">
+    <div class="top-row">
+      <div>
+        <div class="section-head">
+          <h2>Standings</h2>
+          <a href="/standings.html">Full →</a>
+        </div>
+        <div class="standings-preview" id="standings">
+          <div class="msg">Loading standings…</div>
+        </div>
+      </div>
+
+      <section class="panel" id="news-panel">
+        <div class="section-head" style="padding: 0.45rem 0.65rem 0; margin: 0;">
+          <h2>League News</h2>
+        </div>
+        <div class="panel-body" id="news-list" style="max-height: 18rem;"><div class="empty">Loading news…</div></div>
+      </section>
+    </div>
+
+    <div class="section-head">
+      <h2>Matchup of the Week</h2>
+      <a href="/schedules.html">Schedules →</a>
+    </div>
+    <div class="pulse-row" id="motw">
+      <div class="msg">Loading matchups…</div>
+    </div>
+
+    <div class="section-head">
+      <h2>Who’s Hot / Who’s Not</h2>
+      <span style="color:var(--muted);font-size:0.78rem;font-weight:600;">Win streaks + PPG · Losing streaks + low scoring</span>
+    </div>
+    <div class="pulse-row" id="hotnot">
+      <div class="msg">Loading…</div>
+    </div>
+
+    <section class="panel board-panel" id="board-panel">
+      <div class="section-head" style="padding: 0.45rem 0.65rem 0; margin: 0;">
+        <h2>Message Board</h2>
+      </div>
+      <div class="panel-body" id="msg-list"><div class="empty">Loading messages…</div></div>
+      <div class="panel-foot composer" id="msg-composer">
+        <div class="composer-err" id="msg-err"></div>
+        <label for="msg-body">Say something</label>
+        <textarea id="msg-body" maxlength="2000" placeholder="Trash talk welcome. Keep it league-friendly."></textarea>
+        <button type="button" id="msg-submit">Post Message</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <script src="/js/nav.js?v=5"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    let currentUser = null;
+
+    function fmtWhen(iso) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      } catch {
+        return '';
+      }
+    }
+
+    function record(team) {
+      const ties = Number(team.ties || 0);
+      return ties > 0
+        ? `${team.wins}-${team.losses}-${ties}`
+        : `${team.wins}-${team.losses}`;
+    }
+
+    function teamLogo(team, sizeClass = '') {
+      if (!team?.logo) {
+        return `<span class="logo-fallback" aria-hidden="true"></span>`;
+      }
+      return `<img src="${esc(team.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+    }
+
+    function confBoard(conf) {
+      if (!conf?.ok) {
+        return `
+          <div class="board">
+            <div class="board-head ${esc(conf?.key || '')}">
+              ${conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
+              <h3>${esc(conf?.name || 'Conference')}</h3>
+            </div>
+            <div class="empty" style="padding:0.75rem">Unavailable</div>
+          </div>`;
+      }
+      const teams = (conf.teams || []).slice(0, 12);
+      const bodyRows = [];
+      teams.forEach((t, i) => {
+        const rank = i + 1;
+        if (rank === 7) {
+          bodyRows.push(`<tr class="cut-line"><td colspan="4">Playoff cut · 7–12 out · tiebreaker: PF</td></tr>`);
+        }
+        bodyRows.push(`
+          <tr class="${rank > 6 ? 'out' : ''}">
+            <td class="rank">${rank}</td>
+            <td class="team" title="${esc(t.name)}">
+              <span class="team-cell">
+                ${t.logo
+                  ? `<img class="team-logo-sm" src="${esc(t.logo)}" alt="" width="22" height="22" loading="lazy" referrerpolicy="no-referrer" />`
+                  : `<span class="team-logo-fallback" aria-hidden="true"></span>`}
+                <span class="team-name">${esc(t.name)}</span>
+              </span>
+            </td>
+            <td class="num">${esc(record(t))}</td>
+            <td class="num">${Number(t.pointsFor || 0).toFixed(0)}</td>
+          </tr>`);
+      });
+      return `
+        <div class="board">
+          <div class="board-head ${esc(conf.key)}">
+            ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
+            <h3>${esc(conf.shortName || conf.name)}</h3>
+          </div>
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Team</th>
+                <th class="num">W-L</th>
+                <th class="num">PF</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bodyRows.join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    function pickMatchupOfWeek(matchups) {
+      const list = matchups || [];
+      if (!list.length) return null;
+      return list.slice().sort((a, b) => {
+        const aLive = Number(a.home.score || 0) + Number(a.away.score || 0);
+        const bLive = Number(b.home.score || 0) + Number(b.away.score || 0);
+        if (bLive !== aLive) return bLive - aLive;
+        const aProj = Number(a.home.projected || 0) + Number(a.away.projected || 0);
+        const bProj = Number(b.home.projected || 0) + Number(b.away.projected || 0);
+        return bProj - aProj;
+      })[0];
+    }
+
+    function motwCard(conf) {
+      const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
+      if (!conf?.ok) {
+        return `<div class="pulse-card"><div class="board-head ${tone}"><h3>${esc(conf?.name || 'Conference')}</h3></div><div class="empty" style="padding:0.75rem">Unavailable</div></div>`;
+      }
+      const m = pickMatchupOfWeek(conf.matchups);
+      if (!m) {
+        return `
+          <div class="pulse-card">
+            <div class="board-head ${tone}">
+              ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
+              <h3>${esc(conf.shortName || conf.name)}</h3>
+            </div>
+            <div class="empty" style="padding:0.75rem">No matchups this week</div>
+          </div>`;
+      }
+      return `
+        <div class="pulse-card">
+          <div class="board-head ${tone}">
+            ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
+            <h3>${esc(conf.shortName || conf.name)} · Week ${esc(conf.week)}</h3>
+          </div>
+          <div class="motw">
+            <div class="motw-side">
+              ${teamLogo(m.away)}
+              <div class="nm" title="${esc(m.away.name)}">${esc(m.away.name)}</div>
+            </div>
+            <div class="motw-mid">
+              <div class="vs">VS</div>
+              <div class="score">${Number(m.away.score || 0).toFixed(1)} – ${Number(m.home.score || 0).toFixed(1)}</div>
+              <div class="proj">Proj ${Number(m.away.projected || 0).toFixed(1)}–${Number(m.home.projected || 0).toFixed(1)}</div>
+            </div>
+            <div class="motw-side">
+              ${teamLogo(m.home)}
+              <div class="nm" title="${esc(m.home.name)}">${esc(m.home.name)}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function streakText(t) {
+      const n = Number(t.streakLength || 0);
+      if (n <= 0 || !t.streakType || t.streakType === 'NONE') return null;
+      if (t.streakType === 'WIN') return `${n}W streak`;
+      if (t.streakType === 'LOSS') return `${n}L streak`;
+      return null;
+    }
+
+    function formSub(t) {
+      const parts = [];
+      const streak = streakText(t);
+      if (streak) parts.push(streak);
+      const games = Number(t.gamesPlayed || (t.wins || 0) + (t.losses || 0) + (t.ties || 0));
+      const pf = Number(t.pointsFor || 0);
+      if (games > 0) {
+        const ppg = Number(t.pointsPerGame != null ? t.pointsPerGame : pf / games);
+        parts.push(`${ppg.toFixed(1)} PPG`);
+        parts.push(`${pf.toFixed(1)} PF`);
+      } else {
+        parts.push(record(t));
+      }
+      return parts.join(' · ');
+    }
+
+    // Hot = win streak + high scoring. Not = loss streak + low scoring.
+    function heatIndex(t) {
+      const winStreak = t.streakType === 'WIN' ? Number(t.streakLength || 0) : 0;
+      const lossStreak = t.streakType === 'LOSS' ? Number(t.streakLength || 0) : 0;
+      const ppg = Number(t.pointsPerGame || 0);
+      const pf = Number(t.pointsFor || 0);
+      return winStreak * 55 + ppg * 2.2 + pf * 0.08 - lossStreak * 40;
+    }
+
+    function coldIndex(t) {
+      const winStreak = t.streakType === 'WIN' ? Number(t.streakLength || 0) : 0;
+      const lossStreak = t.streakType === 'LOSS' ? Number(t.streakLength || 0) : 0;
+      const ppg = Number(t.pointsPerGame || 0);
+      const pf = Number(t.pointsFor || 0);
+      return lossStreak * 55 - ppg * 2.2 - pf * 0.08 - winStreak * 40;
+    }
+
+    function pickHotNot(teams) {
+      const list = (teams || []).slice();
+      if (list.length < 2) return { hot: list[0] || null, cold: null, ready: false };
+      const played = list.some((t) => Number(t.gamesPlayed || 0) > 0 || Number(t.pointsFor || 0) > 0);
+      if (!played) return { hot: null, cold: null, ready: false };
+
+      const byHeat = list.slice().sort((a, b) => heatIndex(b) - heatIndex(a));
+      const hot = byHeat[0];
+      const byCold = list
+        .filter((t) => t.id !== hot.id)
+        .sort((a, b) => coldIndex(b) - coldIndex(a));
+      return { hot, cold: byCold[0] || byHeat[byHeat.length - 1], ready: true };
+    }
+
+    function hotNotCard(conf) {
+      const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
+      if (!conf?.ok) {
+        return `<div class="pulse-card"><div class="board-head ${tone}"><h3>${esc(conf?.name || 'Conference')}</h3></div><div class="empty" style="padding:0.75rem">Unavailable</div></div>`;
+      }
+      const teams = (conf.teams || []).slice();
+      if (!teams.length) {
+        return `
+          <div class="pulse-card">
+            <div class="board-head ${tone}">
+              ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
+              <h3>${esc(conf.shortName || conf.name)}</h3>
+            </div>
+            <div class="empty" style="padding:0.75rem">No teams yet</div>
+          </div>`;
+      }
+      const pick = pickHotNot(teams);
+      if (!pick.ready) {
+        return `
+          <div class="pulse-card">
+            <div class="board-head ${tone}">
+              ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
+              <h3>${esc(conf.shortName || conf.name)}</h3>
+            </div>
+            <div class="empty" style="padding:0.85rem 0.75rem">Opens after Week 1 — streaks + PPG</div>
+          </div>`;
+      }
+      return `
+        <div class="pulse-card">
+          <div class="board-head ${tone}">
+            ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
+            <h3>${esc(conf.shortName || conf.name)}</h3>
+          </div>
+          <div class="hotnot">
+            <div class="hotnot-col hot">
+              <div class="label">Who’s Hot</div>
+              <div class="hotnot-team">
+                ${teamLogo(pick.hot)}
+                <div style="min-width:0">
+                  <div class="nm" title="${esc(pick.hot.name)}">${esc(pick.hot.name)}</div>
+                  <div class="sub">${esc(formSub(pick.hot))}</div>
+                </div>
+              </div>
+            </div>
+            <div class="hotnot-col not">
+              <div class="label">Who’s Not</div>
+              <div class="hotnot-team">
+                ${teamLogo(pick.cold)}
+                <div style="min-width:0">
+                  <div class="nm" title="${esc(pick.cold.name)}">${esc(pick.cold.name)}</div>
+                  <div class="sub">${esc(formSub(pick.cold))}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    async function loadStandings() {
+      const el = document.getElementById('standings');
+      try {
+        const res = await fetch('/api/leagues', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        const detail = (data.conferences || []).find((c) => c.key === 'detail');
+        const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
+        el.innerHTML = confBoard(detail) + confBoard(overtime);
+        document.getElementById('hotnot').innerHTML = hotNotCard(detail) + hotNotCard(overtime);
+        const t = new Date(data.generatedAt);
+        window.GridIronNav?.setSync(`ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        el.innerHTML = `<div class="msg"><strong>Standings unavailable</strong>${esc(err.message)}</div>`;
+        document.getElementById('hotnot').innerHTML = `<div class="msg"><strong>Unavailable</strong>${esc(err.message)}</div>`;
+        window.GridIronNav?.setSync('Connection error', false);
+      }
+    }
+
+    async function loadMatchupOfWeek() {
+      const el = document.getElementById('motw');
+      try {
+        const res = await fetch('/api/schedule', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        const detail = (data.conferences || []).find((c) => c.key === 'detail');
+        const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
+        el.innerHTML = motwCard(detail) + motwCard(overtime);
+      } catch (err) {
+        el.innerHTML = `<div class="msg"><strong>Matchups unavailable</strong>${esc(err.message)}</div>`;
+      }
+    }
+
+    function canDeleteMessage(item) {
+      if (!currentUser) return false;
+      return currentUser.role === 'commissioner'
+        || currentUser.role === 'conference_admin'
+        || item.authorId === currentUser.id;
+    }
+
+    function renderNews(items) {
+      const el = document.getElementById('news-list');
+      if (!items.length) {
+        el.innerHTML = `<div class="empty">No league news yet.</div>`;
+        return;
+      }
+      el.innerHTML = items.map((n) => `
+        <article class="news-item" data-id="${esc(n.id)}">
+          <h4>${esc(n.title)}</h4>
+          <p>${esc(n.body)}</p>
+          <p class="meta">${esc(n.authorName)} · ${esc(fmtWhen(n.createdAt))}</p>
+        </article>`).join('');
+    }
+
+    function renderMessages(items) {
+      const el = document.getElementById('msg-list');
+      if (!items.length) {
+        el.innerHTML = `<div class="empty">No messages yet. Start the board.</div>`;
+        return;
+      }
+      el.innerHTML = items.map((m) => `
+        <article class="msg-item" data-id="${esc(m.id)}">
+          <p>${esc(m.body)}</p>
+          <p class="meta">
+            ${esc(m.authorName)} · ${esc(fmtWhen(m.createdAt))}
+            ${canDeleteMessage(m) ? `<button type="button" data-del-msg="${esc(m.id)}">Delete</button>` : ''}
+          </p>
+        </article>`).join('');
+    }
+
+    async function loadNews() {
+      const res = await fetch('/api/news', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load news');
+      renderNews(data.news || []);
+    }
+
+    async function loadMessages() {
+      const res = await fetch('/api/messages', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load messages');
+      renderMessages(data.messages || []);
+    }
+
+    function wireComposers() {
+      document.getElementById('msg-submit').addEventListener('click', async () => {
+        const err = document.getElementById('msg-err');
+        const btn = document.getElementById('msg-submit');
+        err.classList.remove('show');
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ body: document.getElementById('msg-body').value })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not post message');
+          document.getElementById('msg-body').value = '';
+          await loadMessages();
+        } catch (e) {
+          err.textContent = e.message;
+          err.classList.add('show');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('msg-list').addEventListener('click', async (e) => {
+        const id = e.target?.dataset?.delMsg;
+        if (!id) return;
+        if (!confirm('Delete this message?')) return;
+        await fetch(`/api/messages/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await loadMessages();
+      });
+    }
+
+    (async () => {
+      const auth = await (window.GridIronNav?.authReady || Promise.resolve({ user: null }));
+      currentUser = auth.user || null;
+      wireComposers();
+      await Promise.all([
+        loadStandings(),
+        loadMatchupOfWeek(),
+        loadNews().catch((err) => {
+          document.getElementById('news-list').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+        }),
+        loadMessages().catch((err) => {
+          document.getElementById('msg-list').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+        })
+      ]);
+    })();
+  </script>
+</body>
+</html>

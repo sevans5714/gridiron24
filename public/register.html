@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>Create Account · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=10" />
+  <style>
+    body.login-page {
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      padding: 1.5rem 0;
+    }
+    .login-card {
+      width: min(100%, 22rem);
+      padding: 0.5rem 1rem 1.5rem;
+      animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .crest {
+      display: block;
+      width: min(70vw, 14rem);
+      height: auto;
+      margin: 0 auto 0.75rem;
+    }
+    h1 {
+      margin: 0 0 1rem;
+      text-align: center;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.28rem;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.72);
+    }
+    input {
+      width: 100%;
+      padding: 0.45rem 0.65rem;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: #0d0d0d;
+      color: #fff;
+      font-family: var(--body);
+      font-size: 0.88rem;
+      margin-bottom: 0.7rem;
+    }
+    input:focus { outline: none; border-color: rgba(255, 255, 255, 0.4); }
+    .section {
+      margin: 0.35rem 0 0.85rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-family: var(--display);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4);
+    }
+    button {
+      width: 100%;
+      margin-top: 0.2rem;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid #fff;
+      background: #fff;
+      color: #050505;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { background: transparent; color: #fff; }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    .err {
+      display: none;
+      margin: 0 0 0.7rem;
+      padding: 0.45rem 0.6rem;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      background: rgba(239, 68, 68, 0.08);
+      color: #fca5a5;
+      font-size: 0.78rem;
+    }
+    .err.show { display: block; }
+    .links {
+      margin: 0.9rem 0 0;
+      text-align: center;
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.55);
+    }
+    .links a { color: rgba(255, 255, 255, 0.85); }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="login-page">
+  <form class="login-card" id="form" autocomplete="on">
+    <img class="crest" src="/assets/login-crest.png" alt="GridIron 24" width="1024" height="1024" />
+    <h1>Create Account</h1>
+    <div class="err" id="err" role="alert"></div>
+
+    <label for="name">Full Name</label>
+    <input id="name" name="name" type="text" required autofocus autocomplete="name" />
+
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" required autocomplete="email" />
+
+    <div class="section">League access</div>
+    <label for="leagueName">League Name</label>
+    <input id="leagueName" name="leagueName" type="text" required autocomplete="off" />
+    <label for="leaguePassword">League Password</label>
+    <input id="leaguePassword" name="leaguePassword" type="password" required autocomplete="off" />
+
+    <div class="section">Your login</div>
+    <label for="loginName">Login Name</label>
+    <input id="loginName" name="loginName" type="text" required autocomplete="username" />
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" required minlength="6" autocomplete="new-password" />
+    <label for="confirmPassword">Confirm Password</label>
+    <input id="confirmPassword" name="confirmPassword" type="password" required minlength="6" autocomplete="new-password" />
+
+    <button type="submit" id="submit">Create Account</button>
+    <p class="links">Already have an account? <a href="/enter">Sign in</a></p>
+  </form>
+  <script>
+    const form = document.getElementById('form');
+    const errEl = document.getElementById('err');
+    const submit = document.getElementById('submit');
+    const next = new URLSearchParams(window.location.search).get('next') || '/home.html';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errEl.classList.remove('show');
+      submit.disabled = true;
+      const body = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        leagueName: document.getElementById('leagueName').value.trim(),
+        leaguePassword: document.getElementById('leaguePassword').value,
+        loginName: document.getElementById('loginName').value.trim(),
+        password: document.getElementById('password').value,
+        confirmPassword: document.getElementById('confirmPassword').value
+      };
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not create account');
+        window.location.href = next;
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.add('show');
+        submit.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

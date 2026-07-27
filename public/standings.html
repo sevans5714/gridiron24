@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Standings · GridIron 24</title>
+  <meta name="description" content="24 Teams. Two Conferences. One Champion. GridIron 24 fantasy football league headquarters." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=11" />
+  <style>
+    .section {
+      padding: 1.75rem 0 0;
+    }
+
+    .boards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+
+    .board {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .board-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .board-head.detail { border-left: 4px solid var(--detail); }
+    .board-head.overtime { border-left: 4px solid var(--overtime); }
+
+    .board-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+
+    .conf-logo {
+      width: clamp(3.5rem, 8vw, 5rem);
+      height: auto;
+      display: block;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) contrast(1.06) saturate(1.08);
+    }
+
+    .board-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      line-height: 1.15;
+    }
+
+    .board-head.detail h2 { color: var(--detail); }
+    .board-head.overtime h2 { color: var(--overtime); }
+
+    .board-head .meta {
+      margin-top: 0.2rem;
+      color: var(--muted);
+      font-size: var(--fs-xs);
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    .standings { width: 100%; }
+
+    .row {
+      display: grid;
+      grid-template-columns:
+        1.75rem
+        minmax(0, 2.8fr)
+        minmax(0, 0.75fr)
+        1.85rem
+        1.85rem
+        1.85rem
+        minmax(2.4rem, 0.32fr)
+        minmax(2.4rem, 0.32fr);
+      gap: 0.3rem 0.4rem;
+      align-items: center;
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .row:last-child { border-bottom: 0; }
+
+    .row.head {
+      background: #0c0c0c;
+      color: var(--muted);
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .row.body:hover { background: rgba(255, 255, 255, 0.03); }
+    .row.out { opacity: 0.72; }
+
+    .cut-line {
+      display: grid;
+      grid-template-columns: 1fr;
+      padding: 0.35rem 0.9rem;
+      border-top: 2px solid rgba(47, 109, 255, 0.75);
+      border-bottom: 1px solid var(--line);
+      background: rgba(47, 109, 255, 0.08);
+      font-family: var(--display);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+      text-align: center;
+    }
+
+    .row .num { text-align: right; }
+    .row .center { text-align: center; }
+
+    .rank {
+      text-align: center;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #cfcfcf;
+      letter-spacing: 0;
+    }
+
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+
+    .name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0;
+      flex: 1;
+    }
+
+    .owner {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 400;
+    }
+
+    .wl {
+      font-family: var(--display);
+      font-size: 0.92rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .pts {
+      font-family: var(--display);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #d0d0d0;
+      letter-spacing: 0;
+    }
+
+    @media (max-width: 1100px) {
+      .row {
+        grid-template-columns:
+          1.7rem
+          minmax(0, 1fr)
+          1.85rem
+          1.85rem
+          1.85rem
+          minmax(2.4rem, 0.35fr)
+          minmax(2.4rem, 0.35fr);
+      }
+      .col-owner { display: none; }
+    }
+
+    @media (max-width: 980px) {
+      .boards { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      .row {
+        grid-template-columns:
+          1.6rem
+          minmax(0, 1fr)
+          1.75rem
+          1.75rem
+          minmax(2.3rem, 0.35fr);
+      }
+      .col-owner,
+      .col-ties,
+      .col-pa { display: none; }
+      .board-head h2 { font-size: 1.1rem; }
+      .conf-logo { width: 3.25rem; }
+    }
+  </style>
+</head>
+<body data-page="standings">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Connecting to ESPN…</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell reveal">
+    <p class="eyebrow">Live Boards</p>
+    <h1>Standings</h1>
+    <p>Detail and Overtime conference records from ESPN. Top 6 in each conference make the playoffs. Record ties broken by points for.</p>
+  </section>
+
+  <main class="page-main shell">
+    <section class="section" style="padding-top:0">
+      <div class="boards">
+        <div class="board" id="detail"></div>
+        <div class="board" id="overtime"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+
+  <script src="/js/nav.js?v=5"></script>
+  <script>
+    const escapeHtml = (value = '') => String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+
+    function fmtPts(value) {
+      return Number(value || 0).toFixed(1);
+    }
+
+    function confLogo(key, name) {
+      const src = key === 'detail'
+        ? '/assets/detail-conference.png'
+        : '/assets/overtime-conference.png';
+      return `<img class="conf-logo" src="${src}" alt="${escapeHtml(name)}" width="80" height="80" decoding="async" />`;
+    }
+
+    function boardHead(conf) {
+      const tone = conf.key === 'detail' ? 'detail' : 'overtime';
+      const week = conf.currentMatchupPeriod != null ? ` · Week ${conf.currentMatchupPeriod}` : '';
+      return `
+        <div class="board-head ${tone}">
+          <div class="board-brand">
+            ${confLogo(conf.key, conf.name)}
+            <div>
+              <h2>${escapeHtml(conf.name)}</h2>
+              <div class="meta">ESPN ${conf.leagueId}${week}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function conferenceMarkup(conf) {
+      if (!conf.ok) {
+        return `
+          ${boardHead(conf)}
+          <div class="msg">
+            <strong>ESPN connection failed</strong>
+            ${escapeHtml(conf.error || 'Unknown error')}
+          </div>`;
+      }
+
+      const teams = conf.teams || [];
+      if (!teams.length) {
+        return `
+          ${boardHead(conf)}
+          <div class="msg">No teams have joined this conference yet.</div>`;
+      }
+
+      const rows = [];
+      teams.forEach((team, index) => {
+        const rank = index + 1;
+        if (rank === 7) {
+          rows.push(`<div class="cut-line">Playoff cut · places 7–12 out · tiebreaker: points for</div>`);
+        }
+        rows.push(`
+          <div class="row body ${rank > 6 ? 'out' : ''}">
+            <div class="rank">${rank}</div>
+            <div class="team">
+              ${team.logo
+                ? `<img class="team-logo-sm" src="${escapeHtml(team.logo)}" alt="" width="22" height="22" loading="lazy" referrerpolicy="no-referrer" />`
+                : `<span class="team-logo-fallback" aria-hidden="true"></span>`}
+              <div class="name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
+            </div>
+            <div class="owner col-owner" title="${escapeHtml(team.owner)}">${escapeHtml(team.owner)}</div>
+            <div class="num wl">${team.wins || 0}</div>
+            <div class="num wl">${team.losses || 0}</div>
+            <div class="num wl col-ties">${team.ties || 0}</div>
+            <div class="num pts">${fmtPts(team.pointsFor)}</div>
+            <div class="num pts col-pa">${fmtPts(team.pointsAgainst)}</div>
+          </div>`);
+      });
+      const rowsHtml = rows.join('');
+
+      return `
+        ${boardHead(conf)}
+        <div class="standings">
+          <div class="row head">
+            <div class="center">#</div>
+            <div>Team</div>
+            <div class="col-owner">Owner</div>
+            <div class="num">W</div>
+            <div class="num">L</div>
+            <div class="num col-ties">T</div>
+            <div class="num">PF</div>
+            <div class="num col-pa">PA</div>
+          </div>
+          ${rowsHtml}
+        </div>`;
+    }
+
+    async function load() {
+      document.getElementById('detail').innerHTML = '<div class="msg">Loading Detail Conference…</div>';
+      document.getElementById('overtime').innerHTML = '<div class="msg">Loading Overtime Conference…</div>';
+
+      try {
+        const response = await fetch('/api/leagues', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Server returned ${response.status}`);
+        const data = await response.json();
+
+        for (const conf of data.conferences) {
+          const target = document.getElementById(conf.key);
+          if (target) target.innerHTML = conferenceMarkup(conf);
+        }
+
+        const time = new Date(data.generatedAt);
+        if (window.GridIronNav) {
+          window.GridIronNav.setSync(`ESPN sync · ${time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+        } else {
+          document.getElementById('lastUpdated').innerHTML =
+            `<span class="live">●</span>ESPN sync · ${time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+        }
+      } catch (error) {
+        if (window.GridIronNav) window.GridIronNav.setSync('Connection error', false);
+        else document.getElementById('lastUpdated').textContent = 'Connection error';
+        const msg = `<div class="msg"><strong>Dashboard error</strong>${escapeHtml(error.message)}</div>`;
+        document.getElementById('detail').innerHTML = msg;
+        document.getElementById('overtime').innerHTML = msg;
+      }
+    }
+
+    load();
+    setInterval(load, 60_000);
+  </script>
+</body>
+</html>

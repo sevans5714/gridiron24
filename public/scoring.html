@@ -7,223 +7,110 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=5" />
+  <link rel="stylesheet" href="/css/site.css?v=10" />
   <style>
-    .conf-bar {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 1rem;
-      align-items: center;
+    .banner {
+      margin-bottom: 1.25rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(239, 215, 130, 0.35);
+      background: rgba(239, 215, 130, 0.08);
+      color: #efd782;
+      font-size: var(--fs-sm);
+      line-height: 1.45;
+    }
+    .banner a {
+      color: #fff;
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .lineup-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
       margin-bottom: 1.25rem;
       padding: 1rem 1.15rem;
       border: 1px solid var(--line);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 55%),
-        var(--panel);
+      background: var(--panel);
     }
-
-    .conf-side {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      min-width: 0;
-    }
-    .conf-side.overtime { justify-content: flex-end; text-align: right; }
-    .conf-side img {
-      width: clamp(3.25rem, 7vw, 4.5rem);
-      height: auto;
-      flex: 0 0 auto;
-      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5));
-    }
-    .conf-side .name {
-      font-family: var(--display);
-      font-size: clamp(1.05rem, 2.4vw, 1.45rem);
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      line-height: 1.15;
-    }
-    .conf-side.detail .name { color: var(--detail); }
-    .conf-side.overtime .name { color: var(--overtime); }
-    .conf-side .sub {
-      margin-top: 0.2rem;
-      color: var(--muted);
-      font-size: var(--fs-xs);
-      font-weight: 500;
-    }
-
-    .sync-pill {
+    .slot {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 0.25rem;
-      min-width: 9rem;
-      padding: 0.65rem 1rem;
+      min-width: 4.5rem;
+      padding: 0.55rem 0.75rem;
       border: 1px solid var(--line);
       background: #0c0c0c;
       text-align: center;
     }
-    .sync-pill .status {
+    .slot .pos {
       font-family: var(--display);
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      line-height: 1;
+      letter-spacing: 0.04em;
+      color: #fff;
     }
-    .sync-pill .status.on { color: var(--good); }
-    .sync-pill .status.off { color: #efd782; }
-    .sync-pill .hint {
-      color: var(--muted);
+    .slot .cnt {
+      margin-top: 0.15rem;
       font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .slot.bench {
+      opacity: 0.75;
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .group-panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .group-panel h2 {
+      margin: 0;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+      font-family: var(--display);
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .rule {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.92rem;
+    }
+    .rule:last-child { border-bottom: 0; }
+    .rule .label {
+      color: #ddd;
       font-weight: 500;
       line-height: 1.3;
     }
-
-    .diff-panel {
-      margin-bottom: 1.25rem;
-      border: 1px solid rgba(239, 215, 130, 0.35);
-      background: rgba(239, 215, 130, 0.06);
-      overflow: hidden;
-    }
-    .diff-panel .head {
-      padding: 0.85rem 1.15rem;
-      border-bottom: 1px solid rgba(239, 215, 130, 0.25);
+    .rule .pts {
       font-family: var(--display);
-      font-size: 0.95rem;
+      font-size: 1.05rem;
       font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #efd782;
-    }
-    .diff-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .diff-table th, .diff-table td {
-      padding: 0.7rem 1.15rem;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      font-size: 0.92rem;
-    }
-    .diff-table th {
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: rgba(0,0,0,0.35);
-    }
-    .diff-table td.num {
-      font-family: var(--display);
-      font-size: 1.1rem;
-      font-weight: 600;
-      text-align: right;
-      white-space: nowrap;
-    }
-    .diff-table td.num.detail { color: var(--detail); }
-    .diff-table td.num.overtime { color: var(--overtime); }
-    .diff-table tr:last-child td { border-bottom: 0; }
-    .diff-table .label { font-weight: 600; color: #eee; }
-
-    .meta-line {
-      margin: 0 0 1rem;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-    }
-    .meta-line strong { color: #fff; font-weight: 600; }
-
-    .matrix-wrap {
-      max-width: none;
-    }
-    .matrix {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .matrix tr:hover td {
-      background: rgba(255, 255, 255, 0.03);
-    }
-    .matrix th, .matrix td {
-      padding: 0.78rem 1.2rem;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      font-size: 0.95rem;
-      line-height: 1.35;
-    }
-    .matrix thead th {
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: #0a0a0a;
-    }
-    .matrix th.group {
-      background: #141414;
-      color: #fff;
-      font-family: var(--display);
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      padding-top: 0.95rem;
-      padding-bottom: 0.6rem;
-    }
-    .matrix td {
-      font-weight: 500;
-      color: #e8e8e8;
-    }
-    .matrix td.pts {
-      text-align: right;
-      font-family: var(--display);
-      font-weight: 600;
-      font-size: 1.2rem;
-      letter-spacing: 0.01em;
       color: #fff;
       white-space: nowrap;
-      width: 6.5rem;
     }
-
-    .lineup-block {
-      margin-top: 1.5rem;
-    }
-    .lineup-block .section-label {
-      margin: 0 0 0.75rem;
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .chip {
-      border: 1px solid var(--line);
-      background: var(--panel);
-      padding: 0.55rem 0.85rem;
-      font-family: var(--body);
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    .chip strong { color: #fff; margin-right: 0.3rem; font-weight: 700; }
-    .chip span { color: var(--muted); font-weight: 500; }
 
     @media (max-width: 900px) {
-      .conf-bar {
-        grid-template-columns: 1fr;
-        justify-items: stretch;
-      }
-      .conf-side.overtime { justify-content: flex-start; text-align: left; order: 3; }
-      .sync-pill { order: 2; width: 100%; }
+      .rules-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -238,212 +125,92 @@
   <section class="page-hero shell reveal">
     <p class="eyebrow">Official Rules</p>
     <h1>Scoring Matrix</h1>
-    <p>One scoring system for all 24 GridIron franchises across both conferences.</p>
+    <p>GridIron 24 scoring and starting lineup — same rules for all 24 franchises.</p>
   </section>
 
   <main class="page-main shell">
-    <div id="content">
-      <div class="msg">Loading scoring settings…</div>
-    </div>
+    <div id="content"><div class="msg">Loading scoring settings…</div></div>
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js"></script>
+  <script src="/js/nav.js?v=5"></script>
+  <script src="/js/conference-diff.js?v=3"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
-    function fmt(n) {
-      if (n == null || n === '') return '—';
-      const x = Number(n);
-      if (!Number.isFinite(x)) return '—';
-      return Number.isInteger(x) ? String(x) : x.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
-    }
+    const GROUP_ORDER = [
+      'Passing',
+      'Rushing',
+      'Receiving',
+      'Misc. Offense',
+      'Kicking',
+      'Defense / Special Teams',
+      'Other'
+    ];
 
-    function mapByStat(items = []) {
-      const map = new Map();
-      for (const item of items) map.set(item.statId, item);
-      return map;
-    }
-
-    function mapBySlot(lineup = []) {
-      const map = new Map();
-      for (const slot of lineup) map.set(slot.id, slot);
-      return map;
-    }
-
-    function findDiffs(detail, overtime) {
-      const diffs = [];
-      const settings = [
-        ['Scoring type', 'playerRankType'],
-        ['Playoff teams', 'playoffTeamCount'],
-        ['Playoff reseed', 'playoffReseed'],
-        ['Regular-season weeks', 'matchupPeriodCount']
-      ];
-      for (const [label, key] of settings) {
-        const dVal = detail[key];
-        const oVal = overtime[key];
-        if (dVal !== oVal) {
-          diffs.push({
-            kind: 'Setting',
-            label,
-            detail: dVal == null ? '—' : String(dVal),
-            overtime: oVal == null ? '—' : String(oVal)
-          });
-        }
-      }
-
-      const dScore = mapByStat(detail.scoringItems);
-      const oScore = mapByStat(overtime.scoringItems);
-      const ids = new Set([...dScore.keys(), ...oScore.keys()]);
-      for (const id of [...ids].sort((a, b) => a - b)) {
-        const d = dScore.get(id);
-        const o = oScore.get(id);
-        const dPts = d ? Number(d.points) : null;
-        const oPts = o ? Number(o.points) : null;
-        if (dPts !== oPts) {
-          diffs.push({
-            kind: 'Scoring',
-            label: (d || o).label || `Stat ${id}`,
-            detail: d ? fmt(dPts) : 'missing',
-            overtime: o ? fmt(oPts) : 'missing'
-          });
-        }
-      }
-
-      const dLine = mapBySlot(detail.lineup);
-      const oLine = mapBySlot(overtime.lineup);
-      const slots = new Set([...dLine.keys(), ...oLine.keys()]);
-      for (const id of [...slots].sort((a, b) => a - b)) {
-        const d = dLine.get(id);
-        const o = oLine.get(id);
-        const dCount = d ? Number(d.count) : null;
-        const oCount = o ? Number(o.count) : null;
-        if (dCount !== oCount) {
-          diffs.push({
-            kind: 'Lineup',
-            label: (d || o).label || `Slot ${id}`,
-            detail: d ? String(dCount) : 'missing',
-            overtime: o ? String(oCount) : 'missing'
-          });
-        }
-      }
-
-      return diffs;
-    }
-
-    function groupedRows(items) {
-      const order = [];
+    function groupPanels(items) {
       const buckets = new Map();
       for (const item of items || []) {
         const g = item.group || 'Other';
-        if (!buckets.has(g)) {
-          buckets.set(g, []);
-          order.push(g);
-        }
+        if (!buckets.has(g)) buckets.set(g, []);
         buckets.get(g).push(item);
       }
+      const order = GROUP_ORDER.filter((g) => buckets.has(g));
+      for (const g of buckets.keys()) {
+        if (!order.includes(g)) order.push(g);
+      }
       return order.map((group) => {
-        const rows = buckets.get(group).map((item) => `
-          <tr>
-            <td>${esc(item.label)}</td>
-            <td class="pts">${fmt(item.points)}</td>
-          </tr>`).join('');
-        return `<tr><th class="group" colspan="2">${esc(group)}</th></tr>${rows}`;
+        const rules = buckets.get(group).map((item) => `
+          <div class="rule">
+            <span class="label">${esc(item.label)}</span>
+            <span class="pts">${esc(GridIronDiff.fmtItem(item))}</span>
+          </div>`).join('');
+        return `
+          <section class="group-panel">
+            <h2>${esc(group)}</h2>
+            ${rules}
+          </section>`;
       }).join('');
     }
 
-    function confSide(conf, side) {
-      const logo = conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
-      const name = conf?.name || (side === 'detail' ? 'Detail Conference' : 'Overtime Conference');
-      const rank = conf?.ok ? (conf.playerRankType || 'PPR') : 'Unavailable';
-      const inner = side === 'overtime'
-        ? `<div><div class="name">${esc(name)}</div><div class="sub">${esc(rank)}</div></div>${logo}`
-        : `${logo}<div><div class="name">${esc(name)}</div><div class="sub">${esc(rank)}</div></div>`;
-      return `<div class="conf-side ${side}">${inner}</div>`;
+    function lineupRow(lineup) {
+      const starterOrder = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K', 'Bench', 'IR'];
+      const sorted = [...(lineup || [])].sort((a, b) => {
+        const ai = starterOrder.indexOf(a.label);
+        const bi = starterOrder.indexOf(b.label);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+      return sorted.map((s) => `
+        <div class="slot ${['Bench', 'IR'].includes(s.label) ? 'bench' : ''}">
+          <span class="pos">${esc(s.label)}</span>
+          <span class="cnt">×${s.count}</span>
+        </div>`).join('');
     }
 
     function render(data) {
-      const conferences = data.conferences || [];
-      const detail = conferences.find((c) => c.key === 'detail');
-      const overtime = conferences.find((c) => c.key === 'overtime');
-      const ok = conferences.filter((c) => c.ok);
+      const detail = (data.conferences || []).find((c) => c.key === 'detail');
+      const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
+      const ok = (data.conferences || []).filter((c) => c.ok);
 
       if (!ok.length) {
-        const err = conferences.map((c) => c.error).filter(Boolean).join(' · ') || 'No conference settings available.';
-        document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>${esc(err)}</div>`;
+        document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load scoring from ESPN.</div>`;
         return;
       }
 
-      const primary = detail?.ok ? detail : ok[0];
-      const bothOk = !!(detail?.ok && overtime?.ok);
-      const diffs = bothOk ? findDiffs(detail, overtime) : [];
-      const matched = bothOk && diffs.length === 0;
-
-      const syncStatus = !bothOk
-        ? { cls: 'off', label: 'Incomplete', hint: 'Could not load both conferences' }
-        : matched
-          ? { cls: 'on', label: 'Rules Synced', hint: 'Detail = Overtime' }
-          : { cls: 'off', label: 'Out of Sync', hint: `${diffs.length} difference${diffs.length === 1 ? '' : 's'}` };
-
-      const diffBlock = (!bothOk || matched) ? '' : `
-        <div class="diff-panel reveal reveal-delay-1">
-          <div class="head">What’s different</div>
-          <table class="diff-table">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Setting</th>
-                <th style="text-align:right">Detail</th>
-                <th style="text-align:right">Overtime</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${diffs.map((d) => `
-                <tr>
-                  <td>${esc(d.kind)}</td>
-                  <td class="label">${esc(d.label)}</td>
-                  <td class="num detail">${esc(d.detail)}</td>
-                  <td class="num overtime">${esc(d.overtime)}</td>
-                </tr>`).join('')}
-            </tbody>
-          </table>
-        </div>`;
-
-      const rows = groupedRows(primary.scoringItems);
-      const lineup = (primary.lineup || []).map((s) => `
-        <div class="chip"><strong>${esc(s.label)}</strong><span>×${s.count}</span></div>`).join('');
+      const rules = detail?.ok ? detail : ok[0];
+      const cmp = GridIronDiff.compare(detail, overtime);
+      const banner = cmp.bothOk && !cmp.matched
+        ? `<div class="banner reveal">Conferences are out of sync on ESPN (${cmp.diffs.length} differences). See the <a href="/commissioner.html">Commissioner</a> page for Detail vs Overtime values.</div>`
+        : '';
 
       document.getElementById('content').innerHTML = `
-        <div class="conf-bar reveal">
-          ${confSide(detail, 'detail')}
-          <div class="sync-pill">
-            <div class="status ${syncStatus.cls}">${esc(syncStatus.label)}</div>
-            <div class="hint">${esc(syncStatus.hint)}</div>
-          </div>
-          ${confSide(overtime, 'overtime')}
-        </div>
-        ${diffBlock}
-        <p class="meta-line reveal reveal-delay-1">
-          Showing <strong>${matched || !bothOk ? 'shared' : 'Detail Conference'}</strong> rules
-          · <strong>${esc(primary.playerRankType || 'PPR')}</strong>
-          · ${(primary.scoringItems || []).length} scoring categories
-        </p>
-        <div class="panel matrix-wrap reveal reveal-delay-1">
-          <div class="panel-title bowl">
-            <img src="/assets/gridiron-bowl.png" alt="">
-            <span>Scoring Rules</span>
-          </div>
-          <table class="matrix">
-            <thead><tr><th>Category</th><th style="text-align:right">Points</th></tr></thead>
-            <tbody>${rows || '<tr><td colspan="2">No scoring items returned.</td></tr>'}</tbody>
-          </table>
-        </div>
-        <section class="lineup-block reveal reveal-delay-2">
-          <div class="section-label">Starting Lineup</div>
-          <div class="chips">${lineup || '<div class="msg">No lineup data.</div>'}</div>
-        </section>`;
+        ${banner}
+        <div class="lineup-row reveal">${lineupRow(rules.lineup)}</div>
+        <div class="rules-grid reveal reveal-delay-1">
+          ${groupPanels(rules.scoringItems)}
+        </div>`;
     }
 
     async function load() {

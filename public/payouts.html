@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=5" />
+  <link rel="stylesheet" href="/css/site.css?v=10" />
   <style>
     .pool-line {
       margin: 0 0 1.25rem;
@@ -128,7 +128,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js"></script>
+  <script src="/js/nav.js?v=5"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -149,6 +149,9 @@
 
     function prizeLogo(label = '') {
       const l = label.toLowerCase();
+      if (l.includes('third place') && l.includes('detail')) return '/assets/detail-3rd-place.png';
+      if (l.includes('third place') && l.includes('overtime')) return '/assets/overtime-3rd-place.png';
+      if (l.includes('third place')) return '/assets/detail-3rd-place.png';
       if (l.includes('bowl') || (l.includes('gridiron') && !l.includes('conference'))) {
         return '/assets/gridiron-bowl.png';
       }

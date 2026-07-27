@@ -60,12 +60,296 @@ body {
   backdrop-filter: blur(12px);
 }
 
+.ticker-wrap {
+  padding-top: 0.65rem;
+  padding-bottom: 0.85rem;
+}
+.ticker {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), transparent 55%),
+    linear-gradient(90deg, rgba(1, 51, 105, 0.18), transparent 22%, transparent 78%, rgba(213, 10, 10, 0.08)),
+    #0a0a0a;
+  overflow: hidden;
+  min-height: 2.55rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.ticker-label {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 0.85rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: #fff;
+  z-index: 1;
+}
+.ticker-label img {
+  width: 1.55rem;
+  height: 1.55rem;
+  object-fit: contain;
+  display: block;
+}
+.ticker-label span {
+  font-family: var(--display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #0a0a0a;
+}
+.ticker-viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(90deg, transparent, #000 2rem, #000 calc(100% - 2rem), transparent);
+}
+.ticker-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  padding: 0.55rem 0;
+  width: max-content;
+  animation: ticker-scroll 55s linear infinite;
+}
+.ticker:hover .ticker-track { animation-play-state: paused; }
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  color: rgba(255,255,255,0.9);
+  font-size: 0.84rem;
+  text-decoration: none;
+}
+.ticker-item:hover { color: #fff; }
+.ticker-item .tag {
+  flex: 0 0 auto;
+  padding: 0.12rem 0.4rem;
+  border: 1px solid rgba(255,255,255,0.12);
+  font-family: var(--display);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ticker-item .tag.custom {
+  color: var(--detail);
+  border-color: rgba(255, 122, 24, 0.35);
+  background: rgba(255, 122, 24, 0.08);
+}
+.ticker-item .tag.espn {
+  color: #8eb6ff;
+  border-color: rgba(47, 109, 255, 0.35);
+  background: rgba(47, 109, 255, 0.1);
+}
+.ticker-sep {
+  color: rgba(255,255,255,0.18);
+  font-size: 0.65rem;
+}
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
 .topbar-inner {
   min-height: 3.4rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.user-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.user-avatar-btn {
+  appearance: none;
+  width: 2.15rem;
+  height: 2.15rem;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 999px;
+  background: #141414;
+  cursor: pointer;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.user-avatar-btn:hover {
+  border-color: rgba(255,255,255,0.45);
+}
+
+.user-avatar-img,
+.user-menu-preview img,
+.user-menu-preview .user-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.user-avatar-fallback {
+  font-family: var(--display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+.user-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  width: min(20rem, calc(100vw - 2rem));
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  background: #0e0e0e;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+  z-index: 50;
+}
+
+.user-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.user-menu-preview {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.55rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #171717;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.user-menu-name {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.user-menu-sub {
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.user-menu-label {
+  display: block;
+  margin: 0.35rem 0 0.3rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.user-menu-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.user-menu-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line);
+  background: #0a0a0a;
+  color: #fff;
+  font-family: var(--body);
+  font-size: 0.88rem;
+}
+
+.user-menu-row button,
+.user-menu-logout {
+  appearance: none;
+  border: 1px solid #fff;
+  background: #fff;
+  color: #050505;
+  font-family: var(--display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.user-menu-logout {
+  width: 100%;
+  margin-top: 0.55rem;
+  background: transparent;
+  color: #fff;
+}
+
+.user-menu-link {
+  display: block;
+  margin-top: 0.65rem;
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.user-menu-link.needs-logo {
+  color: #8eb6ff;
+}
+
+.user-menu-status {
+  min-height: 1.1em;
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.user-menu-status.ok { color: var(--good); }
+.user-menu-status.err { color: var(--bad); }
+
+/* Compact franchise marks for standings / boards */
+.team-logo-sm {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0.28rem;
+  object-fit: cover;
+  flex: 0 0 auto;
+  display: block;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.team-logo-fallback {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0.28rem;
+  flex: 0 0 auto;
+  display: inline-block;
+  background: linear-gradient(135deg, #222, #111);
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 .nav {

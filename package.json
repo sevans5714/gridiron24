@@ -4,7 +4,8 @@
   "private": true,
   "description": "GridIron 24 proof-of-concept dashboard using two ESPN Fantasy Football leagues",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "generate:icons": "node scripts/generate-team-icons.js"
   },
   "engines": {
     "node": ">=18"
