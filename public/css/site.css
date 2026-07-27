@@ -758,9 +758,12 @@ body.auth-page {
 .auth-card {
   width: min(100%, 22rem);
   padding: 0.35rem 0.25rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   animation: gi-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.auth-card.wide { width: min(100%, 26rem); }
+.auth-card.wide { width: min(100%, 22rem); }
 .auth-crest {
   display: block;
   width: min(70vw, 13.5rem);
@@ -768,8 +771,8 @@ body.auth-page {
   margin: 0 auto 0.85rem;
 }
 .auth-crest.hero {
-  width: min(92vw, 34rem);
-  margin-bottom: -2.75rem;
+  width: min(86vw, 18rem);
+  margin: 0 auto 0.35rem;
 }
 .auth-title {
   margin: 0 0 0.85rem;
@@ -791,7 +794,8 @@ body.auth-page {
 .auth-fields {
   position: relative;
   z-index: 1;
-  width: min(100%, 15.5rem);
+  width: 100%;
+  max-width: 18rem;
   margin: 0 auto;
 }
 .auth-card .field { margin-bottom: 0.7rem; }
