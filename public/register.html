@@ -15,19 +15,13 @@
     <img class="auth-crest" src="/assets/login-crest.png" alt="GridIron 24" width="1024" height="1024" />
     <h1 class="auth-title">Create Account</h1>
     <div class="status-note err" id="err" role="alert"></div>
+    <p class="auth-help" id="invite-help" hidden>You're invited to GridIron 24. Create your account below.</p>
 
     <label class="field-label" for="name">Full Name</label>
     <input class="field" id="name" name="name" type="text" required autofocus autocomplete="name" />
 
     <label class="field-label" for="email">Email</label>
     <input class="field" id="email" name="email" type="email" required autocomplete="email" />
-
-    <div class="auth-section" id="access-section">Site access</div>
-    <div id="access-fields">
-      <label class="field-label" for="leaguePassword">Access password</label>
-      <input class="field" id="leaguePassword" name="leaguePassword" type="password" autocomplete="off" />
-    </div>
-    <p class="auth-section" id="invite-banner" hidden style="color:var(--good); border-color:rgba(34,197,94,0.25);">You're invited — no access password needed</p>
 
     <div class="auth-section">Your login</div>
     <label class="field-label" for="loginName">Login Name</label>
@@ -48,14 +42,13 @@
     const inviteToken = new URLSearchParams(window.location.search).get('invite') || '';
 
     async function boot() {
-      const auth = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
       if (!inviteToken) {
-        if (auth.authConfigured) {
-          document.getElementById('leaguePassword').required = true;
-        } else {
-          document.getElementById('access-section').hidden = true;
-          document.getElementById('access-fields').hidden = true;
-        }
+        errEl.textContent = 'Registration is by commissioner invite only. Ask for an invite link, then open it to create your account.';
+        errEl.classList.add('show');
+        submit.disabled = true;
+        ['name', 'email', 'loginName', 'password', 'confirmPassword'].forEach((id) => {
+          document.getElementById(id).disabled = true;
+        });
         return;
       }
       const peek = await fetch(`/api/invites/peek?token=${encodeURIComponent(inviteToken)}`, { cache: 'no-store' })
@@ -63,28 +56,27 @@
       if (!peek.ok) {
         errEl.textContent = peek.error || 'Invite link is invalid or expired';
         errEl.classList.add('show');
+        submit.disabled = true;
         return;
       }
+      document.getElementById('invite-help').hidden = false;
       document.getElementById('email').value = peek.email || '';
       document.getElementById('email').readOnly = true;
-      document.getElementById('access-section').hidden = true;
-      document.getElementById('access-fields').hidden = true;
-      document.getElementById('invite-banner').hidden = false;
     }
     boot().catch(() => {});
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (!inviteToken) return;
       errEl.classList.remove('show');
       submit.disabled = true;
       const body = {
         name: document.getElementById('name').value.trim(),
         email: document.getElementById('email').value.trim(),
-        leaguePassword: document.getElementById('leaguePassword').value,
         loginName: document.getElementById('loginName').value.trim(),
         password: document.getElementById('password').value,
         confirmPassword: document.getElementById('confirmPassword').value,
-        inviteToken: inviteToken || undefined
+        inviteToken
       };
       try {
         const res = await fetch('/api/register', {

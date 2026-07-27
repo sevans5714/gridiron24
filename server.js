@@ -30,7 +30,6 @@ const config = require('./config');
 const users = require('./users-store');
 const board = require('./board-store');
 const logos = require('./logos-store');
-const leagueGate = require('./league-gate');
 const invites = require('./invites-store');
 const { sendPasswordResetEmail, sendInviteEmail } = require('./mail');
 
@@ -73,27 +72,8 @@ const SESSION_COOKIE = 'gi24_session';
 const SESSION_DAYS = 30;
 const APP_BASE_URL = (process.env.APP_BASE_URL || '').replace(/\/$/, '');
 
-function activeGate() {
-  return leagueGate.getGate();
-}
-
 function sessionSecret() {
-  const gate = activeGate();
-  return process.env.SESSION_SECRET || gate?.leaguePassword || 'gridiron24-dev-secret';
-}
-
-function timingSafeEqualString(a, b) {
-  const left = Buffer.from(String(a));
-  const right = Buffer.from(String(b));
-  if (left.length !== right.length) return false;
-  return crypto.timingSafeEqual(left, right);
-}
-
-function leagueGateOk(_leagueName, leaguePassword) {
-  const gate = activeGate();
-  if (!gate?.leaguePassword) return false;
-  // Password-only site gate — GridIron 24 is the existing HQ, not a new league to create.
-  return timingSafeEqualString(String(leaguePassword || ''), gate.leaguePassword);
+  return process.env.SESSION_SECRET || 'gridiron24-dev-secret';
 }
 
 const PUBLIC_PATHS = new Set([
@@ -794,7 +774,7 @@ const server = http.createServer(async (req, res) => {
         app: config.brand.name,
         season: config.season,
         conferenceLeagueIds: config.conferences.map((c) => c.espnLeagueId),
-        authConfigured: leagueGate.isConfigured()
+        authConfigured: true
       });
     }
 
@@ -802,33 +782,16 @@ const server = http.createServer(async (req, res) => {
       const user = getSessionUser(req);
       return sendJson(res, 200, {
         authenticated: Boolean(user),
-        authConfigured: leagueGate.isConfigured(),
+        authConfigured: true,
         user
       });
     }
 
     if (pathname === '/api/setup' && req.method === 'POST') {
-      if (leagueGate.isConfigured()) {
-        return sendJson(res, 409, {
-          ok: false,
-          error: process.env.LEAGUE_PASSWORD
-            ? 'Site access is already configured on the server.'
-            : 'Site access is already set up. Go to Create Account.'
-        });
-      }
-      let body;
-      try {
-        body = await readJsonBody(req);
-      } catch {
-        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
-      }
-      try {
-        const result = leagueGate.writeGate(body);
-        users.ensureCommissionerFromEnv();
-        return sendJson(res, 201, result);
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Setup failed' });
-      }
+      return sendJson(res, 410, {
+        ok: false,
+        error: 'Site access passwords are retired. Accounts join by commissioner invite.'
+      });
     }
 
     if (pathname === '/api/register' && req.method === 'POST') {
@@ -839,7 +802,9 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
       }
       const inviteToken = String(body.inviteToken || '').trim();
+      const existingUsers = users.listUsers();
       let inviteEmail = null;
+
       if (inviteToken) {
         const invite = invites.findByToken(inviteToken);
         if (!invite) {
@@ -850,13 +815,13 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 400, { ok: false, error: 'Use the email address this invite was sent to' });
         }
         body.email = body.email || inviteEmail;
-      } else if (leagueGate.isConfigured()) {
-        if (!leagueGateOk(body.leagueName, body.leaguePassword)) {
-          return sendJson(res, 401, { ok: false, error: 'Incorrect access password' });
-        }
+      } else if (existingUsers.length > 0) {
+        return sendJson(res, 403, {
+          ok: false,
+          error: 'Registration is by commissioner invite only. Ask for an invite link.'
+        });
       }
-      // If site access is not configured (e.g. free-tier disk wipe), allow account
-      // creation without a shared password so nobody is sent to a "create league" flow.
+      // Empty league: allow the first bootstrap account without an invite.
       if (body.password !== body.confirmPassword) {
         return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
       }
@@ -1060,7 +1025,6 @@ const server = http.createServer(async (req, res) => {
       if (!emails.length) {
         return sendJson(res, 400, { ok: false, error: 'Enter at least one email address' });
       }
-      const gate = activeGate();
       const results = [];
       for (const email of emails) {
         try {
@@ -1070,7 +1034,7 @@ const server = http.createServer(async (req, res) => {
             to: created.invite.email,
             inviteUrl,
             invitedByName: user.name || user.loginName,
-            leagueName: gate?.leagueName || config.brand.name
+            leagueName: config.brand.name
           });
           results.push({
             ok: true,
@@ -1406,12 +1370,11 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  leagueGate.ensureBootstrapGate();
   users.ensureBootstrapCommissioner();
   console.log(`\nGridIron 24 is running.`);
   console.log(`Open: http://localhost:${PORT}`);
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
-  console.log(`Auth: ${leagueGate.isConfigured() ? `accounts enabled (site gate via ${activeGate().source})` : 'not configured'}`);
+  console.log(`Auth: invite-only registration · accounts enabled`);
   console.log(`Users: ${users.DATA_DIR}`);
   if (process.env.COMMISSIONER_LOGIN) {
     console.log(`Commissioner login: ${process.env.COMMISSIONER_LOGIN}`);

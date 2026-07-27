@@ -25,7 +25,7 @@
       </label>
       <button class="btn" type="submit" id="submit">Sign In</button>
       <p class="auth-links">
-        <a href="/register">Create account</a><br />
+        <a href="/register">Need an invite to join</a><br />
         <a href="/forgot">Forgot password?</a>
       </p>
     </div>
@@ -102,14 +102,6 @@
     });
 
     (async () => {
-      try {
-        const res = await fetch('/api/auth', { cache: 'no-store' });
-        const data = await res.json();
-        if (!data.authConfigured) {
-          // Free-tier redeploys can clear the gate file; accounts can still be created.
-          showErr('');
-        }
-      } catch {}
       if (await checkExisting()) return;
       const saved = readSaved();
       if (!saved) return;

@@ -10,16 +10,14 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
-      - key: LEAGUE_NAME
-        value: "4to12"
       - key: COMMISSIONER_LOGIN
         value: "sevans"
       - key: COMMISSIONER_EMAIL
         value: "sevans5714@gmail.com"
       - key: APP_BASE_URL
         value: "https://www.gridiron24.com"
-      # Optional overrides in the Render Dashboard. Bootstraps recreate after free-tier wipes.
-      - key: LEAGUE_PASSWORD
-        sync: false
+      # Optional: set in the Render Dashboard so the commissioner account survives free-tier wipes.
       - key: COMMISSIONER_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
         sync: false
