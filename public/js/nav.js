@@ -64,7 +64,9 @@
   }
 
   function avatarHtml(myTeam, user) {
-    const url = hasChosenLogo(myTeam?.logo) ? myTeam.logo.url : '';
+    const url = hasChosenLogo(myTeam?.logo)
+      ? myTeam.logo.url
+      : (myTeam?.claim ? '/assets/team-logo-placeholder.svg' : '');
     const label = myTeam?.team?.name || myTeam?.claim?.teamName || user?.name || 'Account';
     if (url) {
       return `<img class="user-avatar-img" src="${esc(url)}" alt="" width="32" height="32" />`;

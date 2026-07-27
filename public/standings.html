@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=16" />
+  <link rel="stylesheet" href="/css/site.css?v=17" />
   <style>
     .section {
       padding: 1.75rem 0 0;
@@ -242,7 +242,7 @@
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
 
-  <script src="/js/nav.js?v=6"></script>
+  <script src="/js/nav.js?v=7"></script>
   <script>
     const escapeHtml = (value = '') => String(value)
       .replaceAll('&', '&amp;')
@@ -304,9 +304,7 @@
           <div class="row body ${rank > 6 ? 'out' : ''}">
             <div class="rank">${rank}</div>
             <div class="team">
-              ${team.logo
-                ? `<img class="team-logo-sm" src="${escapeHtml(team.logo)}" alt="" width="22" height="22" loading="lazy" referrerpolicy="no-referrer" />`
-                : `<span class="team-logo-fallback" aria-hidden="true"></span>`}
+              <img class="team-logo-sm" src="${escapeHtml(team.logo || '/assets/team-logo-placeholder.svg')}" alt="" width="22" height="22" loading="lazy" referrerpolicy="no-referrer" />
               <div class="name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
             </div>
             <div class="owner col-owner" title="${escapeHtml(team.owner)}">${escapeHtml(team.owner)}</div>

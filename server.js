@@ -344,8 +344,8 @@ function normalizeLeague(raw, conference) {
       name: overrideName || espnName,
       espnName,
       abbreviation: team.abbrev || '',
-      logo: overrideLogo || null,
-      logoSource: overrideLogo ? 'gridiron' : null,
+      logo: logos.displayLogoUrl(overrideLogo),
+      logoSource: overrideLogo ? 'gridiron' : 'placeholder',
       espnLogo: team.logo || null,
       owner: ownerName(membersById.get(ownerId)),
       wins,
@@ -649,8 +649,8 @@ function teamMapFromRaw(raw, conferenceKey) {
     map.set(team.id, {
       id: team.id,
       name: overrideName || espnName,
-      logo: overrideLogo || null,
-      logoSource: overrideLogo ? 'gridiron' : null,
+      logo: logos.displayLogoUrl(overrideLogo),
+      logoSource: overrideLogo ? 'gridiron' : 'placeholder',
       owner: ownerName(membersById.get(ownerId)),
       record: team.record?.overall || {}
     });
@@ -663,8 +663,18 @@ function normalizeSchedule(raw, conference, week) {
   const matchups = (raw.schedule || [])
     .filter((m) => Number(m.matchupPeriodId) === Number(week))
     .map((m) => {
-      const home = teams.get(m.home?.teamId) || { id: m.home?.teamId, name: `Team ${m.home?.teamId}`, logo: null };
-      const away = teams.get(m.away?.teamId) || { id: m.away?.teamId, name: `Team ${m.away?.teamId}`, logo: null };
+      const home = teams.get(m.home?.teamId) || {
+        id: m.home?.teamId,
+        name: `Team ${m.home?.teamId}`,
+        logo: logos.PLACEHOLDER_LOGO,
+        logoSource: 'placeholder'
+      };
+      const away = teams.get(m.away?.teamId) || {
+        id: m.away?.teamId,
+        name: `Team ${m.away?.teamId}`,
+        logo: logos.PLACEHOLDER_LOGO,
+        logoSource: 'placeholder'
+      };
       return {
         id: m.id,
         matchupPeriodId: m.matchupPeriodId,

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=16" />
+  <link rel="stylesheet" href="/css/site.css?v=17" />
   <style>
     .hq-hero {
       text-align: center;
@@ -580,7 +580,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=6"></script>
+  <script src="/js/nav.js?v=7"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -605,10 +605,8 @@
     }
 
     function teamLogo(team, sizeClass = '') {
-      if (!team?.logo) {
-        return `<span class="logo-fallback" aria-hidden="true"></span>`;
-      }
-      return `<img src="${esc(team.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+      const src = team?.logo || '/assets/team-logo-placeholder.svg';
+      return `<img class="${sizeClass}" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
     }
 
     function confBoard(conf) {
@@ -634,9 +632,7 @@
             <td class="rank">${rank}</td>
             <td class="team" title="${esc(t.name)}">
               <span class="team-cell">
-                ${t.logo
-                  ? `<img class="team-logo-sm" src="${esc(t.logo)}" alt="" width="32" height="32" loading="lazy" referrerpolicy="no-referrer" />`
-                  : `<span class="team-logo-fallback" aria-hidden="true"></span>`}
+                <img class="team-logo-sm" src="${esc(t.logo || '/assets/team-logo-placeholder.svg')}" alt="" width="32" height="32" loading="lazy" referrerpolicy="no-referrer" />
                 <span class="team-name">${esc(t.name)}</span>
               </span>
             </td>

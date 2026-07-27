@@ -335,10 +335,10 @@ body {
   width: 1.35rem;
   height: 1.35rem;
   border-radius: 0.28rem;
-  object-fit: cover;
+  object-fit: contain;
   flex: 0 0 auto;
   display: block;
-  background: #1a1a1a;
+  background: #141414;
   border: 1px solid rgba(255,255,255,0.08);
 }
 
@@ -348,7 +348,8 @@ body {
   border-radius: 0.28rem;
   flex: 0 0 auto;
   display: inline-block;
-  background: linear-gradient(135deg, #222, #111);
+  object-fit: contain;
+  background: #141414;
   border: 1px solid rgba(255,255,255,0.08);
 }
 

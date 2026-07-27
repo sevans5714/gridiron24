@@ -8,6 +8,7 @@ const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'team-logos');
 
 const CONFERENCE_KEYS = new Set(['detail', 'overtime']);
 const LOGO_TYPES = new Set(['icon', 'upload', 'espn']);
+const PLACEHOLDER_LOGO = '/assets/team-logo-placeholder.svg';
 
 const LOGO_SPECS = {
   minSize: 256,
@@ -106,6 +107,13 @@ function logoUrl(logo) {
   if (logo.type === 'icon') return `/assets/team-icons/${encodeURIComponent(logo.value)}.svg`;
   if (logo.type === 'upload') return `/uploads/team-logos/${encodeURIComponent(logo.value)}`;
   return null;
+}
+
+/** Chosen logo URL, or the shared placeholder when none is set. */
+function displayLogoUrl(logoOrUrl) {
+  if (typeof logoOrUrl === 'string' && logoOrUrl.trim()) return logoOrUrl.trim();
+  const fromEntry = logoUrl(logoOrUrl);
+  return fromEntry || PLACEHOLDER_LOGO;
 }
 
 function setIconLogo(userId, conferenceKey, teamId, iconId) {
@@ -271,12 +279,14 @@ function resolveUploadPath(filename) {
 
 module.exports = {
   LOGO_SPECS,
+  PLACEHOLDER_LOGO,
   UPLOAD_DIR,
   getClaimForUser,
   getClaimForTeam,
   claimTeam,
   getLogo,
   logoUrl,
+  displayLogoUrl,
   setIconLogo,
   setUploadLogo,
   clearLogo,

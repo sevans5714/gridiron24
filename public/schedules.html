@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=16" />
+  <link rel="stylesheet" href="/css/site.css?v=17" />
   <style>
     .toolbar {
       display: flex;
@@ -246,17 +246,15 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=6"></script>
+  <script src="/js/nav.js?v=7"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
     function teamLogo(team) {
-      if (!team?.logo) {
-        return `<span class="team-logo-fallback" aria-hidden="true"></span>`;
-      }
-      return `<img class="team-logo" src="${esc(team.logo)}" alt="" width="52" height="52" loading="lazy" referrerpolicy="no-referrer">`;
+      const src = team?.logo || '/assets/team-logo-placeholder.svg';
+      return `<img class="team-logo" src="${esc(src)}" alt="" width="52" height="52" loading="lazy" referrerpolicy="no-referrer">`;
     }
 
     function side(team, align) {
