@@ -2,8 +2,6 @@
   const allLinks = [
     { href: '/home.html', label: 'Home', key: 'home' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
-    { href: '/beta-scoring', label: 'Beta Scoring', key: 'beta-scoring' },
-    { href: '/beta-draft', label: 'Beta Draft', key: 'beta-draft' },
     { href: '/standings.html', label: 'Standings', key: 'standings' },
     { href: '/teams.html', label: 'Teams', key: 'teams' },
     { href: '/schedules.html', label: 'Schedules', key: 'schedules' },
@@ -139,12 +137,12 @@
       </div>`;
 
     const hero = document.querySelector('.hq-hero');
-    const leaders = document.getElementById('leaders-ticker');
+    if (active === 'scoreboard') {
+      // Scoreboard uses its own Fantasy Leaders ticker only.
+      return null;
+    }
     if (active === 'home' && hero) {
       hero.insertAdjacentElement('afterend', el);
-    } else if (active === 'scoreboard' && leaders) {
-      // Keep Fantasy Leaders directly under Wire, above the live boards.
-      leaders.closest('.shell')?.insertAdjacentElement('beforebegin', el);
     } else {
       const topbar = document.querySelector('.topbar');
       if (!topbar) return null;
@@ -177,7 +175,7 @@
   }
 
   async function loadTicker() {
-    ensureTickerMount();
+    if (!ensureTickerMount()) return;
     try {
       const res = await fetch('/api/ticker', { cache: 'no-store' });
       const data = await res.json();
