@@ -149,40 +149,106 @@
       vertical-align: middle;
     }
 
+    .lineup-board {
+      margin: 0.85rem 0 0.25rem;
+      border: 1px solid rgba(47, 109, 255, 0.28);
+      background:
+        radial-gradient(ellipse 70% 100% at 0% 0%, rgba(47, 109, 255, 0.12), transparent 55%),
+        var(--panel);
+      overflow: hidden;
+    }
+    .lineup-summary {
+      margin: 0;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid rgba(47, 109, 255, 0.22);
+      background: rgba(47, 109, 255, 0.08);
+      font-family: var(--display);
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+    }
+    .lineup-group {
+      padding: 0.85rem 1rem 1rem;
+    }
+    .lineup-group + .lineup-group {
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .lineup-group-label {
+      margin: 0 0 0.65rem;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
     .lineup-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
-      margin: 0.35rem 0 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+      gap: 0.55rem;
     }
     .slot {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-width: 4.25rem;
-      min-height: 3.5rem;
-      padding: 0.5rem 0.65rem;
-      border: 1px solid var(--line);
-      background: #0c0c0c;
+      gap: 0.35rem;
+      min-height: 4.25rem;
+      padding: 0.65rem 0.5rem;
+      border: 1px solid rgba(47, 109, 255, 0.28);
+      background:
+        linear-gradient(180deg, rgba(47, 109, 255, 0.1), transparent 70%),
+        #0c0c0c;
       text-align: center;
     }
     .slot .pos {
-      font-family: var(--display);
-      font-size: 1rem;
-      font-weight: 600;
+      font-family: var(--page-title), var(--display);
+      font-size: 1.15rem;
+      font-weight: 700;
       letter-spacing: 0.04em;
+      text-transform: uppercase;
       color: #fff;
+      line-height: 1;
     }
     .slot .cnt {
-      margin-top: 0.1rem;
-      font-size: 0.7rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      padding: 0.15rem 0.45rem;
+      border: 1px solid rgba(142, 182, 255, 0.35);
+      background: rgba(47, 109, 255, 0.16);
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 700;
       letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+      line-height: 1.2;
     }
-    .slot.bench { opacity: 0.75; }
+    .slot.bench {
+      border-color: rgba(255,255,255,0.1);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), transparent 70%),
+        #0a0a0a;
+      opacity: 1;
+    }
+    .slot.bench .cnt {
+      border-color: rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.05);
+      color: #b0b0b0;
+    }
+    @media (max-width: 560px) {
+      .lineup-row {
+        grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+        gap: 0.4rem;
+      }
+      .slot {
+        min-height: 3.75rem;
+        padding: 0.5rem 0.35rem;
+      }
+      .slot .pos { font-size: 1rem; }
+    }
 
     .rules-grid {
       display: grid;
@@ -494,11 +560,34 @@
         return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
       });
       if (!sorted.length) return '<p>Lineup settings unavailable.</p>';
-      return `<div class="lineup-row">${sorted.map((s) => `
-        <div class="slot ${['Bench', 'IR'].includes(s.label) ? 'bench' : ''}">
-          <span class="pos">${esc(s.label)}</span>
-          <span class="cnt">×${s.count}</span>
-        </div>`).join('')}</div>`;
+
+      const starters = sorted.filter((s) => !['Bench', 'IR'].includes(s.label));
+      const reserves = sorted.filter((s) => ['Bench', 'IR'].includes(s.label));
+      const starterCount = starters.reduce((n, s) => n + Number(s.count || 0), 0);
+      const reserveCount = reserves.reduce((n, s) => n + Number(s.count || 0), 0);
+
+      function slots(items, reserve = false) {
+        return items.map((s) => `
+          <div class="slot${reserve ? ' bench' : ''}">
+            <span class="pos">${esc(s.label)}</span>
+            <span class="cnt">×${esc(String(s.count))}</span>
+          </div>`).join('');
+      }
+
+      return `
+        <div class="lineup-board">
+          <p class="lineup-summary">${starterCount} starters · ${reserveCount} reserves</p>
+          ${starters.length ? `
+            <div class="lineup-group">
+              <h4 class="lineup-group-label">Starting lineup</h4>
+              <div class="lineup-row">${slots(starters)}</div>
+            </div>` : ''}
+          ${reserves.length ? `
+            <div class="lineup-group">
+              <h4 class="lineup-group-label">Reserves</h4>
+              <div class="lineup-row">${slots(reserves, true)}</div>
+            </div>` : ''}
+        </div>`;
     }
 
     function groupPanels(items) {
