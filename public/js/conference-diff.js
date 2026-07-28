@@ -1,4 +1,14 @@
 window.GridIronDiff = (function () {
+  // Target format for GridIron 24 conference brackets + Week 17 Bowl scoring.
+  const PLAYOFF_TARGET = {
+    matchupPeriodCount: 13,
+    playoffTeamCount: 6,
+    playoffReseed: true,
+    playoffWeekCount: 4,
+    firstPlayoffWeek: 14,
+    finalScoringPeriod: 17
+  };
+
   function fmt(n) {
     if (n == null || n === '') return '—';
     const x = Number(n);
@@ -10,6 +20,18 @@ window.GridIronDiff = (function () {
     if (!item) return '—';
     if (item.display) return String(item.display);
     return fmt(item.points);
+  }
+
+  function fmtBool(v) {
+    if (v === true) return 'On';
+    if (v === false) return 'Off';
+    return '—';
+  }
+
+  function fmtSettingValue(key, value) {
+    if (key === 'playoffReseed') return fmtBool(value);
+    if (value == null || value === '') return '—';
+    return String(value);
   }
 
   function mapByStat(items = []) {
@@ -30,13 +52,85 @@ window.GridIronDiff = (function () {
     return Math.abs(Number(a) - Number(b)) < 1e-9;
   }
 
+  function playoffRows(detail, overtime) {
+    const fields = [
+      {
+        key: 'matchupPeriodCount',
+        label: 'Regular-season weeks',
+        hint: 'Should be 13 so playoffs start Week 14',
+        target: PLAYOFF_TARGET.matchupPeriodCount
+      },
+      {
+        key: 'playoffTeamCount',
+        label: 'Playoff teams',
+        hint: 'Top 6 per conference',
+        target: PLAYOFF_TARGET.playoffTeamCount
+      },
+      {
+        key: 'playoffReseed',
+        label: 'Playoff reseed',
+        hint: 'On after Wild Card',
+        target: PLAYOFF_TARGET.playoffReseed
+      },
+      {
+        key: 'firstPlayoffWeek',
+        label: 'First playoff week',
+        hint: 'Week 14 Wild Card',
+        target: PLAYOFF_TARGET.firstPlayoffWeek
+      },
+      {
+        key: 'playoffWeekCount',
+        label: 'Playoff / Bowl weeks',
+        hint: '14–17 (3 conference + Bowl scoring week)',
+        target: PLAYOFF_TARGET.playoffWeekCount
+      },
+      {
+        key: 'finalScoringPeriod',
+        label: 'Final scoring week',
+        hint: 'Week 17 GridIron Bowl',
+        target: PLAYOFF_TARGET.finalScoringPeriod
+      },
+      {
+        key: 'playoffMatchupPeriodLength',
+        label: 'Playoff week length',
+        hint: 'Usually 1 NFL week',
+        target: 1
+      },
+      {
+        key: 'playoffSeedingRule',
+        label: 'Playoff seeding rule',
+        hint: 'Should match across leagues',
+        target: null
+      }
+    ];
+
+    return fields.map((f) => {
+      const dVal = detail?.[f.key];
+      const oVal = overtime?.[f.key];
+      const matched = dVal === oVal;
+      const meetsTarget = f.target == null
+        ? matched
+        : dVal === f.target && oVal === f.target;
+      return {
+        kind: 'Playoff',
+        key: f.key,
+        label: f.label,
+        hint: f.hint,
+        detail: fmtSettingValue(f.key, dVal),
+        overtime: fmtSettingValue(f.key, oVal),
+        target: f.target == null ? 'Match each other' : fmtSettingValue(f.key, f.target),
+        matched,
+        meetsTarget,
+        rawDetail: dVal,
+        rawOvertime: oVal
+      };
+    });
+  }
+
   function findDiffs(detail, overtime) {
     const diffs = [];
     const settings = [
-      ['Scoring type', 'playerRankType'],
-      ['Playoff teams', 'playoffTeamCount'],
-      ['Playoff reseed', 'playoffReseed'],
-      ['Regular-season weeks', 'matchupPeriodCount']
+      ['Scoring type', 'playerRankType']
     ];
     for (const [label, key] of settings) {
       const dVal = detail[key];
@@ -47,6 +141,18 @@ window.GridIronDiff = (function () {
           label,
           detail: dVal == null ? '—' : String(dVal),
           overtime: oVal == null ? '—' : String(oVal)
+        });
+      }
+    }
+
+    for (const row of playoffRows(detail, overtime)) {
+      if (!row.matched) {
+        diffs.push({
+          kind: 'Playoff',
+          label: row.label,
+          detail: row.detail,
+          overtime: row.overtime,
+          target: row.target
         });
       }
     }
@@ -98,18 +204,26 @@ window.GridIronDiff = (function () {
 
   function compare(detail, overtime) {
     const bothOk = !!(detail?.ok && overtime?.ok);
+    const playoff = bothOk ? playoffRows(detail, overtime) : [];
     const diffs = bothOk ? findDiffs(detail, overtime) : [];
+    const playoffMatched = playoff.length > 0 && playoff.every((r) => r.matched);
+    const playoffOnTarget = playoff.length > 0 && playoff.every((r) => r.meetsTarget);
     return {
       bothOk,
       matched: bothOk && diffs.length === 0,
+      playoffMatched,
+      playoffOnTarget,
+      playoff,
+      playoffTarget: PLAYOFF_TARGET,
       diffs,
       byKind: {
         Setting: diffs.filter((d) => d.kind === 'Setting'),
+        Playoff: diffs.filter((d) => d.kind === 'Playoff'),
         Scoring: diffs.filter((d) => d.kind === 'Scoring'),
         Lineup: diffs.filter((d) => d.kind === 'Lineup')
       }
     };
   }
 
-  return { fmt, fmtItem, findDiffs, compare };
+  return { fmt, fmtItem, findDiffs, compare, playoffRows, PLAYOFF_TARGET };
 })();

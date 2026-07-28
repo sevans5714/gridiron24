@@ -25,3 +25,29 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: WRAP_EMAIL_MODE
+        value: "all"
+
+  # Tuesday 14:00 UTC ≈ 10:00 AM Eastern — after Monday Night Football.
+  # Requires CRON_SECRET + APP_BASE_URL (and ideally OPENAI_API_KEY) in the Dashboard.
+  - type: cron
+    name: gridiron24-weekly-wrap
+    runtime: node
+    plan: starter
+    region: ohio
+    schedule: "0 14 * * 2"
+    buildCommand: npm install
+    startCommand: node -e "const u=process.env.APP_BASE_URL||'https://www.gridiron24.com';const s=process.env.CRON_SECRET;if(!s){console.error('CRON_SECRET missing');process.exit(1);}fetch(u.replace(/\\/$/,'')+'/api/cron/weekly-wrap',{method:'POST',headers:{Authorization:'Bearer '+s}}).then(async r=>{const t=await r.text();console.log(r.status,t.slice(0,500));if(!r.ok)process.exit(1);}).catch(e=>{console.error(e);process.exit(1);});"
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: APP_BASE_URL
+        value: "https://www.gridiron24.com"
+      - key: CRON_SECRET
+        sync: false

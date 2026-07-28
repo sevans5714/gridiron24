@@ -31,7 +31,14 @@ const users = require('./users-store');
 const board = require('./board-store');
 const logos = require('./logos-store');
 const invites = require('./invites-store');
-const { sendPasswordResetEmail, sendInviteEmail, mailConfig } = require('./mail');
+const weeklyWrap = require('./weekly-wrap');
+const {
+  sendPasswordResetEmail,
+  sendInviteEmail,
+  sendWeeklyWrapEmail,
+  buildWeeklyWrapEmail,
+  mailConfig
+} = require('./mail');
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -98,7 +105,8 @@ const PUBLIC_PATHS = new Set([
   '/api/forgot-password',
   '/api/reset-password',
   '/api/logout',
-  '/api/auth'
+  '/api/auth',
+  '/api/cron/weekly-wrap'
 ]);
 
 function sendJson(res, status, payload, extraHeaders = {}) {
@@ -599,6 +607,15 @@ function normalizeSettings(raw, conference) {
     .filter((s) => s.count > 0 && SLOT_LABELS[s.id])
     .sort((a, b) => a.id - b.id);
 
+  const status = raw.status || {};
+  const matchupPeriodCount = schedule.matchupPeriodCount ?? null;
+  const finalScoringPeriod = status.finalScoringPeriod ?? null;
+  const firstPlayoffWeek = matchupPeriodCount != null ? Number(matchupPeriodCount) + 1 : null;
+  const playoffWeekCount =
+    matchupPeriodCount != null && finalScoringPeriod != null
+      ? Math.max(0, Number(finalScoringPeriod) - Number(matchupPeriodCount))
+      : null;
+
   return {
     key: conference.key,
     name: conference.name,
@@ -611,7 +628,13 @@ function normalizeSettings(raw, conference) {
     lineup: slots,
     playoffTeamCount: schedule.playoffTeamCount ?? null,
     playoffReseed: schedule.playoffReseed ?? null,
-    matchupPeriodCount: schedule.matchupPeriodCount ?? null
+    matchupPeriodCount,
+    playoffMatchupPeriodLength: schedule.playoffMatchupPeriodLength ?? null,
+    playoffSeedingRule: schedule.playoffSeedingRule ?? null,
+    finalScoringPeriod,
+    firstPlayoffWeek,
+    playoffWeekCount,
+    currentMatchupPeriod: status.currentMatchupPeriod ?? null
   };
 }
 
@@ -659,6 +682,7 @@ function normalizeSchedule(raw, conference, week) {
         id: m.id,
         matchupPeriodId: m.matchupPeriodId,
         winner: m.winner || 'UNDECIDED',
+        playoffTierType: m.playoffTierType || null,
         home: {
           ...home,
           score: Number(m.home?.totalPoints ?? 0),
@@ -763,6 +787,384 @@ async function apiLeagues(res) {
   });
 }
 
+async function loadStandingsPayload() {
+  const results = await Promise.all(
+    config.conferences.map(async (conference) => {
+      try {
+        const data = await fetchEspnLeague(conference);
+        return { ok: true, ...data };
+      } catch (error) {
+        return {
+          ok: false,
+          key: conference.key,
+          name: conference.name,
+          shortName: conference.shortName,
+          leagueId: conference.espnLeagueId,
+          error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
+        };
+      }
+    })
+  );
+  return {
+    brand: config.brand,
+    season: config.season,
+    generatedAt: new Date().toISOString(),
+    conferences: results
+  };
+}
+
+async function loadSchedulePayload(weekParam) {
+  const results = await Promise.all(
+    config.conferences.map(async (conference) => {
+      try {
+        const raw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], 'matchup');
+        const week = Number(weekParam || raw.status?.currentMatchupPeriod || 1);
+        return { ok: true, ...normalizeSchedule(raw, conference, week) };
+      } catch (error) {
+        return {
+          ok: false,
+          key: conference.key,
+          name: conference.name,
+          error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
+        };
+      }
+    })
+  );
+  const week = results.find((r) => r.ok)?.week || Number(weekParam || 1);
+  return {
+    season: config.season,
+    week,
+    generatedAt: new Date().toISOString(),
+    conferences: results
+  };
+}
+
+function matchupWinnerTeam(m) {
+  const w = String(m?.winner || '').toUpperCase();
+  if (w === 'HOME') return m.home || null;
+  if (w === 'AWAY') return m.away || null;
+  return null;
+}
+
+function isWinnersBracketMatchup(m) {
+  const tier = String(m?.playoffTierType || '').toUpperCase();
+  return tier.includes('WINNER');
+}
+
+function isConsolationMatchup(m) {
+  const tier = String(m?.playoffTierType || '').toUpperCase();
+  return tier.includes('LOSER') || tier.includes('CONSOL');
+}
+
+function conferenceTitleWinner(conf) {
+  if (!conf?.ok) return null;
+  const matchups = conf.matchups || [];
+  if (!matchups.length) return null;
+  const winners = matchups.filter(isWinnersBracketMatchup);
+  const pool = winners.length
+    ? winners
+    : matchups.filter((m) => !isConsolationMatchup(m));
+  const list = pool.length ? pool : matchups;
+  for (const m of list) {
+    const winner = matchupWinnerTeam(m);
+    if (winner) return { ...winner, sourceMatchupId: m.id, playoffTierType: m.playoffTierType || null };
+  }
+  return null;
+}
+
+function teamWeekEntry(conf, teamId) {
+  if (!conf?.ok || teamId == null) return null;
+  for (const m of conf.matchups || []) {
+    if (Number(m.home?.id) === Number(teamId)) {
+      return {
+        ...m.home,
+        side: 'home',
+        opponentName: m.away?.name || null,
+        matchupWinner: m.winner || 'UNDECIDED',
+        matchupId: m.id
+      };
+    }
+    if (Number(m.away?.id) === Number(teamId)) {
+      return {
+        ...m.away,
+        side: 'away',
+        opponentName: m.home?.name || null,
+        matchupWinner: m.winner || 'UNDECIDED',
+        matchupId: m.id
+      };
+    }
+  }
+  return null;
+}
+
+function bowlSideFromConference(titleConf, bowlConf, label) {
+  const champion = conferenceTitleWinner(titleConf);
+  const scoring = champion ? teamWeekEntry(bowlConf, champion.id) : null;
+  const matchupCount = (bowlConf?.matchups || []).length;
+  return {
+    conferenceKey: titleConf?.key || bowlConf?.key || null,
+    conferenceName: label,
+    ok: Boolean(titleConf?.ok && bowlConf?.ok),
+    champion: champion
+      ? {
+          id: champion.id,
+          name: champion.name,
+          logo: champion.logo || null
+        }
+      : null,
+    score: scoring ? Number(scoring.score || 0) : null,
+    projected: scoring ? Number(scoring.projected || 0) : null,
+    hasWeek17Matchup: Boolean(scoring),
+    week17MatchupCount: matchupCount,
+    espnOpponent: scoring?.opponentName || null
+  };
+}
+
+async function buildBowlPayload() {
+  const TITLE_WEEK = 16;
+  const BOWL_WEEK = 17;
+  const [titleWeek, bowlWeek] = await Promise.all([
+    loadSchedulePayload(TITLE_WEEK),
+    loadSchedulePayload(BOWL_WEEK)
+  ]);
+
+  const titleByKey = new Map((titleWeek.conferences || []).map((c) => [c.key, c]));
+  const bowlByKey = new Map((bowlWeek.conferences || []).map((c) => [c.key, c]));
+
+  const detail = bowlSideFromConference(
+    titleByKey.get('detail'),
+    bowlByKey.get('detail'),
+    'Detail Champion'
+  );
+  const overtime = bowlSideFromConference(
+    titleByKey.get('overtime'),
+    bowlByKey.get('overtime'),
+    'Overtime Champion'
+  );
+
+  const champsReady = Boolean(detail.champion && overtime.champion);
+  const scoresReady = Boolean(detail.hasWeek17Matchup && overtime.hasWeek17Matchup);
+  let phase = 'waiting';
+  let message = 'Conference titles crown in Week 16. GridIron Bowl scores pull from each champ’s ESPN Week 17 lineup.';
+
+  if (champsReady && scoresReady) {
+    const d = Number(detail.score || 0);
+    const o = Number(overtime.score || 0);
+    if (d > 0 || o > 0) {
+      phase = 'live';
+      message = 'Live ESPN Week 17 scoring · Detail champ vs Overtime champ';
+    } else {
+      phase = 'ready';
+      message = 'Champions locked. Waiting on Week 17 NFL kickoff for ESPN scores.';
+    }
+  } else if (champsReady && !scoresReady) {
+    phase = 'needs_week17';
+    message = 'Champions are set, but ESPN needs a Week 17 matchup for each champ so lineups score.';
+  } else if ((bowlByKey.get('detail')?.matchups || []).length || (bowlByKey.get('overtime')?.matchups || []).length) {
+    phase = 'week17_open';
+    message = 'Week 17 ESPN matchups exist. Bowl names fill in after Week 16 conference title games.';
+  }
+
+  let leader = null;
+  if (champsReady && scoresReady) {
+    const d = Number(detail.score || 0);
+    const o = Number(overtime.score || 0);
+    if (d > o) leader = 'detail';
+    else if (o > d) leader = 'overtime';
+    else if (d > 0 || o > 0) leader = 'tie';
+  }
+
+  return {
+    ok: true,
+    season: config.season,
+    titleWeek: TITLE_WEEK,
+    bowlWeek: BOWL_WEEK,
+    phase,
+    message,
+    leader,
+    detail,
+    overtime,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+function authorizeCron(req) {
+  const secret = String(process.env.CRON_SECRET || '').trim();
+  if (!secret) return false;
+  const header = String(req.headers.authorization || '');
+  const bearer = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  const alt = String(req.headers['x-cron-secret'] || '').trim();
+  const provided = bearer || alt;
+  if (!provided || provided.length !== secret.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(secret));
+  } catch {
+    return false;
+  }
+}
+
+function wrapRecipients() {
+  const mode = String(process.env.WRAP_EMAIL_MODE || 'all').trim().toLowerCase();
+  const list = users.listUsers().filter((u) => u.email);
+  if (mode === 'staff') {
+    return list.filter((u) => u.role === 'commissioner' || u.role === 'conference_admin');
+  }
+  return list;
+}
+
+async function runWeeklyWrapJob({
+  week: weekParam = null,
+  force = false,
+  sendEmail = true,
+  postNews = true,
+  dryRun = false,
+  triggeredBy = 'system'
+} = {}) {
+  const currentSchedule = await loadSchedulePayload();
+  const currentPeriod = currentSchedule.conferences.find((c) => c.ok)?.currentMatchupPeriod
+    || currentSchedule.week;
+  const week = weeklyWrap.resolveWrapWeek({
+    requestedWeek: weekParam,
+    currentMatchupPeriod: currentPeriod,
+    scheduleConferences: currentSchedule.conferences
+  });
+
+  const existing = weeklyWrap.findExistingWrap(config.season, week);
+  if (existing && !force && !dryRun) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: `Week ${week} wrap already published`,
+      week,
+      season: config.season,
+      existing
+    };
+  }
+
+  const [standings, schedule] = await Promise.all([
+    loadStandingsPayload(),
+    week === currentSchedule.week ? Promise.resolve(currentSchedule) : loadSchedulePayload(week)
+  ]);
+
+  const stats = weeklyWrap.buildStatsPack({
+    season: config.season,
+    week,
+    standings,
+    schedule
+  });
+
+  if (!stats.ready && !force) {
+    return {
+      ok: false,
+      error: `Week ${week} has no final scores yet`,
+      week,
+      season: config.season,
+      stats
+    };
+  }
+
+  const narrative = await weeklyWrap.generateNarrative(stats);
+  const title = weeklyWrap.buildTitle(week, config.season);
+  const body = String(narrative.body || '').slice(0, 8000);
+
+  if (dryRun) {
+    return {
+      ok: true,
+      dryRun: true,
+      week,
+      season: config.season,
+      title,
+      body,
+      provider: narrative.provider,
+      aiConfigured: weeklyWrap.aiConfigured(),
+      mail: mailConfig(),
+      recipientCount: wrapRecipients().length,
+      stats,
+      emailPreview: buildWeeklyWrapEmail({
+        week,
+        season: config.season,
+        title,
+        body,
+        stats,
+        recipientName: 'Manager',
+        baseUrl: process.env.APP_BASE_URL
+      })
+    };
+  }
+
+  let newsItem = null;
+  if (postNews) {
+    newsItem = board.addNews({
+      title,
+      body,
+      author: {
+        id: null,
+        name: 'GridIron Wrap',
+        loginName: 'gridiron-wrap'
+      }
+    });
+  }
+
+  const emailResults = [];
+  if (sendEmail) {
+    const recipients = wrapRecipients();
+    for (const user of recipients) {
+      try {
+        const result = await sendWeeklyWrapEmail({
+          to: user.email,
+          week,
+          season: config.season,
+          title,
+          body,
+          stats,
+          recipientName: user.name || user.loginName,
+          baseUrl: process.env.APP_BASE_URL
+        });
+        emailResults.push({
+          email: user.email,
+          ok: true,
+          sent: Boolean(result.sent),
+          method: result.method
+        });
+      } catch (err) {
+        emailResults.push({
+          email: user.email,
+          ok: false,
+          error: err.message || 'Send failed'
+        });
+      }
+    }
+  }
+
+  const record = {
+    id: crypto.randomUUID(),
+    season: config.season,
+    week,
+    title,
+    newsId: newsItem?.id || null,
+    provider: narrative.provider,
+    emailed: emailResults.filter((r) => r.sent).length,
+    emailAttempted: emailResults.length,
+    triggeredBy,
+    createdAt: new Date().toISOString()
+  };
+  weeklyWrap.saveWrapRecord(record);
+
+  return {
+    ok: true,
+    week,
+    season: config.season,
+    title,
+    body,
+    provider: narrative.provider,
+    newsItem,
+    emailResults,
+    record,
+    mail: mailConfig(),
+    aiConfigured: weeklyWrap.aiConfigured()
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -776,6 +1178,29 @@ const server = http.createServer(async (req, res) => {
         conferenceLeagueIds: config.conferences.map((c) => c.espnLeagueId),
         authConfigured: true
       });
+    }
+
+    if (pathname === '/api/cron/weekly-wrap' && (req.method === 'POST' || req.method === 'GET')) {
+      if (!authorizeCron(req)) {
+        return sendJson(res, 401, { ok: false, error: 'Invalid cron secret' });
+      }
+      const weekParam = requestUrl.searchParams.get('week');
+      const force = requestUrl.searchParams.get('force') === '1';
+      const dryRun = requestUrl.searchParams.get('dryRun') === '1';
+      try {
+        const result = await runWeeklyWrapJob({
+          week: weekParam ? Number(weekParam) : null,
+          force,
+          dryRun,
+          sendEmail: requestUrl.searchParams.get('email') !== '0',
+          postNews: requestUrl.searchParams.get('news') !== '0',
+          triggeredBy: 'cron'
+        });
+        return sendJson(res, result.ok || result.skipped ? 200 : 409, result);
+      } catch (err) {
+        console.error('[weekly-wrap] cron failed', err);
+        return sendJson(res, 500, { ok: false, error: err.message || 'Weekly wrap failed' });
+      }
     }
 
     if (pathname === '/api/auth') {
@@ -1171,6 +1596,57 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    if (pathname === '/api/weekly-wrap/preview' && req.method === 'GET') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      const weekParam = requestUrl.searchParams.get('week');
+      try {
+        const result = await runWeeklyWrapJob({
+          week: weekParam ? Number(weekParam) : null,
+          force: true,
+          dryRun: true,
+          sendEmail: false,
+          postNews: false,
+          triggeredBy: user.loginName || 'commissioner'
+        });
+        if (requestUrl.searchParams.get('format') === 'html' && result.emailPreview?.html) {
+          res.writeHead(200, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store'
+          });
+          return res.end(result.emailPreview.html);
+        }
+        return sendJson(res, result.ok ? 200 : 409, result);
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err.message || 'Could not preview wrap' });
+      }
+    }
+
+    if (pathname === '/api/weekly-wrap' && req.method === 'POST') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const result = await runWeeklyWrapJob({
+          week: body.week != null ? Number(body.week) : null,
+          force: Boolean(body.force),
+          dryRun: Boolean(body.dryRun),
+          sendEmail: body.sendEmail !== false,
+          postNews: body.postNews !== false,
+          triggeredBy: user.loginName || user.name || 'commissioner'
+        });
+        return sendJson(res, result.ok || result.skipped ? 200 : 409, result);
+      } catch (err) {
+        console.error('[weekly-wrap] manual failed', err);
+        return sendJson(res, 500, { ok: false, error: err.message || 'Weekly wrap failed' });
+      }
+    }
+
     if (pathname === '/api/news' && req.method === 'POST') {
       const user = requireStaff(req, res);
       if (!user) return;
@@ -1433,6 +1909,15 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/schedule') {
       return await apiSchedule(res, requestUrl.searchParams.get('week'));
+    }
+
+    if (pathname === '/api/bowl') {
+      try {
+        const payload = await buildBowlPayload();
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load GridIron Bowl' });
+      }
     }
 
     if (pathname === '/api/payouts') {

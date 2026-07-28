@@ -54,7 +54,8 @@ function buildInviteEmail({
     `${who} invited you to join GridIron 24 — 24 teams, two conferences, one champion.\n\n` +
     `Create your account here (invite expires in 14 days):\n${inviteUrl}\n\n` +
     `Already have an account? Sign in: ${homeUrl}\n\n` +
-    `If you weren't expecting this invite, you can ignore this email.\n`;
+    `GridIron 24 HQ · Fantasy Football\n` +
+    `If you weren't expecting this email, ignore it.\n`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -141,8 +142,8 @@ function buildInviteEmail({
           </tr>
           <tr>
             <td style="border-top:1px solid rgba(255,255,255,0.08);padding:16px 28px 22px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.5;color:#666666;text-align:center;">
-              ${escapeHtml(league)} HQ · Fantasy football across Detail &amp; Overtime<br />
-              If you weren’t expecting this email, you can ignore it.
+              GridIron 24 HQ · Fantasy Football<br />
+              If you weren’t expecting this email, ignore it.
             </td>
           </tr>
         </table>
@@ -245,10 +246,198 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;');
 }
 
+function paragraphsToHtml(text) {
+  const chunks = String(text || '')
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (!chunks.length) return '';
+  return chunks
+    .map((p) => {
+      const withBreaks = escapeHtml(p).replaceAll('\n', '<br />');
+      return `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#d4d4d4;">${withBreaks}</p>`;
+    })
+    .join('');
+}
+
+function confResultsHtml(conf) {
+  const games = (conf.games || []).filter((g) => g.final);
+  if (!games.length) {
+    return `<p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8a8a8a;">No final scores yet.</p>`;
+  }
+  return games
+    .map((g) => {
+      const line = `${escapeHtml(g.away)} ${g.awayScore.toFixed(1)} · ${escapeHtml(g.home)} ${g.homeScore.toFixed(1)}`;
+      const winner = g.winnerName
+        ? `<div style="margin-top:2px;font-size:12px;color:#8a8a8a;">Winner: ${escapeHtml(g.winnerName)}</div>`
+        : '';
+      return `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f0f0f0;">${line}${winner}</div>`;
+    })
+    .join('');
+}
+
+function buildWeeklyWrapEmail({
+  week,
+  season,
+  title,
+  body,
+  stats,
+  recipientName,
+  baseUrl
+}) {
+  const league = stats?.leagueName || 'GridIron 24';
+  const origin = siteBaseUrl(baseUrl);
+  const logoUrl = `${origin}/assets/gridiron24-logo.png`;
+  const detailLogo = `${origin}/assets/detail-conference.png`;
+  const overtimeLogo = `${origin}/assets/overtime-conference.png`;
+  const homeUrl = `${origin}/home.html`;
+  const who = recipientName || 'Manager';
+  const headline = title || `Week ${week} Wrap-Up · ${season || ''}`;
+
+  const confBlocks = (stats?.conferences || [])
+    .map((conf) => {
+      const accent = conf.key === 'overtime' ? '#e2232a' : '#ff7a18';
+      const mark = conf.key === 'overtime' ? overtimeLogo : detailLogo;
+      return `
+        <tr>
+          <td style="padding:18px 28px 6px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="44" valign="middle">
+                  <img src="${escapeHtml(mark)}" width="40" height="40" alt="" style="display:block;width:40px;height:40px;object-fit:contain;border:0;" />
+                </td>
+                <td valign="middle" style="padding-left:10px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${accent};">
+                  ${escapeHtml(conf.shortName || conf.name)}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:4px 28px 10px;">
+            ${confResultsHtml(conf)}
+          </td>
+        </tr>`;
+    })
+    .join('');
+
+  const text =
+    `${headline}\n\n` +
+    `Hi ${who},\n\n` +
+    `${body}\n\n` +
+    `Open League HQ: ${homeUrl}\n`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>${escapeHtml(headline)}</title>
+</head>
+<body style="margin:0;padding:0;background:#050505;color:#f2f2f2;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+    Week ${escapeHtml(String(week))} wrap-up is live — scores, streaks, and the race across Detail &amp; Overtime.
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050505;width:100%;">
+    <tr>
+      <td align="center" style="padding:28px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;border:1px solid rgba(255,255,255,0.10);background:#0d0d0d;">
+          <tr>
+            <td align="center" style="padding:26px 28px 6px;background:radial-gradient(ellipse at 50% 0%, rgba(47,109,255,0.16), transparent 58%), #0d0d0d;">
+              <a href="${escapeHtml(origin)}" style="text-decoration:none;">
+                <img src="${escapeHtml(logoUrl)}" width="200" alt="${escapeHtml(league)}" style="display:block;width:200px;max-width:65%;height:auto;border:0;margin:0 auto;" />
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:10px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#9b9b9b;">
+              Weekly Wrap-Up · Week ${escapeHtml(String(week))}
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:14px 28px 8px;font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:1.25;font-weight:700;color:#ffffff;">
+              ${escapeHtml(headline)}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 28px 4px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#9a9a9a;">
+              Hi ${escapeHtml(who)},
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:6px 28px 8px;">
+              ${paragraphsToHtml(body)}
+            </td>
+          </tr>
+          ${confBlocks}
+          <tr>
+            <td align="center" style="padding:22px 28px 10px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" bgcolor="#2f6dff" style="border-radius:4px;">
+                    <a href="${escapeHtml(homeUrl)}" style="display:inline-block;padding:14px 26px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;text-decoration:none;color:#ffffff;">
+                      Open League HQ
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="border-top:1px solid rgba(255,255,255,0.08);padding:16px 28px 22px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.5;color:#666666;text-align:center;">
+              ${escapeHtml(league)} · Detail &amp; Overtime · Season ${escapeHtml(String(season || ''))}<br />
+              You’re receiving this as a league manager at GridIron 24 HQ.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  return {
+    subject: headline,
+    text,
+    html
+  };
+}
+
+async function sendWeeklyWrapEmail({ to, week, season, title, body, stats, recipientName, baseUrl }) {
+  const { configured, from } = mailConfig();
+  const apiKey = process.env.RESEND_API_KEY || '';
+  const content = buildWeeklyWrapEmail({
+    week,
+    season,
+    title,
+    body,
+    stats,
+    recipientName,
+    baseUrl
+  });
+
+  if (configured) {
+    return sendViaResend({
+      from,
+      apiKey,
+      to,
+      subject: content.subject,
+      text: content.text,
+      html: content.html
+    });
+  }
+
+  console.log(`[weekly-wrap] ${to}: ${content.subject}`);
+  return { sent: false, method: 'log', previewHtml: content.html };
+}
+
 module.exports = {
   sendPasswordResetEmail,
   sendInviteEmail,
+  sendWeeklyWrapEmail,
   mailConfig,
   buildInviteEmail,
+  buildWeeklyWrapEmail,
   siteBaseUrl
 };

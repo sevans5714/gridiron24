@@ -316,6 +316,74 @@
       text-transform: uppercase;
     }
 
+    .bowl-scoreboard {
+      width: 100%;
+      margin-top: 0.85rem;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.45rem;
+      align-items: center;
+    }
+    .bowl-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      min-width: 0;
+    }
+    .bowl-side img {
+      width: 3.5rem;
+      height: 3.5rem;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+    }
+    .bowl-side .nm {
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      line-height: 1.2;
+      color: #fff;
+      max-width: 100%;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .bowl-side.detail .nm { color: var(--detail); }
+    .bowl-side.overtime .nm { color: var(--overtime); }
+    .bowl-side.is-lead .nm {
+      text-shadow: 0 0 12px rgba(47, 109, 255, 0.45);
+    }
+    .bowl-mid {
+      text-align: center;
+      font-family: var(--display);
+      min-width: 4.5rem;
+    }
+    .bowl-mid .pair {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .bowl-mid .sep { color: #6a6a6a; margin: 0 0.15rem; }
+    .bowl-mid .status {
+      margin-top: 0.2rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+    }
+    .bowl-note {
+      margin-top: 0.65rem;
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: #9a9a9a;
+      max-width: 16rem;
+    }
+
     .third-place {
       border: 1px solid rgba(239, 215, 130, 0.35);
       background:
@@ -487,14 +555,22 @@
       </section>
 
       <div class="mid reveal reveal-delay-1">
-        <div class="bowl">
-          <div class="eyebrow">Week 17</div>
+        <div class="bowl" id="bowl-card">
+          <div class="eyebrow">Week 17 · ESPN scored</div>
           <img src="/assets/gridiron-bowl.png" alt="GridIron Bowl I" />
-          <div class="vs">
-            <span class="d">Detail Champion</span>
-            <span class="mid-vs">vs</span>
-            <span class="o">Overtime Champion</span>
+          <div class="bowl-scoreboard" id="bowl-scoreboard">
+            <div class="bowl-side detail">
+              <div class="nm" id="bowl-detail-name">Detail Champion</div>
+            </div>
+            <div class="bowl-mid">
+              <div class="pair"><span id="bowl-detail-score">—</span><span class="sep">–</span><span id="bowl-overtime-score">—</span></div>
+              <div class="status" id="bowl-status">Waiting</div>
+            </div>
+            <div class="bowl-side overtime">
+              <div class="nm" id="bowl-overtime-name">Overtime Champion</div>
+            </div>
           </div>
+          <p class="bowl-note" id="bowl-message">Scores appear here from each conference champ’s ESPN Week 17 lineup.</p>
         </div>
       </div>
 
@@ -539,12 +615,70 @@
       </div>
       <div class="note reveal reveal-delay-4">
         <h3>GridIron Bowl</h3>
-        <p>Week 17 is the cross-conference championship. GridIron scores both conference champions from their ESPN starting lineups — no shared ESPN league required.</p>
+        <p>Week 17 is scored by ESPN in each league. GridIron pulls the Detail champ’s Week 17 points and the Overtime champ’s Week 17 points and displays them head-to-head here. Set regular season to 13 weeks so conference playoffs are Weeks 14–16, turn reseed on, and make sure each conference champion still has a Week 17 ESPN matchup (opponent doesn’t matter for the Bowl — only their score counts).</p>
       </div>
     </div>
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
   <script src="/js/nav.js?v=8"></script>
+  <script>
+    const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    function fmt(n) {
+      if (n == null || Number.isNaN(Number(n))) return '—';
+      return Number(n).toFixed(1);
+    }
+
+    function fillSide(prefix, side, isLead) {
+      const nameEl = document.getElementById(`bowl-${prefix}-name`);
+      const scoreEl = document.getElementById(`bowl-${prefix}-score`);
+      const wrap = nameEl.closest('.bowl-side');
+      wrap.classList.toggle('is-lead', Boolean(isLead));
+      nameEl.textContent = side?.champion?.name
+        || (prefix === 'detail' ? 'Detail Champion' : 'Overtime Champion');
+      let img = wrap.querySelector('img.bowl-logo');
+      if (!img) {
+        img = document.createElement('img');
+        img.className = 'bowl-logo';
+        img.alt = '';
+        wrap.insertBefore(img, nameEl);
+      }
+      img.src = side?.champion?.logo || PLACEHOLDER;
+      scoreEl.textContent = side?.hasWeek17Matchup ? fmt(side.score) : '—';
+    }
+
+    async function loadBowl() {
+      try {
+        const res = await fetch('/api/bowl', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        fillSide('detail', data.detail, data.leader === 'detail' || data.leader === 'tie');
+        fillSide('overtime', data.overtime, data.leader === 'overtime' || data.leader === 'tie');
+
+        const status = document.getElementById('bowl-status');
+        const map = {
+          live: 'Live',
+          ready: 'Ready',
+          needs_week17: 'Needs Wk17',
+          week17_open: 'Wk17 open',
+          waiting: 'Waiting'
+        };
+        status.textContent = map[data.phase] || 'Waiting';
+        document.getElementById('bowl-message').textContent = data.message || '';
+        const t = new Date(data.generatedAt);
+        window.GridIronNav?.setSync(`Bowl sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        document.getElementById('bowl-message').textContent = err.message || 'Could not load Bowl scores';
+        window.GridIronNav?.setSync('Bowl sync error', false);
+      }
+    }
+
+    loadBowl();
+    setInterval(loadBowl, 30_000);
+  </script>
 </body>
 </html>

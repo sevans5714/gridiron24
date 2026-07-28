@@ -52,8 +52,8 @@ function addNews({ title, body, author }) {
   const cleanBody = String(body || '').trim();
   if (!cleanTitle) throw Object.assign(new Error('News title is required'), { status: 400 });
   if (!cleanBody) throw Object.assign(new Error('News body is required'), { status: 400 });
-  if (cleanTitle.length > 120) throw Object.assign(new Error('Title is too long'), { status: 400 });
-  if (cleanBody.length > 4000) throw Object.assign(new Error('Body is too long'), { status: 400 });
+  if (cleanTitle.length > 140) throw Object.assign(new Error('Title is too long'), { status: 400 });
+  if (cleanBody.length > 8000) throw Object.assign(new Error('Body is too long'), { status: 400 });
 
   const store = readStore();
   const item = {

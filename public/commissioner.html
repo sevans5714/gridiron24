@@ -332,6 +332,56 @@
       text-transform: uppercase;
     }
 
+    .playoff-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 0.85rem;
+      font-family: var(--display);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .playoff-badge.ok { color: #22c55e; }
+    .playoff-badge.warn { color: #ef4444; }
+    .playoff-badge .dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .playoff-table .hint-cell {
+      color: #8a8a8a;
+      font-size: 0.82rem;
+      font-weight: 400;
+    }
+    .playoff-table tr.is-mismatch td.num {
+      color: #fca5a5 !important;
+    }
+    .playoff-table tr.is-mismatch td.item {
+      color: #fca5a5;
+    }
+    .playoff-table tr.is-off-target td.target-cell {
+      color: #f0d78c;
+    }
+    .playoff-checklist {
+      margin: 0.85rem 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.35rem;
+    }
+    .playoff-checklist li {
+      color: #b0b0b0;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+    .playoff-checklist li::before {
+      content: "→ ";
+      color: #8eb6ff;
+    }
+
     .links {
       display: flex;
       flex-wrap: wrap;
@@ -450,6 +500,8 @@
   <main class="page-main shell">
     <nav class="comm-jump" aria-label="Commissioner sections">
       <a href="#rules-sync">Rules</a>
+      <a href="#playoff-sync">Playoffs</a>
+      <a href="#wrap-admin" id="jump-wrap" hidden>Wrap-Up</a>
       <a href="#invites-admin" id="jump-invites" hidden>Invites</a>
       <a href="#members" id="jump-members" hidden>Members</a>
       <a href="#news-admin">News</a>
@@ -466,6 +518,30 @@
         <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
       </div>
       <div id="content"><div class="msg">Loading conference settings…</div></div>
+    </section>
+
+    <section class="comm-section" id="playoff-sync">
+      <div class="section-head">
+        <h2>Playoff Sync</h2>
+      </div>
+      <p class="help">Compare Detail vs Overtime playoff setup against the GridIron tree: 13 regular-season weeks, 6 teams, reseed on, Weeks 14–16 conference bracket, Week 17 Bowl scoring.</p>
+      <div id="playoff-content"><div class="msg">Loading playoff settings…</div></div>
+    </section>
+
+    <section class="admin-block" id="wrap-admin" hidden>
+      <div class="section-head">
+        <h2>Weekly Wrap-Up</h2>
+      </div>
+      <p class="help">AI writes a custom Week N wrap from final ESPN scores, posts it to League News, and emails every league manager. Cron runs Tuesday 14:00 UTC (after Monday night). Preview the email HTML anytime. Needs <code>OPENAI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code> for AI copy (falls back to a template).</p>
+      <div class="status-note" id="wrap-msg" role="status"></div>
+      <div class="toolbar">
+        <input class="field" id="wrap-week" type="number" min="1" max="17" placeholder="Week (blank = auto)" style="max-width:11rem;" />
+        <button type="button" class="btn btn-secondary" id="wrap-preview">Preview</button>
+        <button type="button" class="btn btn-secondary" id="wrap-preview-email">Email HTML</button>
+        <button type="button" class="btn" id="wrap-send">Generate &amp; Send</button>
+      </div>
+      <p class="help" id="wrap-meta" style="margin-top:0.75rem;"></p>
+      <div id="wrap-preview-body" class="list-gap"></div>
     </section>
 
     <section class="admin-block" id="invites-admin" hidden>
@@ -505,7 +581,7 @@
         </div>
         <div>
           <label class="field-label" for="news-body">Details</label>
-          <textarea class="field field-area" id="news-body" maxlength="4000" placeholder="News details…"></textarea>
+            <textarea class="field field-area" id="news-body" maxlength="8000" placeholder="News details…"></textarea>
         </div>
         <div class="btn-row">
           <button type="button" class="btn" id="news-add">Post News</button>
@@ -530,7 +606,7 @@
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
   <script src="/js/nav.js?v=8"></script>
-  <script src="/js/conference-diff.js?v=3"></script>
+  <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -595,6 +671,79 @@
         </div>`;
     }
 
+    function playoffTable(rows) {
+      if (!rows.length) return '<div class="msg">Playoff settings unavailable.</div>';
+      return `
+        <table class="diff-table playoff-table">
+          <thead>
+            <tr>
+              <th>Setting</th>
+              <th class="num">Detail</th>
+              <th class="num">Overtime</th>
+              <th class="num">GridIron target</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r) => `
+              <tr class="${r.matched ? '' : 'is-mismatch'} ${r.meetsTarget ? '' : 'is-off-target'}">
+                <td class="item">
+                  ${esc(r.label)}
+                  <div class="hint-cell">${esc(r.hint || '')}</div>
+                </td>
+                <td class="num detail">${esc(r.detail)}</td>
+                <td class="num overtime">${esc(r.overtime)}</td>
+                <td class="num target-cell">${esc(r.target)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function renderPlayoffSync(cmp, detail, overtime) {
+      const el = document.getElementById('playoff-content');
+      if (!cmp.bothOk) {
+        el.innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load playoff settings from one or both ESPN leagues.</div>`;
+        return;
+      }
+      const badgeCls = cmp.playoffMatched && cmp.playoffOnTarget ? 'ok' : 'warn';
+      const badgeLabel = !cmp.playoffMatched
+        ? 'Playoffs Out of Sync'
+        : cmp.playoffOnTarget
+          ? 'Playoffs Aligned'
+          : 'Leagues Match · Off Target';
+      const badgeSub = !cmp.playoffMatched
+        ? 'Detail and Overtime playoff settings differ — match Overtime to Detail, then hit the GridIron targets.'
+        : cmp.playoffOnTarget
+          ? 'Both leagues match the GridIron playoff tree (13 RS · 6 teams · reseed · Weeks 14–17).'
+          : 'Leagues match each other, but one or more values still miss the GridIron target.';
+
+      const checklist = [];
+      if (Number(detail?.matchupPeriodCount) !== 13 || Number(overtime?.matchupPeriodCount) !== 13) {
+        checklist.push('Set regular season to 13 weeks in both ESPN leagues');
+      }
+      if (detail?.playoffReseed !== true || overtime?.playoffReseed !== true) {
+        checklist.push('Turn playoff reseeding ON in both leagues');
+      }
+      if (Number(detail?.playoffTeamCount) !== 6 || Number(overtime?.playoffTeamCount) !== 6) {
+        checklist.push('Set playoff teams to 6 in both leagues');
+      }
+      if (Number(detail?.finalScoringPeriod) !== 17 || Number(overtime?.finalScoringPeriod) !== 17) {
+        checklist.push('Confirm final scoring week is 17 (Bowl week)');
+      }
+      checklist.push('Open Detail ESPN Settings and Overtime ESPN Settings, apply the yellow target column, save, then re-check');
+
+      el.innerHTML = `
+        <div class="playoff-badge ${badgeCls}"><span class="dot" aria-hidden="true"></span>${esc(badgeLabel)}</div>
+        <p class="help" style="margin-top:0;">${esc(badgeSub)}</p>
+        ${playoffTable(cmp.playoff || [])}
+        <ul class="playoff-checklist">
+          ${checklist.map((c) => `<li>${esc(c)}</li>`).join('')}
+        </ul>
+        <div class="links" style="margin-top:1rem;">
+          <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
+          <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
+        </div>`;
+    }
+
     function render(data) {
       const detail = (data.conferences || []).find((c) => c.key === 'detail');
       const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
@@ -602,6 +751,7 @@
 
       if (!detail?.ok && !overtime?.ok) {
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load either conference from ESPN.</div>`;
+        document.getElementById('playoff-content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load playoff settings.</div>`;
         return;
       }
 
@@ -619,6 +769,7 @@
           Overtime matches Detail Conference scoring, lineup, and playoff settings.
         </div>` : `
         ${syncChecklist(cmp.byKind.Scoring)}
+        ${cmp.byKind.Playoff.length ? `<section class="diff-section"><h3>Playoffs (${cmp.byKind.Playoff.length})</h3>${diffTable(cmp.byKind.Playoff, { withAction: true })}</section>` : ''}
         ${cmp.byKind.Setting.length ? `<section class="diff-section"><h3>League Settings (${cmp.byKind.Setting.length})</h3>${diffTable(cmp.byKind.Setting)}</section>` : ''}
         ${cmp.byKind.Scoring.length ? `<section class="diff-section"><h3>Scoring (${cmp.byKind.Scoring.length})</h3>${diffTable(cmp.byKind.Scoring, { withAction: true })}</section>` : ''}
         ${cmp.byKind.Lineup.length ? `<section class="diff-section"><h3>Lineup (${cmp.byKind.Lineup.length})</h3>${diffTable(cmp.byKind.Lineup, { withAction: true })}</section>` : ''}`;
@@ -635,7 +786,7 @@
         <div class="summary">
           <div class="stat"><span>Detail categories</span><strong class="detail">${detail?.ok ? (detail.scoringItems || []).length : '—'}</strong></div>
           <div class="stat"><span>Overtime categories</span><strong class="overtime">${overtime?.ok ? (overtime.scoringItems || []).length : '—'}</strong></div>
-          <div class="stat"><span>Playoff reseed</span><strong>${detail?.playoffReseed ? 'On' : 'Off'} / ${overtime?.playoffReseed ? 'On' : 'Off'}</strong></div>
+          <div class="stat"><span>RS weeks</span><strong>${detail?.matchupPeriodCount ?? '—'} / ${overtime?.matchupPeriodCount ?? '—'}</strong></div>
           <div class="stat"><span>Differences</span><strong>${cmp.bothOk ? cmp.diffs.length : '—'}</strong></div>
         </div>
         ${diffSections}
@@ -643,6 +794,8 @@
           <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
           <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
         </div>`;
+
+      renderPlayoffSync(cmp, detail, overtime);
     }
 
     function roleValue(user) {
@@ -1093,6 +1246,95 @@
       });
     }
 
+    function showWrapMsg(text, ok) {
+      const el = document.getElementById('wrap-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function wrapWeekValue() {
+      const raw = document.getElementById('wrap-week').value;
+      if (!raw) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    }
+
+    function renderWrapPreview(data) {
+      const meta = document.getElementById('wrap-meta');
+      const body = document.getElementById('wrap-preview-body');
+      if (!data?.ok && !data?.dryRun) {
+        meta.textContent = '';
+        body.innerHTML = `<div class="msg">${esc(data?.error || 'Preview failed')}</div>`;
+        return;
+      }
+      meta.textContent = `Week ${data.week} · ${data.provider || '—'} · AI ${data.aiConfigured ? 'on' : 'off (template fallback)'} · Mail ${data.mail?.configured ? 'on' : 'off'} · ${data.recipientCount ?? '—'} managers`;
+      body.innerHTML = `
+        <div style="margin-bottom:0.65rem;font-family:var(--display);font-size:1.05rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;">${esc(data.title || '')}</div>
+        <div style="white-space:pre-wrap;color:#ddd;line-height:1.55;max-width:44rem;">${esc(data.body || '')}</div>`;
+    }
+
+    function wireWrapAdmin() {
+      document.getElementById('wrap-admin').hidden = false;
+      document.getElementById('jump-wrap').hidden = false;
+
+      document.getElementById('wrap-preview').addEventListener('click', async () => {
+        const btn = document.getElementById('wrap-preview');
+        btn.disabled = true;
+        try {
+          const week = wrapWeekValue();
+          const qs = week ? `?week=${encodeURIComponent(week)}` : '';
+          const res = await fetch(`/api/weekly-wrap/preview${qs}`, { cache: 'no-store' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok && !data.dryRun) throw new Error(data.error || 'Preview failed');
+          renderWrapPreview(data);
+          showWrapMsg(data.error || 'Preview ready — not posted or emailed.', !data.error);
+        } catch (err) {
+          showWrapMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('wrap-preview-email').addEventListener('click', () => {
+        const week = wrapWeekValue();
+        const qs = new URLSearchParams({ format: 'html' });
+        if (week) qs.set('week', String(week));
+        window.open(`/api/weekly-wrap/preview?${qs.toString()}`, '_blank', 'noopener');
+      });
+
+      document.getElementById('wrap-send').addEventListener('click', async () => {
+        if (!confirm('Generate the weekly wrap-up, post it to League News, and email league managers?')) return;
+        const btn = document.getElementById('wrap-send');
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/weekly-wrap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              week: wrapWeekValue(),
+              force: true,
+              sendEmail: true,
+              postNews: true
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || (!data.ok && !data.skipped)) throw new Error(data.error || data.reason || 'Wrap failed');
+          if (data.skipped) {
+            showWrapMsg(data.reason || 'Already sent for that week.', true);
+          } else {
+            const mailed = (data.emailResults || []).filter((r) => r.sent).length;
+            showWrapMsg(`Posted to League News · emailed ${mailed}/${(data.emailResults || []).length} managers · via ${data.provider}.`, true);
+            renderWrapPreview(data);
+          }
+          try { await loadNewsAdmin(); } catch { /* ignore */ }
+        } catch (err) {
+          showWrapMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
+
     window.GridIronNav?.authReady?.then(async ({ user }) => {
       if (!user || (user.role !== 'commissioner' && user.role !== 'conference_admin')) {
         window.location.replace('/home.html');
@@ -1110,6 +1352,7 @@
         document.getElementById('ticker-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
       if (user.role === 'commissioner') {
+        wireWrapAdmin();
         wireInvitesAdmin();
         try { await loadInvitesAdmin(); } catch (err) {
           document.getElementById('invites-admin').hidden = false;
