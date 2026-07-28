@@ -9,239 +9,398 @@
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/site.css?v=18" />
   <style>
+    body[data-page="commissioner"] .page-hero {
+      padding-top: 1.5rem;
+      padding-bottom: 1.15rem;
+    }
+    body[data-page="commissioner"] .page-hero::before,
+    body[data-page="commissioner"] .page-hero::after {
+      display: none;
+    }
+    body[data-page="commissioner"] .page-main {
+      padding-top: 0.85rem;
+      padding-bottom: 3rem;
+    }
+
+    .comm-jump {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 1.1rem;
+      margin: 0 0 1.75rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .comm-jump a {
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9a9a9a;
+      text-decoration: none;
+    }
+    .comm-jump a:hover { color: #fff; }
+
+    .comm-section {
+      margin: 0 0 2.75rem;
+      padding: 0;
+      scroll-margin-top: 5rem;
+    }
+    .comm-section > .section-head,
+    .admin-block > .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin: 0 0 0.55rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 2px solid rgba(255,255,255,0.12);
+    }
+    .comm-section > .section-head h2,
+    .admin-block > .section-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .comm-section .help {
+      margin: 0 0 1.1rem;
+      max-width: 46rem;
+      color: #9a9a9a;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .comm-section .help a {
+      color: #8eb6ff;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .comm-section .help a:hover { text-decoration: underline; }
+
+    /* Override shared boxed admin styles on this page */
+    body[data-page="commissioner"] .admin-block {
+      margin: 0 0 2.75rem;
+      padding: 0;
+      border: 0;
+      background: none;
+      scroll-margin-top: 5rem;
+    }
+    body[data-page="commissioner"] .admin-block h2 {
+      margin: 0;
+      font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+      letter-spacing: 0.06em;
+    }
+    body[data-page="commissioner"] .admin-block .help {
+      margin: 0 0 1.1rem;
+      max-width: 46rem;
+      font-size: 0.95rem;
+    }
+    body[data-page="commissioner"] .status-note {
+      margin: 0 0 0.85rem;
+      padding: 0;
+      border: 0;
+      background: none;
+    }
+    body[data-page="commissioner"] .status-note.show {
+      display: block;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    body[data-page="commissioner"] .status-note.ok { color: #86efac; }
+    body[data-page="commissioner"] .status-note.err { color: #fca5a5; }
+    body[data-page="commissioner"] .field {
+      border: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.22);
+      background: transparent;
+      border-radius: 0;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    body[data-page="commissioner"] .field:focus {
+      border-bottom-color: #fff;
+    }
+    body[data-page="commissioner"] .data-table {
+      border: 0;
+      background: none;
+    }
+    body[data-page="commissioner"] .data-table th {
+      background: none;
+      padding-left: 0;
+      padding-right: 0.75rem;
+    }
+    body[data-page="commissioner"] .data-table td {
+      padding-left: 0;
+      padding-right: 0.75rem;
+      border-bottom-color: rgba(255,255,255,0.06);
+    }
+    body[data-page="commissioner"] .data-table select {
+      background: transparent;
+      color: #fff;
+      border: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.28);
+      border-radius: 0;
+      padding: 0.35rem 0;
+      max-width: 16rem;
+    }
+
+    .sync-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 1.15rem;
+    }
+    .sync-tools .hint {
+      color: #8a8a8a;
+      font-size: 0.88rem;
+    }
+
     .status-bar {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
-      gap: 1rem;
+      gap: 1rem 1.5rem;
       align-items: center;
-      margin-bottom: 1.5rem;
-      padding: 1.1rem 1.2rem;
-      border: 1px solid var(--line);
-      background: var(--panel);
+      margin-bottom: 1.25rem;
+      padding: 0 0 1.15rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    .conf { display: flex; align-items: center; gap: 0.85rem; min-width: 0; }
+    .conf {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
     .conf.right { justify-content: flex-end; text-align: right; }
-    .conf img { width: 3.5rem; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45)); }
+    .conf img {
+      width: 3.25rem;
+      height: auto;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+    }
     .conf .name {
       font-family: var(--display);
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
       line-height: 1.15;
     }
     .conf.detail .name { color: var(--detail); }
     .conf.overtime .name { color: var(--overtime); }
-    .conf .meta { margin-top: 0.2rem; color: var(--muted); font-size: var(--fs-xs); }
-    .sync-badge {
-      text-align: center;
-      padding: 0.65rem 1.1rem;
-      border: 1px solid var(--line);
-      background: #0c0c0c;
-      min-width: 10rem;
+    .conf .meta {
+      margin-top: 0.2rem;
+      color: #8a8a8a;
+      font-size: 0.82rem;
     }
+    .sync-badge { text-align: center; min-width: 9rem; }
     .sync-badge .label {
       font-family: var(--display);
-      font-size: 1rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
     }
-    .sync-badge .label.ok { color: var(--good); }
-    .sync-badge .label.warn { color: var(--gold); }
-    .sync-badge .sub { margin-top: 0.25rem; color: var(--muted); font-size: 0.75rem; }
+    .sync-badge .label.ok { color: #22c55e; }
+    .sync-badge .label.warn { color: #ef4444; }
+    .sync-badge .sub {
+      margin-top: 0.25rem;
+      color: #8a8a8a;
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
     .summary {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem 1.5rem;
       margin-bottom: 1.5rem;
-    }
-    .stat {
-      padding: 0.9rem 1rem;
-      border: 1px solid var(--line);
-      background: var(--panel);
     }
     .stat span {
       display: block;
-      font-size: var(--fs-xs);
+      font-size: 0.72rem;
       font-weight: 600;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: #8a8a8a;
     }
     .stat strong {
       display: block;
-      margin-top: 0.35rem;
+      margin-top: 0.3rem;
       font-family: var(--display);
       font-size: 1.35rem;
       font-weight: 600;
       letter-spacing: 0.02em;
+      color: #fff;
     }
     .stat strong.detail { color: var(--detail); }
     .stat strong.overtime { color: var(--overtime); }
-    .diff-section { margin-bottom: 1.25rem; }
-    .diff-section h2 {
-      margin: 0 0 0.65rem;
+
+    .diff-section { margin-bottom: 1.5rem; }
+    .diff-section h3 {
+      margin: 0 0 0.55rem;
       font-family: var(--display);
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       font-weight: 600;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: #b0b0b0;
     }
     .diff-table {
       width: 100%;
       border-collapse: collapse;
-      border: 1px solid var(--line);
-      background: var(--panel);
     }
-    .diff-table th, .diff-table td {
-      padding: 0.75rem 1.1rem;
-      border-bottom: 1px solid var(--line);
+    .diff-table th,
+    .diff-table td {
+      padding: 0.65rem 0.75rem 0.65rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
       text-align: left;
       font-size: 0.92rem;
     }
     .diff-table th {
-      font-size: var(--fs-xs);
+      font-size: 0.7rem;
       font-weight: 600;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
-      color: var(--muted);
-      background: #0a0a0a;
+      color: #8a8a8a;
     }
-    .diff-table th.num, .diff-table td.num { text-align: right; }
+    .diff-table th.num,
+    .diff-table td.num { text-align: right; }
     .diff-table td.num {
       font-family: var(--display);
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 600;
       white-space: nowrap;
     }
     .diff-table td.num.detail { color: var(--detail); }
     .diff-table td.num.overtime { color: var(--overtime); }
-    .diff-table td.action { color: var(--gold); font-weight: 600; white-space: nowrap; }
+    .diff-table td.action {
+      color: #f0d78c;
+      font-weight: 600;
+      white-space: nowrap;
+      text-align: right;
+    }
     .diff-table tr:last-child td { border-bottom: 0; }
     .diff-table .item { font-weight: 600; color: #eee; }
-    .sync-actions { margin-bottom: 1rem; }
+
     .sync-box {
-      margin-bottom: 1.25rem;
-      padding: 1.1rem 1.15rem;
-      border: 1px solid rgba(239, 215, 130, 0.28);
-      background: linear-gradient(180deg, rgba(239,215,130,0.07), transparent 55%), var(--panel);
+      margin-bottom: 1.35rem;
+      padding: 0 0 1.1rem;
+      border-bottom: 1px solid rgba(255,184,74,0.2);
     }
     .sync-box strong {
       display: block;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.35rem;
       font-family: var(--display);
       font-size: 0.95rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #f0d78c;
+    }
+    .sync-box p {
+      margin: 0 0 0.65rem;
+      color: #9a9a9a;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      max-width: 44rem;
+    }
+    .sync-box ol {
+      margin: 0;
+      padding-left: 1.15rem;
+      color: #ddd;
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    .sync-box li { margin: 0.3rem 0; }
+    .sync-box a { color: #8eb6ff; font-weight: 600; }
+
+    .ok-line {
+      margin: 0 0 1.25rem;
+      color: #86efac;
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+    .ok-line strong {
+      display: block;
+      margin-bottom: 0.2rem;
+      font-family: var(--display);
+      font-size: 1.1rem;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: var(--gold);
     }
-    .sync-box p { margin: 0 0 0.75rem; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
-    .sync-box ol { margin: 0; padding-left: 1.2rem; color: #eee; font-size: 0.9rem; line-height: 1.55; }
-    .sync-box li { margin: 0.35rem 0; }
-    .sync-box a { color: #8eb6ff; font-weight: 600; }
-    .ok-box {
-      padding: 2rem 1.5rem;
-      text-align: center;
-      border: 1px solid rgba(34, 197, 94, 0.35);
-      background: rgba(34, 197, 94, 0.08);
-      color: var(--good);
-      font-size: var(--fs-md);
-      line-height: 1.5;
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem 1.35rem;
+      margin-top: 0.35rem;
     }
-    .ok-box strong {
-      display: block;
-      font-family: var(--display);
-      font-size: 1.25rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      margin-bottom: 0.35rem;
-    }
-    .links { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.65rem; }
     .links a {
-      display: inline-block;
-      padding: 0.55rem 0.9rem;
-      border: 1px solid var(--line);
-      background: var(--panel);
-      color: #fff;
-      text-decoration: none;
       font-family: var(--display);
       font-size: 0.82rem;
       font-weight: 600;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
+      color: #8eb6ff;
+      text-decoration: none;
     }
-    .links a:hover { border-color: var(--blue); }
+    .links a:hover { color: #fff; }
+
     .role-pill {
       display: inline-block;
-      padding: 0.15rem 0.45rem;
-      border: 1px solid var(--line);
       font-size: 0.72rem;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: #9a9a9a;
     }
-    .role-pill.commissioner { color: var(--gold); border-color: rgba(239, 215, 130, 0.35); }
-    .role-pill.conference_admin { color: var(--blue); border-color: rgba(47, 109, 255, 0.35); }
-    .admin-grid { display: grid; gap: 1rem; margin-top: 1.75rem; }
-    .muted-sm { color: var(--muted); font-size: 0.78rem; }
-    .data-table { border: 1px solid var(--line); background: var(--panel); }
-    @media (max-width: 900px) {
-      .status-bar { grid-template-columns: 1fr; text-align: center; }
-      .conf, .conf.right { justify-content: center; text-align: center; }
-      .summary { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 560px) {
-      .summary { grid-template-columns: 1fr; }
-      .data-table th:nth-child(2),
-      .data-table td:nth-child(2) { display: none; }
-    }
+    .role-pill.commissioner { color: #f0d78c; }
+    .role-pill.conference_admin { color: #8eb6ff; }
+    .muted-sm { color: #8a8a8a; font-size: 0.78rem; }
+
     .invite-links {
-      margin: 0.85rem 0 1rem;
-      padding: 0.85rem 1rem;
-      border: 1px solid var(--line);
-      background: #0c0c0c;
+      margin: 0.85rem 0 1.15rem;
       display: grid;
-      gap: 0.85rem;
+      gap: 1rem;
     }
     .invite-links-head {
       font-family: var(--display);
       font-size: 0.78rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: #8a8a8a;
     }
     .invite-link-row {
       display: grid;
-      gap: 0.45rem;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--line);
+      gap: 0.4rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
     }
     .invite-link-row:first-of-type { border-top: 0; padding-top: 0; }
     .invite-link-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.45rem 0.75rem;
+      gap: 0.4rem 0.75rem;
       align-items: baseline;
     }
     .invite-link-meta strong { color: #fff; }
-    .invite-link-meta span { color: var(--muted); font-size: var(--fs-sm); }
+    .invite-link-meta span { color: #8a8a8a; font-size: 0.88rem; }
     .invite-url {
       display: block;
-      padding: 0.55rem 0.65rem;
-      border: 1px solid var(--line);
-      background: #111;
-      color: #d7e2ff;
+      padding: 0.35rem 0;
+      color: #b8c9ef;
       font-size: 0.82rem;
       word-break: break-all;
       white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
     .invite-link-actions,
     .invite-row-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.55rem 0.85rem;
+      gap: 0.55rem 1rem;
       align-items: center;
     }
     .btn-secondary {
@@ -251,6 +410,26 @@
     }
     .btn-secondary:hover {
       border-color: #fff;
+    }
+
+    body[data-page="commissioner"] .msg {
+      padding: 0.85rem 0;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    .stack-form { margin-bottom: 1.15rem; }
+    .list-gap { margin-top: 1.15rem; }
+
+    @media (max-width: 900px) {
+      .status-bar { grid-template-columns: 1fr; text-align: center; }
+      .conf, .conf.right { justify-content: center; text-align: center; }
+      .summary { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .summary { grid-template-columns: 1fr; }
+      .data-table th:nth-child(2),
+      .data-table td:nth-child(2) { display: none; }
     }
   </style>
 </head>
@@ -262,73 +441,94 @@
     </div>
   </header>
 
-  <section class="page-hero shell reveal">
+  <section class="page-hero shell">
     <p class="eyebrow">League HQ</p>
     <h1>Commissioner</h1>
-    <p>Keep Detail and Overtime aligned, manage members, and run league communications.</p>
+    <p>Rules sync, invites, members, and league communications.</p>
   </section>
 
   <main class="page-main shell">
-    <div class="sync-actions btn-row">
-      <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
-    </div>
-    <div id="content"><div class="msg">Loading conference settings…</div></div>
+    <nav class="comm-jump" aria-label="Commissioner sections">
+      <a href="#rules-sync">Rules</a>
+      <a href="#invites-admin" id="jump-invites" hidden>Invites</a>
+      <a href="#members" id="jump-members" hidden>Members</a>
+      <a href="#news-admin">News</a>
+      <a href="#ticker-admin">Ticker</a>
+    </nav>
 
-    <div class="admin-grid">
-      <section class="admin-block" id="news-admin" hidden>
-        <h2>League News</h2>
-        <p class="help">Posts appear on the Home page for all members.</p>
-        <div class="status-note" id="news-msg" role="status"></div>
-        <div class="stack-form">
-          <div>
-            <label class="field-label" for="news-title">Headline</label>
-            <input class="field" id="news-title" type="text" maxlength="120" placeholder="Headline" />
-          </div>
-          <div>
-            <label class="field-label" for="news-body">Details</label>
-            <textarea class="field field-area" id="news-body" maxlength="4000" placeholder="News details…"></textarea>
-          </div>
-          <div class="btn-row">
-            <button type="button" class="btn" id="news-add">Post News</button>
-          </div>
-        </div>
-        <div id="news-admin-list"><div class="msg">Loading news…</div></div>
-      </section>
+    <section class="comm-section" id="rules-sync">
+      <div class="section-head">
+        <h2>Rules Sync</h2>
+      </div>
+      <p class="help">Detail is the source of truth. Match Overtime’s ESPN settings until this reads Rules Synced.</p>
+      <div class="sync-tools">
+        <span class="hint">Pulls live scoring, lineup, and playoff settings from ESPN</span>
+        <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
+      </div>
+      <div id="content"><div class="msg">Loading conference settings…</div></div>
+    </section>
 
-      <section class="admin-block" id="ticker-admin" hidden>
-        <h2>Ticker</h2>
-        <p class="help">Custom lines run in the HQ ticker with live ESPN NFL headlines.</p>
-        <div class="status-note" id="ticker-msg" role="status"></div>
-        <div class="toolbar">
-          <input class="field" id="ticker-input" type="text" maxlength="240" placeholder="Add a custom ticker message" />
-          <button type="button" class="btn" id="ticker-add">Add</button>
-        </div>
-        <div id="ticker-list"><div class="msg">Loading ticker…</div></div>
-      </section>
-
-      <section class="admin-block" id="invites-admin" hidden>
+    <section class="admin-block" id="invites-admin" hidden>
+      <div class="section-head">
         <h2>Email Invites</h2>
-        <p class="help">Invite members by email. They open the link, create an account, and join GridIron 24. If email isn’t configured on the server, copy the invite link and send it yourself. <a href="/api/invites/preview-email" target="_blank" rel="noopener">Preview invite email</a></p>
-        <div class="status-note" id="invites-mail-status" role="status"></div>
-        <div class="status-note" id="invites-msg" role="status"></div>
-        <div class="toolbar">
-          <input class="field" id="invite-emails" type="text" maxlength="800" placeholder="email@example.com, another@example.com" />
-          <button type="button" class="btn" id="invite-send">Send Invites</button>
-        </div>
-        <div id="invite-links" class="invite-links" hidden></div>
-        <div id="invites-list"><div class="msg">Loading invites…</div></div>
-      </section>
+      </div>
+      <p class="help">Invite by email. Members open the link, create an account, and join. If delivery is offline, copy the link and send it yourself. <a href="/api/invites/preview-email" target="_blank" rel="noopener">Preview invite email</a></p>
+      <div class="status-note" id="invites-mail-status" role="status"></div>
+      <div class="status-note" id="invites-msg" role="status"></div>
+      <div class="toolbar">
+        <input class="field" id="invite-emails" type="text" maxlength="800" placeholder="email@example.com, another@example.com" />
+        <button type="button" class="btn" id="invite-send">Send Invites</button>
+      </div>
+      <div id="invite-links" class="invite-links" hidden></div>
+      <div class="list-gap" id="invites-list"><div class="msg">Loading invites…</div></div>
+    </section>
 
-      <section class="admin-block" id="members" hidden>
+    <section class="admin-block" id="members" hidden>
+      <div class="section-head">
         <h2>Member Access</h2>
-        <p class="help">Promote members to conference admin or overall commissioner.</p>
-        <div class="status-note" id="members-msg" role="status"></div>
-        <div id="members-list"><div class="msg">Loading members…</div></div>
-      </section>
-    </div>
+      </div>
+      <p class="help">Promote members to conference admin or overall commissioner.</p>
+      <div class="status-note" id="members-msg" role="status"></div>
+      <div id="members-list"><div class="msg">Loading members…</div></div>
+    </section>
+
+    <section class="admin-block" id="news-admin" hidden>
+      <div class="section-head">
+        <h2>League News</h2>
+      </div>
+      <p class="help">Posts appear on the Home page for all members.</p>
+      <div class="status-note" id="news-msg" role="status"></div>
+      <div class="stack-form">
+        <div>
+          <label class="field-label" for="news-title">Headline</label>
+          <input class="field" id="news-title" type="text" maxlength="120" placeholder="Headline" />
+        </div>
+        <div>
+          <label class="field-label" for="news-body">Details</label>
+          <textarea class="field field-area" id="news-body" maxlength="4000" placeholder="News details…"></textarea>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn" id="news-add">Post News</button>
+        </div>
+      </div>
+      <div id="news-admin-list"><div class="msg">Loading news…</div></div>
+    </section>
+
+    <section class="admin-block" id="ticker-admin" hidden>
+      <div class="section-head">
+        <h2>Ticker</h2>
+      </div>
+      <p class="help">Custom lines run in the HQ ticker with live ESPN NFL headlines.</p>
+      <div class="status-note" id="ticker-msg" role="status"></div>
+      <div class="toolbar">
+        <input class="field" id="ticker-input" type="text" maxlength="240" placeholder="Add a custom ticker message" />
+        <button type="button" class="btn" id="ticker-add">Add</button>
+      </div>
+      <div class="list-gap" id="ticker-list"><div class="msg">Loading ticker…</div></div>
+    </section>
   </main>
 
-<footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
   <script src="/js/nav.js?v=8"></script>
   <script src="/js/conference-diff.js?v=3"></script>
   <script>
@@ -349,12 +549,12 @@
 
     function confBlock(conf, side) {
       const logo = conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
-      const name = conf?.name || (side === 'detail' ? 'Detail' : 'Overtime');
+      const name = conf?.shortName || conf?.name || (side === 'detail' ? 'Detail' : 'Overtime');
       const count = conf?.ok ? `${(conf.scoringItems || []).length} categories` : 'Unavailable';
       const inner = side === 'overtime'
         ? `<div><div class="name">${esc(name)}</div><div class="meta">${esc(count)}</div></div>${logo}`
         : `${logo}<div><div class="name">${esc(name)}</div><div class="meta">${esc(count)}</div></div>`;
-      return `<div class="conf ${side}">${inner}</div>`;
+      return `<div class="conf ${side}${side === 'overtime' ? ' right' : ''}">${inner}</div>`;
     }
 
     function diffTable(rows, { withAction = false } = {}) {
@@ -384,13 +584,13 @@
     function syncChecklist(scoringDiffs) {
       if (!scoringDiffs.length) return '';
       return `
-        <div class="sync-box reveal reveal-delay-1">
+        <div class="sync-box">
           <strong>Sync Overtime to Detail</strong>
-          <p>Detail Conference is the source of truth. Open Overtime ESPN settings and match each value in the rightmost column. Numbers match ESPN’s scoring fields (e.g. <strong>0.4</strong> pass yards).</p>
+          <p>Open Overtime ESPN settings and match each value in the rightmost column. Numbers match ESPN’s scoring fields (e.g. <strong>0.4</strong> pass yards).</p>
           <ol>
             <li>Open <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings</a> as commissioner</li>
             <li>Go to <strong>Scoring</strong> and apply the ${scoringDiffs.length} change${scoringDiffs.length === 1 ? '' : 's'} below</li>
-            <li>Save on ESPN, then click <strong>Check Rules Sync</strong> — status should flip to Rules Synced</li>
+            <li>Save on ESPN, then click <strong>Check Rules Sync</strong></li>
           </ol>
         </div>`;
     }
@@ -414,17 +614,17 @@
           : `${cmp.diffs.length} difference${cmp.diffs.length === 1 ? '' : 's'} — match Overtime to Detail`;
 
       const diffSections = cmp.matched ? `
-        <div class="ok-box reveal reveal-delay-1">
+        <div class="ok-line">
           <strong>All Clear</strong>
           Overtime matches Detail Conference scoring, lineup, and playoff settings.
         </div>` : `
         ${syncChecklist(cmp.byKind.Scoring)}
-        ${cmp.byKind.Setting.length ? `<section class="diff-section reveal reveal-delay-1"><h2>League Settings (${cmp.byKind.Setting.length})</h2>${diffTable(cmp.byKind.Setting)}</section>` : ''}
-        ${cmp.byKind.Scoring.length ? `<section class="diff-section reveal reveal-delay-2"><h2>Scoring (${cmp.byKind.Scoring.length})</h2>${diffTable(cmp.byKind.Scoring, { withAction: true })}</section>` : ''}
-        ${cmp.byKind.Lineup.length ? `<section class="diff-section reveal reveal-delay-3"><h2>Lineup (${cmp.byKind.Lineup.length})</h2>${diffTable(cmp.byKind.Lineup, { withAction: true })}</section>` : ''}`;
+        ${cmp.byKind.Setting.length ? `<section class="diff-section"><h3>League Settings (${cmp.byKind.Setting.length})</h3>${diffTable(cmp.byKind.Setting)}</section>` : ''}
+        ${cmp.byKind.Scoring.length ? `<section class="diff-section"><h3>Scoring (${cmp.byKind.Scoring.length})</h3>${diffTable(cmp.byKind.Scoring, { withAction: true })}</section>` : ''}
+        ${cmp.byKind.Lineup.length ? `<section class="diff-section"><h3>Lineup (${cmp.byKind.Lineup.length})</h3>${diffTable(cmp.byKind.Lineup, { withAction: true })}</section>` : ''}`;
 
       document.getElementById('content').innerHTML = `
-        <div class="status-bar reveal">
+        <div class="status-bar">
           ${confBlock(detail, 'detail')}
           <div class="sync-badge">
             <div class="label ${syncCls}">${esc(syncLabel)}</div>
@@ -432,16 +632,16 @@
           </div>
           ${confBlock(overtime, 'overtime')}
         </div>
-        <div class="summary reveal reveal-delay-1">
+        <div class="summary">
           <div class="stat"><span>Detail categories</span><strong class="detail">${detail?.ok ? (detail.scoringItems || []).length : '—'}</strong></div>
           <div class="stat"><span>Overtime categories</span><strong class="overtime">${overtime?.ok ? (overtime.scoringItems || []).length : '—'}</strong></div>
           <div class="stat"><span>Playoff reseed</span><strong>${detail?.playoffReseed ? 'On' : 'Off'} / ${overtime?.playoffReseed ? 'On' : 'Off'}</strong></div>
           <div class="stat"><span>Differences</span><strong>${cmp.bothOk ? cmp.diffs.length : '—'}</strong></div>
         </div>
         ${diffSections}
-        <div class="links reveal">
-          <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings</a>
-          <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings</a>
+        <div class="links">
+          <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
+          <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
         </div>`;
     }
 
@@ -536,6 +736,7 @@
       if (!res.ok) throw new Error(`Could not load members (${res.status})`);
       const data = await res.json();
       document.getElementById('members').hidden = false;
+      document.getElementById('jump-members').hidden = false;
       renderMembers(data);
     }
 
@@ -584,7 +785,7 @@
             ${custom.map((t) => `
               <tr>
                 <td>${esc(t.text)}</td>
-                <td style="color:var(--muted);white-space:nowrap">${esc(new Date(t.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</td>
+                <td class="muted-sm" style="white-space:nowrap">${esc(new Date(t.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</td>
                 <td><button type="button" data-del-ticker="${esc(t.id)}" class="link-action">Delete</button></td>
               </tr>`).join('')}
           </tbody>
@@ -671,9 +872,9 @@
               <tr>
                 <td>
                   <strong>${esc(n.title)}</strong><br>
-                  <span style="color:var(--muted);font-size:0.82rem">${esc(n.body)}</span>
+                  <span class="muted-sm">${esc(n.body)}</span>
                 </td>
-                <td style="color:var(--muted);white-space:nowrap">${esc(n.authorName)}<br>${esc(fmtWhen(n.createdAt))}</td>
+                <td class="muted-sm" style="white-space:nowrap">${esc(n.authorName)}<br>${esc(fmtWhen(n.createdAt))}</td>
                 <td><button type="button" data-del-news="${esc(n.id)}" class="link-action">Delete</button></td>
               </tr>`).join('')}
           </tbody>
@@ -735,6 +936,7 @@
         el.textContent = `Email delivery on (${mail.from || 'configured sender'}).`;
       } else {
         el.className = 'status-note show';
+        el.style.color = '#b0b0b0';
         el.textContent = 'Email delivery is offline. Invites still work — copy the link and send it yourself, or set RESEND_API_KEY + MAIL_FROM on Render.';
       }
     }
@@ -777,6 +979,7 @@
     async function loadInvitesAdmin() {
       const wrap = document.getElementById('invites-admin');
       wrap.hidden = false;
+      document.getElementById('jump-invites').hidden = false;
       const res = await fetch('/api/invites', { cache: 'no-store' });
       if (!res.ok) throw new Error(`Could not load invites (${res.status})`);
       const data = await res.json();
@@ -910,10 +1113,12 @@
         wireInvitesAdmin();
         try { await loadInvitesAdmin(); } catch (err) {
           document.getElementById('invites-admin').hidden = false;
+          document.getElementById('jump-invites').hidden = false;
           document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
         }
         try { await loadMembers(); } catch (err) {
           document.getElementById('members').hidden = false;
+          document.getElementById('jump-members').hidden = false;
           document.getElementById('members-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
         }
       }

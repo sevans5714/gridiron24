@@ -26,30 +26,30 @@
 
     .sb-hero {
       text-align: center;
-      padding: 1.35rem 0 1.1rem;
+      padding: 1.1rem 0 1.15rem;
       border-bottom: 1px solid rgba(255, 184, 74, 0.18);
     }
-    .sb-hero .eyebrow {
-      margin: 0 0 0.35rem;
-      font-family: var(--display);
-      font-size: 0.78rem;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--led);
+    .sb-hero .brand-logo {
+      display: block;
+      width: min(14rem, 52vw);
+      height: auto;
+      margin: 0 auto 0.55rem;
+      filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.55));
+      animation: sb-title-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
     .sb-hero h1 {
       margin: 0;
       font-family: var(--display);
-      font-size: clamp(2.2rem, 6vw, 3.6rem);
+      font-size: clamp(1.85rem, 5vw, 2.85rem);
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #fff;
       text-shadow: 0 0 24px rgba(255, 184, 74, 0.25);
-      animation: sb-title-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation: sb-title-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
     }
     .sb-hero .sub {
-      margin: 0.45rem 0 0;
+      margin: 0.4rem 0 0;
       font-family: "Share Tech Mono", ui-monospace, monospace;
       font-size: 0.95rem;
       letter-spacing: 0.12em;
@@ -63,7 +63,7 @@
       justify-content: space-between;
       gap: 1rem;
       flex-wrap: wrap;
-      margin: 1.15rem 0 1.25rem;
+      margin: 1.15rem 0 0.65rem;
       padding: 0.85rem 1rem;
       border: 1px solid rgba(255, 255, 255, 0.1);
       background:
@@ -80,6 +80,7 @@
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--led-green);
+      position: relative;
     }
     .sb-live .dot {
       width: 0.65rem;
@@ -96,6 +97,40 @@
       background: #666;
       box-shadow: none;
       animation: none;
+    }
+    .sb-live.is-refreshing {
+      color: var(--led);
+    }
+    .sb-live.is-refreshing .dot {
+      background: transparent;
+      box-shadow: none;
+      border: 2px solid rgba(255, 184, 74, 0.25);
+      border-top-color: var(--led);
+      animation: sb-spin 0.7s linear infinite;
+    }
+    .sb-refresh-bar {
+      position: relative;
+      height: 3px;
+      margin: -0.35rem 0 1rem;
+      overflow: hidden;
+      background: rgba(255, 184, 74, 0.08);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .sb-refresh-bar.is-on {
+      opacity: 1;
+    }
+    .sb-refresh-bar::after {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 38%;
+      background: linear-gradient(90deg, transparent, var(--led), transparent);
+      box-shadow: 0 0 12px rgba(255, 184, 74, 0.55);
+      animation: sb-sweep 0.9s ease-in-out infinite;
+    }
+    .sb-boards.is-refreshing {
+      animation: sb-boards-pulse 1s ease-in-out infinite;
     }
     .sb-week label {
       display: block;
@@ -168,14 +203,14 @@
       min-width: 0;
     }
     .board-top img {
-      width: 2.5rem;
+      width: 3.75rem;
       height: auto;
       filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
     }
     .board-top h2 {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.15rem;
+      font-size: 1.25rem;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -226,18 +261,18 @@
     }
     .team.home { flex-direction: row-reverse; text-align: right; }
     .team img {
-      width: 2.75rem;
-      height: 2.75rem;
+      width: 4.25rem;
+      height: 4.25rem;
       object-fit: contain;
       flex: 0 0 auto;
       background: rgba(255,255,255,0.03);
-      border-radius: 0.35rem;
+      border-radius: 0.4rem;
       filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
     }
     .team .nm {
       min-width: 0;
       font-family: var(--display);
-      font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+      font-size: clamp(0.95rem, 1.7vw, 1.2rem);
       font-weight: 600;
       letter-spacing: 0.03em;
       text-transform: uppercase;
@@ -319,6 +354,17 @@
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.45; transform: scale(0.85); }
     }
+    @keyframes sb-spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes sb-sweep {
+      from { transform: translateX(-120%); }
+      to { transform: translateX(320%); }
+    }
+    @keyframes sb-boards-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.72; }
+    }
     @keyframes sb-title-in {
       from { opacity: 0; letter-spacing: 0.22em; transform: translateY(8px); }
       to { opacity: 1; letter-spacing: 0.08em; transform: none; }
@@ -331,8 +377,11 @@
     @media (max-width: 900px) {
       .sb-boards { grid-template-columns: 1fr; }
       .board.overtime { animation-delay: 0.05s; }
+      .board-top img { width: 3.35rem; }
+      .team img { width: 3.85rem; height: 3.85rem; }
     }
     @media (max-width: 560px) {
+      .sb-hero .brand-logo { width: min(11rem, 58vw); }
       .game {
         grid-template-columns: 1fr;
         gap: 0.45rem;
@@ -343,7 +392,8 @@
         text-align: center;
       }
       .digits { order: -1; }
-      .team img { width: 3.25rem; height: 3.25rem; }
+      .team img { width: 4.5rem; height: 4.5rem; }
+      .board-top img { width: 3.5rem; }
     }
   </style>
 </head>
@@ -356,7 +406,7 @@
   </header>
 
   <section class="sb-hero shell">
-    <p class="eyebrow">GridIron 24</p>
+    <img class="brand-logo" src="/assets/gridiron24-logo.png?v=3" alt="GridIron 24" width="280" height="280" />
     <h1>Scoreboard</h1>
     <p class="sub">Live ESPN scoring · Auto-refresh</p>
   </section>
@@ -372,6 +422,7 @@
         <select id="week"></select>
       </div>
     </div>
+    <div class="sb-refresh-bar" id="refresh-bar" aria-hidden="true"></div>
 
     <div class="sb-boards" id="boards">
       <div class="board-empty">Powering up scoreboard…</div>
@@ -391,10 +442,31 @@
     let pollTimer = null;
     let currentWeek = null;
     let currentMatchupPeriod = null;
+    let liveMode = false;
+    let loading = false;
 
     function fmtScore(n) {
       const v = Number(n || 0);
       return v.toFixed(1);
+    }
+
+    function setRefreshing(on) {
+      loading = on;
+      const badge = document.getElementById('live-badge');
+      const label = document.getElementById('live-label');
+      const bar = document.getElementById('refresh-bar');
+      const boards = document.getElementById('boards');
+      const note = document.getElementById('refresh-note');
+      badge.classList.toggle('is-refreshing', on);
+      bar.classList.toggle('is-on', on);
+      boards.classList.toggle('is-refreshing', on);
+      if (on) {
+        label.textContent = 'Refreshing';
+        note.textContent = 'Pulling latest scores from ESPN…';
+      } else {
+        setLiveState(liveMode);
+        note.textContent = 'Updates every 30 seconds from ESPN';
+      }
     }
 
     function teamBlock(team, side, winner) {
@@ -409,7 +481,7 @@
       const src = team?.logo || PLACEHOLDER;
       return `
         <div class="${cls}">
-          <img src="${esc(src)}" alt="" width="44" height="44" loading="lazy" referrerpolicy="no-referrer" />
+          <img src="${esc(src)}" alt="" width="68" height="68" loading="lazy" referrerpolicy="no-referrer" />
           <div class="nm" title="${esc(team?.name || '')}">${esc(team?.name || 'TBD')}</div>
         </div>`;
     }
@@ -447,7 +519,7 @@
             <div class="board-face"><div class="board-empty">${esc(conf.error || 'Unavailable')}</div></div>
           </section>`;
       }
-      const logo = conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
+      const logo = conf.logo ? `<img src="${esc(conf.logo)}" alt="" width="60" height="60">` : '';
       const games = (conf.matchups || []).map(gameRow).join('');
       return `
         <section class="board ${tone}">
@@ -475,8 +547,11 @@
     }
 
     function setLiveState(viewingCurrent) {
+      liveMode = viewingCurrent;
+      if (loading) return;
       const badge = document.getElementById('live-badge');
       const label = document.getElementById('live-label');
+      badge.classList.remove('is-refreshing');
       if (viewingCurrent) {
         badge.classList.remove('is-idle');
         label.textContent = 'Live board';
@@ -487,6 +562,8 @@
     }
 
     async function load(week, { quiet = false } = {}) {
+      if (loading && quiet) return;
+      setRefreshing(true);
       if (!quiet) {
         document.getElementById('boards').innerHTML = '<div class="board-empty">Powering up scoreboard…</div>';
       }
@@ -502,10 +579,12 @@
         fillWeeks(currentWeek);
         document.getElementById('week').value = String(currentWeek);
         document.getElementById('boards').innerHTML = (data.conferences || []).map(board).join('');
+        setRefreshing(false);
         setLiveState(currentWeek === currentMatchupPeriod);
         const t = new Date(data.generatedAt);
         window.GridIronNav?.setSync(`ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`);
       } catch (err) {
+        setRefreshing(false);
         document.getElementById('boards').innerHTML = `<div class="board-empty">${esc(err.message)}</div>`;
         window.GridIronNav?.setSync('Connection error', false);
       }

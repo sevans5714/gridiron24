@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=17" />
+  <link rel="stylesheet" href="/css/site.css?v=18" />
   <style>
     .hq-hero {
       text-align: center;
@@ -47,17 +47,9 @@
     .hq-hero .tag .sep { color: #666; margin: 0 0.3em; }
 
     .hq-main {
-      padding-top: 1.25rem;
+      padding-top: 1.35rem;
       padding-bottom: 2.25rem;
       font-size: 1.05rem;
-    }
-
-    .top-row {
-      display: grid;
-      grid-template-columns: 1.35fr 1fr;
-      gap: 1rem;
-      margin-bottom: 1.15rem;
-      align-items: start;
     }
 
     .section-head {
@@ -65,18 +57,19 @@
       align-items: baseline;
       justify-content: space-between;
       gap: 0.85rem;
-      margin: 0 0 0.65rem;
+      margin: 0 0 0.85rem;
     }
     .section-head h2 {
       margin: 0;
       font-family: var(--display);
-      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      font-size: clamp(1.1rem, 2.1vw, 1.35rem);
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: #fff;
     }
-    .section-head a {
+    .section-head a,
+    .section-head .hint {
       color: #b8b8b8;
       font-size: 0.95rem;
       font-weight: 600;
@@ -84,42 +77,46 @@
     }
     .section-head a:hover { color: #fff; }
 
+    .hq-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(17rem, 0.95fr);
+      gap: 1.75rem 2rem;
+      align-items: start;
+      margin-bottom: 2rem;
+    }
+
     .standings-preview {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
+      gap: 1.5rem 1.75rem;
     }
 
-    .board {
-      border: 1px solid var(--line);
-      background: var(--panel);
-      overflow: hidden;
-    }
-    .board-head {
+    .conf-block { min-width: 0; }
+    .conf-head {
       display: flex;
       align-items: center;
       gap: 0.65rem;
-      padding: 0.65rem 0.85rem;
-      border-bottom: 1px solid var(--line);
-      background: var(--panel-2);
+      margin-bottom: 0.7rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 2px solid rgba(255,255,255,0.12);
     }
-    .board-head.detail { border-left: 3px solid var(--detail); }
-    .board-head.overtime { border-left: 3px solid var(--overtime); }
-    .board-head img {
-      width: 3.75rem;
+    .conf-head.detail { border-bottom-color: rgba(255, 122, 24, 0.55); }
+    .conf-head.overtime { border-bottom-color: rgba(226, 35, 42, 0.55); }
+    .conf-head img {
+      width: 3.5rem;
       height: auto;
       filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
     }
-    .board-head h3 {
+    .conf-head h3 {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.05rem;
+      font-size: 1.1rem;
       font-weight: 600;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
     }
-    .board-head.detail h3 { color: var(--detail); }
-    .board-head.overtime h3 { color: var(--overtime); }
+    .conf-head.detail h3 { color: var(--detail); }
+    .conf-head.overtime h3 { color: var(--overtime); }
 
     .mini-table {
       width: 100%;
@@ -127,14 +124,14 @@
       font-size: 0.98rem;
     }
     .mini-table th {
-      padding: 0.45rem 0.55rem;
+      padding: 0.35rem 0.35rem 0.45rem;
       text-align: left;
-      font-size: 0.78rem;
-      letter-spacing: 0.06em;
+      font-size: 0.72rem;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
-      color: #a8a8a8;
+      color: #8f8f8f;
       font-weight: 600;
-      border-bottom: 1px solid var(--line);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .mini-table th.num,
     .mini-table td.num {
@@ -143,21 +140,20 @@
       white-space: nowrap;
     }
     .mini-table td {
-      padding: 0.4rem 0.55rem;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding: 0.42rem 0.35rem;
+      border-bottom: 1px solid rgba(255,255,255,0.045);
       vertical-align: middle;
       color: #f0f0f0;
     }
     .mini-table tr:last-child td { border-bottom: 0; }
     .mini-table .rank {
       width: 1.35rem;
-      color: #a8a8a8;
+      color: #9a9a9a;
       font-variant-numeric: tabular-nums;
       font-weight: 600;
     }
     .mini-table .team {
       width: 100%;
-      max-width: none;
       overflow: hidden;
       color: #fff;
       font-weight: 600;
@@ -165,7 +161,7 @@
     .mini-table .team-cell {
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
+      gap: 0.5rem;
       max-width: 100%;
       min-width: 0;
       width: 100%;
@@ -177,89 +173,62 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .mini-table .team-logo-sm,
-    .mini-table .team-logo-fallback {
-      width: 2rem;
-      height: 2rem;
-    }
-    .mini-table th:nth-child(2),
-    .mini-table td.team {
-      width: auto;
+    .mini-table .team-logo-sm {
+      width: 2.15rem;
+      height: 2.15rem;
+      object-fit: contain;
+      flex: 0 0 auto;
     }
     .mini-table th.num,
-    .mini-table td.num {
-      width: 2.9rem;
-    }
+    .mini-table td.num { width: 2.9rem; }
     .mini-table th:nth-child(3),
-    .mini-table td.num:nth-child(3) {
-      width: 3.8rem;
-    }
-    .mini-table .cut td { border-top: 1px dashed rgba(255,255,255,0.18); }
-    .mini-table .out td { opacity: 0.78; }
+    .mini-table td.num:nth-child(3) { width: 3.8rem; }
+    .mini-table .out td { opacity: 0.72; }
     .mini-table tr.cut-line td {
-      padding: 0.4rem 0.55rem;
-      border-top: 2px solid rgba(47, 109, 255, 0.75);
-      border-bottom: 1px solid var(--line);
-      background: rgba(47, 109, 255, 0.08);
+      padding: 0.45rem 0.35rem;
+      border-top: 2px solid rgba(47, 109, 255, 0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: transparent;
       text-align: center;
       font-family: var(--display);
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       font-weight: 600;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #8eb6ff;
       opacity: 1;
     }
 
-    .logo-fallback {
-      display: inline-block;
-      width: 2.1rem;
-      height: 2.1rem;
-      border-radius: 4px;
-      background: rgba(255,255,255,0.06);
-      flex: 0 0 auto;
+    .motw-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.35rem;
+      min-width: 0;
     }
-    .motw-side .logo-fallback { width: 7rem; height: 7rem; }
-
-    .pulse-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      margin-bottom: 1.15rem;
-    }
-
-    .pulse-card {
-      border: 1px solid var(--line);
-      background: var(--panel);
-      overflow: hidden;
-    }
-    .pulse-card .board-head { margin: 0; }
-
+    .motw-block { min-width: 0; }
     .motw {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
-      gap: 0.85rem;
+      gap: 0.65rem;
       align-items: center;
-      padding: 1.1rem 1rem;
+      padding: 0.35rem 0 0;
     }
     .motw-side {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.55rem;
+      gap: 0.45rem;
       text-align: center;
       min-width: 0;
     }
     .motw-side img {
-      width: 7rem;
-      height: 7rem;
+      width: 5.75rem;
+      height: 5.75rem;
       object-fit: contain;
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
-      background: rgba(255,255,255,0.03);
-      border-radius: 0.55rem;
     }
     .motw-side .nm {
-      font-size: 1.12rem;
+      font-size: 1rem;
       font-weight: 700;
       color: #fff;
       line-height: 1.25;
@@ -277,67 +246,79 @@
       text-transform: uppercase;
     }
     .motw-mid .vs {
-      font-size: 0.9rem;
-      color: #b0b0b0;
-      margin-bottom: 0.25rem;
+      font-size: 0.82rem;
+      color: #9a9a9a;
+      margin-bottom: 0.2rem;
     }
     .motw-mid .score {
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       font-weight: 600;
       color: #fff;
       font-variant-numeric: tabular-nums;
     }
     .motw-mid .proj {
       margin-top: 0.2rem;
-      font-size: 0.85rem;
-      color: #9a9a9a;
+      font-size: 0.78rem;
+      color: #8a8a8a;
       letter-spacing: 0.04em;
     }
 
+    .hotnot-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.75rem 2rem;
+      margin-bottom: 2rem;
+    }
     .hotnot {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0;
-      border-top: 1px solid var(--line);
+      gap: 1.1rem 1.25rem;
+      padding-top: 0.15rem;
     }
     .hotnot-col {
-      padding: 0.9rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.65rem;
+      gap: 0.55rem;
+      min-width: 0;
     }
-    .hotnot-col + .hotnot-col { border-left: 1px solid var(--line); }
     .hotnot-col .label {
       font-family: var(--display);
-      font-size: 0.88rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
-    .hotnot-col.hot .label { color: var(--good); }
-    .hotnot-col.not .label { color: var(--bad); }
+    .hotnot-col.hot .label {
+      color: #ef4444;
+      text-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
+    }
+    .hotnot-col.cold .label {
+      color: #2f6dff;
+      text-shadow: 0 0 18px rgba(47, 109, 255, 0.35);
+    }
+    .hotnot-col.hot {
+      border-left: 3px solid #ef4444;
+      padding-left: 0.75rem;
+    }
+    .hotnot-col.cold {
+      border-left: 3px solid #2f6dff;
+      padding-left: 0.75rem;
+    }
     .hotnot-team {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.7rem;
       min-width: 0;
     }
     .hotnot-team img {
-      width: 5.5rem;
-      height: 5.5rem;
+      width: 4.75rem;
+      height: 4.75rem;
       object-fit: contain;
       flex: 0 0 auto;
       filter: drop-shadow(0 3px 8px rgba(0,0,0,0.4));
-      background: rgba(255,255,255,0.03);
-      border-radius: 0.5rem;
-    }
-    .hotnot-team .logo-fallback {
-      width: 5.5rem;
-      height: 5.5rem;
-      flex: 0 0 auto;
     }
     .hotnot-team .nm {
-      font-size: 1.08rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: #fff;
       line-height: 1.25;
@@ -349,43 +330,36 @@
     }
     .hotnot-team .sub {
       margin-top: 0.2rem;
-      font-size: 0.9rem;
-      color: #b0b0b0;
+      font-size: 0.88rem;
+      color: #a0a0a0;
     }
 
-    .panel {
-      border: 1px solid var(--line);
-      background: var(--panel);
+    .bottom-stack {
       display: flex;
       flex-direction: column;
-      min-height: 0;
+      gap: 2rem;
     }
-    .panel-body {
-      flex: 1;
-      padding: 0.75rem 0.9rem;
-      overflow: auto;
-      max-height: 20rem;
+    .news-block,
+    .board-block {
+      min-width: 0;
     }
-    .panel-foot {
-      padding: 0.75rem 0.9rem;
-      border-top: 1px solid var(--line);
-      background: #0c0c0c;
+    .news-list,
+    .msg-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
-
-    .board-panel .panel-body { max-height: 14rem; }
-
     .empty {
-      color: #b0b0b0;
+      color: #9a9a9a;
       font-size: 1rem;
       line-height: 1.45;
-      padding: 0.35rem 0;
+      padding: 0.15rem 0;
     }
-
     .news-item + .news-item,
     .msg-item + .msg-item {
-      margin-top: 0.75rem;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--line);
+      margin-top: 0.9rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
     }
     .news-item h4 {
       margin: 0 0 0.3rem;
@@ -422,6 +396,11 @@
     }
     .meta button:hover { color: #fca5a5; }
 
+    .composer {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
     .composer label {
       display: block;
       margin-bottom: 0.3rem;
@@ -431,26 +410,23 @@
       text-transform: uppercase;
       color: #b0b0b0;
     }
-    .composer input,
     .composer textarea {
       width: 100%;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.55rem;
       padding: 0.65rem 0.75rem;
-      border: 1px solid var(--line);
-      background: #0a0a0a;
+      border: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.22);
+      background: transparent;
       color: #fff;
       font-family: var(--body);
       font-size: 1.05rem;
       line-height: 1.45;
-    }
-    .composer textarea {
-      min-height: 4rem;
+      min-height: 3.5rem;
       resize: vertical;
     }
-    .composer input:focus,
     .composer textarea:focus {
       outline: none;
-      border-color: rgba(255,255,255,0.35);
+      border-bottom-color: #fff;
     }
     .composer button {
       padding: 0.55rem 1rem;
@@ -481,9 +457,7 @@
     .composer-err.show { display: block; }
 
     .msg {
-      padding: 0.85rem 1rem;
-      border: 1px solid var(--line);
-      background: var(--panel);
+      padding: 0.35rem 0;
       color: #c8c8c8;
       font-size: 1.05rem;
       line-height: 1.45;
@@ -499,17 +473,14 @@
     }
 
     @media (max-width: 980px) {
-      .top-row,
-      .pulse-row { grid-template-columns: 1fr; }
+      .hq-grid { grid-template-columns: 1fr; }
+      .hotnot-row { grid-template-columns: 1fr; }
     }
     @media (max-width: 640px) {
       .standings-preview { grid-template-columns: 1fr; }
-      .motw-side img,
-      .motw-side .logo-fallback { width: 5.5rem; height: 5.5rem; }
-      .hotnot-team img,
-      .hotnot-team .logo-fallback { width: 4.5rem; height: 4.5rem; }
-      .motw-side .nm,
-      .hotnot-team .nm { font-size: 1.05rem; }
+      .hotnot { grid-template-columns: 1fr; }
+      .motw-side img { width: 4.75rem; height: 4.75rem; }
+      .hotnot-team img { width: 4rem; height: 4rem; }
       .hq-main { font-size: 1rem; }
     }
   </style>
@@ -530,7 +501,7 @@
   </section>
 
   <main class="hq-main shell">
-    <div class="top-row">
+    <div class="hq-grid">
       <div>
         <div class="section-head">
           <h2>Standings</h2>
@@ -541,42 +512,46 @@
         </div>
       </div>
 
-      <section class="panel" id="news-panel">
-        <div class="section-head" style="padding: 0.45rem 0.65rem 0; margin: 0;">
-          <h2>League News</h2>
+      <div>
+        <div class="section-head">
+          <h2>Matchup of the Week</h2>
+          <a href="/schedules.html">Schedules →</a>
         </div>
-        <div class="panel-body" id="news-list" style="max-height: 18rem;"><div class="empty">Loading news…</div></div>
-      </section>
-    </div>
-
-    <div class="section-head">
-      <h2>Matchup of the Week</h2>
-      <a href="/schedules.html">Schedules →</a>
-    </div>
-    <div class="pulse-row" id="motw">
-      <div class="msg">Loading matchups…</div>
+        <div class="motw-col" id="motw">
+          <div class="msg">Loading matchups…</div>
+        </div>
+      </div>
     </div>
 
     <div class="section-head">
       <h2>Who’s Hot / Who’s Not</h2>
-      <span style="color:#b0b0b0;font-size:0.95rem;font-weight:600;">Win streaks + PPG · Losing streaks + low scoring</span>
+      <span class="hint">Win streaks + PPG · Losing streaks + low scoring</span>
     </div>
-    <div class="pulse-row" id="hotnot">
+    <div class="hotnot-row" id="hotnot">
       <div class="msg">Loading…</div>
     </div>
 
-    <section class="panel board-panel" id="board-panel">
-      <div class="section-head" style="padding: 0.45rem 0.65rem 0; margin: 0;">
-        <h2>Message Board</h2>
-      </div>
-      <div class="panel-body" id="msg-list"><div class="empty">Loading messages…</div></div>
-      <div class="panel-foot composer" id="msg-composer">
-        <div class="composer-err" id="msg-err"></div>
-        <label for="msg-body">Say something</label>
-        <textarea id="msg-body" maxlength="2000" placeholder="Trash talk welcome. Keep it league-friendly."></textarea>
-        <button type="button" id="msg-submit">Post Message</button>
-      </div>
-    </section>
+    <div class="bottom-stack">
+      <section class="news-block" id="news-panel">
+        <div class="section-head">
+          <h2>League News</h2>
+        </div>
+        <div class="news-list" id="news-list"><div class="empty">Loading news…</div></div>
+      </section>
+
+      <section class="board-block" id="board-panel">
+        <div class="section-head">
+          <h2>Message Board</h2>
+        </div>
+        <div class="msg-list" id="msg-list"><div class="empty">Loading messages…</div></div>
+        <div class="composer" id="msg-composer">
+          <div class="composer-err" id="msg-err"></div>
+          <label for="msg-body">Say something</label>
+          <textarea id="msg-body" maxlength="2000" placeholder="Trash talk welcome. Keep it league-friendly."></textarea>
+          <button type="button" id="msg-submit">Post Message</button>
+        </div>
+      </section>
+    </div>
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
@@ -604,20 +579,26 @@
         : `${team.wins}-${team.losses}`;
     }
 
-    function teamLogo(team, sizeClass = '') {
+    function teamLogo(team) {
       const src = team?.logo || '/assets/team-logo-placeholder.svg';
-      return `<img class="${sizeClass}" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+      return `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+    }
+
+    function confHead(conf) {
+      const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
+      return `
+        <div class="conf-head ${tone}">
+          ${conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
+          <h3>${esc(conf?.shortName || conf?.name || 'Conference')}</h3>
+        </div>`;
     }
 
     function confBoard(conf) {
       if (!conf?.ok) {
         return `
-          <div class="board">
-            <div class="board-head ${esc(conf?.key || '')}">
-              ${conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-              <h3>${esc(conf?.name || 'Conference')}</h3>
-            </div>
-            <div class="empty" style="padding:0.75rem">Unavailable</div>
+          <div class="conf-block">
+            ${confHead(conf)}
+            <div class="empty">Unavailable</div>
           </div>`;
       }
       const teams = (conf.teams || []).slice(0, 12);
@@ -632,7 +613,7 @@
             <td class="rank">${rank}</td>
             <td class="team" title="${esc(t.name)}">
               <span class="team-cell">
-                <img class="team-logo-sm" src="${esc(t.logo || '/assets/team-logo-placeholder.svg')}" alt="" width="32" height="32" loading="lazy" referrerpolicy="no-referrer" />
+                <img class="team-logo-sm" src="${esc(t.logo || '/assets/team-logo-placeholder.svg')}" alt="" width="34" height="34" loading="lazy" referrerpolicy="no-referrer" />
                 <span class="team-name">${esc(t.name)}</span>
               </span>
             </td>
@@ -641,11 +622,8 @@
           </tr>`);
       });
       return `
-        <div class="board">
-          <div class="board-head ${esc(conf.key)}">
-            ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-            <h3>${esc(conf.shortName || conf.name)}</h3>
-          </div>
+        <div class="conf-block">
+          ${confHead(conf)}
           <table class="mini-table">
             <thead>
               <tr>
@@ -676,27 +654,16 @@
     }
 
     function motwCard(conf) {
-      const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
       if (!conf?.ok) {
-        return `<div class="pulse-card"><div class="board-head ${tone}"><h3>${esc(conf?.name || 'Conference')}</h3></div><div class="empty" style="padding:0.75rem">Unavailable</div></div>`;
+        return `<div class="motw-block">${confHead(conf)}<div class="empty">Unavailable</div></div>`;
       }
       const m = pickMatchupOfWeek(conf.matchups);
       if (!m) {
-        return `
-          <div class="pulse-card">
-            <div class="board-head ${tone}">
-              ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-              <h3>${esc(conf.shortName || conf.name)}</h3>
-            </div>
-            <div class="empty" style="padding:0.75rem">No matchups this week</div>
-          </div>`;
+        return `<div class="motw-block">${confHead(conf)}<div class="empty">No matchups this week</div></div>`;
       }
       return `
-        <div class="pulse-card">
-          <div class="board-head ${tone}">
-            ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-            <h3>${esc(conf.shortName || conf.name)} · Week ${esc(conf.week)}</h3>
-          </div>
+        <div class="motw-block">
+          ${confHead({ ...conf, shortName: `${conf.shortName || conf.name} · Week ${conf.week}` })}
           <div class="motw">
             <div class="motw-side">
               ${teamLogo(m.away)}
@@ -739,7 +706,6 @@
       return parts.join(' · ');
     }
 
-    // Hot = win streak + high scoring. Not = loss streak + low scoring.
     function heatIndex(t) {
       const winStreak = t.streakType === 'WIN' ? Number(t.streakLength || 0) : 0;
       const lossStreak = t.streakType === 'LOSS' ? Number(t.streakLength || 0) : 0;
@@ -771,38 +737,20 @@
     }
 
     function hotNotCard(conf) {
-      const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
       if (!conf?.ok) {
-        return `<div class="pulse-card"><div class="board-head ${tone}"><h3>${esc(conf?.name || 'Conference')}</h3></div><div class="empty" style="padding:0.75rem">Unavailable</div></div>`;
+        return `<div class="conf-block">${confHead(conf)}<div class="empty">Unavailable</div></div>`;
       }
       const teams = (conf.teams || []).slice();
       if (!teams.length) {
-        return `
-          <div class="pulse-card">
-            <div class="board-head ${tone}">
-              ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-              <h3>${esc(conf.shortName || conf.name)}</h3>
-            </div>
-            <div class="empty" style="padding:0.75rem">No teams yet</div>
-          </div>`;
+        return `<div class="conf-block">${confHead(conf)}<div class="empty">No teams yet</div></div>`;
       }
       const pick = pickHotNot(teams);
       if (!pick.ready) {
-        return `
-          <div class="pulse-card">
-            <div class="board-head ${tone}">
-              ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-              <h3>${esc(conf.shortName || conf.name)}</h3>
-            </div>
-            <div class="empty" style="padding:0.85rem 0.75rem">Opens after Week 1 — streaks + PPG</div>
-          </div>`;
+        return `<div class="conf-block">${confHead(conf)}<div class="empty">Opens after Week 1 — streaks + PPG</div></div>`;
       }
       return `
-        <div class="pulse-card">
-          <div class="board-head ${tone}">
-            ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-            <h3>${esc(conf.shortName || conf.name)}</h3>
-          </div>
+        <div class="conf-block">
+          ${confHead(conf)}
           <div class="hotnot">
             <div class="hotnot-col hot">
               <div class="label">Who’s Hot</div>
@@ -814,7 +762,7 @@
                 </div>
               </div>
             </div>
-            <div class="hotnot-col not">
+            <div class="hotnot-col cold">
               <div class="label">Who’s Not</div>
               <div class="hotnot-team">
                 ${teamLogo(pick.cold)}
