@@ -50,6 +50,7 @@
   --good: #22c55e;
   --bad: #ef4444;
   --display: "Bebas Neue", Impact, sans-serif;
+  --page-title: "Oswald", "Bebas Neue", Impact, sans-serif;
   --body: "Source Sans 3", system-ui, sans-serif;
 
   --fs-xs: 0.75rem;
@@ -661,10 +662,10 @@ body[data-page="payouts"] .page-hero::before {
 
 .page-hero h1 {
   margin: 0;
-  font-family: var(--display);
+  font-family: var(--page-title);
   font-size: var(--fs-xl);
   font-weight: 700;
-  letter-spacing: var(--track-display);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: var(--lh-tight);
   color: #fff;
