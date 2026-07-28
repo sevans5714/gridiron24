@@ -168,15 +168,15 @@ function isAuthenticated(req) {
   return Boolean(getSessionUser(req));
 }
 
-function sessionCookieHeader(token) {
-  const maxAge = SESSION_DAYS * 24 * 60 * 60;
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+function clearSessionCookieHeader() {
+  const secure = process.env.NODE_ENV === 'production' || process.env.RENDER ? '; Secure' : '';
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
 
-function clearSessionCookieHeader() {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+function sessionCookieHeader(token) {
+  const maxAge = SESSION_DAYS * 24 * 60 * 60;
+  const secure = process.env.NODE_ENV === 'production' || process.env.RENDER ? '; Secure' : '';
+  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
 }
 
 function requestOrigin(req) {

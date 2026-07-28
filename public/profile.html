@@ -1036,7 +1036,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=14"></script>
+  <script src="/js/nav.js?v=15"></script>
   <script src="/js/team-icons.js?v=2"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
@@ -2372,8 +2372,9 @@
     }
 
     document.getElementById('profile-logout')?.addEventListener('click', async () => {
-      try { await fetch('/api/logout', { method: 'POST' }); } catch { /* ignore */ }
-      window.location.href = '/';
+      try { localStorage.removeItem('gi24.savedLogin'); } catch { /* ignore */ }
+      try { await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }); } catch { /* ignore */ }
+      window.location.href = '/enter';
     });
 
     window.GridIronNav?.authReady?.then(async ({ user }) => {

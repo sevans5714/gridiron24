@@ -102,22 +102,23 @@
     });
 
     (async () => {
+      // Fresh logout: never auto-sign back in from saved credentials.
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('logout') === '1') {
+        clearSaved();
+        rememberInput.checked = false;
+        params.delete('logout');
+        const clean = params.toString();
+        history.replaceState({}, '', clean ? `/enter?${clean}` : '/enter');
+      }
+
       if (await checkExisting()) return;
       const saved = readSaved();
       if (!saved) return;
+      // Prefill only — do not auto-login (that made Log Out bounce straight back in).
       loginInput.value = saved.loginName;
       passwordInput.value = saved.password;
       rememberInput.checked = true;
-      setBusy(true);
-      try {
-        await login(saved.loginName, saved.password);
-        window.location.href = next;
-      } catch {
-        clearSaved();
-        setBusy(false);
-        passwordInput.value = '';
-        rememberInput.checked = false;
-      }
     })();
   </script>
 </body>

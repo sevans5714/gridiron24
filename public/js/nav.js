@@ -127,9 +127,12 @@
     document.getElementById('nav-logout')?.addEventListener('click', async (e) => {
       e.preventDefault();
       try {
-        await fetch('/api/logout', { method: 'POST' });
+        localStorage.removeItem('gi24.savedLogin');
       } catch { /* ignore */ }
-      window.location.href = '/';
+      try {
+        await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+      } catch { /* ignore */ }
+      window.location.href = '/enter';
     });
   }
 
