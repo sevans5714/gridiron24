@@ -36,5 +36,12 @@ module.exports = {
       { place: 7, label: 'Detail Most Points', amount: 100 },
       { place: 8, label: 'Overtime Most Points', amount: 100 }
     ]
-  }
+  },
+  calendarDefaults: [
+    { title: 'Draft Day', type: 'draft', date: '2026-08-24', notes: 'Both conferences draft — confirm time with your commissioner.' },
+    { title: 'Dues Due', type: 'dues', date: '2026-09-01', notes: '$100 buy-in per franchise.' },
+    { title: 'Trade Deadline', type: 'deadline', date: '2026-11-18', notes: 'No trades after this date.' },
+    { title: 'Conference Playoffs Begin', type: 'event', date: '2026-12-08', notes: 'Week 14 Wild Card round.' },
+    { title: 'GridIron Bowl I', type: 'bowl', date: '2026-12-29', notes: 'Week 17 — Detail champ vs Overtime champ.' }
+  ]
 };

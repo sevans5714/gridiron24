@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Power Rankings · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=19" />
+  <style>
+    .rank-row { display:grid; grid-template-columns: 2.5rem 1fr; gap: 0.75rem; align-items:start; padding: 0.7rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .rank-num { font-family: var(--display); font-size: 1.25rem; font-weight: 700; color: #8eb6ff; }
+    .rank-name { font-weight: 700; color: #fff; }
+    .rank-meta { margin-top: 0.15rem; color: #9a9a9a; font-size: 0.9rem; }
+    .rank-note { margin-top: 0.25rem; color: #c8c8c8; line-height: 1.4; }
+    .empty { color: #9a9a9a; }
+  </style>
+</head>
+<body data-page="rankings">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Rankings</div>
+    </div>
+  </header>
+  <section class="page-hero shell">
+    <p class="eyebrow">Who’s rising</p>
+    <h1>Power Rankings</h1>
+    <p>Commissioner rankings across both conferences.</p>
+  </section>
+  <main class="page-main shell" id="main"><div class="msg">Loading rankings…</div></main>
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <script src="/js/nav.js?v=10"></script>
+  <script>
+    const esc = (v='') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+    (async () => {
+      try {
+        const res = await fetch('/api/power-rankings', { cache: 'no-store' });
+        const data = await res.json();
+        const latest = data.latest;
+        const main = document.getElementById('main');
+        if (!latest) {
+          main.innerHTML = `<div class="empty">No power rankings published yet. Commissioner posts them from the Commissioner page.</div>`;
+          return;
+        }
+        main.innerHTML = `
+          <p style="color:#9a9a9a;margin:0 0 1rem;">Week ${esc(latest.week)} · ${esc(latest.authorName)} · ${esc(new Date(latest.createdAt).toLocaleDateString([], {month:'short', day:'numeric'}))}</p>
+          ${latest.notes ? `<p style="color:#c8c8c8;margin:0 0 1.25rem;line-height:1.45;">${esc(latest.notes)}</p>` : ''}
+          ${(latest.ranks||[]).map(r => `
+            <div class="rank-row">
+              <div class="rank-num">${esc(r.rank)}</div>
+              <div>
+                <div class="rank-name">${esc(r.teamName)}</div>
+                <div class="rank-meta">${esc(r.conferenceKey === 'overtime' ? 'Overtime' : 'Detail')}</div>
+                ${r.note ? `<div class="rank-note">${esc(r.note)}</div>` : ''}
+              </div>
+            </div>`).join('')}`;
+      } catch (err) {
+        document.getElementById('main').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

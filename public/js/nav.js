@@ -3,9 +3,13 @@
     { href: '/home.html', label: 'Home', key: 'home' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
     { href: '/standings.html', label: 'Standings', key: 'standings' },
-    { href: '/scoring.html', label: 'Scoring', key: 'scoring' },
+    { href: '/teams.html', label: 'Teams', key: 'teams' },
     { href: '/schedules.html', label: 'Schedules', key: 'schedules' },
+    { href: '/transactions.html', label: 'Transactions', key: 'transactions' },
     { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
+    { href: '/rankings.html', label: 'Rankings', key: 'rankings' },
+    { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
+    { href: '/scoring.html', label: 'Scoring', key: 'scoring' },
     { href: '/payouts.html', label: 'Payouts', key: 'payouts' },
     { href: '/commissioner.html', label: 'Commissioner', key: 'commissioner', staffOnly: true }
   ];
@@ -179,13 +183,13 @@
     el.className = 'ticker-wrap shell';
     el.innerHTML = `
       <div class="ticker">
-        <div class="ticker-label" aria-label="NFL ticker">
-          <img src="/assets/nfl-logo.png" alt="NFL" width="600" height="600" />
+        <div class="ticker-label" aria-label="League wire">
+          <img src="/assets/nfl-logo.png" alt="" width="600" height="600" />
           <span>Wire</span>
         </div>
         <div class="ticker-viewport">
           <div class="ticker-track" id="ticker-track">
-            <span class="ticker-item"><span class="tag">…</span> Loading headlines</span>
+            <span class="ticker-item">Loading headlines…</span>
           </div>
         </div>
       </div>`;
@@ -205,17 +209,19 @@
     const track = document.getElementById('ticker-track');
     if (!track) return;
     if (!items.length) {
-      track.innerHTML = `<span class="ticker-item"><span class="tag">League</span> No ticker items yet</span>`;
+      track.innerHTML = `<span class="ticker-item">No ticker items yet</span>`;
       return;
     }
     const html = items.map((item) => {
-      const tagClass = item.source === 'custom' ? 'custom' : 'espn';
-      const label = item.label || (item.source === 'custom' ? 'LEAGUE' : 'NFL');
-      const inner = `<span class="tag ${tagClass}">${esc(label)}</span><span>${esc(item.text)}</span>`;
+      const isCustom = item.source === 'custom';
+      const tag = isCustom
+        ? `<span class="tag custom">${esc(item.label || 'League')}</span>`
+        : '';
+      const inner = `${tag}<span>${esc(item.text)}</span>`;
       if (item.href) {
-        return `<a class="ticker-item" href="${esc(item.href)}" target="_blank" rel="noopener">${inner}</a><span class="ticker-sep">◆</span>`;
+        return `<a class="ticker-item" href="${esc(item.href)}" target="_blank" rel="noopener">${inner}</a><span class="ticker-sep" aria-hidden="true">●</span>`;
       }
-      return `<span class="ticker-item">${inner}</span><span class="ticker-sep">◆</span>`;
+      return `<span class="ticker-item">${inner}</span><span class="ticker-sep" aria-hidden="true">●</span>`;
     }).join('');
     track.innerHTML = html + html;
     const seconds = Math.max(40, items.length * 7);

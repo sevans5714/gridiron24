@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=18" />
+  <link rel="stylesheet" href="/css/site.css?v=19" />
   <style>
     body[data-page="commissioner"] .page-hero {
       padding-top: 1.5rem;
@@ -501,6 +501,8 @@
     <nav class="comm-jump" aria-label="Commissioner sections">
       <a href="#rules-sync">Rules</a>
       <a href="#playoff-sync">Playoffs</a>
+      <a href="#calendar-admin" id="jump-calendar" hidden>Calendar</a>
+      <a href="#rankings-admin" id="jump-rankings" hidden>Rankings</a>
       <a href="#wrap-admin" id="jump-wrap" hidden>Wrap-Up</a>
       <a href="#invites-admin" id="jump-invites" hidden>Invites</a>
       <a href="#members" id="jump-members" hidden>Members</a>
@@ -526,6 +528,38 @@
       </div>
       <p class="help">Compare Detail vs Overtime playoff setup against the GridIron tree: 13 regular-season weeks, 6 teams, reseed on, Weeks 14–16 conference bracket, Week 17 Bowl scoring.</p>
       <div id="playoff-content"><div class="msg">Loading playoff settings…</div></div>
+    </section>
+
+    <section class="admin-block" id="calendar-admin" hidden>
+      <div class="section-head"><h2>League Calendar</h2></div>
+      <p class="help">Dates shown on the Calendar page for all members.</p>
+      <div class="status-note" id="calendar-msg" role="status"></div>
+      <div class="toolbar">
+        <input class="field" id="cal-title" type="text" maxlength="120" placeholder="Event title" />
+        <input class="field" id="cal-date" type="date" style="max-width:11rem;" />
+        <select class="field" id="cal-type" style="max-width:9rem;">
+          <option value="event">Event</option>
+          <option value="draft">Draft</option>
+          <option value="dues">Dues</option>
+          <option value="deadline">Deadline</option>
+          <option value="bowl">Bowl</option>
+        </select>
+        <button type="button" class="btn" id="cal-add">Add</button>
+      </div>
+      <div class="list-gap" id="calendar-list"></div>
+    </section>
+
+    <section class="admin-block" id="rankings-admin" hidden>
+      <div class="section-head"><h2>Power Rankings</h2></div>
+      <p class="help">Publish a weekly ranking. Paste one team per line as <code>conference|teamId|teamName|note</code> (conference = detail or overtime). Or use the quick builder after standings load.</p>
+      <div class="status-note" id="rankings-msg" role="status"></div>
+      <div class="toolbar">
+        <input class="field" id="rank-week" type="number" min="1" max="17" placeholder="Week" style="max-width:7rem;" />
+        <button type="button" class="btn btn-secondary" id="rank-fill">Fill from standings</button>
+        <button type="button" class="btn" id="rank-save">Publish</button>
+      </div>
+      <textarea class="field field-area" id="rank-lines" placeholder="detail|1|Team Name|Looking sharp" style="margin-top:0.75rem;min-height:10rem;"></textarea>
+      <div class="list-gap" id="rankings-list"></div>
     </section>
 
     <section class="admin-block" id="wrap-admin" hidden>
@@ -605,7 +639,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=8"></script>
+  <script src="/js/nav.js?v=10"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1335,6 +1369,133 @@
       });
     }
 
+    function showCalMsg(text, ok) {
+      const el = document.getElementById('calendar-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    async function loadCalendarAdmin() {
+      const res = await fetch('/api/calendar', { cache: 'no-store' });
+      const data = await res.json();
+      const list = document.getElementById('calendar-list');
+      const events = data.events || [];
+      list.innerHTML = events.length ? `<table class="data-table"><thead><tr><th>Date</th><th>Event</th><th></th></tr></thead><tbody>
+        ${events.map((e) => `<tr><td>${esc(e.date || 'TBD')}</td><td><strong>${esc(e.title)}</strong> · ${esc(e.type)}</td>
+          <td><button type="button" class="link-action" data-del-cal="${esc(e.id)}">Delete</button></td></tr>`).join('')}
+      </tbody></table>` : `<div class="msg">No events.</div>`;
+    }
+
+    function wireCalendarAdmin() {
+      document.getElementById('calendar-admin').hidden = false;
+      document.getElementById('jump-calendar').hidden = false;
+      document.getElementById('cal-add').addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/calendar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: document.getElementById('cal-title').value,
+              date: document.getElementById('cal-date').value,
+              type: document.getElementById('cal-type').value
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not add event');
+          document.getElementById('cal-title').value = '';
+          showCalMsg('Event added.', true);
+          await loadCalendarAdmin();
+        } catch (err) {
+          showCalMsg(err.message, false);
+        }
+      });
+      document.getElementById('calendar-list').addEventListener('click', async (e) => {
+        const id = e.target?.dataset?.delCal;
+        if (!id) return;
+        if (!confirm('Delete this event?')) return;
+        await fetch(`/api/calendar/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await loadCalendarAdmin();
+      });
+    }
+
+    function showRankMsg(text, ok) {
+      const el = document.getElementById('rankings-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    async function loadRankingsAdmin() {
+      const res = await fetch('/api/power-rankings', { cache: 'no-store' });
+      const data = await res.json();
+      const list = document.getElementById('rankings-list');
+      const rows = data.rankings || [];
+      list.innerHTML = rows.length ? `<table class="data-table"><thead><tr><th>Week</th><th>By</th><th>Teams</th><th></th></tr></thead><tbody>
+        ${rows.map((r) => `<tr><td>${esc(r.week)}</td><td>${esc(r.authorName)}</td><td>${esc((r.ranks||[]).length)}</td>
+          <td><button type="button" class="link-action" data-del-rank="${esc(r.id)}">Delete</button></td></tr>`).join('')}
+      </tbody></table>` : `<div class="msg">No rankings published.</div>`;
+    }
+
+    function wireRankingsAdmin() {
+      document.getElementById('rankings-admin').hidden = false;
+      document.getElementById('jump-rankings').hidden = false;
+      document.getElementById('rank-fill').addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/leagues', { cache: 'no-store' });
+          const data = await res.json();
+          const lines = [];
+          let rank = 1;
+          for (const key of ['detail', 'overtime']) {
+            const conf = (data.conferences || []).find((c) => c.key === key);
+            for (const t of (conf?.teams || []).slice(0, 6)) {
+              lines.push(`${key}|${t.id}|${t.name}|`);
+              rank += 1;
+            }
+          }
+          document.getElementById('rank-lines').value = lines.map((l, i) => l).join('\n');
+          showRankMsg('Filled top 6 from each conference — reorder lines to set ranks.', true);
+        } catch (err) {
+          showRankMsg(err.message, false);
+        }
+      });
+      document.getElementById('rank-save').addEventListener('click', async () => {
+        const week = Number(document.getElementById('rank-week').value);
+        const ranks = document.getElementById('rank-lines').value
+          .split(/\n+/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line, i) => {
+            const [conferenceKey, teamId, teamName, note] = line.split('|');
+            return {
+              rank: i + 1,
+              conferenceKey: (conferenceKey || '').trim(),
+              teamId: Number(teamId),
+              teamName: (teamName || '').trim(),
+              note: (note || '').trim()
+            };
+          });
+        try {
+          const res = await fetch('/api/power-rankings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ week, ranks })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not publish');
+          showRankMsg(`Week ${week} rankings published.`, true);
+          await loadRankingsAdmin();
+        } catch (err) {
+          showRankMsg(err.message, false);
+        }
+      });
+      document.getElementById('rankings-list').addEventListener('click', async (e) => {
+        const id = e.target?.dataset?.delRank;
+        if (!id) return;
+        if (!confirm('Delete this ranking set?')) return;
+        await fetch(`/api/power-rankings/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await loadRankingsAdmin();
+      });
+    }
+
     window.GridIronNav?.authReady?.then(async ({ user }) => {
       if (!user || (user.role !== 'commissioner' && user.role !== 'conference_admin')) {
         window.location.replace('/home.html');
@@ -1353,7 +1514,11 @@
       }
       if (user.role === 'commissioner') {
         wireWrapAdmin();
+        wireCalendarAdmin();
+        wireRankingsAdmin();
         wireInvitesAdmin();
+        try { await loadCalendarAdmin(); } catch { /* ignore */ }
+        try { await loadRankingsAdmin(); } catch { /* ignore */ }
         try { await loadInvitesAdmin(); } catch (err) {
           document.getElementById('invites-admin').hidden = false;
           document.getElementById('jump-invites').hidden = false;

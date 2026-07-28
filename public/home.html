@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=18" />
+  <link rel="stylesheet" href="/css/site.css?v=19" />
   <style>
     .hq-hero {
       text-align: center;
@@ -77,12 +77,8 @@
     }
     .section-head a:hover { color: #fff; }
 
-    .hq-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.55fr) minmax(17rem, 0.95fr);
-      gap: 1.75rem 2rem;
-      align-items: start;
-      margin-bottom: 2rem;
+    .hq-section {
+      margin-bottom: 2.15rem;
     }
 
     .standings-preview {
@@ -200,9 +196,9 @@
     }
 
     .motw-col {
-      display: flex;
-      flex-direction: column;
-      gap: 1.35rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem 2rem;
       min-width: 0;
     }
     .motw-block { min-width: 0; }
@@ -473,8 +469,8 @@
     }
 
     @media (max-width: 980px) {
-      .hq-grid { grid-template-columns: 1fr; }
       .hotnot-row { grid-template-columns: 1fr; }
+      .motw-col { grid-template-columns: 1fr; }
     }
     @media (max-width: 640px) {
       .standings-preview { grid-template-columns: 1fr; }
@@ -501,35 +497,35 @@
   </section>
 
   <main class="hq-main shell">
-    <div class="hq-grid">
-      <div>
-        <div class="section-head">
-          <h2>Standings</h2>
-          <a href="/standings.html">Full →</a>
-        </div>
-        <div class="standings-preview" id="standings">
-          <div class="msg">Loading standings…</div>
-        </div>
+    <section class="hq-section">
+      <div class="section-head">
+        <h2>Standings</h2>
+        <a href="/standings.html">Full →</a>
       </div>
-
-      <div>
-        <div class="section-head">
-          <h2>Matchup of the Week</h2>
-          <a href="/schedules.html">Schedules →</a>
-        </div>
-        <div class="motw-col" id="motw">
-          <div class="msg">Loading matchups…</div>
-        </div>
+      <div class="standings-preview" id="standings">
+        <div class="msg">Loading standings…</div>
       </div>
-    </div>
+    </section>
 
-    <div class="section-head">
-      <h2>Who’s Hot / Who’s Not</h2>
-      <span class="hint">Win streaks + PPG · Losing streaks + low scoring</span>
-    </div>
-    <div class="hotnot-row" id="hotnot">
-      <div class="msg">Loading…</div>
-    </div>
+    <section class="hq-section">
+      <div class="section-head">
+        <h2>Matchup of the Week</h2>
+        <a href="/schedules.html">Schedules →</a>
+      </div>
+      <div class="motw-col" id="motw">
+        <div class="msg">Loading matchups…</div>
+      </div>
+    </section>
+
+    <section class="hq-section">
+      <div class="section-head">
+        <h2>Who’s Hot / Who’s Not</h2>
+        <span class="hint">Win streaks + PPG · Losing streaks + low scoring</span>
+      </div>
+      <div class="hotnot-row" id="hotnot">
+        <div class="msg">Loading…</div>
+      </div>
+    </section>
 
     <div class="bottom-stack">
       <section class="news-block" id="news-panel">
@@ -555,7 +551,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=8"></script>
+  <script src="/js/nav.js?v=10"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')

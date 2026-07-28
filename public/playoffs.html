@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=17" />
+  <link rel="stylesheet" href="/css/site.css?v=19" />
   <style>
     .legend {
       display: flex;
@@ -520,92 +520,8 @@
       <span><b>Week 17</b> GridIron Bowl I</span>
     </div>
 
-    <div class="tree">
-      <section class="conf-tree detail reveal reveal-delay-2">
-        <div class="conf-head">
-          <img src="/assets/detail-conference.png" alt="" />
-          Detail Conference
-          <span class="wk">Weeks 14–16</span>
-        </div>
-        <div class="rounds">
-          <div class="round-col">
-            <div class="round-label">Week 14 · Wild Card</div>
-            <div class="slot bye"><div class="seed">#1 Seed</div><div class="sub">Bye</div></div>
-            <div class="slot winner-line"><div class="seed">#4 Seed vs #5 Seed</div><div class="sub">Winner advances</div></div>
-            <div class="slot winner-line"><div class="seed">#3 Seed vs #6 Seed</div><div class="sub">Winner advances</div></div>
-            <div class="slot bye"><div class="seed">#2 Seed</div><div class="sub">Bye</div></div>
-          </div>
-          <div class="round-col">
-            <div class="round-label">Week 15 · Semifinals</div>
-            <div class="slot winner-line"><div class="seed">#1 Seed vs Lower Seed</div><div class="sub">Winner → title · Loser → 3rd place</div></div>
-            <div class="slot winner-line"><div class="seed">#2 Seed vs Highest Seed</div><div class="sub">Winner → title · Loser → 3rd place</div></div>
-          </div>
-          <div class="round-col finale-col">
-            <div class="round-label">Week 16 · Title + 3rd</div>
-            <div class="slot title-slot">
-              <img src="/assets/detail-conf-champ.png" alt="Detail Conference Championship" />
-              <span class="sr-only">Detail Conference Championship</span>
-            </div>
-            <div class="slot third-slot">
-              <img src="/assets/detail-3rd-place.png" alt="Detail Conference 3rd Place Game" />
-              <span class="sr-only">Detail Conference 3rd Place Game</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div class="mid reveal reveal-delay-1">
-        <div class="bowl" id="bowl-card">
-          <div class="eyebrow">Week 17 · ESPN scored</div>
-          <img src="/assets/gridiron-bowl.png" alt="GridIron Bowl I" />
-          <div class="bowl-scoreboard" id="bowl-scoreboard">
-            <div class="bowl-side detail">
-              <div class="nm" id="bowl-detail-name">Detail Champion</div>
-            </div>
-            <div class="bowl-mid">
-              <div class="pair"><span id="bowl-detail-score">—</span><span class="sep">–</span><span id="bowl-overtime-score">—</span></div>
-              <div class="status" id="bowl-status">Waiting</div>
-            </div>
-            <div class="bowl-side overtime">
-              <div class="nm" id="bowl-overtime-name">Overtime Champion</div>
-            </div>
-          </div>
-          <p class="bowl-note" id="bowl-message">Scores appear here from each conference champ’s ESPN Week 17 lineup.</p>
-        </div>
-      </div>
-
-      <section class="conf-tree overtime reveal reveal-delay-3">
-        <div class="conf-head">
-          <img src="/assets/overtime-conference.png" alt="" />
-          Overtime Conference
-          <span class="wk">Weeks 14–16</span>
-        </div>
-        <div class="rounds">
-          <div class="round-col">
-            <div class="round-label">Week 14 · Wild Card</div>
-            <div class="slot bye"><div class="seed">#1 Seed</div><div class="sub">Bye</div></div>
-            <div class="slot winner-line"><div class="seed">#4 Seed vs #5 Seed</div><div class="sub">Winner advances</div></div>
-            <div class="slot winner-line"><div class="seed">#3 Seed vs #6 Seed</div><div class="sub">Winner advances</div></div>
-            <div class="slot bye"><div class="seed">#2 Seed</div><div class="sub">Bye</div></div>
-          </div>
-          <div class="round-col">
-            <div class="round-label">Week 15 · Semifinals</div>
-            <div class="slot winner-line"><div class="seed">#1 Seed vs Lower Seed</div><div class="sub">Winner → title · Loser → 3rd place</div></div>
-            <div class="slot winner-line"><div class="seed">#2 Seed vs Highest Seed</div><div class="sub">Winner → title · Loser → 3rd place</div></div>
-          </div>
-          <div class="round-col finale-col">
-            <div class="round-label">Week 16 · Title + 3rd</div>
-            <div class="slot title-slot">
-              <img src="/assets/overtime-conf-champ.png" alt="Overtime Conference Championship" />
-              <span class="sr-only">Overtime Conference Championship</span>
-            </div>
-            <div class="slot third-slot">
-              <img src="/assets/overtime-3rd-place.png" alt="Overtime Conference 3rd Place Game" />
-              <span class="sr-only">Overtime Conference 3rd Place Game</span>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div class="tree" id="live-tree">
+      <div class="msg" style="grid-column:1/-1;">Loading live bracket…</div>
     </div>
 
     <div class="notes">
@@ -621,7 +537,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=8"></script>
+  <script src="/js/nav.js?v=10"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -633,9 +549,93 @@
       return Number(n).toFixed(1);
     }
 
+    function seedName(s) {
+      if (!s) return 'TBD';
+      return s.provisional ? `${s.name}` : s.name;
+    }
+
+    function gameSlot(game, fallback) {
+      if (!game?.home && !game?.away) {
+        return `<div class="slot winner-line"><div class="seed">${esc(fallback)}</div><div class="sub">Awaiting matchup</div></div>`;
+      }
+      const status = game.status === 'final' ? 'Final' : game.status === 'live' ? 'Live' : 'Upcoming';
+      const line = `${esc(game.away?.name || 'TBD')} ${fmt(game.away?.score)} – ${fmt(game.home?.score)} ${esc(game.home?.name || 'TBD')}`;
+      return `<div class="slot winner-line"><div class="seed">${line}</div><div class="sub">${status}</div></div>`;
+    }
+
+    function byeSlot(seed) {
+      return `<div class="slot bye"><div class="seed">${esc(seedName(seed))}</div><div class="sub">#${esc(seed?.seed || '—')} Bye</div></div>`;
+    }
+
+    function confTree(conf) {
+      const tone = conf.key === 'overtime' ? 'overtime' : 'detail';
+      const titleImg = tone === 'detail' ? '/assets/detail-conf-champ.png' : '/assets/overtime-conf-champ.png';
+      const thirdImg = tone === 'detail' ? '/assets/detail-3rd-place.png' : '/assets/overtime-3rd-place.png';
+      const wc = conf.rounds?.wildCard || {};
+      const semis = conf.rounds?.semifinals?.games || [];
+      const finals = conf.rounds?.finals || {};
+      return `
+        <section class="conf-tree ${tone}">
+          <div class="conf-head">
+            ${conf.logo ? `<img src="${esc(conf.logo)}" alt="" />` : ''}
+            ${esc(conf.name)}
+            <span class="wk">Weeks 14–16</span>
+          </div>
+          <div class="rounds">
+            <div class="round-col">
+              <div class="round-label">Week 14 · Wild Card</div>
+              ${byeSlot(wc.bye1)}
+              ${gameSlot(wc.game45, '#4 vs #5')}
+              ${gameSlot(wc.game36, '#3 vs #6')}
+              ${byeSlot(wc.bye2)}
+            </div>
+            <div class="round-col">
+              <div class="round-label">Week 15 · Semifinals</div>
+              ${gameSlot(semis[0], '#1 vs Lower Seed')}
+              ${gameSlot(semis[1], '#2 vs Highest Seed')}
+            </div>
+            <div class="round-col finale-col">
+              <div class="round-label">Week 16 · Title + 3rd</div>
+              <div class="slot title-slot">
+                <img src="${titleImg}" alt="${esc(conf.shortName)} Championship" />
+                ${finals.title?.home ? `<div class="sub" style="margin-top:0.45rem;color:#ddd;">${esc(finals.title.away?.name||'')} ${fmt(finals.title.away?.score)} – ${fmt(finals.title.home?.score)} ${esc(finals.title.home?.name||'')}</div>` : ''}
+              </div>
+              <div class="slot third-slot">
+                <img src="${thirdImg}" alt="${esc(conf.shortName)} 3rd Place" />
+                ${finals.third?.home ? `<div class="sub" style="margin-top:0.45rem;color:#ddd;">${esc(finals.third.away?.name||'')} ${fmt(finals.third.away?.score)} – ${fmt(finals.third.home?.score)} ${esc(finals.third.home?.name||'')}</div>` : ''}
+              </div>
+            </div>
+          </div>
+        </section>`;
+    }
+
+    function bowlBlock(bowl) {
+      return `
+        <div class="mid">
+          <div class="bowl" id="bowl-card">
+            <div class="eyebrow">Week 17 · ESPN scored</div>
+            <img src="/assets/gridiron-bowl.png" alt="GridIron Bowl I" />
+            <div class="bowl-scoreboard" id="bowl-scoreboard">
+              <div class="bowl-side detail">
+                <div class="nm" id="bowl-detail-name">Detail Champion</div>
+              </div>
+              <div class="bowl-mid">
+                <div class="pair"><span id="bowl-detail-score">—</span><span class="sep">–</span><span id="bowl-overtime-score">—</span></div>
+                <div class="status" id="bowl-status">Waiting</div>
+              </div>
+              <div class="bowl-side overtime">
+                <div class="nm" id="bowl-overtime-name">Overtime Champion</div>
+              </div>
+            </div>
+            <p class="bowl-note" id="bowl-message">${esc(bowl?.message || 'Scores appear here from each conference champ’s ESPN Week 17 lineup.')}</p>
+          </div>
+        </div>`;
+    }
+
     function fillSide(prefix, side, isLead) {
       const nameEl = document.getElementById(`bowl-${prefix}-name`);
       const scoreEl = document.getElementById(`bowl-${prefix}-score`);
+      if (!nameEl || !scoreEl) return;
       const wrap = nameEl.closest('.bowl-side');
       wrap.classList.toggle('is-lead', Boolean(isLead));
       nameEl.textContent = side?.champion?.name
@@ -651,34 +651,39 @@
       scoreEl.textContent = side?.hasWeek17Matchup ? fmt(side.score) : '—';
     }
 
-    async function loadBowl() {
+    function applyBowl(data) {
+      if (!data) return;
+      fillSide('detail', data.detail, data.leader === 'detail' || data.leader === 'tie');
+      fillSide('overtime', data.overtime, data.leader === 'overtime' || data.leader === 'tie');
+      const status = document.getElementById('bowl-status');
+      const map = { live: 'Live', ready: 'Ready', needs_week17: 'Needs Wk17', week17_open: 'Wk17 open', waiting: 'Waiting' };
+      if (status) status.textContent = map[data.phase] || 'Waiting';
+      const msg = document.getElementById('bowl-message');
+      if (msg) msg.textContent = data.message || '';
+    }
+
+    async function loadPlayoffs() {
       try {
-        const res = await fetch('/api/bowl', { cache: 'no-store' });
+        const res = await fetch('/api/playoffs', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
-        fillSide('detail', data.detail, data.leader === 'detail' || data.leader === 'tie');
-        fillSide('overtime', data.overtime, data.leader === 'overtime' || data.leader === 'tie');
-
-        const status = document.getElementById('bowl-status');
-        const map = {
-          live: 'Live',
-          ready: 'Ready',
-          needs_week17: 'Needs Wk17',
-          week17_open: 'Wk17 open',
-          waiting: 'Waiting'
-        };
-        status.textContent = map[data.phase] || 'Waiting';
-        document.getElementById('bowl-message').textContent = data.message || '';
+        const detail = (data.conferences || []).find((c) => c.key === 'detail');
+        const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
+        document.getElementById('live-tree').innerHTML =
+          confTree(detail || { key: 'detail', name: 'Detail Conference', rounds: {} }) +
+          bowlBlock(data.bowl) +
+          confTree(overtime || { key: 'overtime', name: 'Overtime Conference', rounds: {} });
+        applyBowl(data.bowl);
         const t = new Date(data.generatedAt);
-        window.GridIronNav?.setSync(`Bowl sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+        window.GridIronNav?.setSync(`Playoffs sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
-        document.getElementById('bowl-message').textContent = err.message || 'Could not load Bowl scores';
-        window.GridIronNav?.setSync('Bowl sync error', false);
+        document.getElementById('live-tree').innerHTML = `<div class="msg" style="grid-column:1/-1;">${esc(err.message)}</div>`;
+        window.GridIronNav?.setSync('Playoffs sync error', false);
       }
     }
 
-    loadBowl();
-    setInterval(loadBowl, 30_000);
+    loadPlayoffs();
+    setInterval(loadPlayoffs, 30_000);
   </script>
 </body>
 </html>

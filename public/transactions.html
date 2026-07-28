@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Transactions · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=19" />
+  <style>
+    .tx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .conf-title { display:flex; align-items:center; gap:0.65rem; margin-bottom:0.85rem; padding-bottom:0.5rem; border-bottom:2px solid rgba(255,255,255,0.12); }
+    .conf-title.detail { border-bottom-color: rgba(255,122,24,0.55); color: var(--detail); }
+    .conf-title.overtime { border-bottom-color: rgba(226,35,42,0.55); color: var(--overtime); }
+    .conf-title img { width: 3rem; }
+    .conf-title h2 { margin:0; font-family:var(--display); letter-spacing:0.05em; text-transform:uppercase; font-size:1.1rem; }
+    .tx { padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .tx .type { font-family: var(--display); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #8eb6ff; }
+    .tx .when { color: #8a8a8a; font-size: 0.85rem; margin-top: 0.15rem; }
+    .tx .body { margin-top: 0.35rem; color: #ddd; line-height: 1.4; }
+    .empty { color: #9a9a9a; padding: 0.5rem 0; }
+    @media (max-width: 800px) { .tx-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body data-page="transactions">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Wire</div>
+    </div>
+  </header>
+  <section class="page-hero shell">
+    <p class="eyebrow">League activity</p>
+    <h1>Transactions</h1>
+    <p>Adds, drops, waivers, and trades from ESPN.</p>
+  </section>
+  <main class="page-main shell">
+    <div class="tx-grid" id="boards"><div class="msg">Loading transactions…</div></div>
+  </main>
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <script src="/js/nav.js?v=10"></script>
+  <script>
+    const esc = (v='') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+    function fmtWhen(iso) {
+      if (!iso) return '';
+      try { return new Date(iso).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); }
+      catch { return ''; }
+    }
+    function board(conf) {
+      const rows = (conf.transactions||[]).map(tx => {
+        const detail = (tx.items||[]).map(it => {
+          const name = it.playerName || (it.playerId ? `Player ${it.playerId}` : 'Player');
+          if (it.toTeam && it.fromTeam) return `${name}: ${it.fromTeam} → ${it.toTeam}`;
+          if (it.toTeam) return `${name} to ${it.toTeam}`;
+          if (it.fromTeam) return `${name} from ${it.fromTeam}`;
+          return name;
+        }).filter(Boolean).join(' · ') || (tx.teams||[]).join(' · ') || 'Activity';
+        return `<article class="tx"><div class="type">${esc(tx.typeLabel||tx.type)}</div><div class="body">${esc(detail)}</div><div class="when">${esc(fmtWhen(tx.when))}</div></article>`;
+      }).join('');
+      return `<section>
+        <div class="conf-title ${esc(conf.key)}">${conf.logo?`<img src="${esc(conf.logo)}" alt="">`:''}<h2>${esc(conf.shortName||conf.name)}</h2></div>
+        ${rows || '<div class="empty">No transactions yet. Activity shows here after the draft and waiver wire open.</div>'}
+      </section>`;
+    }
+    (async () => {
+      try {
+        const res = await fetch('/api/transactions', { cache: 'no-store' });
+        const data = await res.json();
+        document.getElementById('boards').innerHTML = (data.conferences||[]).map(board).join('');
+        window.GridIronNav?.setSync(`ESPN sync · ${new Date(data.generatedAt).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`);
+      } catch (err) {
+        document.getElementById('boards').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

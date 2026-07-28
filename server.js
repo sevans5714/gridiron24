@@ -32,6 +32,8 @@ const board = require('./board-store');
 const logos = require('./logos-store');
 const invites = require('./invites-store');
 const weeklyWrap = require('./weekly-wrap');
+const calendar = require('./calendar-store');
+const powerRankings = require('./power-rankings-store');
 const {
   sendPasswordResetEmail,
   sendInviteEmail,
@@ -62,7 +64,7 @@ async function fetchEspnNflNews(limit = 10) {
       .map((a) => ({
         id: `espn-${a.id || a.published || Math.random()}`,
         source: 'espn',
-        label: 'NFL',
+        label: 'ESPN',
         text: String(a.headline || a.description || '').trim(),
         href: a.links?.web?.href || a.link || null
       }))
@@ -418,6 +420,288 @@ async function fetchEspnLeague(conference) {
   return normalizeLeague(raw, conference);
 }
 
+function playerName(player) {
+  if (!player) return 'Unknown player';
+  return player.fullName
+    || `${player.firstName || ''} ${player.lastName || ''}`.trim()
+    || `Player ${player.id || ''}`;
+}
+
+function normalizeRosterTeam(team, conference, membersById) {
+  const ownerId = team.primaryOwner || (team.owners || [])[0];
+  const key = logos.logoKey(conference.key, team.id);
+  const overrideLogo = logos.getOverrideMap().get(key);
+  const nameOverrides = logos.getNameOverrideMap();
+  const espnName = (team.name || `${team.location || ''} ${team.nickname || ''}`).trim() || `Team ${team.id}`;
+  const entries = (team.roster?.entries || []).map((entry) => {
+    const pool = entry.playerPoolEntry || {};
+    const player = pool.player || {};
+    const slotId = Number(entry.lineupSlotId);
+    return {
+      id: player.id || entry.playerId || null,
+      name: playerName(player),
+      position: POSITION_LABELS[player.defaultPositionId] || '—',
+      slotId,
+      slot: SLOT_LABELS[slotId] || `Slot ${slotId}`,
+      proTeamId: player.proTeamId || null,
+      injuryStatus: player.injuryStatus || null,
+      acquisitionType: entry.acquisitionType || pool.acquisitionType || null
+    };
+  }).sort((a, b) => {
+    const order = { QB: 1, RB: 2, WR: 3, TE: 4, FLEX: 5, 'D/ST': 6, K: 7, Bench: 8, IR: 9 };
+    return (order[a.slot] || 50) - (order[b.slot] || 50) || a.name.localeCompare(b.name);
+  });
+
+  const record = team.record?.overall || {};
+  return {
+    id: team.id,
+    name: nameOverrides.get(key) || espnName,
+    espnName,
+    abbreviation: team.abbrev || '',
+    logo: logos.displayLogoUrl(overrideLogo),
+    owner: ownerName(membersById.get(ownerId)),
+    wins: record.wins || 0,
+    losses: record.losses || 0,
+    ties: record.ties || 0,
+    pointsFor: Number(record.pointsFor || team.points || 0),
+    playoffSeed: Number(team.playoffSeed || 0),
+    waiverRank: Number(team.waiverRank || 0),
+    roster: entries
+  };
+}
+
+async function loadTeamDetail(conferenceKey, teamId) {
+  const conference = config.conferences.find((c) => c.key === conferenceKey);
+  if (!conference) throw Object.assign(new Error('Unknown conference'), { status: 404 });
+  const raw = await fetchEspnRaw(conference, ['mTeam', 'mRoster', 'mStatus'], `roster:${teamId}`);
+  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
+  const team = (raw.teams || []).find((t) => Number(t.id) === Number(teamId));
+  if (!team) throw Object.assign(new Error('Team not found'), { status: 404 });
+  const detail = normalizeRosterTeam(team, conference, membersById);
+  const scheduleRaw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], 'matchup');
+  const currentWeek = Number(scheduleRaw.status?.currentMatchupPeriod || 1);
+  const schedule = normalizeSchedule(scheduleRaw, conference, currentWeek);
+  const recent = [];
+  for (let w = Math.max(1, currentWeek - 2); w <= currentWeek; w += 1) {
+    const weekSched = w === currentWeek ? schedule : normalizeSchedule(scheduleRaw, conference, w);
+    for (const m of weekSched.matchups || []) {
+      if (Number(m.home?.id) === Number(teamId) || Number(m.away?.id) === Number(teamId)) {
+        recent.push({ week: w, ...m });
+      }
+    }
+  }
+  return {
+    ok: true,
+    conference: {
+      key: conference.key,
+      name: conference.name,
+      shortName: conference.shortName,
+      logo: conference.logo
+    },
+    team: detail,
+    recentMatchups: recent,
+    currentMatchupPeriod: currentWeek,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+function normalizeTransactions(raw, conference) {
+  const teams = teamMapFromRaw(raw, conference.key);
+  const list = (raw.transactions || [])
+    .slice()
+    .sort((a, b) => Number(b.processDate || b.proposedDate || 0) - Number(a.processDate || a.proposedDate || 0))
+    .slice(0, 40)
+    .map((tx) => {
+      const items = (tx.items || []).map((item) => ({
+        type: item.type || null,
+        playerId: item.playerId || null,
+        playerName: item.playerName || item.player?.fullName || null,
+        fromTeamId: item.fromTeamId ?? null,
+        toTeamId: item.toTeamId ?? null,
+        fromTeam: item.fromTeamId != null ? teams.get(item.fromTeamId)?.name || null : null,
+        toTeam: item.toTeamId != null ? teams.get(item.toTeamId)?.name || null : null
+      }));
+      const teamIds = new Set();
+      for (const it of items) {
+        if (it.fromTeamId != null) teamIds.add(it.fromTeamId);
+        if (it.toTeamId != null) teamIds.add(it.toTeamId);
+      }
+      if (tx.teamId != null) teamIds.add(tx.teamId);
+      const when = Number(tx.processDate || tx.proposedDate || 0);
+      return {
+        id: tx.id || `${tx.type}-${when}`,
+        type: tx.type || 'UNKNOWN',
+        typeLabel: TX_TYPE_LABELS[tx.type] || tx.type || 'Transaction',
+        status: tx.status || null,
+        when: when ? new Date(when).toISOString() : null,
+        teams: [...teamIds].map((id) => teams.get(id)?.name || `Team ${id}`),
+        items
+      };
+    });
+
+  return {
+    key: conference.key,
+    name: conference.name,
+    shortName: conference.shortName,
+    logo: conference.logo,
+    transactions: list
+  };
+}
+
+async function loadTransactionsPayload() {
+  const conferences = await Promise.all(
+    config.conferences.map(async (conference) => {
+      try {
+        const raw = await fetchEspnRaw(conference, ['mTeam', 'mTransactions2'], 'transactions');
+        return { ok: true, ...normalizeTransactions(raw, conference) };
+      } catch (error) {
+        return {
+          ok: false,
+          key: conference.key,
+          name: conference.name,
+          shortName: conference.shortName,
+          logo: conference.logo,
+          error: error.message || 'Unavailable',
+          transactions: []
+        };
+      }
+    })
+  );
+  return {
+    season: config.season,
+    generatedAt: new Date().toISOString(),
+    conferences
+  };
+}
+
+function seedLabel(seed) {
+  const n = Number(seed || 0);
+  return n > 0 ? `#${n}` : null;
+}
+
+function pickMatchupForSeeds(matchups, seedA, seedB, teamsById) {
+  const list = matchups || [];
+  for (const m of list) {
+    const hs = Number(teamsById.get(m.home?.id)?.playoffSeed || 0);
+    const as = Number(teamsById.get(m.away?.id)?.playoffSeed || 0);
+    if ((hs === seedA && as === seedB) || (hs === seedB && as === seedA)) return m;
+  }
+  return null;
+}
+
+async function buildPlayoffsPayload() {
+  const standings = await loadStandingsPayload();
+  const weeks = {};
+  for (const w of [14, 15, 16]) {
+    weeks[w] = await loadSchedulePayload(w);
+  }
+  const bowl = await buildBowlPayload();
+
+  const conferences = config.conferences.map((conf) => {
+    const stand = (standings.conferences || []).find((c) => c.key === conf.key);
+    const teams = stand?.ok ? stand.teams || [] : [];
+    const byId = new Map(teams.map((t) => [t.id, t]));
+    const bySeed = new Map();
+    for (const t of teams) {
+      if (Number(t.playoffSeed) > 0) bySeed.set(Number(t.playoffSeed), t);
+    }
+    // Fallback: top 6 standings as provisional seeds before ESPN sets playoffSeed
+    if (bySeed.size < 6) {
+      teams.slice(0, 6).forEach((t, i) => {
+        if (!bySeed.has(i + 1)) bySeed.set(i + 1, { ...t, playoffSeed: i + 1, provisional: true });
+      });
+    }
+
+    const w14 = (weeks[14].conferences || []).find((c) => c.key === conf.key);
+    const w15 = (weeks[15].conferences || []).find((c) => c.key === conf.key);
+    const w16 = (weeks[16].conferences || []).find((c) => c.key === conf.key);
+
+    const slot = (seedNum) => {
+      const t = bySeed.get(seedNum);
+      if (!t) return { seed: seedNum, name: `#${seedNum} Seed`, logo: null, id: null, provisional: true };
+      return {
+        seed: seedNum,
+        id: t.id,
+        name: t.name,
+        logo: t.logo || null,
+        provisional: Boolean(t.provisional) || Number(t.playoffSeed || 0) === 0
+      };
+    };
+
+    const formatGame = (m, fallbackLabel) => {
+      if (!m) {
+        return {
+          label: fallbackLabel,
+          status: 'upcoming',
+          home: null,
+          away: null,
+          winner: 'UNDECIDED'
+        };
+      }
+      const decided = m.winner === 'HOME' || m.winner === 'AWAY';
+      return {
+        label: fallbackLabel,
+        status: decided ? 'final' : (Number(m.home?.score || 0) + Number(m.away?.score || 0) > 0 ? 'live' : 'upcoming'),
+        winner: m.winner || 'UNDECIDED',
+        home: m.home,
+        away: m.away,
+        playoffTierType: m.playoffTierType || null
+      };
+    };
+
+    const playable14 = (w14?.matchups || []).filter((m) => m.home && m.away);
+    const game45 = pickMatchupForSeeds(playable14, 4, 5, byId) || playable14[0] || null;
+    const game36 = pickMatchupForSeeds(playable14, 3, 6, byId) || playable14[1] || playable14[0] || null;
+
+    const playable15 = (w15?.matchups || []).filter((m) => m.home && m.away);
+    const winners15 = playable15.filter(isWinnersBracketMatchup);
+    const semis = (winners15.length ? winners15 : playable15).slice(0, 2);
+
+    const playable16 = (w16?.matchups || []).filter((m) => m.home && m.away);
+    const title16 = playable16.find(isWinnersBracketMatchup) || playable16[0] || null;
+    const third16 = playable16.find(isConsolationMatchup)
+      || playable16.find((m) => m.id !== title16?.id)
+      || null;
+
+    return {
+      key: conf.key,
+      name: conf.name,
+      shortName: conf.shortName,
+      logo: conf.logo,
+      ok: Boolean(stand?.ok),
+      seeds: [1, 2, 3, 4, 5, 6].map(slot),
+      rounds: {
+        wildCard: {
+          week: 14,
+          bye1: slot(1),
+          bye2: slot(2),
+          game45: formatGame(game45, '#4 vs #5'),
+          game36: formatGame(game36, '#3 vs #6')
+        },
+        semifinals: {
+          week: 15,
+          games: [
+            formatGame(semis[0], 'Semifinal 1'),
+            formatGame(semis[1], 'Semifinal 2')
+          ]
+        },
+        finals: {
+          week: 16,
+          title: formatGame(title16, 'Conference Title'),
+          third: formatGame(third16, 'Third Place')
+        }
+      }
+    };
+  });
+
+  return {
+    season: config.season,
+    generatedAt: new Date().toISOString(),
+    conferences,
+    bowl
+  };
+}
+
 const SCORING_LABELS = {
   0: 'Pass attempt',
   1: 'Pass completion',
@@ -521,6 +805,23 @@ const SLOT_LABELS = {
   20: 'Bench',
   21: 'IR',
   23: 'FLEX'
+};
+
+const POSITION_LABELS = {
+  1: 'QB',
+  2: 'RB',
+  3: 'WR',
+  4: 'TE',
+  5: 'K',
+  16: 'D/ST'
+};
+
+const TX_TYPE_LABELS = {
+  FREEAGENT: 'Free agent',
+  WAIVER: 'Waiver',
+  TRADE: 'Trade',
+  DROP: 'Drop',
+  DRAFT: 'Draft'
 };
 
 // Per-yard continuous stats (ESPN stores points-per-yard in the settings field).
@@ -1920,6 +2221,121 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/playoffs') {
+      try {
+        const payload = await buildPlayoffsPayload();
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load playoffs' });
+      }
+    }
+
+    if (pathname === '/api/transactions') {
+      try {
+        const payload = await loadTransactionsPayload();
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load transactions' });
+      }
+    }
+
+    if (pathname === '/api/team') {
+      const conferenceKey = String(requestUrl.searchParams.get('conference') || '').trim();
+      const teamId = Number(requestUrl.searchParams.get('teamId'));
+      if (!conferenceKey || !Number.isFinite(teamId)) {
+        return sendJson(res, 400, { ok: false, error: 'conference and teamId are required' });
+      }
+      try {
+        const payload = await loadTeamDetail(conferenceKey, teamId);
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Could not load team' });
+      }
+    }
+
+    if (pathname === '/api/calendar' && req.method === 'GET') {
+      try {
+        calendar.seedIfEmpty(config.calendarDefaults || []);
+      } catch { /* ignore */ }
+      return sendJson(res, 200, {
+        ok: true,
+        events: calendar.listEvents(),
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/calendar' && req.method === 'POST') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const item = calendar.addEvent(body);
+        return sendJson(res, 201, { ok: true, item });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not add event' });
+      }
+    }
+
+    if (pathname.startsWith('/api/calendar/') && req.method === 'DELETE') {
+      if (!requireCommissioner(req, res)) return;
+      const id = pathname.slice('/api/calendar/'.length);
+      try {
+        calendar.deleteEvent(id);
+        return sendJson(res, 200, { ok: true });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete event' });
+      }
+    }
+
+    if (pathname === '/api/power-rankings' && req.method === 'GET') {
+      return sendJson(res, 200, {
+        ok: true,
+        latest: powerRankings.latestRanking(),
+        rankings: powerRankings.listRankings(),
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/power-rankings' && req.method === 'POST') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const item = powerRankings.saveRanking({
+          week: body.week,
+          season: config.season,
+          ranks: body.ranks,
+          notes: body.notes,
+          author: user
+        });
+        return sendJson(res, 201, { ok: true, item });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save rankings' });
+      }
+    }
+
+    if (pathname.startsWith('/api/power-rankings/') && req.method === 'DELETE') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      const id = pathname.slice('/api/power-rankings/'.length);
+      try {
+        powerRankings.deleteRanking(id, user);
+        return sendJson(res, 200, { ok: true });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete ranking' });
+      }
+    }
+
     if (pathname === '/api/payouts') {
       return sendJson(res, 200, {
         season: config.season,
@@ -1947,6 +2363,11 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   users.ensureBootstrapCommissioner();
+  try {
+    calendar.seedIfEmpty(config.calendarDefaults || []);
+  } catch (err) {
+    console.warn('Calendar seed failed:', err.message || err);
+  }
   console.log(`\nGridIron 24 is running.`);
   console.log(`Open: http://localhost:${PORT}`);
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
