@@ -55,3 +55,20 @@ services:
         value: "https://www.gridiron24.com"
       - key: CRON_SECRET
         sync: false
+
+  - type: cron
+    name: gridiron24-rules-sync
+    runtime: node
+    plan: starter
+    region: ohio
+    # Mondays and Thursdays at 14:00 UTC (~10am ET)
+    schedule: "0 14 * * 1,4"
+    buildCommand: npm install
+    startCommand: node -e "const u=process.env.APP_BASE_URL||'https://www.gridiron24.com';const s=process.env.CRON_SECRET;if(!s){console.error('CRON_SECRET missing');process.exit(1);}fetch(u.replace(/\\/$/,'')+'/api/cron/rules-sync',{method:'POST',headers:{Authorization:'Bearer '+s}}).then(async r=>{const t=await r.text();console.log(r.status,t.slice(0,800));if(!r.ok)process.exit(1);}).catch(e=>{console.error(e);process.exit(1);});"
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: APP_BASE_URL
+        value: "https://www.gridiron24.com"
+      - key: CRON_SECRET
+        sync: false

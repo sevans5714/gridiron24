@@ -6,8 +6,8 @@
   <title>Scoring · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=24" />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=31" />
   <style>
     .banner {
       margin-bottom: 1.25rem;
@@ -23,6 +23,22 @@
       font-weight: 600;
       text-decoration: underline;
       text-underline-offset: 2px;
+    }
+    .banner.ok {
+      border-color: rgba(34, 197, 94, 0.35);
+      background: rgba(34, 197, 94, 0.08);
+      color: #86efac;
+    }
+    .sync-pill {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.15rem 0.45rem;
+      border: 1px solid currentColor;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      vertical-align: middle;
     }
 
     .lineup-row {
@@ -133,8 +149,8 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=15"></script>
-  <script src="/js/conference-diff.js?v=3"></script>
+  <script src="/js/nav.js?v=17"></script>
+  <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -190,37 +206,47 @@
     }
 
     function render(data) {
-      const detail = (data.conferences || []).find((c) => c.key === 'detail');
-      const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
-      const ok = (data.conferences || []).filter((c) => c.ok);
-
-      if (!ok.length) {
+      const rules = data.scoring;
+      if (!rules?.ok && !(rules?.scoringItems || []).length) {
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load scoring from ESPN.</div>`;
         return;
       }
 
-      const rules = detail?.ok ? detail : ok[0];
-      const cmp = GridIronDiff.compare(detail, overtime);
-      const banner = cmp.bothOk && !cmp.matched
-        ? `<div class="banner reveal">Conferences are out of sync on ESPN (${cmp.diffs.length} differences). See <a href="/profile.html#profile-admin">League Tools</a> in your profile for Detail vs Overtime values.</div>`
+      const synced = Boolean(data.synced || data.compare?.matched);
+      const source = data.source === 'official' ? 'official' : 'live';
+      const updated = data.officialScoring?.updatedAt || data.rulesSync?.checkedAt || data.generatedAt;
+      const when = updated
+        ? new Date(updated).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
         : '';
+
+      let banner = '';
+      if (synced) {
+        banner = `<div class="banner ok reveal">Conferences synced<span class="sync-pill">Official</span>${when ? ` · Scoring updated ${esc(when)}` : ''}</div>`;
+      } else if (data.compare?.bothOk === false) {
+        banner = `<div class="banner reveal">Could not verify both ESPN leagues. Showing Detail Conference rules.</div>`;
+      } else {
+        const n = data.compare?.diffCount || 0;
+        banner = `<div class="banner reveal">Conferences are out of sync on ESPN (${n} difference${n === 1 ? '' : 's'}). Showing Detail as source of truth. See <a href="/league-tools.html#rules-sync">League Tools</a>.</div>`;
+      }
 
       document.getElementById('content').innerHTML = `
         ${banner}
         <div class="lineup-row reveal">${lineupRow(rules.lineup)}</div>
         <div class="rules-grid reveal reveal-delay-1">
           ${groupPanels(rules.scoringItems)}
-        </div>`;
+        </div>
+        <p class="msg" style="margin-top:1.25rem;color:#8a8a8a;font-size:0.88rem;">Source: ${source === 'official' ? 'Official synced snapshot (Detail)' : 'Live Detail ESPN settings'}</p>`;
     }
 
     async function load() {
       try {
-        const res = await fetch('/api/settings', { cache: 'no-store' });
+        const res = await fetch('/api/scoring', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
         render(data);
         const t = new Date(data.generatedAt);
-        window.GridIronNav?.setSync(`ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+        const label = data.synced ? 'Rules synced' : 'Live ESPN';
+        window.GridIronNav?.setSync(`${label} · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
         window.GridIronNav?.setSync('Connection error', false);

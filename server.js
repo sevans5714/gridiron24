@@ -34,10 +34,13 @@ const invites = require('./invites-store');
 const weeklyWrap = require('./weekly-wrap');
 const calendar = require('./calendar-store');
 const powerRankings = require('./power-rankings-store');
+const rulesSyncStore = require('./rules-sync-store');
+const { compareSettings } = require('./rules-diff');
 const {
   sendPasswordResetEmail,
   sendInviteEmail,
   sendWeeklyWrapEmail,
+  sendRulesSyncAlert,
   buildWeeklyWrapEmail,
   mailConfig
 } = require('./mail');
@@ -108,7 +111,8 @@ const PUBLIC_PATHS = new Set([
   '/api/reset-password',
   '/api/logout',
   '/api/auth',
-  '/api/cron/weekly-wrap'
+  '/api/cron/weekly-wrap',
+  '/api/cron/rules-sync'
 ]);
 
 function sendJson(res, status, payload, extraHeaders = {}) {
@@ -379,8 +383,12 @@ function normalizeLeague(raw, conference) {
   };
 }
 
-async function fetchEspnRaw(conference, views, cacheSuffix = '') {
-  const cacheKey = `${config.season}:${conference.espnLeagueId}:${cacheSuffix || views.join(',')}`;
+async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}) {
+  const queryKey = Object.keys(query || {})
+    .sort()
+    .map((k) => `${k}=${query[k]}`)
+    .join('&');
+  const cacheKey = `${config.season}:${conference.espnLeagueId}:${cacheSuffix || views.join(',')}${queryKey ? `:${queryKey}` : ''}`;
   const existing = cache.get(cacheKey);
   if (existing && Date.now() - existing.at < CACHE_MS) return existing.data;
 
@@ -388,6 +396,9 @@ async function fetchEspnRaw(conference, views, cacheSuffix = '') {
     `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${config.season}/segments/0/leagues/${conference.espnLeagueId}`
   );
   for (const view of views) endpoint.searchParams.append('view', view);
+  for (const [key, value] of Object.entries(query || {})) {
+    if (value != null && value !== '') endpoint.searchParams.set(key, String(value));
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
@@ -1011,8 +1022,160 @@ function normalizeSchedule(raw, conference, week) {
   };
 }
 
-async function apiSettings(res) {
+const BENCH_OR_IR_SLOTS = new Set([20, 21]);
+
+function weekStatTotal(entry, week, sourceId) {
+  const stats = entry?.playerPoolEntry?.player?.stats || [];
+  const hit = stats.find((s) => (
+    Number(s.scoringPeriodId) === Number(week)
+    && Number(s.statSourceId) === Number(sourceId)
+    && (s.statSplitTypeId == null || Number(s.statSplitTypeId) === 1)
+  ));
+  return hit?.appliedTotal != null ? Number(hit.appliedTotal) : null;
+}
+
+function playerWeekPoints(entry, week) {
+  const pool = entry?.playerPoolEntry || {};
+  if (pool.appliedStatTotal != null && Number.isFinite(Number(pool.appliedStatTotal))) {
+    return Number(pool.appliedStatTotal);
+  }
+  const actual = weekStatTotal(entry, week, 0);
+  if (actual != null) return actual;
+  return 0;
+}
+
+function playerWeekProjected(entry, week) {
+  const projected = weekStatTotal(entry, week, 1);
+  return projected != null ? projected : 0;
+}
+
+function matchupSideEntries(side) {
+  return side?.rosterForCurrentScoringPeriod?.entries
+    || side?.rosterForMatchupPeriod?.entries
+    || side?.rosterForMatchupPeriodDelayed?.entries
+    || [];
+}
+
+function extractConferenceLeaders(raw, conference, week) {
+  const teams = teamMapFromRaw(raw, conference.key);
+  const players = [];
+  const teamScores = [];
+
+  for (const match of (raw.schedule || []).filter((m) => Number(m.matchupPeriodId) === Number(week))) {
+    for (const sideKey of ['home', 'away']) {
+      const side = match[sideKey];
+      if (!side) continue;
+      const team = teams.get(side.teamId) || {
+        id: side.teamId,
+        name: `Team ${side.teamId}`,
+        logo: logos.PLACEHOLDER_LOGO
+      };
+      const score = Number(side.totalPoints ?? 0);
+      const projected = Number(side.totalProjectedPointsLive ?? side.totalProjectedPoints ?? 0);
+      teamScores.push({
+        kind: 'team',
+        conferenceKey: conference.key,
+        conference: conference.shortName,
+        teamId: team.id,
+        teamName: team.name,
+        teamLogo: team.logo,
+        points: score,
+        projected,
+        live: score > 0 || projected > 0
+      });
+
+      for (const entry of matchupSideEntries(side)) {
+        const slotId = Number(entry.lineupSlotId);
+        if (BENCH_OR_IR_SLOTS.has(slotId)) continue;
+        const pool = entry.playerPoolEntry || {};
+        const player = pool.player || {};
+        const points = playerWeekPoints(entry, week);
+        const projectedPts = playerWeekProjected(entry, week);
+        if (!(points > 0 || projectedPts > 0)) continue;
+        players.push({
+          kind: 'player',
+          id: player.id || entry.playerId || null,
+          name: playerName(player),
+          position: POSITION_LABELS[player.defaultPositionId] || SLOT_LABELS[slotId] || '—',
+          slot: SLOT_LABELS[slotId] || `Slot ${slotId}`,
+          points,
+          projected: projectedPts,
+          conferenceKey: conference.key,
+          conference: conference.shortName,
+          teamId: team.id,
+          teamName: team.name,
+          teamLogo: team.logo
+        });
+      }
+    }
+  }
+
+  players.sort((a, b) => b.points - a.points || b.projected - a.projected || a.name.localeCompare(b.name));
+  teamScores.sort((a, b) => b.points - a.points || b.projected - a.projected || a.teamName.localeCompare(b.teamName));
+
+  return {
+    players,
+    teams: teamScores,
+    currentMatchupPeriod: raw.status?.currentMatchupPeriod ?? null,
+    latestScoringPeriod: raw.status?.latestScoringPeriod ?? null
+  };
+}
+
+async function apiFantasyLeaders(res, weekParam) {
   const results = await Promise.all(
+    config.conferences.map(async (conference) => {
+      try {
+        const base = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], 'matchup');
+        const week = Number(weekParam || base.status?.currentMatchupPeriod || 1);
+        const raw = await fetchEspnRaw(
+          conference,
+          ['mTeam', 'mMatchup', 'mScoreboard', 'mStatus'],
+          `leaders:${week}`,
+          { scoringPeriodId: week }
+        );
+        return { ok: true, key: conference.key, week, ...extractConferenceLeaders(raw, conference, week) };
+      } catch (error) {
+        return {
+          ok: false,
+          key: conference.key,
+          name: conference.name,
+          error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message,
+          players: [],
+          teams: []
+        };
+      }
+    })
+  );
+
+  const week = results.find((r) => r.ok)?.week || Number(weekParam || 1);
+  const players = results.flatMap((r) => r.players || [])
+    .sort((a, b) => b.points - a.points || b.projected - a.projected || a.name.localeCompare(b.name))
+    .slice(0, 20);
+  const teams = results.flatMap((r) => r.teams || [])
+    .sort((a, b) => b.points - a.points || b.projected - a.projected || a.teamName.localeCompare(b.teamName))
+    .slice(0, 12);
+  const hasLivePoints = players.some((p) => p.points > 0) || teams.some((t) => t.points > 0);
+
+  sendJson(res, 200, {
+    ok: true,
+    season: config.season,
+    week,
+    hasLivePoints,
+    generatedAt: new Date().toISOString(),
+    players,
+    teams,
+    conferences: results.map((r) => ({
+      ok: r.ok,
+      key: r.key || r.players?.[0]?.conferenceKey,
+      error: r.error || null,
+      playerCount: (r.players || []).length,
+      teamCount: (r.teams || []).length
+    }))
+  });
+}
+
+async function loadConferenceSettings() {
+  return Promise.all(
     config.conferences.map(async (conference) => {
       try {
         const raw = await fetchEspnRaw(conference, ['mSettings', 'mStatus'], 'settings');
@@ -1027,11 +1190,117 @@ async function apiSettings(res) {
       }
     })
   );
+}
+
+async function runRulesSyncJob({
+  triggeredBy = 'system',
+  notify = true,
+  notifyOnMatch = false
+} = {}) {
+  const conferences = await loadConferenceSettings();
+  const detail = conferences.find((c) => c.key === 'detail') || null;
+  const overtime = conferences.find((c) => c.key === 'overtime') || null;
+  const cmp = compareSettings(detail, overtime);
+  const store = rulesSyncStore.saveCheck({
+    matched: cmp.matched,
+    bothOk: cmp.bothOk,
+    diffs: cmp.diffs,
+    detail,
+    triggeredBy,
+    season: config.season
+  });
+
+  const result = {
+    ok: true,
+    matched: cmp.matched,
+    bothOk: cmp.bothOk,
+    diffCount: cmp.diffs.length,
+    diffs: cmp.diffs,
+    officialUpdated: Boolean(cmp.matched && store.officialScoring),
+    lastCheck: store.lastCheck,
+    officialScoring: store.officialScoring,
+    generatedAt: new Date().toISOString()
+  };
+
+  const shouldMail = notify && ((cmp.bothOk && !cmp.matched) || (notifyOnMatch && cmp.matched));
+  if (shouldMail) {
+    const recipients = users.listUsers()
+      .filter((u) => u.role === 'commissioner' && u.email)
+      .map((u) => u.email);
+    const fallback = process.env.COMMISSIONER_EMAIL;
+    const toList = recipients.length ? recipients : (fallback ? [fallback] : []);
+    result.notifications = [];
+    for (const to of toList) {
+      try {
+        const sent = await sendRulesSyncAlert({
+          to,
+          matched: cmp.matched,
+          diffs: cmp.diffs,
+          checkedAt: store.lastCheck?.checkedAt,
+          baseUrl: process.env.APP_BASE_URL
+        });
+        result.notifications.push({ to, ...sent });
+      } catch (err) {
+        console.error('[rules-sync] notify failed', to, err);
+        result.notifications.push({ to, sent: false, error: err.message });
+      }
+    }
+  }
+
+  console.log(`[rules-sync] matched=${cmp.matched} diffs=${cmp.diffs.length} by=${triggeredBy}`);
+  return result;
+}
+
+async function apiSettings(res) {
+  const results = await loadConferenceSettings();
+  const sync = rulesSyncStore.getStatus();
 
   sendJson(res, 200, {
     season: config.season,
     generatedAt: new Date().toISOString(),
-    conferences: results
+    conferences: results,
+    rulesSync: sync.lastCheck,
+    officialScoring: sync.officialScoring
+  });
+}
+
+async function apiOfficialScoring(res) {
+  const sync = rulesSyncStore.getStatus();
+  const live = await loadConferenceSettings();
+  const detail = live.find((c) => c.key === 'detail') || null;
+  const overtime = live.find((c) => c.key === 'overtime') || null;
+  const cmp = compareSettings(detail, overtime);
+
+  // Prefer persisted official snapshot when conferences are known synced.
+  const official = sync.officialScoring;
+  const useOfficial = Boolean(official && (cmp.matched || sync.lastCheck?.matched));
+
+  sendJson(res, 200, {
+    ok: true,
+    season: config.season,
+    generatedAt: new Date().toISOString(),
+    source: useOfficial ? 'official' : 'live-detail',
+    synced: cmp.matched,
+    rulesSync: sync.lastCheck,
+    officialScoring: official,
+    scoring: useOfficial
+      ? {
+          ok: true,
+          key: official.conferenceKey,
+          name: official.conferenceName,
+          shortName: official.shortName,
+          playerRankType: official.playerRankType,
+          scoringType: official.scoringType,
+          scoringItems: official.scoringItems,
+          lineup: official.lineup
+        }
+      : detail,
+    conferences: live,
+    compare: {
+      matched: cmp.matched,
+      bothOk: cmp.bothOk,
+      diffCount: cmp.diffs.length
+    }
   });
 }
 
@@ -1506,6 +1775,23 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/cron/rules-sync' && (req.method === 'POST' || req.method === 'GET')) {
+      if (!authorizeCron(req)) {
+        return sendJson(res, 401, { ok: false, error: 'Invalid cron secret' });
+      }
+      try {
+        const result = await runRulesSyncJob({
+          triggeredBy: 'cron',
+          notify: requestUrl.searchParams.get('notify') !== '0',
+          notifyOnMatch: requestUrl.searchParams.get('notifyOnMatch') === '1'
+        });
+        return sendJson(res, 200, result);
+      } catch (err) {
+        console.error('[rules-sync] cron failed', err);
+        return sendJson(res, 500, { ok: false, error: err.message || 'Rules sync check failed' });
+      }
+    }
+
     if (pathname === '/api/auth') {
       const user = getSessionUser(req);
       return sendJson(res, 200, {
@@ -1663,6 +1949,28 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true, user }, { 'Set-Cookie': sessionCookieHeader(token) });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not reset password' });
+      }
+    }
+
+    if (pathname === '/api/change-password' && req.method === 'POST') {
+      const sessionUser = getSessionUser(req);
+      if (!sessionUser) {
+        return sendJson(res, 401, { ok: false, error: 'Sign in required' });
+      }
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      if (body.password !== body.confirmPassword) {
+        return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
+      }
+      try {
+        const user = users.changePassword(sessionUser.id, body.currentPassword, body.password);
+        return sendJson(res, 200, { ok: true, user });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not change password' });
       }
     }
 
@@ -2197,7 +2505,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(302, { Location: '/home.html' });
         return res.end();
       }
-      res.writeHead(302, { Location: '/profile.html#profile-admin' });
+      res.writeHead(302, { Location: '/league-tools.html' });
       return res.end();
     }
 
@@ -2208,6 +2516,15 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/profile.html' || pathname === '/profile') {
       return sendFile(res, path.join(PUBLIC_DIR, 'profile.html'));
+    }
+
+    if (pathname === '/league-tools.html' || pathname === '/league-tools') {
+      const user = getSessionUser(req);
+      if (!canAccessCommissionerPage(user)) {
+        res.writeHead(302, { Location: user ? '/profile.html' : '/enter?next=' + encodeURIComponent('/league-tools.html') });
+        return res.end();
+      }
+      return sendFile(res, path.join(PUBLIC_DIR, 'league-tools.html'));
     }
 
     if (pathname === '/api/leagues') {
@@ -2359,8 +2676,35 @@ const server = http.createServer(async (req, res) => {
       return await apiSettings(res);
     }
 
+    if (pathname === '/api/scoring') {
+      return await apiOfficialScoring(res);
+    }
+
+    if (pathname === '/api/rules-sync' && req.method === 'GET') {
+      const sync = rulesSyncStore.getStatus();
+      return sendJson(res, 200, { ok: true, ...sync, generatedAt: new Date().toISOString() });
+    }
+
+    if (pathname === '/api/rules-sync/check' && req.method === 'POST') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      try {
+        const result = await runRulesSyncJob({
+          triggeredBy: user.loginName || user.name || 'staff',
+          notify: false
+        });
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err.message || 'Rules sync check failed' });
+      }
+    }
+
     if (pathname === '/api/schedule') {
       return await apiSchedule(res, requestUrl.searchParams.get('week'));
+    }
+
+    if (pathname === '/api/fantasy-leaders') {
+      return await apiFantasyLeaders(res, requestUrl.searchParams.get('week'));
     }
 
     if (pathname === '/api/bowl') {

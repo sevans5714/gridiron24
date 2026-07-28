@@ -75,6 +75,12 @@
     return `<span class="user-avatar-fallback" aria-hidden="true">${esc(initials(label))}</span>`;
   }
 
+  function roleLabel(role) {
+    if (role === 'commissioner') return 'Commissioner';
+    if (role === 'conference_admin') return 'Conference Admin';
+    return 'Member';
+  }
+
   function renderUserMenu(user, myTeam = null) {
     const mount = ensureUserMenuMount();
     if (!mount) return;
@@ -85,21 +91,24 @@
     }
     mount.hidden = false;
     const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || user.name || 'Profile';
-    const sub = user.name || user.loginName || '';
+    const access = roleLabel(user.role);
     const onProfile = active === 'profile';
+    const staffLink = user.role === 'commissioner' || user.role === 'conference_admin'
+      ? '<a class="user-menu-link" href="/league-tools.html">League Tools</a>'
+      : '';
     mount.innerHTML = `
-      <button type="button" class="user-avatar-btn${onProfile ? ' is-active' : ''}" id="user-menu-toggle" aria-haspopup="true" aria-expanded="false" title="${esc(teamName)}">
+      <a class="user-avatar-btn${onProfile ? ' is-active' : ''}" id="user-menu-toggle" href="/profile.html" title="${esc(teamName)} · ${esc(access)}" aria-haspopup="true" aria-expanded="false">
         ${avatarHtml(myTeam, user)}
-      </button>
+      </a>
       <div class="user-menu-panel" id="user-menu-panel" hidden>
-        <div class="user-menu-head">
+        <a class="user-menu-head" href="/profile.html">
           <div class="user-menu-preview">${avatarHtml(myTeam, user)}</div>
           <div class="user-menu-meta">
             <div class="user-menu-name">${esc(teamName)}</div>
-            <div class="user-menu-sub">${esc(sub)}</div>
+            <div class="user-menu-role">${esc(access)}</div>
           </div>
-        </div>
-        <a class="user-menu-link" href="/profile.html">Profile</a>
+        </a>
+        ${staffLink}
         <button type="button" class="user-menu-logout" id="nav-logout">Log Out</button>
       </div>`;
 
@@ -114,12 +123,6 @@
       panel?.setAttribute('hidden', '');
       toggle?.setAttribute('aria-expanded', 'false');
     }
-
-    toggle?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (panel?.hasAttribute('hidden')) openMenu();
-      else closeMenu();
-    });
 
     mount.addEventListener('mouseenter', openMenu);
     mount.addEventListener('mouseleave', closeMenu);

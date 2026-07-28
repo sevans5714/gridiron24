@@ -405,6 +405,28 @@ function resetPasswordWithToken(token, newPassword) {
   return publicUser(store.users[idx]);
 }
 
+function changePassword(userId, currentPassword, newPassword) {
+  if (!newPassword || String(newPassword).length < 6) {
+    throw Object.assign(new Error('Password must be at least 6 characters'), { status: 400 });
+  }
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Account not found'), { status: 404 });
+  }
+  const user = store.users[idx];
+  if (!verifyPassword(currentPassword, user.passwordSalt, user.passwordHash)) {
+    throw Object.assign(new Error('Current password is incorrect'), { status: 400 });
+  }
+  const { salt, hash } = hashPassword(newPassword);
+  store.users[idx].passwordSalt = salt;
+  store.users[idx].passwordHash = hash;
+  store.users[idx].resetTokenHash = null;
+  store.users[idx].resetTokenExpires = null;
+  writeStore(store);
+  return publicUser(store.users[idx]);
+}
+
 module.exports = {
   DATA_DIR,
   ROLES,
@@ -413,6 +435,7 @@ module.exports = {
   authenticate,
   createResetToken,
   resetPasswordWithToken,
+  changePassword,
   findById,
   findByEmail,
   listUsers,

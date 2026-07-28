@@ -55,17 +55,41 @@ function saveRanking({ week, season, ranks, notes, author }) {
   const cleanRanks = (Array.isArray(ranks) ? ranks : [])
     .map((r, i) => ({
       rank: Number(r.rank) || i + 1,
-      conferenceKey: String(r.conferenceKey || '').trim(),
+      conferenceKey: String(r.conferenceKey || '').trim().toLowerCase(),
       teamId: Number(r.teamId),
       teamName: String(r.teamName || '').trim().slice(0, 80),
       note: String(r.note || '').trim().slice(0, 240)
     }))
-    .filter((r) => r.conferenceKey && Number.isFinite(r.teamId) && r.teamName)
-    .sort((a, b) => a.rank - b.rank);
+    .filter((r) => (r.conferenceKey === 'detail' || r.conferenceKey === 'overtime')
+      && Number.isFinite(r.teamId)
+      && r.teamName);
 
-  if (!cleanRanks.length) {
-    throw Object.assign(new Error('Add at least one ranked team'), { status: 400 });
+  if (cleanRanks.length !== 24) {
+    throw Object.assign(new Error(`Power rankings must list all 24 teams (got ${cleanRanks.length})`), { status: 400 });
   }
+
+  const seen = new Set();
+  for (const r of cleanRanks) {
+    const key = `${r.conferenceKey}:${r.teamId}`;
+    if (seen.has(key)) {
+      throw Object.assign(new Error(`Duplicate team in rankings: ${r.teamName}`), { status: 400 });
+    }
+    seen.add(key);
+  }
+
+  const detailCount = cleanRanks.filter((r) => r.conferenceKey === 'detail').length;
+  const overtimeCount = cleanRanks.filter((r) => r.conferenceKey === 'overtime').length;
+  if (detailCount !== 12 || overtimeCount !== 12) {
+    throw Object.assign(
+      new Error(`Need 12 Detail and 12 Overtime teams (got ${detailCount} Detail, ${overtimeCount} Overtime)`),
+      { status: 400 }
+    );
+  }
+
+  const normalized = cleanRanks
+    .slice()
+    .sort((a, b) => a.rank - b.rank)
+    .map((r, i) => ({ ...r, rank: i + 1 }));
 
   const store = readStore();
   const item = {
@@ -73,7 +97,7 @@ function saveRanking({ week, season, ranks, notes, author }) {
     week: w,
     season: Number(season) || new Date().getFullYear(),
     notes: String(notes || '').trim().slice(0, 1000),
-    ranks: cleanRanks,
+    ranks: normalized,
     authorId: author?.id || null,
     authorName: author?.name || author?.loginName || 'Commissioner',
     createdAt: new Date().toISOString()

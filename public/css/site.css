@@ -1,4 +1,12 @@
 /* Shared GridIron 24 chrome + type system */
+@font-face {
+  font-family: "Bebas Neue";
+  src: url("/assets/fonts/BebasNeue-Regular.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #050505;
   --panel: #111111;
@@ -13,7 +21,7 @@
   --gold: #efd782;
   --good: #22c55e;
   --bad: #ef4444;
-  --display: "Oswald", Impact, sans-serif;
+  --display: "Bebas Neue", Impact, sans-serif;
   --body: "Source Sans 3", system-ui, sans-serif;
 
   --fs-xs: 0.75rem;
@@ -25,8 +33,8 @@
   --lh-tight: 1.15;
   --lh-snug: 1.35;
   --lh-body: 1.55;
-  --track-display: 0.02em;
-  --track-label: 0.06em;
+  --track-display: 0.04em;
+  --track-label: 0.08em;
 }
 
 * { box-sizing: border-box; }
@@ -71,7 +79,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 3px;
   background:
-    linear-gradient(90deg, rgba(47, 109, 255, 0.06), transparent 22%, transparent 78%, rgba(226, 35, 42, 0.05)),
+    linear-gradient(90deg, rgba(47, 109, 255, 0.07), transparent 35%),
     linear-gradient(180deg, #0d0d0d 0%, #060606 100%);
   box-shadow:
     0 6px 28px rgba(0, 0, 0, 0.35),
@@ -85,7 +93,7 @@ body {
   inset: 0 auto auto 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, var(--detail), var(--blue) 48%, var(--overtime));
+  background: var(--blue);
   opacity: 0.9;
   pointer-events: none;
 }
@@ -319,6 +327,12 @@ body {
   align-items: center;
   gap: 0.65rem;
   margin-bottom: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 0.35rem;
+}
+.user-menu-head:hover .user-menu-name {
+  color: #8eb6ff;
 }
 
 .user-menu-preview {
@@ -339,6 +353,17 @@ body {
   font-weight: 600;
   letter-spacing: 0.02em;
   color: #fff;
+  line-height: 1.2;
+}
+
+.user-menu-role {
+  margin-top: 0.2rem;
+  font-family: var(--display);
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--blue);
   line-height: 1.2;
 }
 
@@ -421,9 +446,9 @@ body {
 
 /* Compact franchise marks for standings / boards */
 .team-logo-sm {
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 0.28rem;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.35rem;
   object-fit: contain;
   flex: 0 0 auto;
   display: block;
@@ -432,9 +457,9 @@ body {
 }
 
 .team-logo-fallback {
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 0.28rem;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.35rem;
   flex: 0 0 auto;
   display: inline-block;
   object-fit: contain;
@@ -499,7 +524,7 @@ body {
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: linear-gradient(180deg, var(--detail), var(--blue), var(--overtime));
+  background: var(--blue);
 }
 
 .page-hero::after {
@@ -838,6 +863,7 @@ body.auth-page {
   min-height: 100vh;
   margin: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 1.75rem 1rem;

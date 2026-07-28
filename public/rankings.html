@@ -6,14 +6,67 @@
   <title>Power Rankings · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=24" />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=30" />
   <style>
-    .rank-row { display:grid; grid-template-columns: 2.5rem 1fr; gap: 0.75rem; align-items:start; padding: 0.7rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .rank-num { font-family: var(--display); font-size: 1.25rem; font-weight: 700; color: #8eb6ff; }
-    .rank-name { font-weight: 700; color: #fff; }
-    .rank-meta { margin-top: 0.15rem; color: #9a9a9a; font-size: 0.9rem; }
-    .rank-note { margin-top: 0.25rem; color: #c8c8c8; line-height: 1.4; }
+    .rank-board {
+      max-width: 44rem;
+    }
+    .rank-meta-line {
+      margin: 0 0 1.25rem;
+      color: #9a9a9a;
+      font-size: 0.95rem;
+    }
+    .rank-notes {
+      margin: 0 0 1.5rem;
+      color: #c8c8c8;
+      line-height: 1.45;
+    }
+    .rank-row {
+      display: grid;
+      grid-template-columns: 2.75rem 2.5rem minmax(0, 1fr);
+      gap: 0.75rem 0.85rem;
+      align-items: center;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .rank-num {
+      font-family: var(--display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #8eb6ff;
+      text-align: right;
+    }
+    .rank-logo {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.4rem;
+      object-fit: contain;
+      background: #141414;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .rank-name {
+      font-weight: 700;
+      color: #fff;
+      font-size: 1.02rem;
+      line-height: 1.25;
+    }
+    .rank-conf {
+      margin-top: 0.15rem;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .rank-conf.detail { color: var(--detail); }
+    .rank-conf.overtime { color: var(--overtime); }
+    .rank-note {
+      margin-top: 0.3rem;
+      color: #b0b0b0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
     .empty { color: #9a9a9a; }
   </style>
 </head>
@@ -27,35 +80,62 @@
   <section class="page-hero shell">
     <p class="eyebrow">Who’s rising</p>
     <h1>Power Rankings</h1>
-    <p>Commissioner rankings across both conferences.</p>
+    <p>Commissioner rankings 1–24 across Detail and Overtime.</p>
   </section>
   <main class="page-main shell" id="main"><div class="msg">Loading rankings…</div></main>
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=15"></script>
+  <script src="/js/nav.js?v=17"></script>
   <script>
     const esc = (v='') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+    const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
+
+    function confLabel(key) {
+      return key === 'overtime' ? 'Overtime' : 'Detail';
+    }
+
     (async () => {
       try {
-        const res = await fetch('/api/power-rankings', { cache: 'no-store' });
-        const data = await res.json();
+        const [rankRes, leagueRes] = await Promise.all([
+          fetch('/api/power-rankings', { cache: 'no-store' }),
+          fetch('/api/leagues', { cache: 'no-store' })
+        ]);
+        const data = await rankRes.json();
+        const leagues = await leagueRes.json().catch(() => ({}));
+        const logoMap = new Map();
+        for (const conf of leagues.conferences || []) {
+          for (const t of conf.teams || []) {
+            logoMap.set(`${conf.key}:${t.id}`, t.logo || PLACEHOLDER);
+          }
+        }
+
         const latest = data.latest;
         const main = document.getElementById('main');
         if (!latest) {
-          main.innerHTML = `<div class="empty">No power rankings published yet. Commissioner posts them from the Commissioner page.</div>`;
+          main.innerHTML = `<div class="empty">No power rankings published yet. Commissioner posts them from League Tools.</div>`;
           return;
         }
+
+        const ranks = (latest.ranks || []).slice().sort((a, b) => a.rank - b.rank);
         main.innerHTML = `
-          <p style="color:#9a9a9a;margin:0 0 1rem;">Week ${esc(latest.week)} · ${esc(latest.authorName)} · ${esc(new Date(latest.createdAt).toLocaleDateString([], {month:'short', day:'numeric'}))}</p>
-          ${latest.notes ? `<p style="color:#c8c8c8;margin:0 0 1.25rem;line-height:1.45;">${esc(latest.notes)}</p>` : ''}
-          ${(latest.ranks||[]).map(r => `
-            <div class="rank-row">
-              <div class="rank-num">${esc(r.rank)}</div>
-              <div>
-                <div class="rank-name">${esc(r.teamName)}</div>
-                <div class="rank-meta">${esc(r.conferenceKey === 'overtime' ? 'Overtime' : 'Detail')}</div>
-                ${r.note ? `<div class="rank-note">${esc(r.note)}</div>` : ''}
-              </div>
-            </div>`).join('')}`;
+          <div class="rank-board">
+            <p class="rank-meta-line">Week ${esc(latest.week)} · ${esc(ranks.length)} teams · ${esc(latest.authorName)} · ${esc(new Date(latest.createdAt).toLocaleDateString([], {month:'short', day:'numeric'}))}</p>
+            ${latest.notes ? `<p class="rank-notes">${esc(latest.notes)}</p>` : ''}
+            ${ranks.map((r) => {
+              const logo = logoMap.get(`${r.conferenceKey}:${r.teamId}`) || PLACEHOLDER;
+              const conf = r.conferenceKey === 'overtime' ? 'overtime' : 'detail';
+              return `
+                <div class="rank-row">
+                  <div class="rank-num">${esc(r.rank)}</div>
+                  <img class="rank-logo" src="${esc(logo)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
+                  <div>
+                    <div class="rank-name">${esc(r.teamName)}</div>
+                    <div class="rank-conf ${conf}">${esc(confLabel(conf))}</div>
+                    ${r.note ? `<div class="rank-note">${esc(r.note)}</div>` : ''}
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>`;
+        window.GridIronNav?.setSync(`Week ${latest.week} · 1–24`, true);
       } catch (err) {
         document.getElementById('main').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
       }

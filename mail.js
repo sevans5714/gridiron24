@@ -434,10 +434,55 @@ async function sendWeeklyWrapEmail({ to, week, season, title, body, stats, recip
   return { sent: false, method: 'log', previewHtml: content.html };
 }
 
+async function sendRulesSyncAlert({ to, matched, diffs, checkedAt, baseUrl }) {
+  const cfg = mailConfig();
+  const origin = siteBaseUrl(baseUrl);
+  const toolsUrl = `${origin}/league-tools.html#rules-sync`;
+  const when = checkedAt ? new Date(checkedAt).toLocaleString('en-US', { timeZone: 'America/New_York' }) : 'just now';
+  const subject = matched
+    ? 'GridIron 24 · Conferences synced'
+    : `GridIron 24 · Rules out of sync (${(diffs || []).length} differences)`;
+
+  const lines = (diffs || []).slice(0, 20).map((d) => (
+    `• [${d.kind}] ${d.label}: Detail=${d.detail} · Overtime=${d.overtime}`
+  ));
+  const text = matched
+    ? `Detail and Overtime match.\n\nChecked: ${when}\nOfficial scoring on the Scoring page was refreshed.\n\n${toolsUrl}\n`
+    : `Detail and Overtime scoring/lineup/playoff settings differ.\n\nChecked: ${when}\nDifferences (${(diffs || []).length}):\n${lines.join('\n')}\n\nOpen League Tools to fix:\n${toolsUrl}\n`;
+
+  const htmlDiffs = matched
+    ? `<p style="color:#86efac;">Both conferences match. Official scoring was refreshed.</p>`
+    : `<p style="color:#fca5a5;">${(diffs || []).length} difference(s) found.</p>
+       <ul style="color:#c8c8c8;font-size:13px;line-height:1.5;">${lines.map((l) => `<li>${escapeHtml(l.replace(/^• /, ''))}</li>`).join('')}</ul>`;
+
+  const html = `<!DOCTYPE html><html><body style="background:#050505;color:#f2f2f2;font-family:Arial,sans-serif;padding:24px;">
+    <div style="max-width:560px;margin:0 auto;border:1px solid rgba(255,255,255,0.1);background:#0d0d0d;padding:24px;">
+      <h1 style="margin:0 0 12px;font-size:20px;">Rules sync check</h1>
+      <p style="color:#9a9a9a;font-size:13px;">Checked ${escapeHtml(when)} (Eastern)</p>
+      ${htmlDiffs}
+      <p style="margin-top:20px;"><a href="${escapeHtml(toolsUrl)}" style="color:#8eb6ff;">Open League Tools →</a></p>
+    </div>
+  </body></html>`;
+
+  if (cfg.configured) {
+    return sendViaResend({
+      from: cfg.from,
+      apiKey: process.env.RESEND_API_KEY,
+      to,
+      subject,
+      text,
+      html
+    });
+  }
+  console.log(`[rules-sync] ${to}: ${subject}`);
+  return { sent: false, method: 'log' };
+}
+
 module.exports = {
   sendPasswordResetEmail,
   sendInviteEmail,
   sendWeeklyWrapEmail,
+  sendRulesSyncAlert,
   mailConfig,
   buildInviteEmail,
   buildWeeklyWrapEmail,
