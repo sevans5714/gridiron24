@@ -9,6 +9,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/site.css?v=46" />
   <style>
+    body[data-page="payouts"] .page-hero {
+      text-align: center;
+      align-items: center;
+    }
+    body[data-page="payouts"] .page-hero::before {
+      left: 50%;
+      top: 0;
+      bottom: auto;
+      width: min(12rem, 40%);
+      height: 3px;
+      transform: translateX(-50%);
+    }
     body[data-page="payouts"] .page-hero h1 {
       font-size: clamp(2.4rem, 6vw, 3.6rem);
     }
