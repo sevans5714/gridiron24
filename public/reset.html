@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=22" />
+  <link rel="stylesheet" href="/css/site.css?v=24" />
 </head>
 <body class="auth-page">
   <form class="auth-card" id="form">
@@ -21,6 +21,10 @@
     <button class="btn" type="submit" id="submit">Update Password</button>
     <p class="auth-links"><a href="/enter">Back to sign in</a></p>
   </form>
+  <p class="auth-legal">
+    <strong>GridIron 24</strong> is an independent fantasy football league headquarters.
+    Not affiliated with the NFL, ESPN, or any professional sports league.
+  </p>
   <script>
     const token = new URLSearchParams(window.location.search).get('token') || '';
     const form = document.getElementById('form');

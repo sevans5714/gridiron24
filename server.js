@@ -1536,7 +1536,7 @@ const server = http.createServer(async (req, res) => {
       if (inviteToken) {
         const invite = invites.findByToken(inviteToken);
         if (!invite) {
-          return sendJson(res, 400, { ok: false, error: 'Invite link is invalid or expired' });
+          return sendJson(res, 400, { ok: false, error: 'Invite link is invalid or was revoked' });
         }
         inviteEmail = invite.email;
         if (body.email && String(body.email).trim().toLowerCase() !== inviteEmail) {
@@ -1709,7 +1709,7 @@ const server = http.createServer(async (req, res) => {
       const token = String(requestUrl.searchParams.get('token') || '').trim();
       const invite = invites.findByToken(token);
       if (!invite) {
-        return sendJson(res, 404, { ok: false, error: 'Invite link is invalid or expired' });
+        return sendJson(res, 404, { ok: false, error: 'Invite link is invalid or was revoked' });
       }
       return sendJson(res, 200, {
         ok: true,

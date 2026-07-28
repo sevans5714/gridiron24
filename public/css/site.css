@@ -859,10 +859,25 @@ body.auth-page {
   width: min(70vw, 13.5rem);
   height: auto;
   margin: 0 auto 0.85rem;
+  background: transparent;
 }
 .auth-crest.hero {
   width: min(92vw, 28rem);
   margin: 0 auto 0.15rem;
+  background: transparent;
+}
+.auth-legal {
+  margin: 1.35rem 0 0;
+  max-width: 28rem;
+  text-align: center;
+  font-family: var(--body);
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: #6a6a6a;
+}
+.auth-legal strong {
+  color: #8a8a8a;
+  font-weight: 600;
 }
 .auth-title {
   margin: 0 0 0.85rem;

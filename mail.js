@@ -52,7 +52,8 @@ function buildInviteEmail({
   const text =
     `You're invited to ${league}\n\n` +
     `${who} invited you to join GridIron 24 — 24 teams, two conferences, one champion.\n\n` +
-    `Create your account here (invite expires in 14 days):\n${inviteUrl}\n\n` +
+    `Create your account here:\n${inviteUrl}\n\n` +
+    `This link stays active until you join. A commissioner must approve your account before you can sign in.\n\n` +
     `Already have an account? Sign in: ${homeUrl}\n\n` +
     `GridIron 24 HQ · Fantasy Football\n` +
     `If you weren't expecting this email, ignore it.\n`;
@@ -129,8 +130,9 @@ function buildInviteEmail({
           </tr>
           <tr>
             <td align="center" style="padding:12px 36px 8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#8a8a8a;">
-              This invite link expires in <strong style="color:#c8c8c8;">14 days</strong>.
-              After you join, you can sign in anytime at
+              This invite link stays active until you create your account.
+              A commissioner must approve you before you can sign in.
+              After approval, sign in anytime at
               <a href="${escapeHtml(homeUrl)}" style="color:#8eb6ff;text-decoration:underline;">${escapeHtml(homeUrl.replace(/^https?:\/\//, ''))}</a>.
             </td>
           </tr>

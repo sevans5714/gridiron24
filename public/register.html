@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=22" />
+  <link rel="stylesheet" href="/css/site.css?v=24" />
 </head>
 <body class="auth-page">
   <form class="auth-card" id="form" autocomplete="on">
@@ -34,6 +34,11 @@
     <button class="btn" type="submit" id="submit">Create Account</button>
     <p class="auth-links">Already have an account? <a href="/enter">Sign in</a></p>
   </form>
+  <p class="auth-legal">
+    <strong>GridIron 24</strong> is an independent fantasy football league headquarters.
+    Not affiliated with the NFL, ESPN, or any professional sports league.
+    All team names and logos are property of their respective owners.
+  </p>
   <script>
     const form = document.getElementById('form');
     const errEl = document.getElementById('err');
@@ -54,7 +59,7 @@
       const peek = await fetch(`/api/invites/peek?token=${encodeURIComponent(inviteToken)}`, { cache: 'no-store' })
         .then((r) => r.json()).catch(() => ({}));
       if (!peek.ok) {
-        errEl.textContent = peek.error || 'Invite link is invalid or expired';
+        errEl.textContent = peek.error || 'Invite link is invalid or was revoked';
         errEl.classList.add('show');
         submit.disabled = true;
         return;

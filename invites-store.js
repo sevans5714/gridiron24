@@ -4,7 +4,6 @@ const crypto = require('crypto');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const INVITES_FILE = path.join(DATA_DIR, 'invites.json');
-const INVITE_DAYS = 14;
 
 function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -35,6 +34,27 @@ function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
+function makeToken() {
+  return crypto.randomBytes(24).toString('hex');
+}
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function ensureInviteToken(invite) {
+  if (invite.token) {
+    if (!invite.tokenHash) invite.tokenHash = hashToken(invite.token);
+    return invite.token;
+  }
+  // Only mint when no plaintext token is stored. Prefer keeping an existing hash
+  // so previously emailed links keep working when we are not resending.
+  const token = makeToken();
+  invite.token = token;
+  invite.tokenHash = hashToken(token);
+  return token;
+}
+
 function publicInvite(invite) {
   if (!invite) return null;
   return {
@@ -42,19 +62,20 @@ function publicInvite(invite) {
     email: invite.email,
     status: invite.status,
     createdAt: invite.createdAt,
-    expiresAt: invite.expiresAt,
+    expiresAt: invite.expiresAt || null,
     acceptedAt: invite.acceptedAt || null,
     invitedByName: invite.invitedByName || null
   };
 }
 
 function listInvites() {
-  const now = Date.now();
   const store = readStore();
+  // Revive invites that were auto-marked expired — links stay valid until used or revoked.
   let changed = false;
   for (const invite of store.invites) {
-    if (invite.status === 'pending' && Date.parse(invite.expiresAt) < now) {
-      invite.status = 'expired';
+    if (invite.status === 'expired') {
+      invite.status = 'pending';
+      invite.expiresAt = null;
       changed = true;
     }
   }
@@ -74,29 +95,36 @@ function createInvite({ email, invitedBy }) {
 
   const store = readStore();
   const existingIdx = store.invites.findIndex(
-    (i) => i.email === emailKey && i.status === 'pending' && Date.parse(i.expiresAt) > Date.now()
+    (i) => i.email === emailKey && (i.status === 'pending' || i.status === 'expired')
   );
 
-  const token = crypto.randomBytes(24).toString('hex');
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
   if (existingIdx !== -1) {
-    store.invites[existingIdx].tokenHash = tokenHash;
-    store.invites[existingIdx].expiresAt = new Date(Date.now() + INVITE_DAYS * 24 * 60 * 60 * 1000).toISOString();
-    store.invites[existingIdx].invitedById = invitedBy?.id || store.invites[existingIdx].invitedById;
-    store.invites[existingIdx].invitedByName =
-      invitedBy?.name || invitedBy?.loginName || store.invites[existingIdx].invitedByName;
+    const existing = store.invites[existingIdx];
+    existing.status = 'pending';
+    existing.expiresAt = null;
+    // Reuse the same token whenever we still have it so earlier emails stay live.
+    let token = existing.token || null;
+    if (!token) {
+      token = ensureInviteToken(existing);
+    } else if (!existing.tokenHash) {
+      existing.tokenHash = hashToken(token);
+    }
+    existing.invitedById = invitedBy?.id || existing.invitedById;
+    existing.invitedByName =
+      invitedBy?.name || invitedBy?.loginName || existing.invitedByName;
     writeStore(store);
-    return { invite: publicInvite(store.invites[existingIdx]), token, reused: true };
+    return { invite: publicInvite(existing), token, reused: true };
   }
 
+  const token = makeToken();
   const invite = {
     id: crypto.randomUUID(),
     email: emailKey,
-    tokenHash,
+    token,
+    tokenHash: hashToken(token),
     status: 'pending',
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + INVITE_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+    expiresAt: null,
     acceptedAt: null,
     invitedById: invitedBy?.id || null,
     invitedByName: invitedBy?.name || invitedBy?.loginName || null
@@ -107,14 +135,19 @@ function createInvite({ email, invitedBy }) {
 }
 
 function findByToken(token) {
-  const hash = crypto.createHash('sha256').update(String(token || '')).digest('hex');
+  const raw = String(token || '').trim();
+  if (!raw) return null;
+  const hash = hashToken(raw);
   const store = readStore();
-  const invite = store.invites.find((i) => i.tokenHash === hash);
+  const invite = store.invites.find(
+    (i) => i.tokenHash === hash || i.token === raw
+  );
   if (!invite) return null;
-  if (invite.status === 'pending' && Date.parse(invite.expiresAt) < Date.now()) {
-    invite.status = 'expired';
+  // Pending (and formerly expired) invites stay usable until accepted or revoked.
+  if (invite.status === 'expired') {
+    invite.status = 'pending';
+    invite.expiresAt = null;
     writeStore(store);
-    return null;
   }
   if (invite.status !== 'pending') return null;
   return invite;
@@ -123,7 +156,7 @@ function findByToken(token) {
 function acceptInvite(token, email) {
   const invite = findByToken(token);
   if (!invite) {
-    const err = new Error('Invite link is invalid or expired');
+    const err = new Error('Invite link is invalid or was revoked');
     err.status = 400;
     throw err;
   }
@@ -154,14 +187,14 @@ function revokeInvite(id) {
     err.status = 404;
     throw err;
   }
-  if (store.invites[idx].status === 'pending') {
+  if (store.invites[idx].status === 'pending' || store.invites[idx].status === 'expired') {
     store.invites[idx].status = 'revoked';
     writeStore(store);
   }
   return publicInvite(store.invites[idx]);
 }
 
-/** Refresh a pending invite token so the commissioner can resend / copy a new link. */
+/** Resend uses the same token so earlier emails keep working. */
 function refreshInvite(id, invitedBy) {
   const store = readStore();
   const idx = store.invites.findIndex((i) => i.id === id);
@@ -171,23 +204,18 @@ function refreshInvite(id, invitedBy) {
     throw err;
   }
   const invite = store.invites[idx];
-  if (invite.status !== 'pending') {
-    const err = new Error('Only pending invites can be resent');
+  if (invite.status === 'accepted' || invite.status === 'revoked') {
+    const err = new Error('Only open invites can be resent');
     err.status = 400;
     throw err;
   }
-  if (Date.parse(invite.expiresAt) < Date.now()) {
-    invite.status = 'expired';
-    writeStore(store);
-    const err = new Error('Invite has expired — create a new one');
-    err.status = 400;
-    throw err;
+  invite.status = 'pending';
+  invite.expiresAt = null;
+  let token = invite.token || null;
+  if (!token) {
+    // Older invites may only have a hash — mint once and store so future resends stay stable.
+    token = ensureInviteToken(invite);
   }
-
-  const token = crypto.randomBytes(24).toString('hex');
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-  invite.tokenHash = tokenHash;
-  invite.expiresAt = new Date(Date.now() + INVITE_DAYS * 24 * 60 * 60 * 1000).toISOString();
   if (invitedBy) {
     invite.invitedById = invitedBy.id || invite.invitedById;
     invite.invitedByName = invitedBy.name || invitedBy.loginName || invite.invitedByName;
