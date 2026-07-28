@@ -62,11 +62,12 @@
     .section-head h2 {
       margin: 0;
       font-family: var(--display);
-      font-size: clamp(1.1rem, 2.1vw, 1.35rem);
+      font-size: clamp(1rem, 2vw, 1.2rem);
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: #fff;
+      line-height: 1.1;
     }
     .section-head a,
     .section-head .hint {
@@ -110,13 +111,14 @@
       padding-right: 1.2rem;
     }
     .hq-board .section-head {
-      margin: 0 0 1rem;
-      padding: 0.9rem 1.2rem;
+      margin: 0 0 0.85rem;
+      padding: 0.45rem 1.05rem;
       border-bottom: 1px solid rgba(47, 109, 255, 0.28);
       background:
         radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
         linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
       position: relative;
+      align-items: center;
     }
     .hq-board .section-head::before {
       content: "";
@@ -411,13 +413,14 @@
     }
     .news-block .section-head,
     .board-block .section-head {
-      margin: 0 0 1rem;
-      padding: 0.9rem 1.2rem;
+      margin: 0 0 0.85rem;
+      padding: 0.45rem 1.05rem;
       border-bottom: 1px solid rgba(47, 109, 255, 0.28);
       background:
         radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
         linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
       position: relative;
+      align-items: center;
     }
     .news-block .section-head::before,
     .board-block .section-head::before {
@@ -598,7 +601,6 @@
         <section class="hq-section">
           <div class="section-head">
             <h2>Standings</h2>
-            <a href="/standings.html">Full →</a>
           </div>
           <div class="standings-preview" id="standings">
             <div class="msg">Loading standings…</div>
@@ -610,7 +612,6 @@
         <section class="hq-section">
           <div class="section-head">
             <h2>Matchup of the Week</h2>
-            <a href="/schedules.html">Schedules →</a>
           </div>
           <div class="motw-col" id="motw">
             <div class="msg">Loading matchups…</div>
@@ -703,7 +704,7 @@
       teams.forEach((t, i) => {
         const rank = i + 1;
         if (rank === 7) {
-          bodyRows.push(`<tr class="cut-line"><td colspan="4">Playoff cut · 7–12 out · tiebreaker: PF</td></tr>`);
+          bodyRows.push(`<tr class="cut-line"><td colspan="4"></td></tr>`);
         }
         bodyRows.push(`
           <tr class="${rank > 6 ? 'out' : ''}">
