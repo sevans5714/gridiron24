@@ -1709,11 +1709,83 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/users' && req.method === 'GET') {
       if (!requireCommissioner(req, res)) return;
+      const claims = logos.listClaims();
+      const claimByUser = new Map(claims.map((c) => [c.userId, c]));
+      let teamsByConference = {};
+      try {
+        const leagues = await Promise.all(
+          config.conferences.map(async (conference) => {
+            try {
+              const league = await fetchEspnLeague(conference);
+              return {
+                key: conference.key,
+                name: conference.name,
+                teams: (league.teams || []).map((t) => ({
+                  id: t.id,
+                  name: t.name,
+                  owner: t.owner || null
+                }))
+              };
+            } catch {
+              return { key: conference.key, name: conference.name, teams: [] };
+            }
+          })
+        );
+        for (const league of leagues) teamsByConference[league.key] = league;
+      } catch { /* ignore */ }
+
       return sendJson(res, 200, {
         ok: true,
-        users: users.listUsers(),
-        conferences: config.conferences.map((c) => ({ key: c.key, name: c.name }))
+        users: users.listUsers().map((u) => ({
+          ...u,
+          claim: claimByUser.get(u.id) || null
+        })),
+        claims,
+        conferences: config.conferences.map((c) => ({
+          key: c.key,
+          name: c.name,
+          teams: (teamsByConference[c.key]?.teams) || []
+        }))
       });
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/team') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/team'.length);
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const target = users.findById(userId);
+        if (!target) return sendJson(res, 404, { ok: false, error: 'User not found' });
+
+        if (body.clear || body.conferenceKey === '' || body.teamId === '' || body.teamId == null) {
+          logos.unassignTeam(userId);
+          return sendJson(res, 200, { ok: true, claim: null, user: users.publicUser(target) });
+        }
+
+        const conferenceKey = String(body.conferenceKey || '').trim();
+        const teamId = Number(body.teamId);
+        let teamName = String(body.teamName || '').trim();
+        if (!teamName) {
+          try {
+            const conference = config.conferences.find((c) => c.key === conferenceKey);
+            if (conference) {
+              const league = await fetchEspnLeague(conference);
+              const found = (league.teams || []).find((t) => Number(t.id) === teamId);
+              if (found) teamName = found.name;
+            }
+          } catch { /* ignore */ }
+        }
+        const claim = logos.assignTeam(userId, conferenceKey, teamId, teamName, admin.id);
+        return sendJson(res, 200, { ok: true, claim, user: users.publicUser(target) });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not assign team' });
+      }
     }
 
     if (pathname.startsWith('/api/users/') && pathname.endsWith('/role') && req.method === 'POST') {
@@ -2068,6 +2140,17 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(302, { Location: '/home.html' });
         return res.end();
       }
+      res.writeHead(302, { Location: '/profile.html#profile-admin' });
+      return res.end();
+    }
+
+    if (pathname === '/team-logo.html') {
+      res.writeHead(302, { Location: '/profile.html#logo' });
+      return res.end();
+    }
+
+    if (pathname === '/profile.html' || pathname === '/profile') {
+      return sendFile(res, path.join(PUBLIC_DIR, 'profile.html'));
     }
 
     if (pathname === '/api/leagues') {
@@ -2089,12 +2172,27 @@ const server = http.createServer(async (req, res) => {
             const league = await fetchEspnLeague(conference);
             const found = (league.teams || []).find((t) => Number(t.id) === Number(claim.teamId));
             if (found) {
+              const rank = (league.teams || []).findIndex((t) => Number(t.id) === Number(found.id)) + 1;
               team = {
                 id: found.id,
                 name: found.name,
                 espnName: found.espnName || found.name,
+                abbreviation: found.abbreviation || '',
                 logo: found.logo || null,
-                conferenceKey: claim.conferenceKey
+                conferenceKey: claim.conferenceKey,
+                conferenceName: conference.name,
+                wins: found.wins ?? 0,
+                losses: found.losses ?? 0,
+                ties: found.ties ?? 0,
+                pointsFor: found.pointsFor ?? 0,
+                pointsAgainst: found.pointsAgainst ?? 0,
+                pointsPerGame: found.pointsPerGame ?? 0,
+                playoffSeed: found.playoffSeed ?? 0,
+                waiverRank: found.waiverRank ?? 0,
+                streakType: found.streakType || 'NONE',
+                streakLength: found.streakLength ?? 0,
+                standingRank: rank || null,
+                teamCount: (league.teams || []).length
               };
             }
           }
@@ -2119,14 +2217,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/my-team/claim' && req.method === 'POST') {
-      try {
-        const user = getSessionUser(req);
-        const body = await readJsonBody(req);
-        const claim = logos.claimTeam(user.id, body.conferenceKey, body.teamId, body.teamName);
-        return sendJson(res, 200, { ok: true, claim });
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not claim team' });
-      }
+      return sendJson(res, 403, {
+        ok: false,
+        error: 'Teams are assigned by the commissioner. Ask them to link your franchise.'
+      });
     }
 
     if (pathname === '/api/my-team/name' && req.method === 'POST') {

@@ -74,15 +74,21 @@ function getClaimForTeam(conferenceKey, teamId) {
   return readStore().claims.find((c) => c.conferenceKey === conf && Number(c.teamId) === id) || null;
 }
 
-function claimTeam(userId, conferenceKey, teamId, teamName = '') {
+function listClaims() {
+  return readStore().claims.slice();
+}
+
+/** Assign a franchise to a user. One team per user; team cannot be owned by someone else. */
+function assignTeam(userId, conferenceKey, teamId, teamName = '', assignedBy = null) {
   const conf = normalizeConference(conferenceKey);
   const id = Number(teamId);
+  if (!userId) throw Object.assign(new Error('User is required'), { status: 400 });
   if (!conf) throw Object.assign(new Error('Pick Detail or Overtime'), { status: 400 });
   if (!Number.isFinite(id) || id <= 0) throw Object.assign(new Error('Pick a team'), { status: 400 });
 
   const data = readStore();
   const taken = data.claims.find((c) => c.conferenceKey === conf && Number(c.teamId) === id && c.userId !== userId);
-  if (taken) throw Object.assign(new Error('That team is already claimed by another owner'), { status: 409 });
+  if (taken) throw Object.assign(new Error('That team is already assigned to another member'), { status: 409 });
 
   data.claims = data.claims.filter((c) => c.userId !== userId);
   data.claims.push({
@@ -90,10 +96,28 @@ function claimTeam(userId, conferenceKey, teamId, teamName = '') {
     conferenceKey: conf,
     teamId: id,
     teamName: String(teamName || '').trim(),
-    claimedAt: new Date().toISOString()
+    claimedAt: new Date().toISOString(),
+    assignedBy: assignedBy || null
   });
   writeStore(data);
   return getClaimForUser(userId);
+}
+
+function unassignTeam(userId) {
+  if (!userId) throw Object.assign(new Error('User is required'), { status: 400 });
+  const data = readStore();
+  const before = data.claims.length;
+  data.claims = data.claims.filter((c) => c.userId !== userId);
+  if (data.claims.length === before) {
+    throw Object.assign(new Error('No team assigned to that member'), { status: 404 });
+  }
+  writeStore(data);
+  return true;
+}
+
+/** @deprecated Use assignTeam — kept for internal callers */
+function claimTeam(userId, conferenceKey, teamId, teamName = '') {
+  return assignTeam(userId, conferenceKey, teamId, teamName, null);
 }
 
 function getLogo(conferenceKey, teamId) {
@@ -125,7 +149,7 @@ function setIconLogo(userId, conferenceKey, teamId, iconId) {
 
   const claim = getClaimForUser(userId);
   if (!claim || claim.conferenceKey !== conf || Number(claim.teamId) !== id) {
-    throw Object.assign(new Error('Claim this team before setting a logo'), { status: 403 });
+    throw Object.assign(new Error('No team assigned — ask your commissioner to link your franchise'), { status: 403 });
   }
 
   const data = readStore();
@@ -150,7 +174,7 @@ function setUploadLogo(userId, conferenceKey, teamId, { buffer, mimeType, width,
 
   const claim = getClaimForUser(userId);
   if (!claim || claim.conferenceKey !== conf || Number(claim.teamId) !== id) {
-    throw Object.assign(new Error('Claim this team before setting a logo'), { status: 403 });
+    throw Object.assign(new Error('No team assigned — ask your commissioner to link your franchise'), { status: 403 });
   }
 
   const ext = LOGO_SPECS.mimeTypes[mimeType];
@@ -201,7 +225,7 @@ function clearLogo(userId, conferenceKey, teamId) {
   const id = Number(teamId);
   const claim = getClaimForUser(userId);
   if (!claim || claim.conferenceKey !== conf || Number(claim.teamId) !== id) {
-    throw Object.assign(new Error('Claim this team before clearing a logo'), { status: 403 });
+    throw Object.assign(new Error('No team assigned — ask your commissioner to link your franchise'), { status: 403 });
   }
   const data = readStore();
   const prev = data.logos.find((l) => l.conferenceKey === conf && Number(l.teamId) === id);
@@ -233,7 +257,7 @@ function setDisplayName(userId, conferenceKey, teamId, displayName) {
 
   const claim = getClaimForUser(userId);
   if (!claim || claim.conferenceKey !== conf || Number(claim.teamId) !== id) {
-    throw Object.assign(new Error('Claim this team before renaming'), { status: 403 });
+    throw Object.assign(new Error('Your commissioner must assign this team before you can rename it'), { status: 403 });
   }
 
   const data = readStore();
@@ -283,6 +307,9 @@ module.exports = {
   UPLOAD_DIR,
   getClaimForUser,
   getClaimForTeam,
+  listClaims,
+  assignTeam,
+  unassignTeam,
   claimTeam,
   getLogo,
   logoUrl,

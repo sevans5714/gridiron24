@@ -263,9 +263,12 @@ body {
   overflow: hidden;
   display: grid;
   place-items: center;
+  text-decoration: none;
+  color: inherit;
 }
 
-.user-avatar-btn:hover {
+.user-avatar-btn:hover,
+.user-avatar-btn.is-active {
   border-color: rgba(255,255,255,0.45);
 }
 

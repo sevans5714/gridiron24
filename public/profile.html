@@ -1,0 +1,2330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profile · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=21" />
+  <style>
+    body[data-page="profile"] .page-hero {
+      padding-top: 1.5rem;
+      padding-bottom: 1.15rem;
+    }
+    body[data-page="profile"] .page-hero::before,
+    body[data-page="profile"] .page-hero::after {
+      display: none;
+    }
+    body[data-page="profile"] .page-main {
+      padding-top: 0.85rem;
+      padding-bottom: 3rem;
+    }
+
+    .comm-layout {
+      display: grid;
+      grid-template-columns: 11.5rem minmax(0, 1fr);
+      gap: 2rem 2.5rem;
+      align-items: start;
+    }
+    .comm-nav {
+      position: sticky;
+      top: 4.5rem;
+      display: grid;
+      gap: 1.15rem;
+      padding: 0;
+    }
+    .comm-nav-group {
+      display: grid;
+      gap: 0.35rem;
+    }
+    .comm-nav-label {
+      margin: 0 0 0.15rem;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6e6e6e;
+    }
+    .comm-nav a {
+      font-family: var(--display);
+      font-size: 0.84rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #9a9a9a;
+      text-decoration: none;
+      line-height: 1.35;
+    }
+    .comm-nav a:hover { color: #fff; }
+    .comm-nav a[hidden],
+    .comm-nav-group[hidden] { display: none !important; }
+
+    .comm-groups {
+      display: grid;
+      gap: 2.75rem;
+      min-width: 0;
+    }
+    .comm-group {
+      margin: 0;
+      padding: 0;
+      scroll-margin-top: 5rem;
+    }
+    .comm-group > header {
+      margin: 0 0 1.35rem;
+      padding-bottom: 0.7rem;
+      border-bottom: 2px solid rgba(255,255,255,0.14);
+    }
+    .comm-group > header h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.25rem, 2.4vw, 1.55rem);
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .comm-group > header p {
+      margin: 0.4rem 0 0;
+      max-width: 40rem;
+      color: #8a8a8a;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .comm-group-body {
+      display: grid;
+      gap: 2.15rem;
+    }
+
+    .comm-section {
+      margin: 0;
+      padding: 0;
+      scroll-margin-top: 5rem;
+    }
+    .comm-section > .section-head,
+    .admin-block > .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin: 0 0 0.45rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .comm-section > .section-head h2,
+    .admin-block > .section-head h2,
+    .comm-section > .section-head h3,
+    .admin-block > .section-head h3 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #ddd;
+    }
+    .comm-section .help {
+      margin: 0 0 0.95rem;
+      max-width: 44rem;
+      color: #9a9a9a;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .comm-section .help a {
+      color: #8eb6ff;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .comm-section .help a:hover { text-decoration: underline; }
+
+    /* Override shared boxed admin styles on this page */
+    body[data-page="profile"] .admin-block {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      scroll-margin-top: 5rem;
+    }
+    body[data-page="profile"] .admin-block h2,
+    body[data-page="profile"] .admin-block h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      letter-spacing: 0.06em;
+    }
+    body[data-page="profile"] .admin-block .help {
+      margin: 0 0 0.95rem;
+      max-width: 44rem;
+      font-size: 0.92rem;
+    }
+    body[data-page="profile"] .status-note {
+      margin: 0 0 0.85rem;
+      padding: 0;
+      border: 0;
+      background: none;
+    }
+    body[data-page="profile"] .status-note.show {
+      display: block;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    body[data-page="profile"] .status-note.ok { color: #86efac; }
+    body[data-page="profile"] .status-note.err { color: #fca5a5; }
+    body[data-page="profile"] .field {
+      border: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.22);
+      background: transparent;
+      border-radius: 0;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    body[data-page="profile"] .field:focus {
+      border-bottom-color: #fff;
+    }
+    body[data-page="profile"] .data-table {
+      border: 0;
+      background: none;
+    }
+    body[data-page="profile"] .data-table th {
+      background: none;
+      padding-left: 0;
+      padding-right: 0.75rem;
+    }
+    body[data-page="profile"] .data-table td {
+      padding-left: 0;
+      padding-right: 0.75rem;
+      border-bottom-color: rgba(255,255,255,0.06);
+    }
+    body[data-page="profile"] .data-table select {
+      background: transparent;
+      color: #fff;
+      border: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.28);
+      border-radius: 0;
+      padding: 0.35rem 0;
+      max-width: 16rem;
+    }
+
+    .sync-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 1.15rem;
+    }
+    .sync-tools .hint {
+      color: #8a8a8a;
+      font-size: 0.88rem;
+    }
+
+    .status-bar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem 1.5rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding: 0 0 1.15rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .conf {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+    .conf.right { justify-content: flex-end; text-align: right; }
+    .conf img {
+      width: 3.25rem;
+      height: auto;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+    }
+    .conf .name {
+      font-family: var(--display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      line-height: 1.15;
+    }
+    .conf.detail .name { color: var(--detail); }
+    .conf.overtime .name { color: var(--overtime); }
+    .conf .meta {
+      margin-top: 0.2rem;
+      color: #8a8a8a;
+      font-size: 0.82rem;
+    }
+    .sync-badge { text-align: center; min-width: 9rem; }
+    .sync-badge .label {
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .sync-badge .label.ok { color: #22c55e; }
+    .sync-badge .label.warn { color: #ef4444; }
+    .sync-badge .sub {
+      margin-top: 0.25rem;
+      color: #8a8a8a;
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat span {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .stat strong {
+      display: block;
+      margin-top: 0.3rem;
+      font-family: var(--display);
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #fff;
+    }
+    .stat strong.detail { color: var(--detail); }
+    .stat strong.overtime { color: var(--overtime); }
+
+    .diff-section { margin-bottom: 1.5rem; }
+    .diff-section h3 {
+      margin: 0 0 0.55rem;
+      font-family: var(--display);
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #b0b0b0;
+    }
+    .diff-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .diff-table th,
+    .diff-table td {
+      padding: 0.65rem 0.75rem 0.65rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      text-align: left;
+      font-size: 0.92rem;
+    }
+    .diff-table th {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .diff-table th.num,
+    .diff-table td.num { text-align: right; }
+    .diff-table td.num {
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .diff-table td.num.detail { color: var(--detail); }
+    .diff-table td.num.overtime { color: var(--overtime); }
+    .diff-table td.action {
+      color: #f0d78c;
+      font-weight: 600;
+      white-space: nowrap;
+      text-align: right;
+    }
+    .diff-table tr:last-child td { border-bottom: 0; }
+    .diff-table .item { font-weight: 600; color: #eee; }
+
+    .sync-box {
+      margin-bottom: 1.35rem;
+      padding: 0 0 1.1rem;
+      border-bottom: 1px solid rgba(255,184,74,0.2);
+    }
+    .sync-box strong {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #f0d78c;
+    }
+    .sync-box p {
+      margin: 0 0 0.65rem;
+      color: #9a9a9a;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      max-width: 44rem;
+    }
+    .sync-box ol {
+      margin: 0;
+      padding-left: 1.15rem;
+      color: #ddd;
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    .sync-box li { margin: 0.3rem 0; }
+    .sync-box a { color: #8eb6ff; font-weight: 600; }
+
+    .ok-line {
+      margin: 0 0 1.25rem;
+      color: #86efac;
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+    .ok-line strong {
+      display: block;
+      margin-bottom: 0.2rem;
+      font-family: var(--display);
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .playoff-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 0.85rem;
+      font-family: var(--display);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .playoff-badge.ok { color: #22c55e; }
+    .playoff-badge.warn { color: #ef4444; }
+    .playoff-badge .dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .playoff-table .hint-cell {
+      color: #8a8a8a;
+      font-size: 0.82rem;
+      font-weight: 400;
+    }
+    .playoff-table tr.is-mismatch td.num {
+      color: #fca5a5 !important;
+    }
+    .playoff-table tr.is-mismatch td.item {
+      color: #fca5a5;
+    }
+    .playoff-table tr.is-off-target td.target-cell {
+      color: #f0d78c;
+    }
+    .playoff-checklist {
+      margin: 0.85rem 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.35rem;
+    }
+    .playoff-checklist li {
+      color: #b0b0b0;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+    .playoff-checklist li::before {
+      content: "→ ";
+      color: #8eb6ff;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem 1.35rem;
+      margin-top: 0.35rem;
+    }
+    .links a {
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+      text-decoration: none;
+    }
+    .links a:hover { color: #fff; }
+
+    .role-pill {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #9a9a9a;
+    }
+    .role-pill.commissioner { color: #f0d78c; }
+    .role-pill.conference_admin { color: #8eb6ff; }
+    .muted-sm { color: #8a8a8a; font-size: 0.78rem; }
+
+    .invite-links {
+      margin: 0.85rem 0 1.15rem;
+      display: grid;
+      gap: 1rem;
+    }
+    .invite-links-head {
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .invite-link-row {
+      display: grid;
+      gap: 0.4rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .invite-link-row:first-of-type { border-top: 0; padding-top: 0; }
+    .invite-link-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 0.75rem;
+      align-items: baseline;
+    }
+    .invite-link-meta strong { color: #fff; }
+    .invite-link-meta span { color: #8a8a8a; font-size: 0.88rem; }
+    .invite-url {
+      display: block;
+      padding: 0.35rem 0;
+      color: #b8c9ef;
+      font-size: 0.82rem;
+      word-break: break-all;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .invite-link-actions,
+    .invite-row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1rem;
+      align-items: center;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: #fff;
+      border-color: rgba(255,255,255,0.35);
+    }
+    .btn-secondary:hover {
+      border-color: #fff;
+    }
+
+    body[data-page="profile"] .msg {
+      padding: 0.85rem 0;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    .stack-form { margin-bottom: 1.15rem; }
+    .list-gap { margin-top: 1.15rem; }
+
+    @media (max-width: 900px) {
+      .comm-layout {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+      }
+      .comm-nav {
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.5rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      .comm-nav-group { gap: 0.25rem; }
+      .status-bar { grid-template-columns: 1fr; text-align: center; }
+      .conf, .conf.right { justify-content: center; text-align: center; }
+      .summary { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .summary { grid-template-columns: 1fr; }
+      .data-table th:nth-child(2),
+      .data-table td:nth-child(2) { display: none; }
+    }
+  </style>
+  <style>
+
+    .profile-jump {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem 1.15rem;
+      margin: 0 0 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .profile-jump a {
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9a9a9a;
+      text-decoration: none;
+    }
+    .profile-jump a:hover { color: #fff; }
+    .profile-card {
+      margin: 0 0 2.5rem;
+      scroll-margin-top: 5rem;
+    }
+    .profile-card > .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: 0 0 0.85rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid rgba(255,255,255,0.12);
+    }
+    .profile-card > .section-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .profile-hero-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.25rem 1.5rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .profile-avatar {
+      width: 5.5rem;
+      height: 5.5rem;
+      border-radius: 0.85rem;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: #111;
+      display: grid;
+      place-items: center;
+    }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .profile-avatar .ph {
+      font-family: var(--display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .profile-meta h3 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.45rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .profile-meta .sub { margin-top: 0.3rem; color: #9a9a9a; font-size: 0.95rem; }
+    .profile-meta .pill {
+      display: inline-block;
+      margin-top: 0.55rem;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f0d78c;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.85rem 1.25rem;
+      margin: 1rem 0 1.25rem;
+    }
+    .stat-grid .stat span {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .stat-grid .stat strong {
+      display: block;
+      margin-top: 0.25rem;
+      font-family: var(--display);
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .name-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      max-width: 28rem;
+    }
+    .name-row input {
+      flex: 1;
+      min-width: 12rem;
+      padding: 0.55rem 0;
+      border: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.22);
+      background: transparent;
+      color: #fff;
+      font-family: var(--body);
+      font-size: 1rem;
+    }
+    .name-row input:focus { outline: 0; border-bottom-color: #fff; }
+    .profile-note {
+      margin: 0.75rem 0 0;
+      color: #9a9a9a;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      max-width: 40rem;
+    }
+    .profile-note.ok { color: #86efac; }
+    .profile-note.err { color: #fca5a5; }
+    .logo-layout {
+      display: grid;
+      grid-template-columns: minmax(12rem, 15rem) 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    .logo-side .preview {
+      width: 100%;
+      aspect-ratio: 1;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0c0c0c;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      margin-bottom: 0.85rem;
+      border-radius: 0.75rem;
+    }
+    .logo-side .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .logo-side .preview .ph { color: #8a8a8a; font-size: 0.85rem; text-align: center; padding: 1rem; }
+    .logo-main {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+    .logo-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: end;
+      justify-content: space-between;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .logo-bar .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; flex: 1; }
+    .logo-bar .filters > div { min-width: 8rem; flex: 1; }
+    .logo-bar label {
+      display: block;
+      margin: 0 0 0.3rem;
+      color: #8a8a8a;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .logo-bar select, .logo-bar input[type="search"] {
+      width: 100%;
+      padding: 0.5rem 0.55rem;
+      border: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.22);
+      background: transparent;
+      color: #fff;
+      font-family: var(--body);
+      font-size: 0.9rem;
+    }
+    .icon-count { color: #8a8a8a; font-size: 0.78rem; font-weight: 600; padding-bottom: 0.45rem; }
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+      gap: 0.45rem;
+      padding: 0.85rem;
+      max-height: min(52vh, 36rem);
+      overflow: auto;
+    }
+    .icon-card {
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0c0c0c;
+      color: #9a9a9a;
+      padding: 0.3rem;
+      cursor: pointer;
+      text-align: center;
+    }
+    .icon-card:hover { border-color: rgba(255,255,255,0.35); }
+    .icon-card.selected { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+    .icon-card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+      border-radius: 0.45rem;
+    }
+    .icon-card span {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.62rem;
+      color: #8a8a8a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .upload-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .upload-row .hint { color: #8a8a8a; font-size: 0.8rem; }
+    .upload-row.over { outline: 1px dashed var(--blue); outline-offset: -4px; }
+    .file-btn {
+      appearance: none;
+      border: 1px solid #fff;
+      background: transparent;
+      color: #fff;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.55rem 0.8rem;
+      cursor: pointer;
+    }
+    .profile-actions { margin-top: 1.5rem; }
+    #profile-admin { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(255,255,255,0.12); }
+    @media (max-width: 900px) {
+      .stat-grid { grid-template-columns: 1fr 1fr; }
+      .logo-layout { grid-template-columns: 1fr; }
+      .profile-hero-row { grid-template-columns: 1fr; }
+    }
+
+  </style>
+</head>
+<body data-page="profile">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Loading…</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell">
+    <p class="eyebrow">Account</p>
+    <h1>Your Profile</h1>
+    <p>Franchise, logo, and league tools for commissioners.</p>
+  </section>
+
+  <main class="page-main shell">
+    <nav class="profile-jump" aria-label="Profile sections">
+      <a href="#franchise">Franchise</a>
+      <a href="#logo">Logo</a>
+      <a href="#profile-admin" id="jump-admin" hidden>League Tools</a>
+    </nav>
+
+    <section class="profile-card" id="franchise">
+      <div class="section-head"><h2>Your Franchise</h2></div>
+      <div id="franchise-body"><div class="msg">Loading…</div></div>
+    </section>
+
+    <section class="profile-card" id="logo">
+      <div class="section-head"><h2>Team Logo</h2></div>
+      <div id="logo-body"><div class="msg">Loading…</div></div>
+    </section>
+
+    <section class="profile-actions">
+      <button type="button" class="btn btn-secondary" id="profile-logout">Log Out</button>
+    </section>
+
+    <section id="profile-admin" hidden>
+      <div class="section-head" style="margin-bottom:1.25rem;padding-bottom:0.55rem;border-bottom:2px solid rgba(255,255,255,0.14);">
+        <h2 style="margin:0;font-family:var(--display);font-size:clamp(1.25rem,2.4vw,1.55rem);font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#fff;">League Tools</h2>
+        <p style="margin:0.4rem 0 0;color:#8a8a8a;font-size:0.92rem;">Commissioner and conference admin controls.</p>
+      </div>
+      <div class="comm-layout">
+      <nav class="comm-nav" aria-label="Commissioner sections">
+        <div class="comm-nav-group">
+          <p class="comm-nav-label">ESPN</p>
+          <a href="#rules-sync">Rules</a>
+          <a href="#playoff-sync">Playoffs</a>
+        </div>
+        <div class="comm-nav-group" id="nav-people" hidden>
+          <p class="comm-nav-label">People</p>
+          <a href="#invites-admin" id="jump-invites" hidden>Invites</a>
+          <a href="#members" id="jump-members" hidden>Members</a>
+        </div>
+        <div class="comm-nav-group" id="nav-comms">
+          <p class="comm-nav-label">Comms</p>
+          <a href="#news-admin">News</a>
+          <a href="#ticker-admin">Ticker</a>
+          <a href="#wrap-admin" id="jump-wrap" hidden>Wrap-Up</a>
+        </div>
+        <div class="comm-nav-group" id="nav-season" hidden>
+          <p class="comm-nav-label">Season</p>
+          <a href="#calendar-admin" id="jump-calendar" hidden>Calendar</a>
+          <a href="#rankings-admin" id="jump-rankings" hidden>Rankings</a>
+        </div>
+      </nav>
+
+      <div class="comm-groups">
+        <section class="comm-group" id="group-espn">
+          <header>
+            <h2>ESPN Sync</h2>
+            <p>Detail is the source of truth. Match Overtime until both read synced.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="comm-section" id="rules-sync">
+              <div class="section-head">
+                <h3>Rules Sync</h3>
+              </div>
+              <p class="help">Scoring, lineup, and playoff settings from ESPN.</p>
+              <div class="sync-tools">
+                <span class="hint">Live pull from both leagues</span>
+                <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
+              </div>
+              <div id="content"><div class="msg">Loading conference settings…</div></div>
+            </section>
+
+            <section class="comm-section" id="playoff-sync">
+              <div class="section-head">
+                <h3>Playoff Sync</h3>
+              </div>
+              <p class="help">Target: 13 regular-season weeks, 6 teams, reseed on, Weeks 14–16 bracket, Week 17 Bowl.</p>
+              <div id="playoff-content"><div class="msg">Loading playoff settings…</div></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="comm-group" id="group-people" hidden>
+          <header>
+            <h2>People</h2>
+            <p>Invite managers and set access roles.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="admin-block" id="invites-admin" hidden>
+              <div class="section-head">
+                <h3>Email Invites</h3>
+              </div>
+              <p class="help">Send invite links by email. If mail is offline, copy the link. <a href="/api/invites/preview-email" target="_blank" rel="noopener">Preview email</a></p>
+              <div class="status-note" id="invites-mail-status" role="status"></div>
+              <div class="status-note" id="invites-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="invite-emails" type="text" maxlength="800" placeholder="email@example.com, another@example.com" />
+                <button type="button" class="btn" id="invite-send">Send Invites</button>
+              </div>
+              <div id="invite-links" class="invite-links" hidden></div>
+              <div class="list-gap" id="invites-list"><div class="msg">Loading invites…</div></div>
+            </section>
+
+            <section class="admin-block" id="members" hidden>
+              <div class="section-head">
+                <h3>Member Access</h3>
+              </div>
+              <p class="help">Assign each member a franchise and set access roles.</p>
+              <div class="status-note" id="members-msg" role="status"></div>
+              <div id="members-list"><div class="msg">Loading members…</div></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="comm-group" id="group-comms">
+          <header>
+            <h2>Communications</h2>
+            <p>What members see on Home and in the ticker.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="admin-block" id="news-admin" hidden>
+              <div class="section-head">
+                <h3>League News</h3>
+              </div>
+              <p class="help">Posts appear on the Home page.</p>
+              <div class="status-note" id="news-msg" role="status"></div>
+              <div class="stack-form">
+                <div>
+                  <label class="field-label" for="news-title">Headline</label>
+                  <input class="field" id="news-title" type="text" maxlength="120" placeholder="Headline" />
+                </div>
+                <div>
+                  <label class="field-label" for="news-body">Details</label>
+                  <textarea class="field field-area" id="news-body" maxlength="8000" placeholder="News details…"></textarea>
+                </div>
+                <div class="btn-row">
+                  <button type="button" class="btn" id="news-add">Post News</button>
+                </div>
+              </div>
+              <div id="news-admin-list"><div class="msg">Loading news…</div></div>
+            </section>
+
+            <section class="admin-block" id="ticker-admin" hidden>
+              <div class="section-head">
+                <h3>Ticker</h3>
+              </div>
+              <p class="help">Custom lines mixed with ESPN NFL headlines.</p>
+              <div class="status-note" id="ticker-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="ticker-input" type="text" maxlength="240" placeholder="Add a custom ticker message" />
+                <button type="button" class="btn" id="ticker-add">Add</button>
+              </div>
+              <div class="list-gap" id="ticker-list"><div class="msg">Loading ticker…</div></div>
+            </section>
+
+            <section class="admin-block" id="wrap-admin" hidden>
+              <div class="section-head">
+                <h3>Weekly Wrap-Up</h3>
+              </div>
+              <p class="help">Generate a Week N wrap from ESPN scores, post to News, and email managers. Needs an AI API key for custom copy.</p>
+              <div class="status-note" id="wrap-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="wrap-week" type="number" min="1" max="17" placeholder="Week (blank = auto)" style="max-width:11rem;" />
+                <button type="button" class="btn btn-secondary" id="wrap-preview">Preview</button>
+                <button type="button" class="btn btn-secondary" id="wrap-preview-email">Email HTML</button>
+                <button type="button" class="btn" id="wrap-send">Generate &amp; Send</button>
+              </div>
+              <p class="help" id="wrap-meta" style="margin-top:0.75rem;"></p>
+              <div id="wrap-preview-body" class="list-gap"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="comm-group" id="group-season" hidden>
+          <header>
+            <h2>Season</h2>
+            <p>League calendar and power rankings.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="admin-block" id="calendar-admin" hidden>
+              <div class="section-head"><h3>League Calendar</h3></div>
+              <p class="help">Dates shown on the Calendar page.</p>
+              <div class="status-note" id="calendar-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="cal-title" type="text" maxlength="120" placeholder="Event title" />
+                <input class="field" id="cal-date" type="date" style="max-width:11rem;" />
+                <select class="field" id="cal-type" style="max-width:9rem;">
+                  <option value="event">Event</option>
+                  <option value="draft">Draft</option>
+                  <option value="dues">Dues</option>
+                  <option value="deadline">Deadline</option>
+                  <option value="bowl">Bowl</option>
+                </select>
+                <button type="button" class="btn" id="cal-add">Add</button>
+              </div>
+              <div class="list-gap" id="calendar-list"></div>
+            </section>
+
+            <section class="admin-block" id="rankings-admin" hidden>
+              <div class="section-head"><h3>Power Rankings</h3></div>
+              <p class="help">One team per line: <code>conference|teamId|teamName|note</code> — or fill from standings.</p>
+              <div class="status-note" id="rankings-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="rank-week" type="number" min="1" max="17" placeholder="Week" style="max-width:7rem;" />
+                <button type="button" class="btn btn-secondary" id="rank-fill">Fill from standings</button>
+                <button type="button" class="btn" id="rank-save">Publish</button>
+              </div>
+              <textarea class="field field-area" id="rank-lines" placeholder="detail|1|Team Name|Looking sharp" style="margin-top:0.75rem;min-height:10rem;"></textarea>
+              <div class="list-gap" id="rankings-list"></div>
+            </section>
+          </div>
+        </section>
+      </div>
+    </div>
+    </section>
+  </main>
+
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <script src="/js/nav.js?v=12"></script>
+  <script src="/js/team-icons.js?v=2"></script>
+  <script src="/js/conference-diff.js?v=4"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    const ESPN = {
+      detail: 'https://fantasy.espn.com/football/league/settings?leagueId=559054421&seasonId=2026',
+      overtime: 'https://fantasy.espn.com/football/league/settings?leagueId=236438046&seasonId=2026'
+    };
+
+    const ROLE_LABELS = {
+      user: 'User',
+      conference_admin: 'Conference Admin',
+      commissioner: 'Commissioner'
+    };
+
+    function confBlock(conf, side) {
+      const logo = conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
+      const name = conf?.shortName || conf?.name || (side === 'detail' ? 'Detail' : 'Overtime');
+      const count = conf?.ok ? `${(conf.scoringItems || []).length} categories` : 'Unavailable';
+      const inner = side === 'overtime'
+        ? `<div><div class="name">${esc(name)}</div><div class="meta">${esc(count)}</div></div>${logo}`
+        : `${logo}<div><div class="name">${esc(name)}</div><div class="meta">${esc(count)}</div></div>`;
+      return `<div class="conf ${side}${side === 'overtime' ? ' right' : ''}">${inner}</div>`;
+    }
+
+    function diffTable(rows, { withAction = false } = {}) {
+      if (!rows.length) return '';
+      return `
+        <table class="diff-table">
+          <thead>
+            <tr>
+              <th>Setting</th>
+              <th class="num">Detail</th>
+              <th class="num">Overtime</th>
+              ${withAction ? '<th class="action">Set Overtime to</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((d) => `
+              <tr>
+                <td class="item">${esc(d.label)}</td>
+                <td class="num detail">${esc(d.detail)}</td>
+                <td class="num overtime">${esc(d.overtime)}</td>
+                ${withAction ? `<td class="action">${esc(d.target || d.detail)}</td>` : ''}
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function syncChecklist(scoringDiffs) {
+      if (!scoringDiffs.length) return '';
+      return `
+        <div class="sync-box">
+          <strong>Sync Overtime to Detail</strong>
+          <p>Open Overtime ESPN settings and match each value in the rightmost column. Numbers match ESPN’s scoring fields (e.g. <strong>0.4</strong> pass yards).</p>
+          <ol>
+            <li>Open <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings</a> as commissioner</li>
+            <li>Go to <strong>Scoring</strong> and apply the ${scoringDiffs.length} change${scoringDiffs.length === 1 ? '' : 's'} below</li>
+            <li>Save on ESPN, then click <strong>Check Rules Sync</strong></li>
+          </ol>
+        </div>`;
+    }
+
+    function playoffTable(rows) {
+      if (!rows.length) return '<div class="msg">Playoff settings unavailable.</div>';
+      return `
+        <table class="diff-table playoff-table">
+          <thead>
+            <tr>
+              <th>Setting</th>
+              <th class="num">Detail</th>
+              <th class="num">Overtime</th>
+              <th class="num">GridIron target</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r) => `
+              <tr class="${r.matched ? '' : 'is-mismatch'} ${r.meetsTarget ? '' : 'is-off-target'}">
+                <td class="item">
+                  ${esc(r.label)}
+                  <div class="hint-cell">${esc(r.hint || '')}</div>
+                </td>
+                <td class="num detail">${esc(r.detail)}</td>
+                <td class="num overtime">${esc(r.overtime)}</td>
+                <td class="num target-cell">${esc(r.target)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function renderPlayoffSync(cmp, detail, overtime) {
+      const el = document.getElementById('playoff-content');
+      if (!cmp.bothOk) {
+        el.innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load playoff settings from one or both ESPN leagues.</div>`;
+        return;
+      }
+      const badgeCls = cmp.playoffMatched && cmp.playoffOnTarget ? 'ok' : 'warn';
+      const badgeLabel = !cmp.playoffMatched
+        ? 'Playoffs Out of Sync'
+        : cmp.playoffOnTarget
+          ? 'Playoffs Aligned'
+          : 'Leagues Match · Off Target';
+      const badgeSub = !cmp.playoffMatched
+        ? 'Detail and Overtime playoff settings differ — match Overtime to Detail, then hit the GridIron targets.'
+        : cmp.playoffOnTarget
+          ? 'Both leagues match the GridIron playoff tree (13 RS · 6 teams · reseed · Weeks 14–17).'
+          : 'Leagues match each other, but one or more values still miss the GridIron target.';
+
+      const checklist = [];
+      if (Number(detail?.matchupPeriodCount) !== 13 || Number(overtime?.matchupPeriodCount) !== 13) {
+        checklist.push('Set regular season to 13 weeks in both ESPN leagues');
+      }
+      if (detail?.playoffReseed !== true || overtime?.playoffReseed !== true) {
+        checklist.push('Turn playoff reseeding ON in both leagues');
+      }
+      if (Number(detail?.playoffTeamCount) !== 6 || Number(overtime?.playoffTeamCount) !== 6) {
+        checklist.push('Set playoff teams to 6 in both leagues');
+      }
+      if (Number(detail?.finalScoringPeriod) !== 17 || Number(overtime?.finalScoringPeriod) !== 17) {
+        checklist.push('Confirm final scoring week is 17 (Bowl week)');
+      }
+      checklist.push('Open Detail ESPN Settings and Overtime ESPN Settings, apply the yellow target column, save, then re-check');
+
+      el.innerHTML = `
+        <div class="playoff-badge ${badgeCls}"><span class="dot" aria-hidden="true"></span>${esc(badgeLabel)}</div>
+        <p class="help" style="margin-top:0;">${esc(badgeSub)}</p>
+        ${playoffTable(cmp.playoff || [])}
+        <ul class="playoff-checklist">
+          ${checklist.map((c) => `<li>${esc(c)}</li>`).join('')}
+        </ul>
+        <div class="links" style="margin-top:1rem;">
+          <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
+          <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
+        </div>`;
+    }
+
+    function render(data) {
+      const detail = (data.conferences || []).find((c) => c.key === 'detail');
+      const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
+      const cmp = GridIronDiff.compare(detail, overtime);
+
+      if (!detail?.ok && !overtime?.ok) {
+        document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load either conference from ESPN.</div>`;
+        document.getElementById('playoff-content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load playoff settings.</div>`;
+        return;
+      }
+
+      const syncLabel = !cmp.bothOk ? 'Incomplete' : cmp.matched ? 'Rules Synced' : 'Out of Sync';
+      const syncCls = cmp.matched ? 'ok' : 'warn';
+      const syncSub = !cmp.bothOk
+        ? 'One or both leagues failed to load'
+        : cmp.matched
+          ? 'Overtime matches Detail'
+          : `${cmp.diffs.length} difference${cmp.diffs.length === 1 ? '' : 's'} — match Overtime to Detail`;
+
+      const diffSections = cmp.matched ? `
+        <div class="ok-line">
+          <strong>All Clear</strong>
+          Overtime matches Detail Conference scoring, lineup, and playoff settings.
+        </div>` : `
+        ${syncChecklist(cmp.byKind.Scoring)}
+        ${cmp.byKind.Playoff.length ? `<section class="diff-section"><h3>Playoffs (${cmp.byKind.Playoff.length})</h3>${diffTable(cmp.byKind.Playoff, { withAction: true })}</section>` : ''}
+        ${cmp.byKind.Setting.length ? `<section class="diff-section"><h3>League Settings (${cmp.byKind.Setting.length})</h3>${diffTable(cmp.byKind.Setting)}</section>` : ''}
+        ${cmp.byKind.Scoring.length ? `<section class="diff-section"><h3>Scoring (${cmp.byKind.Scoring.length})</h3>${diffTable(cmp.byKind.Scoring, { withAction: true })}</section>` : ''}
+        ${cmp.byKind.Lineup.length ? `<section class="diff-section"><h3>Lineup (${cmp.byKind.Lineup.length})</h3>${diffTable(cmp.byKind.Lineup, { withAction: true })}</section>` : ''}`;
+
+      document.getElementById('content').innerHTML = `
+        <div class="status-bar">
+          ${confBlock(detail, 'detail')}
+          <div class="sync-badge">
+            <div class="label ${syncCls}">${esc(syncLabel)}</div>
+            <div class="sub">${esc(syncSub)}</div>
+          </div>
+          ${confBlock(overtime, 'overtime')}
+        </div>
+        <div class="summary">
+          <div class="stat"><span>Detail categories</span><strong class="detail">${detail?.ok ? (detail.scoringItems || []).length : '—'}</strong></div>
+          <div class="stat"><span>Overtime categories</span><strong class="overtime">${overtime?.ok ? (overtime.scoringItems || []).length : '—'}</strong></div>
+          <div class="stat"><span>RS weeks</span><strong>${detail?.matchupPeriodCount ?? '—'} / ${overtime?.matchupPeriodCount ?? '—'}</strong></div>
+          <div class="stat"><span>Differences</span><strong>${cmp.bothOk ? cmp.diffs.length : '—'}</strong></div>
+        </div>
+        ${diffSections}
+        <div class="links">
+          <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
+          <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
+        </div>`;
+
+      renderPlayoffSync(cmp, detail, overtime);
+    }
+
+    function roleValue(user) {
+      if (user.role === 'conference_admin') return `conference_admin:${user.conference || ''}`;
+      return user.role || 'user';
+    }
+
+    function showMembersMsg(text, ok) {
+      const el = document.getElementById('members-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function teamAssignValue(claim) {
+      if (!claim) return '';
+      return `${claim.conferenceKey}:${claim.teamId}`;
+    }
+
+    function teamOptionsHtml(conferences, claim) {
+      const current = teamAssignValue(claim);
+      const opts = [`<option value="">Unassigned</option>`];
+      for (const conf of conferences || []) {
+        const teams = conf.teams || [];
+        if (!teams.length) continue;
+        opts.push(`<optgroup label="${esc(conf.name)}">`);
+        for (const t of teams) {
+          const val = `${conf.key}:${t.id}`;
+          const taken = (window.__giClaims || []).find(
+            (c) => c.conferenceKey === conf.key && Number(c.teamId) === Number(t.id) && (!claim || c.userId !== claim.userId)
+          );
+          const label = taken ? `${t.name} (assigned)` : t.name;
+          const disabled = taken ? ' disabled' : '';
+          opts.push(`<option value="${esc(val)}" ${val === current ? 'selected' : ''}${disabled}>${esc(label)}</option>`);
+        }
+        opts.push('</optgroup>');
+      }
+      return opts.join('');
+    }
+
+    function renderMembers(payload) {
+      const list = payload.users || [];
+      const conferences = payload.conferences || [];
+      window.__giClaims = payload.claims || list.map((u) => u.claim).filter(Boolean);
+      if (!list.length) {
+        document.getElementById('members-list').innerHTML = `<div class="msg">No member accounts yet.</div>`;
+        return;
+      }
+      document.getElementById('members-list').innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Franchise</th>
+              <th>Access</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map((u) => `
+              <tr data-user-id="${esc(u.id)}">
+                <td>
+                  <strong>${esc(u.name)}</strong><br>
+                  <span class="muted-sm">${esc(u.loginName)} · ${esc(u.email)}</span><br>
+                  <span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span>
+                </td>
+                <td>
+                  <select class="team-select" data-user-id="${esc(u.id)}" aria-label="Assign franchise">
+                    ${teamOptionsHtml(conferences, u.claim)}
+                  </select>
+                </td>
+                <td>
+                  <select class="role-select" data-user-id="${esc(u.id)}">
+                    <option value="user" ${roleValue(u) === 'user' ? 'selected' : ''}>User</option>
+                    ${conferences.map((c) => `
+                      <option value="conference_admin:${esc(c.key)}" ${roleValue(u) === `conference_admin:${c.key}` ? 'selected' : ''}>
+                        ${esc(c.name)} Admin
+                      </option>`).join('')}
+                    <option value="commissioner" ${roleValue(u) === 'commissioner' ? 'selected' : ''}>Overall Commissioner</option>
+                  </select>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+
+      document.querySelectorAll('.role-select').forEach((select) => {
+        select.addEventListener('change', async () => {
+          const userId = select.dataset.userId;
+          const raw = select.value;
+          let role = raw;
+          let conference = null;
+          if (raw.startsWith('conference_admin:')) {
+            role = 'conference_admin';
+            conference = raw.slice('conference_admin:'.length);
+          }
+          select.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/role`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ role, conference })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
+            showMembersMsg(`Updated ${data.user.loginName} to ${ROLE_LABELS[data.user.role]}${data.user.conference ? ` (${data.user.conference})` : ''}.`, true);
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            await loadMembers();
+          } finally {
+            select.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll('.team-select').forEach((select) => {
+        select.addEventListener('change', async () => {
+          const userId = select.dataset.userId;
+          const raw = select.value;
+          select.disabled = true;
+          try {
+            let body = { clear: true };
+            if (raw) {
+              const [conferenceKey, teamId] = raw.split(':');
+              body = { conferenceKey, teamId: Number(teamId) };
+            }
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/team`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not assign team');
+            showMembersMsg(
+              data.claim
+                ? `Assigned ${data.claim.teamName || 'team'} to member.`
+                : 'Franchise unassigned.',
+              true
+            );
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            await loadMembers();
+          } finally {
+            select.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function loadMembers() {
+      const res = await fetch('/api/users', { cache: 'no-store' });
+      if (res.status === 403) {
+        document.getElementById('members').hidden = true;
+        return;
+      }
+      if (!res.ok) throw new Error(`Could not load members (${res.status})`);
+      const data = await res.json();
+      document.getElementById('group-people').hidden = false;
+      document.getElementById('nav-people').hidden = false;
+      document.getElementById('members').hidden = false;
+      document.getElementById('jump-members').hidden = false;
+      renderMembers(data);
+    }
+
+    async function load() {
+      const btn = document.getElementById('check-sync');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Checking…';
+      }
+      try {
+        const res = await fetch('/api/settings', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        render(data);
+        const t = new Date(data.generatedAt);
+        window.GridIronNav?.setSync(`ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        document.getElementById('content').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        window.GridIronNav?.setSync('Connection error', false);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Check Rules Sync';
+        }
+      }
+    }
+
+    document.getElementById('check-sync')?.addEventListener('click', () => { load(); });
+
+    async function loadTickerAdmin() {
+      const wrap = document.getElementById('ticker-admin');
+      wrap.hidden = false;
+      const res = await fetch('/api/ticker', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load ticker (${res.status})`);
+      const data = await res.json();
+      const custom = data.custom || [];
+      const list = document.getElementById('ticker-list');
+      if (!custom.length) {
+        list.innerHTML = `<div class="msg">No custom ticker messages yet. ESPN NFL headlines still run automatically.</div>`;
+        return;
+      }
+      list.innerHTML = `
+        <table class="data-table">
+          <thead><tr><th>Message</th><th>Added</th><th></th></tr></thead>
+          <tbody>
+            ${custom.map((t) => `
+              <tr>
+                <td>${esc(t.text)}</td>
+                <td class="muted-sm" style="white-space:nowrap">${esc(new Date(t.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</td>
+                <td><button type="button" data-del-ticker="${esc(t.id)}" class="link-action">Delete</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function showTickerMsg(text, ok) {
+      const el = document.getElementById('ticker-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function wireTickerAdmin() {
+      document.getElementById('ticker-add').addEventListener('click', async () => {
+        const input = document.getElementById('ticker-input');
+        const btn = document.getElementById('ticker-add');
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/ticker', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: input.value })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not add ticker message');
+          input.value = '';
+          showTickerMsg('Ticker message added.', true);
+          await loadTickerAdmin();
+          window.GridIronNav?.reloadTicker?.();
+        } catch (err) {
+          showTickerMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('ticker-list').addEventListener('click', async (e) => {
+        const id = e.target?.dataset?.delTicker;
+        if (!id) return;
+        if (!confirm('Remove this ticker message?')) return;
+        const res = await fetch(`/api/ticker/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          showTickerMsg(data.error || 'Could not delete', false);
+          return;
+        }
+        showTickerMsg('Ticker message removed.', true);
+        await loadTickerAdmin();
+        window.GridIronNav?.reloadTicker?.();
+      });
+    }
+
+    function showNewsMsg(text, ok) {
+      const el = document.getElementById('news-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function fmtWhen(iso) {
+      try {
+        return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      } catch {
+        return '';
+      }
+    }
+
+    async function loadNewsAdmin() {
+      const wrap = document.getElementById('news-admin');
+      wrap.hidden = false;
+      const res = await fetch('/api/news', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load news (${res.status})`);
+      const data = await res.json();
+      const news = data.news || [];
+      const list = document.getElementById('news-admin-list');
+      if (!news.length) {
+        list.innerHTML = `<div class="msg">No league news posted yet.</div>`;
+        return;
+      }
+      list.innerHTML = `
+        <table class="data-table">
+          <thead><tr><th>Post</th><th>By</th><th></th></tr></thead>
+          <tbody>
+            ${news.map((n) => `
+              <tr>
+                <td>
+                  <strong>${esc(n.title)}</strong><br>
+                  <span class="muted-sm">${esc(n.body)}</span>
+                </td>
+                <td class="muted-sm" style="white-space:nowrap">${esc(n.authorName)}<br>${esc(fmtWhen(n.createdAt))}</td>
+                <td><button type="button" data-del-news="${esc(n.id)}" class="link-action">Delete</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function wireNewsAdmin() {
+      document.getElementById('news-add').addEventListener('click', async () => {
+        const btn = document.getElementById('news-add');
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/news', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: document.getElementById('news-title').value,
+              body: document.getElementById('news-body').value
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not post news');
+          document.getElementById('news-title').value = '';
+          document.getElementById('news-body').value = '';
+          showNewsMsg('League news posted.', true);
+          await loadNewsAdmin();
+        } catch (err) {
+          showNewsMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('news-admin-list').addEventListener('click', async (e) => {
+        const id = e.target?.dataset?.delNews;
+        if (!id) return;
+        if (!confirm('Delete this news post?')) return;
+        const res = await fetch(`/api/news/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          showNewsMsg(data.error || 'Could not delete', false);
+          return;
+        }
+        showNewsMsg('News post deleted.', true);
+        await loadNewsAdmin();
+      });
+    }
+
+    function showInvitesMsg(text, ok) {
+      const el = document.getElementById('invites-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function setMailStatus(mail) {
+      const el = document.getElementById('invites-mail-status');
+      if (!el) return;
+      if (mail?.configured) {
+        el.className = 'status-note show ok';
+        el.textContent = `Email delivery on (${mail.from || 'configured sender'}).`;
+      } else {
+        el.className = 'status-note show';
+        el.style.color = '#b0b0b0';
+        el.textContent = 'Email delivery is offline. Invites still work — copy the link and send it yourself, or set RESEND_API_KEY + MAIL_FROM on Render.';
+      }
+    }
+
+    function renderInviteLinks(results = []) {
+      const wrap = document.getElementById('invite-links');
+      const rows = (results || []).filter((r) => r.ok && r.inviteUrl);
+      if (!rows.length) {
+        wrap.hidden = true;
+        wrap.innerHTML = '';
+        return;
+      }
+      wrap.hidden = false;
+      wrap.innerHTML = `
+        <div class="invite-links-head">Invite links</div>
+        ${rows.map((r) => `
+          <div class="invite-link-row">
+            <div class="invite-link-meta">
+              <strong>${esc(r.email)}</strong>
+              <span>${r.sent ? 'Emailed' : (r.mailError ? `Email failed: ${esc(r.mailError)}` : 'Copy & share')}</span>
+            </div>
+            <code class="invite-url">${esc(r.inviteUrl)}</code>
+            <div class="invite-link-actions">
+              <button type="button" class="btn btn-secondary" data-copy-invite="${esc(r.inviteUrl)}">Copy link</button>
+              <a class="btn btn-secondary" href="mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent('GridIron 24 invite')}&body=${encodeURIComponent(`You're invited to GridIron 24. Create your account here:\n${r.inviteUrl}`)}">Open mail app</a>
+            </div>
+          </div>
+        `).join('')}`;
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    async function loadInvitesAdmin() {
+      document.getElementById('group-people').hidden = false;
+      document.getElementById('nav-people').hidden = false;
+      const wrap = document.getElementById('invites-admin');
+      wrap.hidden = false;
+      document.getElementById('jump-invites').hidden = false;
+      const res = await fetch('/api/invites', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load invites (${res.status})`);
+      const data = await res.json();
+      setMailStatus(data.mail);
+      const list = document.getElementById('invites-list');
+      const rows = data.invites || [];
+      if (!rows.length) {
+        list.innerHTML = `<div class="msg">No invites yet.</div>`;
+        return;
+      }
+      list.innerHTML = `
+        <table class="data-table">
+          <thead><tr><th>Email</th><th>Status</th><th>Sent</th><th></th></tr></thead>
+          <tbody>
+            ${rows.map((inv) => `
+              <tr>
+                <td>${esc(inv.email)}</td>
+                <td>${esc(inv.status)}</td>
+                <td>${esc((inv.createdAt || '').slice(0, 10))}</td>
+                <td class="invite-row-actions">
+                  ${inv.status === 'pending' ? `
+                    <button type="button" data-resend-invite="${esc(inv.id)}" class="link-action">Resend / copy link</button>
+                    <button type="button" data-revoke-invite="${esc(inv.id)}" class="link-action">Revoke</button>
+                  ` : ''}
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function wireInvitesAdmin() {
+      document.getElementById('invite-send').addEventListener('click', async () => {
+        const input = document.getElementById('invite-emails');
+        const btn = document.getElementById('invite-send');
+        const emails = input.value
+          .split(/[,;\n]+/)
+          .map((e) => e.trim())
+          .filter(Boolean);
+        if (!emails.length) {
+          showInvitesMsg('Enter at least one email.', false);
+          return;
+        }
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/invites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emails })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || data.message || 'Could not send invites');
+          setMailStatus(data.mail);
+          showInvitesMsg(data.message || 'Invites processed.', true);
+          renderInviteLinks(data.results || []);
+          input.value = '';
+          await loadInvitesAdmin();
+        } catch (err) {
+          showInvitesMsg(err.message || 'Could not send invites', false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('invite-links').addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-copy-invite]');
+        if (!btn) return;
+        const url = btn.getAttribute('data-copy-invite');
+        const ok = await copyText(url);
+        showInvitesMsg(ok ? 'Invite link copied.' : 'Could not copy — select the link and copy manually.', ok);
+      });
+
+      document.getElementById('invites-list').addEventListener('click', async (e) => {
+        const resendBtn = e.target.closest('[data-resend-invite]');
+        if (resendBtn) {
+          const id = resendBtn.getAttribute('data-resend-invite');
+          resendBtn.disabled = true;
+          try {
+            const res = await fetch(`/api/invites/${encodeURIComponent(id)}/resend`, { method: 'POST' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not resend invite');
+            setMailStatus(data.mail);
+            showInvitesMsg(data.message || 'Invite refreshed.', true);
+            renderInviteLinks([{
+              ok: true,
+              email: data.invite?.email,
+              inviteUrl: data.inviteUrl,
+              sent: data.sent,
+              mailError: data.mailError
+            }]);
+            await loadInvitesAdmin();
+          } catch (err) {
+            showInvitesMsg(err.message || 'Could not resend invite', false);
+          } finally {
+            resendBtn.disabled = false;
+          }
+          return;
+        }
+
+        const btn = e.target.closest('[data-revoke-invite]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-revoke-invite');
+        if (!confirm('Revoke this invite?')) return;
+        const res = await fetch(`/api/invites/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          showInvitesMsg(data.error || 'Could not revoke', false);
+          return;
+        }
+        showInvitesMsg('Invite revoked.', true);
+        await loadInvitesAdmin();
+      });
+    }
+
+    function showWrapMsg(text, ok) {
+      const el = document.getElementById('wrap-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function wrapWeekValue() {
+      const raw = document.getElementById('wrap-week').value;
+      if (!raw) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    }
+
+    function renderWrapPreview(data) {
+      const meta = document.getElementById('wrap-meta');
+      const body = document.getElementById('wrap-preview-body');
+      if (!data?.ok && !data?.dryRun) {
+        meta.textContent = '';
+        body.innerHTML = `<div class="msg">${esc(data?.error || 'Preview failed')}</div>`;
+        return;
+      }
+      meta.textContent = `Week ${data.week} · ${data.provider || '—'} · AI ${data.aiConfigured ? 'on' : 'off (template fallback)'} · Mail ${data.mail?.configured ? 'on' : 'off'} · ${data.recipientCount ?? '—'} managers`;
+      body.innerHTML = `
+        <div style="margin-bottom:0.65rem;font-family:var(--display);font-size:1.05rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;">${esc(data.title || '')}</div>
+        <div style="white-space:pre-wrap;color:#ddd;line-height:1.55;max-width:44rem;">${esc(data.body || '')}</div>`;
+    }
+
+    function wireWrapAdmin() {
+      document.getElementById('wrap-admin').hidden = false;
+      document.getElementById('jump-wrap').hidden = false;
+      document.getElementById('group-comms').hidden = false;
+
+      document.getElementById('wrap-preview').addEventListener('click', async () => {
+        const btn = document.getElementById('wrap-preview');
+        btn.disabled = true;
+        try {
+          const week = wrapWeekValue();
+          const qs = week ? `?week=${encodeURIComponent(week)}` : '';
+          const res = await fetch(`/api/weekly-wrap/preview${qs}`, { cache: 'no-store' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok && !data.dryRun) throw new Error(data.error || 'Preview failed');
+          renderWrapPreview(data);
+          showWrapMsg(data.error || 'Preview ready — not posted or emailed.', !data.error);
+        } catch (err) {
+          showWrapMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('wrap-preview-email').addEventListener('click', () => {
+        const week = wrapWeekValue();
+        const qs = new URLSearchParams({ format: 'html' });
+        if (week) qs.set('week', String(week));
+        window.open(`/api/weekly-wrap/preview?${qs.toString()}`, '_blank', 'noopener');
+      });
+
+      document.getElementById('wrap-send').addEventListener('click', async () => {
+        if (!confirm('Generate the weekly wrap-up, post it to League News, and email league managers?')) return;
+        const btn = document.getElementById('wrap-send');
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/weekly-wrap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              week: wrapWeekValue(),
+              force: true,
+              sendEmail: true,
+              postNews: true
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || (!data.ok && !data.skipped)) throw new Error(data.error || data.reason || 'Wrap failed');
+          if (data.skipped) {
+            showWrapMsg(data.reason || 'Already sent for that week.', true);
+          } else {
+            const mailed = (data.emailResults || []).filter((r) => r.sent).length;
+            showWrapMsg(`Posted to League News · emailed ${mailed}/${(data.emailResults || []).length} managers · via ${data.provider}.`, true);
+            renderWrapPreview(data);
+          }
+          try { await loadNewsAdmin(); } catch { /* ignore */ }
+        } catch (err) {
+          showWrapMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
+
+    function showCalMsg(text, ok) {
+      const el = document.getElementById('calendar-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    async function loadCalendarAdmin() {
+      const res = await fetch('/api/calendar', { cache: 'no-store' });
+      const data = await res.json();
+      const list = document.getElementById('calendar-list');
+      const events = data.events || [];
+      list.innerHTML = events.length ? `<table class="data-table"><thead><tr><th>Date</th><th>Event</th><th></th></tr></thead><tbody>
+        ${events.map((e) => `<tr><td>${esc(e.date || 'TBD')}</td><td><strong>${esc(e.title)}</strong> · ${esc(e.type)}</td>
+          <td><button type="button" class="link-action" data-del-cal="${esc(e.id)}">Delete</button></td></tr>`).join('')}
+      </tbody></table>` : `<div class="msg">No events.</div>`;
+    }
+
+    function wireCalendarAdmin() {
+      document.getElementById('group-season').hidden = false;
+      document.getElementById('nav-season').hidden = false;
+      document.getElementById('calendar-admin').hidden = false;
+      document.getElementById('jump-calendar').hidden = false;
+      document.getElementById('cal-add').addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/calendar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: document.getElementById('cal-title').value,
+              date: document.getElementById('cal-date').value,
+              type: document.getElementById('cal-type').value
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not add event');
+          document.getElementById('cal-title').value = '';
+          showCalMsg('Event added.', true);
+          await loadCalendarAdmin();
+        } catch (err) {
+          showCalMsg(err.message, false);
+        }
+      });
+      document.getElementById('calendar-list').addEventListener('click', async (e) => {
+        const id = e.target?.dataset?.delCal;
+        if (!id) return;
+        if (!confirm('Delete this event?')) return;
+        await fetch(`/api/calendar/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await loadCalendarAdmin();
+      });
+    }
+
+    function showRankMsg(text, ok) {
+      const el = document.getElementById('rankings-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    async function loadRankingsAdmin() {
+      const res = await fetch('/api/power-rankings', { cache: 'no-store' });
+      const data = await res.json();
+      const list = document.getElementById('rankings-list');
+      const rows = data.rankings || [];
+      list.innerHTML = rows.length ? `<table class="data-table"><thead><tr><th>Week</th><th>By</th><th>Teams</th><th></th></tr></thead><tbody>
+        ${rows.map((r) => `<tr><td>${esc(r.week)}</td><td>${esc(r.authorName)}</td><td>${esc((r.ranks||[]).length)}</td>
+          <td><button type="button" class="link-action" data-del-rank="${esc(r.id)}">Delete</button></td></tr>`).join('')}
+      </tbody></table>` : `<div class="msg">No rankings published.</div>`;
+    }
+
+    function wireRankingsAdmin() {
+      document.getElementById('group-season').hidden = false;
+      document.getElementById('nav-season').hidden = false;
+      document.getElementById('rankings-admin').hidden = false;
+      document.getElementById('jump-rankings').hidden = false;
+      document.getElementById('rank-fill').addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/leagues', { cache: 'no-store' });
+          const data = await res.json();
+          const lines = [];
+          let rank = 1;
+          for (const key of ['detail', 'overtime']) {
+            const conf = (data.conferences || []).find((c) => c.key === key);
+            for (const t of (conf?.teams || []).slice(0, 6)) {
+              lines.push(`${key}|${t.id}|${t.name}|`);
+              rank += 1;
+            }
+          }
+          document.getElementById('rank-lines').value = lines.map((l, i) => l).join('\n');
+          showRankMsg('Filled top 6 from each conference — reorder lines to set ranks.', true);
+        } catch (err) {
+          showRankMsg(err.message, false);
+        }
+      });
+      document.getElementById('rank-save').addEventListener('click', async () => {
+        const week = Number(document.getElementById('rank-week').value);
+        const ranks = document.getElementById('rank-lines').value
+          .split(/\n+/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line, i) => {
+            const [conferenceKey, teamId, teamName, note] = line.split('|');
+            return {
+              rank: i + 1,
+              conferenceKey: (conferenceKey || '').trim(),
+              teamId: Number(teamId),
+              teamName: (teamName || '').trim(),
+              note: (note || '').trim()
+            };
+          });
+        try {
+          const res = await fetch('/api/power-rankings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ week, ranks })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not publish');
+          showRankMsg(`Week ${week} rankings published.`, true);
+          await loadRankingsAdmin();
+        } catch (err) {
+          showRankMsg(err.message, false);
+        }
+      });
+      document.getElementById('rankings-list').addEventListener('click', async (e) => {
+        const id = e.target?.dataset?.delRank;
+        if (!id) return;
+        if (!confirm('Delete this ranking set?')) return;
+        await fetch(`/api/power-rankings/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await loadRankingsAdmin();
+      });
+    }
+
+    async function bootCommissionerTools(user) {
+      const admin = document.getElementById('profile-admin');
+      const jump = document.getElementById('jump-admin');
+      if (!user || (user.role !== 'commissioner' && user.role !== 'conference_admin')) {
+        if (admin) admin.hidden = true;
+        if (jump) jump.hidden = true;
+        return;
+      }
+      if (admin) admin.hidden = false;
+      if (jump) jump.hidden = false;
+      await load();
+      wireNewsAdmin();
+      wireTickerAdmin();
+      try { await loadNewsAdmin(); } catch (err) {
+        document.getElementById('news-admin').hidden = false;
+        document.getElementById('news-admin-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
+      try { await loadTickerAdmin(); } catch (err) {
+        document.getElementById('ticker-admin').hidden = false;
+        document.getElementById('ticker-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
+      if (user.role === 'commissioner') {
+        document.getElementById('group-people').hidden = false;
+        document.getElementById('nav-people').hidden = false;
+        document.getElementById('group-season').hidden = false;
+        document.getElementById('nav-season').hidden = false;
+        wireWrapAdmin();
+        wireCalendarAdmin();
+        wireRankingsAdmin();
+        wireInvitesAdmin();
+        try { await loadCalendarAdmin(); } catch { /* ignore */ }
+        try { await loadRankingsAdmin(); } catch { /* ignore */ }
+        try { await loadInvitesAdmin(); } catch (err) {
+          document.getElementById('invites-admin').hidden = false;
+          document.getElementById('jump-invites').hidden = false;
+          document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        }
+        try { await loadMembers(); } catch (err) {
+          document.getElementById('members').hidden = false;
+          document.getElementById('jump-members').hidden = false;
+          document.getElementById('members-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        }
+      }
+    }
+    window.GridIronProfile = window.GridIronProfile || {};
+    window.GridIronProfile.bootCommissionerTools = bootCommissionerTools;
+  </script>
+
+  <script>
+    const escP = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    const ROLE_LABELS_P = {
+      user: 'Member',
+      conference_admin: 'Conference Admin',
+      commissioner: 'Commissioner'
+    };
+
+    let myTeamData = null;
+    let selectedIcon = null;
+    const pack = window.GridIronIcons || { icons: [], categories: [] };
+
+    function isChosenLogo(logo) {
+      return logo?.type === 'icon' || logo?.type === 'upload';
+    }
+
+    function recordLine(team) {
+      if (!team) return '—';
+      const t = Number(team.ties || 0);
+      return t > 0
+        ? `${team.wins || 0}-${team.losses || 0}-${t}`
+        : `${team.wins || 0}-${team.losses || 0}`;
+    }
+
+    function streakLine(team) {
+      if (!team || !team.streakLength) return '—';
+      const letter = team.streakType === 'WIN' ? 'W' : team.streakType === 'LOSS' ? 'L' : 'T';
+      return `${letter}${team.streakLength}`;
+    }
+
+    function setLogoPreview(url) {
+      const preview = document.getElementById('logo-preview');
+      if (!preview) return;
+      preview.innerHTML = url
+        ? `<img src="${escP(url)}" alt="Team logo">`
+        : `<div class="ph">Choose a logo</div>`;
+    }
+
+    function setLogoStatus(msg, kind = '') {
+      const el = document.getElementById('logo-status');
+      if (!el) return;
+      el.textContent = msg || '';
+      el.className = `profile-note ${kind}`;
+    }
+
+    function renderFranchise(data) {
+      const user = data.user || {};
+      const team = data.team;
+      const claim = data.claim;
+      const logoUrl = isChosenLogo(data.logo) ? data.logo.url : (team ? '/assets/team-logo-placeholder.svg' : '');
+      const title = team?.name || claim?.teamName || 'No franchise assigned';
+      const conf = team?.conferenceName || (claim?.conferenceKey === 'detail' ? 'Detail Conference' : claim?.conferenceKey === 'overtime' ? 'Overtime Conference' : '');
+
+      if (!claim) {
+        document.getElementById('franchise-body').innerHTML = `
+          <div class="profile-hero-row">
+            <div class="profile-avatar"><span class="ph">${escP((user.name || '?').slice(0,2).toUpperCase())}</span></div>
+            <div class="profile-meta">
+              <h3>${escP(user.name || user.loginName || 'Member')}</h3>
+              <div class="sub">${escP(user.email || '')}</div>
+              <div class="pill">${escP(ROLE_LABELS_P[user.role] || user.role || 'Member')}</div>
+            </div>
+          </div>
+          <p class="profile-note">Your commissioner assigns franchises. Once linked, your record and logo tools appear here.</p>`;
+        return;
+      }
+
+      document.getElementById('franchise-body').innerHTML = `
+        <div class="profile-hero-row">
+          <div class="profile-avatar">${logoUrl ? `<img src="${escP(logoUrl)}" alt="">` : `<span class="ph">${escP(title.slice(0,2).toUpperCase())}</span>`}</div>
+          <div class="profile-meta">
+            <h3>${escP(title)}</h3>
+            <div class="sub">${escP(conf)}${conf && user.name ? ' · ' : ''}${escP(user.name || '')}</div>
+            <div class="pill">${escP(ROLE_LABELS_P[user.role] || user.role || 'Member')}</div>
+          </div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat"><span>Record</span><strong>${escP(recordLine(team))}</strong></div>
+          <div class="stat"><span>Points For</span><strong>${team ? Number(team.pointsFor || 0).toFixed(1) : '—'}</strong></div>
+          <div class="stat"><span>Standing</span><strong>${team?.standingRank ? `#${team.standingRank}` : '—'}</strong></div>
+          <div class="stat"><span>Streak</span><strong>${escP(streakLine(team))}</strong></div>
+        </div>
+        <div class="name-row">
+          <input id="profile-team-name" type="text" maxlength="40" value="${escP(title)}" />
+          <button type="button" class="btn" id="profile-save-name">Save Name</button>
+        </div>
+        <p class="profile-note" id="franchise-status" role="status"></p>
+        ${team ? `<p class="profile-note"><a href="/team.html?conference=${escP(claim.conferenceKey)}&teamId=${escP(claim.teamId)}" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Open team page →</a></p>` : ''}`;
+
+      document.getElementById('profile-save-name')?.addEventListener('click', async () => {
+        const status = document.getElementById('franchise-status');
+        const name = document.getElementById('profile-team-name')?.value?.trim() || '';
+        try {
+          status.textContent = 'Saving…';
+          status.className = 'profile-note';
+          const res = await fetch('/api/my-team/name', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+          });
+          const body = await res.json();
+          if (!res.ok || !body.ok) throw new Error(body.error || 'Could not save');
+          status.textContent = 'Team name updated.';
+          status.className = 'profile-note ok';
+          window.GridIronNav?.refresh?.();
+          await loadProfile();
+        } catch (err) {
+          status.textContent = err.message || 'Save failed';
+          status.className = 'profile-note err';
+        }
+      });
+    }
+
+    function renderLogoSection(data) {
+      const body = document.getElementById('logo-body');
+      if (!data.claim) {
+        body.innerHTML = `<p class="profile-note">Logo tools unlock after your commissioner assigns a franchise.</p>`;
+        return;
+      }
+      selectedIcon = data.logo?.type === 'icon' ? data.logo.value : null;
+      body.innerHTML = `
+        <div class="logo-layout">
+          <aside class="logo-side">
+            <div class="preview" id="logo-preview"></div>
+            <p class="profile-note" id="logo-status" role="status">Pick an avatar or upload a custom square logo.</p>
+          </aside>
+          <section class="logo-main">
+            <div class="logo-bar">
+              <div class="filters">
+                <div>
+                  <label for="logo-category">Category</label>
+                  <select id="logo-category"></select>
+                </div>
+                <div>
+                  <label for="logo-search">Search</label>
+                  <input id="logo-search" type="search" placeholder="helmet, wolf…" />
+                </div>
+              </div>
+              <div class="icon-count" id="icon-count">0 icons</div>
+            </div>
+            <div class="icon-grid" id="icon-grid"></div>
+            <div class="upload-row" id="logo-drop">
+              <label class="file-btn" for="logo-file">Upload Custom</label>
+              <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+              <span class="hint">Square PNG/JPG/WEBP · 512×512 best</span>
+            </div>
+          </section>
+        </div>`;
+
+      setLogoPreview(isChosenLogo(data.logo) ? data.logo.url : null);
+      const categorySel = document.getElementById('logo-category');
+      const searchInput = document.getElementById('logo-search');
+      const iconGrid = document.getElementById('icon-grid');
+      categorySel.innerHTML = ['All', ...(pack.categories || [])]
+        .map((c) => `<option value="${escP(c)}">${escP(c)}</option>`).join('');
+
+      function filteredIcons() {
+        const cat = categorySel.value;
+        const q = searchInput.value.trim().toLowerCase();
+        return (pack.icons || []).filter((icon) => {
+          if (cat && cat !== 'All' && icon.category !== cat) return false;
+          if (!q) return true;
+          return `${icon.name} ${icon.motif} ${icon.category} ${icon.palette}`.toLowerCase().includes(q);
+        });
+      }
+
+      function renderIcons() {
+        const icons = filteredIcons();
+        document.getElementById('icon-count').textContent = `${icons.length} icons`;
+        iconGrid.innerHTML = icons.map((icon) => `
+          <button type="button" class="icon-card ${selectedIcon === icon.id ? 'selected' : ''}" data-id="${escP(icon.id)}" title="${escP(icon.name)}">
+            <img src="${escP(icon.src)}" alt="" loading="lazy">
+            <span>${escP(icon.name)}</span>
+          </button>`).join('');
+      }
+
+      async function applyIcon(iconId) {
+        setLogoStatus('Saving…');
+        const res = await fetch('/api/my-team/logo/icon', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ iconId })
+        });
+        const body = await res.json();
+        if (!res.ok || !body.ok) throw new Error(body.error || 'Could not save icon');
+        selectedIcon = iconId;
+        setLogoPreview(body.logo.url);
+        renderIcons();
+        setLogoStatus('Logo updated.', 'ok');
+        window.GridIronNav?.refresh?.();
+        await loadProfile(false);
+      }
+
+      function toSquareDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+            return reject(new Error('Use PNG, JPG, or WEBP'));
+          }
+          if (file.size > 2 * 1024 * 1024) return reject(new Error('Max 2 MB'));
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error('Could not read file'));
+          reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+              const size = 512;
+              const side = Math.min(img.naturalWidth, img.naturalHeight);
+              if (side < 256) return reject(new Error('Image must be at least 256×256'));
+              const sx = Math.floor((img.naturalWidth - side) / 2);
+              const sy = Math.floor((img.naturalHeight - side) / 2);
+              const canvas = document.createElement('canvas');
+              canvas.width = size;
+              canvas.height = size;
+              canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, size, size);
+              resolve({ dataUrl: canvas.toDataURL('image/png'), width: size, height: size });
+            };
+            img.onerror = () => reject(new Error('Could not load image'));
+            img.src = reader.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function uploadCustom(file) {
+        try {
+          setLogoStatus('Uploading…');
+          const { dataUrl, width, height } = await toSquareDataUrl(file);
+          const res = await fetch('/api/my-team/logo/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataUrl, width, height })
+          });
+          const body = await res.json();
+          if (!res.ok || !body.ok) throw new Error(body.error || 'Upload failed');
+          selectedIcon = null;
+          setLogoPreview(body.logo.url);
+          renderIcons();
+          setLogoStatus('Custom logo saved.', 'ok');
+          window.GridIronNav?.refresh?.();
+          await loadProfile(false);
+        } catch (err) {
+          setLogoStatus(err.message || 'Upload failed', 'err');
+        }
+      }
+
+      categorySel.addEventListener('change', renderIcons);
+      searchInput.addEventListener('input', renderIcons);
+      iconGrid.addEventListener('click', (e) => {
+        const card = e.target.closest('[data-id]');
+        if (!card) return;
+        applyIcon(card.dataset.id).catch((err) => setLogoStatus(err.message, 'err'));
+      });
+      const fileInput = document.getElementById('logo-file');
+      const drop = document.getElementById('logo-drop');
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files?.[0];
+        if (file) uploadCustom(file);
+        fileInput.value = '';
+      });
+      ['dragenter', 'dragover'].forEach((evt) => drop.addEventListener(evt, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+      ['dragleave', 'drop'].forEach((evt) => drop.addEventListener(evt, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+      drop.addEventListener('drop', (e) => {
+        const file = e.dataTransfer?.files?.[0];
+        if (file) uploadCustom(file);
+      });
+      renderIcons();
+    }
+
+    async function loadProfile(withSync = true) {
+      const res = await fetch('/api/my-team', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Could not load profile');
+      myTeamData = await res.json();
+      renderFranchise(myTeamData);
+      renderLogoSection(myTeamData);
+      if (withSync) {
+        const name = myTeamData.team?.name || myTeamData.user?.name || 'Profile';
+        window.GridIronNav?.setSync(name, true);
+      }
+    }
+
+    document.getElementById('profile-logout')?.addEventListener('click', async () => {
+      try { await fetch('/api/logout', { method: 'POST' }); } catch { /* ignore */ }
+      window.location.href = '/';
+    });
+
+    window.GridIronNav?.authReady?.then(async ({ user }) => {
+      if (!user) {
+        window.location.replace('/enter?next=' + encodeURIComponent('/profile.html'));
+        return;
+      }
+      try {
+        await loadProfile();
+        await window.GridIronProfile?.bootCommissionerTools?.(user);
+        if (location.hash === '#profile-admin' || location.hash === '#admin') {
+          document.getElementById('profile-admin')?.scrollIntoView({ behavior: 'smooth' });
+        } else if (location.hash === '#logo') {
+          document.getElementById('logo')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      } catch (err) {
+        document.getElementById('franchise-body').innerHTML = `<div class="msg"><strong>Error</strong>${escP(err.message)}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>

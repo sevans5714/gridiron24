@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=20" />
+  <link rel="stylesheet" href="/css/site.css?v=21" />
   <style>
     .banner {
       margin-bottom: 1.25rem;
@@ -133,7 +133,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=11"></script>
+  <script src="/js/nav.js?v=12"></script>
   <script src="/js/conference-diff.js?v=3"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -202,7 +202,7 @@
       const rules = detail?.ok ? detail : ok[0];
       const cmp = GridIronDiff.compare(detail, overtime);
       const banner = cmp.bothOk && !cmp.matched
-        ? `<div class="banner reveal">Conferences are out of sync on ESPN (${cmp.diffs.length} differences). See the <a href="/commissioner.html">Commissioner</a> page for Detail vs Overtime values.</div>`
+        ? `<div class="banner reveal">Conferences are out of sync on ESPN (${cmp.diffs.length} differences). See <a href="/profile.html#profile-admin">League Tools</a> in your profile for Detail vs Overtime values.</div>`
         : '';
 
       document.getElementById('content').innerHTML = `

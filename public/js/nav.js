@@ -10,8 +10,7 @@
     { href: '/rankings.html', label: 'Rankings', key: 'rankings' },
     { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
     { href: '/scoring.html', label: 'Scoring', key: 'scoring' },
-    { href: '/payouts.html', label: 'Payouts', key: 'payouts' },
-    { href: '/commissioner.html', label: 'Commissioner', key: 'commissioner', staffOnly: true }
+    { href: '/payouts.html', label: 'Payouts', key: 'payouts' }
   ];
 
   const active = document.body.dataset.page || 'home';
@@ -33,10 +32,7 @@
 
   function renderNav(user) {
     if (!nav) return;
-    const role = user?.role || 'user';
-    const isStaff = role === 'commissioner' || role === 'conference_admin';
-    const links = allLinks.filter((link) => !link.staffOnly || isStaff);
-    nav.innerHTML = links.map((link) => {
+    nav.innerHTML = allLinks.map((link) => {
       const cls = link.key === active ? 'active' : '';
       return `<a class="${cls}" href="${link.href}">${link.label}</a>`;
     }).join('');
@@ -88,91 +84,12 @@
       return;
     }
     mount.hidden = false;
-    const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || '';
-    const claimed = Boolean(myTeam?.claim);
-    const chosenLogo = hasChosenLogo(myTeam?.logo);
-    const logoLink = !claimed
-      ? 'Claim team & pick logo'
-      : chosenLogo
-        ? 'Change team logo'
-        : 'Choose your team logo';
+    const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || user.name || 'Profile';
+    const onProfile = active === 'profile';
     mount.innerHTML = `
-      <button type="button" class="user-avatar-btn" id="user-menu-toggle" aria-haspopup="true" aria-expanded="false" title="${esc(teamName || user.name || 'Account')}">
+      <a class="user-avatar-btn${onProfile ? ' is-active' : ''}" id="user-menu-toggle" href="/profile.html" title="${esc(teamName)}">
         ${avatarHtml(myTeam, user)}
-      </button>
-      <div class="user-menu-panel" id="user-menu-panel" hidden>
-        <div class="user-menu-head">
-          <div class="user-menu-preview">${avatarHtml(myTeam, user)}</div>
-          <div class="user-menu-meta">
-            <div class="user-menu-name">${esc(teamName || 'No team claimed')}</div>
-            <div class="user-menu-sub">${esc(user.name || user.loginName || '')}</div>
-          </div>
-        </div>
-        <label class="user-menu-label" for="user-team-name">Team name</label>
-        <div class="user-menu-row">
-          <input id="user-team-name" type="text" maxlength="40" placeholder="${claimed ? 'Franchise name' : 'Claim a team first'}" value="${esc(teamName)}" ${claimed ? '' : 'disabled'} />
-          <button type="button" id="user-save-name" ${claimed ? '' : 'disabled'}>Save</button>
-        </div>
-        <a class="user-menu-link ${claimed && !chosenLogo ? 'needs-logo' : ''}" href="/team-logo.html">${logoLink}</a>
-        <button type="button" class="user-menu-logout" id="nav-logout">Log Out</button>
-        <div class="user-menu-status" id="user-menu-status" role="status"></div>
-      </div>`;
-
-    const toggle = document.getElementById('user-menu-toggle');
-    const panel = document.getElementById('user-menu-panel');
-    const status = document.getElementById('user-menu-status');
-
-    function setStatus(msg, ok) {
-      if (!status) return;
-      status.textContent = msg || '';
-      status.className = `user-menu-status ${ok === true ? 'ok' : ok === false ? 'err' : ''}`;
-    }
-
-    toggle?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const open = panel.hasAttribute('hidden');
-      if (open) panel.removeAttribute('hidden');
-      else panel.setAttribute('hidden', '');
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
-    document.getElementById('user-save-name')?.addEventListener('click', async () => {
-      const name = document.getElementById('user-team-name')?.value?.trim() || '';
-      try {
-        setStatus('Saving…');
-        const res = await fetch('/api/my-team/name', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name })
-        });
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save name');
-        setStatus('Team name updated', true);
-        const nameEl = mount.querySelector('.user-menu-name');
-        if (nameEl) nameEl.textContent = data.displayName;
-        toggle.title = data.displayName;
-      } catch (err) {
-        setStatus(err.message || 'Save failed', false);
-      }
-    });
-
-    document.getElementById('nav-logout')?.addEventListener('click', async (e) => {
-      e.preventDefault();
-      try {
-        await fetch('/api/logout', { method: 'POST' });
-      } catch { /* ignore */ }
-      window.location.href = '/';
-    });
-  }
-
-  function closeUserMenuOnOutside(e) {
-    const mount = document.getElementById('user-menu');
-    const panel = document.getElementById('user-menu-panel');
-    const toggle = document.getElementById('user-menu-toggle');
-    if (!mount || !panel || panel.hasAttribute('hidden')) return;
-    if (mount.contains(e.target)) return;
-    panel.setAttribute('hidden', '');
-    toggle?.setAttribute('aria-expanded', 'false');
+      </a>`;
   }
 
   function ensureTickerMount() {
@@ -276,7 +193,6 @@
   ensureTickerMount();
   ensureUserMenuMount();
   loadTicker();
-  document.addEventListener('click', closeUserMenuOnOutside);
 
   const authReady = refreshAuth();
 
