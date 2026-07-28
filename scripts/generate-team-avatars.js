@@ -111,14 +111,35 @@ function wrapAvatar(innerSvg, bg, idPrefix) {
 `;
 }
 
+function loadExistingCatalogIcons() {
+  if (!fs.existsSync(CATALOG)) return [];
+  try {
+    const raw = fs.readFileSync(CATALOG, 'utf8');
+    const match = raw.match(/icons:\s*(\[[\s\S]*?\n\s*\])\s*\n\}/);
+    if (!match) return [];
+    return JSON.parse(match[1]);
+  } catch {
+    return [];
+  }
+}
+
+function isAvatarIconId(id) {
+  const s = String(id || '');
+  return STYLES.some((style) => s.startsWith(`${style.id}-`));
+}
+
 async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
+
+  // Only remove prior DiceBear avatar SVGs — keep sports marks.
   for (const file of fs.readdirSync(OUT_DIR)) {
-    if (file.endsWith('.svg')) fs.unlinkSync(path.join(OUT_DIR, file));
+    if (!file.endsWith('.svg')) continue;
+    const id = file.replace(/\.svg$/, '');
+    if (isAvatarIconId(id)) fs.unlinkSync(path.join(OUT_DIR, file));
   }
 
-  const icons = [];
-  const categories = [...new Set(STYLES.map((s) => s.category))];
+  const avatarIcons = [];
+  const avatarCategories = [...new Set(STYLES.map((s) => s.category))];
 
   // 16 seeds × 8 styles = 128 unique avatars
   const seedPick = SEEDS.slice(0, 16);
@@ -134,7 +155,7 @@ async function main() {
         const raw = await fetchSvg(url);
         const svg = wrapAvatar(raw, bg, id);
         fs.writeFileSync(path.join(OUT_DIR, `${id}.svg`), svg);
-        icons.push({
+        avatarIcons.push({
           id,
           name: `${style.name} · ${seed}`,
           motif: seed.toLowerCase(),
@@ -150,9 +171,22 @@ async function main() {
     }
   }
 
-  icons.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+  avatarIcons.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 
-  const catalog = `/* Auto-generated DiceBear avatar pack for GridIron */
+  const sportsIcons = loadExistingCatalogIcons().filter((icon) => {
+    if (isAvatarIconId(icon.id)) return false;
+    return fs.existsSync(path.join(OUT_DIR, `${icon.id}.svg`));
+  });
+
+  const icons = [...sportsIcons, ...avatarIcons];
+  const categories = [
+    ...new Set([
+      ...sportsIcons.map((i) => i.category),
+      ...avatarCategories
+    ])
+  ];
+
+  const catalog = `/* Auto-generated GridIron icon pack (sports + avatars) */
 window.GridIronIcons = {
   recommendedSize: 512,
   minSize: 256,
@@ -162,7 +196,9 @@ window.GridIronIcons = {
 };
 `;
   fs.writeFileSync(CATALOG, catalog);
-  console.log(`\nWrote ${icons.length} avatars → ${OUT_DIR}`);
+  console.log(
+    `\nWrote ${avatarIcons.length} avatars; kept ${sportsIcons.length} sports; catalog total ${icons.length}`
+  );
   console.log(`Catalog → ${CATALOG}`);
 }
 

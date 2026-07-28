@@ -337,20 +337,28 @@ const ICONS = [
   }
 ];
 
+function loadExistingCatalogIcons() {
+  if (!fs.existsSync(CATALOG)) return [];
+  try {
+    const raw = fs.readFileSync(CATALOG, 'utf8');
+    const match = raw.match(/icons:\s*(\[[\s\S]*?\n\s*\])\s*\n\}/);
+    if (!match) return [];
+    return JSON.parse(match[1]);
+  } catch {
+    return [];
+  }
+}
+
 function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
-  for (const file of fs.readdirSync(OUT_DIR)) {
-    if (file.endsWith('.svg')) fs.unlinkSync(path.join(OUT_DIR, file));
-  }
 
-  const icons = [];
+  const sportsIds = new Set();
+  const sportsIcons = [];
   for (const icon of ICONS) {
     for (const color of COLORS) {
-      // Fix strokes that used currentColor inside fill group — rewrite bodies to use fg
       let body = icon.body
         .replaceAll('stroke="currentColor"', `stroke="${color.fg}"`)
         .replaceAll('fill="currentColor"', `fill="${color.fg}"`);
-      // Paths with only stroke and no fill attribute may inherit fill from parent g — neutralize
       body = body.replace(/<path([^>]*stroke=)/g, (m, rest) => {
         if (/fill=/.test(m)) return m;
         return `<path fill="none"${rest}`;
@@ -358,9 +366,10 @@ function main() {
       body = body.replace(/<line /g, '<line fill="none" ');
 
       const id = `${icon.id}-${color.id}`;
+      sportsIds.add(id);
       const markup = svg(color.fg, color.bg, body);
       fs.writeFileSync(path.join(OUT_DIR, `${id}.svg`), markup);
-      icons.push({
+      sportsIcons.push({
         id,
         name: icon.name,
         motif: icon.id,
@@ -371,8 +380,21 @@ function main() {
     }
   }
 
-  const categories = [...new Set(ICONS.map((i) => i.category))];
-  fs.writeFileSync(CATALOG, `/* Auto-generated sports icon pack */
+  // Keep fun avatar pack entries that still have files on disk.
+  const prior = loadExistingCatalogIcons().filter((icon) => {
+    if (sportsIds.has(icon.id)) return false;
+    return fs.existsSync(path.join(OUT_DIR, `${icon.id}.svg`));
+  });
+
+  const icons = [...sportsIcons, ...prior];
+  const categories = [
+    ...new Set([
+      ...ICONS.map((i) => i.category),
+      ...prior.map((i) => i.category)
+    ])
+  ];
+
+  fs.writeFileSync(CATALOG, `/* Auto-generated GridIron icon pack (sports + avatars) */
 window.GridIronIcons = {
   recommendedSize: 512,
   minSize: 256,
@@ -381,7 +403,9 @@ window.GridIronIcons = {
   icons: ${JSON.stringify(icons, null, 2)}
 };
 `);
-  console.log(`Generated ${icons.length} sports icons (${ICONS.length} marks × ${COLORS.length} colors)`);
+  console.log(
+    `Generated ${sportsIcons.length} sports icons; kept ${prior.length} avatars; catalog total ${icons.length}`
+  );
 }
 
 main();

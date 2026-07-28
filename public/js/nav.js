@@ -30,9 +30,17 @@
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
+  function isStaff(user) {
+    return user?.role === 'commissioner' || user?.role === 'conference_admin';
+  }
+
   function renderNav(user) {
     if (!nav) return;
-    nav.innerHTML = allLinks.map((link) => {
+    const links = allLinks.slice();
+    if (isStaff(user)) {
+      links.push({ href: '/league-tools.html', label: 'Tools', key: 'league-tools' });
+    }
+    nav.innerHTML = links.map((link) => {
       const cls = link.key === navActive ? 'active' : '';
       return `<a class="${cls}" href="${link.href}">${link.label}</a>`;
     }).join('');

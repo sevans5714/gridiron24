@@ -1,10 +1,1930 @@
-/* Auto-generated DiceBear avatar pack for GridIron */
+/* Auto-generated GridIron icon pack (sports + avatars) */
 window.GridIronIcons = {
   recommendedSize: 512,
   minSize: 256,
   maxSize: 1024,
-  categories: ["Characters","Robots","Fun"],
+  categories: ["Ball","Gear","Field","Champ","Crest","Power","Animals","Marks","Characters","Fun","Robots"],
   icons: [
+  {
+    "id": "football-white",
+    "name": "Football",
+    "motif": "football",
+    "category": "Ball",
+    "palette": "white",
+    "src": "/assets/team-icons/football-white.svg"
+  },
+  {
+    "id": "football-gold",
+    "name": "Football",
+    "motif": "football",
+    "category": "Ball",
+    "palette": "gold",
+    "src": "/assets/team-icons/football-gold.svg"
+  },
+  {
+    "id": "football-blue",
+    "name": "Football",
+    "motif": "football",
+    "category": "Ball",
+    "palette": "blue",
+    "src": "/assets/team-icons/football-blue.svg"
+  },
+  {
+    "id": "football-orange",
+    "name": "Football",
+    "motif": "football",
+    "category": "Ball",
+    "palette": "orange",
+    "src": "/assets/team-icons/football-orange.svg"
+  },
+  {
+    "id": "football-red",
+    "name": "Football",
+    "motif": "football",
+    "category": "Ball",
+    "palette": "red",
+    "src": "/assets/team-icons/football-red.svg"
+  },
+  {
+    "id": "football-green",
+    "name": "Football",
+    "motif": "football",
+    "category": "Ball",
+    "palette": "green",
+    "src": "/assets/team-icons/football-green.svg"
+  },
+  {
+    "id": "helmet-white",
+    "name": "Helmet",
+    "motif": "helmet",
+    "category": "Gear",
+    "palette": "white",
+    "src": "/assets/team-icons/helmet-white.svg"
+  },
+  {
+    "id": "helmet-gold",
+    "name": "Helmet",
+    "motif": "helmet",
+    "category": "Gear",
+    "palette": "gold",
+    "src": "/assets/team-icons/helmet-gold.svg"
+  },
+  {
+    "id": "helmet-blue",
+    "name": "Helmet",
+    "motif": "helmet",
+    "category": "Gear",
+    "palette": "blue",
+    "src": "/assets/team-icons/helmet-blue.svg"
+  },
+  {
+    "id": "helmet-orange",
+    "name": "Helmet",
+    "motif": "helmet",
+    "category": "Gear",
+    "palette": "orange",
+    "src": "/assets/team-icons/helmet-orange.svg"
+  },
+  {
+    "id": "helmet-red",
+    "name": "Helmet",
+    "motif": "helmet",
+    "category": "Gear",
+    "palette": "red",
+    "src": "/assets/team-icons/helmet-red.svg"
+  },
+  {
+    "id": "helmet-green",
+    "name": "Helmet",
+    "motif": "helmet",
+    "category": "Gear",
+    "palette": "green",
+    "src": "/assets/team-icons/helmet-green.svg"
+  },
+  {
+    "id": "cleat-white",
+    "name": "Cleat",
+    "motif": "cleat",
+    "category": "Gear",
+    "palette": "white",
+    "src": "/assets/team-icons/cleat-white.svg"
+  },
+  {
+    "id": "cleat-gold",
+    "name": "Cleat",
+    "motif": "cleat",
+    "category": "Gear",
+    "palette": "gold",
+    "src": "/assets/team-icons/cleat-gold.svg"
+  },
+  {
+    "id": "cleat-blue",
+    "name": "Cleat",
+    "motif": "cleat",
+    "category": "Gear",
+    "palette": "blue",
+    "src": "/assets/team-icons/cleat-blue.svg"
+  },
+  {
+    "id": "cleat-orange",
+    "name": "Cleat",
+    "motif": "cleat",
+    "category": "Gear",
+    "palette": "orange",
+    "src": "/assets/team-icons/cleat-orange.svg"
+  },
+  {
+    "id": "cleat-red",
+    "name": "Cleat",
+    "motif": "cleat",
+    "category": "Gear",
+    "palette": "red",
+    "src": "/assets/team-icons/cleat-red.svg"
+  },
+  {
+    "id": "cleat-green",
+    "name": "Cleat",
+    "motif": "cleat",
+    "category": "Gear",
+    "palette": "green",
+    "src": "/assets/team-icons/cleat-green.svg"
+  },
+  {
+    "id": "jersey-white",
+    "name": "Jersey",
+    "motif": "jersey",
+    "category": "Gear",
+    "palette": "white",
+    "src": "/assets/team-icons/jersey-white.svg"
+  },
+  {
+    "id": "jersey-gold",
+    "name": "Jersey",
+    "motif": "jersey",
+    "category": "Gear",
+    "palette": "gold",
+    "src": "/assets/team-icons/jersey-gold.svg"
+  },
+  {
+    "id": "jersey-blue",
+    "name": "Jersey",
+    "motif": "jersey",
+    "category": "Gear",
+    "palette": "blue",
+    "src": "/assets/team-icons/jersey-blue.svg"
+  },
+  {
+    "id": "jersey-orange",
+    "name": "Jersey",
+    "motif": "jersey",
+    "category": "Gear",
+    "palette": "orange",
+    "src": "/assets/team-icons/jersey-orange.svg"
+  },
+  {
+    "id": "jersey-red",
+    "name": "Jersey",
+    "motif": "jersey",
+    "category": "Gear",
+    "palette": "red",
+    "src": "/assets/team-icons/jersey-red.svg"
+  },
+  {
+    "id": "jersey-green",
+    "name": "Jersey",
+    "motif": "jersey",
+    "category": "Gear",
+    "palette": "green",
+    "src": "/assets/team-icons/jersey-green.svg"
+  },
+  {
+    "id": "glove-white",
+    "name": "Glove",
+    "motif": "glove",
+    "category": "Gear",
+    "palette": "white",
+    "src": "/assets/team-icons/glove-white.svg"
+  },
+  {
+    "id": "glove-gold",
+    "name": "Glove",
+    "motif": "glove",
+    "category": "Gear",
+    "palette": "gold",
+    "src": "/assets/team-icons/glove-gold.svg"
+  },
+  {
+    "id": "glove-blue",
+    "name": "Glove",
+    "motif": "glove",
+    "category": "Gear",
+    "palette": "blue",
+    "src": "/assets/team-icons/glove-blue.svg"
+  },
+  {
+    "id": "glove-orange",
+    "name": "Glove",
+    "motif": "glove",
+    "category": "Gear",
+    "palette": "orange",
+    "src": "/assets/team-icons/glove-orange.svg"
+  },
+  {
+    "id": "glove-red",
+    "name": "Glove",
+    "motif": "glove",
+    "category": "Gear",
+    "palette": "red",
+    "src": "/assets/team-icons/glove-red.svg"
+  },
+  {
+    "id": "glove-green",
+    "name": "Glove",
+    "motif": "glove",
+    "category": "Gear",
+    "palette": "green",
+    "src": "/assets/team-icons/glove-green.svg"
+  },
+  {
+    "id": "whistle-white",
+    "name": "Whistle",
+    "motif": "whistle",
+    "category": "Gear",
+    "palette": "white",
+    "src": "/assets/team-icons/whistle-white.svg"
+  },
+  {
+    "id": "whistle-gold",
+    "name": "Whistle",
+    "motif": "whistle",
+    "category": "Gear",
+    "palette": "gold",
+    "src": "/assets/team-icons/whistle-gold.svg"
+  },
+  {
+    "id": "whistle-blue",
+    "name": "Whistle",
+    "motif": "whistle",
+    "category": "Gear",
+    "palette": "blue",
+    "src": "/assets/team-icons/whistle-blue.svg"
+  },
+  {
+    "id": "whistle-orange",
+    "name": "Whistle",
+    "motif": "whistle",
+    "category": "Gear",
+    "palette": "orange",
+    "src": "/assets/team-icons/whistle-orange.svg"
+  },
+  {
+    "id": "whistle-red",
+    "name": "Whistle",
+    "motif": "whistle",
+    "category": "Gear",
+    "palette": "red",
+    "src": "/assets/team-icons/whistle-red.svg"
+  },
+  {
+    "id": "whistle-green",
+    "name": "Whistle",
+    "motif": "whistle",
+    "category": "Gear",
+    "palette": "green",
+    "src": "/assets/team-icons/whistle-green.svg"
+  },
+  {
+    "id": "goalpost-white",
+    "name": "Goalposts",
+    "motif": "goalpost",
+    "category": "Field",
+    "palette": "white",
+    "src": "/assets/team-icons/goalpost-white.svg"
+  },
+  {
+    "id": "goalpost-gold",
+    "name": "Goalposts",
+    "motif": "goalpost",
+    "category": "Field",
+    "palette": "gold",
+    "src": "/assets/team-icons/goalpost-gold.svg"
+  },
+  {
+    "id": "goalpost-blue",
+    "name": "Goalposts",
+    "motif": "goalpost",
+    "category": "Field",
+    "palette": "blue",
+    "src": "/assets/team-icons/goalpost-blue.svg"
+  },
+  {
+    "id": "goalpost-orange",
+    "name": "Goalposts",
+    "motif": "goalpost",
+    "category": "Field",
+    "palette": "orange",
+    "src": "/assets/team-icons/goalpost-orange.svg"
+  },
+  {
+    "id": "goalpost-red",
+    "name": "Goalposts",
+    "motif": "goalpost",
+    "category": "Field",
+    "palette": "red",
+    "src": "/assets/team-icons/goalpost-red.svg"
+  },
+  {
+    "id": "goalpost-green",
+    "name": "Goalposts",
+    "motif": "goalpost",
+    "category": "Field",
+    "palette": "green",
+    "src": "/assets/team-icons/goalpost-green.svg"
+  },
+  {
+    "id": "field-white",
+    "name": "Field",
+    "motif": "field",
+    "category": "Field",
+    "palette": "white",
+    "src": "/assets/team-icons/field-white.svg"
+  },
+  {
+    "id": "field-gold",
+    "name": "Field",
+    "motif": "field",
+    "category": "Field",
+    "palette": "gold",
+    "src": "/assets/team-icons/field-gold.svg"
+  },
+  {
+    "id": "field-blue",
+    "name": "Field",
+    "motif": "field",
+    "category": "Field",
+    "palette": "blue",
+    "src": "/assets/team-icons/field-blue.svg"
+  },
+  {
+    "id": "field-orange",
+    "name": "Field",
+    "motif": "field",
+    "category": "Field",
+    "palette": "orange",
+    "src": "/assets/team-icons/field-orange.svg"
+  },
+  {
+    "id": "field-red",
+    "name": "Field",
+    "motif": "field",
+    "category": "Field",
+    "palette": "red",
+    "src": "/assets/team-icons/field-red.svg"
+  },
+  {
+    "id": "field-green",
+    "name": "Field",
+    "motif": "field",
+    "category": "Field",
+    "palette": "green",
+    "src": "/assets/team-icons/field-green.svg"
+  },
+  {
+    "id": "first-down-white",
+    "name": "First Down",
+    "motif": "first-down",
+    "category": "Field",
+    "palette": "white",
+    "src": "/assets/team-icons/first-down-white.svg"
+  },
+  {
+    "id": "first-down-gold",
+    "name": "First Down",
+    "motif": "first-down",
+    "category": "Field",
+    "palette": "gold",
+    "src": "/assets/team-icons/first-down-gold.svg"
+  },
+  {
+    "id": "first-down-blue",
+    "name": "First Down",
+    "motif": "first-down",
+    "category": "Field",
+    "palette": "blue",
+    "src": "/assets/team-icons/first-down-blue.svg"
+  },
+  {
+    "id": "first-down-orange",
+    "name": "First Down",
+    "motif": "first-down",
+    "category": "Field",
+    "palette": "orange",
+    "src": "/assets/team-icons/first-down-orange.svg"
+  },
+  {
+    "id": "first-down-red",
+    "name": "First Down",
+    "motif": "first-down",
+    "category": "Field",
+    "palette": "red",
+    "src": "/assets/team-icons/first-down-red.svg"
+  },
+  {
+    "id": "first-down-green",
+    "name": "First Down",
+    "motif": "first-down",
+    "category": "Field",
+    "palette": "green",
+    "src": "/assets/team-icons/first-down-green.svg"
+  },
+  {
+    "id": "spike-white",
+    "name": "Spike",
+    "motif": "spike",
+    "category": "Field",
+    "palette": "white",
+    "src": "/assets/team-icons/spike-white.svg"
+  },
+  {
+    "id": "spike-gold",
+    "name": "Spike",
+    "motif": "spike",
+    "category": "Field",
+    "palette": "gold",
+    "src": "/assets/team-icons/spike-gold.svg"
+  },
+  {
+    "id": "spike-blue",
+    "name": "Spike",
+    "motif": "spike",
+    "category": "Field",
+    "palette": "blue",
+    "src": "/assets/team-icons/spike-blue.svg"
+  },
+  {
+    "id": "spike-orange",
+    "name": "Spike",
+    "motif": "spike",
+    "category": "Field",
+    "palette": "orange",
+    "src": "/assets/team-icons/spike-orange.svg"
+  },
+  {
+    "id": "spike-red",
+    "name": "Spike",
+    "motif": "spike",
+    "category": "Field",
+    "palette": "red",
+    "src": "/assets/team-icons/spike-red.svg"
+  },
+  {
+    "id": "spike-green",
+    "name": "Spike",
+    "motif": "spike",
+    "category": "Field",
+    "palette": "green",
+    "src": "/assets/team-icons/spike-green.svg"
+  },
+  {
+    "id": "trophy-white",
+    "name": "Trophy",
+    "motif": "trophy",
+    "category": "Champ",
+    "palette": "white",
+    "src": "/assets/team-icons/trophy-white.svg"
+  },
+  {
+    "id": "trophy-gold",
+    "name": "Trophy",
+    "motif": "trophy",
+    "category": "Champ",
+    "palette": "gold",
+    "src": "/assets/team-icons/trophy-gold.svg"
+  },
+  {
+    "id": "trophy-blue",
+    "name": "Trophy",
+    "motif": "trophy",
+    "category": "Champ",
+    "palette": "blue",
+    "src": "/assets/team-icons/trophy-blue.svg"
+  },
+  {
+    "id": "trophy-orange",
+    "name": "Trophy",
+    "motif": "trophy",
+    "category": "Champ",
+    "palette": "orange",
+    "src": "/assets/team-icons/trophy-orange.svg"
+  },
+  {
+    "id": "trophy-red",
+    "name": "Trophy",
+    "motif": "trophy",
+    "category": "Champ",
+    "palette": "red",
+    "src": "/assets/team-icons/trophy-red.svg"
+  },
+  {
+    "id": "trophy-green",
+    "name": "Trophy",
+    "motif": "trophy",
+    "category": "Champ",
+    "palette": "green",
+    "src": "/assets/team-icons/trophy-green.svg"
+  },
+  {
+    "id": "medal-white",
+    "name": "Medal",
+    "motif": "medal",
+    "category": "Champ",
+    "palette": "white",
+    "src": "/assets/team-icons/medal-white.svg"
+  },
+  {
+    "id": "medal-gold",
+    "name": "Medal",
+    "motif": "medal",
+    "category": "Champ",
+    "palette": "gold",
+    "src": "/assets/team-icons/medal-gold.svg"
+  },
+  {
+    "id": "medal-blue",
+    "name": "Medal",
+    "motif": "medal",
+    "category": "Champ",
+    "palette": "blue",
+    "src": "/assets/team-icons/medal-blue.svg"
+  },
+  {
+    "id": "medal-orange",
+    "name": "Medal",
+    "motif": "medal",
+    "category": "Champ",
+    "palette": "orange",
+    "src": "/assets/team-icons/medal-orange.svg"
+  },
+  {
+    "id": "medal-red",
+    "name": "Medal",
+    "motif": "medal",
+    "category": "Champ",
+    "palette": "red",
+    "src": "/assets/team-icons/medal-red.svg"
+  },
+  {
+    "id": "medal-green",
+    "name": "Medal",
+    "motif": "medal",
+    "category": "Champ",
+    "palette": "green",
+    "src": "/assets/team-icons/medal-green.svg"
+  },
+  {
+    "id": "crown-white",
+    "name": "Crown",
+    "motif": "crown",
+    "category": "Champ",
+    "palette": "white",
+    "src": "/assets/team-icons/crown-white.svg"
+  },
+  {
+    "id": "crown-gold",
+    "name": "Crown",
+    "motif": "crown",
+    "category": "Champ",
+    "palette": "gold",
+    "src": "/assets/team-icons/crown-gold.svg"
+  },
+  {
+    "id": "crown-blue",
+    "name": "Crown",
+    "motif": "crown",
+    "category": "Champ",
+    "palette": "blue",
+    "src": "/assets/team-icons/crown-blue.svg"
+  },
+  {
+    "id": "crown-orange",
+    "name": "Crown",
+    "motif": "crown",
+    "category": "Champ",
+    "palette": "orange",
+    "src": "/assets/team-icons/crown-orange.svg"
+  },
+  {
+    "id": "crown-red",
+    "name": "Crown",
+    "motif": "crown",
+    "category": "Champ",
+    "palette": "red",
+    "src": "/assets/team-icons/crown-red.svg"
+  },
+  {
+    "id": "crown-green",
+    "name": "Crown",
+    "motif": "crown",
+    "category": "Champ",
+    "palette": "green",
+    "src": "/assets/team-icons/crown-green.svg"
+  },
+  {
+    "id": "ring-white",
+    "name": "Ring",
+    "motif": "ring",
+    "category": "Champ",
+    "palette": "white",
+    "src": "/assets/team-icons/ring-white.svg"
+  },
+  {
+    "id": "ring-gold",
+    "name": "Ring",
+    "motif": "ring",
+    "category": "Champ",
+    "palette": "gold",
+    "src": "/assets/team-icons/ring-gold.svg"
+  },
+  {
+    "id": "ring-blue",
+    "name": "Ring",
+    "motif": "ring",
+    "category": "Champ",
+    "palette": "blue",
+    "src": "/assets/team-icons/ring-blue.svg"
+  },
+  {
+    "id": "ring-orange",
+    "name": "Ring",
+    "motif": "ring",
+    "category": "Champ",
+    "palette": "orange",
+    "src": "/assets/team-icons/ring-orange.svg"
+  },
+  {
+    "id": "ring-red",
+    "name": "Ring",
+    "motif": "ring",
+    "category": "Champ",
+    "palette": "red",
+    "src": "/assets/team-icons/ring-red.svg"
+  },
+  {
+    "id": "ring-green",
+    "name": "Ring",
+    "motif": "ring",
+    "category": "Champ",
+    "palette": "green",
+    "src": "/assets/team-icons/ring-green.svg"
+  },
+  {
+    "id": "star-white",
+    "name": "Star",
+    "motif": "star",
+    "category": "Champ",
+    "palette": "white",
+    "src": "/assets/team-icons/star-white.svg"
+  },
+  {
+    "id": "star-gold",
+    "name": "Star",
+    "motif": "star",
+    "category": "Champ",
+    "palette": "gold",
+    "src": "/assets/team-icons/star-gold.svg"
+  },
+  {
+    "id": "star-blue",
+    "name": "Star",
+    "motif": "star",
+    "category": "Champ",
+    "palette": "blue",
+    "src": "/assets/team-icons/star-blue.svg"
+  },
+  {
+    "id": "star-orange",
+    "name": "Star",
+    "motif": "star",
+    "category": "Champ",
+    "palette": "orange",
+    "src": "/assets/team-icons/star-orange.svg"
+  },
+  {
+    "id": "star-red",
+    "name": "Star",
+    "motif": "star",
+    "category": "Champ",
+    "palette": "red",
+    "src": "/assets/team-icons/star-red.svg"
+  },
+  {
+    "id": "star-green",
+    "name": "Star",
+    "motif": "star",
+    "category": "Champ",
+    "palette": "green",
+    "src": "/assets/team-icons/star-green.svg"
+  },
+  {
+    "id": "shield-white",
+    "name": "Shield",
+    "motif": "shield",
+    "category": "Crest",
+    "palette": "white",
+    "src": "/assets/team-icons/shield-white.svg"
+  },
+  {
+    "id": "shield-gold",
+    "name": "Shield",
+    "motif": "shield",
+    "category": "Crest",
+    "palette": "gold",
+    "src": "/assets/team-icons/shield-gold.svg"
+  },
+  {
+    "id": "shield-blue",
+    "name": "Shield",
+    "motif": "shield",
+    "category": "Crest",
+    "palette": "blue",
+    "src": "/assets/team-icons/shield-blue.svg"
+  },
+  {
+    "id": "shield-orange",
+    "name": "Shield",
+    "motif": "shield",
+    "category": "Crest",
+    "palette": "orange",
+    "src": "/assets/team-icons/shield-orange.svg"
+  },
+  {
+    "id": "shield-red",
+    "name": "Shield",
+    "motif": "shield",
+    "category": "Crest",
+    "palette": "red",
+    "src": "/assets/team-icons/shield-red.svg"
+  },
+  {
+    "id": "shield-green",
+    "name": "Shield",
+    "motif": "shield",
+    "category": "Crest",
+    "palette": "green",
+    "src": "/assets/team-icons/shield-green.svg"
+  },
+  {
+    "id": "bolt-white",
+    "name": "Lightning",
+    "motif": "bolt",
+    "category": "Power",
+    "palette": "white",
+    "src": "/assets/team-icons/bolt-white.svg"
+  },
+  {
+    "id": "bolt-gold",
+    "name": "Lightning",
+    "motif": "bolt",
+    "category": "Power",
+    "palette": "gold",
+    "src": "/assets/team-icons/bolt-gold.svg"
+  },
+  {
+    "id": "bolt-blue",
+    "name": "Lightning",
+    "motif": "bolt",
+    "category": "Power",
+    "palette": "blue",
+    "src": "/assets/team-icons/bolt-blue.svg"
+  },
+  {
+    "id": "bolt-orange",
+    "name": "Lightning",
+    "motif": "bolt",
+    "category": "Power",
+    "palette": "orange",
+    "src": "/assets/team-icons/bolt-orange.svg"
+  },
+  {
+    "id": "bolt-red",
+    "name": "Lightning",
+    "motif": "bolt",
+    "category": "Power",
+    "palette": "red",
+    "src": "/assets/team-icons/bolt-red.svg"
+  },
+  {
+    "id": "bolt-green",
+    "name": "Lightning",
+    "motif": "bolt",
+    "category": "Power",
+    "palette": "green",
+    "src": "/assets/team-icons/bolt-green.svg"
+  },
+  {
+    "id": "flame-white",
+    "name": "Flame",
+    "motif": "flame",
+    "category": "Power",
+    "palette": "white",
+    "src": "/assets/team-icons/flame-white.svg"
+  },
+  {
+    "id": "flame-gold",
+    "name": "Flame",
+    "motif": "flame",
+    "category": "Power",
+    "palette": "gold",
+    "src": "/assets/team-icons/flame-gold.svg"
+  },
+  {
+    "id": "flame-blue",
+    "name": "Flame",
+    "motif": "flame",
+    "category": "Power",
+    "palette": "blue",
+    "src": "/assets/team-icons/flame-blue.svg"
+  },
+  {
+    "id": "flame-orange",
+    "name": "Flame",
+    "motif": "flame",
+    "category": "Power",
+    "palette": "orange",
+    "src": "/assets/team-icons/flame-orange.svg"
+  },
+  {
+    "id": "flame-red",
+    "name": "Flame",
+    "motif": "flame",
+    "category": "Power",
+    "palette": "red",
+    "src": "/assets/team-icons/flame-red.svg"
+  },
+  {
+    "id": "flame-green",
+    "name": "Flame",
+    "motif": "flame",
+    "category": "Power",
+    "palette": "green",
+    "src": "/assets/team-icons/flame-green.svg"
+  },
+  {
+    "id": "fist-white",
+    "name": "Fist",
+    "motif": "fist",
+    "category": "Power",
+    "palette": "white",
+    "src": "/assets/team-icons/fist-white.svg"
+  },
+  {
+    "id": "fist-gold",
+    "name": "Fist",
+    "motif": "fist",
+    "category": "Power",
+    "palette": "gold",
+    "src": "/assets/team-icons/fist-gold.svg"
+  },
+  {
+    "id": "fist-blue",
+    "name": "Fist",
+    "motif": "fist",
+    "category": "Power",
+    "palette": "blue",
+    "src": "/assets/team-icons/fist-blue.svg"
+  },
+  {
+    "id": "fist-orange",
+    "name": "Fist",
+    "motif": "fist",
+    "category": "Power",
+    "palette": "orange",
+    "src": "/assets/team-icons/fist-orange.svg"
+  },
+  {
+    "id": "fist-red",
+    "name": "Fist",
+    "motif": "fist",
+    "category": "Power",
+    "palette": "red",
+    "src": "/assets/team-icons/fist-red.svg"
+  },
+  {
+    "id": "fist-green",
+    "name": "Fist",
+    "motif": "fist",
+    "category": "Power",
+    "palette": "green",
+    "src": "/assets/team-icons/fist-green.svg"
+  },
+  {
+    "id": "target-white",
+    "name": "Target",
+    "motif": "target",
+    "category": "Power",
+    "palette": "white",
+    "src": "/assets/team-icons/target-white.svg"
+  },
+  {
+    "id": "target-gold",
+    "name": "Target",
+    "motif": "target",
+    "category": "Power",
+    "palette": "gold",
+    "src": "/assets/team-icons/target-gold.svg"
+  },
+  {
+    "id": "target-blue",
+    "name": "Target",
+    "motif": "target",
+    "category": "Power",
+    "palette": "blue",
+    "src": "/assets/team-icons/target-blue.svg"
+  },
+  {
+    "id": "target-orange",
+    "name": "Target",
+    "motif": "target",
+    "category": "Power",
+    "palette": "orange",
+    "src": "/assets/team-icons/target-orange.svg"
+  },
+  {
+    "id": "target-red",
+    "name": "Target",
+    "motif": "target",
+    "category": "Power",
+    "palette": "red",
+    "src": "/assets/team-icons/target-red.svg"
+  },
+  {
+    "id": "target-green",
+    "name": "Target",
+    "motif": "target",
+    "category": "Power",
+    "palette": "green",
+    "src": "/assets/team-icons/target-green.svg"
+  },
+  {
+    "id": "hawk-white",
+    "name": "Hawk",
+    "motif": "hawk",
+    "category": "Animals",
+    "palette": "white",
+    "src": "/assets/team-icons/hawk-white.svg"
+  },
+  {
+    "id": "hawk-gold",
+    "name": "Hawk",
+    "motif": "hawk",
+    "category": "Animals",
+    "palette": "gold",
+    "src": "/assets/team-icons/hawk-gold.svg"
+  },
+  {
+    "id": "hawk-blue",
+    "name": "Hawk",
+    "motif": "hawk",
+    "category": "Animals",
+    "palette": "blue",
+    "src": "/assets/team-icons/hawk-blue.svg"
+  },
+  {
+    "id": "hawk-orange",
+    "name": "Hawk",
+    "motif": "hawk",
+    "category": "Animals",
+    "palette": "orange",
+    "src": "/assets/team-icons/hawk-orange.svg"
+  },
+  {
+    "id": "hawk-red",
+    "name": "Hawk",
+    "motif": "hawk",
+    "category": "Animals",
+    "palette": "red",
+    "src": "/assets/team-icons/hawk-red.svg"
+  },
+  {
+    "id": "hawk-green",
+    "name": "Hawk",
+    "motif": "hawk",
+    "category": "Animals",
+    "palette": "green",
+    "src": "/assets/team-icons/hawk-green.svg"
+  },
+  {
+    "id": "wolf-white",
+    "name": "Wolf",
+    "motif": "wolf",
+    "category": "Animals",
+    "palette": "white",
+    "src": "/assets/team-icons/wolf-white.svg"
+  },
+  {
+    "id": "wolf-gold",
+    "name": "Wolf",
+    "motif": "wolf",
+    "category": "Animals",
+    "palette": "gold",
+    "src": "/assets/team-icons/wolf-gold.svg"
+  },
+  {
+    "id": "wolf-blue",
+    "name": "Wolf",
+    "motif": "wolf",
+    "category": "Animals",
+    "palette": "blue",
+    "src": "/assets/team-icons/wolf-blue.svg"
+  },
+  {
+    "id": "wolf-orange",
+    "name": "Wolf",
+    "motif": "wolf",
+    "category": "Animals",
+    "palette": "orange",
+    "src": "/assets/team-icons/wolf-orange.svg"
+  },
+  {
+    "id": "wolf-red",
+    "name": "Wolf",
+    "motif": "wolf",
+    "category": "Animals",
+    "palette": "red",
+    "src": "/assets/team-icons/wolf-red.svg"
+  },
+  {
+    "id": "wolf-green",
+    "name": "Wolf",
+    "motif": "wolf",
+    "category": "Animals",
+    "palette": "green",
+    "src": "/assets/team-icons/wolf-green.svg"
+  },
+  {
+    "id": "bull-white",
+    "name": "Bull",
+    "motif": "bull",
+    "category": "Animals",
+    "palette": "white",
+    "src": "/assets/team-icons/bull-white.svg"
+  },
+  {
+    "id": "bull-gold",
+    "name": "Bull",
+    "motif": "bull",
+    "category": "Animals",
+    "palette": "gold",
+    "src": "/assets/team-icons/bull-gold.svg"
+  },
+  {
+    "id": "bull-blue",
+    "name": "Bull",
+    "motif": "bull",
+    "category": "Animals",
+    "palette": "blue",
+    "src": "/assets/team-icons/bull-blue.svg"
+  },
+  {
+    "id": "bull-orange",
+    "name": "Bull",
+    "motif": "bull",
+    "category": "Animals",
+    "palette": "orange",
+    "src": "/assets/team-icons/bull-orange.svg"
+  },
+  {
+    "id": "bull-red",
+    "name": "Bull",
+    "motif": "bull",
+    "category": "Animals",
+    "palette": "red",
+    "src": "/assets/team-icons/bull-red.svg"
+  },
+  {
+    "id": "bull-green",
+    "name": "Bull",
+    "motif": "bull",
+    "category": "Animals",
+    "palette": "green",
+    "src": "/assets/team-icons/bull-green.svg"
+  },
+  {
+    "id": "bear-white",
+    "name": "Bear",
+    "motif": "bear",
+    "category": "Animals",
+    "palette": "white",
+    "src": "/assets/team-icons/bear-white.svg"
+  },
+  {
+    "id": "bear-gold",
+    "name": "Bear",
+    "motif": "bear",
+    "category": "Animals",
+    "palette": "gold",
+    "src": "/assets/team-icons/bear-gold.svg"
+  },
+  {
+    "id": "bear-blue",
+    "name": "Bear",
+    "motif": "bear",
+    "category": "Animals",
+    "palette": "blue",
+    "src": "/assets/team-icons/bear-blue.svg"
+  },
+  {
+    "id": "bear-orange",
+    "name": "Bear",
+    "motif": "bear",
+    "category": "Animals",
+    "palette": "orange",
+    "src": "/assets/team-icons/bear-orange.svg"
+  },
+  {
+    "id": "bear-red",
+    "name": "Bear",
+    "motif": "bear",
+    "category": "Animals",
+    "palette": "red",
+    "src": "/assets/team-icons/bear-red.svg"
+  },
+  {
+    "id": "bear-green",
+    "name": "Bear",
+    "motif": "bear",
+    "category": "Animals",
+    "palette": "green",
+    "src": "/assets/team-icons/bear-green.svg"
+  },
+  {
+    "id": "panther-white",
+    "name": "Panther",
+    "motif": "panther",
+    "category": "Animals",
+    "palette": "white",
+    "src": "/assets/team-icons/panther-white.svg"
+  },
+  {
+    "id": "panther-gold",
+    "name": "Panther",
+    "motif": "panther",
+    "category": "Animals",
+    "palette": "gold",
+    "src": "/assets/team-icons/panther-gold.svg"
+  },
+  {
+    "id": "panther-blue",
+    "name": "Panther",
+    "motif": "panther",
+    "category": "Animals",
+    "palette": "blue",
+    "src": "/assets/team-icons/panther-blue.svg"
+  },
+  {
+    "id": "panther-orange",
+    "name": "Panther",
+    "motif": "panther",
+    "category": "Animals",
+    "palette": "orange",
+    "src": "/assets/team-icons/panther-orange.svg"
+  },
+  {
+    "id": "panther-red",
+    "name": "Panther",
+    "motif": "panther",
+    "category": "Animals",
+    "palette": "red",
+    "src": "/assets/team-icons/panther-red.svg"
+  },
+  {
+    "id": "panther-green",
+    "name": "Panther",
+    "motif": "panther",
+    "category": "Animals",
+    "palette": "green",
+    "src": "/assets/team-icons/panther-green.svg"
+  },
+  {
+    "id": "eagle-white",
+    "name": "Eagle",
+    "motif": "eagle",
+    "category": "Animals",
+    "palette": "white",
+    "src": "/assets/team-icons/eagle-white.svg"
+  },
+  {
+    "id": "eagle-gold",
+    "name": "Eagle",
+    "motif": "eagle",
+    "category": "Animals",
+    "palette": "gold",
+    "src": "/assets/team-icons/eagle-gold.svg"
+  },
+  {
+    "id": "eagle-blue",
+    "name": "Eagle",
+    "motif": "eagle",
+    "category": "Animals",
+    "palette": "blue",
+    "src": "/assets/team-icons/eagle-blue.svg"
+  },
+  {
+    "id": "eagle-orange",
+    "name": "Eagle",
+    "motif": "eagle",
+    "category": "Animals",
+    "palette": "orange",
+    "src": "/assets/team-icons/eagle-orange.svg"
+  },
+  {
+    "id": "eagle-red",
+    "name": "Eagle",
+    "motif": "eagle",
+    "category": "Animals",
+    "palette": "red",
+    "src": "/assets/team-icons/eagle-red.svg"
+  },
+  {
+    "id": "eagle-green",
+    "name": "Eagle",
+    "motif": "eagle",
+    "category": "Animals",
+    "palette": "green",
+    "src": "/assets/team-icons/eagle-green.svg"
+  },
+  {
+    "id": "shark-white",
+    "name": "Shark",
+    "motif": "shark",
+    "category": "Animals",
+    "palette": "white",
+    "src": "/assets/team-icons/shark-white.svg"
+  },
+  {
+    "id": "shark-gold",
+    "name": "Shark",
+    "motif": "shark",
+    "category": "Animals",
+    "palette": "gold",
+    "src": "/assets/team-icons/shark-gold.svg"
+  },
+  {
+    "id": "shark-blue",
+    "name": "Shark",
+    "motif": "shark",
+    "category": "Animals",
+    "palette": "blue",
+    "src": "/assets/team-icons/shark-blue.svg"
+  },
+  {
+    "id": "shark-orange",
+    "name": "Shark",
+    "motif": "shark",
+    "category": "Animals",
+    "palette": "orange",
+    "src": "/assets/team-icons/shark-orange.svg"
+  },
+  {
+    "id": "shark-red",
+    "name": "Shark",
+    "motif": "shark",
+    "category": "Animals",
+    "palette": "red",
+    "src": "/assets/team-icons/shark-red.svg"
+  },
+  {
+    "id": "shark-green",
+    "name": "Shark",
+    "motif": "shark",
+    "category": "Animals",
+    "palette": "green",
+    "src": "/assets/team-icons/shark-green.svg"
+  },
+  {
+    "id": "ram-white",
+    "name": "Ram",
+    "motif": "ram",
+    "category": "Animals",
+    "palette": "white",
+    "src": "/assets/team-icons/ram-white.svg"
+  },
+  {
+    "id": "ram-gold",
+    "name": "Ram",
+    "motif": "ram",
+    "category": "Animals",
+    "palette": "gold",
+    "src": "/assets/team-icons/ram-gold.svg"
+  },
+  {
+    "id": "ram-blue",
+    "name": "Ram",
+    "motif": "ram",
+    "category": "Animals",
+    "palette": "blue",
+    "src": "/assets/team-icons/ram-blue.svg"
+  },
+  {
+    "id": "ram-orange",
+    "name": "Ram",
+    "motif": "ram",
+    "category": "Animals",
+    "palette": "orange",
+    "src": "/assets/team-icons/ram-orange.svg"
+  },
+  {
+    "id": "ram-red",
+    "name": "Ram",
+    "motif": "ram",
+    "category": "Animals",
+    "palette": "red",
+    "src": "/assets/team-icons/ram-red.svg"
+  },
+  {
+    "id": "ram-green",
+    "name": "Ram",
+    "motif": "ram",
+    "category": "Animals",
+    "palette": "green",
+    "src": "/assets/team-icons/ram-green.svg"
+  },
+  {
+    "id": "mountain-white",
+    "name": "Mountain",
+    "motif": "mountain",
+    "category": "Marks",
+    "palette": "white",
+    "src": "/assets/team-icons/mountain-white.svg"
+  },
+  {
+    "id": "mountain-gold",
+    "name": "Mountain",
+    "motif": "mountain",
+    "category": "Marks",
+    "palette": "gold",
+    "src": "/assets/team-icons/mountain-gold.svg"
+  },
+  {
+    "id": "mountain-blue",
+    "name": "Mountain",
+    "motif": "mountain",
+    "category": "Marks",
+    "palette": "blue",
+    "src": "/assets/team-icons/mountain-blue.svg"
+  },
+  {
+    "id": "mountain-orange",
+    "name": "Mountain",
+    "motif": "mountain",
+    "category": "Marks",
+    "palette": "orange",
+    "src": "/assets/team-icons/mountain-orange.svg"
+  },
+  {
+    "id": "mountain-red",
+    "name": "Mountain",
+    "motif": "mountain",
+    "category": "Marks",
+    "palette": "red",
+    "src": "/assets/team-icons/mountain-red.svg"
+  },
+  {
+    "id": "mountain-green",
+    "name": "Mountain",
+    "motif": "mountain",
+    "category": "Marks",
+    "palette": "green",
+    "src": "/assets/team-icons/mountain-green.svg"
+  },
+  {
+    "id": "wave-white",
+    "name": "Wave",
+    "motif": "wave",
+    "category": "Marks",
+    "palette": "white",
+    "src": "/assets/team-icons/wave-white.svg"
+  },
+  {
+    "id": "wave-gold",
+    "name": "Wave",
+    "motif": "wave",
+    "category": "Marks",
+    "palette": "gold",
+    "src": "/assets/team-icons/wave-gold.svg"
+  },
+  {
+    "id": "wave-blue",
+    "name": "Wave",
+    "motif": "wave",
+    "category": "Marks",
+    "palette": "blue",
+    "src": "/assets/team-icons/wave-blue.svg"
+  },
+  {
+    "id": "wave-orange",
+    "name": "Wave",
+    "motif": "wave",
+    "category": "Marks",
+    "palette": "orange",
+    "src": "/assets/team-icons/wave-orange.svg"
+  },
+  {
+    "id": "wave-red",
+    "name": "Wave",
+    "motif": "wave",
+    "category": "Marks",
+    "palette": "red",
+    "src": "/assets/team-icons/wave-red.svg"
+  },
+  {
+    "id": "wave-green",
+    "name": "Wave",
+    "motif": "wave",
+    "category": "Marks",
+    "palette": "green",
+    "src": "/assets/team-icons/wave-green.svg"
+  },
+  {
+    "id": "sun-white",
+    "name": "Sun",
+    "motif": "sun",
+    "category": "Marks",
+    "palette": "white",
+    "src": "/assets/team-icons/sun-white.svg"
+  },
+  {
+    "id": "sun-gold",
+    "name": "Sun",
+    "motif": "sun",
+    "category": "Marks",
+    "palette": "gold",
+    "src": "/assets/team-icons/sun-gold.svg"
+  },
+  {
+    "id": "sun-blue",
+    "name": "Sun",
+    "motif": "sun",
+    "category": "Marks",
+    "palette": "blue",
+    "src": "/assets/team-icons/sun-blue.svg"
+  },
+  {
+    "id": "sun-orange",
+    "name": "Sun",
+    "motif": "sun",
+    "category": "Marks",
+    "palette": "orange",
+    "src": "/assets/team-icons/sun-orange.svg"
+  },
+  {
+    "id": "sun-red",
+    "name": "Sun",
+    "motif": "sun",
+    "category": "Marks",
+    "palette": "red",
+    "src": "/assets/team-icons/sun-red.svg"
+  },
+  {
+    "id": "sun-green",
+    "name": "Sun",
+    "motif": "sun",
+    "category": "Marks",
+    "palette": "green",
+    "src": "/assets/team-icons/sun-green.svg"
+  },
+  {
+    "id": "ice-white",
+    "name": "Ice",
+    "motif": "ice",
+    "category": "Marks",
+    "palette": "white",
+    "src": "/assets/team-icons/ice-white.svg"
+  },
+  {
+    "id": "ice-gold",
+    "name": "Ice",
+    "motif": "ice",
+    "category": "Marks",
+    "palette": "gold",
+    "src": "/assets/team-icons/ice-gold.svg"
+  },
+  {
+    "id": "ice-blue",
+    "name": "Ice",
+    "motif": "ice",
+    "category": "Marks",
+    "palette": "blue",
+    "src": "/assets/team-icons/ice-blue.svg"
+  },
+  {
+    "id": "ice-orange",
+    "name": "Ice",
+    "motif": "ice",
+    "category": "Marks",
+    "palette": "orange",
+    "src": "/assets/team-icons/ice-orange.svg"
+  },
+  {
+    "id": "ice-red",
+    "name": "Ice",
+    "motif": "ice",
+    "category": "Marks",
+    "palette": "red",
+    "src": "/assets/team-icons/ice-red.svg"
+  },
+  {
+    "id": "ice-green",
+    "name": "Ice",
+    "motif": "ice",
+    "category": "Marks",
+    "palette": "green",
+    "src": "/assets/team-icons/ice-green.svg"
+  },
+  {
+    "id": "arrow-white",
+    "name": "Arrowhead",
+    "motif": "arrow",
+    "category": "Marks",
+    "palette": "white",
+    "src": "/assets/team-icons/arrow-white.svg"
+  },
+  {
+    "id": "arrow-gold",
+    "name": "Arrowhead",
+    "motif": "arrow",
+    "category": "Marks",
+    "palette": "gold",
+    "src": "/assets/team-icons/arrow-gold.svg"
+  },
+  {
+    "id": "arrow-blue",
+    "name": "Arrowhead",
+    "motif": "arrow",
+    "category": "Marks",
+    "palette": "blue",
+    "src": "/assets/team-icons/arrow-blue.svg"
+  },
+  {
+    "id": "arrow-orange",
+    "name": "Arrowhead",
+    "motif": "arrow",
+    "category": "Marks",
+    "palette": "orange",
+    "src": "/assets/team-icons/arrow-orange.svg"
+  },
+  {
+    "id": "arrow-red",
+    "name": "Arrowhead",
+    "motif": "arrow",
+    "category": "Marks",
+    "palette": "red",
+    "src": "/assets/team-icons/arrow-red.svg"
+  },
+  {
+    "id": "arrow-green",
+    "name": "Arrowhead",
+    "motif": "arrow",
+    "category": "Marks",
+    "palette": "green",
+    "src": "/assets/team-icons/arrow-green.svg"
+  },
+  {
+    "id": "diamond-white",
+    "name": "Diamond",
+    "motif": "diamond",
+    "category": "Marks",
+    "palette": "white",
+    "src": "/assets/team-icons/diamond-white.svg"
+  },
+  {
+    "id": "diamond-gold",
+    "name": "Diamond",
+    "motif": "diamond",
+    "category": "Marks",
+    "palette": "gold",
+    "src": "/assets/team-icons/diamond-gold.svg"
+  },
+  {
+    "id": "diamond-blue",
+    "name": "Diamond",
+    "motif": "diamond",
+    "category": "Marks",
+    "palette": "blue",
+    "src": "/assets/team-icons/diamond-blue.svg"
+  },
+  {
+    "id": "diamond-orange",
+    "name": "Diamond",
+    "motif": "diamond",
+    "category": "Marks",
+    "palette": "orange",
+    "src": "/assets/team-icons/diamond-orange.svg"
+  },
+  {
+    "id": "diamond-red",
+    "name": "Diamond",
+    "motif": "diamond",
+    "category": "Marks",
+    "palette": "red",
+    "src": "/assets/team-icons/diamond-red.svg"
+  },
+  {
+    "id": "diamond-green",
+    "name": "Diamond",
+    "motif": "diamond",
+    "category": "Marks",
+    "palette": "green",
+    "src": "/assets/team-icons/diamond-green.svg"
+  },
+  {
+    "id": "hex-white",
+    "name": "Hex",
+    "motif": "hex",
+    "category": "Marks",
+    "palette": "white",
+    "src": "/assets/team-icons/hex-white.svg"
+  },
+  {
+    "id": "hex-gold",
+    "name": "Hex",
+    "motif": "hex",
+    "category": "Marks",
+    "palette": "gold",
+    "src": "/assets/team-icons/hex-gold.svg"
+  },
+  {
+    "id": "hex-blue",
+    "name": "Hex",
+    "motif": "hex",
+    "category": "Marks",
+    "palette": "blue",
+    "src": "/assets/team-icons/hex-blue.svg"
+  },
+  {
+    "id": "hex-orange",
+    "name": "Hex",
+    "motif": "hex",
+    "category": "Marks",
+    "palette": "orange",
+    "src": "/assets/team-icons/hex-orange.svg"
+  },
+  {
+    "id": "hex-red",
+    "name": "Hex",
+    "motif": "hex",
+    "category": "Marks",
+    "palette": "red",
+    "src": "/assets/team-icons/hex-red.svg"
+  },
+  {
+    "id": "hex-green",
+    "name": "Hex",
+    "motif": "hex",
+    "category": "Marks",
+    "palette": "green",
+    "src": "/assets/team-icons/hex-green.svg"
+  },
+  {
+    "id": "pad-white",
+    "name": "Pads",
+    "motif": "pad",
+    "category": "Gear",
+    "palette": "white",
+    "src": "/assets/team-icons/pad-white.svg"
+  },
+  {
+    "id": "pad-gold",
+    "name": "Pads",
+    "motif": "pad",
+    "category": "Gear",
+    "palette": "gold",
+    "src": "/assets/team-icons/pad-gold.svg"
+  },
+  {
+    "id": "pad-blue",
+    "name": "Pads",
+    "motif": "pad",
+    "category": "Gear",
+    "palette": "blue",
+    "src": "/assets/team-icons/pad-blue.svg"
+  },
+  {
+    "id": "pad-orange",
+    "name": "Pads",
+    "motif": "pad",
+    "category": "Gear",
+    "palette": "orange",
+    "src": "/assets/team-icons/pad-orange.svg"
+  },
+  {
+    "id": "pad-red",
+    "name": "Pads",
+    "motif": "pad",
+    "category": "Gear",
+    "palette": "red",
+    "src": "/assets/team-icons/pad-red.svg"
+  },
+  {
+    "id": "pad-green",
+    "name": "Pads",
+    "motif": "pad",
+    "category": "Gear",
+    "palette": "green",
+    "src": "/assets/team-icons/pad-green.svg"
+  },
+  {
+    "id": "facemask-white",
+    "name": "Facemask",
+    "motif": "facemask",
+    "category": "Gear",
+    "palette": "white",
+    "src": "/assets/team-icons/facemask-white.svg"
+  },
+  {
+    "id": "facemask-gold",
+    "name": "Facemask",
+    "motif": "facemask",
+    "category": "Gear",
+    "palette": "gold",
+    "src": "/assets/team-icons/facemask-gold.svg"
+  },
+  {
+    "id": "facemask-blue",
+    "name": "Facemask",
+    "motif": "facemask",
+    "category": "Gear",
+    "palette": "blue",
+    "src": "/assets/team-icons/facemask-blue.svg"
+  },
+  {
+    "id": "facemask-orange",
+    "name": "Facemask",
+    "motif": "facemask",
+    "category": "Gear",
+    "palette": "orange",
+    "src": "/assets/team-icons/facemask-orange.svg"
+  },
+  {
+    "id": "facemask-red",
+    "name": "Facemask",
+    "motif": "facemask",
+    "category": "Gear",
+    "palette": "red",
+    "src": "/assets/team-icons/facemask-red.svg"
+  },
+  {
+    "id": "facemask-green",
+    "name": "Facemask",
+    "motif": "facemask",
+    "category": "Gear",
+    "palette": "green",
+    "src": "/assets/team-icons/facemask-green.svg"
+  },
+  {
+    "id": "playbook-white",
+    "name": "Playbook",
+    "motif": "playbook",
+    "category": "Field",
+    "palette": "white",
+    "src": "/assets/team-icons/playbook-white.svg"
+  },
+  {
+    "id": "playbook-gold",
+    "name": "Playbook",
+    "motif": "playbook",
+    "category": "Field",
+    "palette": "gold",
+    "src": "/assets/team-icons/playbook-gold.svg"
+  },
+  {
+    "id": "playbook-blue",
+    "name": "Playbook",
+    "motif": "playbook",
+    "category": "Field",
+    "palette": "blue",
+    "src": "/assets/team-icons/playbook-blue.svg"
+  },
+  {
+    "id": "playbook-orange",
+    "name": "Playbook",
+    "motif": "playbook",
+    "category": "Field",
+    "palette": "orange",
+    "src": "/assets/team-icons/playbook-orange.svg"
+  },
+  {
+    "id": "playbook-red",
+    "name": "Playbook",
+    "motif": "playbook",
+    "category": "Field",
+    "palette": "red",
+    "src": "/assets/team-icons/playbook-red.svg"
+  },
+  {
+    "id": "playbook-green",
+    "name": "Playbook",
+    "motif": "playbook",
+    "category": "Field",
+    "palette": "green",
+    "src": "/assets/team-icons/playbook-green.svg"
+  },
+  {
+    "id": "lock-white",
+    "name": "Lockdown",
+    "motif": "lock",
+    "category": "Field",
+    "palette": "white",
+    "src": "/assets/team-icons/lock-white.svg"
+  },
+  {
+    "id": "lock-gold",
+    "name": "Lockdown",
+    "motif": "lock",
+    "category": "Field",
+    "palette": "gold",
+    "src": "/assets/team-icons/lock-gold.svg"
+  },
+  {
+    "id": "lock-blue",
+    "name": "Lockdown",
+    "motif": "lock",
+    "category": "Field",
+    "palette": "blue",
+    "src": "/assets/team-icons/lock-blue.svg"
+  },
+  {
+    "id": "lock-orange",
+    "name": "Lockdown",
+    "motif": "lock",
+    "category": "Field",
+    "palette": "orange",
+    "src": "/assets/team-icons/lock-orange.svg"
+  },
+  {
+    "id": "lock-red",
+    "name": "Lockdown",
+    "motif": "lock",
+    "category": "Field",
+    "palette": "red",
+    "src": "/assets/team-icons/lock-red.svg"
+  },
+  {
+    "id": "lock-green",
+    "name": "Lockdown",
+    "motif": "lock",
+    "category": "Field",
+    "palette": "green",
+    "src": "/assets/team-icons/lock-green.svg"
+  },
+  {
+    "id": "checkered-white",
+    "name": "Finish",
+    "motif": "checkered",
+    "category": "Field",
+    "palette": "white",
+    "src": "/assets/team-icons/checkered-white.svg"
+  },
+  {
+    "id": "checkered-gold",
+    "name": "Finish",
+    "motif": "checkered",
+    "category": "Field",
+    "palette": "gold",
+    "src": "/assets/team-icons/checkered-gold.svg"
+  },
+  {
+    "id": "checkered-blue",
+    "name": "Finish",
+    "motif": "checkered",
+    "category": "Field",
+    "palette": "blue",
+    "src": "/assets/team-icons/checkered-blue.svg"
+  },
+  {
+    "id": "checkered-orange",
+    "name": "Finish",
+    "motif": "checkered",
+    "category": "Field",
+    "palette": "orange",
+    "src": "/assets/team-icons/checkered-orange.svg"
+  },
+  {
+    "id": "checkered-red",
+    "name": "Finish",
+    "motif": "checkered",
+    "category": "Field",
+    "palette": "red",
+    "src": "/assets/team-icons/checkered-red.svg"
+  },
+  {
+    "id": "checkered-green",
+    "name": "Finish",
+    "motif": "checkered",
+    "category": "Field",
+    "palette": "green",
+    "src": "/assets/team-icons/checkered-green.svg"
+  },
   {
     "id": "adventurer-audible-1a0d",
     "name": "Adventurer · Audible",

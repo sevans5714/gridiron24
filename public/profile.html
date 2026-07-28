@@ -112,15 +112,36 @@
       color: #fff;
     }
     .profile-meta .sub { margin-top: 0.3rem; color: #9a9a9a; font-size: 0.95rem; }
+    .profile-meta .access-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.55rem 1rem;
+      margin-top: 0.55rem;
+    }
     .profile-meta .pill {
       display: inline-block;
-      margin-top: 0.55rem;
+      margin: 0;
       font-family: var(--display);
       font-size: 0.72rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #f0d78c;
+    }
+    .profile-meta .staff-link {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9a9a9a;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.18);
+    }
+    .profile-meta .staff-link:hover {
+      color: #fff;
+      border-bottom-color: rgba(255,255,255,0.55);
     }
     .stat-grid {
       display: grid;
@@ -332,43 +353,6 @@
       outline: 0;
       border-bottom-color: #fff;
     }
-    .tools-card-link {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.35rem 0 0.15rem;
-      color: #fff;
-      text-decoration: none;
-    }
-    .tools-card-link:hover { color: #8eb6ff; }
-    .tools-card-link strong {
-      display: block;
-      font-family: var(--display);
-      font-size: 1.05rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .tools-card-link span {
-      display: block;
-      margin-top: 0.35rem;
-      color: #9a9a9a;
-      font-size: 0.9rem;
-      font-weight: 400;
-      letter-spacing: 0;
-      text-transform: none;
-      max-width: 28rem;
-      line-height: 1.4;
-    }
-    .tools-card-link em {
-      font-style: normal;
-      font-family: var(--display);
-      font-size: 0.9rem;
-      letter-spacing: 0.06em;
-      color: #8eb6ff;
-      white-space: nowrap;
-    }
     .logo-locked {
       padding: 1rem 0 0.25rem;
       color: #9a9a9a;
@@ -401,7 +385,6 @@
       <a href="#franchise">Franchise</a>
       <a href="#logo">Avatar / Logo</a>
       <a href="#password">Password</a>
-      <a href="#tools-card" id="jump-tools" hidden>League Tools</a>
     </nav>
 
     <section class="profile-card" id="account">
@@ -459,27 +442,14 @@
       </form>
     </section>
 
-    <section class="profile-card" id="tools-card" hidden>
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2>League Tools</h2>
-          <p>Staff-only commissioner controls live on a separate page.</p>
-        </div>
-      </div>
-      <a class="tools-card-link" href="/league-tools.html">
-        <strong>Open League Tools<span>Rules sync, invites, members, news, ticker, calendar, and power rankings</span></strong>
-        <em>Open →</em>
-      </a>
-    </section>
-
     <section class="profile-actions">
       <button type="button" class="btn btn-secondary" id="profile-logout">Log Out</button>
     </section>
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=27"></script>
-  <script src="/js/team-icons.js?v=2"></script>
+  <script src="/js/nav.js?v=28"></script>
+  <script src="/js/team-icons.js?v=3"></script>
   <script>
     const escP = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -528,9 +498,14 @@
       el.className = `profile-note ${kind}`;
     }
 
+    function isStaffRole(role) {
+      return role === 'commissioner' || role === 'conference_admin';
+    }
+
     function renderAccount(data) {
       const user = data.user || {};
       const logoUrl = isChosenLogo(data.logo) ? data.logo.url : '';
+      const staff = isStaffRole(user.role);
       document.getElementById('account-body').innerHTML = `
         <div class="profile-hero-row">
           <div class="profile-avatar">${logoUrl
@@ -539,7 +514,10 @@
           <div class="profile-meta">
             <h3>${escP(user.name || user.loginName || 'Member')}</h3>
             <div class="sub">${escP(user.loginName || '')}${user.email ? ` · ${escP(user.email)}` : ''}</div>
-            <div class="pill">${escP(ROLE_LABELS_P[user.role] || user.role || 'Member')}</div>
+            <div class="access-row">
+              <span class="pill">${escP(ROLE_LABELS_P[user.role] || user.role || 'Member')}</span>
+              ${staff ? '<a class="staff-link" href="/league-tools.html">League Tools</a>' : ''}
+            </div>
           </div>
         </div>`;
     }
@@ -838,11 +816,7 @@
         window.location.replace('/enter?next=' + encodeURIComponent('/profile.html'));
         return;
       }
-      const staff = user.role === 'commissioner' || user.role === 'conference_admin';
-      const jump = document.getElementById('jump-tools');
-      const card = document.getElementById('tools-card');
-      if (jump) jump.hidden = !staff;
-      if (card) card.hidden = !staff;
+      const staff = isStaffRole(user.role);
       try {
         await loadProfile();
         wirePasswordForm();
@@ -853,8 +827,7 @@
         } else if (location.hash === '#password') {
           document.getElementById('password')?.scrollIntoView({ behavior: 'smooth' });
         } else if (location.hash === '#tools-card' || location.hash === '#profile-admin' || location.hash === '#admin') {
-          if (staff) document.getElementById('tools-card')?.scrollIntoView({ behavior: 'smooth' });
-          else window.location.replace('/league-tools.html');
+          window.location.replace(staff ? '/league-tools.html' : '/profile.html');
         }
       } catch (err) {
         const msg = `<div class="msg"><strong>Error</strong>${escP(err.message)}</div>`;
