@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=49" />
+  <link rel="stylesheet" href="/css/site.css?v=50" />
   <style>
     :root {
       --led: #ffb84a;
@@ -151,14 +151,15 @@
         0 6px 28px rgba(0, 0, 0, 0.35),
         inset 0 1px 0 rgba(142, 182, 255, 0.12);
       overflow: hidden;
-      min-height: 0;
+      min-height: 2.35rem;
     }
     .leaders-label {
       flex: 0 0 auto;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 0.45rem;
-      padding: 0.2rem 0.95rem 0.2rem 0.75rem;
+      padding: 0.35rem 0.95rem 0.35rem 0.75rem;
       background: #fff;
       z-index: 1;
       position: relative;
@@ -189,6 +190,8 @@
       min-width: 0;
       overflow: hidden;
       position: relative;
+      display: flex;
+      align-items: center;
       mask-image: linear-gradient(90deg, transparent, #000 2rem, #000 calc(100% - 2.25rem), transparent);
       -webkit-mask-image: linear-gradient(90deg, transparent, #000 2rem, #000 calc(100% - 2.25rem), transparent);
     }
@@ -216,7 +219,8 @@
       gap: 0;
       width: max-content;
       white-space: nowrap;
-      padding: 0.28rem 0;
+      padding: 0;
+      min-height: 100%;
       animation: leaders-scroll 55s linear infinite;
       will-change: transform;
     }
@@ -229,8 +233,10 @@
       font-family: var(--body);
       font-size: 0.9rem;
       font-weight: 500;
+      line-height: 1;
       color: rgba(255, 255, 255, 0.9);
       text-decoration: none;
+      min-height: 100%;
     }
     .leaders-item .pos {
       font-family: var(--display);
@@ -238,20 +244,24 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #8eb6ff;
+      line-height: 1;
     }
     .leaders-item .who {
       color: #fff;
       font-weight: 600;
+      line-height: 1;
     }
     .leaders-item .pts {
       font-family: "Share Tech Mono", ui-monospace, monospace;
       color: #8eb6ff;
       font-variant-numeric: tabular-nums;
+      line-height: 1;
     }
     .leaders-item .pts.is-proj { color: #9a9a9a; }
     .leaders-item .meta {
       color: #8a8a8a;
       font-size: 0.82rem;
+      line-height: 1;
     }
     .leaders-sep {
       width: 4px;
@@ -264,9 +274,11 @@
     .leaders-empty {
       display: flex;
       align-items: center;
-      padding: 0.28rem 1rem;
+      padding: 0 1rem;
       color: #8a8a8a;
       font-size: 0.88rem;
+      line-height: 1;
+      min-height: 100%;
     }
     @keyframes leaders-scroll {
       from { transform: translateX(0); }
