@@ -85,11 +85,62 @@
     }
     mount.hidden = false;
     const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || user.name || 'Profile';
+    const sub = user.name || user.loginName || '';
     const onProfile = active === 'profile';
     mount.innerHTML = `
-      <a class="user-avatar-btn${onProfile ? ' is-active' : ''}" id="user-menu-toggle" href="/profile.html" title="${esc(teamName)}">
+      <button type="button" class="user-avatar-btn${onProfile ? ' is-active' : ''}" id="user-menu-toggle" aria-haspopup="true" aria-expanded="false" title="${esc(teamName)}">
         ${avatarHtml(myTeam, user)}
-      </a>`;
+      </button>
+      <div class="user-menu-panel" id="user-menu-panel" hidden>
+        <div class="user-menu-head">
+          <div class="user-menu-preview">${avatarHtml(myTeam, user)}</div>
+          <div class="user-menu-meta">
+            <div class="user-menu-name">${esc(teamName)}</div>
+            <div class="user-menu-sub">${esc(sub)}</div>
+          </div>
+        </div>
+        <a class="user-menu-link" href="/profile.html">Profile</a>
+        <button type="button" class="user-menu-logout" id="nav-logout">Log Out</button>
+      </div>`;
+
+    const toggle = document.getElementById('user-menu-toggle');
+    const panel = document.getElementById('user-menu-panel');
+
+    function openMenu() {
+      panel?.removeAttribute('hidden');
+      toggle?.setAttribute('aria-expanded', 'true');
+    }
+    function closeMenu() {
+      panel?.setAttribute('hidden', '');
+      toggle?.setAttribute('aria-expanded', 'false');
+    }
+
+    toggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (panel?.hasAttribute('hidden')) openMenu();
+      else closeMenu();
+    });
+
+    mount.addEventListener('mouseenter', openMenu);
+    mount.addEventListener('mouseleave', closeMenu);
+
+    document.getElementById('nav-logout')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        await fetch('/api/logout', { method: 'POST' });
+      } catch { /* ignore */ }
+      window.location.href = '/';
+    });
+  }
+
+  function closeUserMenuOnOutside(e) {
+    const mount = document.getElementById('user-menu');
+    const panel = document.getElementById('user-menu-panel');
+    const toggle = document.getElementById('user-menu-toggle');
+    if (!mount || !panel || panel.hasAttribute('hidden')) return;
+    if (mount.contains(e.target)) return;
+    panel.setAttribute('hidden', '');
+    toggle?.setAttribute('aria-expanded', 'false');
   }
 
   function ensureTickerMount() {
@@ -193,6 +244,7 @@
   ensureTickerMount();
   ensureUserMenuMount();
   loadTicker();
+  document.addEventListener('click', closeUserMenuOnOutside);
 
   const authReady = refreshAuth();
 
