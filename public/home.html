@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=30" />
+  <link rel="stylesheet" href="/css/site.css?v=38" />
   <style>
     .hq-hero {
       text-align: center;
@@ -86,7 +86,7 @@
       grid-template-columns: minmax(0, 1.05fr) minmax(17rem, 0.78fr);
       gap: 1.75rem 2rem;
       align-items: start;
-      margin-bottom: 2.15rem;
+      margin-bottom: 2.5rem;
     }
     .hq-board-main,
     .hq-board-side {
@@ -94,16 +94,35 @@
     }
     .hq-board-side {
       display: grid;
-      gap: 1.75rem;
+      gap: 1.35rem;
     }
     .hq-board .hq-section {
       margin-bottom: 0;
+      padding: 1.15rem 1.2rem 1.25rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%),
+        #0a0a0a;
+    }
+    .hq-board .section-head {
+      margin-bottom: 1rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
     .standings-preview {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1.15rem 1.25rem;
+      gap: 1.35rem 1.5rem;
+    }
+    .standings-preview .conf-block + .conf-block {
+      padding-left: 0;
+    }
+    @media (min-width: 641px) {
+      .standings-preview .conf-block:last-child {
+        padding-left: 1.15rem;
+        border-left: 1px solid rgba(255,255,255,0.1);
+      }
     }
 
     .conf-block { min-width: 0; }
@@ -353,11 +372,24 @@
     .bottom-stack {
       display: flex;
       flex-direction: column;
-      gap: 2rem;
+      gap: 1.5rem;
+      padding-top: 0.35rem;
+      border-top: 1px solid rgba(255,255,255,0.12);
     }
     .news-block,
     .board-block {
       min-width: 0;
+      padding: 1.15rem 1.2rem 1.25rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%),
+        #0a0a0a;
+    }
+    .news-block .section-head,
+    .board-block .section-head {
+      margin-bottom: 1rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
     .news-list,
     .msg-list {
@@ -493,16 +525,14 @@
         grid-template-columns: 1fr;
         gap: 2rem;
       }
-      .motw-col,
-      .hotnot-row {
-        grid-template-columns: 1fr 1fr;
-      }
     }
-    @media (max-width: 640px) {
-      .standings-preview,
+    @media (max-width: 900px) {
       .motw-col,
       .hotnot-row,
       .hotnot { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .standings-preview { grid-template-columns: 1fr; }
       .motw-side img { width: 4.75rem; height: 4.75rem; }
       .hotnot-team img { width: 4rem; height: 4rem; }
       .hq-main { font-size: 1rem; }
@@ -584,7 +614,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=17"></script>
+  <script src="/js/nav.js?v=20"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')

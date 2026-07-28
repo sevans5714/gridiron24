@@ -7,12 +7,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=30" />
+  <link rel="stylesheet" href="/css/site.css?v=38" />
   <style>
+    body[data-page="payouts"] .page-hero {
+      text-align: center;
+    }
+    body[data-page="payouts"] .page-hero::before {
+      left: 50%;
+      width: min(12rem, 40%);
+      height: 3px;
+      inset: 0 auto auto 50%;
+      transform: translateX(-50%);
+    }
+    body[data-page="payouts"] .page-hero h1 {
+      font-size: clamp(2.4rem, 6vw, 3.6rem);
+    }
+
+    .payout-board {
+      width: min(52rem, 100%);
+      margin: 0 auto;
+      text-align: center;
+    }
+
     .pool-line {
-      margin: 0 0 1.25rem;
+      margin: 0 0 1.5rem;
       color: var(--muted);
-      font-size: var(--fs-md);
+      font-size: clamp(1.05rem, 2.2vw, 1.25rem);
       line-height: 1.45;
     }
     .pool-line strong {
@@ -22,19 +42,19 @@
 
     .payout-table {
       width: 100%;
-      max-width: 44rem;
       border-collapse: collapse;
-      border: 1px solid var(--line);
+      border: 1px solid rgba(34, 197, 94, 0.28);
       background: var(--panel);
+      text-align: left;
     }
 
     .payout-table thead th {
-      padding: 0.7rem 1rem;
+      padding: 1rem 1.35rem;
       text-align: left;
       font-family: var(--body);
-      font-size: var(--fs-xs);
+      font-size: 0.85rem;
       font-weight: 600;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
       background: #0c0c0c;
@@ -55,7 +75,7 @@
     }
 
     .payout-table td {
-      padding: 0.85rem 1rem;
+      padding: 1.15rem 1.35rem;
       border-bottom: 1px solid var(--line);
       vertical-align: middle;
     }
@@ -70,20 +90,20 @@
     .award-cell {
       display: flex;
       align-items: center;
-      gap: 0.85rem;
+      gap: 1.1rem;
       min-width: 0;
     }
 
     .award-cell img {
-      width: 2.75rem;
-      height: 2.75rem;
+      width: 3.75rem;
+      height: 3.75rem;
       object-fit: contain;
-      flex: 0 0 2.75rem;
+      flex: 0 0 3.75rem;
       filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
     }
 
     .award-cell span {
-      font-size: 0.98rem;
+      font-size: clamp(1.1rem, 2.4vw, 1.35rem);
       font-weight: 600;
       line-height: 1.3;
       color: #eee;
@@ -93,7 +113,7 @@
       text-align: right;
       white-space: nowrap;
       font-family: var(--display);
-      font-size: 1.2rem;
+      font-size: clamp(1.55rem, 3.2vw, 2rem);
       font-weight: 600;
       letter-spacing: 0.02em;
       color: #fff;
@@ -110,18 +130,38 @@
       font-family: var(--display);
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      font-size: 0.95rem;
+      font-size: clamp(1.05rem, 2.2vw, 1.25rem);
     }
     .payout-table tr.total-row td.amount {
       color: #efd782;
     }
 
-    .note {
-      margin-top: 1rem;
-      max-width: 44rem;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-      line-height: 1.55;
+    @media (max-width: 560px) {
+      body[data-page="payouts"] .page-hero h1 {
+        font-size: clamp(1.85rem, 9vw, 2.6rem);
+      }
+      .pool-line {
+        font-size: 0.98rem;
+      }
+      .payout-table thead th,
+      .payout-table td {
+        padding: 0.85rem 0.85rem;
+      }
+      .award-cell {
+        gap: 0.75rem;
+      }
+      .award-cell img {
+        width: 2.75rem;
+        height: 2.75rem;
+        flex-basis: 2.75rem;
+      }
+      .award-cell span {
+        font-size: 1rem;
+      }
+      .payout-table td.amount {
+        font-size: 1.35rem;
+        padding-left: 0.75rem;
+      }
     }
   </style>
 </head>
@@ -136,7 +176,6 @@
   <section class="page-hero shell reveal">
     <p class="eyebrow">Prize Money</p>
     <h1>Payout Schedule</h1>
-    <p>Entry fees from all 24 franchises fund the season prize pool.</p>
   </section>
 
   <main class="page-main shell">
@@ -144,7 +183,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=17"></script>
+  <script src="/js/nav.js?v=20"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -206,22 +245,23 @@
         </tr>`).join('');
 
       document.getElementById('content').innerHTML = `
-        <p class="pool-line reveal">
-          <strong>${buyIn}</strong> buy-in · <strong>${pool}</strong> total prize pool · ${esc(p.seasonLabel || data.season)}
-        </p>
-        <table class="payout-table reveal reveal-delay-1">
-          <thead>
-            <tr><th>Award</th><th>Payout</th></tr>
-          </thead>
-          <tbody>
-            ${rows || '<tr><td colspan="2">No payouts configured.</td></tr>'}
-            <tr class="total-row">
-              <td class="award"><div class="award-cell"><span>Total</span></div></td>
-              <td class="amount">${money(prizesTotal, currency)}</td>
-            </tr>
-          </tbody>
-        </table>
-        <p class="note reveal reveal-delay-2">${esc(p.notes || '')}</p>`;
+        <div class="payout-board">
+          <p class="pool-line reveal">
+            <strong>${buyIn}</strong> buy-in · <strong>${pool}</strong> total prize pool
+          </p>
+          <table class="payout-table reveal reveal-delay-1">
+            <thead>
+              <tr><th>Award</th><th>Payout</th></tr>
+            </thead>
+            <tbody>
+              ${rows || '<tr><td colspan="2">No payouts configured.</td></tr>'}
+              <tr class="total-row">
+                <td class="award"><div class="award-cell"><span>Total</span></div></td>
+                <td class="amount">${money(prizesTotal, currency)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>`;
     }
 
     async function load() {

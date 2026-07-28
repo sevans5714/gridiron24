@@ -283,16 +283,21 @@ function sendFile(res, filePath) {
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',
       '.webp': 'image/webp',
-      '.gif': 'image/gif'
+      '.gif': 'image/gif',
+      '.ttf': 'font/ttf',
+      '.otf': 'font/otf',
+      '.woff': 'font/woff',
+      '.woff2': 'font/woff2'
     }[ext] || 'application/octet-stream';
 
     const fileName = path.basename(filePath);
     const isAuthPage = ['login.html', 'register.html', 'forgot.html', 'reset.html', 'setup.html'].includes(fileName);
+    const isFont = ['.ttf', '.otf', '.woff', '.woff2'].includes(ext);
     const cacheControl = isAuthPage
       ? 'no-store, no-cache, must-revalidate'
       : ext === '.html'
         ? 'no-cache'
-        : (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.webp' || ext === '.css' || ext === '.js')
+        : (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.webp' || ext === '.css' || ext === '.js' || isFont)
           ? 'public, max-age=300'
           : 'public, max-age=3600';
 
@@ -881,16 +886,17 @@ function formatPointsNumber(points) {
 function formatScoringDisplay(statId, points) {
   const p = Number(points);
   if (!Number.isFinite(p)) return '—';
-  // Match ESPN settings fields (pts per yard), with a yards-per-point hint.
   if (PER_YARD_STAT_IDS.has(statId) && p !== 0) {
-    const yardsPerPoint = 1 / p;
-    const rounded = Math.round(yardsPerPoint * 100) / 100;
-    const yds = Math.abs(yardsPerPoint - Math.round(yardsPerPoint)) < 1e-6
-      ? String(Math.round(yardsPerPoint))
-      : String(rounded);
-    return `${formatPointsNumber(p)}/yd (1/${yds})`;
+    return `${formatPointsNumber(p)}/yd`;
   }
   return formatPointsNumber(p);
+}
+
+function refreshScoringDisplays(items = []) {
+  return (items || []).map((item) => ({
+    ...item,
+    display: formatScoringDisplay(item.statId, item.points)
+  }));
 }
 
 function scoringGroupFor(statId) {
@@ -1291,10 +1297,12 @@ async function apiOfficialScoring(res) {
           shortName: official.shortName,
           playerRankType: official.playerRankType,
           scoringType: official.scoringType,
-          scoringItems: official.scoringItems,
+          scoringItems: refreshScoringDisplays(official.scoringItems),
           lineup: official.lineup
         }
-      : detail,
+      : detail
+        ? { ...detail, scoringItems: refreshScoringDisplays(detail.scoringItems) }
+        : detail,
     conferences: live,
     compare: {
       matched: cmp.matched,
@@ -2506,6 +2514,11 @@ const server = http.createServer(async (req, res) => {
         return res.end();
       }
       res.writeHead(302, { Location: '/league-tools.html' });
+      return res.end();
+    }
+
+    if (pathname === '/scoring.html' || pathname === '/scoring') {
+      res.writeHead(302, { Location: '/rulebook.html#article-iv' });
       return res.end();
     }
 

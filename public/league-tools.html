@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=31" />
+  <link rel="stylesheet" href="/css/site.css?v=38" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -548,13 +548,19 @@
       .status-bar { grid-template-columns: 1fr; text-align: center; }
       .conf, .conf.right { justify-content: center; text-align: center; }
       .summary { grid-template-columns: 1fr 1fr; }
+      .data-table,
+      .diff-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
     }
     @media (max-width: 560px) {
       .summary { grid-template-columns: 1fr; }
       .data-table th:nth-child(2),
       .data-table td:nth-child(2) { display: none; }
     }
-  </style>
     body[data-page="league-tools"] .page-main { padding-top: 0.85rem; padding-bottom: 3rem; }
     body[data-page="league-tools"] .tools-back {
       display: inline-block;
@@ -568,7 +574,7 @@
       text-decoration: none;
     }
     body[data-page="league-tools"] .tools-back:hover { color: #fff; }
-
+  </style>
 </head>
 <body data-page="league-tools">
   <header class="topbar">
@@ -579,9 +585,9 @@
   </header>
 
   <section class="page-hero shell">
-    <p class="eyebrow">Staff</p>
+    <p class="eyebrow">Staff · From your profile</p>
     <h1>League Tools</h1>
-    <p>Commissioner and conference admin controls.</p>
+    <p>Commissioner and conference admin controls. Return to your profile when finished.</p>
   </section>
 
   <main class="page-main shell">
@@ -777,7 +783,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=17"></script>
+  <script src="/js/nav.js?v=20"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=30" />
+  <link rel="stylesheet" href="/css/site.css?v=38" />
   <style>
     :root {
       --led: #ffb84a;
@@ -27,7 +27,10 @@
     .sb-hero {
       text-align: center;
       padding: 1.1rem 0 1.15rem;
-      border-bottom: 1px solid rgba(255, 184, 74, 0.18);
+      border-bottom: 1px solid rgba(47, 109, 255, 0.22);
+      background:
+        radial-gradient(ellipse 80% 120% at 50% 0%, rgba(47, 109, 255, 0.18), transparent 55%),
+        linear-gradient(180deg, rgba(47, 109, 255, 0.12), rgba(47, 109, 255, 0.03) 70%, transparent);
     }
     .sb-hero .brand-logo {
       display: block;
@@ -501,19 +504,23 @@
       .board.overtime { animation-delay: 0.05s; }
       .board-top img { width: 3.35rem; }
       .team img { width: 3.85rem; height: 3.85rem; }
-    }
-    @media (max-width: 560px) {
-      .sb-hero .brand-logo { width: min(11rem, 58vw); }
       .game {
         grid-template-columns: 1fr;
-        gap: 0.45rem;
+        gap: 0.5rem;
         text-align: center;
       }
       .team, .team.home {
         flex-direction: column;
         text-align: center;
       }
-      .digits { order: -1; }
+      .digits {
+        order: -1;
+        min-width: 0;
+        justify-self: center;
+      }
+    }
+    @media (max-width: 560px) {
+      .sb-hero .brand-logo { width: min(11rem, 58vw); }
       .team img { width: 4.5rem; height: 4.5rem; }
       .board-top img { width: 3.5rem; }
     }
@@ -565,7 +572,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=17"></script>
+  <script src="/js/nav.js?v=20"></script>
   <script>
     const REFRESH_MS = 30_000;
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';

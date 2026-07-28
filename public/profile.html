@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=30" />
+  <link rel="stylesheet" href="/css/site.css?v=38" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -40,17 +40,22 @@
     }
     .profile-jump a:hover { color: #fff; }
     .profile-card {
-      margin: 0 0 2.5rem;
+      margin: 0 0 1.35rem;
+      padding: 1.15rem 1.2rem 1.3rem;
       scroll-margin-top: 5rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%),
+        #0a0a0a;
     }
     .profile-card > .section-head {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
       gap: 1rem;
-      margin: 0 0 0.85rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid rgba(255,255,255,0.12);
+      margin: 0 0 1rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
     }
     .profile-card > .section-head h2 {
       margin: 0;
@@ -60,6 +65,18 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: #fff;
+    }
+    .profile-card > .section-head p {
+      margin: 0.35rem 0 0;
+      color: #8a8a8a;
+      font-size: 0.9rem;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .section-head-block {
+      display: grid;
+      gap: 0.35rem;
     }
     .profile-hero-row {
       display: grid;
@@ -266,11 +283,26 @@
       padding: 0.55rem 0.8rem;
       cursor: pointer;
     }
-    .profile-actions { margin-top: 1.5rem; }
     @media (max-width: 900px) {
       .stat-grid { grid-template-columns: 1fr 1fr; }
       .logo-layout { grid-template-columns: 1fr; }
       .profile-hero-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .stat-grid { grid-template-columns: 1fr; }
+      .profile-jump a {
+        min-height: 2.75rem;
+        padding: 0.65rem 0.9rem;
+      }
+      .icon-card {
+        padding: 0.55rem 0.35rem;
+      }
+      .icon-card span {
+        font-size: 0.72rem;
+      }
+      .profile-card {
+        scroll-margin-top: 6.5rem;
+      }
     }
 
     .password-form {
@@ -305,10 +337,9 @@
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      padding: 1rem 0;
+      padding: 0.35rem 0 0.15rem;
       color: #fff;
       text-decoration: none;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
     }
     .tools-card-link:hover { color: #8eb6ff; }
     .tools-card-link strong {
@@ -321,12 +352,14 @@
     }
     .tools-card-link span {
       display: block;
-      margin-top: 0.3rem;
+      margin-top: 0.35rem;
       color: #9a9a9a;
       font-size: 0.9rem;
       font-weight: 400;
       letter-spacing: 0;
       text-transform: none;
+      max-width: 28rem;
+      line-height: 1.4;
     }
     .tools-card-link em {
       font-style: normal;
@@ -334,6 +367,18 @@
       font-size: 0.9rem;
       letter-spacing: 0.06em;
       color: #8eb6ff;
+      white-space: nowrap;
+    }
+    .logo-locked {
+      padding: 1rem 0 0.25rem;
+      color: #9a9a9a;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+    .profile-actions {
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
   </style>
 </head>
@@ -348,23 +393,55 @@
   <section class="page-hero shell">
     <p class="eyebrow">Account</p>
     <h1>Your Profile</h1>
-    <p>Your franchise, team logo, and password.</p>
+    <p>Manage your franchise, avatar, password, and staff tools.</p>
   </section>
 
   <main class="page-main shell">
     <nav class="profile-jump" aria-label="Profile sections">
+      <a href="#account">Account</a>
       <a href="#franchise">Franchise</a>
+      <a href="#logo">Avatar / Logo</a>
       <a href="#password">Password</a>
-      <a href="/league-tools.html" id="jump-tools" hidden>League Tools</a>
+      <a href="#tools-card" id="jump-tools" hidden>League Tools</a>
     </nav>
 
+    <section class="profile-card" id="account">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Account</h2>
+          <p>Your member identity on GridIron 24.</p>
+        </div>
+      </div>
+      <div id="account-body"><div class="msg">Loading…</div></div>
+    </section>
+
     <section class="profile-card" id="franchise">
-      <div class="section-head"><h2>Your Franchise</h2></div>
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Franchise</h2>
+          <p>Team assignment, record, and display name.</p>
+        </div>
+      </div>
       <div id="franchise-body"><div class="msg">Loading…</div></div>
     </section>
 
+    <section class="profile-card" id="logo">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Avatar / Logo</h2>
+          <p>Choose an icon or upload a custom logo for the top-right and your franchise.</p>
+        </div>
+      </div>
+      <div id="logo-body"><div class="msg">Loading…</div></div>
+    </section>
+
     <section class="profile-card" id="password">
-      <div class="section-head"><h2>Change Password</h2></div>
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Password</h2>
+          <p>Update the password you use to sign in.</p>
+        </div>
+      </div>
       <form class="password-form" id="password-form" autocomplete="off">
         <div>
           <label class="field-label" for="current-password">Current password</label>
@@ -384,9 +461,14 @@
     </section>
 
     <section class="profile-card" id="tools-card" hidden>
-      <div class="section-head"><h2>Staff</h2></div>
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>League Tools</h2>
+          <p>Staff-only commissioner controls live on a separate page.</p>
+        </div>
+      </div>
       <a class="tools-card-link" href="/league-tools.html">
-        <strong>League Tools<span>Invites, members, news, sync, and season controls</span></strong>
+        <strong>Open League Tools<span>Rules sync, invites, members, news, ticker, calendar, and power rankings</span></strong>
         <em>Open →</em>
       </a>
     </section>
@@ -397,7 +479,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=17"></script>
+  <script src="/js/nav.js?v=20"></script>
   <script src="/js/team-icons.js?v=2"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -447,6 +529,22 @@
       el.className = `profile-note ${kind}`;
     }
 
+    function renderAccount(data) {
+      const user = data.user || {};
+      const logoUrl = isChosenLogo(data.logo) ? data.logo.url : '';
+      document.getElementById('account-body').innerHTML = `
+        <div class="profile-hero-row">
+          <div class="profile-avatar">${logoUrl
+            ? `<img src="${escP(logoUrl)}" alt="">`
+            : `<span class="ph">${escP((user.name || user.loginName || '?').slice(0, 2).toUpperCase())}</span>`}</div>
+          <div class="profile-meta">
+            <h3>${escP(user.name || user.loginName || 'Member')}</h3>
+            <div class="sub">${escP(user.loginName || '')}${user.email ? ` · ${escP(user.email)}` : ''}</div>
+            <div class="pill">${escP(ROLE_LABELS_P[user.role] || user.role || 'Member')}</div>
+          </div>
+        </div>`;
+    }
+
     function renderFranchise(data) {
       const user = data.user || {};
       const team = data.team;
@@ -457,15 +555,7 @@
 
       if (!claim) {
         document.getElementById('franchise-body').innerHTML = `
-          <div class="profile-hero-row">
-            <div class="profile-avatar"><span class="ph">${escP((user.name || '?').slice(0,2).toUpperCase())}</span></div>
-            <div class="profile-meta">
-              <h3>${escP(user.name || user.loginName || 'Member')}</h3>
-              <div class="sub">${escP(user.email || '')}</div>
-              <div class="pill">${escP(ROLE_LABELS_P[user.role] || user.role || 'Member')}</div>
-            </div>
-          </div>
-          <p class="profile-note">Your commissioner assigns franchises. Until then, only the placeholder shows in the top-right corner. After a team is linked, your logo attaches to that franchise.</p>`;
+          <p class="profile-note">No franchise is linked to your account yet. Your commissioner assigns teams from League Tools. After you are assigned, your avatar attaches to that franchise across the site.</p>`;
         return;
       }
 
@@ -475,7 +565,6 @@
           <div class="profile-meta">
             <h3>${escP(title)}</h3>
             <div class="sub">${escP(conf)}${conf && user.name ? ' · ' : ''}${escP(user.name || '')}</div>
-            <div class="pill">${escP(ROLE_LABELS_P[user.role] || user.role || 'Member')}</div>
           </div>
         </div>
         <div class="stat-grid">
@@ -489,10 +578,7 @@
           <button type="button" class="btn" id="profile-save-name">Save Name</button>
         </div>
         <p class="profile-note" id="franchise-status" role="status"></p>
-        ${team ? `<p class="profile-note"><a href="/team.html?conference=${escP(claim.conferenceKey)}&teamId=${escP(claim.teamId)}" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Open team page →</a></p>` : ''}
-        <div class="section-head" style="margin-top:1.75rem;"><h2 style="font-size:1.05rem;color:#ddd;">Team Logo</h2></div>
-        <p class="profile-note">This logo appears in the top-right corner and on your franchise across the league.</p>
-        <div id="franchise-logo-mount"></div>`;
+        ${team ? `<p class="profile-note"><a href="/team.html?conference=${escP(claim.conferenceKey)}&teamId=${escP(claim.teamId)}" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Open team page →</a></p>` : ''}`;
 
       document.getElementById('profile-save-name')?.addEventListener('click', async () => {
         const status = document.getElementById('franchise-status');
@@ -519,15 +605,24 @@
     }
 
     function renderLogoSection(data) {
-      const body = document.getElementById('franchise-logo-mount');
+      const body = document.getElementById('logo-body');
       if (!body) return;
-      if (!data.claim) return;
+
+      if (!data.claim) {
+        body.innerHTML = `
+          <div class="logo-locked">
+            Avatar and logo selection unlocks after your commissioner assigns your franchise.
+            Once linked, pick an icon or upload a custom square logo here.
+          </div>`;
+        return;
+      }
+
       selectedIcon = data.logo?.type === 'icon' ? data.logo.value : null;
       body.innerHTML = `
         <div class="logo-layout">
           <aside class="logo-side">
             <div class="preview" id="logo-preview"></div>
-            <p class="profile-note" id="logo-status" role="status">Pick an avatar or upload a custom square logo.</p>
+            <p class="profile-note" id="logo-status" role="status">Pick an avatar icon or upload a custom square logo.</p>
           </aside>
           <section class="logo-main">
             <div class="logo-bar">
@@ -674,6 +769,7 @@
       const res = await fetch('/api/my-team', { cache: 'no-store' });
       if (!res.ok) throw new Error('Could not load profile');
       myTeamData = await res.json();
+      renderAccount(myTeamData);
       renderFranchise(myTeamData);
       renderLogoSection(myTeamData);
       if (withSync) {
@@ -731,12 +827,15 @@
       try {
         await loadProfile();
         wirePasswordForm();
-        if (location.hash === '#logo' || location.hash === '#franchise') {
-          document.getElementById('franchise')?.scrollIntoView({ behavior: 'smooth' });
+        if (location.hash === '#logo') {
+          document.getElementById('logo')?.scrollIntoView({ behavior: 'smooth' });
+        } else if (location.hash === '#franchise' || location.hash === '#account') {
+          document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' });
         } else if (location.hash === '#password') {
           document.getElementById('password')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (location.hash === '#profile-admin' || location.hash === '#admin') {
-          window.location.replace('/league-tools.html');
+        } else if (location.hash === '#tools-card' || location.hash === '#profile-admin' || location.hash === '#admin') {
+          if (staff) document.getElementById('tools-card')?.scrollIntoView({ behavior: 'smooth' });
+          else window.location.replace('/league-tools.html');
         }
       } catch (err) {
         document.getElementById('franchise-body').innerHTML = `<div class="msg"><strong>Error</strong>${escP(err.message)}</div>`;

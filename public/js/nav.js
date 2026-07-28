@@ -9,11 +9,12 @@
     { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
     { href: '/rankings.html', label: 'Rankings', key: 'rankings' },
     { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
-    { href: '/scoring.html', label: 'Scoring', key: 'scoring' },
+    { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' },
     { href: '/payouts.html', label: 'Payouts', key: 'payouts' }
   ];
 
   const active = document.body.dataset.page || 'home';
+  const navActive = (active === 'scoring' || active === 'rulebook') ? 'rulebook' : active;
   const nav = document.getElementById('site-nav');
   const sync = document.getElementById('lastUpdated');
 
@@ -33,7 +34,7 @@
   function renderNav(user) {
     if (!nav) return;
     nav.innerHTML = allLinks.map((link) => {
-      const cls = link.key === active ? 'active' : '';
+      const cls = link.key === navActive ? 'active' : '';
       return `<a class="${cls}" href="${link.href}">${link.label}</a>`;
     }).join('');
   }
@@ -84,36 +85,42 @@
   function renderUserMenu(user, myTeam = null) {
     const mount = ensureUserMenuMount();
     if (!mount) return;
+    if (sync) {
+      sync.hidden = true;
+      sync.textContent = '';
+    }
     if (!user) {
       mount.innerHTML = '';
       mount.hidden = true;
       return;
     }
     mount.hidden = false;
-    const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || user.name || 'Profile';
+    const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || 'Unassigned';
+    const ownerName = user.name || 'Owner';
     const access = roleLabel(user.role);
     const onProfile = active === 'profile';
-    const staffLink = user.role === 'commissioner' || user.role === 'conference_admin'
-      ? '<a class="user-menu-link" href="/league-tools.html">League Tools</a>'
-      : '';
     mount.innerHTML = `
-      <a class="user-avatar-btn${onProfile ? ' is-active' : ''}" id="user-menu-toggle" href="/profile.html" title="${esc(teamName)} · ${esc(access)}" aria-haspopup="true" aria-expanded="false">
-        ${avatarHtml(myTeam, user)}
-      </a>
+      <button type="button" class="user-chip${onProfile ? ' is-active' : ''}" id="user-menu-toggle" title="${esc(teamName)} · ${esc(ownerName)} · ${esc(access)}" aria-haspopup="true" aria-expanded="false">
+        <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
+        <span class="user-chip-text">
+          <span class="user-chip-team">${esc(teamName)}</span>
+          <span class="user-chip-meta">${esc(ownerName)} · ${esc(access)}</span>
+        </span>
+      </button>
       <div class="user-menu-panel" id="user-menu-panel" hidden>
         <a class="user-menu-head" href="/profile.html">
           <div class="user-menu-preview">${avatarHtml(myTeam, user)}</div>
           <div class="user-menu-meta">
             <div class="user-menu-name">${esc(teamName)}</div>
-            <div class="user-menu-role">${esc(access)}</div>
+            <div class="user-menu-role">${esc(ownerName)} · ${esc(access)}</div>
           </div>
         </a>
-        ${staffLink}
         <button type="button" class="user-menu-logout" id="nav-logout">Log Out</button>
       </div>`;
 
     const toggle = document.getElementById('user-menu-toggle');
     const panel = document.getElementById('user-menu-panel');
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
     function openMenu() {
       panel?.removeAttribute('hidden');
@@ -123,9 +130,26 @@
       panel?.setAttribute('hidden', '');
       toggle?.setAttribute('aria-expanded', 'false');
     }
+    function toggleMenu(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!panel) return;
+      if (panel.hasAttribute('hidden')) openMenu();
+      else closeMenu();
+    }
 
-    mount.addEventListener('mouseenter', openMenu);
-    mount.addEventListener('mouseleave', closeMenu);
+    if (finePointer) {
+      mount.onmouseenter = openMenu;
+      mount.onmouseleave = closeMenu;
+      toggle?.addEventListener('click', (e) => {
+        e.preventDefault();
+        openMenu();
+      });
+    } else {
+      mount.onmouseenter = null;
+      mount.onmouseleave = null;
+      toggle?.addEventListener('click', toggleMenu);
+    }
 
     document.getElementById('nav-logout')?.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -176,6 +200,14 @@
       const topbar = document.querySelector('.topbar');
       if (!topbar) return null;
       topbar.insertAdjacentElement('afterend', el);
+    }
+    const ticker = el.querySelector('.ticker');
+    if (ticker && !ticker.dataset.pauseBound) {
+      ticker.dataset.pauseBound = '1';
+      ticker.addEventListener('pointerdown', () => ticker.classList.add('is-paused'));
+      ticker.addEventListener('pointerup', () => ticker.classList.remove('is-paused'));
+      ticker.addEventListener('pointerleave', () => ticker.classList.remove('is-paused'));
+      ticker.addEventListener('pointercancel', () => ticker.classList.remove('is-paused'));
     }
     return el;
   }
@@ -258,11 +290,8 @@
     authReady,
     refresh: refreshAuth,
     reloadTicker: loadTicker,
-    setSync(text, live = true) {
-      if (!sync) return;
-      sync.innerHTML = live
-        ? `<span class="live">●</span>${text}`
-        : text;
+    setSync() {
+      /* Top-right header shows identity (team / owner / access), not sync text. */
     }
   };
 })();

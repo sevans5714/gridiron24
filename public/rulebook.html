@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rule Book · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=38" />
+  <style>
+    .book {
+      max-width: 52rem;
+      margin: 0 auto;
+    }
+
+    .book-toc {
+      margin: 0 0 2.25rem;
+      padding: 1.25rem 1.35rem 1.4rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .book-toc h2 {
+      margin: 0 0 0.85rem;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .book-toc ol {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: toc;
+    }
+    .book-toc li {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      counter-increment: toc;
+    }
+    .book-toc li:last-child { border-bottom: 0; }
+    .book-toc li::before {
+      content: "Article " counter(toc, upper-roman);
+      flex: 0 0 auto;
+      font-family: var(--display);
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+      min-width: 6.5rem;
+    }
+    .book-toc a {
+      color: #ddd;
+      text-decoration: none;
+      font-size: var(--fs-md);
+      font-weight: 600;
+    }
+    .book-toc a:hover { color: #fff; }
+
+    .article {
+      margin: 0 0 2.5rem;
+      scroll-margin-top: 5.5rem;
+    }
+    .article-head {
+      margin: 0 0 1.15rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid rgba(47, 109, 255, 0.45);
+    }
+    .article-num {
+      margin: 0 0 0.25rem;
+      font-family: var(--display);
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+    }
+    .article-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.65rem, 4vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .section {
+      margin: 0 0 1.35rem;
+    }
+    .section-title {
+      margin: 0 0 0.55rem;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .section p,
+    .section li {
+      color: #d0d0d0;
+      font-size: var(--fs-md);
+      line-height: 1.55;
+    }
+    .section p { margin: 0 0 0.75rem; max-width: 44rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    .section ol,
+    .section ul {
+      margin: 0;
+      padding: 0 0 0 1.15rem;
+    }
+    .section li { margin: 0 0 0.45rem; padding-left: 0.15rem; }
+    .section li:last-child { margin-bottom: 0; }
+
+    .banner {
+      margin-bottom: 1rem;
+      padding: 0.7rem 0.95rem;
+      border: 1px solid rgba(239, 215, 130, 0.35);
+      background: rgba(239, 215, 130, 0.08);
+      color: #efd782;
+      font-size: var(--fs-sm);
+      line-height: 1.45;
+    }
+    .banner a {
+      color: #fff;
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .banner.ok {
+      border-color: rgba(34, 197, 94, 0.35);
+      background: rgba(34, 197, 94, 0.08);
+      color: #86efac;
+    }
+    .sync-pill {
+      display: inline-block;
+      margin-left: 0.45rem;
+      padding: 0.12rem 0.4rem;
+      border: 1px solid currentColor;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+
+    .lineup-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0.35rem 0 1rem;
+    }
+    .slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 4.25rem;
+      min-height: 3.5rem;
+      padding: 0.5rem 0.65rem;
+      border: 1px solid var(--line);
+      background: #0c0c0c;
+      text-align: center;
+    }
+    .slot .pos {
+      font-family: var(--display);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+    .slot .cnt {
+      margin-top: 0.1rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .slot.bench { opacity: 0.75; }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+    .group-panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .group-panel h3 {
+      margin: 0;
+      padding: 0.65rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+      font-family: var(--display);
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .rule {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.55rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.92rem;
+    }
+    .rule:last-child { border-bottom: 0; }
+    .rule .label { color: #ddd; font-weight: 500; line-height: 1.3; }
+    .rule .pts {
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .prize-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      margin: 0.35rem 0 0.85rem;
+    }
+    .prize-table th,
+    .prize-table td {
+      padding: 0.7rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+    .prize-table th {
+      font-size: var(--fs-xs);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: #0c0c0c;
+    }
+    .prize-table td.amt {
+      text-align: right;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .prize-table tr:last-child td { border-bottom: 0; }
+    .prize-table tr.total td {
+      background: #0c0c0c;
+      border-top: 2px solid rgba(255,255,255,0.14);
+      font-weight: 700;
+    }
+    .prize-table tr.total td.amt { color: #efd782; }
+
+    .book-link {
+      color: #8eb6ff;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .book-link:hover { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+    .source-note {
+      margin: 0.85rem 0 0;
+      color: #8a8a8a;
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 900px) {
+      .rules-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .book-toc li {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.15rem;
+      }
+      .book-toc li::before { min-width: 0; }
+      .article { scroll-margin-top: 4.75rem; }
+    }
+  </style>
+</head>
+<body data-page="rulebook">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated" hidden></div>
+    </div>
+  </header>
+
+  <section class="page-hero shell reveal">
+    <p class="eyebrow">Official Rules</p>
+    <h1>Rule Book</h1>
+  </section>
+
+  <main class="page-main shell">
+    <div class="book">
+      <nav class="book-toc reveal" aria-label="Table of contents">
+        <h2>Table of Contents</h2>
+        <ol>
+          <li><a href="#article-i">League Structure</a></li>
+          <li><a href="#article-ii">Season &amp; Calendar</a></li>
+          <li><a href="#article-iii">Rosters &amp; Lineups</a></li>
+          <li><a href="#article-iv">Scoring</a></li>
+          <li><a href="#article-v">Playoffs &amp; GridIron Bowl</a></li>
+          <li><a href="#article-vi">Prize Pool &amp; Payouts</a></li>
+          <li><a href="#article-vii">Authority</a></li>
+        </ol>
+      </nav>
+
+      <article class="article reveal" id="article-i">
+        <header class="article-head">
+          <p class="article-num">Article I</p>
+          <h2>League Structure</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§1.01 Name</h3>
+          <p>This league is GridIron 24 — twenty-four franchises, two conferences, one champion.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§1.02 Conferences</h3>
+          <ol>
+            <li><strong>Detail Conference</strong> — twelve franchises.</li>
+            <li><strong>Overtime Conference</strong> — twelve franchises.</li>
+          </ol>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§1.03 System of Record</h3>
+          <p>ESPN Fantasy is the system of record for drafts, rosters, scoring, waivers, and transactions. GridIron 24 is the league headquarters for standings, rules, payouts, and championship presentation.</p>
+        </section>
+      </article>
+
+      <article class="article reveal" id="article-ii">
+        <header class="article-head">
+          <p class="article-num">Article II</p>
+          <h2>Season &amp; Calendar</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§2.01 Regular Season</h3>
+          <p>Each conference plays a thirteen-week regular season. Conference standings and playoff seeding follow ESPN results for that conference.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§2.02 Key Dates</h3>
+          <div id="calendar-rules"><div class="msg">Loading calendar…</div></div>
+        </section>
+      </article>
+
+      <article class="article reveal" id="article-iii">
+        <header class="article-head">
+          <p class="article-num">Article III</p>
+          <h2>Rosters &amp; Lineups</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§3.01 Starting Lineup</h3>
+          <p>Owners must set a legal starting lineup before each week’s games. Bench and IR slots do not score unless moved into an active roster slot.</p>
+          <div id="lineup-rules"><div class="msg">Loading lineup…</div></div>
+        </section>
+      </article>
+
+      <article class="article reveal" id="article-iv">
+        <header class="article-head">
+          <p class="article-num">Article IV</p>
+          <h2>Scoring</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§4.01 Uniform Rules</h3>
+          <p>Detail and Overtime use the same official scoring settings. When the conferences disagree on ESPN, Detail Conference settings are the source of truth until staff re-syncs Overtime.</p>
+          <div id="scoring-banner"></div>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§4.02 Point Values</h3>
+          <div id="scoring-rules"><div class="msg">Loading scoring…</div></div>
+        </section>
+      </article>
+
+      <article class="article reveal" id="article-v">
+        <header class="article-head">
+          <p class="article-num">Article V</p>
+          <h2>Playoffs &amp; GridIron Bowl</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§5.01 Conference Playoffs</h3>
+          <ol>
+            <li>Six teams qualify per conference.</li>
+            <li>Playoffs begin Week 14 (Wild Card).</li>
+            <li>Conferences reseed after each round.</li>
+            <li>Conference champions are decided by Week 16.</li>
+          </ol>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§5.02 GridIron Bowl</h3>
+          <p>In Week 17, the Detail champion and Overtime champion meet for the GridIron Bowl. Championship ranking uses each conference champ’s Week 17 ESPN score.</p>
+          <p><a class="book-link" href="/playoffs.html">View playoff bracket →</a></p>
+        </section>
+      </article>
+
+      <article class="article reveal" id="article-vi">
+        <header class="article-head">
+          <p class="article-num">Article VI</p>
+          <h2>Prize Pool &amp; Payouts</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§6.01 Buy-In &amp; Pool</h3>
+          <div id="payout-summary"><div class="msg">Loading payouts…</div></div>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§6.02 Award Schedule</h3>
+          <div id="payout-table"><div class="msg">Loading award schedule…</div></div>
+          <p><a class="book-link" href="/payouts.html">Open payout schedule page →</a></p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§6.03 Distribution Notes</h3>
+          <div id="payout-notes"></div>
+        </section>
+      </article>
+
+      <article class="article reveal" id="article-vii">
+        <header class="article-head">
+          <p class="article-num">Article VII</p>
+          <h2>Authority</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§7.01 Commissioner</h3>
+          <p>The commissioner administers membership, franchise assignments, invites, and league tools. Conference admins may assist within their conference.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§7.02 Amendments</h3>
+          <p>Material rule changes should be communicated before they affect active competition. ESPN setting changes that create conference drift are corrected through League Tools rules sync.</p>
+        </section>
+      </article>
+    </div>
+  </main>
+
+  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
+  <script src="/js/nav.js?v=20"></script>
+  <script src="/js/conference-diff.js?v=4"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    const GROUP_ORDER = [
+      'Passing', 'Rushing', 'Receiving', 'Misc. Offense',
+      'Kicking', 'Defense / Special Teams', 'Other'
+    ];
+
+    function money(amount, currency = 'USD', digits = 0) {
+      if (amount == null || amount === '') return 'TBD';
+      try {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits
+        }).format(Number(amount));
+      } catch {
+        return `$${Number(amount).toFixed(digits)}`;
+      }
+    }
+
+    function fmtDate(d) {
+      if (!d) return 'TBD';
+      try {
+        return new Date(`${d}T12:00:00`).toLocaleDateString([], {
+          month: 'short', day: 'numeric', year: 'numeric'
+        });
+      } catch {
+        return d;
+      }
+    }
+
+    function noteBullets(notes = '') {
+      const parts = String(notes)
+        .split(/(?<=\.)\s+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!parts.length) return '<p>No additional payout notes.</p>';
+      return `<ol>${parts.map((p) => `<li>${esc(p)}</li>`).join('')}</ol>`;
+    }
+
+    function lineupRow(lineup) {
+      const starterOrder = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K', 'Bench', 'IR'];
+      const sorted = [...(lineup || [])].sort((a, b) => {
+        const ai = starterOrder.indexOf(a.label);
+        const bi = starterOrder.indexOf(b.label);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+      if (!sorted.length) return '<p>Lineup settings unavailable.</p>';
+      return `<div class="lineup-row">${sorted.map((s) => `
+        <div class="slot ${['Bench', 'IR'].includes(s.label) ? 'bench' : ''}">
+          <span class="pos">${esc(s.label)}</span>
+          <span class="cnt">×${s.count}</span>
+        </div>`).join('')}</div>`;
+    }
+
+    function groupPanels(items) {
+      const buckets = new Map();
+      for (const item of items || []) {
+        const g = item.group || 'Other';
+        if (!buckets.has(g)) buckets.set(g, []);
+        buckets.get(g).push(item);
+      }
+      const order = GROUP_ORDER.filter((g) => buckets.has(g));
+      for (const g of buckets.keys()) {
+        if (!order.includes(g)) order.push(g);
+      }
+      if (!order.length) return '<p>Scoring settings unavailable.</p>';
+      return `<div class="rules-grid">${order.map((group) => {
+        const rules = buckets.get(group).map((item) => `
+          <div class="rule">
+            <span class="label">${esc(item.label)}</span>
+            <span class="pts">${esc(GridIronDiff.fmtItem(item))}</span>
+          </div>`).join('');
+        return `<section class="group-panel"><h3>${esc(group)}</h3>${rules}</section>`;
+      }).join('')}</div>`;
+    }
+
+    async function loadCalendar() {
+      const mount = document.getElementById('calendar-rules');
+      try {
+        const res = await fetch('/api/calendar', { cache: 'no-store' });
+        const data = await res.json();
+        const events = data.events || [];
+        if (!events.length) {
+          mount.innerHTML = '<p>Season calendar is not published yet.</p>';
+          return;
+        }
+        mount.innerHTML = `<ol>${events.map((e) => `
+          <li><strong>${esc(fmtDate(e.date))}</strong> — ${esc(e.title)}${e.notes ? `: ${esc(e.notes)}` : ''}</li>
+        `).join('')}</ol>`;
+      } catch (err) {
+        mount.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
+    }
+
+    async function loadScoring() {
+      const lineupMount = document.getElementById('lineup-rules');
+      const scoringMount = document.getElementById('scoring-rules');
+      const bannerMount = document.getElementById('scoring-banner');
+      try {
+        const res = await fetch('/api/scoring', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        const rules = data.scoring;
+        if (!rules?.ok && !(rules?.scoringItems || []).length) {
+          lineupMount.innerHTML = '<p>Could not load lineup settings from ESPN.</p>';
+          scoringMount.innerHTML = '<p>Could not load scoring settings from ESPN.</p>';
+          return;
+        }
+
+        const synced = Boolean(data.synced || data.compare?.matched);
+        const source = data.source === 'official' ? 'official' : 'live';
+        const updated = data.officialScoring?.updatedAt || data.rulesSync?.checkedAt || data.generatedAt;
+        const when = updated
+          ? new Date(updated).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+          : '';
+
+        if (synced) {
+          bannerMount.innerHTML = `<div class="banner ok">Conferences synced<span class="sync-pill">Official</span>${when ? ` · Updated ${esc(when)}` : ''}</div>`;
+        } else if (data.compare?.bothOk === false) {
+          bannerMount.innerHTML = `<div class="banner">Could not verify both ESPN leagues. Showing Detail Conference rules.</div>`;
+        } else {
+          const n = data.compare?.diffCount || 0;
+          bannerMount.innerHTML = `<div class="banner">Conferences are out of sync on ESPN (${n} difference${n === 1 ? '' : 's'}). Showing Detail as source of truth. See <a href="/league-tools.html#rules-sync">League Tools</a>.</div>`;
+        }
+
+        lineupMount.innerHTML = lineupRow(rules.lineup);
+        scoringMount.innerHTML = `
+          ${groupPanels(rules.scoringItems)}
+          <p class="source-note">Source: ${source === 'official' ? 'Official synced snapshot (Detail)' : 'Live Detail ESPN settings'}</p>
+        `;
+      } catch (err) {
+        lineupMount.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        scoringMount.innerHTML = '';
+      }
+    }
+
+    async function loadPayouts() {
+      const summary = document.getElementById('payout-summary');
+      const table = document.getElementById('payout-table');
+      const notes = document.getElementById('payout-notes');
+      try {
+        const res = await fetch('/api/payouts', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        const p = data.payouts || {};
+        const currency = p.currency || 'USD';
+        const buyIn = money(p.buyInPerTeam, currency);
+        const pool = p.buyInPerTeam != null && p.teamCount
+          ? money(Number(p.buyInPerTeam) * Number(p.teamCount), currency)
+          : 'TBD';
+        const prizes = p.prizes || [];
+        const total = prizes.reduce((sum, prize) => sum + Number(prize.amount || 0), 0);
+
+        summary.innerHTML = `<p>Each franchise pays a <strong style="color:#fff">${buyIn}</strong> buy-in. With <strong style="color:#fff">${esc(String(p.teamCount || 24))}</strong> franchises, the prize pool is <strong style="color:#fff">${pool}</strong>.</p>`;
+
+        table.innerHTML = `
+          <div class="table-scroll">
+            <table class="prize-table">
+              <thead><tr><th>Award</th><th>Amount</th></tr></thead>
+              <tbody>
+                ${prizes.map((prize) => `
+                  <tr>
+                    <td>${esc(prize.label)}</td>
+                    <td class="amt">${money(prize.amount, currency, 0)}</td>
+                  </tr>`).join('') || '<tr><td colspan="2">No awards configured.</td></tr>'}
+                <tr class="total">
+                  <td>Total</td>
+                  <td class="amt">${money(total, currency, 0)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>`;
+        notes.innerHTML = noteBullets(p.notes);
+      } catch (err) {
+        summary.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        table.innerHTML = '';
+        notes.innerHTML = '';
+      }
+    }
+
+    Promise.all([loadCalendar(), loadScoring(), loadPayouts()]).then(() => {
+      const hash = location.hash;
+      if (hash) {
+        const el = document.querySelector(hash);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  </script>
+</body>
+</html>
