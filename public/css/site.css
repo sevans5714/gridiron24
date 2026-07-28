@@ -113,7 +113,7 @@ body {
   display: flex;
   align-items: stretch;
   border: 1px solid rgba(47, 109, 255, 0.28);
-  border-radius: 3px;
+  border-radius: 999px;
   background:
     linear-gradient(90deg, rgba(47, 109, 255, 0.18), rgba(47, 109, 255, 0.06) 42%, rgba(47, 109, 255, 0.1)),
     linear-gradient(180deg, #101820 0%, #0a1018 100%);
@@ -213,10 +213,6 @@ body {
   animation: ticker-scroll 55s linear infinite;
   will-change: transform;
 }
-@media (hover: hover) and (pointer: fine) {
-  .ticker:hover .ticker-track { animation-play-state: paused; }
-}
-.ticker.is-paused .ticker-track { animation-play-state: paused; }
 .ticker-item {
   display: inline-flex;
   align-items: center;

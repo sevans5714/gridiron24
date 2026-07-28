@@ -201,14 +201,6 @@
       if (!topbar) return null;
       topbar.insertAdjacentElement('afterend', el);
     }
-    const ticker = el.querySelector('.ticker');
-    if (ticker && !ticker.dataset.pauseBound) {
-      ticker.dataset.pauseBound = '1';
-      ticker.addEventListener('pointerdown', () => ticker.classList.add('is-paused'));
-      ticker.addEventListener('pointerup', () => ticker.classList.remove('is-paused'));
-      ticker.addEventListener('pointerleave', () => ticker.classList.remove('is-paused'));
-      ticker.addEventListener('pointercancel', () => ticker.classList.remove('is-paused'));
-    }
     return el;
   }
 
