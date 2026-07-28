@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=45" />
+  <link rel="stylesheet" href="/css/site.css?v=46" />
   <style>
     .hq-hero {
       text-align: center;
@@ -112,25 +112,27 @@
     }
     .hq-board .section-head {
       margin: 0 0 0.75rem;
-      padding: 0.28rem 1rem;
+      min-height: 2.15rem;
+      padding: 0.2rem 1.05rem;
       border-bottom: 1px solid rgba(47, 109, 255, 0.28);
       background:
-        radial-gradient(ellipse 80% 120% at 50% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
+        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
         linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
       position: relative;
+      display: flex;
       align-items: center;
-      justify-content: center;
-      text-align: center;
+      justify-content: flex-start;
+      text-align: left;
     }
     .hq-board .section-head::before {
       content: "";
       position: absolute;
-      left: 50%;
+      left: 0;
       top: 0;
-      bottom: auto;
-      width: min(5.5rem, 28%);
-      height: 2px;
-      transform: translateX(-50%);
+      bottom: 0;
+      width: 3px;
+      height: auto;
+      transform: none;
       background: var(--blue);
     }
 
@@ -418,26 +420,28 @@
     .news-block .section-head,
     .board-block .section-head {
       margin: 0 0 0.75rem;
-      padding: 0.28rem 1rem;
+      min-height: 2.15rem;
+      padding: 0.2rem 1.05rem;
       border-bottom: 1px solid rgba(47, 109, 255, 0.28);
       background:
-        radial-gradient(ellipse 80% 120% at 50% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
+        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
         linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
       position: relative;
+      display: flex;
       align-items: center;
-      justify-content: center;
-      text-align: center;
+      justify-content: flex-start;
+      text-align: left;
     }
     .news-block .section-head::before,
     .board-block .section-head::before {
       content: "";
       position: absolute;
-      left: 50%;
+      left: 0;
       top: 0;
-      bottom: auto;
-      width: min(5.5rem, 28%);
-      height: 2px;
-      transform: translateX(-50%);
+      bottom: 0;
+      width: 3px;
+      height: auto;
+      transform: none;
       background: var(--blue);
     }
     .news-list,

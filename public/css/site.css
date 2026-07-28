@@ -598,25 +598,28 @@ body {
 .page-hero {
   position: relative;
   margin-top: 0.45rem;
-  padding-top: 1.05rem;
-  padding-bottom: 0.85rem;
+  min-height: 3.35rem;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
   border-bottom: 1px solid rgba(47, 109, 255, 0.22);
   overflow: hidden;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
   background:
-    radial-gradient(ellipse 80% 120% at 50% 0%, rgba(47, 109, 255, 0.2), transparent 55%),
+    radial-gradient(ellipse 80% 120% at 12% 0%, rgba(47, 109, 255, 0.2), transparent 55%),
     linear-gradient(180deg, rgba(47, 109, 255, 0.12), rgba(47, 109, 255, 0.03) 70%, transparent);
 }
 
 .page-hero::before {
   content: "";
   position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: auto;
-  width: min(10rem, 36%);
-  height: 3px;
-  transform: translateX(-50%);
+  inset: 0 auto 0 0;
+  width: 3px;
+  height: auto;
+  transform: none;
   background: var(--blue);
 }
 
@@ -639,7 +642,7 @@ body {
 body[data-page="payouts"] .page-hero {
   border-bottom-color: rgba(34, 197, 94, 0.28);
   background:
-    radial-gradient(ellipse 80% 120% at 50% 0%, rgba(34, 197, 94, 0.2), transparent 55%),
+    radial-gradient(ellipse 80% 120% at 12% 0%, rgba(34, 197, 94, 0.2), transparent 55%),
     linear-gradient(180deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.04) 70%, transparent);
 }
 body[data-page="payouts"] .page-hero::before {
@@ -647,7 +650,7 @@ body[data-page="payouts"] .page-hero::before {
 }
 
 .page-hero .eyebrow {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.3rem;
   font-family: var(--body);
   font-size: var(--fs-xs);
   font-weight: 600;
@@ -668,7 +671,7 @@ body[data-page="payouts"] .page-hero::before {
 }
 
 .page-hero p {
-  margin: 0.5rem auto 0;
+  margin: 0.45rem 0 0;
   max-width: 36rem;
   color: var(--muted);
   font-size: var(--fs-md);
@@ -1156,8 +1159,9 @@ body.auth-page {
   }
 
   .page-hero {
-    padding-top: 0.95rem;
-    padding-bottom: 0.75rem;
+    min-height: 3rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
   }
   .page-hero h1 { font-size: clamp(1.65rem, 8vw, 2.2rem); }
   .panel-title .meta { display: none; }
