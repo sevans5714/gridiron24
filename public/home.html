@@ -70,7 +70,7 @@
     }
     .section-head a,
     .section-head .hint {
-      color: #b8b8b8;
+      color: #9ec0ff;
       font-size: 0.95rem;
       font-weight: 600;
       text-decoration: none;
@@ -98,16 +98,34 @@
     }
     .hq-board .hq-section {
       margin-bottom: 0;
-      padding: 1.15rem 1.2rem 1.25rem;
-      border: 1px solid rgba(255,255,255,0.1);
+      padding: 0 0 1.25rem;
+      border: 1px solid rgba(47, 109, 255, 0.22);
       background:
         linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%),
         #0a0a0a;
+      overflow: hidden;
+    }
+    .hq-board .hq-section > :not(.section-head) {
+      padding-left: 1.2rem;
+      padding-right: 1.2rem;
     }
     .hq-board .section-head {
-      margin-bottom: 1rem;
-      padding-bottom: 0.65rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin: 0 0 1rem;
+      padding: 0.9rem 1.2rem;
+      border-bottom: 1px solid rgba(47, 109, 255, 0.28);
+      background:
+        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
+        linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
+      position: relative;
+    }
+    .hq-board .section-head::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--blue);
     }
 
     .standings-preview {
@@ -379,17 +397,37 @@
     .news-block,
     .board-block {
       min-width: 0;
-      padding: 1.15rem 1.2rem 1.25rem;
-      border: 1px solid rgba(255,255,255,0.1);
+      padding: 0 0 1.25rem;
+      border: 1px solid rgba(47, 109, 255, 0.22);
       background:
         linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%),
         #0a0a0a;
+      overflow: hidden;
+    }
+    .news-block > :not(.section-head),
+    .board-block > :not(.section-head) {
+      padding-left: 1.2rem;
+      padding-right: 1.2rem;
     }
     .news-block .section-head,
     .board-block .section-head {
-      margin-bottom: 1rem;
-      padding-bottom: 0.65rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin: 0 0 1rem;
+      padding: 0.9rem 1.2rem;
+      border-bottom: 1px solid rgba(47, 109, 255, 0.28);
+      background:
+        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
+        linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
+      position: relative;
+    }
+    .news-block .section-head::before,
+    .board-block .section-head::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--blue);
     }
     .news-list,
     .msg-list {
