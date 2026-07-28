@@ -977,6 +977,10 @@ const server = http.createServer(async (req, res) => {
 
     if (!requireAuth(req, res, pathname)) return;
 
+    if (pathname === '/scoreboard' || pathname === '/scoreboard.html') {
+      return sendFile(res, path.join(PUBLIC_DIR, 'scoreboard.html'));
+    }
+
     if (pathname === '/api/users' && req.method === 'GET') {
       if (!requireCommissioner(req, res)) return;
       return sendJson(res, 200, {
