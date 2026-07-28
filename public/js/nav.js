@@ -1,6 +1,7 @@
 (function () {
   const allLinks = [
     { href: '/home.html', label: 'Home', key: 'home' },
+    { href: '/scoreboard.html', label: 'Scoreboard', key: 'scoreboard' },
     { href: '/standings.html', label: 'Standings', key: 'standings' },
     { href: '/scoring.html', label: 'Scoring', key: 'scoring' },
     { href: '/schedules.html', label: 'Schedules', key: 'schedules' },
