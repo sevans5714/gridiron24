@@ -104,7 +104,8 @@
         <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
         <span class="user-chip-text">
           <span class="user-chip-team">${esc(teamName)}</span>
-          <span class="user-chip-meta">${esc(ownerName)} · ${esc(access)}</span>
+          <span class="user-chip-owner">${esc(ownerName)}</span>
+          <span class="user-chip-access">${esc(access)}</span>
         </span>
       </button>
       <div class="user-menu-panel" id="user-menu-panel" hidden>
@@ -112,7 +113,8 @@
           <div class="user-menu-preview">${avatarHtml(myTeam, user)}</div>
           <div class="user-menu-meta">
             <div class="user-menu-name">${esc(teamName)}</div>
-            <div class="user-menu-role">${esc(ownerName)} · ${esc(access)}</div>
+            <div class="user-menu-role">${esc(ownerName)}</div>
+            <div class="user-menu-access">${esc(access)}</div>
           </div>
         </a>
         <button type="button" class="user-menu-logout" id="nav-logout">Log Out</button>
