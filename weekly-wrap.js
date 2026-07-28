@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const config = require('./config');
+const config = require('./league-runtime');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const STATE_FILE = path.join(DATA_DIR, 'weekly-wraps.json');
@@ -88,7 +88,6 @@ function summarizeConference(standingsConf, scheduleConf) {
   });
 
   const finals = games.filter((g) => g.final);
-  const highestScorer = teams.slice().sort((a, b) => Number(b.pointsFor || 0) - Number(a.pointsFor || 0))[0] || null;
   const hottest = teams
     .filter((t) => t.streakType === 'WIN' && Number(t.streakLength || 0) > 0)
     .sort((a, b) => Number(b.streakLength || 0) - Number(a.streakLength || 0))[0] || null;
@@ -98,6 +97,7 @@ function summarizeConference(standingsConf, scheduleConf) {
   const blowout = finals.slice().sort((a, b) => b.margin - a.margin)[0] || null;
   const barnburner = finals.slice().sort((a, b) => a.margin - b.margin)[0] || null;
   const shootout = finals.slice().sort((a, b) => b.total - a.total)[0] || null;
+  const weekHigh = weekHighFromGames(finals);
 
   return {
     key: standingsConf?.key || scheduleConf?.key,
@@ -117,14 +117,144 @@ function summarizeConference(standingsConf, scheduleConf) {
     games,
     finalsCount: finals.length,
     pendingCount: games.length - finals.length,
-    highestScorer: highestScorer
-      ? { name: highestScorer.name, pf: Number(highestScorer.pointsFor || 0).toFixed(1), record: record(highestScorer) }
+    weekHigh,
+    hottest: hottest
+      ? {
+          name: hottest.name,
+          streak: `${hottest.streakLength}W`,
+          streakLength: Number(hottest.streakLength || 0),
+          record: record(hottest)
+        }
       : null,
-    hottest: hottest ? { name: hottest.name, streak: `${hottest.streakLength}W`, record: record(hottest) } : null,
-    coldest: coldest ? { name: coldest.name, streak: `${coldest.streakLength}L`, record: record(coldest) } : null,
+    coldest: coldest
+      ? {
+          name: coldest.name,
+          streak: `${coldest.streakLength}L`,
+          streakLength: Number(coldest.streakLength || 0),
+          record: record(coldest)
+        }
+      : null,
     blowout,
     barnburner,
     shootout
+  };
+}
+
+function weekHighFromGames(games) {
+  let best = null;
+  for (const g of games || []) {
+    for (const side of [
+      { name: g.away, score: g.awayScore },
+      { name: g.home, score: g.homeScore }
+    ]) {
+      if (!side.name) continue;
+      if (!best || side.score > best.score) {
+        best = { name: side.name, score: side.score };
+      }
+    }
+  }
+  return best;
+}
+
+function taggedGame(game, conf) {
+  if (!game) return null;
+  return {
+    ...game,
+    conferenceKey: conf.key,
+    conference: conf.shortName || conf.name
+  };
+}
+
+function sameGame(a, b) {
+  if (!a || !b) return false;
+  return (
+    a.away === b.away &&
+    a.home === b.home &&
+    Number(a.awayScore) === Number(b.awayScore) &&
+    Number(a.homeScore) === Number(b.homeScore)
+  );
+}
+
+function buildWeeklyAwards(conferences) {
+  const list = conferences || [];
+  const taggedFinals = list.flatMap((conf) =>
+    (conf.games || [])
+      .filter((g) => g.final)
+      .map((g) => taggedGame(g, conf))
+  );
+
+  const blowout = taggedFinals.slice().sort((a, b) => b.margin - a.margin)[0] || null;
+  const closest = taggedFinals.slice().sort((a, b) => a.margin - b.margin)[0] || null;
+  const shootout = taggedFinals.slice().sort((a, b) => b.total - a.total)[0] || null;
+  const highestScore = weekHighFromGames(taggedFinals);
+
+  const hottest = list
+    .map((c) => (c.hottest ? { ...c.hottest, conference: c.shortName || c.name } : null))
+    .filter(Boolean)
+    .sort((a, b) => b.streakLength - a.streakLength)[0] || null;
+  const coldest = list
+    .map((c) => (c.coldest ? { ...c.coldest, conference: c.shortName || c.name } : null))
+    .filter(Boolean)
+    .sort((a, b) => b.streakLength - a.streakLength)[0] || null;
+
+  const awards = [];
+  if (highestScore) {
+    awards.push({
+      key: 'highest',
+      label: 'Highest Score',
+      detail: `${highestScore.name} · ${highestScore.score.toFixed(1)} pts`
+    });
+  }
+  if (blowout?.winnerName) {
+    awards.push({
+      key: 'blowout',
+      label: 'Blowout',
+      detail: `${blowout.winnerName} over ${blowout.loserName} by ${blowout.margin.toFixed(1)} · ${blowout.conference}`
+    });
+  }
+  if (closest && !sameGame(closest, blowout)) {
+    awards.push({
+      key: 'closest',
+      label: 'Closest Game',
+      detail:
+        `${closest.away} ${closest.awayScore.toFixed(1)} · ${closest.home} ${closest.homeScore.toFixed(1)}` +
+        ` (margin ${closest.margin.toFixed(1)}) · ${closest.conference}`
+    });
+  }
+  if (shootout && !sameGame(shootout, blowout) && !sameGame(shootout, closest)) {
+    awards.push({
+      key: 'shootout',
+      label: 'Shootout',
+      detail:
+        `${shootout.away} ${shootout.awayScore.toFixed(1)} · ${shootout.home} ${shootout.homeScore.toFixed(1)}` +
+        ` (${shootout.total.toFixed(1)} combined) · ${shootout.conference}`
+    });
+  }
+  if (hottest) {
+    awards.push({
+      key: 'hot',
+      label: 'Hottest',
+      detail: `${hottest.name} · ${hottest.streak} (${hottest.record}) · ${hottest.conference}`
+    });
+  }
+  if (coldest) {
+    awards.push({
+      key: 'cold',
+      label: 'Coldest',
+      detail: `${coldest.name} · ${coldest.streak} (${coldest.record}) · ${coldest.conference}`
+    });
+  }
+
+  return {
+    highestScore: highestScore
+      ? { name: highestScore.name, score: Number(highestScore.score.toFixed(1)) }
+      : null,
+    blowout,
+    closest,
+    shootout,
+    hottest,
+    coldest,
+    items: awards
   };
 }
 
@@ -140,7 +270,8 @@ function buildStatsPack({ season, week, standings, schedule }) {
     tagline: config.brand?.tagline || '',
     ready: conferences.some((c) => c.finalsCount > 0),
     allFinal: conferences.every((c) => c.pendingCount === 0 && c.finalsCount > 0),
-    conferences
+    conferences,
+    awards: buildWeeklyAwards(conferences)
   };
 }
 
@@ -165,14 +296,29 @@ function statsToPrompt(stats) {
           `${g.winnerName ? `; winner ${g.winnerName}` : ''})`
       );
     }
+    if (conf.weekHigh) {
+      lines.push(`Week high: ${conf.weekHigh.name} ${conf.weekHigh.score.toFixed(1)}`);
+    }
     if (conf.blowout?.final) {
       lines.push(`Blowout: ${conf.blowout.winnerName} over ${conf.blowout.loserName} by ${conf.blowout.margin.toFixed(1)}`);
     }
     if (conf.barnburner?.final) {
       lines.push(`Closest: ${conf.barnburner.away} vs ${conf.barnburner.home} (margin ${conf.barnburner.margin.toFixed(1)})`);
     }
+    if (conf.shootout?.final) {
+      lines.push(
+        `Shootout: ${conf.shootout.away} vs ${conf.shootout.home} (${conf.shootout.total.toFixed(1)} combined)`
+      );
+    }
     if (conf.hottest) lines.push(`Hot: ${conf.hottest.name} (${conf.hottest.streak})`);
     if (conf.coldest) lines.push(`Cold: ${conf.coldest.name} (${conf.coldest.streak})`);
+    lines.push('');
+  }
+  if (stats.awards?.items?.length) {
+    lines.push('## League Weekly Awards');
+    for (const a of stats.awards.items) {
+      lines.push(`- ${a.label}: ${a.detail}`);
+    }
     lines.push('');
   }
   return lines.join('\n');
@@ -340,6 +486,7 @@ module.exports = {
   resolveWrapWeek,
   allMatchupsFinal,
   buildStatsPack,
+  buildWeeklyAwards,
   generateNarrative,
   buildTitle,
   findExistingWrap,

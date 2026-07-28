@@ -13,6 +13,19 @@ const ROLES = {
 
 const CONFERENCE_KEYS = new Set(['detail', 'overtime']);
 
+function setAllowedConferenceKeys(keys) {
+  const next = (Array.isArray(keys) ? keys : [])
+    .map((k) => String(k || '').trim().toLowerCase())
+    .filter(Boolean);
+  if (!next.length) return;
+  CONFERENCE_KEYS.clear();
+  for (const k of next) CONFERENCE_KEYS.add(k);
+}
+
+function getAllowedConferenceKeys() {
+  return [...CONFERENCE_KEYS];
+}
+
 function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(USERS_FILE)) {
@@ -84,6 +97,8 @@ function publicUser(user) {
     loginName: user.loginName,
     role,
     conference: role === ROLES.CONFERENCE_ADMIN ? normalizeConference(user.conference) : null,
+    leagueId: user.leagueId || null,
+    leagueOwner: Boolean(user.leagueOwner),
     approved,
     createdAt: user.createdAt || null,
     approvedAt: user.approvedAt || null
@@ -124,7 +139,7 @@ function isCommissioner(user) {
   return normalizeRole(user?.role) === ROLES.COMMISSIONER;
 }
 
-function createUser({ name, email, loginName, password, role, conference, approved }) {
+function createUser({ name, email, loginName, password, role, conference, approved, leagueId, leagueOwner }) {
   const store = readStore();
   const emailKey = normalizeEmail(email);
   const loginKey = normalizeLoginName(loginName);
@@ -154,7 +169,7 @@ function createUser({ name, email, loginName, password, role, conference, approv
   if (nextRole === ROLES.CONFERENCE_ADMIN) {
     nextConference = normalizeConference(conference);
     if (!nextConference) {
-      throw Object.assign(new Error('Conference admin requires detail or overtime'), { status: 400 });
+      throw Object.assign(new Error('Conference admin requires a valid conference'), { status: 400 });
     }
   }
   if (nextRole === ROLES.COMMISSIONER) nextConference = null;
@@ -178,6 +193,8 @@ function createUser({ name, email, loginName, password, role, conference, approv
     loginName: loginKey,
     role: nextRole,
     conference: nextConference,
+    leagueId: leagueId || null,
+    leagueOwner: Boolean(leagueOwner) || (isCommissionerAccount && Boolean(leagueId)),
     approved: finalApproved,
     approvedAt: finalApproved ? new Date().toISOString() : null,
     passwordSalt: salt,
@@ -201,7 +218,7 @@ function setUserRole(userId, role, conference) {
   if (nextRole === ROLES.CONFERENCE_ADMIN) {
     nextConference = normalizeConference(conference);
     if (!nextConference) {
-      throw Object.assign(new Error('Pick Detail or Overtime for conference admin'), { status: 400 });
+      throw Object.assign(new Error('Pick a conference for conference admin'), { status: 400 });
     }
   }
 
@@ -431,6 +448,8 @@ module.exports = {
   DATA_DIR,
   ROLES,
   CONFERENCE_KEYS,
+  setAllowedConferenceKeys,
+  getAllowedConferenceKeys,
   createUser,
   authenticate,
   createResetToken,

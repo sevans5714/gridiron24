@@ -367,16 +367,12 @@ body {
   max-width: 100%;
 }
 
-.user-chip-access {
-  font-size: clamp(0.58rem, 1.05vw, 0.66rem);
-  font-weight: 400;
-  color: #8a93a3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.15;
-  letter-spacing: 0.02em;
-  max-width: 100%;
+.user-chip.needs-logo .user-chip-access {
+  color: #8eb6ff;
+}
+
+a.user-chip {
+  text-decoration: none;
 }
 
 .user-avatar-btn {

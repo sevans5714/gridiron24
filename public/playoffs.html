@@ -7,38 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=50" />
+  <link rel="stylesheet" href="/css/site.css?v=51" />
   <style>
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.55rem;
-      margin-bottom: 1.35rem;
-    }
-    .legend span {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.5rem 0.8rem;
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, #151515, #0d0d0d);
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 500;
-      letter-spacing: 0.02em;
-      text-transform: none;
-      color: var(--muted);
-      line-height: 1.3;
-    }
-    .legend b {
-      color: #fff;
-      font-weight: 700;
-      font-family: var(--display);
-      font-size: 0.85rem;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-    }
-
     .tree {
       display: flex;
       flex-direction: column;
@@ -351,29 +321,13 @@
       min-width: 5.5rem;
       padding: 0 0.25rem;
     }
-    .bowl-mid .pair {
-      font-size: clamp(1.55rem, 2.5vw, 2rem);
+    .bowl-mid .vs {
+      font-size: clamp(1.4rem, 2.4vw, 1.85rem);
       font-weight: 700;
-      color: #fff;
-      letter-spacing: 0.02em;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.1;
-      white-space: nowrap;
-    }
-    .bowl-mid .sep { color: #6a6a6a; margin: 0 0.2rem; }
-    .bowl-mid .status {
-      margin-top: 0.3rem;
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #8eb6ff;
-    }
-    .bowl-note {
-      margin-top: 0.85rem;
-      font-size: 0.85rem;
-      line-height: 1.45;
-      color: #9a9a9a;
-      max-width: 36rem;
+      color: #fff;
+      line-height: 1;
     }
 
     .third-place {
@@ -504,37 +458,17 @@
   </header>
 
   <section class="page-hero shell reveal">
-    <p class="eyebrow">Road to the Bowl</p>
     <h1>Playoffs</h1>
   </section>
 
   <main class="page-main shell">
-    <div class="legend reveal reveal-delay-1">
-      <span><b>6</b> playoff teams per conference</span>
-      <span><b>#1 and #2 seeds</b> earn first-round byes</span>
-      <span><b>Reseed</b> after the Wild Card round</span>
-      <span><b>Week 16</b> Conf. Title + Third Place</span>
-      <span><b>Week 17</b> GridIron Bowl I</span>
-    </div>
-
     <div class="tree" id="live-tree">
       <div class="msg" style="grid-column:1/-1;">Loading live bracket…</div>
-    </div>
-
-    <div class="notes">
-      <div class="note reveal reveal-delay-3">
-        <h3>Conference Playoffs</h3>
-        <p>Weeks 14 through 16 are played inside each ESPN league. The #1 and #2 seeds earn byes in the Wild Card round. Semifinals are reseeded: the #1 seed plays the lower remaining seed, and the #2 seed plays the higher remaining seed. Week 15 losers meet in a third-place game in Week 16 while the winners play for the conference title.</p>
-      </div>
-      <div class="note reveal reveal-delay-4">
-        <h3>GridIron Bowl</h3>
-        <p>Week 17 is scored by ESPN in each league. GridIron pulls the Detail champ’s Week 17 points and the Overtime champ’s Week 17 points and displays them head-to-head here. Set regular season to 13 weeks so conference playoffs are Weeks 14–16, turn reseed on, and make sure each conference champion still has a Week 17 ESPN matchup (opponent doesn’t matter for the Bowl — only their score counts).</p>
-      </div>
     </div>
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=24"></script>
+  <script src="/js/nav.js?v=27"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -606,33 +540,30 @@
         </section>`;
     }
 
-    function bowlBlock(bowl) {
+    function bowlBlock() {
       return `
         <div class="mid">
           <div class="bowl" id="bowl-card">
-            <div class="eyebrow">Week 17 · ESPN scored</div>
+            <div class="eyebrow">Week 17</div>
             <img src="/assets/gridiron-bowl.png" alt="GridIron Bowl I" />
             <div class="bowl-scoreboard" id="bowl-scoreboard">
               <div class="bowl-side detail">
                 <div class="nm" id="bowl-detail-name">Detail Champion</div>
               </div>
               <div class="bowl-mid">
-                <div class="pair"><span id="bowl-detail-score">—</span><span class="sep">–</span><span id="bowl-overtime-score">—</span></div>
-                <div class="status" id="bowl-status">Waiting</div>
+                <div class="vs" id="bowl-vs">VS</div>
               </div>
               <div class="bowl-side overtime">
                 <div class="nm" id="bowl-overtime-name">Overtime Champion</div>
               </div>
             </div>
-            <p class="bowl-note" id="bowl-message">${esc(bowl?.message || 'Scores appear here from each conference champ’s ESPN Week 17 lineup.')}</p>
           </div>
         </div>`;
     }
 
     function fillSide(prefix, side, isLead) {
       const nameEl = document.getElementById(`bowl-${prefix}-name`);
-      const scoreEl = document.getElementById(`bowl-${prefix}-score`);
-      if (!nameEl || !scoreEl) return;
+      if (!nameEl) return;
       const wrap = nameEl.closest('.bowl-side');
       wrap.classList.toggle('is-lead', Boolean(isLead));
       nameEl.textContent = side?.champion?.name
@@ -645,18 +576,12 @@
         wrap.insertBefore(img, nameEl);
       }
       img.src = side?.champion?.logo || PLACEHOLDER;
-      scoreEl.textContent = side?.hasWeek17Matchup ? fmt(side.score) : '—';
     }
 
     function applyBowl(data) {
       if (!data) return;
       fillSide('detail', data.detail, data.leader === 'detail' || data.leader === 'tie');
       fillSide('overtime', data.overtime, data.leader === 'overtime' || data.leader === 'tie');
-      const status = document.getElementById('bowl-status');
-      const map = { live: 'Live', ready: 'Ready', needs_week17: 'Needs Wk17', week17_open: 'Wk17 open', waiting: 'Waiting' };
-      if (status) status.textContent = map[data.phase] || 'Waiting';
-      const msg = document.getElementById('bowl-message');
-      if (msg) msg.textContent = data.message || '';
     }
 
     async function loadPlayoffs() {
@@ -671,7 +596,7 @@
             ${confTree(detail || { key: 'detail', name: 'Detail Conference', rounds: {} })}
             ${confTree(overtime || { key: 'overtime', name: 'Overtime Conference', rounds: {} })}
           </div>
-          ${bowlBlock(data.bowl)}`;
+          ${bowlBlock()}`;
         applyBowl(data.bowl);
         const t = new Date(data.generatedAt);
         window.GridIronNav?.setSync(`Playoffs sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);

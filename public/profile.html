@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=50" />
+  <link rel="stylesheet" href="/css/site.css?v=51" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -428,7 +428,7 @@
       <div class="section-head">
         <div class="section-head-block">
           <h2>Avatar / Logo</h2>
-          <p>Choose an icon or upload a custom logo for the top-right and your franchise.</p>
+          <p>Pick from the icon pack or upload a custom square logo. Used in the top-right header and on your franchise once assigned.</p>
         </div>
       </div>
       <div id="logo-body"><div class="msg">Loading…</div></div>
@@ -478,7 +478,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=24"></script>
+  <script src="/js/nav.js?v=27"></script>
   <script src="/js/team-icons.js?v=2"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -607,21 +607,19 @@
       const body = document.getElementById('logo-body');
       if (!body) return;
 
-      if (!data.claim) {
-        body.innerHTML = `
-          <div class="logo-locked">
-            Avatar and logo selection unlocks after your commissioner assigns your franchise.
-            Once linked, pick an icon or upload a custom square logo here.
-          </div>`;
-        return;
-      }
-
+      const specs = data.specs || { minSize: 256, maxSize: 1024, recommended: 512 };
       selectedIcon = data.logo?.type === 'icon' ? data.logo.value : null;
+      const claimNote = data.claim
+        ? 'This logo shows on your franchise across standings, schedules, and the header.'
+        : 'No franchise assigned yet — your pick still sets the top-right avatar, and copies to your team when the commissioner assigns one.';
+
       body.innerHTML = `
         <div class="logo-layout">
           <aside class="logo-side">
             <div class="preview" id="logo-preview"></div>
             <p class="profile-note" id="logo-status" role="status">Pick an avatar icon or upload a custom square logo.</p>
+            <p class="profile-note">${escP(claimNote)}</p>
+            <button type="button" class="btn btn-secondary" id="logo-clear" ${isChosenLogo(data.logo) ? '' : 'hidden'}>Clear logo</button>
           </aside>
           <section class="logo-main">
             <div class="logo-bar">
@@ -639,9 +637,9 @@
             </div>
             <div class="icon-grid" id="icon-grid"></div>
             <div class="upload-row" id="logo-drop">
-              <label class="file-btn" for="logo-file">Upload Custom</label>
+              <label class="file-btn" for="logo-file">Upload Custom Logo</label>
               <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp" hidden />
-              <span class="hint">Square PNG/JPG/WEBP · 512×512 best</span>
+              <span class="hint">Drag &amp; drop or browse · square PNG/JPG/WEBP · ${specs.minSize}–${specs.maxSize}px · ${specs.recommended}×${specs.recommended} best · max 2MB</span>
             </div>
           </section>
         </div>`;
@@ -666,6 +664,10 @@
       function renderIcons() {
         const icons = filteredIcons();
         document.getElementById('icon-count').textContent = `${icons.length} icons`;
+        if (!icons.length) {
+          iconGrid.innerHTML = `<div class="logo-locked" style="grid-column:1/-1;">No icons match. Try another category or clear search.</div>`;
+          return;
+        }
         iconGrid.innerHTML = icons.map((icon) => `
           <button type="button" class="icon-card ${selectedIcon === icon.id ? 'selected' : ''}" data-id="${escP(icon.id)}" title="${escP(icon.name)}">
             <img src="${escP(icon.src)}" alt="" loading="lazy">
@@ -680,14 +682,14 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ iconId })
         });
-        const body = await res.json();
-        if (!res.ok || !body.ok) throw new Error(body.error || 'Could not save icon');
+        const bodyJson = await res.json();
+        if (!res.ok || !bodyJson.ok) throw new Error(bodyJson.error || 'Could not save icon');
         selectedIcon = iconId;
-        setLogoPreview(body.logo.url);
+        setLogoPreview(bodyJson.logo.url);
+        document.getElementById('logo-clear').hidden = false;
         renderIcons();
         setLogoStatus('Logo updated.', 'ok');
         window.GridIronNav?.refresh?.();
-        await loadProfile(false);
       }
 
       function toSquareDataUrl(file) {
@@ -701,9 +703,11 @@
           reader.onload = () => {
             const img = new Image();
             img.onload = () => {
-              const size = 512;
+              const size = specs.recommended || 512;
               const side = Math.min(img.naturalWidth, img.naturalHeight);
-              if (side < 256) return reject(new Error('Image must be at least 256×256'));
+              if (side < (specs.minSize || 256)) {
+                return reject(new Error(`Image must be at least ${specs.minSize || 256}×${specs.minSize || 256}`));
+              }
               const sx = Math.floor((img.naturalWidth - side) / 2);
               const sy = Math.floor((img.naturalHeight - side) / 2);
               const canvas = document.createElement('canvas');
@@ -728,14 +732,14 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dataUrl, width, height })
           });
-          const body = await res.json();
-          if (!res.ok || !body.ok) throw new Error(body.error || 'Upload failed');
+          const bodyJson = await res.json();
+          if (!res.ok || !bodyJson.ok) throw new Error(bodyJson.error || 'Upload failed');
           selectedIcon = null;
-          setLogoPreview(body.logo.url);
+          setLogoPreview(bodyJson.logo.url);
+          document.getElementById('logo-clear').hidden = false;
           renderIcons();
           setLogoStatus('Custom logo saved.', 'ok');
           window.GridIronNav?.refresh?.();
-          await loadProfile(false);
         } catch (err) {
           setLogoStatus(err.message || 'Upload failed', 'err');
         }
@@ -760,6 +764,22 @@
       drop.addEventListener('drop', (e) => {
         const file = e.dataTransfer?.files?.[0];
         if (file) uploadCustom(file);
+      });
+      document.getElementById('logo-clear')?.addEventListener('click', async () => {
+        try {
+          setLogoStatus('Clearing…');
+          const res = await fetch('/api/my-team/logo', { method: 'DELETE' });
+          const bodyJson = await res.json().catch(() => ({}));
+          if (!res.ok || !bodyJson.ok) throw new Error(bodyJson.error || 'Could not clear');
+          selectedIcon = null;
+          setLogoPreview(null);
+          document.getElementById('logo-clear').hidden = true;
+          renderIcons();
+          setLogoStatus('Logo cleared.', 'ok');
+          window.GridIronNav?.refresh?.();
+        } catch (err) {
+          setLogoStatus(err.message || 'Could not clear', 'err');
+        }
       });
       renderIcons();
     }
@@ -837,7 +857,9 @@
           else window.location.replace('/league-tools.html');
         }
       } catch (err) {
-        document.getElementById('franchise-body').innerHTML = `<div class="msg"><strong>Error</strong>${escP(err.message)}</div>`;
+        const msg = `<div class="msg"><strong>Error</strong>${escP(err.message)}</div>`;
+        document.getElementById('franchise-body').innerHTML = msg;
+        document.getElementById('logo-body').innerHTML = msg;
       }
     });
   </script>

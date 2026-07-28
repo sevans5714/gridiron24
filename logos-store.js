@@ -10,6 +10,15 @@ const CONFERENCE_KEYS = new Set(['detail', 'overtime']);
 const LOGO_TYPES = new Set(['icon', 'upload', 'espn']);
 const PLACEHOLDER_LOGO = '/assets/team-logo-placeholder.svg';
 
+function setAllowedConferenceKeys(keys) {
+  const next = (Array.isArray(keys) ? keys : [])
+    .map((k) => String(k || '').trim().toLowerCase())
+    .filter(Boolean);
+  if (!next.length) return;
+  CONFERENCE_KEYS.clear();
+  for (const k of next) CONFERENCE_KEYS.add(k);
+}
+
 const LOGO_SPECS = {
   minSize: 256,
   maxSize: 1024,
@@ -26,7 +35,7 @@ function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   if (!fs.existsSync(STORE_FILE)) {
-    fs.writeFileSync(STORE_FILE, JSON.stringify({ claims: [], logos: [] }, null, 2));
+    fs.writeFileSync(STORE_FILE, JSON.stringify({ claims: [], logos: [], names: [], avatars: [] }, null, 2));
   }
 }
 
@@ -37,10 +46,11 @@ function readStore() {
     return {
       claims: Array.isArray(data.claims) ? data.claims : [],
       logos: Array.isArray(data.logos) ? data.logos : [],
-      names: Array.isArray(data.names) ? data.names : []
+      names: Array.isArray(data.names) ? data.names : [],
+      avatars: Array.isArray(data.avatars) ? data.avatars : []
     };
   } catch {
-    return { claims: [], logos: [], names: [] };
+    return { claims: [], logos: [], names: [], avatars: [] };
   }
 }
 
@@ -50,7 +60,8 @@ function writeStore(data) {
   fs.writeFileSync(tmp, JSON.stringify({
     claims: data.claims || [],
     logos: data.logos || [],
-    names: data.names || []
+    names: data.names || [],
+    avatars: data.avatars || []
   }, null, 2));
   fs.renameSync(tmp, STORE_FILE);
 }
@@ -83,7 +94,7 @@ function assignTeam(userId, conferenceKey, teamId, teamName = '', assignedBy = n
   const conf = normalizeConference(conferenceKey);
   const id = Number(teamId);
   if (!userId) throw Object.assign(new Error('User is required'), { status: 400 });
-  if (!conf) throw Object.assign(new Error('Pick Detail or Overtime'), { status: 400 });
+  if (!conf) throw Object.assign(new Error('Pick a conference'), { status: 400 });
   if (!Number.isFinite(id) || id <= 0) throw Object.assign(new Error('Pick a team'), { status: 400 });
 
   const data = readStore();
@@ -99,6 +110,23 @@ function assignTeam(userId, conferenceKey, teamId, teamName = '', assignedBy = n
     claimedAt: new Date().toISOString(),
     assignedBy: assignedBy || null
   });
+
+  // If the member already chose an avatar and this franchise has no logo yet, copy it over.
+  const existingLogo = data.logos.find((l) => l.conferenceKey === conf && Number(l.teamId) === id);
+  const avatar = data.avatars.find((a) => a.userId === userId);
+  if (!existingLogo && avatar && (avatar.type === 'icon' || avatar.type === 'upload')) {
+    data.logos.push({
+      conferenceKey: conf,
+      teamId: id,
+      type: avatar.type,
+      value: avatar.value,
+      width: avatar.width || null,
+      height: avatar.height || null,
+      updatedBy: userId,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
   writeStore(data);
   return getClaimForUser(userId);
 }
@@ -140,43 +168,37 @@ function displayLogoUrl(logoOrUrl) {
   return fromEntry || PLACEHOLDER_LOGO;
 }
 
-function setIconLogo(userId, conferenceKey, teamId, iconId) {
-  const conf = normalizeConference(conferenceKey);
-  const id = Number(teamId);
-  const icon = String(iconId || '').trim();
-  if (!conf || !Number.isFinite(id)) throw Object.assign(new Error('Invalid team'), { status: 400 });
-  if (!/^[a-z0-9-]{2,80}$/.test(icon)) throw Object.assign(new Error('Invalid icon'), { status: 400 });
+function getUserAvatar(userId) {
+  if (!userId) return null;
+  return readStore().avatars.find((a) => a.userId === userId) || null;
+}
 
-  const claim = getClaimForUser(userId);
-  if (!claim || claim.conferenceKey !== conf || Number(claim.teamId) !== id) {
-    throw Object.assign(new Error('No team assigned — ask your commissioner to link your franchise'), { status: 403 });
-  }
-
-  const data = readStore();
-  data.logos = data.logos.filter((l) => !(l.conferenceKey === conf && Number(l.teamId) === id));
-  const entry = {
-    conferenceKey: conf,
-    teamId: id,
-    type: 'icon',
-    value: icon,
-    updatedBy: userId,
-    updatedAt: new Date().toISOString()
-  };
-  data.logos.push(entry);
-  writeStore(data);
+function publicLogoEntry(entry) {
+  if (!entry) return null;
   return { ...entry, url: logoUrl(entry) };
 }
 
-function setUploadLogo(userId, conferenceKey, teamId, { buffer, mimeType, width, height }) {
-  const conf = normalizeConference(conferenceKey);
-  const id = Number(teamId);
-  if (!conf || !Number.isFinite(id)) throw Object.assign(new Error('Invalid team'), { status: 400 });
-
+/** Franchise logo if claimed, otherwise the member's personal avatar. */
+function resolveLogoForUser(userId) {
   const claim = getClaimForUser(userId);
-  if (!claim || claim.conferenceKey !== conf || Number(claim.teamId) !== id) {
-    throw Object.assign(new Error('No team assigned — ask your commissioner to link your franchise'), { status: 403 });
+  if (claim) {
+    const teamLogo = getLogo(claim.conferenceKey, claim.teamId);
+    if (teamLogo && (teamLogo.type === 'icon' || teamLogo.type === 'upload')) {
+      return publicLogoEntry(teamLogo);
+    }
   }
+  return publicLogoEntry(getUserAvatar(userId));
+}
 
+function validateIconId(iconId) {
+  const icon = String(iconId || '').trim();
+  if (!/^[a-z0-9-]{2,80}$/.test(icon)) {
+    throw Object.assign(new Error('Invalid icon'), { status: 400 });
+  }
+  return icon;
+}
+
+function validateUploadPayload({ buffer, mimeType, width, height }) {
   const ext = LOGO_SPECS.mimeTypes[mimeType];
   if (!ext) throw Object.assign(new Error('Use PNG, JPG, or WEBP'), { status: 400 });
   if (!buffer || buffer.length > LOGO_SPECS.maxBytes) {
@@ -190,52 +212,144 @@ function setUploadLogo(userId, conferenceKey, teamId, { buffer, mimeType, width,
   if (w < LOGO_SPECS.minSize || w > LOGO_SPECS.maxSize) {
     throw Object.assign(new Error(`Logo must be ${LOGO_SPECS.minSize}–${LOGO_SPECS.maxSize} pixels on each side`), { status: 400 });
   }
+  return { ext, w, h };
+}
 
-  ensureStore();
-  const filename = `${conf}-${id}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
-  fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
-
+function saveUserAvatarEntry(userId, entry) {
   const data = readStore();
-  const prev = data.logos.find((l) => l.conferenceKey === conf && Number(l.teamId) === id && l.type === 'upload');
-  if (prev?.value) {
+  const prev = data.avatars.find((a) => a.userId === userId);
+  if (prev?.type === 'upload' && prev.value && prev.value !== entry.value) {
     const oldPath = path.join(UPLOAD_DIR, prev.value);
     if (fs.existsSync(oldPath)) {
       try { fs.unlinkSync(oldPath); } catch { /* ignore */ }
     }
   }
+  data.avatars = data.avatars.filter((a) => a.userId !== userId);
+  data.avatars.push(entry);
+  writeStore(data);
+  return publicLogoEntry(entry);
+}
 
-  data.logos = data.logos.filter((l) => !(l.conferenceKey === conf && Number(l.teamId) === id));
-  const entry = {
-    conferenceKey: conf,
-    teamId: id,
-    type: 'upload',
-    value: filename,
-    width: w,
-    height: h,
-    updatedBy: userId,
+function setIconLogo(userId, conferenceKey, teamId, iconId) {
+  const icon = validateIconId(iconId);
+  const claim = getClaimForUser(userId);
+
+  // Always keep a personal avatar so the header works even before franchise assignment.
+  const avatarEntry = {
+    userId,
+    type: 'icon',
+    value: icon,
     updatedAt: new Date().toISOString()
   };
-  data.logos.push(entry);
-  writeStore(data);
-  return { ...entry, url: logoUrl(entry) };
+  saveUserAvatarEntry(userId, avatarEntry);
+
+  if (claim) {
+    const conf = normalizeConference(conferenceKey || claim.conferenceKey);
+    const id = Number(teamId || claim.teamId);
+    if (!conf || !Number.isFinite(id)) throw Object.assign(new Error('Invalid team'), { status: 400 });
+    if (claim.conferenceKey !== conf || Number(claim.teamId) !== id) {
+      throw Object.assign(new Error('That franchise is not assigned to you'), { status: 403 });
+    }
+    const data = readStore();
+    data.logos = data.logos.filter((l) => !(l.conferenceKey === conf && Number(l.teamId) === id));
+    const entry = {
+      conferenceKey: conf,
+      teamId: id,
+      type: 'icon',
+      value: icon,
+      updatedBy: userId,
+      updatedAt: new Date().toISOString()
+    };
+    data.logos.push(entry);
+    writeStore(data);
+    return publicLogoEntry(entry);
+  }
+
+  return publicLogoEntry(avatarEntry);
+}
+
+function setUploadLogo(userId, conferenceKey, teamId, payload) {
+  const { ext, w, h } = validateUploadPayload(payload);
+  const claim = getClaimForUser(userId);
+  ensureStore();
+
+  const personalName = `user-${userId.slice(0, 8)}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
+  fs.writeFileSync(path.join(UPLOAD_DIR, personalName), payload.buffer);
+  const avatarEntry = {
+    userId,
+    type: 'upload',
+    value: personalName,
+    width: w,
+    height: h,
+    updatedAt: new Date().toISOString()
+  };
+  saveUserAvatarEntry(userId, avatarEntry);
+
+  if (claim) {
+    const conf = normalizeConference(conferenceKey || claim.conferenceKey);
+    const id = Number(teamId || claim.teamId);
+    if (!conf || !Number.isFinite(id)) throw Object.assign(new Error('Invalid team'), { status: 400 });
+    if (claim.conferenceKey !== conf || Number(claim.teamId) !== id) {
+      throw Object.assign(new Error('That franchise is not assigned to you'), { status: 403 });
+    }
+
+    const filename = `${conf}-${id}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, filename), payload.buffer);
+
+    const data = readStore();
+    const prev = data.logos.find((l) => l.conferenceKey === conf && Number(l.teamId) === id && l.type === 'upload');
+    if (prev?.value) {
+      const oldPath = path.join(UPLOAD_DIR, prev.value);
+      if (fs.existsSync(oldPath)) {
+        try { fs.unlinkSync(oldPath); } catch { /* ignore */ }
+      }
+    }
+    data.logos = data.logos.filter((l) => !(l.conferenceKey === conf && Number(l.teamId) === id));
+    const entry = {
+      conferenceKey: conf,
+      teamId: id,
+      type: 'upload',
+      value: filename,
+      width: w,
+      height: h,
+      updatedBy: userId,
+      updatedAt: new Date().toISOString()
+    };
+    data.logos.push(entry);
+    writeStore(data);
+    return publicLogoEntry(entry);
+  }
+
+  return publicLogoEntry(avatarEntry);
 }
 
 function clearLogo(userId, conferenceKey, teamId) {
-  const conf = normalizeConference(conferenceKey);
-  const id = Number(teamId);
   const claim = getClaimForUser(userId);
-  if (!claim || claim.conferenceKey !== conf || Number(claim.teamId) !== id) {
-    throw Object.assign(new Error('No team assigned — ask your commissioner to link your franchise'), { status: 403 });
-  }
   const data = readStore();
-  const prev = data.logos.find((l) => l.conferenceKey === conf && Number(l.teamId) === id);
-  if (prev?.type === 'upload' && prev.value) {
-    const oldPath = path.join(UPLOAD_DIR, prev.value);
+
+  if (claim) {
+    const conf = normalizeConference(conferenceKey || claim.conferenceKey);
+    const id = Number(teamId || claim.teamId);
+    if (claim.conferenceKey === conf && Number(claim.teamId) === id) {
+      const prev = data.logos.find((l) => l.conferenceKey === conf && Number(l.teamId) === id);
+      if (prev?.type === 'upload' && prev.value) {
+        const oldPath = path.join(UPLOAD_DIR, prev.value);
+        if (fs.existsSync(oldPath)) {
+          try { fs.unlinkSync(oldPath); } catch { /* ignore */ }
+        }
+      }
+      data.logos = data.logos.filter((l) => !(l.conferenceKey === conf && Number(l.teamId) === id));
+    }
+  }
+
+  const prevAvatar = data.avatars.find((a) => a.userId === userId);
+  if (prevAvatar?.type === 'upload' && prevAvatar.value) {
+    const oldPath = path.join(UPLOAD_DIR, prevAvatar.value);
     if (fs.existsSync(oldPath)) {
       try { fs.unlinkSync(oldPath); } catch { /* ignore */ }
     }
   }
-  data.logos = data.logos.filter((l) => !(l.conferenceKey === conf && Number(l.teamId) === id));
+  data.avatars = data.avatars.filter((a) => a.userId !== userId);
   writeStore(data);
   return { ok: true };
 }
@@ -305,6 +419,7 @@ module.exports = {
   LOGO_SPECS,
   PLACEHOLDER_LOGO,
   UPLOAD_DIR,
+  setAllowedConferenceKeys,
   getClaimForUser,
   getClaimForTeam,
   listClaims,
@@ -312,6 +427,8 @@ module.exports = {
   unassignTeam,
   claimTeam,
   getLogo,
+  getUserAvatar,
+  resolveLogoForUser,
   logoUrl,
   displayLogoUrl,
   setIconLogo,

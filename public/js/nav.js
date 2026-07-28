@@ -9,12 +9,11 @@
     { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
     { href: '/rankings.html', label: 'Rankings', key: 'rankings' },
     { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
-    { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' },
-    { href: '/payouts.html', label: 'Payouts', key: 'payouts' }
+    { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' }
   ];
 
   const active = document.body.dataset.page || 'home';
-  const navActive = (active === 'scoring' || active === 'rulebook') ? 'rulebook' : active;
+  const navActive = (active === 'scoring' || active === 'rulebook' || active === 'payouts') ? 'rulebook' : active;
   const nav = document.getElementById('site-nav');
   const sync = document.getElementById('lastUpdated');
 
@@ -95,87 +94,30 @@
       return;
     }
     mount.hidden = false;
+    mount.onmouseenter = null;
+    mount.onmouseleave = null;
     const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || 'Unassigned';
     const ownerName = user.name || 'Owner';
     const access = roleLabel(user.role);
     const onProfile = active === 'profile';
+    const needsLogo = !hasChosenLogo(myTeam?.logo);
+    const href = needsLogo ? '/profile.html#logo' : '/profile.html';
     mount.innerHTML = `
-      <button type="button" class="user-chip${onProfile ? ' is-active' : ''}" id="user-menu-toggle" title="${esc(teamName)} · ${esc(ownerName)} · ${esc(access)}" aria-haspopup="true" aria-expanded="false">
+      <a class="user-chip${onProfile ? ' is-active' : ''}${needsLogo ? ' needs-logo' : ''}" href="${href}" title="${esc(teamName)} · ${esc(ownerName)} · ${esc(access)}">
         <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
         <span class="user-chip-text">
           <span class="user-chip-team">${esc(teamName)}</span>
           <span class="user-chip-owner">${esc(ownerName)}</span>
-          <span class="user-chip-access">${esc(access)}</span>
+          <span class="user-chip-access">${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
         </span>
-      </button>
-      <div class="user-menu-panel" id="user-menu-panel" hidden>
-        <a class="user-menu-head" href="/profile.html">
-          <div class="user-menu-preview">${avatarHtml(myTeam, user)}</div>
-          <div class="user-menu-meta">
-            <div class="user-menu-name">${esc(teamName)}</div>
-            <div class="user-menu-role">${esc(ownerName)}</div>
-            <div class="user-menu-access">${esc(access)}</div>
-          </div>
-        </a>
-        <button type="button" class="user-menu-logout" id="nav-logout">Log Out</button>
-      </div>`;
-
-    const toggle = document.getElementById('user-menu-toggle');
-    const panel = document.getElementById('user-menu-panel');
-    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-    function openMenu() {
-      panel?.removeAttribute('hidden');
-      toggle?.setAttribute('aria-expanded', 'true');
-    }
-    function closeMenu() {
-      panel?.setAttribute('hidden', '');
-      toggle?.setAttribute('aria-expanded', 'false');
-    }
-    function toggleMenu(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!panel) return;
-      if (panel.hasAttribute('hidden')) openMenu();
-      else closeMenu();
-    }
-
-    if (finePointer) {
-      mount.onmouseenter = openMenu;
-      mount.onmouseleave = closeMenu;
-      toggle?.addEventListener('click', (e) => {
-        e.preventDefault();
-        openMenu();
-      });
-    } else {
-      mount.onmouseenter = null;
-      mount.onmouseleave = null;
-      toggle?.addEventListener('click', toggleMenu);
-    }
-
-    document.getElementById('nav-logout')?.addEventListener('click', async (e) => {
-      e.preventDefault();
-      try {
-        localStorage.removeItem('gi24.savedLogin');
-      } catch { /* ignore */ }
-      try {
-        await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
-      } catch { /* ignore */ }
-      window.location.href = '/enter';
-    });
+      </a>`;
   }
 
-  function closeUserMenuOnOutside(e) {
-    const mount = document.getElementById('user-menu');
-    const panel = document.getElementById('user-menu-panel');
-    const toggle = document.getElementById('user-menu-toggle');
-    if (!mount || !panel || panel.hasAttribute('hidden')) return;
-    if (mount.contains(e.target)) return;
-    panel.setAttribute('hidden', '');
-    toggle?.setAttribute('aria-expanded', 'false');
+  function closeUserMenuOnOutside() {
+    /* Identity chip links straight to profile; no dropdown. */
   }
 
-  function ensureTickerMount() {
+    function ensureTickerMount() {
     let el = document.getElementById('site-ticker');
     if (el) return el;
     el = document.createElement('div');
@@ -195,8 +137,12 @@
       </div>`;
 
     const hero = document.querySelector('.hq-hero');
+    const leaders = document.getElementById('leaders-ticker');
     if (active === 'home' && hero) {
       hero.insertAdjacentElement('afterend', el);
+    } else if (active === 'scoreboard' && leaders) {
+      // Keep Fantasy Leaders directly under Wire, above the live boards.
+      leaders.closest('.shell')?.insertAdjacentElement('beforebegin', el);
     } else {
       const topbar = document.querySelector('.topbar');
       if (!topbar) return null;

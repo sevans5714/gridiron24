@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=50" />
+  <link rel="stylesheet" href="/css/site.css?v=51" />
   <style>
     .book {
       max-width: 52rem;
@@ -149,53 +149,48 @@
       vertical-align: middle;
     }
 
-    .lineup-list {
-      margin: 0.75rem 0 0;
-      padding: 0;
-      list-style: none;
-      max-width: 22rem;
-    }
-    .lineup-list li {
+    .lineup-row {
       display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
-      margin: 0;
-      padding: 0.55rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      color: #ddd;
-      font-size: var(--fs-md);
-      line-height: 1.3;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0.75rem 0 0.25rem;
     }
-    .lineup-list li:last-child { border-bottom: 0; }
-    .lineup-list .pos {
+    .slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      min-width: 4.5rem;
+      min-height: 3.75rem;
+      padding: 0.55rem 0.7rem;
+      border: 1px solid var(--line);
+      background: #0c0c0c;
+      text-align: center;
+    }
+    .slot .pos {
       font-family: var(--page-title), var(--display);
-      font-size: 1.05rem;
+      font-size: 1.2rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
       color: #fff;
+      line-height: 1;
     }
-    .lineup-list .cnt {
+    .slot .cnt {
       font-family: var(--display);
-      font-size: 1.15rem;
+      font-size: 0.95rem;
       font-weight: 600;
+      letter-spacing: 0.04em;
       color: #8eb6ff;
       font-variant-numeric: tabular-nums;
+      line-height: 1;
     }
-    .lineup-list .bench .pos,
-    .lineup-list .bench .cnt {
+    .slot.bench {
+      opacity: 0.72;
+    }
+    .slot.bench .cnt {
       color: #9a9a9a;
-    }
-    .lineup-divider {
-      margin: 0.35rem 0 0.15rem;
-      padding: 0.55rem 0 0.15rem;
-      border-bottom: 0;
-      font-family: var(--display);
-      font-size: 0.75rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
     }
 
     .rules-grid {
@@ -428,7 +423,6 @@
         <section class="section">
           <h3 class="section-title">§6.02 Award Schedule</h3>
           <div id="payout-table"><div class="msg">Loading award schedule…</div></div>
-          <p><a class="book-link" href="/payouts.html">Open payout schedule page →</a></p>
         </section>
         <section class="section">
           <h3 class="section-title">§6.03 Distribution Notes</h3>
@@ -454,7 +448,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=24"></script>
+  <script src="/js/nav.js?v=27"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -508,34 +502,11 @@
         return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
       });
       if (!sorted.length) return '<p>Lineup settings unavailable.</p>';
-
-      const starters = sorted.filter((s) => !['Bench', 'IR'].includes(s.label));
-      const reserves = sorted.filter((s) => ['Bench', 'IR'].includes(s.label));
-      const starterCount = starters.reduce((n, s) => n + Number(s.count || 0), 0);
-      const reserveCount = reserves.reduce((n, s) => n + Number(s.count || 0), 0);
-
-      function slots(items, reserve = false) {
-        return items.map((s) => `
-          <div class="slot${reserve ? ' bench' : ''}">
-            <span class="pos">${esc(s.label)}</span>
-            <span class="cnt">×${esc(String(s.count))}</span>
-          </div>`).join('');
-      }
-
-      return `
-        <div class="lineup-board">
-          <p class="lineup-summary">${starterCount} starters · ${reserveCount} reserves</p>
-          ${starters.length ? `
-            <div class="lineup-group">
-              <h4 class="lineup-group-label">Starting lineup</h4>
-              <div class="lineup-row">${slots(starters)}</div>
-            </div>` : ''}
-          ${reserves.length ? `
-            <div class="lineup-group">
-              <h4 class="lineup-group-label">Reserves</h4>
-              <div class="lineup-row">${slots(reserves, true)}</div>
-            </div>` : ''}
-        </div>`;
+      return `<div class="lineup-row">${sorted.map((s) => `
+        <div class="slot${['Bench', 'IR'].includes(s.label) ? ' bench' : ''}">
+          <span class="pos">${esc(s.label)}</span>
+          <span class="cnt">×${esc(String(s.count))}</span>
+        </div>`).join('')}</div>`;
     }
 
     function groupPanels(items) {

@@ -278,6 +278,92 @@ function confResultsHtml(conf) {
     .join('');
 }
 
+function confStandingsHtml(conf) {
+  const rows = (conf.standingsTop || []).slice(0, 6);
+  if (!rows.length) return '';
+  const items = rows
+    .map(
+      (t, i) =>
+        `<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#d8d8d8;">` +
+        `<span style="color:#8a8a8a;display:inline-block;min-width:1.4rem;">${i + 1}.</span>` +
+        `${escapeHtml(t.name)} <span style="color:#9a9a9a;">${escapeHtml(t.record)}</span>` +
+        ` <span style="color:#666;">· PF ${escapeHtml(t.pf)} · ${escapeHtml(t.streak)}</span></div>`
+    )
+    .join('');
+  return `
+    <div style="margin-top:12px;">
+      <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#8a8a8a;margin-bottom:4px;">Standings</div>
+      ${items}
+    </div>`;
+}
+
+function weeklyAwardsHtml(stats) {
+  const items = stats?.awards?.items || [];
+  if (!items.length) return '';
+  const rows = items
+    .map(
+      (a) => `
+      <tr>
+        <td style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.08);vertical-align:top;width:34%;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8eb6ff;">
+          ${escapeHtml(a.label)}
+        </td>
+        <td style="padding:9px 0 9px 12px;border-bottom:1px solid rgba(255,255,255,0.08);font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.4;color:#f0f0f0;">
+          ${escapeHtml(a.detail)}
+        </td>
+      </tr>`
+    )
+    .join('');
+  return `
+    <tr>
+      <td style="padding:22px 28px 4px;">
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#ffffff;">
+          Week ${escapeHtml(String(stats.week))} Awards
+        </div>
+        <div style="margin-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#8a8a8a;">
+          Across Detail &amp; Overtime
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:8px 28px 6px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${rows}
+        </table>
+      </td>
+    </tr>`;
+}
+
+function awardsPlainText(stats) {
+  const items = stats?.awards?.items || [];
+  if (!items.length) return '';
+  return (
+    `\nWeek ${stats.week} Awards\n` +
+    items.map((a) => `• ${a.label}: ${a.detail}`).join('\n') +
+    '\n'
+  );
+}
+
+function resultsPlainText(stats) {
+  const confs = stats?.conferences || [];
+  if (!confs.length) return '';
+  const blocks = confs.map((conf) => {
+    const finals = (conf.games || []).filter((g) => g.final);
+    const lines = [`\n${conf.shortName || conf.name}`];
+    if (!finals.length) {
+      lines.push('No final scores yet.');
+    } else {
+      for (const g of finals) {
+        lines.push(
+          `${g.away} ${g.awayScore.toFixed(1)} · ${g.home} ${g.homeScore.toFixed(1)}` +
+            (g.winnerName ? ` (W: ${g.winnerName})` : '')
+        );
+      }
+    }
+    return lines.join('\n');
+  });
+  return `\nLeague Results${blocks.join('\n')}\n`;
+}
+
 function buildWeeklyWrapEmail({
   week,
   season,
@@ -317,7 +403,9 @@ function buildWeeklyWrapEmail({
         </tr>
         <tr>
           <td style="padding:4px 28px 10px;">
+            <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#8a8a8a;margin-bottom:4px;">Results</div>
             ${confResultsHtml(conf)}
+            ${confStandingsHtml(conf)}
           </td>
         </tr>`;
     })
@@ -326,8 +414,10 @@ function buildWeeklyWrapEmail({
   const text =
     `${headline}\n\n` +
     `Hi ${who},\n\n` +
-    `${body}\n\n` +
-    `Open League HQ: ${homeUrl}\n`;
+    `${body}\n` +
+    awardsPlainText(stats) +
+    resultsPlainText(stats) +
+    `\nOpen League HQ: ${homeUrl}\n`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -339,7 +429,7 @@ function buildWeeklyWrapEmail({
 </head>
 <body style="margin:0;padding:0;background:#050505;color:#f2f2f2;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
-    Week ${escapeHtml(String(week))} wrap-up is live — scores, streaks, and the race across Detail &amp; Overtime.
+    Week ${escapeHtml(String(week))} wrap-up is live — awards, scores, and the race across Detail &amp; Overtime.
   </div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050505;width:100%;">
     <tr>
@@ -372,6 +462,7 @@ function buildWeeklyWrapEmail({
               ${paragraphsToHtml(body)}
             </td>
           </tr>
+          ${weeklyAwardsHtml(stats)}
           ${confBlocks}
           <tr>
             <td align="center" style="padding:22px 28px 10px;">

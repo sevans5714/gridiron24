@@ -26,7 +26,8 @@ const { URL } = require('url');
   }
 })();
 
-const config = require('./config');
+const config = require('./league-runtime');
+const staticConfig = require('./config');
 const users = require('./users-store');
 const board = require('./board-store');
 const logos = require('./logos-store');
@@ -35,6 +36,7 @@ const weeklyWrap = require('./weekly-wrap');
 const calendar = require('./calendar-store');
 const powerRankings = require('./power-rankings-store');
 const rulesSyncStore = require('./rules-sync-store');
+const leagues = require('./leagues-store');
 const { compareSettings } = require('./rules-diff');
 const {
   sendPasswordResetEmail,
@@ -96,6 +98,8 @@ const PUBLIC_PATHS = new Set([
   '/enter.html',
   '/register.html',
   '/register',
+  '/register-league',
+  '/register-league.html',
   '/forgot.html',
   '/forgot',
   '/reset.html',
@@ -111,6 +115,11 @@ const PUBLIC_PATHS = new Set([
   '/api/reset-password',
   '/api/logout',
   '/api/auth',
+  '/api/league',
+  '/api/league-registration',
+  '/api/league-registration/draft',
+  '/api/league-registration/asset',
+  '/api/league-registration/espn-peek',
   '/api/cron/weekly-wrap',
   '/api/cron/rules-sync'
 ]);
@@ -1263,6 +1272,9 @@ async function apiSettings(res) {
 
   sendJson(res, 200, {
     season: config.season,
+    brand: config.brand,
+    championship: config.championship || null,
+    structure: config.structure || null,
     generatedAt: new Date().toISOString(),
     conferences: results,
     rulesSync: sync.lastCheck,
@@ -1273,8 +1285,14 @@ async function apiSettings(res) {
 async function apiOfficialScoring(res) {
   const sync = rulesSyncStore.getStatus();
   const live = await loadConferenceSettings();
-  const detail = live.find((c) => c.key === 'detail') || null;
-  const overtime = live.find((c) => c.key === 'overtime') || null;
+  const primaryKey = (config.conferences || []).find((c) => c.isRulesPrimary)?.key
+    || (config.conferences || [])[0]?.key
+    || 'detail';
+  const secondaryKey = (config.conferences || []).find((c) => c.key !== primaryKey)?.key
+    || (config.conferences || [])[1]?.key
+    || 'overtime';
+  const detail = live.find((c) => c.key === primaryKey) || live[0] || null;
+  const overtime = live.find((c) => c.key === secondaryKey) || live[1] || null;
   const cmp = compareSettings(detail, overtime);
 
   // Prefer persisted official snapshot when conferences are known synced.
@@ -1501,8 +1519,10 @@ function bowlSideFromConference(titleConf, bowlConf, label) {
 }
 
 async function buildBowlPayload() {
-  const TITLE_WEEK = 16;
-  const BOWL_WEEK = 17;
+  const champ = config.championship || {};
+  const TITLE_WEEK = Number(champ.titleWeek) || 16;
+  const BOWL_WEEK = Number(champ.bowlWeek) || 17;
+  const bowlName = champ.name || 'Championship';
   const [titleWeek, bowlWeek] = await Promise.all([
     loadSchedulePayload(TITLE_WEEK),
     loadSchedulePayload(BOWL_WEEK)
@@ -1510,60 +1530,80 @@ async function buildBowlPayload() {
 
   const titleByKey = new Map((titleWeek.conferences || []).map((c) => [c.key, c]));
   const bowlByKey = new Map((bowlWeek.conferences || []).map((c) => [c.key, c]));
-
-  const detail = bowlSideFromConference(
-    titleByKey.get('detail'),
-    bowlByKey.get('detail'),
-    'Detail Champion'
-  );
-  const overtime = bowlSideFromConference(
-    titleByKey.get('overtime'),
-    bowlByKey.get('overtime'),
-    'Overtime Champion'
+  const confs = config.conferences || [];
+  const sides = confs.map((conf) =>
+    bowlSideFromConference(
+      titleByKey.get(conf.key),
+      bowlByKey.get(conf.key),
+      `${conf.shortName || conf.name} Champion`
+    )
   );
 
-  const champsReady = Boolean(detail.champion && overtime.champion);
-  const scoresReady = Boolean(detail.hasWeek17Matchup && overtime.hasWeek17Matchup);
+  while (sides.length < 2) {
+    sides.push({
+      champion: null,
+      score: null,
+      hasWeek17Matchup: false,
+      conferenceKey: null,
+      conferenceName: null
+    });
+  }
+
+  const left = sides[0];
+  const right = sides[1];
+  const champsReady = Boolean(left.champion && right.champion);
+  const scoresReady = Boolean(left.hasWeek17Matchup && right.hasWeek17Matchup);
   let phase = 'waiting';
-  let message = 'Conference titles crown in Week 16. GridIron Bowl scores pull from each champ’s ESPN Week 17 lineup.';
+  let message = `Conference titles crown in Week ${TITLE_WEEK}. ${bowlName} scores pull from each champ’s ESPN Week ${BOWL_WEEK} lineup.`;
 
   if (champsReady && scoresReady) {
-    const d = Number(detail.score || 0);
-    const o = Number(overtime.score || 0);
+    const d = Number(left.score || 0);
+    const o = Number(right.score || 0);
     if (d > 0 || o > 0) {
       phase = 'live';
-      message = 'Live ESPN Week 17 scoring · Detail champ vs Overtime champ';
+      message = `Live ESPN Week ${BOWL_WEEK} scoring · ${confs[0]?.shortName || 'A'} champ vs ${confs[1]?.shortName || 'B'} champ`;
     } else {
       phase = 'ready';
-      message = 'Champions locked. Waiting on Week 17 NFL kickoff for ESPN scores.';
+      message = `Champions locked. Waiting on Week ${BOWL_WEEK} NFL kickoff for ESPN scores.`;
     }
   } else if (champsReady && !scoresReady) {
     phase = 'needs_week17';
-    message = 'Champions are set, but ESPN needs a Week 17 matchup for each champ so lineups score.';
-  } else if ((bowlByKey.get('detail')?.matchups || []).length || (bowlByKey.get('overtime')?.matchups || []).length) {
+    message = `Champions are set, but ESPN needs a Week ${BOWL_WEEK} matchup for each champ so lineups score.`;
+  } else if ((bowlByKey.get(confs[0]?.key)?.matchups || []).length || (bowlByKey.get(confs[1]?.key)?.matchups || []).length) {
     phase = 'week17_open';
-    message = 'Week 17 ESPN matchups exist. Bowl names fill in after Week 16 conference title games.';
+    message = `Week ${BOWL_WEEK} ESPN matchups exist. Bowl names fill in after Week ${TITLE_WEEK} conference title games.`;
   }
 
   let leader = null;
   if (champsReady && scoresReady) {
-    const d = Number(detail.score || 0);
-    const o = Number(overtime.score || 0);
-    if (d > o) leader = 'detail';
-    else if (o > d) leader = 'overtime';
+    const d = Number(left.score || 0);
+    const o = Number(right.score || 0);
+    if (d > o) leader = confs[0]?.key || 'left';
+    else if (o > d) leader = confs[1]?.key || 'right';
     else if (d > 0 || o > 0) leader = 'tie';
   }
+
+  const byKey = {};
+  confs.forEach((c, i) => {
+    byKey[c.key] = sides[i];
+  });
 
   return {
     ok: true,
     season: config.season,
     titleWeek: TITLE_WEEK,
     bowlWeek: BOWL_WEEK,
+    championship: {
+      name: bowlName,
+      logo: champ.logo || null
+    },
     phase,
     message,
     leader,
-    detail,
-    overtime,
+    sides,
+    // Legacy aliases for existing UI (Detail / Overtime keys or first two sides)
+    detail: byKey.detail || left,
+    overtime: byKey.overtime || right,
     generatedAt: new Date().toISOString()
   };
 }
@@ -2011,6 +2051,240 @@ const server = http.createServer(async (req, res) => {
     }
     if (pathname === '/register' || pathname === '/register.html') {
       return sendFile(res, path.join(PUBLIC_DIR, 'register.html'));
+    }
+
+    if (pathname === '/register-league' || pathname === '/register-league.html') {
+      return sendFile(res, path.join(PUBLIC_DIR, 'register-league.html'));
+    }
+
+    if (pathname === '/api/league' && req.method === 'GET') {
+      const active = leagues.getActiveLeague();
+      return sendJson(res, 200, {
+        ok: true,
+        registrationOpen: leagues.registrationEnabled(),
+        league: active ? leagues.publicLeague(active) : null,
+        brand: config.brand,
+        season: config.season,
+        championship: config.championship || null,
+        structure: config.structure || null,
+        conferences: (config.conferences || []).map((c) => ({
+          key: c.key,
+          name: c.name,
+          shortName: c.shortName,
+          logo: c.logo,
+          color: c.color || null,
+          espnLeagueId: c.espnLeagueId
+        }))
+      });
+    }
+
+    if (pathname === '/api/league-registration' && req.method === 'GET') {
+      return sendJson(res, 200, {
+        ok: true,
+        open: leagues.registrationEnabled(),
+        steps: [
+          { id: 'owner', title: 'League owner' },
+          { id: 'brand', title: 'Brand' },
+          { id: 'conferences', title: 'Conferences & ESPN' },
+          { id: 'championship', title: 'Championship' },
+          { id: 'money', title: 'Structure & payouts' },
+          { id: 'calendar', title: 'Calendar' },
+          { id: 'review', title: 'Review & launch' }
+        ],
+        assetTypes: [...leagues.ASSET_TYPES]
+      });
+    }
+
+    if (pathname === '/api/league-registration/draft' && req.method === 'POST') {
+      if (!leagues.registrationEnabled()) {
+        return sendJson(res, 403, { ok: false, error: 'League registration is disabled' });
+      }
+      const draftId = crypto.randomUUID();
+      fs.mkdirSync(path.join(leagues.UPLOAD_DIR, draftId), { recursive: true });
+      return sendJson(res, 201, { ok: true, draftId });
+    }
+
+    if (pathname === '/api/league-registration/asset' && req.method === 'POST') {
+      if (!leagues.registrationEnabled()) {
+        return sendJson(res, 403, { ok: false, error: 'League registration is disabled' });
+      }
+      try {
+        const body = await readJsonBody(req, { maxBytes: 3_500_000 });
+        const draftId = String(body.draftId || '').trim();
+        const assetType = String(body.assetType || '').trim();
+        if (!draftId || !/^[a-f0-9-]{36}$/i.test(draftId)) {
+          return sendJson(res, 400, { ok: false, error: 'Valid draftId required' });
+        }
+        if (!leagues.ASSET_TYPES.has(assetType)) {
+          return sendJson(res, 400, { ok: false, error: 'Unknown asset type' });
+        }
+        const dataUrl = String(body.dataUrl || '');
+        const match = dataUrl.match(/^data:(image\/(?:png|jpeg|webp|svg\+xml));base64,([a-zA-Z0-9+/=\s]+)$/);
+        if (!match) {
+          return sendJson(res, 400, { ok: false, error: 'Upload a PNG, JPG, WEBP, or SVG image' });
+        }
+        const url = leagues.saveAssetBuffer(
+          draftId,
+          assetType,
+          Buffer.from(match[2].replace(/\s+/g, ''), 'base64'),
+          match[1]
+        );
+        return sendJson(res, 200, { ok: true, assetType, url });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Upload failed' });
+      }
+    }
+
+    if (pathname === '/api/league-registration/espn-peek' && req.method === 'POST') {
+      if (!leagues.registrationEnabled()) {
+        return sendJson(res, 403, { ok: false, error: 'League registration is disabled' });
+      }
+      try {
+        const body = await readJsonBody(req);
+        const espnLeagueId = Number(body.espnLeagueId);
+        const season = Number(body.season) || config.season || staticConfig.season;
+        if (!Number.isFinite(espnLeagueId) || espnLeagueId <= 0) {
+          return sendJson(res, 400, { ok: false, error: 'Valid ESPN league ID required' });
+        }
+        const url =
+          `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leagues/${espnLeagueId}` +
+          `?view=mSettings`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 12_000);
+        let resEspn;
+        try {
+          resEspn = await fetch(url, {
+            headers: { Accept: 'application/json' },
+            signal: controller.signal
+          });
+        } finally {
+          clearTimeout(timer);
+        }
+        if (!resEspn.ok) {
+          return sendJson(res, 400, {
+            ok: false,
+            error: `ESPN returned ${resEspn.status}. Confirm the league ID is public and the season is correct.`
+          });
+        }
+        const raw = await resEspn.json();
+        const teamCount = Array.isArray(raw.teams) ? raw.teams.length : null;
+        return sendJson(res, 200, {
+          ok: true,
+          espnLeagueId,
+          season,
+          name: raw.settings?.name || raw.settings?.naming?.name || `ESPN League ${espnLeagueId}`,
+          size: raw.settings?.size || teamCount,
+          isPublic: true
+        });
+      } catch (err) {
+        return sendJson(res, 400, {
+          ok: false,
+          error: err.name === 'AbortError' ? 'ESPN request timed out' : (err.message || 'Could not reach ESPN')
+        });
+      }
+    }
+
+    if (pathname === '/api/league-registration' && req.method === 'POST') {
+      if (!leagues.registrationEnabled()) {
+        return sendJson(res, 403, { ok: false, error: 'League registration is disabled' });
+      }
+      let body;
+      try {
+        body = await readJsonBody(req, { maxBytes: 1_000_000 });
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const owner = body.owner || {};
+        if (owner.password !== owner.confirmPassword) {
+          return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
+        }
+        const draftId = String(body.draftId || '').trim() || crypto.randomUUID();
+        const uploadedAssets = leagues.listDraftAssets(draftId);
+
+        const user = users.createUser({
+          name: owner.name,
+          email: owner.email,
+          loginName: owner.loginName,
+          password: owner.password,
+          role: 'commissioner',
+          approved: true,
+          leagueOwner: true
+        });
+
+        const activate = body.activate !== false;
+        const league = leagues.createLeague({
+          id: draftId,
+          ownerUserId: user.id,
+          season: body.season,
+          brand: body.brand,
+          conferences: body.conferences,
+          championship: body.championship,
+          structure: body.structure,
+          payouts: body.payouts,
+          calendarDefaults: body.calendarDefaults,
+          uploadedAssets,
+          activate
+        });
+
+        // Attach leagueId on owner (createUser already ran — patch store via attach + recreate public)
+        leagues.attachOwner(league.id, user.id);
+        try {
+          const storePath = path.join(users.DATA_DIR, 'users.json');
+          const store = JSON.parse(fs.readFileSync(storePath, 'utf8'));
+          const idx = (store.users || []).findIndex((u) => u.id === user.id);
+          if (idx !== -1) {
+            store.users[idx].leagueId = league.id;
+            store.users[idx].leagueOwner = true;
+            fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+          }
+        } catch { /* non-fatal */ }
+
+        if (activate) {
+          config.refresh();
+          try {
+            calendar.seedIfEmpty(league.calendarDefaults || []);
+          } catch { /* ignore */ }
+        }
+
+        const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
+        const token = signSession(user.id, expiresAt);
+        return sendJson(
+          res,
+          201,
+          {
+            ok: true,
+            league,
+            user: users.publicUser(users.findById(user.id)),
+            activated: activate,
+            message: activate
+              ? 'League registered and activated. You are signed in as league owner.'
+              : 'League registered. Activate it from League Tools when ready.'
+          },
+          { 'Set-Cookie': sessionCookieHeader(token) }
+        );
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not register league' });
+      }
+    }
+
+    if (pathname === '/api/league/activate' && req.method === 'POST') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      try {
+        const body = await readJsonBody(req);
+        const leagueId = String(body.leagueId || '').trim();
+        const league = leagues.findById(leagueId);
+        if (!league) return sendJson(res, 404, { ok: false, error: 'League not found' });
+        if (!league.isSystem && league.ownerUserId && league.ownerUserId !== user.id && !user.leagueOwner) {
+          // Allow any commissioner on this deploy for now
+        }
+        const activated = leagues.setActiveLeague(leagueId);
+        config.refresh();
+        return sendJson(res, 200, { ok: true, league: activated });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not activate league' });
+      }
     }
     if (pathname === '/setup' || pathname === '/setup.html') {
       // Never show a league/site setup form — GridIron 24 already exists.
@@ -2522,6 +2796,11 @@ const server = http.createServer(async (req, res) => {
       return res.end();
     }
 
+    if (pathname === '/payouts.html' || pathname === '/payouts') {
+      res.writeHead(302, { Location: '/rulebook.html#article-vi' });
+      return res.end();
+    }
+
     if (pathname === '/team-logo.html') {
       res.writeHead(302, { Location: '/profile.html#logo' });
       return res.end();
@@ -2547,11 +2826,9 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/my-team' && req.method === 'GET') {
       const user = getSessionUser(req);
       const claim = logos.getClaimForUser(user.id);
-      let logo = null;
+      const logo = logos.resolveLogoForUser(user.id);
       let team = null;
       if (claim) {
-        const entry = logos.getLogo(claim.conferenceKey, claim.teamId);
-        logo = entry ? { ...entry, url: logos.logoUrl(entry) } : null;
         const nameEntry = logos.getDisplayName(claim.conferenceKey, claim.teamId);
         try {
           const conference = config.conferences.find((c) => c.key === claim.conferenceKey);
@@ -2628,12 +2905,16 @@ const server = http.createServer(async (req, res) => {
         const user = getSessionUser(req);
         const body = await readJsonBody(req);
         const claim = logos.getClaimForUser(user.id);
-        if (!claim) return sendJson(res, 400, { ok: false, error: 'Claim a team first' });
         const iconPath = path.join(PUBLIC_DIR, 'assets', 'team-icons', `${path.basename(String(body.iconId || ''))}.svg`);
         if (!fs.existsSync(iconPath)) {
           return sendJson(res, 400, { ok: false, error: 'Unknown icon' });
         }
-        const logo = logos.setIconLogo(user.id, claim.conferenceKey, claim.teamId, body.iconId);
+        const logo = logos.setIconLogo(
+          user.id,
+          claim?.conferenceKey,
+          claim?.teamId,
+          body.iconId
+        );
         return sendJson(res, 200, { ok: true, logo });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not set icon' });
@@ -2645,14 +2926,13 @@ const server = http.createServer(async (req, res) => {
         const user = getSessionUser(req);
         const body = await readJsonBody(req, { maxBytes: 3_500_000 });
         const claim = logos.getClaimForUser(user.id);
-        if (!claim) return sendJson(res, 400, { ok: false, error: 'Claim a team first' });
         const dataUrl = String(body.dataUrl || '');
         const match = dataUrl.match(/^data:(image\/(?:png|jpeg|webp));base64,([a-zA-Z0-9+/=\s]+)$/);
         if (!match) {
           return sendJson(res, 400, { ok: false, error: 'Upload a PNG, JPG, or WEBP image' });
         }
         const buffer = Buffer.from(match[2].replace(/\s+/g, ''), 'base64');
-        const logo = logos.setUploadLogo(user.id, claim.conferenceKey, claim.teamId, {
+        const logo = logos.setUploadLogo(user.id, claim?.conferenceKey, claim?.teamId, {
           buffer,
           mimeType: match[1],
           width: body.width,
@@ -2668,8 +2948,7 @@ const server = http.createServer(async (req, res) => {
       try {
         const user = getSessionUser(req);
         const claim = logos.getClaimForUser(user.id);
-        if (!claim) return sendJson(res, 400, { ok: false, error: 'Claim a team first' });
-        logos.clearLogo(user.id, claim.conferenceKey, claim.teamId);
+        logos.clearLogo(user.id, claim?.conferenceKey, claim?.teamId);
         return sendJson(res, 200, { ok: true });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not clear logo' });
@@ -2678,6 +2957,15 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname.startsWith('/uploads/team-logos/')) {
       const file = logos.resolveUploadPath(pathname.slice('/uploads/team-logos/'.length));
+      if (!file) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        return res.end('Not found');
+      }
+      return sendFile(res, file);
+    }
+
+    if (pathname.startsWith('/uploads/leagues/')) {
+      const file = leagues.resolveLeagueUploadPath(pathname.slice('/uploads/leagues/'.length));
       if (!file) {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
         return res.end('Not found');
@@ -2870,6 +3158,11 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
+  try {
+    config.bootstrap();
+  } catch (err) {
+    console.warn('League bootstrap failed:', err.message || err);
+  }
   users.ensureBootstrapCommissioner();
   try { users.migrateApprovalFlags(); } catch (err) {
     console.warn('Approval migration failed:', err.message || err);
@@ -2879,9 +3172,12 @@ server.listen(PORT, '0.0.0.0', () => {
   } catch (err) {
     console.warn('Calendar seed failed:', err.message || err);
   }
-  console.log(`\nGridIron 24 is running.`);
+  const active = leagues.getActiveLeague();
+  console.log(`\n${config.brand?.name || 'League HQ'} is running.`);
   console.log(`Open: http://localhost:${PORT}`);
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
+  console.log(`Active league: ${active?.slug || 'none'} (${active?.brand?.name || '—'})`);
+  console.log(`Register a league: http://localhost:${PORT}/register-league`);
   console.log(`Auth: invite + commissioner approval`);
   console.log(`Users: ${users.DATA_DIR}`);
   if (process.env.COMMISSIONER_LOGIN) {

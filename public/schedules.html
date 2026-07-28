@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=50" />
+  <link rel="stylesheet" href="/css/site.css?v=51" />
   <style>
     .toolbar {
       display: flex;
@@ -148,59 +148,9 @@
       letter-spacing: 0.04em;
     }
 
-    .path {
-      margin: 0 0 1.25rem;
-      padding-bottom: 1.15rem;
-      border-bottom: 1px solid var(--line);
-    }
-    .section-label {
-      margin: 0 0 0.75rem;
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 0.55rem;
-    }
-    .step {
-      padding: 0.85rem 0.75rem;
-      border: 1px solid var(--line);
-      background: var(--panel);
-    }
-    .step span {
-      display: block;
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .step strong {
-      display: block;
-      margin-top: 0.35rem;
-      font-family: var(--display);
-      font-size: 1rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      line-height: 1.2;
-    }
-    .step.final {
-      border-color: rgba(47, 109, 255, 0.45);
-      background: rgba(47, 109, 255, 0.1);
-    }
-    .step.final strong { color: #8eb6ff; }
 
     @media (max-width: 900px) {
       .grid-2 { grid-template-columns: 1fr; }
-      .steps { grid-template-columns: 1fr 1fr; }
-      .step.final { grid-column: 1 / -1; }
     }
     @media (max-width: 700px) {
       .matchup {
@@ -209,10 +159,6 @@
         text-align: center;
       }
       .side { justify-content: center; }
-    }
-    @media (max-width: 560px) {
-      .steps { grid-template-columns: 1fr; }
-      .step.final { grid-column: auto; }
     }
   </style>
 </head>
@@ -230,17 +176,6 @@
   </section>
 
   <main class="page-main shell">
-    <section class="path reveal">
-      <div class="section-label">Road to the Bowl</div>
-      <div class="steps">
-        <div class="step"><span>Weeks 1–13</span><strong>Regular Season</strong></div>
-        <div class="step"><span>Week 14</span><strong>Wild Card</strong></div>
-        <div class="step"><span>Week 15</span><strong>Semifinals</strong></div>
-        <div class="step"><span>Week 16</span><strong>Title + 3rd Place</strong></div>
-        <div class="step final"><span>Week 17</span><strong>GridIron Bowl I</strong></div>
-      </div>
-    </section>
-
     <div class="toolbar reveal reveal-delay-1">
       <div class="week-control">
         <label for="week">Select Week</label>
@@ -253,7 +188,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=24"></script>
+  <script src="/js/nav.js?v=27"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')

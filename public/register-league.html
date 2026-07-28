@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>Register a League</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=51" />
+  <style>
+    body.league-reg {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(47, 109, 255, 0.16), transparent 55%),
+        #070707;
+      color: #f2f2f2;
+    }
+    .reg-shell {
+      width: min(100% - 2rem, 44rem);
+      margin: 0 auto;
+      padding: 2rem 0 3.5rem;
+    }
+    .reg-top {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .reg-top .mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 3.25rem;
+      height: 3.25rem;
+      margin-bottom: 0.85rem;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: #101010;
+      font-family: var(--page-title), Oswald, sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #8eb6ff;
+    }
+    .reg-top h1 {
+      margin: 0 0 0.4rem;
+      font-family: var(--page-title), Oswald, sans-serif;
+      font-size: clamp(1.7rem, 4vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .reg-top p {
+      margin: 0 auto;
+      max-width: 34rem;
+      color: #9a9a9a;
+      font-size: 0.98rem;
+      line-height: 1.5;
+    }
+    .steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      justify-content: center;
+      margin: 1.25rem 0 1.5rem;
+    }
+    .steps button {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #101010;
+      color: #8a8a8a;
+      font-family: var(--display), Bebas Neue, sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.65rem;
+      cursor: pointer;
+    }
+    .steps button.on {
+      border-color: rgba(47, 109, 255, 0.45);
+      color: #fff;
+      background: rgba(47, 109, 255, 0.16);
+    }
+    .steps button.done { color: #b8d0ff; }
+    .panel {
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0d0d0d;
+      padding: 1.25rem 1.35rem 1.4rem;
+    }
+    .panel h2 {
+      margin: 0 0 0.35rem;
+      font-family: var(--page-title), Oswald, sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .panel .lead {
+      margin: 0 0 1.1rem;
+      color: #9a9a9a;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem 1rem;
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+    .field-label { display: block; margin: 0.65rem 0 0.3rem; color: #b0b0b0; font-size: 0.82rem; }
+    .field, .field-area, .field-file {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .field-area {
+      min-height: 4.5rem;
+      resize: vertical;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #0a0a0a;
+      color: #f0f0f0;
+      font: inherit;
+    }
+    .conf-card {
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #0a0a0a;
+    }
+    .conf-card h3 {
+      margin: 0 0 0.75rem;
+      font-family: var(--display), Bebas Neue, sans-serif;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+    }
+    .upload-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.55rem;
+    }
+    .upload-row img {
+      width: 3rem;
+      height: 3rem;
+      object-fit: contain;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #050505;
+    }
+    .upload-row .meta { font-size: 0.82rem; color: #8a8a8a; }
+    .nav-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-top: 1.35rem;
+    }
+    .status-note { margin-top: 0.85rem; }
+    .peek {
+      margin-top: 0.45rem;
+      font-size: 0.82rem;
+      color: #86efac;
+    }
+    .peek.bad { color: #fca5a5; }
+    .review dl {
+      margin: 0;
+      display: grid;
+      gap: 0.55rem;
+    }
+    .review dt {
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .review dd {
+      margin: 0.15rem 0 0.55rem;
+      color: #eee;
+      line-height: 1.4;
+    }
+    .legal {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.78rem;
+      color: #666;
+      line-height: 1.45;
+    }
+    .prize-row {
+      display: grid;
+      grid-template-columns: 4rem 1fr 6rem;
+      gap: 0.45rem;
+      margin-bottom: 0.4rem;
+    }
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+      margin-top: 1rem;
+      color: #c8c8c8;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body class="league-reg">
+  <div class="reg-shell">
+    <div class="reg-top">
+      <div class="mark" aria-hidden="true">HQ</div>
+      <h1>Register a League</h1>
+      <p>Create your league headquarters. You’ll register as the league owner (commissioner), then provide ESPN IDs, branding, conferences, championship details, and payouts.</p>
+    </div>
+
+    <div class="steps" id="stepper" role="tablist" aria-label="Registration steps"></div>
+    <div class="status-note err" id="err" role="alert"></div>
+
+    <form class="panel" id="form" novalidate>
+      <!-- Step 0: Owner -->
+      <section class="step" data-step="0">
+        <h2>League owner</h2>
+        <p class="lead">This account becomes the commissioner — invites managers, assigns franchises, and runs league tools.</p>
+        <label class="field-label" for="ownerName">Full name</label>
+        <input class="field" id="ownerName" name="ownerName" type="text" autocomplete="name" required />
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="ownerEmail">Email</label>
+            <input class="field" id="ownerEmail" name="ownerEmail" type="email" autocomplete="email" required />
+          </div>
+          <div>
+            <label class="field-label" for="ownerLogin">Login name</label>
+            <input class="field" id="ownerLogin" name="ownerLogin" type="text" autocomplete="username" required minlength="3" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="ownerPassword">Password</label>
+            <input class="field" id="ownerPassword" name="ownerPassword" type="password" autocomplete="new-password" required minlength="6" />
+          </div>
+          <div>
+            <label class="field-label" for="ownerConfirm">Confirm password</label>
+            <input class="field" id="ownerConfirm" name="ownerConfirm" type="password" autocomplete="new-password" required minlength="6" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 1: Brand -->
+      <section class="step" data-step="1" hidden>
+        <h2>Brand</h2>
+        <p class="lead">League name and logos shown across HQ, emails, and auth screens. Keep this generic to your league — no borrowed brand marks.</p>
+        <label class="field-label" for="brandName">League name</label>
+        <input class="field" id="brandName" type="text" required placeholder="e.g. Metro Fantasy League" />
+        <label class="field-label" for="brandTagline">Tagline</label>
+        <input class="field" id="brandTagline" type="text" placeholder="e.g. Two conferences. One champion." />
+        <label class="field-label" for="brandSlug">URL slug (optional)</label>
+        <input class="field" id="brandSlug" type="text" placeholder="metro-ffl" />
+        <label class="field-label">Primary logo</label>
+        <div class="upload-row" data-asset="brandLogo">
+          <img alt="" hidden />
+          <div>
+            <input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+            <div class="meta">PNG, JPG, WEBP, or SVG · under 3MB</div>
+          </div>
+        </div>
+        <label class="field-label">Login crest (optional)</label>
+        <div class="upload-row" data-asset="brandCrest">
+          <img alt="" hidden />
+          <div>
+            <input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+            <div class="meta">Defaults to primary logo if skipped</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2: Conferences -->
+      <section class="step" data-step="2" hidden>
+        <h2>Conferences &amp; ESPN</h2>
+        <p class="lead">Two ESPN fantasy leagues power the HQ (one per conference). IDs must be viewable publicly on ESPN.</p>
+        <label class="field-label" for="season">Season year</label>
+        <input class="field" id="season" type="number" min="2018" max="2100" style="max-width:8rem;" />
+
+        <div class="conf-card" data-conf="0">
+          <h3>Conference A · rules source</h3>
+          <div class="grid-2">
+            <div>
+              <label class="field-label">Name</label>
+              <input class="field conf-name" type="text" placeholder="e.g. East Conference" required />
+            </div>
+            <div>
+              <label class="field-label">Short name</label>
+              <input class="field conf-short" type="text" placeholder="EAST" maxlength="16" />
+            </div>
+          </div>
+          <div class="grid-2">
+            <div>
+              <label class="field-label">ESPN league ID</label>
+              <input class="field conf-espn" type="number" inputmode="numeric" placeholder="123456789" required />
+              <div class="peek" hidden></div>
+            </div>
+            <div>
+              <label class="field-label">Accent color</label>
+              <input class="field conf-color" type="color" value="#ff7a18" />
+            </div>
+          </div>
+          <label class="field-label">Conference logo</label>
+          <div class="upload-row" data-asset="conferenceLogo0">
+            <img alt="" hidden />
+            <div>
+              <input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+              <div class="meta">Used on standings, scoreboard, emails</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary espn-peek" style="margin-top:0.75rem;">Verify ESPN ID</button>
+        </div>
+
+        <div class="conf-card" data-conf="1">
+          <h3>Conference B</h3>
+          <div class="grid-2">
+            <div>
+              <label class="field-label">Name</label>
+              <input class="field conf-name" type="text" placeholder="e.g. West Conference" required />
+            </div>
+            <div>
+              <label class="field-label">Short name</label>
+              <input class="field conf-short" type="text" placeholder="WEST" maxlength="16" />
+            </div>
+          </div>
+          <div class="grid-2">
+            <div>
+              <label class="field-label">ESPN league ID</label>
+              <input class="field conf-espn" type="number" inputmode="numeric" placeholder="987654321" required />
+              <div class="peek" hidden></div>
+            </div>
+            <div>
+              <label class="field-label">Accent color</label>
+              <input class="field conf-color" type="color" value="#e2232a" />
+            </div>
+          </div>
+          <label class="field-label">Conference logo</label>
+          <div class="upload-row" data-asset="conferenceLogo1">
+            <img alt="" hidden />
+            <div>
+              <input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+              <div class="meta">Used on standings, scoreboard, emails</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary espn-peek" style="margin-top:0.75rem;">Verify ESPN ID</button>
+        </div>
+      </section>
+
+      <!-- Step 3: Championship -->
+      <section class="step" data-step="3" hidden>
+        <h2>Championship</h2>
+        <p class="lead">Name your title game and upload its mark. Optional trophy art for conference champs and third place.</p>
+        <label class="field-label" for="bowlName">Championship name</label>
+        <input class="field" id="bowlName" type="text" placeholder="e.g. Metro Cup" required />
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="titleWeek">Conference title week</label>
+            <input class="field" id="titleWeek" type="number" min="1" max="18" value="16" />
+          </div>
+          <div>
+            <label class="field-label" for="bowlWeek">Championship week</label>
+            <input class="field" id="bowlWeek" type="number" min="1" max="18" value="17" />
+          </div>
+        </div>
+        <label class="field-label">Championship logo</label>
+        <div class="upload-row" data-asset="championshipLogo">
+          <img alt="" hidden />
+          <div>
+            <input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+            <div class="meta">Shown on playoffs / bowl scoreboard</div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:0.75rem;">
+          <div>
+            <label class="field-label">Conf A champ trophy (optional)</label>
+            <div class="upload-row" data-asset="confChampLogo0">
+              <img alt="" hidden />
+              <div><input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Conf B champ trophy (optional)</label>
+            <div class="upload-row" data-asset="confChampLogo1">
+              <img alt="" hidden />
+              <div><input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="field-label">Conf A 3rd-place mark (optional)</label>
+            <div class="upload-row" data-asset="thirdPlaceLogo0">
+              <img alt="" hidden />
+              <div><input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Conf B 3rd-place mark (optional)</label>
+            <div class="upload-row" data-asset="thirdPlaceLogo1">
+              <img alt="" hidden />
+              <div><input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 4: Money -->
+      <section class="step" data-step="4" hidden>
+        <h2>Structure &amp; payouts</h2>
+        <p class="lead">Team counts and prize pool. Edit prize labels to match your league — amounts are informational for the HQ payouts page.</p>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="teamsPerConf">Teams per conference</label>
+            <input class="field" id="teamsPerConf" type="number" min="4" max="20" value="12" />
+          </div>
+          <div>
+            <label class="field-label" for="buyIn">Buy-in per team ($)</label>
+            <input class="field" id="buyIn" type="number" min="0" step="1" value="100" />
+          </div>
+        </div>
+        <label class="field-label" for="seasonLabel">Season label</label>
+        <input class="field" id="seasonLabel" type="text" />
+        <label class="field-label" for="payoutNotes">Payout notes</label>
+        <textarea class="field-area" id="payoutNotes" placeholder="How the prize pool is split…"></textarea>
+        <label class="field-label">Prize rows</label>
+        <div id="prizes"></div>
+        <button type="button" class="btn btn-secondary" id="add-prize" style="margin-top:0.5rem;">Add prize</button>
+      </section>
+
+      <!-- Step 5: Calendar -->
+      <section class="step" data-step="5" hidden>
+        <h2>Calendar</h2>
+        <p class="lead">Seed key dates. You can edit these later in League Tools. Leave blank to skip.</p>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="calDraft">Draft day</label>
+            <input class="field" id="calDraft" type="date" />
+          </div>
+          <div>
+            <label class="field-label" for="calDues">Dues due</label>
+            <input class="field" id="calDues" type="date" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="calTrade">Trade deadline</label>
+            <input class="field" id="calTrade" type="date" />
+          </div>
+          <div>
+            <label class="field-label" for="calPlayoffs">Playoffs begin</label>
+            <input class="field" id="calPlayoffs" type="date" />
+          </div>
+        </div>
+        <label class="field-label" for="calBowl">Championship date</label>
+        <input class="field" id="calBowl" type="date" style="max-width:14rem;" />
+      </section>
+
+      <!-- Step 6: Review -->
+      <section class="step" data-step="6" hidden>
+        <h2>Review &amp; launch</h2>
+        <p class="lead">Confirm everything below. Launching activates this league on this HQ instance and signs you in as owner.</p>
+        <div class="review" id="review"></div>
+        <label class="check-row">
+          <input type="checkbox" id="activateNow" />
+          <span>Activate this league now on this HQ instance (switches ESPN IDs, brand, and championship config for the live site)</span>
+        </label>
+      </section>
+
+      <div class="nav-row">
+        <button type="button" class="btn btn-secondary" id="back" hidden>Back</button>
+        <button type="button" class="btn" id="next">Continue</button>
+      </div>
+    </form>
+
+    <p class="legal">
+      Independent fantasy football headquarters. Not affiliated with the NFL, ESPN, or any professional sports league.
+      You are responsible for having rights to any logos you upload.
+      Already have an invite? <a href="/register">Create a manager account</a> · <a href="/enter">Sign in</a>
+    </p>
+  </div>
+
+  <script>
+    const STEPS = [
+      'Owner', 'Brand', 'Conferences', 'Championship', 'Payouts', 'Calendar', 'Review'
+    ];
+    let step = 0;
+    let draftId = null;
+    const assets = {};
+
+    const errEl = document.getElementById('err');
+    const form = document.getElementById('form');
+    const backBtn = document.getElementById('back');
+    const nextBtn = document.getElementById('next');
+    const stepper = document.getElementById('stepper');
+
+    document.getElementById('season').value = new Date().getFullYear();
+    document.getElementById('seasonLabel').value = `${new Date().getFullYear()} Season`;
+
+    function showErr(msg) {
+      errEl.textContent = msg || '';
+      errEl.classList.toggle('show', Boolean(msg));
+      if (msg) errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderStepper() {
+      stepper.innerHTML = STEPS.map((label, i) =>
+        `<button type="button" class="${i === step ? 'on' : ''} ${i < step ? 'done' : ''}" data-go="${i}">${i + 1}. ${label}</button>`
+      ).join('');
+    }
+
+    function showStep(n) {
+      step = n;
+      form.querySelectorAll('.step').forEach((el) => {
+        el.hidden = Number(el.dataset.step) !== step;
+      });
+      backBtn.hidden = step === 0;
+      nextBtn.textContent = step === STEPS.length - 1 ? 'Register & launch' : 'Continue';
+      renderStepper();
+      showErr('');
+      if (step === STEPS.length - 1) fillReview();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function ensureDraft() {
+      if (draftId) return draftId;
+      const res = await fetch('/api/league-registration/draft', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not start registration');
+      draftId = data.draftId;
+      return draftId;
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Could not read file'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadAsset(assetType, file) {
+      await ensureDraft();
+      const dataUrl = await fileToDataUrl(file);
+      const res = await fetch('/api/league-registration/asset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftId, assetType, dataUrl })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+      assets[assetType] = data.url;
+      return data.url;
+    }
+
+    document.querySelectorAll('.upload-row').forEach((row) => {
+      const input = row.querySelector('.field-file');
+      const img = row.querySelector('img');
+      input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        showErr('');
+        try {
+          nextBtn.disabled = true;
+          const url = await uploadAsset(row.dataset.asset, file);
+          img.src = url;
+          img.hidden = false;
+        } catch (err) {
+          showErr(err.message || 'Upload failed');
+        } finally {
+          nextBtn.disabled = false;
+        }
+      });
+    });
+
+    function confData(index) {
+      const card = document.querySelector(`.conf-card[data-conf="${index}"]`);
+      const name = card.querySelector('.conf-name').value.trim();
+      const shortName = card.querySelector('.conf-short').value.trim() || name;
+      return {
+        name,
+        shortName,
+        espnLeagueId: Number(card.querySelector('.conf-espn').value),
+        color: card.querySelector('.conf-color').value
+      };
+    }
+
+    document.querySelectorAll('.espn-peek').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('.conf-card');
+        const peek = card.querySelector('.peek');
+        const espnLeagueId = Number(card.querySelector('.conf-espn').value);
+        const season = Number(document.getElementById('season').value);
+        peek.hidden = false;
+        peek.className = 'peek';
+        peek.textContent = 'Checking ESPN…';
+        try {
+          const res = await fetch('/api/league-registration/espn-peek', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ espnLeagueId, season })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Lookup failed');
+          peek.textContent = `Found: ${data.name}${data.size ? ` · ${data.size} teams` : ''}`;
+        } catch (err) {
+          peek.className = 'peek bad';
+          peek.textContent = err.message || 'Could not verify';
+        }
+      });
+    });
+
+    function defaultPrizes() {
+      return [
+        { place: 1, label: 'Champion', amount: 1000 },
+        { place: 2, label: 'Runner-up', amount: 500 },
+        { place: 3, label: 'Conference A 2nd place', amount: 250 },
+        { place: 4, label: 'Conference B 2nd place', amount: 250 },
+        { place: 5, label: 'Conference A 3rd place', amount: 100 },
+        { place: 6, label: 'Conference B 3rd place', amount: 100 },
+        { place: 7, label: 'Conference A most points', amount: 100 },
+        { place: 8, label: 'Conference B most points', amount: 100 }
+      ];
+    }
+
+    function renderPrizes(rows) {
+      const mount = document.getElementById('prizes');
+      mount.innerHTML = rows.map((p, i) => `
+        <div class="prize-row" data-i="${i}">
+          <input class="field prize-place" type="number" min="1" value="${p.place}" aria-label="Place" />
+          <input class="field prize-label" type="text" value="${String(p.label).replaceAll('"', '&quot;')}" aria-label="Label" />
+          <input class="field prize-amount" type="number" min="0" value="${p.amount}" aria-label="Amount" />
+        </div>`).join('');
+    }
+    renderPrizes(defaultPrizes());
+
+    document.getElementById('add-prize').addEventListener('click', () => {
+      const rows = readPrizes();
+      rows.push({ place: rows.length + 1, label: `Place ${rows.length + 1}`, amount: 0 });
+      renderPrizes(rows);
+    });
+
+    function readPrizes() {
+      return [...document.querySelectorAll('#prizes .prize-row')].map((row) => ({
+        place: Number(row.querySelector('.prize-place').value) || 1,
+        label: row.querySelector('.prize-label').value.trim(),
+        amount: Number(row.querySelector('.prize-amount').value) || 0
+      }));
+    }
+
+    function calendarDefaults() {
+      const bowlName = document.getElementById('bowlName').value.trim() || 'Championship';
+      const events = [];
+      const push = (title, type, id) => {
+        const date = document.getElementById(id).value;
+        if (date) events.push({ title, type, date, notes: '' });
+      };
+      push('Draft Day', 'draft', 'calDraft');
+      push('Dues Due', 'dues', 'calDues');
+      push('Trade Deadline', 'deadline', 'calTrade');
+      push('Playoffs Begin', 'event', 'calPlayoffs');
+      push(bowlName, 'bowl', 'calBowl');
+      return events;
+    }
+
+    function validateStep(n) {
+      if (n === 0) {
+        if (!document.getElementById('ownerName').value.trim()) return 'Full name is required';
+        if (!document.getElementById('ownerEmail').value.trim().includes('@')) return 'Valid email is required';
+        if (document.getElementById('ownerLogin').value.trim().length < 3) return 'Login name must be at least 3 characters';
+        const pw = document.getElementById('ownerPassword').value;
+        if (pw.length < 6) return 'Password must be at least 6 characters';
+        if (pw !== document.getElementById('ownerConfirm').value) return 'Passwords do not match';
+      }
+      if (n === 1) {
+        if (!document.getElementById('brandName').value.trim()) return 'League name is required';
+      }
+      if (n === 2) {
+        const a = confData(0);
+        const b = confData(1);
+        if (!a.name || !b.name) return 'Both conference names are required';
+        if (!a.espnLeagueId || !b.espnLeagueId) return 'Both ESPN league IDs are required';
+        if (a.espnLeagueId === b.espnLeagueId) return 'Conferences need different ESPN league IDs';
+      }
+      if (n === 3) {
+        if (!document.getElementById('bowlName').value.trim()) return 'Championship name is required';
+      }
+      return '';
+    }
+
+    function buildPayload() {
+      const teamsPerConference = Number(document.getElementById('teamsPerConf').value) || 12;
+      const brandName = document.getElementById('brandName').value.trim();
+      return {
+        draftId,
+        activate: document.getElementById('activateNow').checked,
+        season: Number(document.getElementById('season').value),
+        owner: {
+          name: document.getElementById('ownerName').value.trim(),
+          email: document.getElementById('ownerEmail').value.trim(),
+          loginName: document.getElementById('ownerLogin').value.trim(),
+          password: document.getElementById('ownerPassword').value,
+          confirmPassword: document.getElementById('ownerConfirm').value
+        },
+        brand: {
+          name: brandName,
+          tagline: document.getElementById('brandTagline').value.trim(),
+          slug: document.getElementById('brandSlug').value.trim()
+        },
+        conferences: [confData(0), confData(1)],
+        championship: {
+          name: document.getElementById('bowlName').value.trim(),
+          titleWeek: Number(document.getElementById('titleWeek').value) || 16,
+          bowlWeek: Number(document.getElementById('bowlWeek').value) || 17
+        },
+        structure: {
+          teamsPerConference,
+          totalTeams: teamsPerConference * 2,
+          playoffTeamCount: 6,
+          playoffWeeks: [14, 15, 16]
+        },
+        payouts: {
+          seasonLabel: document.getElementById('seasonLabel').value.trim(),
+          buyInPerTeam: Number(document.getElementById('buyIn').value) || 0,
+          teamCount: teamsPerConference * 2,
+          currency: 'USD',
+          notes: document.getElementById('payoutNotes').value.trim(),
+          prizes: readPrizes()
+        },
+        calendarDefaults: calendarDefaults()
+      };
+    }
+
+    function fillReview() {
+      const p = buildPayload();
+      const assetList = Object.keys(assets).length
+        ? Object.keys(assets).map((k) => k).join(', ')
+        : 'None uploaded yet';
+      document.getElementById('review').innerHTML = `
+        <dl>
+          <dt>Owner</dt><dd>${esc(p.owner.name)} · ${esc(p.owner.email)} · login ${esc(p.owner.loginName)}</dd>
+          <dt>League</dt><dd>${esc(p.brand.name)}${p.brand.tagline ? ` — ${esc(p.brand.tagline)}` : ''} · Season ${esc(String(p.season))}</dd>
+          <dt>Conference A</dt><dd>${esc(p.conferences[0].name)} (${esc(p.conferences[0].shortName)}) · ESPN ${esc(String(p.conferences[0].espnLeagueId))}</dd>
+          <dt>Conference B</dt><dd>${esc(p.conferences[1].name)} (${esc(p.conferences[1].shortName)}) · ESPN ${esc(String(p.conferences[1].espnLeagueId))}</dd>
+          <dt>Championship</dt><dd>${esc(p.championship.name)} · titles W${esc(String(p.championship.titleWeek))} · final W${esc(String(p.championship.bowlWeek))}</dd>
+          <dt>Structure</dt><dd>${esc(String(p.structure.totalTeams))} teams · $${esc(String(p.payouts.buyInPerTeam))} buy-in · ${esc(String(p.payouts.prizes.length))} prize rows</dd>
+          <dt>Calendar seeds</dt><dd>${p.calendarDefaults.length ? esc(p.calendarDefaults.map((e) => e.title).join(', ')) : 'None'}</dd>
+          <dt>Uploaded assets</dt><dd>${esc(assetList)}</dd>
+        </dl>`;
+    }
+
+    function esc(s) {
+      return String(s || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    backBtn.addEventListener('click', () => {
+      if (step > 0) showStep(step - 1);
+    });
+
+    nextBtn.addEventListener('click', async () => {
+      const problem = validateStep(step);
+      if (problem) return showErr(problem);
+      if (step < STEPS.length - 1) {
+        try { await ensureDraft(); } catch (err) { return showErr(err.message); }
+        return showStep(step + 1);
+      }
+      showErr('');
+      nextBtn.disabled = true;
+      try {
+        await ensureDraft();
+        const payload = buildPayload();
+        const res = await fetch('/api/league-registration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Registration failed');
+        window.location.href = '/league-tools.html';
+      } catch (err) {
+        showErr(err.message || 'Registration failed');
+        nextBtn.disabled = false;
+      }
+    });
+
+    stepper.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-go]');
+      if (!btn) return;
+      const target = Number(btn.dataset.go);
+      if (target < step) showStep(target);
+    });
+
+    async function boot() {
+      const meta = await fetch('/api/league-registration', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
+      if (meta.open === false) {
+        showErr('League registration is disabled on this server.');
+        nextBtn.disabled = true;
+        form.querySelectorAll('input,button,textarea').forEach((el) => { el.disabled = true; });
+        return;
+      }
+      const active = await fetch('/api/league', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
+      const activate = document.getElementById('activateNow');
+      if (active?.league?.isSystem) {
+        activate.checked = false;
+      }
+      showStep(0);
+    }
+    boot();
+  </script>
+</body>
+</html>
