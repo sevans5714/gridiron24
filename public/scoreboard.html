@@ -139,75 +139,94 @@
       display: flex;
       align-items: stretch;
       margin: 0 0 1.15rem;
-      border: 1px solid rgba(255, 184, 74, 0.22);
+      border: 1px solid rgba(47, 109, 255, 0.28);
+      border-radius: 999px;
       background:
-        linear-gradient(90deg, rgba(255, 184, 74, 0.06), transparent 28%),
-        linear-gradient(180deg, #0d0d0d 0%, #060606 100%);
+        linear-gradient(90deg, rgba(47, 109, 255, 0.18), rgba(47, 109, 255, 0.06) 42%, rgba(47, 109, 255, 0.1)),
+        linear-gradient(180deg, #101820 0%, #0a1018 100%);
+      box-shadow:
+        0 6px 28px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(142, 182, 255, 0.12);
       overflow: hidden;
-      min-height: 2.85rem;
-    }
-    .leaders-ticker::before {
-      content: "";
-      position: absolute;
-      inset: 0 auto auto 0;
-      width: 100%;
-      height: 2px;
-      background: var(--led);
-      opacity: 0.85;
-      pointer-events: none;
+      min-height: 0;
     }
     .leaders-label {
       flex: 0 0 auto;
       display: flex;
       align-items: center;
       gap: 0.45rem;
-      padding: 0.55rem 0.9rem 0.55rem 0.85rem;
-      border-right: 1px solid rgba(255, 184, 74, 0.18);
-      background: linear-gradient(90deg, rgba(255, 184, 74, 0.08), transparent);
+      padding: 0.2rem 0.95rem 0.2rem 0.75rem;
+      background: #fff;
       z-index: 1;
       position: relative;
     }
-    .leaders-label .pulse {
-      width: 0.45rem;
-      height: 0.45rem;
-      border-radius: 50%;
-      background: var(--led);
-      box-shadow: 0 0 8px var(--led);
-      animation: sb-pulse 1.4s ease-in-out infinite;
+    .leaders-label::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(47, 109, 255, 0.2);
     }
-    .leaders-label span {
+    .leaders-label-text {
       font-family: var(--display);
-      font-size: 0.78rem;
-      font-weight: 600;
+      font-size: 0.92rem;
+      font-weight: 800;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--led);
+      color: var(--blue);
+      line-height: 1;
       white-space: nowrap;
+      -webkit-text-stroke: 0.35px currentColor;
+      text-shadow: 0 0 0.4px currentColor;
     }
     .leaders-viewport {
       flex: 1;
       min-width: 0;
       overflow: hidden;
-      mask-image: linear-gradient(90deg, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent);
-      -webkit-mask-image: linear-gradient(90deg, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent);
+      position: relative;
+      mask-image: linear-gradient(90deg, transparent, #000 2rem, #000 calc(100% - 2.25rem), transparent);
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 2rem, #000 calc(100% - 2.25rem), transparent);
+    }
+    .leaders-viewport::before,
+    .leaders-viewport::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2rem;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .leaders-viewport::before {
+      left: 0;
+      background: linear-gradient(90deg, #0a1018, transparent);
+    }
+    .leaders-viewport::after {
+      right: 0;
+      background: linear-gradient(270deg, #060606, transparent);
     }
     .leaders-track {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0;
       width: max-content;
-      min-height: 2.85rem;
+      white-space: nowrap;
+      padding: 0.28rem 0;
       animation: leaders-scroll 55s linear infinite;
+      will-change: transform;
     }
-    .leaders-ticker:hover .leaders-track { animation-play-state: paused; }
     .leaders-item {
       display: inline-flex;
-      align-items: baseline;
+      align-items: center;
       gap: 0.45rem;
       padding: 0 1.15rem;
       white-space: nowrap;
-      font-size: 0.92rem;
-      color: #d8d8d8;
+      font-family: var(--body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
       text-decoration: none;
     }
     .leaders-item .pos {
@@ -215,7 +234,7 @@
       font-size: 0.72rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--led);
+      color: #8eb6ff;
     }
     .leaders-item .who {
       color: #fff;
@@ -223,7 +242,7 @@
     }
     .leaders-item .pts {
       font-family: "Share Tech Mono", ui-monospace, monospace;
-      color: var(--led-green);
+      color: #8eb6ff;
       font-variant-numeric: tabular-nums;
     }
     .leaders-item .pts.is-proj { color: #9a9a9a; }
@@ -235,24 +254,38 @@
       width: 4px;
       height: 4px;
       border-radius: 50%;
-      background: rgba(255, 184, 74, 0.45);
+      background: rgba(142, 182, 255, 0.45);
       flex: 0 0 auto;
       align-self: center;
     }
     .leaders-empty {
       display: flex;
       align-items: center;
-      padding: 0 1rem;
+      padding: 0.28rem 1rem;
       color: #8a8a8a;
       font-size: 0.88rem;
-      min-height: 2.85rem;
     }
     @keyframes leaders-scroll {
       from { transform: translateX(0); }
       to { transform: translateX(-50%); }
     }
     @media (prefers-reduced-motion: reduce) {
-      .leaders-track { animation: none; transform: none; flex-wrap: wrap; width: auto; }
+      .leaders-track {
+        animation: none;
+        transform: none;
+        flex-wrap: wrap;
+        width: auto;
+        white-space: normal;
+      }
+      .leaders-viewport {
+        mask-image: none;
+        -webkit-mask-image: none;
+        overflow: visible;
+      }
+    }
+    @media (max-width: 560px) {
+      .leaders-label-text { font-size: 0.78rem; letter-spacing: 0.08em; }
+      .leaders-label { padding-left: 0.65rem; padding-right: 0.75rem; }
     }
 
     .sb-boards.is-refreshing {
@@ -553,10 +586,9 @@
     </div>
     <div class="sb-refresh-bar" id="refresh-bar" aria-hidden="true"></div>
 
-    <div class="leaders-ticker" id="leaders-ticker" aria-label="Fantasy leaders">
+    <div class="leaders-ticker" id="leaders-ticker" aria-label="Fantasy Leaders">
       <div class="leaders-label">
-        <span class="pulse" aria-hidden="true"></span>
-        <span>Leaders</span>
+        <span class="leaders-label-text">Fantasy Leaders</span>
       </div>
       <div class="leaders-viewport">
         <div class="leaders-track" id="leaders-track">
