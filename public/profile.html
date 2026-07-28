@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=21" />
+  <link rel="stylesheet" href="/css/site.css?v=22" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -823,24 +823,18 @@
   <section class="page-hero shell">
     <p class="eyebrow">Account</p>
     <h1>Your Profile</h1>
-    <p>Franchise, logo, and league tools for commissioners.</p>
+    <p>Your franchise, team logo, and league tools.</p>
   </section>
 
   <main class="page-main shell">
     <nav class="profile-jump" aria-label="Profile sections">
       <a href="#franchise">Franchise</a>
-      <a href="#logo">Logo</a>
       <a href="#profile-admin" id="jump-admin" hidden>League Tools</a>
     </nav>
 
     <section class="profile-card" id="franchise">
       <div class="section-head"><h2>Your Franchise</h2></div>
       <div id="franchise-body"><div class="msg">Loading…</div></div>
-    </section>
-
-    <section class="profile-card" id="logo">
-      <div class="section-head"><h2>Team Logo</h2></div>
-      <div id="logo-body"><div class="msg">Loading…</div></div>
     </section>
 
     <section class="profile-actions">
@@ -931,7 +925,7 @@
               <div class="section-head">
                 <h3>Member Access</h3>
               </div>
-              <p class="help">Assign each member a franchise and set access roles.</p>
+              <p class="help">Approve new accounts, assign or remove franchises, and set access roles.</p>
               <div class="status-note" id="members-msg" role="status"></div>
               <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
@@ -1042,7 +1036,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=12"></script>
+  <script src="/js/nav.js?v=13"></script>
   <script src="/js/team-icons.js?v=2"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
@@ -1254,7 +1248,7 @@
 
     function teamOptionsHtml(conferences, claim) {
       const current = teamAssignValue(claim);
-      const opts = [`<option value="">Unassigned</option>`];
+      const opts = [`<option value="">No franchise</option>`];
       for (const conf of conferences || []) {
         const teams = conf.teams || [];
         if (!teams.length) continue;
@@ -1281,11 +1275,16 @@
         document.getElementById('members-list').innerHTML = `<div class="msg">No member accounts yet.</div>`;
         return;
       }
-      document.getElementById('members-list').innerHTML = `
+      const pending = list.filter((u) => u.approved === false);
+      const pendingBanner = pending.length
+        ? `<div class="msg" style="margin-bottom:0.85rem;"><strong>${pending.length} awaiting approval</strong>Approve accounts before they can sign in.</div>`
+        : '';
+      document.getElementById('members-list').innerHTML = pendingBanner + `
         <table class="data-table">
           <thead>
             <tr>
               <th>Member</th>
+              <th>Status</th>
               <th>Franchise</th>
               <th>Access</th>
             </tr>
@@ -1295,16 +1294,25 @@
               <tr data-user-id="${esc(u.id)}">
                 <td>
                   <strong>${esc(u.name)}</strong><br>
-                  <span class="muted-sm">${esc(u.loginName)} · ${esc(u.email)}</span><br>
-                  <span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span>
+                  <span class="muted-sm">${esc(u.loginName)} · ${esc(u.email)}</span>
                 </td>
                 <td>
-                  <select class="team-select" data-user-id="${esc(u.id)}" aria-label="Assign franchise">
+                  ${u.approved === false
+                    ? `<span class="role-pill" style="color:#f0d78c;">Pending</span>
+                       <div class="invite-row-actions" style="margin-top:0.45rem;">
+                         <button type="button" class="btn" data-approve="${esc(u.id)}">Approve</button>
+                         <button type="button" class="link-action" data-reject="${esc(u.id)}">Reject</button>
+                       </div>`
+                    : `<span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span>`}
+                </td>
+                <td>
+                  <select class="team-select" data-user-id="${esc(u.id)}" aria-label="Assign franchise" ${u.approved === false ? 'disabled' : ''}>
                     ${teamOptionsHtml(conferences, u.claim)}
                   </select>
+                  ${u.claim ? `<button type="button" class="link-action" style="margin-top:0.4rem;" data-remove-team="${esc(u.id)}">Remove team</button>` : ''}
                 </td>
                 <td>
-                  <select class="role-select" data-user-id="${esc(u.id)}">
+                  <select class="role-select" data-user-id="${esc(u.id)}" ${u.approved === false ? 'disabled' : ''}>
                     <option value="user" ${roleValue(u) === 'user' ? 'selected' : ''}>User</option>
                     ${conferences.map((c) => `
                       <option value="conference_admin:${esc(c.key)}" ${roleValue(u) === `conference_admin:${c.key}` ? 'selected' : ''}>
@@ -1368,7 +1376,7 @@
             showMembersMsg(
               data.claim
                 ? `Assigned ${data.claim.teamName || 'team'} to member.`
-                : 'Franchise unassigned.',
+                : 'Franchise removed.',
               true
             );
             await loadMembers();
@@ -1377,6 +1385,65 @@
             await loadMembers();
           } finally {
             select.disabled = false;
+          }
+        });
+      });
+
+      document.getElementById('members-list').querySelectorAll('[data-remove-team]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const userId = btn.dataset.removeTeam;
+          if (!confirm('Remove this franchise from the member?')) return;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/team`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ clear: true })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not remove team');
+            showMembersMsg('Franchise removed.', true);
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+          }
+        });
+      });
+
+      document.getElementById('members-list').querySelectorAll('[data-approve]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const userId = btn.dataset.approve;
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/approve`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ approved: true })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not approve');
+            showMembersMsg(`Approved ${data.user.loginName}. They can sign in now.`, true);
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      document.getElementById('members-list').querySelectorAll('[data-reject]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const userId = btn.dataset.reject;
+          if (!confirm('Reject and delete this pending account?')) return;
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/reject`, { method: 'POST' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not reject');
+            showMembersMsg(`Rejected ${data.user?.loginName || 'account'}.`, true);
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            btn.disabled = false;
           }
         });
       });
@@ -2087,7 +2154,7 @@
               <div class="pill">${escP(ROLE_LABELS_P[user.role] || user.role || 'Member')}</div>
             </div>
           </div>
-          <p class="profile-note">Your commissioner assigns franchises. Once linked, your record and logo tools appear here.</p>`;
+          <p class="profile-note">Your commissioner assigns franchises. Until then, only the placeholder shows in the top-right corner. After a team is linked, your logo attaches to that franchise.</p>`;
         return;
       }
 
@@ -2111,7 +2178,10 @@
           <button type="button" class="btn" id="profile-save-name">Save Name</button>
         </div>
         <p class="profile-note" id="franchise-status" role="status"></p>
-        ${team ? `<p class="profile-note"><a href="/team.html?conference=${escP(claim.conferenceKey)}&teamId=${escP(claim.teamId)}" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Open team page →</a></p>` : ''}`;
+        ${team ? `<p class="profile-note"><a href="/team.html?conference=${escP(claim.conferenceKey)}&teamId=${escP(claim.teamId)}" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Open team page →</a></p>` : ''}
+        <div class="section-head" style="margin-top:1.75rem;"><h2 style="font-size:1.05rem;color:#ddd;">Team Logo</h2></div>
+        <p class="profile-note">This logo appears in the top-right corner and on your franchise across the league.</p>
+        <div id="franchise-logo-mount"></div>`;
 
       document.getElementById('profile-save-name')?.addEventListener('click', async () => {
         const status = document.getElementById('franchise-status');
@@ -2138,11 +2208,9 @@
     }
 
     function renderLogoSection(data) {
-      const body = document.getElementById('logo-body');
-      if (!data.claim) {
-        body.innerHTML = `<p class="profile-note">Logo tools unlock after your commissioner assigns a franchise.</p>`;
-        return;
-      }
+      const body = document.getElementById('franchise-logo-mount');
+      if (!body) return;
+      if (!data.claim) return;
       selectedIcon = data.logo?.type === 'icon' ? data.logo.value : null;
       body.innerHTML = `
         <div class="logo-layout">
@@ -2319,7 +2387,7 @@
         if (location.hash === '#profile-admin' || location.hash === '#admin') {
           document.getElementById('profile-admin')?.scrollIntoView({ behavior: 'smooth' });
         } else if (location.hash === '#logo') {
-          document.getElementById('logo')?.scrollIntoView({ behavior: 'smooth' });
+          document.getElementById('franchise')?.scrollIntoView({ behavior: 'smooth' });
         }
       } catch (err) {
         document.getElementById('franchise-body').innerHTML = `<div class="msg"><strong>Error</strong>${escP(err.message)}</div>`;

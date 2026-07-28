@@ -76,6 +76,7 @@ function verifyPassword(password, salt, expectedHash) {
 function publicUser(user) {
   if (!user) return null;
   const role = normalizeRole(user.role);
+  const approved = user.approved !== false;
   return {
     id: user.id,
     name: user.name,
@@ -83,7 +84,9 @@ function publicUser(user) {
     loginName: user.loginName,
     role,
     conference: role === ROLES.CONFERENCE_ADMIN ? normalizeConference(user.conference) : null,
-    createdAt: user.createdAt || null
+    approved,
+    createdAt: user.createdAt || null,
+    approvedAt: user.approvedAt || null
   };
 }
 
@@ -121,7 +124,7 @@ function isCommissioner(user) {
   return normalizeRole(user?.role) === ROLES.COMMISSIONER;
 }
 
-function createUser({ name, email, loginName, password, role, conference }) {
+function createUser({ name, email, loginName, password, role, conference, approved }) {
   const store = readStore();
   const emailKey = normalizeEmail(email);
   const loginKey = normalizeLoginName(loginName);
@@ -163,6 +166,10 @@ function createUser({ name, email, loginName, password, role, conference }) {
     nextConference = null;
   }
 
+  const isCommissionerAccount = nextRole === ROLES.COMMISSIONER;
+  // Commissioners/bootstrap always approved. Invite signups wait for commissioner approval unless explicitly approved.
+  const finalApproved = isCommissionerAccount || approved === true;
+
   const { salt, hash } = hashPassword(password);
   const user = {
     id: crypto.randomUUID(),
@@ -171,6 +178,8 @@ function createUser({ name, email, loginName, password, role, conference }) {
     loginName: loginKey,
     role: nextRole,
     conference: nextConference,
+    approved: finalApproved,
+    approvedAt: finalApproved ? new Date().toISOString() : null,
     passwordSalt: salt,
     passwordHash: hash,
     createdAt: new Date().toISOString(),
@@ -211,8 +220,71 @@ function setUserRole(userId, role, conference) {
 
   store.users[idx].role = nextRole;
   store.users[idx].conference = nextConference;
+  if (nextRole === ROLES.COMMISSIONER) {
+    store.users[idx].approved = true;
+    store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
+  }
   writeStore(store);
   return publicUser(store.users[idx]);
+}
+
+function setUserApproved(userId, approved, actorId = null) {
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) throw Object.assign(new Error('User not found'), { status: 404 });
+  if (userId === actorId) {
+    throw Object.assign(new Error('You cannot change your own approval status'), { status: 400 });
+  }
+  const target = store.users[idx];
+  if (normalizeRole(target.role) === ROLES.COMMISSIONER && approved === false) {
+    throw Object.assign(new Error('Cannot unapprove a commissioner'), { status: 400 });
+  }
+  store.users[idx].approved = Boolean(approved);
+  store.users[idx].approvedAt = approved ? new Date().toISOString() : null;
+  writeStore(store);
+  return publicUser(store.users[idx]);
+}
+
+function deleteUser(userId, actorId = null) {
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) throw Object.assign(new Error('User not found'), { status: 404 });
+  if (userId === actorId) {
+    throw Object.assign(new Error('You cannot delete your own account here'), { status: 400 });
+  }
+  const target = store.users[idx];
+  if (normalizeRole(target.role) === ROLES.COMMISSIONER) {
+    const otherCommissioners = store.users.filter(
+      (u, i) => i !== idx && normalizeRole(u.role) === ROLES.COMMISSIONER
+    );
+    if (otherCommissioners.length === 0) {
+      throw Object.assign(new Error('Cannot remove the last commissioner'), { status: 400 });
+    }
+  }
+  const removed = store.users[idx];
+  store.users.splice(idx, 1);
+  writeStore(store);
+  return publicUser(removed);
+}
+
+/** Existing accounts without an approved flag are treated as approved. */
+function migrateApprovalFlags() {
+  const store = readStore();
+  let changed = false;
+  for (const user of store.users) {
+    if (user.approved === undefined || user.approved === null) {
+      user.approved = true;
+      user.approvedAt = user.approvedAt || user.createdAt || new Date().toISOString();
+      changed = true;
+    }
+    if (normalizeRole(user.role) === ROLES.COMMISSIONER && user.approved !== true) {
+      user.approved = true;
+      user.approvedAt = user.approvedAt || new Date().toISOString();
+      changed = true;
+    }
+  }
+  if (changed) writeStore(store);
+  return changed;
 }
 
 function ensureCommissionerFromEnv() {
@@ -274,7 +346,8 @@ function ensureBootstrapCommissioner() {
       email,
       loginName: login,
       password,
-      role: ROLES.COMMISSIONER
+      role: ROLES.COMMISSIONER,
+      approved: true
     });
     console.log(`Bootstrap commissioner created: ${login}`);
     return user;
@@ -288,7 +361,13 @@ function authenticate(loginName, password) {
   const user = findByLoginName(loginName);
   if (!user) return null;
   if (!verifyPassword(password, user.passwordSalt, user.passwordHash)) return null;
-  return publicUser(user);
+  const pub = publicUser(user);
+  if (!pub.approved) {
+    const err = Object.assign(new Error('Your account is waiting for commissioner approval'), { status: 403, code: 'pending_approval' });
+    err.user = pub;
+    throw err;
+  }
+  return pub;
 }
 
 function createResetToken(email) {
@@ -338,6 +417,9 @@ module.exports = {
   findByEmail,
   listUsers,
   setUserRole,
+  setUserApproved,
+  deleteUser,
+  migrateApprovalFlags,
   ensureCommissionerFromEnv,
   ensureBootstrapCommissioner,
   isStaff,

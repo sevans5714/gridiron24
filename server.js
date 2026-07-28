@@ -159,7 +159,9 @@ function verifySession(token) {
 
 function getSessionUser(req) {
   const cookies = parseCookies(req.headers.cookie);
-  return verifySession(cookies[SESSION_COOKIE]);
+  const user = verifySession(cookies[SESSION_COOKIE]);
+  if (user && user.approved === false) return null;
+  return user;
 }
 
 function isAuthenticated(req) {
@@ -1552,14 +1554,25 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
       }
       try {
+        const bootstrap = existingUsers.length === 0 && !inviteToken;
         const user = users.createUser({
           name: body.name,
           email: body.email,
           loginName: body.loginName,
-          password: body.password
+          password: body.password,
+          approved: bootstrap
         });
         if (inviteToken) {
           try { invites.acceptInvite(inviteToken, user.email); } catch { /* non-fatal */ }
+        }
+        // Pending members do not get a session until the commissioner approves them.
+        if (!user.approved) {
+          return sendJson(res, 201, {
+            ok: true,
+            pendingApproval: true,
+            user,
+            message: 'Account created. A commissioner must approve you before you can sign in.'
+          });
         }
         const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
         const token = signSession(user.id, expiresAt);
@@ -1576,7 +1589,19 @@ const server = http.createServer(async (req, res) => {
       } catch {
         return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
       }
-      const user = users.authenticate(body.loginName, body.password);
+      let user;
+      try {
+        user = users.authenticate(body.loginName, body.password);
+      } catch (err) {
+        if (err.code === 'pending_approval') {
+          return sendJson(res, 403, {
+            ok: false,
+            pendingApproval: true,
+            error: err.message || 'Your account is waiting for commissioner approval'
+          });
+        }
+        return sendJson(res, err.status || 401, { ok: false, error: err.message || 'Incorrect login name or password' });
+      }
       if (!user) {
         return sendJson(res, 401, { ok: false, error: 'Incorrect login name or password' });
       }
@@ -1802,6 +1827,38 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true, user: updated });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not update role' });
+      }
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/approve') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/approve'.length);
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const updated = users.setUserApproved(userId, body.approved !== false, admin.id);
+        return sendJson(res, 200, { ok: true, user: updated });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not update approval' });
+      }
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/reject') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/reject'.length);
+      try {
+        // Reject = delete pending account (and clear any team assignment).
+        try { logos.unassignTeam(userId); } catch { /* may have no team */ }
+        const removed = users.deleteUser(userId, admin.id);
+        return sendJson(res, 200, { ok: true, user: removed });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not reject account' });
       }
     }
 
@@ -2457,6 +2514,9 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   users.ensureBootstrapCommissioner();
+  try { users.migrateApprovalFlags(); } catch (err) {
+    console.warn('Approval migration failed:', err.message || err);
+  }
   try {
     calendar.seedIfEmpty(config.calendarDefaults || []);
   } catch (err) {
@@ -2465,7 +2525,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`\nGridIron 24 is running.`);
   console.log(`Open: http://localhost:${PORT}`);
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
-  console.log(`Auth: invite-only registration · accounts enabled`);
+  console.log(`Auth: invite + commissioner approval`);
   console.log(`Users: ${users.DATA_DIR}`);
   if (process.env.COMMISSIONER_LOGIN) {
     console.log(`Commissioner login: ${process.env.COMMISSIONER_LOGIN}`);

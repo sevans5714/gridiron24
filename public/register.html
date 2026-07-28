@@ -8,14 +8,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/site.css?v=21" />
+  <link rel="stylesheet" href="/css/site.css?v=22" />
 </head>
 <body class="auth-page">
   <form class="auth-card" id="form" autocomplete="on">
     <img class="auth-crest" src="/assets/login-crest.png" alt="GridIron 24" width="1024" height="1024" />
     <h1 class="auth-title">Create Account</h1>
     <div class="status-note err" id="err" role="alert"></div>
-    <p class="auth-help" id="invite-help" hidden>You're invited to GridIron 24. Create your account below.</p>
+    <p class="auth-help" id="invite-help" hidden>You're invited to GridIron 24. Create your account below — a commissioner must approve you before you can sign in.</p>
 
     <label class="field-label" for="name">Full Name</label>
     <input class="field" id="name" name="name" type="text" required autofocus autocomplete="name" />
@@ -86,6 +86,13 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || 'Could not create account');
+        if (data.pendingApproval) {
+          errEl.className = 'status-note ok show';
+          errEl.textContent = data.message || 'Account created. Wait for commissioner approval, then sign in.';
+          submit.disabled = true;
+          form.querySelectorAll('input').forEach((el) => { el.disabled = true; });
+          return;
+        }
         window.location.href = next;
       } catch (err) {
         errEl.textContent = err.message;
