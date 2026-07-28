@@ -182,7 +182,6 @@
     el.innerHTML = `
       <div class="ticker">
         <div class="ticker-label" aria-label="League wire">
-          <span class="ticker-live" aria-hidden="true"></span>
           <img src="/assets/nfl-logo.png" alt="" width="600" height="600" />
           <span class="ticker-label-text">Wire</span>
         </div>
