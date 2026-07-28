@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Beta Draft · GridIron 24</title>
+  <meta name="description" content="Build your own fantasy draft — nflverse player pool, independent of ESPN." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=51" />
+  <style>
+    body[data-page="beta-draft"] .page-hero {
+      padding-top: 1.35rem;
+      padding-bottom: 1rem;
+    }
+    body[data-page="beta-draft"] .page-hero::before,
+    body[data-page="beta-draft"] .page-hero::after { display: none; }
+    body[data-page="beta-draft"] .page-main {
+      padding-top: 0.75rem;
+      padding-bottom: 3rem;
+    }
+    .beta-badge {
+      display: inline-block;
+      margin: 0 0 0.55rem;
+      padding: 0.2rem 0.55rem;
+      border: 1px solid rgba(240, 215, 140, 0.45);
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #f0d78c;
+    }
+    .beta-sub {
+      margin: 0.4rem 0 0;
+      max-width: 42rem;
+      color: #9a9a9a;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+    .draft-on-clock {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem 1.25rem;
+      margin: 0 0 1rem;
+      padding: 0.9rem 1rem;
+      border: 1px solid rgba(240, 215, 140, 0.28);
+      background:
+        linear-gradient(180deg, rgba(240, 215, 140, 0.08), transparent 70%),
+        #0a0a0a;
+    }
+    .draft-on-clock .label {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #f0d78c;
+    }
+    .draft-on-clock .pick {
+      margin-top: 0.25rem;
+      font-family: var(--display);
+      font-size: clamp(1.25rem, 3vw, 1.7rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .draft-on-clock .meta {
+      color: #9a9a9a;
+      font-size: 0.9rem;
+    }
+    .draft-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+    .draft-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 0.85fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+    .draft-panel {
+      border: 1px solid rgba(255,255,255,0.1);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%),
+        #0a0a0a;
+      padding: 0.95rem 1rem 1.1rem;
+    }
+    .draft-panel h2 {
+      margin: 0 0 0.75rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .pool-tools {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.65rem;
+      margin-bottom: 0.85rem;
+    }
+    .pool-tools select,
+    .pool-tools input {
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: #0c0c0c;
+      color: #fff;
+      font-family: var(--body);
+      font-size: 0.95rem;
+    }
+    .pool-tools label {
+      display: grid;
+      gap: 0.25rem;
+      font-family: var(--display);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .pool-counts {
+      margin: 0 0 0.75rem;
+      color: #8a8a8a;
+      font-size: 0.85rem;
+    }
+    .player-list {
+      display: grid;
+      gap: 0.35rem;
+      max-height: 70vh;
+      overflow: auto;
+    }
+    .player-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 0.7rem;
+      align-items: center;
+      width: 100%;
+      padding: 0.55rem 0.6rem;
+      border: 1px solid transparent;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+    }
+    .player-row:hover,
+    .player-row:focus-visible {
+      border-color: rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.04);
+      outline: 0;
+    }
+    .player-row img {
+      width: 2rem;
+      height: 2rem;
+      object-fit: cover;
+      border-radius: 0.25rem;
+      background: #111;
+    }
+    .player-row .who strong {
+      display: block;
+      color: #fff;
+      font-weight: 600;
+    }
+    .player-row .who span {
+      color: #8a8a8a;
+      font-size: 0.85rem;
+    }
+    .player-row .pos {
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #f0d78c;
+    }
+    .player-row .team {
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #9a9a9a;
+      min-width: 2.4rem;
+      text-align: right;
+    }
+    .pick-list {
+      display: grid;
+      gap: 0.35rem;
+      max-height: 70vh;
+      overflow: auto;
+    }
+    .pick-row {
+      display: grid;
+      grid-template-columns: 3.2rem 1fr;
+      gap: 0.55rem;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.92rem;
+    }
+    .pick-row .num {
+      font-family: var(--display);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #8a8a8a;
+    }
+    .pick-row strong { color: #fff; font-weight: 600; }
+    .pick-row span { color: #8a8a8a; }
+    .draft-setup {
+      display: none;
+      margin: 0 0 1rem;
+      padding: 0.95rem 1rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0a0a0a;
+    }
+    .draft-setup.is-open { display: block; }
+    .draft-setup-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+    .draft-setup label {
+      display: grid;
+      gap: 0.3rem;
+      font-family: var(--display);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .draft-setup input,
+    .draft-setup select {
+      padding: 0.45rem 0.55rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: #0c0c0c;
+      color: #fff;
+      font: inherit;
+    }
+    .msg-line {
+      margin: 0 0 0.85rem;
+      min-height: 1.2em;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    .msg-line.ok { color: #86efac; }
+    .msg-line.err { color: #fca5a5; }
+    @media (max-width: 900px) {
+      .draft-layout { grid-template-columns: 1fr; }
+      .draft-setup-grid { grid-template-columns: 1fr 1fr; }
+      .player-list, .pick-list { max-height: 50vh; }
+    }
+  </style>
+</head>
+<body data-page="beta-draft">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Loading…</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell">
+    <span class="beta-badge">Beta · Own platform</span>
+    <h1>Beta Draft</h1>
+    <p class="beta-sub">Your draft board on an nflverse player pool — not ESPN. Click a player to pick. Snake draft by default (24 teams × 15 rounds).</p>
+  </section>
+
+  <main class="page-main shell">
+    <p class="msg-line" id="msg" role="status"></p>
+
+    <div class="draft-on-clock" id="on-clock">
+      <div>
+        <div class="label">On the clock</div>
+        <div class="pick" id="clock-pick">Loading…</div>
+        <div class="meta" id="clock-meta"></div>
+      </div>
+      <div class="draft-actions">
+        <button type="button" class="btn btn-secondary" id="btn-setup">Setup / Reset</button>
+        <button type="button" class="btn btn-secondary" id="btn-undo">Undo pick</button>
+      </div>
+    </div>
+
+    <div class="draft-setup" id="setup-panel">
+      <div class="draft-setup-grid">
+        <label>Teams
+          <input id="setup-teams" type="number" min="2" max="32" value="24" />
+        </label>
+        <label>Rounds
+          <input id="setup-rounds" type="number" min="1" max="25" value="15" />
+        </label>
+        <label>Order
+          <select id="setup-order">
+            <option value="snake">Snake</option>
+            <option value="linear">Linear</option>
+          </select>
+        </label>
+        <label>Season roster
+          <input id="setup-season" type="number" min="2020" max="2030" value="2026" />
+        </label>
+      </div>
+      <button type="button" class="btn" id="btn-reset">Start new draft</button>
+    </div>
+
+    <div class="draft-layout">
+      <section class="draft-panel">
+        <h2>Available players</h2>
+        <div class="pool-tools">
+          <label>Position
+            <select id="pos-filter">
+              <option value="">All</option>
+              <option value="QB">QB</option>
+              <option value="RB">RB</option>
+              <option value="WR">WR</option>
+              <option value="TE">TE</option>
+              <option value="K">K</option>
+            </select>
+          </label>
+          <label>Search
+            <input id="search" type="search" placeholder="Name or NFL team" autocomplete="off" />
+          </label>
+        </div>
+        <p class="pool-counts" id="pool-counts"></p>
+        <div class="player-list" id="player-list"></div>
+      </section>
+
+      <section class="draft-panel">
+        <h2>Pick history</h2>
+        <div class="pick-list" id="pick-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="shell">Beta platform · Player pool from nflverse season rosters. Fantasy HQ draft remains on ESPN.</footer>
+  <script src="/js/nav.js?v=30"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    let board = null;
+    let available = [];
+
+    const msgEl = document.getElementById('msg');
+    const listEl = document.getElementById('player-list');
+    const picksEl = document.getElementById('pick-list');
+    const posFilter = document.getElementById('pos-filter');
+    const searchInput = document.getElementById('search');
+    const setupPanel = document.getElementById('setup-panel');
+
+    function setMsg(text, ok) {
+      msgEl.textContent = text || '';
+      msgEl.className = `msg-line${text ? (ok ? ' ok' : ' err') : ''}`;
+    }
+
+    function filteredPlayers() {
+      const pos = posFilter.value;
+      const q = searchInput.value.trim().toLowerCase();
+      return available.filter((p) => {
+        if (pos && p.position !== pos) return false;
+        if (!q) return true;
+        return `${p.name} ${p.team || ''}`.toLowerCase().includes(q);
+      });
+    }
+
+    function renderPool() {
+      const rows = filteredPlayers();
+      document.getElementById('pool-counts').textContent = board
+        ? `${rows.length} shown · ${available.length} available · nflverse ${board.pool?.season || ''}`
+        : '';
+      if (!rows.length) {
+        listEl.innerHTML = `<div class="pool-counts">No players match.</div>`;
+        return;
+      }
+      listEl.innerHTML = rows.slice(0, 400).map((p) => `
+        <button type="button" class="player-row" data-id="${esc(p.id)}">
+          ${p.headshot ? `<img src="${esc(p.headshot)}" alt="" width="32" height="32" loading="lazy" />` : '<span></span>'}
+          <div class="who"><strong>${esc(p.name)}</strong><span>${esc(p.status || '')}</span></div>
+          <div class="pos">${esc(p.position)}</div>
+          <div class="team">${esc(p.team || '—')}</div>
+        </button>
+      `).join('');
+    }
+
+    function renderPicks() {
+      const picks = [...(board?.draft?.picks || [])].reverse();
+      if (!picks.length) {
+        picksEl.innerHTML = `<div class="pool-counts">No picks yet.</div>`;
+        return;
+      }
+      picksEl.innerHTML = picks.map((p) => `
+        <div class="pick-row">
+          <div class="num">#${esc(p.overall)}</div>
+          <div>
+            <strong>${esc(p.playerName)}</strong>
+            <span> · ${esc(p.position)} · ${esc(p.nflTeam || 'FA')} · ${esc(p.teamName)}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderClock() {
+      const next = board?.draft?.nextPick;
+      const d = board?.draft;
+      if (!d) return;
+      if (!next) {
+        document.getElementById('clock-pick').textContent = 'Draft complete';
+        document.getElementById('clock-meta').textContent =
+          `${d.picks.length} picks · ${d.settings.teams} teams · ${d.settings.rounds} rounds`;
+        return;
+      }
+      document.getElementById('clock-pick').textContent =
+        `${next.teamName} · Round ${next.round}, Pick ${next.pick}`;
+      document.getElementById('clock-meta').textContent =
+        `Overall #${next.overall} · ${d.picksRemaining} remaining · ${d.settings.order} · ${d.settings.teams} teams`;
+    }
+
+    function applyBoard(data) {
+      board = data;
+      available = data.available || [];
+      if (data.draft?.season) document.getElementById('setup-season').value = data.draft.season;
+      if (data.draft?.settings) {
+        document.getElementById('setup-teams').value = data.draft.settings.teams;
+        document.getElementById('setup-rounds').value = data.draft.settings.rounds;
+        document.getElementById('setup-order').value = data.draft.settings.order;
+      }
+      renderClock();
+      renderPool();
+      renderPicks();
+    }
+
+    async function loadBoard() {
+      const res = await fetch('/api/beta/draft', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load draft');
+      applyBoard(data);
+    }
+
+    async function postAction(body) {
+      const res = await fetch('/api/beta/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Draft action failed');
+      applyBoard(data);
+      return data;
+    }
+
+    listEl.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-id]');
+      if (!btn) return;
+      const playerId = btn.getAttribute('data-id');
+      const player = available.find((p) => p.id === playerId);
+      if (!player) return;
+      if (!confirm(`Draft ${player.name} (${player.position})?`)) return;
+      btn.disabled = true;
+      try {
+        await postAction({ action: 'pick', playerId });
+        setMsg(`Picked ${player.name}`, true);
+      } catch (err) {
+        setMsg(err.message, false);
+      }
+    });
+
+    document.getElementById('btn-undo').addEventListener('click', async () => {
+      try {
+        await postAction({ action: 'undo' });
+        setMsg('Last pick undone', true);
+      } catch (err) {
+        setMsg(err.message, false);
+      }
+    });
+
+    document.getElementById('btn-setup').addEventListener('click', () => {
+      setupPanel.classList.toggle('is-open');
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', async () => {
+      if (!confirm('Start a new draft? This clears all picks.')) return;
+      try {
+        await postAction({
+          action: 'reset',
+          teams: Number(document.getElementById('setup-teams').value),
+          rounds: Number(document.getElementById('setup-rounds').value),
+          order: document.getElementById('setup-order').value,
+          season: Number(document.getElementById('setup-season').value)
+        });
+        setupPanel.classList.remove('is-open');
+        setMsg('New draft started', true);
+      } catch (err) {
+        setMsg(err.message, false);
+      }
+    });
+
+    posFilter.addEventListener('change', renderPool);
+    searchInput.addEventListener('input', renderPool);
+
+    window.GridIronNav?.authReady?.then(async ({ user }) => {
+      if (!user) {
+        window.location.replace('/enter?next=' + encodeURIComponent('/beta-draft'));
+        return;
+      }
+      try {
+        await loadBoard();
+      } catch (err) {
+        setMsg(err.message, false);
+      }
+    });
+  </script>
+</body>
+</html>

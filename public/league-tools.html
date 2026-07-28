@@ -183,6 +183,51 @@
     body[data-page="league-tools"] .field:focus {
       border-bottom-color: #fff;
     }
+    body[data-page="league-tools"] .field-hint {
+      margin: 0.2rem 0 0.7rem;
+      color: #8a8a8a;
+      font-size: 0.88rem;
+      line-height: 1.4;
+      max-width: 36rem;
+    }
+    body[data-page="league-tools"] .invite-compose {
+      margin: 0 0 1.15rem;
+      max-width: 40rem;
+    }
+    body[data-page="league-tools"] .invite-compose .field-label {
+      display: block;
+      margin: 0;
+    }
+    body[data-page="league-tools"] .field-box {
+      display: block;
+      width: 100%;
+      min-height: 5.75rem;
+      margin: 0 0 0.85rem;
+      padding: 0.8rem 0.9rem;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 0;
+      background: rgba(255,255,255,0.04);
+      color: #fff;
+      font-family: var(--body);
+      font-size: 1rem;
+      line-height: 1.45;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    body[data-page="league-tools"] .field-box:focus {
+      outline: 0;
+      border-color: rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.06);
+    }
+    body[data-page="league-tools"] .field-box::placeholder {
+      color: #6a6a6a;
+    }
+    body[data-page="league-tools"] .invite-compose .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+    }
     body[data-page="league-tools"] .data-table {
       border: 0;
       background: none;
@@ -656,12 +701,25 @@
               <div class="section-head">
                 <h3>Email Invites</h3>
               </div>
-              <p class="help">Send invite links by email. If mail is offline, copy the link. <a href="/api/invites/preview-email" target="_blank" rel="noopener">Preview email</a></p>
+              <p class="help">Send invite links by email. If mail is offline, copy the link after sending. Preview: <a href="/api/invites/preview-email" target="_blank" rel="noopener">Invite</a> · <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Approved</a> · <a href="/api/mail/preview-reset" target="_blank" rel="noopener">Password reset</a></p>
               <div class="status-note" id="invites-mail-status" role="status"></div>
               <div class="status-note" id="invites-msg" role="status"></div>
-              <div class="toolbar">
-                <input class="field" id="invite-emails" type="text" maxlength="800" placeholder="email@example.com, another@example.com" />
-                <button type="button" class="btn" id="invite-send">Send Invites</button>
+              <div class="invite-compose">
+                <label class="field-label" for="invite-emails">Email addresses</label>
+                <p class="field-hint" id="invite-emails-hint">Type one or more addresses below. Separate with commas or new lines.</p>
+                <textarea
+                  class="field field-area field-box"
+                  id="invite-emails"
+                  name="inviteEmails"
+                  rows="3"
+                  maxlength="800"
+                  autocomplete="email"
+                  spellcheck="false"
+                  aria-describedby="invite-emails-hint"
+                ></textarea>
+                <div class="btn-row">
+                  <button type="button" class="btn" id="invite-send">Send Invites</button>
+                </div>
               </div>
               <div id="invite-links" class="invite-links" hidden></div>
               <div class="list-gap" id="invites-list"><div class="msg">Loading invites…</div></div>
@@ -671,7 +729,7 @@
               <div class="section-head">
                 <h3>Member Access</h3>
               </div>
-              <p class="help">Approve new accounts, assign or remove franchises, and set access roles.</p>
+              <p class="help">Approve new accounts, assign or remove franchises, and set access roles. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
               <div class="status-note" id="members-msg" role="status"></div>
               <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
@@ -782,7 +840,7 @@
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=28"></script>
+  <script src="/js/nav.js?v=30"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1166,7 +1224,10 @@
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok || !data.ok) throw new Error(data.error || 'Could not approve');
-            showMembersMsg(`Approved ${data.user.loginName}. They can sign in now.`, true);
+            const mailNote = data.mailSent
+              ? ' Approval email sent.'
+              : (data.mailError ? ` Approval email failed: ${data.mailError}` : '');
+            showMembersMsg(`Approved ${data.user.loginName}. They can sign in now.${mailNote}`, true);
             await loadMembers();
           } catch (err) {
             showMembersMsg(err.message, false);

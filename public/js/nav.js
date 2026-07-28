@@ -2,6 +2,8 @@
   const allLinks = [
     { href: '/home.html', label: 'Home', key: 'home' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
+    { href: '/beta-scoring', label: 'Beta Scoring', key: 'beta-scoring' },
+    { href: '/beta-draft', label: 'Beta Draft', key: 'beta-draft' },
     { href: '/standings.html', label: 'Standings', key: 'standings' },
     { href: '/teams.html', label: 'Teams', key: 'teams' },
     { href: '/schedules.html', label: 'Schedules', key: 'schedules' },
@@ -30,17 +32,9 @@
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
-  function isStaff(user) {
-    return user?.role === 'commissioner' || user?.role === 'conference_admin';
-  }
-
-  function renderNav(user) {
+  function renderNav() {
     if (!nav) return;
-    const links = allLinks.slice();
-    if (isStaff(user)) {
-      links.push({ href: '/league-tools.html', label: 'Tools', key: 'league-tools' });
-    }
-    nav.innerHTML = links.map((link) => {
+    nav.innerHTML = allLinks.map((link) => {
       const cls = link.key === navActive ? 'active' : '';
       return `<a class="${cls}" href="${link.href}">${link.label}</a>`;
     }).join('');
@@ -204,7 +198,7 @@
     try {
       const data = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json());
       const user = data.authenticated ? data.user : null;
-      renderNav(user);
+      renderNav();
       let myTeam = null;
       if (user) {
         try {
@@ -225,7 +219,7 @@
     }
   }
 
-  renderNav(null);
+  renderNav();
   ensureTickerMount();
   ensureUserMenuMount();
   loadTicker();

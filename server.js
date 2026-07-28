@@ -38,9 +38,12 @@ const powerRankings = require('./power-rankings-store');
 const rulesSyncStore = require('./rules-sync-store');
 const leagues = require('./leagues-store');
 const { compareSettings } = require('./rules-diff');
+const nflverseLive = require('./nflverse-live');
+const nflverseDraft = require('./nflverse-draft');
 const {
   sendPasswordResetEmail,
   sendInviteEmail,
+  sendAccountApprovedEmail,
   sendWeeklyWrapEmail,
   sendRulesSyncAlert,
   buildWeeklyWrapEmail,
@@ -2322,6 +2325,93 @@ const server = http.createServer(async (req, res) => {
       return sendFile(res, path.join(PUBLIC_DIR, 'scoreboard.html'));
     }
 
+    if (pathname === '/beta-scoring' || pathname === '/beta-scoring.html') {
+      return sendFile(res, path.join(PUBLIC_DIR, 'beta-scoring.html'));
+    }
+
+    if (pathname === '/beta-draft' || pathname === '/beta-draft.html') {
+      return sendFile(res, path.join(PUBLIC_DIR, 'beta-draft.html'));
+    }
+
+    if (pathname === '/api/beta/live-scoring' && req.method === 'GET') {
+      try {
+        const week = requestUrl.searchParams.get('week');
+        const seasontype = requestUrl.searchParams.get('seasontype');
+        const dates = requestUrl.searchParams.get('dates');
+        const payload = await nflverseLive.getLiveScoring({ week, seasontype, dates });
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 502, {
+          ok: false,
+          error: err.message || 'Live scoring unavailable'
+        });
+      }
+    }
+
+    if (pathname === '/api/beta/draft-pool' && req.method === 'GET') {
+      try {
+        const season = requestUrl.searchParams.get('season');
+        const activeOnly = requestUrl.searchParams.get('activeOnly') !== '0';
+        const payload = await nflverseDraft.loadDraftPool({ season, activeOnly });
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 502, {
+          ok: false,
+          error: err.message || 'Draft pool unavailable'
+        });
+      }
+    }
+
+    if (pathname === '/api/beta/draft' && req.method === 'GET') {
+      try {
+        const payload = await nflverseDraft.getDraftBoard();
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Draft board unavailable'
+        });
+      }
+    }
+
+    if (pathname === '/api/beta/draft' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        if (body.action === 'reset') {
+          nflverseDraft.resetDraft({
+            teams: body.teams,
+            rounds: body.rounds,
+            order: body.order,
+            season: body.season,
+            teamNames: body.teamNames
+          });
+          const payload = await nflverseDraft.getDraftBoard();
+          return sendJson(res, 200, payload);
+        }
+        if (body.action === 'undo') {
+          const payload = await nflverseDraft.undoPick(user);
+          return sendJson(res, 200, payload);
+        }
+        if (body.action === 'pick') {
+          const payload = await nflverseDraft.makePick(body.playerId, user);
+          return sendJson(res, 200, payload);
+        }
+        return sendJson(res, 400, { ok: false, error: 'Unknown draft action' });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Draft action failed'
+        });
+      }
+    }
+
     if (pathname === '/api/users' && req.method === 'GET') {
       if (!requireCommissioner(req, res)) return;
       const claims = logos.listClaims();
@@ -2431,8 +2521,33 @@ const server = http.createServer(async (req, res) => {
         body = {};
       }
       try {
+        const before = users.findById(userId);
+        const newlyApproved = Boolean(before) && before.approved === false && body.approved !== false;
         const updated = users.setUserApproved(userId, body.approved !== false, admin.id);
-        return sendJson(res, 200, { ok: true, user: updated });
+        let mail = { sent: false, method: 'none' };
+        if (newlyApproved && updated.email) {
+          try {
+            mail = await sendAccountApprovedEmail({
+              to: updated.email,
+              name: updated.name || updated.loginName,
+              leagueName: config.brand.name,
+              baseUrl: requestOrigin(req)
+            });
+          } catch (mailErr) {
+            mail = {
+              sent: false,
+              method: 'error',
+              error: mailErr.message || 'Email send failed'
+            };
+          }
+        }
+        return sendJson(res, 200, {
+          ok: true,
+          user: updated,
+          mailSent: Boolean(mail.sent),
+          mailMethod: mail.method || null,
+          mailError: mail.error || null
+        });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not update approval' });
       }
@@ -2460,6 +2575,42 @@ const server = http.createServer(async (req, res) => {
       const content = buildInviteEmail({
         inviteUrl: `${origin}/register?invite=preview-sample-token`,
         invitedByName: user.name || user.loginName || 'Commissioner',
+        leagueName: config.brand.name,
+        baseUrl: origin
+      });
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      return res.end(content.html);
+    }
+
+    if (pathname === '/api/mail/preview-approved' && req.method === 'GET') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      const { buildAccountApprovedEmail } = require('./mail');
+      const origin = requestOrigin(req);
+      const content = buildAccountApprovedEmail({
+        name: 'Alex Manager',
+        leagueName: config.brand.name,
+        signInUrl: `${origin}/enter`,
+        baseUrl: origin
+      });
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      return res.end(content.html);
+    }
+
+    if (pathname === '/api/mail/preview-reset' && req.method === 'GET') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      const { buildPasswordResetEmail } = require('./mail');
+      const origin = requestOrigin(req);
+      const content = buildPasswordResetEmail({
+        resetUrl: `${origin}/reset?token=preview-sample-token`,
+        name: user.name || user.loginName || 'Manager',
         leagueName: config.brand.name,
         baseUrl: origin
       });

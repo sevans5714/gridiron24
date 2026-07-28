@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Beta Scoring · GridIron 24</title>
+  <meta name="description" content="BETA live NFL scoring powered by the nflverse ESPN scoreboard feed." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site.css?v=51" />
+  <style>
+    body[data-page="beta-scoring"] .page-hero {
+      padding-top: 1.35rem;
+      padding-bottom: 1rem;
+    }
+    body[data-page="beta-scoring"] .page-hero::before,
+    body[data-page="beta-scoring"] .page-hero::after {
+      display: none;
+    }
+    body[data-page="beta-scoring"] .page-main {
+      padding-top: 0.75rem;
+      padding-bottom: 3rem;
+    }
+    .beta-badge {
+      display: inline-block;
+      margin: 0 0 0.55rem;
+      padding: 0.2rem 0.55rem;
+      border: 1px solid rgba(240, 215, 140, 0.45);
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #f0d78c;
+    }
+    .beta-sub {
+      margin: 0.4rem 0 0;
+      max-width: 40rem;
+      color: #9a9a9a;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+    .beta-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: 0 0 1.15rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .beta-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      align-items: flex-end;
+    }
+    .beta-filters label {
+      display: grid;
+      gap: 0.3rem;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .beta-filters select {
+      min-width: 8.5rem;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: #0c0c0c;
+      color: #fff;
+      font-family: var(--body);
+      font-size: 0.95rem;
+    }
+    .beta-meta {
+      text-align: right;
+      color: #8a8a8a;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .beta-meta strong {
+      color: #c8c8c8;
+      font-weight: 600;
+    }
+    .beta-counts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1.1rem;
+      margin: 0 0 1.15rem;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .beta-counts span[data-live] { color: #86efac; }
+    .beta-counts span[data-final] { color: #c8c8c8; }
+    .beta-board {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .beta-game {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.75rem 1.25rem;
+      padding: 0.95rem 1rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 50%),
+        #0a0a0a;
+    }
+    .beta-game.is-live {
+      border-color: rgba(134, 239, 172, 0.28);
+    }
+    .beta-game.is-final {
+      opacity: 0.92;
+    }
+    .beta-status {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.35rem 1rem;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .beta-game.is-live .beta-status { color: #86efac; }
+    .beta-side {
+      display: grid;
+      gap: 0.55rem;
+    }
+    .beta-team {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .beta-team img {
+      width: 2.1rem;
+      height: 2.1rem;
+      object-fit: contain;
+    }
+    .beta-team .name {
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .beta-team .name small {
+      display: block;
+      margin-top: 0.15rem;
+      font-family: var(--body);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      color: #8a8a8a;
+    }
+    .beta-team .score {
+      font-family: var(--display);
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #fff;
+      min-width: 2.2rem;
+      text-align: right;
+    }
+    .beta-team.is-winner .name,
+    .beta-team.is-winner .score {
+      color: #f0d78c;
+    }
+    .beta-extra {
+      align-self: center;
+      text-align: right;
+      color: #8a8a8a;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      max-width: 11rem;
+    }
+    .beta-empty,
+    .beta-error {
+      padding: 1.5rem 0;
+      color: #9a9a9a;
+      font-size: 0.98rem;
+    }
+    .beta-error { color: #fca5a5; }
+    @media (max-width: 640px) {
+      .beta-game {
+        grid-template-columns: 1fr;
+      }
+      .beta-extra {
+        text-align: left;
+        max-width: none;
+      }
+      .beta-meta { text-align: left; }
+    }
+  </style>
+</head>
+<body data-page="beta-scoring">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Loading…</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell">
+    <span class="beta-badge">Beta · Own platform</span>
+    <h1>Beta Scoring</h1>
+    <p class="beta-sub">Sandbox for GridIron’s own scoring platform. The main Scoreboard and league HQ stay on ESPN Fantasy — this beta feed is separate NFL live data for building what comes next.</p>
+  </section>
+
+  <main class="page-main shell">
+    <div class="beta-controls">
+      <div class="beta-filters">
+        <label>
+          Season type
+          <select id="seasontype">
+            <option value="">Current</option>
+            <option value="1">Preseason</option>
+            <option value="2">Regular</option>
+            <option value="3">Postseason</option>
+          </select>
+        </label>
+        <label>
+          Week
+          <select id="week">
+            <option value="">Current</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn-secondary" id="refresh-now">Refresh</button>
+      </div>
+      <div class="beta-meta" id="beta-meta">Loading feed…</div>
+    </div>
+    <div class="beta-counts" id="beta-counts" hidden></div>
+    <div class="beta-board" id="beta-board"><div class="beta-empty">Loading live scores…</div></div>
+  </main>
+
+  <footer class="shell">Beta platform · NFL live feed via nflverse ESPN scoreboard surface. Fantasy Scoreboard remains ESPN Fantasy.</footer>
+  <script src="/js/nav.js?v=30"></script>
+  <script>
+    const REFRESH_MS = 15_000;
+    const board = document.getElementById('beta-board');
+    const meta = document.getElementById('beta-meta');
+    const countsEl = document.getElementById('beta-counts');
+    const weekSel = document.getElementById('week');
+    const typeSel = document.getElementById('seasontype');
+
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    function fillWeekOptions(current) {
+      const prev = weekSel.value;
+      const opts = ['<option value="">Current</option>'];
+      for (let i = 1; i <= 18; i += 1) {
+        opts.push(`<option value="${i}">Week ${i}</option>`);
+      }
+      weekSel.innerHTML = opts.join('');
+      if (prev) weekSel.value = prev;
+      else if (current) weekSel.value = String(current);
+    }
+
+    function teamRow(side) {
+      if (!side) return '';
+      const score = side.score == null ? '—' : String(side.score);
+      const logo = side.logo
+        ? `<img src="${esc(side.logo)}" alt="" width="34" height="34" />`
+        : `<span aria-hidden="true"></span>`;
+      return `
+        <div class="beta-team${side.winner ? ' is-winner' : ''}">
+          ${logo}
+          <div class="name">${esc(side.abbreviation || side.shortName)}
+            <small>${esc(side.name || '')}${side.record ? ` · ${esc(side.record)}` : ''}</small>
+          </div>
+          <div class="score">${esc(score)}</div>
+        </div>`;
+    }
+
+    function renderGames(payload) {
+      const games = payload.games || [];
+      if (!games.length) {
+        board.innerHTML = `<div class="beta-empty">No games for this week yet.</div>`;
+        return;
+      }
+      board.innerHTML = games.map((g) => {
+        const st = g.status || {};
+        const extraBits = [
+          g.venue,
+          (g.broadcasts || []).join(', '),
+          g.odds?.details,
+          g.odds?.overUnder != null ? `O/U ${g.odds.overUnder}` : null
+        ].filter(Boolean);
+        return `
+          <article class="beta-game is-${esc(st.bucket || 'upcoming')}">
+            <div class="beta-status">
+              <span>${esc(st.shortDetail || st.detail || st.description || st.bucket)}</span>
+              <span>${st.bucket === 'live' && st.clock ? esc(`Q${st.period || ''} ${st.clock}`) : ''}</span>
+            </div>
+            <div class="beta-side">
+              ${teamRow(g.away)}
+              ${teamRow(g.home)}
+            </div>
+            <div class="beta-extra">${extraBits.map((b) => esc(b)).join('<br>')}</div>
+          </article>`;
+      }).join('');
+    }
+
+    async function loadBoard() {
+      const params = new URLSearchParams();
+      if (weekSel.value) params.set('week', weekSel.value);
+      if (typeSel.value) params.set('seasontype', typeSel.value);
+      const qs = params.toString();
+      try {
+        const res = await fetch(`/api/beta/live-scoring${qs ? `?${qs}` : ''}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load live scoring');
+
+        fillWeekOptions(data.week?.number);
+        const when = data.fetchedAt ? new Date(data.fetchedAt).toLocaleTimeString() : '—';
+        meta.innerHTML = `<strong>${esc(data.season?.typeLabel || 'NFL')}</strong>`
+          + `${data.week?.number ? ` · Week ${esc(data.week.number)}` : ''}`
+          + `<br>Updated ${esc(when)}`;
+
+        const c = data.counts || {};
+        countsEl.hidden = false;
+        countsEl.innerHTML = `
+          <span data-live>${c.live || 0} live</span>
+          <span data-final>${c.final || 0} final</span>
+          <span>${c.upcoming || 0} upcoming</span>`;
+
+        renderGames(data);
+      } catch (err) {
+        board.innerHTML = `<div class="beta-error">${esc(err.message || 'Live scoring unavailable')}</div>`;
+        meta.textContent = 'Feed error';
+      }
+    }
+
+    weekSel.addEventListener('change', loadBoard);
+    typeSel.addEventListener('change', () => {
+      weekSel.value = '';
+      loadBoard();
+    });
+    document.getElementById('refresh-now').addEventListener('click', loadBoard);
+
+    window.GridIronNav?.authReady?.then(({ user }) => {
+      if (!user) {
+        window.location.replace('/enter?next=' + encodeURIComponent('/beta-scoring'));
+        return;
+      }
+      loadBoard();
+      setInterval(loadBoard, REFRESH_MS);
+    });
+  </script>
+</body>
+</html>

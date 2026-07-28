@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Clean GridIron sports icon pack — simple, bold, sports marks.
+ * GridIron team logo pack — generic football helmets only.
  */
 const fs = require('fs');
 const path = require('path');
@@ -9,403 +9,83 @@ const OUT_DIR = path.join(__dirname, '..', 'public', 'assets', 'team-icons');
 const CATALOG = path.join(__dirname, '..', 'public', 'js', 'team-icons.js');
 
 const COLORS = [
-  { id: 'white', bg: '#111111', fg: '#f4f4f4' },
-  { id: 'gold', bg: '#111111', fg: '#efd782' },
-  { id: 'blue', bg: '#0a1628', fg: '#5b8cff' },
-  { id: 'orange', bg: '#1a0d04', fg: '#ff7a18' },
-  { id: 'red', bg: '#1a0506', fg: '#e2232a' },
-  { id: 'green', bg: '#07140c', fg: '#3dd68c' }
+  { id: 'white', name: 'White', bg: '#141414', shell: '#f2f2f2', mask: '#9a9a9a', stripe: '#222222' },
+  { id: 'silver', name: 'Silver', bg: '#141414', shell: '#c0c5cc', mask: '#6e737a', stripe: '#2a2e34' },
+  { id: 'black', name: 'Black', bg: '#1c1c1c', shell: '#2a2a2a', mask: '#8a8a8a', stripe: '#efefef' },
+  { id: 'gold', name: 'Gold', bg: '#1a1408', shell: '#e8c547', mask: '#7a6418', stripe: '#1a1408' },
+  { id: 'navy', name: 'Navy', bg: '#070d18', shell: '#1a3a6e', mask: '#8a9bb0', stripe: '#efefef' },
+  { id: 'blue', name: 'Blue', bg: '#0a1628', shell: '#2f6fed', mask: '#0d1f3d', stripe: '#efefef' },
+  { id: 'sky', name: 'Sky', bg: '#0a1620', shell: '#5eb3e8', mask: '#1a3a50', stripe: '#0a1620' },
+  { id: 'teal', name: 'Teal', bg: '#061414', shell: '#1aa6a0', mask: '#0a3a38', stripe: '#efefef' },
+  { id: 'green', name: 'Green', bg: '#07140c', shell: '#1f9d55', mask: '#0a3a20', stripe: '#efefef' },
+  { id: 'lime', name: 'Lime', bg: '#0c1408', shell: '#8fd94a', mask: '#2f4a14', stripe: '#0c1408' },
+  { id: 'yellow', name: 'Yellow', bg: '#161208', shell: '#f5d031', mask: '#6a5810', stripe: '#161208' },
+  { id: 'orange', name: 'Orange', bg: '#1a0d04', shell: '#f07316', mask: '#5a2a08', stripe: '#1a0d04' },
+  { id: 'red', name: 'Red', bg: '#1a0506', shell: '#d8222a', mask: '#5a1014', stripe: '#efefef' },
+  { id: 'crimson', name: 'Crimson', bg: '#160508', shell: '#9b1b2e', mask: '#4a0e18', stripe: '#efefef' },
+  { id: 'maroon', name: 'Maroon', bg: '#14080c', shell: '#6b1d2a', mask: '#3a1018', stripe: '#efefef' },
+  { id: 'purple', name: 'Purple', bg: '#12081a', shell: '#6b3fd4', mask: '#2a1850', stripe: '#efefef' },
+  { id: 'violet', name: 'Violet', bg: '#14081a', shell: '#9b59d8', mask: '#3a1850', stripe: '#efefef' },
+  { id: 'pink', name: 'Pink', bg: '#1a0812', shell: '#e85a9a', mask: '#5a1838', stripe: '#1a0812' },
+  { id: 'brown', name: 'Brown', bg: '#140c08', shell: '#8b5a2b', mask: '#3a2410', stripe: '#efefef' },
+  { id: 'tan', name: 'Tan', bg: '#14100c', shell: '#c4a574', mask: '#5a4830', stripe: '#2a2018' }
 ];
 
-function svg(fg, bg, body) {
+function helmetSvg({ bg, shell, mask, stripe }) {
+  // Side-view American football helmet — shell, center stripe, facemask, ear hole.
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <rect width="64" height="64" rx="14" fill="${bg}"/>
-  <g fill="${fg}">${body}</g>
-</svg>`;
-}
-
-// Clean geometric sports glyphs (24x24-ish content centered in 64)
-const ICONS = [
-  {
-    id: 'football',
-    name: 'Football',
-    category: 'Ball',
-    body: `<ellipse cx="32" cy="32" rx="22" ry="13" transform="rotate(-35 32 32)"/>
-      <path d="M20 26c8 4 16 10 24 14" fill="none" stroke="#111" stroke-width="2"/>
-      <path d="M26 24l2 4M30 22l2 4.5M34 23l1.8 4.2M38 26l1.5 3.8" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>`
-  },
-  {
-    id: 'helmet',
-    name: 'Helmet',
-    category: 'Gear',
-    body: `<path d="M14 38c0-14 10-24 22-24 13 0 18 10 18 18 0 5-3 8-8 8H33l-6 8h-4l4-8h-5c-3 0-6-1-6-2z"/>
-      <path d="M32 28h18" stroke="#111" stroke-width="5" stroke-linecap="round"/>`
-  },
-  {
-    id: 'cleat',
-    name: 'Cleat',
-    category: 'Gear',
-    body: `<path d="M12 34c8-10 22-12 32-6l10 3v8H44c-6 6-18 8-26 4z"/>
-      <circle cx="20" cy="44" r="2.2"/><circle cx="28" cy="46" r="2.2"/>
-      <circle cx="36" cy="45" r="2.2"/><circle cx="44" cy="42" r="2.2"/>`
-  },
-  {
-    id: 'jersey',
-    name: 'Jersey',
-    category: 'Gear',
-    body: `<path d="M20 16l7-3 5 7 5-7 7 3 8 8v28H12V24z"/>
-      <text x="32" y="40" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="12" fill="#111">24</text>`
-  },
-  {
-    id: 'glove',
-    name: 'Glove',
-    category: 'Gear',
-    body: `<path d="M20 48V30c0-8 6-12 12-12s12 4 12 12v18z"/>
-      <rect x="23" y="10" width="5" height="14" rx="2"/>
-      <rect x="30" y="8" width="5" height="16" rx="2"/>
-      <rect x="37" y="10" width="5" height="14" rx="2"/>`
-  },
-  {
-    id: 'whistle',
-    name: 'Whistle',
-    category: 'Gear',
-    body: `<rect x="12" y="26" width="26" height="14" rx="5"/>
-      <circle cx="44" cy="33" r="10"/>
-      <circle cx="44" cy="33" r="3.5" fill="#111"/>
-      <rect x="18" y="18" width="5" height="10" rx="1.5"/>`
-  },
-  {
-    id: 'goalpost',
-    name: 'Goalposts',
-    category: 'Field',
-    body: `<rect x="30" y="36" width="4" height="18"/>
-      <rect x="16" y="22" width="32" height="4"/>
-      <rect x="16" y="10" width="4" height="16"/>
-      <rect x="44" y="10" width="4" height="16"/>`
-  },
-  {
-    id: 'field',
-    name: 'Field',
-    category: 'Field',
-    body: `<rect x="10" y="16" width="44" height="32" rx="3"/>
-      <path d="M21 16v32M32 16v32M43 16v32" stroke="#111" stroke-width="2"/>
-      <path d="M10 24h44M10 32h44M10 40h44" stroke="#111" stroke-width="1.5" opacity="0.7"/>`
-  },
-  {
-    id: 'first-down',
-    name: 'First Down',
-    category: 'Field',
-    body: `<rect x="12" y="14" width="5" height="36" rx="1"/>
-      <rect x="47" y="14" width="5" height="36" rx="1"/>
-      <path d="M17 22h30M17 32h30M17 42h30" stroke="currentColor" stroke-width="3"/>`
-  },
-  {
-    id: 'spike',
-    name: 'Spike',
-    category: 'Field',
-    body: `<path d="M32 8l8 28H24z"/>
-      <rect x="29" y="34" width="6" height="20"/>
-      <circle cx="32" cy="34" r="4" fill="#111" stroke="currentColor" stroke-width="2"/>`
-  },
-  {
-    id: 'trophy',
-    name: 'Trophy',
-    category: 'Champ',
-    body: `<path d="M20 16h24v12c0 10-6 16-12 16s-12-6-12-16z"/>
-      <path d="M20 20H14c0 10 6 14 10 15M44 20h6c0 10-6 14-10 15" fill="none" stroke="currentColor" stroke-width="3"/>
-      <rect x="29" y="44" width="6" height="6"/>
-      <rect x="22" y="50" width="20" height="5" rx="1"/>`
-  },
-  {
-    id: 'medal',
-    name: 'Medal',
-    category: 'Champ',
-    body: `<path d="M20 8l12 14L44 8" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-      <circle cx="32" cy="38" r="14"/>
-      <circle cx="32" cy="38" r="7" fill="#111"/>`
-  },
-  {
-    id: 'crown',
-    name: 'Crown',
-    category: 'Champ',
-    body: `<path d="M12 44L14 18l12 14L32 12l6 20 12-14 2 26z"/>
-      <rect x="12" y="44" width="40" height="6" rx="1"/>`
-  },
-  {
-    id: 'ring',
-    name: 'Ring',
-    category: 'Champ',
-    body: `<circle cx="32" cy="34" r="16" fill="none" stroke="currentColor" stroke-width="7"/>
-      <rect x="26" y="12" width="12" height="10" rx="1"/>`
-  },
-  {
-    id: 'star',
-    name: 'Star',
-    category: 'Champ',
-    body: `<path d="M32 8l5 14h15l-12 9 5 15-13-9-13 9 5-15-12-9h15z"/>`
-  },
-  {
-    id: 'shield',
-    name: 'Shield',
-    category: 'Crest',
-    body: `<path d="M32 8l20 8v16c0 14-10 22-20 26-10-4-20-12-20-26V16z"/>
-      <path d="M32 18l12 5v10c0 8-5 13-12 16-7-3-12-8-12-16V23z" fill="#111"/>`
-  },
-  {
-    id: 'bolt',
-    name: 'Lightning',
-    category: 'Power',
-    body: `<path d="M36 6L18 34h12l-6 24 24-32H34z"/>`
-  },
-  {
-    id: 'flame',
-    name: 'Flame',
-    category: 'Power',
-    body: `<path d="M32 8c8 12 16 16 16 28a16 16 0 11-32 0c0-10 8-16 10-22 2 8 8 10 6-6z"/>
-      <path d="M32 28c4 6 8 8 8 14a8 8 0 11-16 0c0-5 4-8 8-14z" fill="#111"/>`
-  },
-  {
-    id: 'fist',
-    name: 'Fist',
-    category: 'Power',
-    body: `<rect x="16" y="22" width="32" height="22" rx="6"/>
-      <rect x="18" y="14" width="6" height="12" rx="2"/>
-      <rect x="26" y="12" width="6" height="14" rx="2"/>
-      <rect x="34" y="14" width="6" height="12" rx="2"/>
-      <path d="M16 38h32v10c0 4-4 6-16 6s-16-2-16-6z"/>`
-  },
-  {
-    id: 'target',
-    name: 'Target',
-    category: 'Power',
-    body: `<circle cx="32" cy="32" r="20"/>
-      <circle cx="32" cy="32" r="13" fill="#111"/>
-      <circle cx="32" cy="32" r="7"/>
-      <circle cx="32" cy="32" r="2.5" fill="#111"/>`
-  },
-  {
-    id: 'hawk',
-    name: 'Hawk',
-    category: 'Animals',
-    body: `<path d="M32 10c10 4 18 14 17 24-6-2-11 0-17 8-6-8-11-10-17-8-1-10 7-20 17-24z"/>
-      <path d="M24 28l8 7 8-7" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>`
-  },
-  {
-    id: 'wolf',
-    name: 'Wolf',
-    category: 'Animals',
-    body: `<path d="M16 46L14 22l10 8L32 12l8 18 10-8-2 24z"/>
-      <circle cx="26" cy="32" r="2" fill="#111"/><circle cx="38" cy="32" r="2" fill="#111"/>`
-  },
-  {
-    id: 'bull',
-    name: 'Bull',
-    category: 'Animals',
-    body: `<ellipse cx="32" cy="34" rx="16" ry="14"/>
-      <path d="M10 20l8 8M54 20l-8 8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="26" cy="32" r="2.5" fill="#111"/><circle cx="38" cy="32" r="2.5" fill="#111"/>`
-  },
-  {
-    id: 'bear',
-    name: 'Bear',
-    category: 'Animals',
-    body: `<circle cx="18" cy="20" r="7"/><circle cx="46" cy="20" r="7"/>
-      <circle cx="32" cy="34" r="18"/>
-      <circle cx="25" cy="32" r="3" fill="#111"/><circle cx="39" cy="32" r="3" fill="#111"/>
-      <ellipse cx="32" cy="40" rx="5" ry="3.5" fill="#111"/>`
-  },
-  {
-    id: 'panther',
-    name: 'Panther',
-    category: 'Animals',
-    body: `<ellipse cx="32" cy="36" rx="18" ry="14"/>
-      <path d="M16 26l-4-12 12 8M48 26l4-12-12 8"/>
-      <circle cx="25" cy="34" r="2.5" fill="#111"/><circle cx="39" cy="34" r="2.5" fill="#111"/>`
-  },
-  {
-    id: 'eagle',
-    name: 'Eagle',
-    category: 'Animals',
-    body: `<path d="M32 46C18 36 8 34 6 24c12 4 18-4 26-14 8 10 14 18 26 14-2 10-12 12-26 22z"/>`
-  },
-  {
-    id: 'shark',
-    name: 'Shark',
-    category: 'Animals',
-    body: `<path d="M8 36c12-16 34-18 48-6-12-1-18 4-22 10-6-2-16-2-26-4z"/>
-      <path d="M36 22l5-12 5 13"/>
-      <circle cx="46" cy="30" r="2" fill="#111"/>`
-  },
-  {
-    id: 'ram',
-    name: 'Ram',
-    category: 'Animals',
-    body: `<ellipse cx="32" cy="36" rx="15" ry="13"/>
-      <path d="M12 20c-4 8 2 16 10 12M52 20c4 8-2 16-10 12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="26" cy="34" r="2" fill="#111"/><circle cx="38" cy="34" r="2" fill="#111"/>`
-  },
-  {
-    id: 'mountain',
-    name: 'Mountain',
-    category: 'Marks',
-    body: `<path d="M6 50L24 18l8 12 10-20 16 40z"/>
-      <path d="M24 18l5 8H20z" fill="#111"/><path d="M42 10l5 10h-9z" fill="#111"/>`
-  },
-  {
-    id: 'wave',
-    name: 'Wave',
-    category: 'Marks',
-    body: `<path d="M6 34c8-12 16 12 24 0s16 12 28-4" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
-      <path d="M6 46c8-12 16 12 24 0s16 12 28-4" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>`
-  },
-  {
-    id: 'sun',
-    name: 'Sun',
-    category: 'Marks',
-    body: `<circle cx="32" cy="32" r="10"/>
-      ${[0, 45, 90, 135, 180, 225, 270, 315].map((d) => {
-        const r = (d * Math.PI) / 180;
-        return `<line x1="${32 + Math.cos(r) * 14}" y1="${32 + Math.sin(r) * 14}" x2="${32 + Math.cos(r) * 22}" y2="${32 + Math.sin(r) * 22}" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>`;
-      }).join('')}`
-  },
-  {
-    id: 'ice',
-    name: 'Ice',
-    category: 'Marks',
-    body: `<path d="M32 8l4 16 16-4-12 12 12 12-16-4-4 16-4-16-16 4 12-12-12-12 16 4z"/>`
-  },
-  {
-    id: 'arrow',
-    name: 'Arrowhead',
-    category: 'Marks',
-    body: `<path d="M32 6l18 24H40v28H24V30H14z"/>`
-  },
-  {
-    id: 'diamond',
-    name: 'Diamond',
-    category: 'Marks',
-    body: `<path d="M32 6l22 26-22 26L10 32z"/>
-      <path d="M32 16l12 16-12 16L20 32z" fill="#111"/>`
-  },
-  {
-    id: 'hex',
-    name: 'Hex',
-    category: 'Marks',
-    body: `<path d="M32 6l18 12v20L32 50 14 38V18z"/>
-      <text x="32" y="36" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="12" fill="#111">24</text>`
-  },
-  {
-    id: 'pad',
-    name: 'Pads',
-    category: 'Gear',
-    body: `<path d="M8 36c4-16 14-22 24-22s20 6 24 22c-8-4-16-6-24-6s-16 2-24 6z"/>
-      <rect x="28" y="34" width="8" height="18" rx="2"/>`
-  },
-  {
-    id: 'facemask',
-    name: 'Facemask',
-    category: 'Gear',
-    body: `<ellipse cx="32" cy="32" rx="20" ry="16"/>
-      <path d="M16 26h32M16 32h32M16 38h32" stroke="#111" stroke-width="2.5"/>
-      <path d="M22 20v24M32 18v28M42 20v24" stroke="#111" stroke-width="2"/>`
-  },
-  {
-    id: 'playbook',
-    name: 'Playbook',
-    category: 'Field',
-    body: `<rect x="14" y="12" width="36" height="40" rx="3"/>
-      <path d="M24 24h20M24 32h16M24 40h18" stroke="#111" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="19" cy="24" r="2" fill="#111"/><circle cx="19" cy="32" r="2" fill="#111"/><circle cx="19" cy="40" r="2" fill="#111"/>`
-  },
-  {
-    id: 'lock',
-    name: 'Lockdown',
-    category: 'Field',
-    body: `<rect x="16" y="28" width="32" height="24" rx="4"/>
-      <path d="M22 28v-6a10 10 0 1120 0v6" fill="none" stroke="currentColor" stroke-width="4"/>
-      <circle cx="32" cy="40" r="3" fill="#111"/>`
-  },
-  {
-    id: 'checkered',
-    name: 'Finish',
-    category: 'Field',
-    body: `<rect x="12" y="14" width="40" height="36" rx="2"/>
-      ${[0, 1, 2, 3].map((row) => [0, 1, 2, 3].map((col) => (
-        (row + col) % 2 ? '' : `<rect x="${14 + col * 9}" y="${16 + row * 8}" width="9" height="8" fill="#111"/>`
-      )).join('')).join('')}`
-  }
-];
-
-function loadExistingCatalogIcons() {
-  if (!fs.existsSync(CATALOG)) return [];
-  try {
-    const raw = fs.readFileSync(CATALOG, 'utf8');
-    const match = raw.match(/icons:\s*(\[[\s\S]*?\n\s*\])\s*\n\}/);
-    if (!match) return [];
-    return JSON.parse(match[1]);
-  } catch {
-    return [];
-  }
+  <!-- shell -->
+  <path fill="${shell}" d="M12 36c0-13.5 10.5-24 24-24 14.5 0 22 10 22 20.5 0 5.5-3.5 9-9 9H34.5l-5.5 9.5h-4.5l3.8-9.5H18c-3.5 0-6-1.5-6-5z"/>
+  <!-- center stripe -->
+  <path fill="${stripe}" d="M33.2 12.2c1.1-.15 2.2-.2 3.3-.2.4 0 .8 0 1.2.02V41.5h-4.5V12.2z" opacity="0.92"/>
+  <!-- facemask -->
+  <g stroke="${mask}" stroke-width="2.2" stroke-linecap="round" fill="none">
+    <path d="M34 26.5h18.5"/>
+    <path d="M33.5 31h19.5"/>
+    <path d="M33 35.5h17"/>
+    <path d="M52.5 26.5v9"/>
+    <path d="M47 26.5v12.5"/>
+    <path d="M41.5 26.5v14"/>
+  </g>
+  <!-- ear / buckle -->
+  <circle cx="28" cy="34" r="2.6" fill="${bg}" stroke="${mask}" stroke-width="1.4"/>
+</svg>
+`;
 }
 
 function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
-  const sportsIds = new Set();
-  const sportsIcons = [];
-  for (const icon of ICONS) {
-    for (const color of COLORS) {
-      let body = icon.body
-        .replaceAll('stroke="currentColor"', `stroke="${color.fg}"`)
-        .replaceAll('fill="currentColor"', `fill="${color.fg}"`);
-      body = body.replace(/<path([^>]*stroke=)/g, (m, rest) => {
-        if (/fill=/.test(m)) return m;
-        return `<path fill="none"${rest}`;
-      });
-      body = body.replace(/<line /g, '<line fill="none" ');
-
-      const id = `${icon.id}-${color.id}`;
-      sportsIds.add(id);
-      const markup = svg(color.fg, color.bg, body);
-      fs.writeFileSync(path.join(OUT_DIR, `${id}.svg`), markup);
-      sportsIcons.push({
-        id,
-        name: icon.name,
-        motif: icon.id,
-        category: icon.category,
-        palette: color.id,
-        src: `/assets/team-icons/${id}.svg`
-      });
-    }
+  // Wipe prior pack files — picker is helmets only.
+  for (const file of fs.readdirSync(OUT_DIR)) {
+    if (file.endsWith('.svg')) fs.unlinkSync(path.join(OUT_DIR, file));
   }
 
-  // Keep fun avatar pack entries that still have files on disk.
-  const prior = loadExistingCatalogIcons().filter((icon) => {
-    if (sportsIds.has(icon.id)) return false;
-    return fs.existsSync(path.join(OUT_DIR, `${icon.id}.svg`));
+  const icons = COLORS.map((color) => {
+    const id = `helmet-${color.id}`;
+    fs.writeFileSync(path.join(OUT_DIR, `${id}.svg`), helmetSvg(color));
+    return {
+      id,
+      name: `${color.name} Helmet`,
+      motif: 'helmet',
+      category: 'Helmets',
+      palette: color.id,
+      src: `/assets/team-icons/${id}.svg`
+    };
   });
 
-  const icons = [...sportsIcons, ...prior];
-  const categories = [
-    ...new Set([
-      ...ICONS.map((i) => i.category),
-      ...prior.map((i) => i.category)
-    ])
-  ];
-
-  fs.writeFileSync(CATALOG, `/* Auto-generated GridIron icon pack (sports + avatars) */
+  fs.writeFileSync(CATALOG, `/* Auto-generated GridIron icon pack — football helmets */
 window.GridIronIcons = {
   recommendedSize: 512,
   minSize: 256,
   maxSize: 1024,
-  categories: ${JSON.stringify(categories)},
+  categories: ["Helmets"],
   icons: ${JSON.stringify(icons, null, 2)}
 };
 `);
-  console.log(
-    `Generated ${sportsIcons.length} sports icons; kept ${prior.length} avatars; catalog total ${icons.length}`
-  );
+  console.log(`Generated ${icons.length} helmets → ${CATALOG}`);
 }
 
 main();

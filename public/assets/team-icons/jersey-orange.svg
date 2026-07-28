@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="14" fill="#1a0d04"/>
-  <g fill="#ff7a18"><path d="M20 16l7-3 5 7 5-7 7 3 8 8v28H12V24z"/>
-      <text x="32" y="40" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="12" fill="#111">24</text></g>
-</svg>
