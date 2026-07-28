@@ -277,22 +277,27 @@ body {
   align-items: center;
   gap: 0.65rem;
   margin-left: auto;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(15rem, 38vw);
 }
 
 .user-menu {
   position: relative;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .user-chip {
   appearance: none;
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  max-width: min(18rem, 48vw);
+  gap: 0.55rem;
+  width: 100%;
+  max-width: 100%;
   min-height: 2.75rem;
-  padding: 0.15rem 0.15rem 0.15rem 0.85rem;
+  padding: 0.1rem 0.1rem 0.1rem 0.75rem;
   border: 0;
   border-left: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 0;
@@ -312,9 +317,9 @@ body {
 }
 
 .user-chip-avatar {
-  width: 2.15rem;
-  height: 2.15rem;
-  flex: 0 0 2.15rem;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
   border-radius: 999px;
   overflow: hidden;
   display: grid;
@@ -326,36 +331,39 @@ body {
 .user-chip-text {
   display: flex;
   flex-direction: column;
-  gap: 0.08rem;
+  gap: 0.06rem;
   min-width: 0;
-  padding-right: 0.15rem;
+  flex: 1 1 auto;
+  padding-right: 0.1rem;
 }
 
 .user-chip-team {
   font-family: var(--display);
-  font-size: 0.92rem;
+  font-size: clamp(0.72rem, 1.35vw, 0.84rem);
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: #fff;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.1;
+  white-space: nowrap;
+  line-height: 1.15;
+  max-width: 100%;
 }
 
 .user-chip-owner {
-  font-size: 0.78rem;
+  font-size: clamp(0.66rem, 1.15vw, 0.74rem);
   font-weight: 600;
   color: #c8c8c8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.15;
+  max-width: 100%;
 }
 
 .user-chip-access {
-  font-size: 0.68rem;
+  font-size: clamp(0.58rem, 1.05vw, 0.66rem);
   font-weight: 400;
   color: #8a93a3;
   white-space: nowrap;
@@ -363,6 +371,7 @@ body {
   text-overflow: ellipsis;
   line-height: 1.15;
   letter-spacing: 0.02em;
+  max-width: 100%;
 }
 
 .user-avatar-btn {
@@ -586,6 +595,7 @@ body {
   align-items: center;
   gap: 0.1rem;
   flex-wrap: wrap;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -1117,6 +1127,30 @@ body.auth-page {
   accent-color: var(--blue);
 }
 
+@media (max-width: 1100px) {
+  .topbar-right {
+    max-width: min(12.5rem, 34vw);
+  }
+  .user-chip-access {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .topbar-right {
+    max-width: min(10.5rem, 32vw);
+  }
+  .user-chip-owner,
+  .user-chip-access {
+    display: none;
+  }
+  .user-chip-avatar {
+    width: 1.85rem;
+    height: 1.85rem;
+    flex-basis: 1.85rem;
+  }
+}
+
 @media (max-width: 760px) {
   .shell {
     padding-left: max(1rem, env(safe-area-inset-left, 0px));
@@ -1129,7 +1163,7 @@ body.auth-page {
     align-items: center;
     padding-top: 0.4rem;
     padding-bottom: 0.4rem;
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   .nav {
@@ -1154,17 +1188,28 @@ body.auth-page {
   .topbar-right {
     margin-left: 0;
     flex: 0 0 auto;
+    max-width: none;
+  }
+
+  .user-menu {
+    flex: 0 0 auto;
   }
 
   .user-chip {
-    max-width: min(10.5rem, 40vw);
-    min-height: 2.75rem;
-    padding-left: 0.7rem;
-    gap: 0.55rem;
+    width: auto;
+    max-width: none;
+    min-height: 2.5rem;
+    padding-left: 0.55rem;
+    gap: 0;
   }
-  .user-chip-team { font-size: 0.78rem; }
-  .user-chip-owner { font-size: 0.7rem; }
-  .user-chip-access { font-size: 0.62rem; }
+  .user-chip-text {
+    display: none;
+  }
+  .user-chip-avatar {
+    width: 2rem;
+    height: 2rem;
+    flex-basis: 2rem;
+  }
 
   .ticker-label-text { display: none; }
   .ticker-label { padding-right: 0.55rem; }
