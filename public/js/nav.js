@@ -184,8 +184,9 @@
     el.innerHTML = `
       <div class="ticker">
         <div class="ticker-label" aria-label="League wire">
+          <span class="ticker-live" aria-hidden="true"></span>
           <img src="/assets/nfl-logo.png" alt="" width="600" height="600" />
-          <span>Wire</span>
+          <span class="ticker-label-text">Wire</span>
         </div>
         <div class="ticker-viewport">
           <div class="ticker-track" id="ticker-track">
@@ -219,9 +220,9 @@
         : '';
       const inner = `${tag}<span>${esc(item.text)}</span>`;
       if (item.href) {
-        return `<a class="ticker-item" href="${esc(item.href)}" target="_blank" rel="noopener">${inner}</a><span class="ticker-sep" aria-hidden="true">●</span>`;
+        return `<a class="ticker-item" href="${esc(item.href)}" target="_blank" rel="noopener">${inner}</a><span class="ticker-sep" aria-hidden="true"></span>`;
       }
-      return `<span class="ticker-item">${inner}</span><span class="ticker-sep" aria-hidden="true">●</span>`;
+      return `<span class="ticker-item">${inner}</span><span class="ticker-sep" aria-hidden="true"></span>`;
     }).join('');
     track.innerHTML = html + html;
     const seconds = Math.max(40, items.length * 7);
