@@ -22,27 +22,84 @@
       padding-bottom: 3rem;
     }
 
-    .comm-jump {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem 1.1rem;
-      margin: 0 0 1.75rem;
-      padding-bottom: 0.85rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+    .comm-layout {
+      display: grid;
+      grid-template-columns: 11.5rem minmax(0, 1fr);
+      gap: 2rem 2.5rem;
+      align-items: start;
     }
-    .comm-jump a {
+    .comm-nav {
+      position: sticky;
+      top: 4.5rem;
+      display: grid;
+      gap: 1.15rem;
+      padding: 0;
+    }
+    .comm-nav-group {
+      display: grid;
+      gap: 0.35rem;
+    }
+    .comm-nav-label {
+      margin: 0 0 0.15rem;
       font-family: var(--display);
-      font-size: 0.82rem;
+      font-size: 0.68rem;
       font-weight: 600;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6e6e6e;
+    }
+    .comm-nav a {
+      font-family: var(--display);
+      font-size: 0.84rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: #9a9a9a;
       text-decoration: none;
+      line-height: 1.35;
     }
-    .comm-jump a:hover { color: #fff; }
+    .comm-nav a:hover { color: #fff; }
+    .comm-nav a[hidden],
+    .comm-nav-group[hidden] { display: none !important; }
+
+    .comm-groups {
+      display: grid;
+      gap: 2.75rem;
+      min-width: 0;
+    }
+    .comm-group {
+      margin: 0;
+      padding: 0;
+      scroll-margin-top: 5rem;
+    }
+    .comm-group > header {
+      margin: 0 0 1.35rem;
+      padding-bottom: 0.7rem;
+      border-bottom: 2px solid rgba(255,255,255,0.14);
+    }
+    .comm-group > header h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.25rem, 2.4vw, 1.55rem);
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .comm-group > header p {
+      margin: 0.4rem 0 0;
+      max-width: 40rem;
+      color: #8a8a8a;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .comm-group-body {
+      display: grid;
+      gap: 2.15rem;
+    }
 
     .comm-section {
-      margin: 0 0 2.75rem;
+      margin: 0;
       padding: 0;
       scroll-margin-top: 5rem;
     }
@@ -53,25 +110,27 @@
       justify-content: space-between;
       gap: 1rem;
       flex-wrap: wrap;
-      margin: 0 0 0.55rem;
-      padding-bottom: 0.55rem;
-      border-bottom: 2px solid rgba(255,255,255,0.12);
+      margin: 0 0 0.45rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .comm-section > .section-head h2,
-    .admin-block > .section-head h2 {
+    .admin-block > .section-head h2,
+    .comm-section > .section-head h3,
+    .admin-block > .section-head h3 {
       margin: 0;
       font-family: var(--display);
-      font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+      font-size: 1.05rem;
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #fff;
+      color: #ddd;
     }
     .comm-section .help {
-      margin: 0 0 1.1rem;
-      max-width: 46rem;
+      margin: 0 0 0.95rem;
+      max-width: 44rem;
       color: #9a9a9a;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       line-height: 1.5;
     }
     .comm-section .help a {
@@ -83,21 +142,22 @@
 
     /* Override shared boxed admin styles on this page */
     body[data-page="commissioner"] .admin-block {
-      margin: 0 0 2.75rem;
+      margin: 0;
       padding: 0;
       border: 0;
       background: none;
       scroll-margin-top: 5rem;
     }
-    body[data-page="commissioner"] .admin-block h2 {
+    body[data-page="commissioner"] .admin-block h2,
+    body[data-page="commissioner"] .admin-block h3 {
       margin: 0;
-      font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+      font-size: 1.05rem;
       letter-spacing: 0.06em;
     }
     body[data-page="commissioner"] .admin-block .help {
-      margin: 0 0 1.1rem;
-      max-width: 46rem;
-      font-size: 0.95rem;
+      margin: 0 0 0.95rem;
+      max-width: 44rem;
+      font-size: 0.92rem;
     }
     body[data-page="commissioner"] .status-note {
       margin: 0 0 0.85rem;
@@ -472,6 +532,19 @@
     .list-gap { margin-top: 1.15rem; }
 
     @media (max-width: 900px) {
+      .comm-layout {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+      }
+      .comm-nav {
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.5rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      .comm-nav-group { gap: 0.25rem; }
       .status-bar { grid-template-columns: 1fr; text-align: center; }
       .conf, .conf.right { justify-content: center; text-align: center; }
       .summary { grid-template-columns: 1fr 1fr; }
@@ -494,148 +567,196 @@
   <section class="page-hero shell">
     <p class="eyebrow">League HQ</p>
     <h1>Commissioner</h1>
-    <p>Rules sync, invites, members, and league communications.</p>
+    <p>ESPN rules, people, communications, and season tools.</p>
   </section>
 
   <main class="page-main shell">
-    <nav class="comm-jump" aria-label="Commissioner sections">
-      <a href="#rules-sync">Rules</a>
-      <a href="#playoff-sync">Playoffs</a>
-      <a href="#calendar-admin" id="jump-calendar" hidden>Calendar</a>
-      <a href="#rankings-admin" id="jump-rankings" hidden>Rankings</a>
-      <a href="#wrap-admin" id="jump-wrap" hidden>Wrap-Up</a>
-      <a href="#invites-admin" id="jump-invites" hidden>Invites</a>
-      <a href="#members" id="jump-members" hidden>Members</a>
-      <a href="#news-admin">News</a>
-      <a href="#ticker-admin">Ticker</a>
-    </nav>
-
-    <section class="comm-section" id="rules-sync">
-      <div class="section-head">
-        <h2>Rules Sync</h2>
-      </div>
-      <p class="help">Detail is the source of truth. Match Overtime’s ESPN settings until this reads Rules Synced.</p>
-      <div class="sync-tools">
-        <span class="hint">Pulls live scoring, lineup, and playoff settings from ESPN</span>
-        <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
-      </div>
-      <div id="content"><div class="msg">Loading conference settings…</div></div>
-    </section>
-
-    <section class="comm-section" id="playoff-sync">
-      <div class="section-head">
-        <h2>Playoff Sync</h2>
-      </div>
-      <p class="help">Compare Detail vs Overtime playoff setup against the GridIron tree: 13 regular-season weeks, 6 teams, reseed on, Weeks 14–16 conference bracket, Week 17 Bowl scoring.</p>
-      <div id="playoff-content"><div class="msg">Loading playoff settings…</div></div>
-    </section>
-
-    <section class="admin-block" id="calendar-admin" hidden>
-      <div class="section-head"><h2>League Calendar</h2></div>
-      <p class="help">Dates shown on the Calendar page for all members.</p>
-      <div class="status-note" id="calendar-msg" role="status"></div>
-      <div class="toolbar">
-        <input class="field" id="cal-title" type="text" maxlength="120" placeholder="Event title" />
-        <input class="field" id="cal-date" type="date" style="max-width:11rem;" />
-        <select class="field" id="cal-type" style="max-width:9rem;">
-          <option value="event">Event</option>
-          <option value="draft">Draft</option>
-          <option value="dues">Dues</option>
-          <option value="deadline">Deadline</option>
-          <option value="bowl">Bowl</option>
-        </select>
-        <button type="button" class="btn" id="cal-add">Add</button>
-      </div>
-      <div class="list-gap" id="calendar-list"></div>
-    </section>
-
-    <section class="admin-block" id="rankings-admin" hidden>
-      <div class="section-head"><h2>Power Rankings</h2></div>
-      <p class="help">Publish a weekly ranking. Paste one team per line as <code>conference|teamId|teamName|note</code> (conference = detail or overtime). Or use the quick builder after standings load.</p>
-      <div class="status-note" id="rankings-msg" role="status"></div>
-      <div class="toolbar">
-        <input class="field" id="rank-week" type="number" min="1" max="17" placeholder="Week" style="max-width:7rem;" />
-        <button type="button" class="btn btn-secondary" id="rank-fill">Fill from standings</button>
-        <button type="button" class="btn" id="rank-save">Publish</button>
-      </div>
-      <textarea class="field field-area" id="rank-lines" placeholder="detail|1|Team Name|Looking sharp" style="margin-top:0.75rem;min-height:10rem;"></textarea>
-      <div class="list-gap" id="rankings-list"></div>
-    </section>
-
-    <section class="admin-block" id="wrap-admin" hidden>
-      <div class="section-head">
-        <h2>Weekly Wrap-Up</h2>
-      </div>
-      <p class="help">AI writes a custom Week N wrap from final ESPN scores, posts it to League News, and emails every league manager. Cron runs Tuesday 14:00 UTC (after Monday night). Preview the email HTML anytime. Needs <code>OPENAI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code> for AI copy (falls back to a template).</p>
-      <div class="status-note" id="wrap-msg" role="status"></div>
-      <div class="toolbar">
-        <input class="field" id="wrap-week" type="number" min="1" max="17" placeholder="Week (blank = auto)" style="max-width:11rem;" />
-        <button type="button" class="btn btn-secondary" id="wrap-preview">Preview</button>
-        <button type="button" class="btn btn-secondary" id="wrap-preview-email">Email HTML</button>
-        <button type="button" class="btn" id="wrap-send">Generate &amp; Send</button>
-      </div>
-      <p class="help" id="wrap-meta" style="margin-top:0.75rem;"></p>
-      <div id="wrap-preview-body" class="list-gap"></div>
-    </section>
-
-    <section class="admin-block" id="invites-admin" hidden>
-      <div class="section-head">
-        <h2>Email Invites</h2>
-      </div>
-      <p class="help">Invite by email. Members open the link, create an account, and join. If delivery is offline, copy the link and send it yourself. <a href="/api/invites/preview-email" target="_blank" rel="noopener">Preview invite email</a></p>
-      <div class="status-note" id="invites-mail-status" role="status"></div>
-      <div class="status-note" id="invites-msg" role="status"></div>
-      <div class="toolbar">
-        <input class="field" id="invite-emails" type="text" maxlength="800" placeholder="email@example.com, another@example.com" />
-        <button type="button" class="btn" id="invite-send">Send Invites</button>
-      </div>
-      <div id="invite-links" class="invite-links" hidden></div>
-      <div class="list-gap" id="invites-list"><div class="msg">Loading invites…</div></div>
-    </section>
-
-    <section class="admin-block" id="members" hidden>
-      <div class="section-head">
-        <h2>Member Access</h2>
-      </div>
-      <p class="help">Promote members to conference admin or overall commissioner.</p>
-      <div class="status-note" id="members-msg" role="status"></div>
-      <div id="members-list"><div class="msg">Loading members…</div></div>
-    </section>
-
-    <section class="admin-block" id="news-admin" hidden>
-      <div class="section-head">
-        <h2>League News</h2>
-      </div>
-      <p class="help">Posts appear on the Home page for all members.</p>
-      <div class="status-note" id="news-msg" role="status"></div>
-      <div class="stack-form">
-        <div>
-          <label class="field-label" for="news-title">Headline</label>
-          <input class="field" id="news-title" type="text" maxlength="120" placeholder="Headline" />
+    <div class="comm-layout">
+      <nav class="comm-nav" aria-label="Commissioner sections">
+        <div class="comm-nav-group">
+          <p class="comm-nav-label">ESPN</p>
+          <a href="#rules-sync">Rules</a>
+          <a href="#playoff-sync">Playoffs</a>
         </div>
-        <div>
-          <label class="field-label" for="news-body">Details</label>
-            <textarea class="field field-area" id="news-body" maxlength="8000" placeholder="News details…"></textarea>
+        <div class="comm-nav-group" id="nav-people" hidden>
+          <p class="comm-nav-label">People</p>
+          <a href="#invites-admin" id="jump-invites" hidden>Invites</a>
+          <a href="#members" id="jump-members" hidden>Members</a>
         </div>
-        <div class="btn-row">
-          <button type="button" class="btn" id="news-add">Post News</button>
+        <div class="comm-nav-group" id="nav-comms">
+          <p class="comm-nav-label">Comms</p>
+          <a href="#news-admin">News</a>
+          <a href="#ticker-admin">Ticker</a>
+          <a href="#wrap-admin" id="jump-wrap" hidden>Wrap-Up</a>
         </div>
-      </div>
-      <div id="news-admin-list"><div class="msg">Loading news…</div></div>
-    </section>
+        <div class="comm-nav-group" id="nav-season" hidden>
+          <p class="comm-nav-label">Season</p>
+          <a href="#calendar-admin" id="jump-calendar" hidden>Calendar</a>
+          <a href="#rankings-admin" id="jump-rankings" hidden>Rankings</a>
+        </div>
+      </nav>
 
-    <section class="admin-block" id="ticker-admin" hidden>
-      <div class="section-head">
-        <h2>Ticker</h2>
+      <div class="comm-groups">
+        <section class="comm-group" id="group-espn">
+          <header>
+            <h2>ESPN Sync</h2>
+            <p>Detail is the source of truth. Match Overtime until both read synced.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="comm-section" id="rules-sync">
+              <div class="section-head">
+                <h3>Rules Sync</h3>
+              </div>
+              <p class="help">Scoring, lineup, and playoff settings from ESPN.</p>
+              <div class="sync-tools">
+                <span class="hint">Live pull from both leagues</span>
+                <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
+              </div>
+              <div id="content"><div class="msg">Loading conference settings…</div></div>
+            </section>
+
+            <section class="comm-section" id="playoff-sync">
+              <div class="section-head">
+                <h3>Playoff Sync</h3>
+              </div>
+              <p class="help">Target: 13 regular-season weeks, 6 teams, reseed on, Weeks 14–16 bracket, Week 17 Bowl.</p>
+              <div id="playoff-content"><div class="msg">Loading playoff settings…</div></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="comm-group" id="group-people" hidden>
+          <header>
+            <h2>People</h2>
+            <p>Invite managers and set access roles.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="admin-block" id="invites-admin" hidden>
+              <div class="section-head">
+                <h3>Email Invites</h3>
+              </div>
+              <p class="help">Send invite links by email. If mail is offline, copy the link. <a href="/api/invites/preview-email" target="_blank" rel="noopener">Preview email</a></p>
+              <div class="status-note" id="invites-mail-status" role="status"></div>
+              <div class="status-note" id="invites-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="invite-emails" type="text" maxlength="800" placeholder="email@example.com, another@example.com" />
+                <button type="button" class="btn" id="invite-send">Send Invites</button>
+              </div>
+              <div id="invite-links" class="invite-links" hidden></div>
+              <div class="list-gap" id="invites-list"><div class="msg">Loading invites…</div></div>
+            </section>
+
+            <section class="admin-block" id="members" hidden>
+              <div class="section-head">
+                <h3>Member Access</h3>
+              </div>
+              <p class="help">Promote members to conference admin or commissioner.</p>
+              <div class="status-note" id="members-msg" role="status"></div>
+              <div id="members-list"><div class="msg">Loading members…</div></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="comm-group" id="group-comms">
+          <header>
+            <h2>Communications</h2>
+            <p>What members see on Home and in the ticker.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="admin-block" id="news-admin" hidden>
+              <div class="section-head">
+                <h3>League News</h3>
+              </div>
+              <p class="help">Posts appear on the Home page.</p>
+              <div class="status-note" id="news-msg" role="status"></div>
+              <div class="stack-form">
+                <div>
+                  <label class="field-label" for="news-title">Headline</label>
+                  <input class="field" id="news-title" type="text" maxlength="120" placeholder="Headline" />
+                </div>
+                <div>
+                  <label class="field-label" for="news-body">Details</label>
+                  <textarea class="field field-area" id="news-body" maxlength="8000" placeholder="News details…"></textarea>
+                </div>
+                <div class="btn-row">
+                  <button type="button" class="btn" id="news-add">Post News</button>
+                </div>
+              </div>
+              <div id="news-admin-list"><div class="msg">Loading news…</div></div>
+            </section>
+
+            <section class="admin-block" id="ticker-admin" hidden>
+              <div class="section-head">
+                <h3>Ticker</h3>
+              </div>
+              <p class="help">Custom lines mixed with ESPN NFL headlines.</p>
+              <div class="status-note" id="ticker-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="ticker-input" type="text" maxlength="240" placeholder="Add a custom ticker message" />
+                <button type="button" class="btn" id="ticker-add">Add</button>
+              </div>
+              <div class="list-gap" id="ticker-list"><div class="msg">Loading ticker…</div></div>
+            </section>
+
+            <section class="admin-block" id="wrap-admin" hidden>
+              <div class="section-head">
+                <h3>Weekly Wrap-Up</h3>
+              </div>
+              <p class="help">Generate a Week N wrap from ESPN scores, post to News, and email managers. Needs an AI API key for custom copy.</p>
+              <div class="status-note" id="wrap-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="wrap-week" type="number" min="1" max="17" placeholder="Week (blank = auto)" style="max-width:11rem;" />
+                <button type="button" class="btn btn-secondary" id="wrap-preview">Preview</button>
+                <button type="button" class="btn btn-secondary" id="wrap-preview-email">Email HTML</button>
+                <button type="button" class="btn" id="wrap-send">Generate &amp; Send</button>
+              </div>
+              <p class="help" id="wrap-meta" style="margin-top:0.75rem;"></p>
+              <div id="wrap-preview-body" class="list-gap"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="comm-group" id="group-season" hidden>
+          <header>
+            <h2>Season</h2>
+            <p>League calendar and power rankings.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="admin-block" id="calendar-admin" hidden>
+              <div class="section-head"><h3>League Calendar</h3></div>
+              <p class="help">Dates shown on the Calendar page.</p>
+              <div class="status-note" id="calendar-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="cal-title" type="text" maxlength="120" placeholder="Event title" />
+                <input class="field" id="cal-date" type="date" style="max-width:11rem;" />
+                <select class="field" id="cal-type" style="max-width:9rem;">
+                  <option value="event">Event</option>
+                  <option value="draft">Draft</option>
+                  <option value="dues">Dues</option>
+                  <option value="deadline">Deadline</option>
+                  <option value="bowl">Bowl</option>
+                </select>
+                <button type="button" class="btn" id="cal-add">Add</button>
+              </div>
+              <div class="list-gap" id="calendar-list"></div>
+            </section>
+
+            <section class="admin-block" id="rankings-admin" hidden>
+              <div class="section-head"><h3>Power Rankings</h3></div>
+              <p class="help">One team per line: <code>conference|teamId|teamName|note</code> — or fill from standings.</p>
+              <div class="status-note" id="rankings-msg" role="status"></div>
+              <div class="toolbar">
+                <input class="field" id="rank-week" type="number" min="1" max="17" placeholder="Week" style="max-width:7rem;" />
+                <button type="button" class="btn btn-secondary" id="rank-fill">Fill from standings</button>
+                <button type="button" class="btn" id="rank-save">Publish</button>
+              </div>
+              <textarea class="field field-area" id="rank-lines" placeholder="detail|1|Team Name|Looking sharp" style="margin-top:0.75rem;min-height:10rem;"></textarea>
+              <div class="list-gap" id="rankings-list"></div>
+            </section>
+          </div>
+        </section>
       </div>
-      <p class="help">Custom lines run in the HQ ticker with live ESPN NFL headlines.</p>
-      <div class="status-note" id="ticker-msg" role="status"></div>
-      <div class="toolbar">
-        <input class="field" id="ticker-input" type="text" maxlength="240" placeholder="Add a custom ticker message" />
-        <button type="button" class="btn" id="ticker-add">Add</button>
-      </div>
-      <div class="list-gap" id="ticker-list"><div class="msg">Loading ticker…</div></div>
-    </section>
+    </div>
   </main>
 
   <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
@@ -922,6 +1043,8 @@
       }
       if (!res.ok) throw new Error(`Could not load members (${res.status})`);
       const data = await res.json();
+      document.getElementById('group-people').hidden = false;
+      document.getElementById('nav-people').hidden = false;
       document.getElementById('members').hidden = false;
       document.getElementById('jump-members').hidden = false;
       renderMembers(data);
@@ -1164,6 +1287,8 @@
     }
 
     async function loadInvitesAdmin() {
+      document.getElementById('group-people').hidden = false;
+      document.getElementById('nav-people').hidden = false;
       const wrap = document.getElementById('invites-admin');
       wrap.hidden = false;
       document.getElementById('jump-invites').hidden = false;
@@ -1310,6 +1435,7 @@
     function wireWrapAdmin() {
       document.getElementById('wrap-admin').hidden = false;
       document.getElementById('jump-wrap').hidden = false;
+      document.getElementById('group-comms').hidden = false;
 
       document.getElementById('wrap-preview').addEventListener('click', async () => {
         const btn = document.getElementById('wrap-preview');
@@ -1387,6 +1513,8 @@
     }
 
     function wireCalendarAdmin() {
+      document.getElementById('group-season').hidden = false;
+      document.getElementById('nav-season').hidden = false;
       document.getElementById('calendar-admin').hidden = false;
       document.getElementById('jump-calendar').hidden = false;
       document.getElementById('cal-add').addEventListener('click', async () => {
@@ -1436,6 +1564,8 @@
     }
 
     function wireRankingsAdmin() {
+      document.getElementById('group-season').hidden = false;
+      document.getElementById('nav-season').hidden = false;
       document.getElementById('rankings-admin').hidden = false;
       document.getElementById('jump-rankings').hidden = false;
       document.getElementById('rank-fill').addEventListener('click', async () => {
@@ -1513,6 +1643,10 @@
         document.getElementById('ticker-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
       if (user.role === 'commissioner') {
+        document.getElementById('group-people').hidden = false;
+        document.getElementById('nav-people').hidden = false;
+        document.getElementById('group-season').hidden = false;
+        document.getElementById('nav-season').hidden = false;
         wireWrapAdmin();
         wireCalendarAdmin();
         wireRankingsAdmin();
