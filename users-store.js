@@ -72,6 +72,17 @@ function normalizeConference(conference) {
   return CONFERENCE_KEYS.has(key) ? key : null;
 }
 
+/** Find the existing conference admin for a conference (optional exceptUserId). */
+function findConferenceAdmin(store, conferenceKey, exceptUserId = null) {
+  const key = normalizeConference(conferenceKey);
+  if (!key) return null;
+  return store.users.find((user) => {
+    if (exceptUserId && user.id === exceptUserId) return false;
+    return normalizeRole(user.role) === ROLES.CONFERENCE_ADMIN
+      && normalizeConference(user.conference) === key;
+  }) || null;
+}
+
 /** Demote any other conference admins for this conference to member. Returns demoted public users. */
 function clearOtherConferenceAdmins(store, conferenceKey, exceptUserId = null) {
   const key = normalizeConference(conferenceKey);
@@ -225,7 +236,16 @@ function createUser({ name, email, loginName, password, role, conference, approv
     resetTokenExpires: null
   };
   if (nextRole === ROLES.CONFERENCE_ADMIN && nextConference) {
-    clearOtherConferenceAdmins(store, nextConference, null);
+    const existing = findConferenceAdmin(store, nextConference, null);
+    if (existing) {
+      const label = existing.name || existing.loginName || 'another member';
+      throw Object.assign(
+        new Error(
+          `${label} is already the ${nextConference} conference admin. Set them to Member first, then assign the new admin.`
+        ),
+        { status: 409, code: 'conference_admin_taken' }
+      );
+    }
   }
   store.users.push(user);
   writeStore(store);
@@ -244,6 +264,16 @@ function setUserRole(userId, role, conference) {
     if (!nextConference) {
       throw Object.assign(new Error('Pick a conference for conference admin'), { status: 400 });
     }
+    const existing = findConferenceAdmin(store, nextConference, userId);
+    if (existing) {
+      const label = existing.name || existing.loginName || 'another member';
+      throw Object.assign(
+        new Error(
+          `${label} is already the ${nextConference} conference admin. Set them to Member first, then assign the new admin.`
+        ),
+        { status: 409, code: 'conference_admin_taken', existingAdmin: publicUser(existing) }
+      );
+    }
   }
 
   // Keep at least one commissioner if demoting.
@@ -259,11 +289,6 @@ function setUserRole(userId, role, conference) {
     }
   }
 
-  let previousAdmins = [];
-  if (nextRole === ROLES.CONFERENCE_ADMIN && nextConference) {
-    previousAdmins = clearOtherConferenceAdmins(store, nextConference, userId);
-  }
-
   store.users[idx].role = nextRole;
   store.users[idx].conference = nextConference;
   if (nextRole === ROLES.COMMISSIONER) {
@@ -273,7 +298,7 @@ function setUserRole(userId, role, conference) {
   writeStore(store);
   return {
     user: publicUser(store.users[idx]),
-    previousConferenceAdmins: previousAdmins
+    previousConferenceAdmins: []
   };
 }
 

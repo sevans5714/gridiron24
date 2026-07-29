@@ -2606,14 +2606,17 @@ const server = http.createServer(async (req, res) => {
       try {
         const result = users.setUserRole(userId, body.role, body.conference);
         const updated = result?.user || result;
-        const previousConferenceAdmins = result?.previousConferenceAdmins || [];
         return sendJson(res, 200, {
           ok: true,
-          user: updated,
-          previousConferenceAdmins
+          user: updated
         });
       } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not update role' });
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not update role',
+          code: err.code || null,
+          existingAdmin: err.existingAdmin || null
+        });
       }
     }
 
