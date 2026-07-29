@@ -9,20 +9,78 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=55" />
+  <link rel="stylesheet" href="/css/site.css?v=56" />
   <style>
-    :root {
+    :root,
+    html[data-theme="night"] {
       --led: #ffb84a;
       --led-dim: #7a5420;
       --led-green: #3dff8a;
       --board-bezel: #1a1a1a;
       --board-face: #070807;
+      --sb-page-mid: #0a0a0a;
+      --sb-page-bg: #050505;
+      --sb-wash: rgba(255, 184, 74, 0.07);
+      --sb-control-bg: #0c0c0c;
+      --sb-control-border: rgba(255, 255, 255, 0.1);
+      --sb-title: #d8d8d8;
+      --sb-title-glow:
+        0 0 8px rgba(200, 200, 200, 0.55),
+        0 0 18px rgba(180, 180, 180, 0.4),
+        0 0 36px rgba(160, 160, 160, 0.28);
+      --sb-muted: #9a9a9a;
+      --sb-idle: #888;
+      --sb-select-face: #101010;
+      --sb-board-border: #2a2a2a;
+      --sb-board-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 18px 40px rgba(0,0,0,0.55);
+      --sb-board-top: linear-gradient(180deg, #222, #141414);
+      --sb-game-bg: rgba(0, 0, 0, 0.45);
+      --sb-game-border: rgba(255, 184, 74, 0.12);
+      --sb-team: #e8e8e8;
+      --sb-score: #ffb84a;
+      --sb-leaders-face-top: #101820;
+      --sb-leaders-face-bottom: #0a1018;
+      --sb-leaders-fade-l: #0a1018;
+      --sb-leaders-fade-r: #060606;
+      --sb-leaders-item: rgba(255, 255, 255, 0.9);
+      --sb-leaders-who: #fff;
+    }
+
+    html[data-theme="day"] {
+      --led: #c47a12;
+      --led-dim: #9a6410;
+      --led-green: #15803d;
+      --board-bezel: #d5deea;
+      --board-face: #eef3f9;
+      --sb-page-mid: var(--body-mid);
+      --sb-page-bg: var(--bg);
+      --sb-wash: rgba(196, 122, 18, 0.08);
+      --sb-control-bg: var(--panel);
+      --sb-control-border: var(--line);
+      --sb-title: var(--text);
+      --sb-title-glow: none;
+      --sb-muted: var(--muted);
+      --sb-idle: var(--muted-2);
+      --sb-select-face: var(--panel-2);
+      --sb-board-border: rgba(20, 24, 31, 0.16);
+      --sb-board-shadow: inset 0 0 0 1px rgba(255,255,255,0.55), 0 14px 28px rgba(20, 24, 31, 0.1);
+      --sb-board-top: linear-gradient(180deg, #f7f9fc, #e7eef7);
+      --sb-game-bg: rgba(255, 255, 255, 0.72);
+      --sb-game-border: rgba(196, 122, 18, 0.28);
+      --sb-team: var(--text);
+      --sb-score: #a8640a;
+      --sb-leaders-face-top: var(--ticker-face-top);
+      --sb-leaders-face-bottom: var(--ticker-face-bottom);
+      --sb-leaders-fade-l: var(--ticker-fade-left);
+      --sb-leaders-fade-r: var(--ticker-fade-right);
+      --sb-leaders-item: var(--ticker-item);
+      --sb-leaders-who: var(--text);
     }
 
     body[data-page="scoreboard"] {
       background:
-        radial-gradient(ellipse 80% 40% at 50% -5%, rgba(255, 184, 74, 0.07), transparent 55%),
-        linear-gradient(180deg, #0a0a0a 0%, #050505 40%, #050505 100%);
+        radial-gradient(ellipse 80% 40% at 50% -5%, var(--sb-wash), transparent 55%),
+        linear-gradient(180deg, var(--sb-page-mid) 0%, var(--sb-page-bg) 40%, var(--sb-page-bg) 100%);
     }
 
     .sb-hero {
@@ -39,7 +97,7 @@
       width: min(14rem, 52vw);
       height: auto;
       margin: 0 auto 0.55rem;
-      filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.55));
+      filter: var(--logo-shadow-lg);
       animation: sb-title-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
     .sb-hero h1 {
@@ -49,11 +107,8 @@
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #d8d8d8;
-      text-shadow:
-        0 0 8px rgba(200, 200, 200, 0.55),
-        0 0 18px rgba(180, 180, 180, 0.4),
-        0 0 36px rgba(160, 160, 160, 0.28);
+      color: var(--sb-title);
+      text-shadow: var(--sb-title-glow);
       animation: sb-title-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
     }
     .sb-hero .sub {
@@ -62,7 +117,7 @@
       font-size: 0.95rem;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #9a9a9a;
+      color: var(--sb-muted);
     }
 
     .sb-controls {
@@ -73,10 +128,10 @@
       flex-wrap: wrap;
       margin: 1.15rem 0 0.65rem;
       padding: 0.85rem 1rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--sb-control-border);
       background:
         linear-gradient(180deg, rgba(255,255,255,0.03), transparent),
-        #0c0c0c;
+        var(--sb-control-bg);
     }
     .sb-live {
       display: inline-flex;
@@ -99,10 +154,10 @@
       animation: sb-pulse 1.2s ease-in-out infinite;
     }
     .sb-live.is-idle {
-      color: #888;
+      color: var(--sb-idle);
     }
     .sb-live.is-idle .dot {
-      background: #666;
+      background: var(--sb-idle);
       box-shadow: none;
       animation: none;
     }
@@ -147,9 +202,9 @@
       border-radius: 999px;
       background:
         linear-gradient(90deg, rgba(47, 109, 255, 0.18), rgba(47, 109, 255, 0.06) 42%, rgba(47, 109, 255, 0.1)),
-        linear-gradient(180deg, #101820 0%, #0a1018 100%);
+        linear-gradient(180deg, var(--sb-leaders-face-top) 0%, var(--sb-leaders-face-bottom) 100%);
       box-shadow:
-        0 6px 28px rgba(0, 0, 0, 0.35),
+        var(--ticker-shadow),
         inset 0 1px 0 rgba(142, 182, 255, 0.12);
       overflow: hidden;
       min-height: 2.35rem;
@@ -208,11 +263,11 @@
     }
     .leaders-viewport::before {
       left: 0;
-      background: linear-gradient(90deg, #0a1018, transparent);
+      background: linear-gradient(90deg, var(--sb-leaders-fade-l), transparent);
     }
     .leaders-viewport::after {
       right: 0;
-      background: linear-gradient(270deg, #060606, transparent);
+      background: linear-gradient(270deg, var(--sb-leaders-fade-r), transparent);
     }
     .leaders-track {
       display: inline-flex;
@@ -235,7 +290,7 @@
       font-size: 0.9rem;
       font-weight: 500;
       line-height: 1;
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--sb-leaders-item);
       text-decoration: none;
       min-height: 100%;
     }
@@ -248,7 +303,7 @@
       line-height: 1;
     }
     .leaders-item .who {
-      color: #fff;
+      color: var(--sb-leaders-who);
       font-weight: 600;
       line-height: 1;
     }
@@ -258,9 +313,9 @@
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
-    .leaders-item .pts.is-proj { color: #9a9a9a; }
+    .leaders-item .pts.is-proj { color: var(--sb-muted); }
     .leaders-item .meta {
-      color: #8a8a8a;
+      color: var(--sb-muted);
       font-size: 0.82rem;
       line-height: 1;
     }
@@ -276,7 +331,7 @@
       display: flex;
       align-items: center;
       padding: 0 1rem;
-      color: #8a8a8a;
+      color: var(--sb-muted);
       font-size: 0.88rem;
       line-height: 1;
       min-height: 100%;
@@ -314,7 +369,7 @@
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #888;
+      color: var(--sb-muted);
     }
     .sb-week select {
       appearance: none;
@@ -329,7 +384,7 @@
       background:
         linear-gradient(45deg, transparent 50%, var(--led) 50%),
         linear-gradient(135deg, var(--led) 50%, transparent 50%),
-        #101010;
+        var(--sb-select-face);
       background-position:
         calc(100% - 1.05rem) calc(50% - 0.15rem),
         calc(100% - 0.75rem) calc(50% - 0.15rem),
@@ -351,11 +406,9 @@
     }
 
     .board {
-      border: 3px solid #2a2a2a;
+      border: 3px solid var(--sb-board-border);
       background: var(--board-bezel);
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.06),
-        0 18px 40px rgba(0,0,0,0.55);
+      box-shadow: var(--sb-board-shadow);
       overflow: hidden;
       animation: sb-board-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
@@ -368,8 +421,8 @@
       justify-content: space-between;
       gap: 0.75rem;
       padding: 0.75rem 0.95rem;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      background: linear-gradient(180deg, #222, #141414);
+      border-bottom: 1px solid var(--line);
+      background: var(--sb-board-top);
     }
     .board-top .conf {
       display: flex;
@@ -380,7 +433,7 @@
     .board-top img {
       width: 3.75rem;
       height: auto;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+      filter: var(--logo-shadow);
     }
     .board-top h2 {
       margin: 0;
@@ -419,8 +472,8 @@
       gap: 0.55rem;
       align-items: center;
       padding: 0.7rem 0.65rem;
-      border: 1px solid rgba(255, 184, 74, 0.12);
-      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid var(--sb-game-border);
+      background: var(--sb-game-bg);
       margin-bottom: 0.45rem;
     }
     .game:last-child { margin-bottom: 0; }
@@ -440,9 +493,10 @@
       height: 4.25rem;
       object-fit: contain;
       flex: 0 0 auto;
-      background: rgba(255,255,255,0.03);
+      background: var(--logo-tile-bg);
+      border: 1px solid var(--logo-tile-border);
       border-radius: 0.4rem;
-      filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
+      filter: var(--logo-shadow);
     }
     .team .nm {
       min-width: 0;
@@ -452,7 +506,7 @@
       letter-spacing: 0.03em;
       text-transform: uppercase;
       line-height: 1.15;
-      color: #e8e8e8;
+      color: var(--sb-team);
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -460,8 +514,12 @@
       word-break: break-word;
     }
     .team.is-winner .nm {
-      color: #fff;
+      color: var(--sb-team);
       text-shadow: 0 0 12px rgba(255, 184, 74, 0.35);
+    }
+    html[data-theme="day"] .team.is-winner .nm {
+      text-shadow: none;
+      color: var(--sb-score);
     }
     .team.is-loser {
       opacity: 0.55;
@@ -484,6 +542,9 @@
       text-shadow: 0 0 14px rgba(255, 184, 74, 0.45);
       font-variant-numeric: tabular-nums;
     }
+    html[data-theme="day"] .digits .pair {
+      text-shadow: none;
+    }
     .digits .pair .sep {
       color: var(--led-dim);
       font-size: 0.85em;
@@ -503,7 +564,7 @@
       font-family: "Share Tech Mono", ui-monospace, monospace;
       font-size: 0.68rem;
       letter-spacing: 0.04em;
-      color: #6a6a6a;
+      color: var(--sb-muted);
     }
 
     .board-empty {
@@ -522,7 +583,7 @@
       font-size: 0.78rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #666;
+      color: var(--sb-muted);
     }
 
     @keyframes sb-pulse {

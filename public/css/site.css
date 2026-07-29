@@ -76,8 +76,11 @@ html[data-theme="night"] {
   --link-hover: #fff;
   --status-ok-text: #86efac;
   --status-err-text: #fca5a5;
-  --logo-tile-bg: #141414;
-  --logo-tile-border: rgba(255, 255, 255, 0.08);
+  /* Team marks ship with dark SVG pads — keep tiles dark in both themes. */
+  --logo-tile-bg: #111111;
+  --logo-tile-border: rgba(255, 255, 255, 0.14);
+  --logo-shadow: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45));
+  --logo-shadow-lg: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
   --row-hover: rgba(255, 255, 255, 0.03);
   --ticker-face-top: #101820;
   --ticker-face-bottom: #0a1018;
@@ -125,8 +128,8 @@ html[data-theme="day"] {
   --chip-border-active: rgba(31, 94, 240, 0.55);
   --chip-team: #14181f;
   --chip-owner: #4a5563;
-  --chip-avatar-bg: #e8ecf1;
-  --chip-avatar-border: rgba(20, 24, 31, 0.14);
+  --chip-avatar-bg: #111111;
+  --chip-avatar-border: rgba(20, 24, 31, 0.2);
   --btn-border: #14181f;
   --btn-bg: #14181f;
   --btn-text: #ffffff;
@@ -137,8 +140,10 @@ html[data-theme="day"] {
   --link-hover: #14181f;
   --status-ok-text: #166534;
   --status-err-text: #b91c1c;
-  --logo-tile-bg: #eef2f7;
-  --logo-tile-border: rgba(20, 24, 31, 0.12);
+  --logo-tile-bg: #111111;
+  --logo-tile-border: rgba(20, 24, 31, 0.22);
+  --logo-shadow: drop-shadow(0 2px 5px rgba(20, 24, 31, 0.2));
+  --logo-shadow-lg: drop-shadow(0 4px 10px rgba(20, 24, 31, 0.22));
   --row-hover: rgba(20, 24, 31, 0.04);
   --ticker-face-top: #d9e4f5;
   --ticker-face-bottom: #c5d4ea;
@@ -702,26 +707,40 @@ a.user-chip {
 .user-menu-status.err { color: var(--bad); }
 
 /* Compact franchise marks for standings / boards */
-.team-logo-sm {
-  width: 2.15rem;
-  height: 2.15rem;
+.team-logo-sm,
+.team-logo-fallback,
+.team-logo,
+img.team-logo-sm,
+img.team-logo {
+  background: var(--logo-tile-bg);
+  border: 1px solid var(--logo-tile-border);
   border-radius: 0.35rem;
   object-fit: contain;
   flex: 0 0 auto;
   display: block;
-  background: var(--logo-tile-bg);
-  border: 1px solid var(--logo-tile-border);
+  filter: var(--logo-shadow);
+}
+
+.team-logo-sm {
+  width: 2.15rem;
+  height: 2.15rem;
 }
 
 .team-logo-fallback {
   width: 2.15rem;
   height: 2.15rem;
-  border-radius: 0.35rem;
-  flex: 0 0 auto;
   display: inline-block;
-  object-fit: contain;
-  background: var(--logo-tile-bg);
-  border: 1px solid var(--logo-tile-border);
+}
+
+.team-logo {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.conf-logo,
+.board-brand img,
+.board-top img {
+  filter: var(--logo-shadow-lg);
 }
 
 .nav {
@@ -877,7 +896,7 @@ body[data-page="payouts"] .page-hero::before {
   width: 2.35rem;
   height: auto;
   flex: 0 0 auto;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+  filter: var(--logo-shadow);
 }
 
 .panel-title .meta {
