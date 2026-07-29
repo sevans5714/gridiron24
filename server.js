@@ -333,6 +333,18 @@ function ownerName(member) {
   return full || member.displayName || 'Owner';
 }
 
+function conferenceAdminName(conferenceKey) {
+  const key = String(conferenceKey || '').trim().toLowerCase();
+  if (!key) return null;
+  const names = users.listUsers()
+    .filter((u) => u.role === 'conference_admin'
+      && String(u.conference || '').toLowerCase() === key
+      && u.approved !== false)
+    .map((u) => String(u.name || '').trim())
+    .filter(Boolean);
+  return names.length ? names.join(' · ') : null;
+}
+
 function normalizeLeague(raw, conference) {
   const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
   const logoOverrides = logos.getOverrideMap();
@@ -390,6 +402,7 @@ function normalizeLeague(raw, conference) {
     shortName: conference.shortName,
     leagueId: conference.espnLeagueId,
     logo: conference.logo || null,
+    admin: conferenceAdminName(conference.key),
     espnLeagueName: raw.settings?.name || `ESPN League ${conference.espnLeagueId}`,
     season: raw.seasonId || config.season,
     teamCount: teams.length,
@@ -1366,7 +1379,7 @@ async function apiLeagues(res) {
     config.conferences.map(async (conference) => {
       try {
         const data = await fetchEspnLeague(conference);
-        return { ok: true, ...data };
+        return { ok: true, ...data, admin: data.admin || conferenceAdminName(conference.key) };
       } catch (error) {
         return {
           ok: false,
@@ -1374,6 +1387,8 @@ async function apiLeagues(res) {
           name: conference.name,
           shortName: conference.shortName,
           leagueId: conference.espnLeagueId,
+          logo: conference.logo || null,
+          admin: conferenceAdminName(conference.key),
           error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message,
           detail: error.detail || null
         };
@@ -1394,7 +1409,7 @@ async function loadStandingsPayload() {
     config.conferences.map(async (conference) => {
       try {
         const data = await fetchEspnLeague(conference);
-        return { ok: true, ...data };
+        return { ok: true, ...data, admin: data.admin || conferenceAdminName(conference.key) };
       } catch (error) {
         return {
           ok: false,
@@ -1402,6 +1417,8 @@ async function loadStandingsPayload() {
           name: conference.name,
           shortName: conference.shortName,
           leagueId: conference.espnLeagueId,
+          logo: conference.logo || null,
+          admin: conferenceAdminName(conference.key),
           error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
         };
       }

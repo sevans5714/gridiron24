@@ -70,6 +70,14 @@
     .board-head.detail h2 { color: var(--detail); }
     .board-head.overtime h2 { color: var(--overtime); }
 
+    .board-head .admin {
+      margin-top: 0.2rem;
+      color: var(--text);
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
     .board-head .meta {
       margin-top: 0.2rem;
       color: var(--muted);
@@ -279,12 +287,16 @@
     function boardHead(conf) {
       const tone = conf.key === 'detail' ? 'detail' : 'overtime';
       const week = conf.currentMatchupPeriod != null ? ` · Week ${conf.currentMatchupPeriod}` : '';
+      const admin = conf.admin
+        ? `<div class="admin">Admin · ${escapeHtml(conf.admin)}</div>`
+        : '';
       return `
         <div class="board-head ${tone}">
           <div class="board-brand">
             ${confLogo(conf.key, conf.name)}
             <div>
               <h2>${escapeHtml(conf.name)}</h2>
+              ${admin}
               <div class="meta">ESPN ${conf.leagueId}${week}</div>
             </div>
           </div>

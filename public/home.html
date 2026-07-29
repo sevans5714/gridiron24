@@ -188,6 +188,17 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
+    .conf-head-text { min-width: 0; }
+    .conf-admin {
+      margin-top: 0.2rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .conf-head.detail h3 { color: var(--detail); }
     .conf-head.overtime h3 { color: var(--overtime); }
 
@@ -714,10 +725,16 @@
 
     function confHead(conf) {
       const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
+      const admin = conf?.admin
+        ? `<div class="conf-admin">Admin · ${esc(conf.admin)}</div>`
+        : '';
       return `
         <div class="conf-head ${tone}">
           ${conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-          <h3>${esc(conf?.shortName || conf?.name || 'Conference')}</h3>
+          <div class="conf-head-text">
+            <h3>${esc(conf?.shortName || conf?.name || 'Conference')}</h3>
+            ${admin}
+          </div>
         </div>`;
     }
 
