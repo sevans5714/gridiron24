@@ -72,6 +72,22 @@ function normalizeConference(conference) {
   return CONFERENCE_KEYS.has(key) ? key : null;
 }
 
+/** Demote any other conference admins for this conference to member. Returns demoted public users. */
+function clearOtherConferenceAdmins(store, conferenceKey, exceptUserId = null) {
+  const key = normalizeConference(conferenceKey);
+  if (!key) return [];
+  const demoted = [];
+  for (const user of store.users) {
+    if (exceptUserId && user.id === exceptUserId) continue;
+    if (normalizeRole(user.role) !== ROLES.CONFERENCE_ADMIN) continue;
+    if (normalizeConference(user.conference) !== key) continue;
+    demoted.push(publicUser({ ...user }));
+    user.role = ROLES.USER;
+    user.conference = null;
+  }
+  return demoted;
+}
+
 function normalizeTheme(theme) {
   return String(theme || '').trim().toLowerCase() === 'day' ? 'day' : 'night';
 }
@@ -208,6 +224,9 @@ function createUser({ name, email, loginName, password, role, conference, approv
     resetTokenHash: null,
     resetTokenExpires: null
   };
+  if (nextRole === ROLES.CONFERENCE_ADMIN && nextConference) {
+    clearOtherConferenceAdmins(store, nextConference, null);
+  }
   store.users.push(user);
   writeStore(store);
   return publicUser(user);
@@ -240,6 +259,11 @@ function setUserRole(userId, role, conference) {
     }
   }
 
+  let previousAdmins = [];
+  if (nextRole === ROLES.CONFERENCE_ADMIN && nextConference) {
+    previousAdmins = clearOtherConferenceAdmins(store, nextConference, userId);
+  }
+
   store.users[idx].role = nextRole;
   store.users[idx].conference = nextConference;
   if (nextRole === ROLES.COMMISSIONER) {
@@ -247,7 +271,10 @@ function setUserRole(userId, role, conference) {
     store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
   }
   writeStore(store);
-  return publicUser(store.users[idx]);
+  return {
+    user: publicUser(store.users[idx]),
+    previousConferenceAdmins: previousAdmins
+  };
 }
 
 function setUserApproved(userId, approved, actorId = null) {
@@ -303,6 +330,22 @@ function migrateApprovalFlags() {
       user.approved = true;
       user.approvedAt = user.approvedAt || new Date().toISOString();
       changed = true;
+    }
+  }
+  // One conference admin per conference — keep the earliest account, demote the rest.
+  const keepers = new Map();
+  const admins = store.users
+    .filter((u) => normalizeRole(u.role) === ROLES.CONFERENCE_ADMIN && normalizeConference(u.conference))
+    .slice()
+    .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+  for (const user of admins) {
+    const key = normalizeConference(user.conference);
+    if (keepers.has(key)) {
+      user.role = ROLES.USER;
+      user.conference = null;
+      changed = true;
+    } else {
+      keepers.set(key, user.id);
     }
   }
   if (changed) writeStore(store);

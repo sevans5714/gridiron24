@@ -804,7 +804,7 @@
               <div class="section-head">
                 <h3>Member Access</h3>
               </div>
-              <p class="help">Approve new accounts, assign or remove franchises, and set access roles. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
+              <p class="help">Approve new accounts, assign or remove franchises, and set access roles. One conference admin per conference — assigning a new one demotes the previous admin to member. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
               <div class="status-note" id="members-msg" role="status"></div>
               <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
@@ -1259,7 +1259,13 @@
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
-            showMembersMsg(`Updated ${data.user.loginName} to ${ROLE_LABELS[data.user.role]}${data.user.conference ? ` (${data.user.conference})` : ''}.`, true);
+            const prev = (data.previousConferenceAdmins || [])
+              .map((u) => u.name || u.loginName)
+              .filter(Boolean);
+            const replaced = prev.length
+              ? ` Replaced ${prev.join(', ')} as conference admin (now member).`
+              : '';
+            showMembersMsg(`Updated ${data.user.loginName} to ${ROLE_LABELS[data.user.role]}${data.user.conference ? ` (${data.user.conference})` : ''}.${replaced}`, true);
             await loadMembers();
           } catch (err) {
             showMembersMsg(err.message, false);
