@@ -977,6 +977,13 @@ footer.site-footer {
   font-size: var(--fs-sm);
   font-weight: 500;
 }
+.site-footer-brand {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
 .site-footer-build {
   display: block;
   margin-top: 0.35rem;
