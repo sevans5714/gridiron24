@@ -72,26 +72,45 @@
     .board-head.overtime .board-admin-name { color: var(--overtime); }
 
     .board-admin {
-      text-align: center;
-      padding: 0.1rem 0.35rem 0.15rem;
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 0.55rem;
+      align-self: center;
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 0.15rem 0.15rem 0.15rem 0.75rem;
+      border-left: 2px solid transparent;
+      text-align: left;
+    }
+    .board-head.detail .board-admin {
+      border-left-color: rgba(255, 122, 24, 0.7);
+    }
+    .board-head.overtime .board-admin {
+      border-left-color: rgba(226, 35, 42, 0.7);
     }
     .board-admin-name {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.15rem;
+      font-size: 1rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      line-height: 1.15;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .board-admin-role {
-      margin: 0.22rem 0 0;
+      margin: 0;
       font-family: var(--display);
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--muted);
+      white-space: nowrap;
+      flex: 0 0 auto;
     }
 
     .board-head .meta {
