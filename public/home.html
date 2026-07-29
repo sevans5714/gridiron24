@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=57" />
+  <link rel="stylesheet" href="/css/site.css?v=58" />
   <style>
     .hq-hero {
       text-align: center;
@@ -176,7 +176,9 @@
     .conf-head img {
       width: 3.25rem;
       height: auto;
-      filter: var(--logo-shadow);
+      filter: none;
+
+      box-shadow: var(--logo-lift);
     }
     .conf-head h3 {
       margin: 0;
@@ -297,10 +299,10 @@
       width: 4.25rem;
       height: 4.25rem;
       object-fit: contain;
-      background: var(--logo-tile-bg);
-      border: 1px solid var(--logo-tile-border);
-      border-radius: 0.45rem;
-      filter: var(--logo-shadow);
+      background: transparent;
+      border: 0;
+      filter: none;
+      box-shadow: var(--logo-lift);
     }
     .motw-side .nm {
       font-size: 1rem;
@@ -390,10 +392,10 @@
       height: 3.5rem;
       object-fit: contain;
       flex: 0 0 auto;
-      background: var(--logo-tile-bg);
-      border: 1px solid var(--logo-tile-border);
-      border-radius: 0.4rem;
-      filter: var(--logo-shadow);
+      background: transparent;
+      border: 0;
+      filter: none;
+      box-shadow: var(--logo-lift);
     }
     .hotnot-team .nm {
       font-size: 1.05rem;

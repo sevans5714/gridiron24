@@ -1,18 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Team logo placeholder">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1c1c1c"/>
-      <stop offset="100%" stop-color="#0a0a0a"/>
-    </linearGradient>
-    <linearGradient id="ball" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0%" stop-color="#3a3a3a"/>
-      <stop offset="100%" stop-color="#181818"/>
-    </linearGradient>
-  </defs>
-  <rect width="128" height="128" rx="22" fill="url(#bg)"/>
-  <rect x="4" y="4" width="120" height="120" rx="19" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
-  <ellipse cx="64" cy="64" rx="38" ry="24" fill="url(#ball)" stroke="#2f6dff" stroke-width="2.5"/>
-  <path d="M40 64h48" fill="none" stroke="#efd782" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M52 54v20M64 52v24M76 54v20" fill="none" stroke="#efd782" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="64" cy="64" r="3.2" fill="#2f6dff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Team logo placeholder">
+  <rect width="64" height="64" rx="12" fill="#111111"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="11.25" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <ellipse cx="32" cy="32" rx="18" ry="11.5" fill="none" stroke="#4d82ff" stroke-width="2.2"/>
+  <path d="M20 32h24" fill="none" stroke="#efd782" stroke-width="2" stroke-linecap="round"/>
+  <path d="M26 27v10M32 25.5v13M38 27v10" fill="none" stroke="#efd782" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="32" cy="32" r="2.2" fill="#4d82ff"/>
 </svg>

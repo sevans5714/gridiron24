@@ -10,23 +10,24 @@ const OUT_DIR = path.join(__dirname, '..', 'public', 'assets', 'team-icons');
 const CATALOG = path.join(__dirname, '..', 'public', 'js', 'team-icons.js');
 const SRC_DIR = path.join(__dirname, '..', 'vendor', 'american-football-icons', 'src');
 
+/* Dark badge + bright mark — every palette must read clearly on day and night. */
 const COLORS = [
-  { id: 'white', name: 'White', bg: '#141414', fg: '#f2f2f2' },
-  { id: 'silver', name: 'Silver', bg: '#141414', fg: '#c5cad1' },
-  { id: 'black', name: 'Black', bg: '#1c1c1c', fg: '#4a4a4a' },
-  { id: 'gold', name: 'Gold', bg: '#1a1408', fg: '#e8c547' },
-  { id: 'navy', name: 'Navy', bg: '#070d18', fg: '#3b6ec8' },
-  { id: 'blue', name: 'Blue', bg: '#0a1628', fg: '#2f6fed' },
-  { id: 'sky', name: 'Sky', bg: '#0a1620', fg: '#5eb3e8' },
-  { id: 'teal', name: 'Teal', bg: '#061414', fg: '#1cb5ae' },
-  { id: 'green', name: 'Green', bg: '#07140c', fg: '#22a85a' },
-  { id: 'lime', name: 'Lime', bg: '#0c1408', fg: '#8fd94a' },
-  { id: 'yellow', name: 'Yellow', bg: '#161208', fg: '#f5d031' },
-  { id: 'orange', name: 'Orange', bg: '#1a0d04', fg: '#f07316' },
-  { id: 'red', name: 'Red', bg: '#1a0506', fg: '#e2232a' },
-  { id: 'crimson', name: 'Crimson', bg: '#160508', fg: '#a61e32' },
-  { id: 'maroon', name: 'Maroon', bg: '#14080c', fg: '#7a2434' },
-  { id: 'purple', name: 'Purple', bg: '#12081a', fg: '#6b3fd4' }
+  { id: 'white', name: 'White', bg: '#111111', fg: '#ffffff' },
+  { id: 'silver', name: 'Silver', bg: '#111111', fg: '#d7dde5' },
+  { id: 'black', name: 'Black', bg: '#111111', fg: '#e8e8e8' },
+  { id: 'gold', name: 'Gold', bg: '#1a1408', fg: '#f0d060' },
+  { id: 'navy', name: 'Navy', bg: '#070d18', fg: '#6b9bff' },
+  { id: 'blue', name: 'Blue', bg: '#0a1628', fg: '#4d8fff' },
+  { id: 'sky', name: 'Sky', bg: '#0a1620', fg: '#7ec8f5' },
+  { id: 'teal', name: 'Teal', bg: '#061414', fg: '#2fd4cc' },
+  { id: 'green', name: 'Green', bg: '#07140c', fg: '#3dd87a' },
+  { id: 'lime', name: 'Lime', bg: '#0c1408', fg: '#a8f05a' },
+  { id: 'yellow', name: 'Yellow', bg: '#161208', fg: '#ffe04a' },
+  { id: 'orange', name: 'Orange', bg: '#1a0d04', fg: '#ff8a2b' },
+  { id: 'red', name: 'Red', bg: '#1a0506', fg: '#ff555c' },
+  { id: 'crimson', name: 'Crimson', bg: '#160508', fg: '#ff5a72' },
+  { id: 'maroon', name: 'Maroon', bg: '#14080c', fg: '#e06888' },
+  { id: 'purple', name: 'Purple', bg: '#12081a', fg: '#9b6bff' }
 ];
 
 // Multicolor emoji / illustrated SVGs — use as-is (one tile each).
@@ -95,10 +96,12 @@ function colorizeInner(inner, fg) {
 }
 
 function wrap({ viewBox, inner, bg }) {
+  // Self-contained dark badge — CSS must not add a second tile/filter on top.
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="14" fill="${bg}"/>
-  <svg x="8" y="8" width="48" height="48" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">
+  <rect width="64" height="64" rx="12" fill="${bg}"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="11.25" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <svg x="7" y="7" width="50" height="50" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">
     ${inner}
   </svg>
 </svg>

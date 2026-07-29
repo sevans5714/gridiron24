@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=57" />
+  <link rel="stylesheet" href="/css/site.css?v=58" />
   <style>
     .toolbar {
       display: flex;
@@ -99,13 +99,14 @@
       flex: 0 0 auto;
       object-fit: contain;
       border-radius: 0.45rem;
-      background: var(--logo-tile-bg);
-      border: 1px solid var(--logo-tile-border);
-      filter: var(--logo-shadow);
+      background: transparent;
+      border: 0;
+      filter: none;
+      box-shadow: var(--logo-lift);
     }
     .side .team-logo-fallback {
       display: inline-block;
-      background: var(--logo-tile-bg);
+      background: transparent;
     }
       filter: none;
     }

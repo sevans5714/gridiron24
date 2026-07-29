@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=57" />
+  <link rel="stylesheet" href="/css/site.css?v=58" />
   <style>
     .teams-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 0.5rem; }
     .team-list { display: grid; gap: 0.55rem; }
@@ -27,10 +27,10 @@
       width: 2.5rem;
       height: 2.5rem;
       object-fit: contain;
-      background: var(--logo-tile-bg);
-      border: 1px solid var(--logo-tile-border);
-      border-radius: 0.35rem;
-      filter: var(--logo-shadow);
+      background: transparent;
+      border: 0;
+      filter: none;
+      box-shadow: var(--logo-lift);
     }
     .team-row .seed { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; }
     .team-row .nm { font-weight: 700; color: var(--text); }
@@ -38,7 +38,12 @@
     .conf-title { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--line); }
     .conf-title.detail { border-bottom-color: rgba(255,122,24,0.55); color: var(--detail); }
     .conf-title.overtime { border-bottom-color: rgba(226,35,42,0.55); color: var(--overtime); }
-    .conf-title img { width: 3rem; height: auto; filter: var(--logo-shadow); }
+    .conf-title img {
+      width: 3rem;
+      height: auto;
+      filter: none;
+      box-shadow: var(--logo-lift);
+    }
     .conf-title h2 { margin: 0; font-family: var(--display); font-size: 1.15rem; letter-spacing: 0.05em; text-transform: uppercase; }
     @media (max-width: 800px) { .teams-grid { grid-template-columns: 1fr; } }
   </style>

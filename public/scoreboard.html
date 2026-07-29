@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=57" />
+  <link rel="stylesheet" href="/css/site.css?v=58" />
   <style>
     :root,
     html[data-theme="night"] {
@@ -97,7 +97,9 @@
       width: min(14rem, 52vw);
       height: auto;
       margin: 0 auto 0.55rem;
-      filter: var(--logo-shadow-lg);
+      filter: none;
+
+      box-shadow: var(--logo-lift);
       animation: sb-title-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
     .sb-hero h1 {
@@ -433,7 +435,9 @@
     .board-top img {
       width: 3.75rem;
       height: auto;
-      filter: var(--logo-shadow);
+      filter: none;
+
+      box-shadow: var(--logo-lift);
     }
     .board-top h2 {
       margin: 0;
@@ -493,10 +497,10 @@
       height: 4.25rem;
       object-fit: contain;
       flex: 0 0 auto;
-      background: var(--logo-tile-bg);
-      border: 1px solid var(--logo-tile-border);
-      border-radius: 0.4rem;
-      filter: var(--logo-shadow);
+      background: transparent;
+      border: 0;
+      filter: none;
+      box-shadow: var(--logo-lift);
     }
     .team .nm {
       min-width: 0;
