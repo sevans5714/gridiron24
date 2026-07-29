@@ -38,6 +38,7 @@
     const next = theme === 'day' ? 'day' : 'night';
     document.documentElement.setAttribute('data-theme', next);
     try { localStorage.setItem(THEME_KEY, next); } catch { /* ignore */ }
+    syncConferenceLogos(next);
     return next;
   }
 
@@ -46,6 +47,59 @@
     const preferred = user.theme === 'day' ? 'day' : (user.theme === 'night' ? 'night' : null);
     if (!preferred) return getTheme();
     return applyTheme(preferred);
+  }
+
+  /** Night assets stay as-is; day uses transparent-background conference marks. */
+  function conferenceLogoForTheme(src, theme) {
+    if (!src || typeof src !== 'string') return src;
+    if (theme === 'day') {
+      return src
+        .replace(/\/assets\/detail-conference(?!-day)\.png\b/g, '/assets/detail-conference-day.png')
+        .replace(/\/assets\/overtime-conference(?!-day)\.png\b/g, '/assets/overtime-conference-day.png');
+    }
+    return src
+      .replace(/\/assets\/detail-conference-day\.png\b/g, '/assets/detail-conference.png')
+      .replace(/\/assets\/overtime-conference-day\.png\b/g, '/assets/overtime-conference.png');
+  }
+
+  function syncConferenceLogos(theme = getTheme()) {
+    document.querySelectorAll('img[src*="detail-conference"], img[src*="overtime-conference"]').forEach((img) => {
+      const cur = img.getAttribute('src');
+      const next = conferenceLogoForTheme(cur, theme);
+      if (next && next !== cur) img.setAttribute('src', next);
+    });
+  }
+
+  function watchConferenceLogos() {
+    if (typeof MutationObserver === 'undefined') return;
+    const obs = new MutationObserver((mutations) => {
+      const theme = getTheme();
+      for (const m of mutations) {
+        if (m.type === 'attributes' && m.target?.tagName === 'IMG') {
+          const cur = m.target.getAttribute('src');
+          const next = conferenceLogoForTheme(cur, theme);
+          if (next && next !== cur) m.target.setAttribute('src', next);
+          continue;
+        }
+        m.addedNodes?.forEach((node) => {
+          if (!node || node.nodeType !== 1) return;
+          const imgs = node.tagName === 'IMG'
+            ? [node]
+            : (node.querySelectorAll ? node.querySelectorAll('img[src*="detail-conference"], img[src*="overtime-conference"]') : []);
+          imgs.forEach((img) => {
+            const cur = img.getAttribute('src');
+            const next = conferenceLogoForTheme(cur, theme);
+            if (next && next !== cur) img.setAttribute('src', next);
+          });
+        });
+      }
+    });
+    obs.observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['src']
+    });
   }
 
   function initials(name) {
@@ -276,6 +330,7 @@
   ensureTickerMount();
   ensureUserMenuMount();
   applyTheme(getTheme());
+  watchConferenceLogos();
   ensureFooter('Build …');
   loadBuildFooter();
   loadTicker();
@@ -292,6 +347,8 @@
     },
     getTheme,
     setTheme: applyTheme,
-    syncThemeFromUser
+    syncThemeFromUser,
+    conferenceLogoForTheme,
+    syncConferenceLogos
   };
 })();
