@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=58" />
+  <link rel="stylesheet" href="/css/site.css?v=59" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -214,6 +214,81 @@
     }
     .profile-note.ok { color: #86efac; }
     .profile-note.err { color: #fca5a5; }
+    .portal-links {
+      margin-top: 1.35rem;
+      padding-top: 1.15rem;
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 0.85rem;
+      max-width: 42rem;
+    }
+    .portal-links > h3 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .portal-row {
+      display: grid;
+      grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+      gap: 0.65rem 0.85rem;
+      align-items: center;
+    }
+    .portal-row .portal-label {
+      margin: 0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .portal-row .portal-url {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--blue);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.88rem;
+      text-decoration: none;
+    }
+    .portal-row .portal-url:hover { text-decoration: underline; color: var(--link-hover); }
+    .portal-row .portal-actions {
+      display: flex;
+      gap: 0.4rem;
+      flex: 0 0 auto;
+    }
+    .portal-row .btn-copy {
+      appearance: none;
+      border: 1px solid var(--chip-border);
+      background: transparent;
+      color: var(--text);
+      font-family: var(--display);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.65rem;
+      cursor: pointer;
+    }
+    .portal-row .btn-copy:hover {
+      border-color: var(--chip-border-active);
+      background: var(--ghost-hover-bg);
+    }
+    .portal-row .btn-copy.is-copied {
+      border-color: var(--good);
+      color: var(--good);
+    }
+    @media (max-width: 640px) {
+      .portal-row {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+      }
+      .portal-row .portal-actions { justify-content: flex-start; }
+    }
     .logo-layout {
       display: grid;
       grid-template-columns: minmax(12rem, 15rem) 1fr;
@@ -414,7 +489,7 @@
       <div class="section-head">
         <div class="section-head-block">
           <h2>Account</h2>
-          <p>Your member identity on GridIron 24.</p>
+          <p>Your member identity and shareable portal links.</p>
         </div>
       </div>
       <div id="account-body"><div class="msg">Loading…</div></div>
@@ -562,6 +637,58 @@
       return role === 'commissioner' || role === 'conference_admin';
     }
 
+    function portalUrls() {
+      const origin = window.location.origin.replace(/\/$/, '');
+      return {
+        portal: `${origin}/home`,
+        customer: `${origin}/enter`
+      };
+    }
+
+    async function copyPortalUrl(url, btn) {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      if (!btn) return;
+      const prev = btn.textContent;
+      btn.textContent = 'Copied';
+      btn.classList.add('is-copied');
+      window.setTimeout(() => {
+        btn.textContent = prev;
+        btn.classList.remove('is-copied');
+      }, 1400);
+    }
+
+    function portalRowHtml(label, url) {
+      return `
+        <div class="portal-row">
+          <p class="portal-label">${escP(label)}</p>
+          <a class="portal-url" href="${escP(url)}" target="_blank" rel="noopener noreferrer">${escP(url)}</a>
+          <div class="portal-actions">
+            <button type="button" class="btn-copy" data-copy-url="${escP(url)}">Copy</button>
+          </div>
+        </div>`;
+    }
+
+    function bindPortalCopy(root) {
+      root?.querySelectorAll('[data-copy-url]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const url = btn.getAttribute('data-copy-url') || '';
+          if (url) copyPortalUrl(url, btn);
+        });
+      });
+    }
+
     function renderAccount(data) {
       const user = data.user || {};
       const logoUrl = isChosenLogo(data.logo) ? data.logo.url : '';
@@ -570,7 +697,9 @@
       const jumpTools = document.getElementById('jump-tools');
       if (toolsCard) toolsCard.hidden = !staff;
       if (jumpTools) jumpTools.hidden = !staff;
-      document.getElementById('account-body').innerHTML = `
+      const urls = portalUrls();
+      const accountBody = document.getElementById('account-body');
+      accountBody.innerHTML = `
         <div class="profile-hero-row">
           <div class="profile-avatar">${logoUrl
             ? `<img src="${escP(logoUrl)}" alt="">`
@@ -582,7 +711,14 @@
               <span class="pill">${escP(ROLE_LABELS_P[user.role] || user.role || 'Member')}</span>
             </div>
           </div>
+        </div>
+        <div class="portal-links" aria-label="Shareable portal links">
+          <h3>Portal links</h3>
+          ${portalRowHtml('Portal URL', urls.portal)}
+          ${portalRowHtml('Customer URL', urls.customer)}
+          <p class="profile-note">Portal URL opens League HQ. Customer URL is the general sign-in page for managers.</p>
         </div>`;
+      bindPortalCopy(accountBody);
     }
 
     function renderFranchise(data) {
