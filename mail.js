@@ -65,7 +65,7 @@ function brandedEmailHtml({
   ctaUrl,
   noteHtml = '',
   linkFallbackUrl = '',
-  footerExtra = 'If you weren’t expecting this email, ignore it.',
+  footerExtra = 'If you weren’t expecting this email, ignore it.<br />GridIron 24 created by S.Evans',
   baseUrl
 }) {
   const { origin, logoUrl, detailLogo, overtimeLogo } = brandedAssets(baseUrl);
@@ -360,6 +360,105 @@ async function sendAccountApprovedEmail({ to, name, leagueName, baseUrl }) {
 
   console.log(`[account-approved] ${to}: ${content.subject}`);
   return { sent: false, method: 'log', previewHtml: content.html };
+}
+
+function conferenceEyebrow(conferenceKey, conferenceName) {
+  const key = String(conferenceKey || '').toLowerCase();
+  if (key === 'detail') return 'Detail Conference · GridIron 24';
+  if (key === 'overtime') return 'Overtime Conference · GridIron 24';
+  return conferenceName ? `${conferenceName} · GridIron 24` : 'GridIron 24 · Conference Note';
+}
+
+function buildConferenceOwnerEmail({
+  subject,
+  headline,
+  body,
+  recipientName,
+  fromName,
+  conferenceKey,
+  conferenceName,
+  ctaLabel,
+  ctaUrl,
+  baseUrl
+}) {
+  const origin = siteBaseUrl(baseUrl);
+  const who = String(recipientName || '').trim() || 'Manager';
+  const from = String(fromName || '').trim() || 'Your conference admin';
+  const confLabel = conferenceName || (conferenceKey === 'overtime' ? 'Overtime Conference' : 'Detail Conference');
+  const resolvedCtaUrl = ctaUrl
+    ? (String(ctaUrl).startsWith('http') ? String(ctaUrl) : `${origin}${String(ctaUrl).startsWith('/') ? '' : '/'}${ctaUrl}`)
+    : `${origin}/home.html`;
+  const resolvedCtaLabel = ctaLabel || 'Open League HQ';
+  const bodyText = String(body || '').trim();
+  const text =
+    `${subject || 'Message from GridIron 24'}\n\n` +
+    `Hi ${who},\n\n` +
+    `${bodyText}\n\n` +
+    `— ${from}\n${confLabel}\n\n` +
+    `${resolvedCtaLabel}: ${resolvedCtaUrl}\n\n` +
+    `GridIron 24 HQ · Fantasy Football\n`;
+
+  const greeting = `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#d4d4d4;">Hi ${escapeHtml(who)},</p>`;
+  const signoff =
+    `<p style="margin:18px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#9a9a9a;">` +
+    `— ${escapeHtml(from)}<br /><span style="letter-spacing:0.06em;text-transform:uppercase;font-size:12px;">${escapeHtml(confLabel)}</span></p>`;
+
+  const html = brandedEmailHtml({
+    title: subject || 'GridIron 24',
+    preheader: `${from} · ${confLabel}`,
+    eyebrow: conferenceEyebrow(conferenceKey, confLabel),
+    headline: headline || subject || 'Conference update',
+    bodyHtml: `${greeting}${paragraphsToHtml(bodyText)}${signoff}`,
+    showConferences: false,
+    ctaLabel: resolvedCtaLabel,
+    ctaUrl: resolvedCtaUrl,
+    linkFallbackUrl: resolvedCtaUrl,
+    footerExtra: 'GridIron 24 created by S.Evans · Patrol Division',
+    baseUrl: origin
+  });
+
+  return { subject: subject || `Message from ${confLabel}`, text, html };
+}
+
+async function sendConferenceOwnerEmail({
+  to,
+  subject,
+  headline,
+  body,
+  recipientName,
+  fromName,
+  conferenceKey,
+  conferenceName,
+  ctaLabel,
+  ctaUrl,
+  baseUrl
+}) {
+  const content = buildConferenceOwnerEmail({
+    subject,
+    headline,
+    body,
+    recipientName,
+    fromName,
+    conferenceKey,
+    conferenceName,
+    ctaLabel,
+    ctaUrl,
+    baseUrl
+  });
+  const cfg = mailConfig();
+  if (cfg.configured) {
+    await sendViaResend({
+      from: cfg.from,
+      apiKey: process.env.RESEND_API_KEY,
+      to,
+      subject: content.subject,
+      text: content.text,
+      html: content.html
+    });
+    return { sent: true, method: 'resend', subject: content.subject };
+  }
+  console.log(`[conference-email] ${to}: ${content.subject}`);
+  return { sent: false, method: 'log', subject: content.subject, previewHtml: content.html };
 }
 
 function paragraphsToHtml(text) {
@@ -689,10 +788,12 @@ module.exports = {
   sendAccountApprovedEmail,
   sendWeeklyWrapEmail,
   sendRulesSyncAlert,
+  sendConferenceOwnerEmail,
   mailConfig,
   buildInviteEmail,
   buildAccountApprovedEmail,
   buildPasswordResetEmail,
   buildWeeklyWrapEmail,
+  buildConferenceOwnerEmail,
   siteBaseUrl
 };

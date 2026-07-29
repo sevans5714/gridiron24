@@ -47,7 +47,9 @@ const {
   sendAccountApprovedEmail,
   sendWeeklyWrapEmail,
   sendRulesSyncAlert,
+  sendConferenceOwnerEmail,
   buildWeeklyWrapEmail,
+  buildConferenceOwnerEmail,
   mailConfig
 } = require('./mail');
 
@@ -273,6 +275,66 @@ function requireCommissioner(req, res) {
     return null;
   }
   return user;
+}
+
+function resolveStaffConferenceKey(user, requestedKey) {
+  if (user.role === 'conference_admin') {
+    const key = String(user.conference || '').trim().toLowerCase();
+    if (!key || !config.conferences.some((c) => c.key === key)) {
+      const err = new Error('Your account is missing a conference assignment');
+      err.status = 400;
+      throw err;
+    }
+    return key;
+  }
+  const key = String(requestedKey || '').trim().toLowerCase();
+  if (!key || !config.conferences.some((c) => c.key === key)) {
+    const err = new Error('Pick a conference');
+    err.status = 400;
+    throw err;
+  }
+  return key;
+}
+
+async function loadConferenceOwnerRoster(conferenceKey) {
+  const conference = config.conferences.find((c) => c.key === conferenceKey);
+  if (!conference) {
+    const err = new Error('Unknown conference');
+    err.status = 404;
+    throw err;
+  }
+  const league = await fetchEspnLeague(conference);
+  const claimByTeam = new Map(
+    logos.listClaims()
+      .filter((c) => c.conferenceKey === conferenceKey)
+      .map((c) => [Number(c.teamId), c])
+  );
+  const teams = (league.teams || []).map((t) => {
+    const claim = claimByTeam.get(Number(t.id));
+    const ownerUser = claim ? users.findById(claim.userId) : null;
+    const ownerEmail = ownerUser?.email || null;
+    return {
+      teamId: t.id,
+      teamName: t.name,
+      logo: t.logo || null,
+      espnOwnerName: t.owner || null,
+      claimed: Boolean(claim),
+      ownerUserId: ownerUser?.id || null,
+      ownerName: ownerUser?.name || t.owner || null,
+      ownerEmail,
+      emailable: Boolean(ownerEmail)
+    };
+  });
+  return {
+    conference: {
+      key: conference.key,
+      name: conference.name,
+      shortName: conference.shortName,
+      logo: conference.logo || null
+    },
+    teams,
+    mail: mailConfig()
+  };
 }
 
 function canAccessCommissionerPage(user) {
@@ -2660,6 +2722,162 @@ const server = http.createServer(async (req, res) => {
         'Cache-Control': 'no-store'
       });
       return res.end(content.html);
+    }
+
+    if (pathname === '/api/conference/teams' && req.method === 'GET') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      try {
+        const conferenceKey = resolveStaffConferenceKey(user, requestUrl.searchParams.get('conference'));
+        const roster = await loadConferenceOwnerRoster(conferenceKey);
+        return sendJson(res, 200, {
+          ok: true,
+          ...roster,
+          viewer: {
+            role: user.role,
+            conference: user.conference || null,
+            name: user.name || user.loginName
+          }
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not load conference teams' });
+      }
+    }
+
+    if (pathname === '/api/conference/email-owners/preview' && req.method === 'GET') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      try {
+        const conferenceKey = resolveStaffConferenceKey(user, requestUrl.searchParams.get('conference'));
+        const conference = config.conferences.find((c) => c.key === conferenceKey);
+        const origin = requestOrigin(req);
+        const content = buildConferenceOwnerEmail({
+          subject: requestUrl.searchParams.get('subject') || 'Conference update',
+          headline: requestUrl.searchParams.get('headline') || 'Conference update',
+          body: requestUrl.searchParams.get('body') || 'This is a preview of your branded conference email to selected team owners.',
+          recipientName: 'Alex Manager',
+          fromName: user.name || user.loginName || 'Conference Admin',
+          conferenceKey,
+          conferenceName: conference?.name,
+          ctaLabel: requestUrl.searchParams.get('ctaLabel') || 'Open League HQ',
+          ctaUrl: requestUrl.searchParams.get('ctaUrl') || '/home.html',
+          baseUrl: origin
+        });
+        res.writeHead(200, {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store'
+        });
+        return res.end(content.html);
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not build preview' });
+      }
+    }
+
+    if (pathname === '/api/conference/email-owners' && req.method === 'POST') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const conferenceKey = resolveStaffConferenceKey(user, body.conference);
+        const conference = config.conferences.find((c) => c.key === conferenceKey);
+        const roster = await loadConferenceOwnerRoster(conferenceKey);
+        const selectedIds = new Set(
+          (Array.isArray(body.teamIds) ? body.teamIds : [])
+            .map((id) => Number(id))
+            .filter((id) => Number.isFinite(id))
+        );
+        if (!selectedIds.size) {
+          return sendJson(res, 400, { ok: false, error: 'Select at least one team' });
+        }
+        const subject = String(body.subject || '').trim();
+        const messageBody = String(body.body || '').trim();
+        const headline = String(body.headline || subject || 'Conference update').trim();
+        if (!subject) return sendJson(res, 400, { ok: false, error: 'Subject is required' });
+        if (!messageBody) return sendJson(res, 400, { ok: false, error: 'Message body is required' });
+        if (subject.length > 160) return sendJson(res, 400, { ok: false, error: 'Subject is too long' });
+        if (messageBody.length > 8000) return sendJson(res, 400, { ok: false, error: 'Message is too long' });
+
+        const byId = new Map(roster.teams.map((t) => [Number(t.teamId), t]));
+        const results = [];
+        const skipped = [];
+        let sentCount = 0;
+        for (const teamId of selectedIds) {
+          const team = byId.get(Number(teamId));
+          if (!team) {
+            skipped.push({ teamId, reason: 'not_in_conference' });
+            continue;
+          }
+          if (!team.emailable || !team.ownerEmail) {
+            skipped.push({
+              teamId,
+              teamName: team.teamName,
+              reason: team.claimed ? 'missing_email' : 'unclaimed'
+            });
+            continue;
+          }
+          try {
+            const mailResult = await sendConferenceOwnerEmail({
+              to: team.ownerEmail,
+              subject,
+              headline,
+              body: messageBody,
+              recipientName: team.ownerName || 'Manager',
+              fromName: user.name || user.loginName || 'Conference Admin',
+              conferenceKey,
+              conferenceName: conference?.name,
+              ctaLabel: String(body.ctaLabel || 'Open League HQ').trim() || 'Open League HQ',
+              ctaUrl: String(body.ctaUrl || '/home.html').trim() || '/home.html',
+              baseUrl: requestOrigin(req)
+            });
+            if (mailResult.sent) sentCount += 1;
+            results.push({
+              ok: true,
+              teamId: team.teamId,
+              teamName: team.teamName,
+              email: team.ownerEmail,
+              ownerName: team.ownerName,
+              sent: Boolean(mailResult.sent),
+              method: mailResult.method || null
+            });
+          } catch (mailErr) {
+            results.push({
+              ok: false,
+              teamId: team.teamId,
+              teamName: team.teamName,
+              email: team.ownerEmail,
+              ownerName: team.ownerName,
+              sent: false,
+              error: mailErr.message || 'Email send failed'
+            });
+          }
+        }
+
+        const okCount = results.filter((r) => r.ok).length;
+        const mailReady = mailConfig().configured;
+        let message;
+        if (!okCount) message = 'No emails were sent. Selected teams may be unclaimed or missing emails.';
+        else if (!mailReady) message = `Prepared ${okCount} branded email${okCount === 1 ? '' : 's'} (mail not configured — logged only).`;
+        else if (sentCount === okCount) message = `Emailed ${sentCount} team owner${sentCount === 1 ? '' : 's'}.`;
+        else message = `Emailed ${sentCount} of ${okCount}. Check results for failures.`;
+
+        return sendJson(res, 200, {
+          ok: true,
+          conference: roster.conference,
+          results,
+          skipped,
+          sentCount,
+          preparedCount: okCount,
+          mail: mailConfig(),
+          message
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not email owners' });
+      }
     }
 
     if (pathname === '/api/invites' && req.method === 'GET') {

@@ -554,6 +554,77 @@
       white-space: pre-wrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
+    .owners-toolbar {
+      display: grid;
+      gap: 0.35rem;
+      margin: 0.85rem 0 0.65rem;
+      max-width: 18rem;
+    }
+    .owners-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 0.75rem;
+      align-items: center;
+      margin: 0.75rem 0;
+    }
+    .owners-selected {
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .owners-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.1rem;
+      font-size: 0.95rem;
+    }
+    .owners-table th {
+      text-align: left;
+      padding: 0.45rem 0.4rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+    .owners-table td {
+      padding: 0.55rem 0.4rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+      color: var(--text);
+    }
+    .owners-table tr.not-emailable td { opacity: 0.72; }
+    .owners-table .team-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+    .owners-table .team-cell img {
+      width: 1.85rem;
+      height: 1.85rem;
+      object-fit: contain;
+      border-radius: 0.3rem;
+      box-shadow: var(--logo-lift);
+      flex: 0 0 auto;
+    }
+    .owners-table .email {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.84rem;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .owners-table .tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .owners-table .tag.ok { color: var(--good); }
+    .owners-compose { margin-top: 0.5rem; }
+    .owners-compose .field-label { margin-top: 0.75rem; }
     .invite-link-actions,
     .invite-row-actions {
       display: flex;
@@ -654,6 +725,7 @@
         </div>
         <div class="comm-nav-group" id="nav-comms">
           <p class="comm-nav-label">Comms</p>
+          <a href="#conference-owners">Email Owners</a>
           <a href="#news-admin">News</a>
           <a href="#ticker-admin">Ticker</a>
           <a href="#wrap-admin" id="jump-wrap" hidden>Wrap-Up</a>
@@ -745,6 +817,40 @@
             <p>What members see on Home and in the ticker.</p>
           </header>
           <div class="comm-group-body">
+            <section class="admin-block" id="conference-owners">
+              <div class="section-head">
+                <h3>Email Owners</h3>
+              </div>
+              <p class="help">Conference roster with GridIron owner names and emails. Select teams and send a branded mass email. Unclaimed franchises cannot receive mail until assigned in Members.</p>
+              <div class="status-note" id="owners-mail-status" role="status"></div>
+              <div class="status-note" id="owners-msg" role="status"></div>
+              <div class="owners-toolbar" id="owners-conf-picker" hidden>
+                <label class="field-label" for="owners-conference">Conference</label>
+                <select class="field" id="owners-conference" style="max-width:16rem;">
+                  <option value="detail">Detail Conference</option>
+                  <option value="overtime">Overtime Conference</option>
+                </select>
+              </div>
+              <div class="owners-actions">
+                <button type="button" class="btn btn-secondary" id="owners-select-all">Select emailable</button>
+                <button type="button" class="btn btn-secondary" id="owners-clear">Clear</button>
+                <span class="owners-selected" id="owners-selected-count">0 selected</span>
+              </div>
+              <div id="owners-table"><div class="msg">Loading conference teams…</div></div>
+              <div class="invite-compose owners-compose">
+                <label class="field-label" for="owners-subject">Subject</label>
+                <input class="field field-box" id="owners-subject" type="text" maxlength="160" placeholder="Subject line" />
+                <label class="field-label" for="owners-headline">Headline</label>
+                <input class="field field-box" id="owners-headline" type="text" maxlength="120" placeholder="Email headline (optional)" />
+                <label class="field-label" for="owners-body">Message</label>
+                <textarea class="field field-area field-box" id="owners-body" rows="6" maxlength="8000" placeholder="Write your message to selected team owners…"></textarea>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-secondary" id="owners-preview">Preview branded email</button>
+                  <button type="button" class="btn" id="owners-send">Send to selected</button>
+                </div>
+              </div>
+            </section>
+
             <section class="admin-block" id="news-admin" hidden>
               <div class="section-head">
                 <h3>League News</h3>
@@ -1885,6 +1991,180 @@
       });
     }
 
+    let ownersRoster = { teams: [], conference: null, mail: null };
+    let ownersViewer = null;
+
+    function showOwnersMsg(text, ok) {
+      const el = document.getElementById('owners-msg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.className = `status-note show ${ok === true ? 'ok' : ok === false ? 'err' : ''}`;
+    }
+
+    function ownersSelectedIds() {
+      return [...document.querySelectorAll('#owners-table input[data-team-id]:checked')]
+        .map((el) => Number(el.getAttribute('data-team-id')))
+        .filter((id) => Number.isFinite(id));
+    }
+
+    function updateOwnersSelectedCount() {
+      const n = ownersSelectedIds().length;
+      const el = document.getElementById('owners-selected-count');
+      if (el) el.textContent = `${n} selected`;
+    }
+
+    function renderOwnersTable(payload) {
+      ownersRoster = payload || { teams: [], conference: null, mail: null };
+      const teams = ownersRoster.teams || [];
+      const mailEl = document.getElementById('owners-mail-status');
+      if (mailEl) {
+        const ready = Boolean(ownersRoster.mail?.configured);
+        mailEl.textContent = ready
+          ? 'Branded email delivery is configured.'
+          : 'Mail is not configured — sends will be logged until RESEND_API_KEY / MAIL_FROM are set.';
+        mailEl.className = `status-note show ${ready ? 'ok' : ''}`;
+      }
+      const conf = ownersRoster.conference;
+      if (!teams.length) {
+        document.getElementById('owners-table').innerHTML =
+          `<div class="msg">No teams found${conf?.name ? ` for ${esc(conf.name)}` : ''}.</div>`;
+        updateOwnersSelectedCount();
+        return;
+      }
+      const rows = teams.map((t) => {
+        const emailable = Boolean(t.emailable);
+        const email = t.ownerEmail
+          ? `<span class="email">${esc(t.ownerEmail)}</span>`
+          : `<span class="tag">${t.claimed ? 'No email' : 'Unclaimed'}</span>`;
+        return `
+          <tr class="${emailable ? '' : 'not-emailable'}">
+            <td>
+              <input type="checkbox" data-team-id="${esc(String(t.teamId))}" ${emailable ? '' : 'disabled'} aria-label="Select ${esc(t.teamName || 'team')}" />
+            </td>
+            <td>
+              <span class="team-cell">
+                ${t.logo ? `<img src="${esc(t.logo)}" alt="">` : ''}
+                <span>${esc(t.teamName || `Team ${t.teamId}`)}</span>
+              </span>
+            </td>
+            <td>${esc(t.ownerName || t.espnOwnerName || '—')}</td>
+            <td>${email}</td>
+            <td>${emailable ? '<span class="tag ok">Ready</span>' : '<span class="tag">Skip</span>'}</td>
+          </tr>`;
+      }).join('');
+      document.getElementById('owners-table').innerHTML = `
+        <table class="owners-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Team</th>
+              <th>Owner</th>
+              <th>Email</th>
+              <th>Mail</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+      updateOwnersSelectedCount();
+    }
+
+    async function loadConferenceOwners() {
+      const picker = document.getElementById('owners-conference');
+      const qs = ownersViewer?.role === 'commissioner' && picker?.value
+        ? `?conference=${encodeURIComponent(picker.value)}`
+        : '';
+      const res = await fetch(`/api/conference/teams${qs}`, { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || `Could not load teams (${res.status})`);
+      renderOwnersTable(data);
+      if (data.conference?.name && !document.getElementById('owners-subject').value) {
+        document.getElementById('owners-subject').placeholder = `${data.conference.name} update`;
+      }
+      return data;
+    }
+
+    function wireConferenceOwners(user) {
+      ownersViewer = user;
+      const pickerWrap = document.getElementById('owners-conf-picker');
+      const picker = document.getElementById('owners-conference');
+      if (user.role === 'commissioner') {
+        pickerWrap.hidden = false;
+        if (user.conference && picker) picker.value = user.conference;
+      } else {
+        pickerWrap.hidden = true;
+      }
+      picker?.addEventListener('change', async () => {
+        showOwnersMsg('Loading…');
+        try {
+          await loadConferenceOwners();
+          showOwnersMsg('');
+        } catch (err) {
+          showOwnersMsg(err.message, false);
+        }
+      });
+      document.getElementById('owners-table')?.addEventListener('change', (e) => {
+        if (e.target?.matches?.('input[data-team-id]')) updateOwnersSelectedCount();
+      });
+      document.getElementById('owners-select-all')?.addEventListener('click', () => {
+        document.querySelectorAll('#owners-table input[data-team-id]:not(:disabled)').forEach((el) => {
+          el.checked = true;
+        });
+        updateOwnersSelectedCount();
+      });
+      document.getElementById('owners-clear')?.addEventListener('click', () => {
+        document.querySelectorAll('#owners-table input[data-team-id]').forEach((el) => {
+          el.checked = false;
+        });
+        updateOwnersSelectedCount();
+      });
+      document.getElementById('owners-preview')?.addEventListener('click', () => {
+        const conf = ownersRoster.conference?.key
+          || (user.role === 'commissioner' ? picker?.value : user.conference)
+          || 'detail';
+        const qs = new URLSearchParams({
+          conference: conf,
+          subject: document.getElementById('owners-subject').value.trim() || 'Conference update',
+          headline: document.getElementById('owners-headline').value.trim() || '',
+          body: document.getElementById('owners-body').value.trim() || 'This is a preview of your branded conference email.'
+        });
+        window.open(`/api/conference/email-owners/preview?${qs.toString()}`, '_blank', 'noopener');
+      });
+      document.getElementById('owners-send')?.addEventListener('click', async () => {
+        const teamIds = ownersSelectedIds();
+        const subject = document.getElementById('owners-subject').value.trim();
+        const headline = document.getElementById('owners-headline').value.trim();
+        const body = document.getElementById('owners-body').value.trim();
+        if (!teamIds.length) return showOwnersMsg('Select at least one emailable team.', false);
+        if (!subject) return showOwnersMsg('Add a subject.', false);
+        if (!body) return showOwnersMsg('Add a message body.', false);
+        const conf = ownersRoster.conference?.key
+          || (user.role === 'commissioner' ? picker?.value : user.conference);
+        const btn = document.getElementById('owners-send');
+        btn.disabled = true;
+        showOwnersMsg('Sending branded emails…');
+        try {
+          const res = await fetch('/api/conference/email-owners', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              conference: conf,
+              teamIds,
+              subject,
+              headline: headline || subject,
+              body
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not send');
+          showOwnersMsg(data.message || 'Sent.', true);
+        } catch (err) {
+          showOwnersMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
+
     async function bootCommissionerTools(user) {
       if (!user || (user.role !== 'commissioner' && user.role !== 'conference_admin')) {
         window.location.replace('/profile.html');
@@ -1893,6 +2173,11 @@
       await load();
       wireNewsAdmin();
       wireTickerAdmin();
+      wireConferenceOwners(user);
+      try { await loadConferenceOwners(); } catch (err) {
+        document.getElementById('owners-table').innerHTML =
+          `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
       try { await loadNewsAdmin(); } catch (err) {
         document.getElementById('news-admin').hidden = false;
         document.getElementById('news-admin-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
