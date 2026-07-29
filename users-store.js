@@ -72,6 +72,10 @@ function normalizeConference(conference) {
   return CONFERENCE_KEYS.has(key) ? key : null;
 }
 
+function normalizeTheme(theme) {
+  return String(theme || '').trim().toLowerCase() === 'day' ? 'day' : 'night';
+}
+
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
   const hash = crypto.scryptSync(String(password), salt, 64).toString('hex');
   return { salt, hash };
@@ -100,6 +104,7 @@ function publicUser(user) {
     leagueId: user.leagueId || null,
     leagueOwner: Boolean(user.leagueOwner),
     approved,
+    theme: normalizeTheme(user.theme),
     createdAt: user.createdAt || null,
     approvedAt: user.approvedAt || null
   };
@@ -444,6 +449,19 @@ function changePassword(userId, currentPassword, newPassword) {
   return publicUser(store.users[idx]);
 }
 
+function updatePreferences(userId, prefs = {}) {
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Account not found'), { status: 404 });
+  }
+  if (Object.prototype.hasOwnProperty.call(prefs, 'theme')) {
+    store.users[idx].theme = normalizeTheme(prefs.theme);
+  }
+  writeStore(store);
+  return publicUser(store.users[idx]);
+}
+
 module.exports = {
   DATA_DIR,
   ROLES,
@@ -455,6 +473,7 @@ module.exports = {
   createResetToken,
   resetPasswordWithToken,
   changePassword,
+  updatePreferences,
   findById,
   findByEmail,
   listUsers,

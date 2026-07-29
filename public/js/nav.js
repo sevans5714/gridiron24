@@ -12,6 +12,7 @@
     { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' }
   ];
 
+  const THEME_KEY = 'gi-theme';
   const active = document.body.dataset.page || 'home';
   const navActive = (active === 'scoring' || active === 'rulebook' || active === 'payouts') ? 'rulebook' : active;
   const nav = document.getElementById('site-nav');
@@ -21,6 +22,30 @@
     return String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+  }
+
+  function getTheme() {
+    const attr = document.documentElement.getAttribute('data-theme');
+    if (attr === 'day' || attr === 'night') return attr;
+    try {
+      const stored = localStorage.getItem(THEME_KEY);
+      if (stored === 'day' || stored === 'night') return stored;
+    } catch { /* ignore */ }
+    return 'night';
+  }
+
+  function applyTheme(theme) {
+    const next = theme === 'day' ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem(THEME_KEY, next); } catch { /* ignore */ }
+    return next;
+  }
+
+  function syncThemeFromUser(user) {
+    if (!user) return getTheme();
+    const preferred = user.theme === 'day' ? 'day' : (user.theme === 'night' ? 'night' : null);
+    if (!preferred) return getTheme();
+    return applyTheme(preferred);
   }
 
   function initials(name) {
@@ -206,6 +231,7 @@
         } catch { /* ignore */ }
       }
       authState = { user, authenticated: Boolean(user), myTeam };
+      syncThemeFromUser(user);
       renderUserMenu(user, myTeam);
       document.dispatchEvent(new CustomEvent('gi:auth', { detail: authState }));
       return authState;
@@ -220,6 +246,7 @@
   renderNav();
   ensureTickerMount();
   ensureUserMenuMount();
+  applyTheme(getTheme());
   loadTicker();
   document.addEventListener('click', closeUserMenuOnOutside);
 
@@ -231,6 +258,9 @@
     reloadTicker: loadTicker,
     setSync() {
       /* Top-right header shows identity (team / owner / access), not sync text. */
-    }
+    },
+    getTheme,
+    setTheme: applyTheme,
+    syncThemeFromUser
   };
 })();

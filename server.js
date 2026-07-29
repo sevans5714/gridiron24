@@ -2025,6 +2025,27 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/preferences' && req.method === 'POST') {
+      const sessionUser = getSessionUser(req);
+      if (!sessionUser) {
+        return sendJson(res, 401, { ok: false, error: 'Sign in required' });
+      }
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const user = users.updatePreferences(sessionUser.id, {
+          theme: body.theme
+        });
+        return sendJson(res, 200, { ok: true, user });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save preferences' });
+      }
+    }
+
     if (pathname === '/api/logout' && (req.method === 'POST' || req.method === 'GET')) {
       return sendJson(res, 200, { ok: true }, { 'Set-Cookie': clearSessionCookieHeader() });
     }
