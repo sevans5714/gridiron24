@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=54" />
+  <link rel="stylesheet" href="/css/site.css?v=55" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -55,11 +55,11 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #9a9a9a;
+      color: var(--muted);
       text-decoration: none;
       line-height: 1.35;
     }
-    .comm-nav a:hover { color: #fff; }
+    .comm-nav a:hover { color: var(--nav-hover); }
     .comm-nav a[hidden],
     .comm-nav-group[hidden] { display: none !important; }
 
@@ -85,12 +85,12 @@
       font-weight: 700;
       letter-spacing: 0.07em;
       text-transform: uppercase;
-      color: #fff;
+      color: var(--text);
     }
     .comm-group > header p {
       margin: 0.4rem 0 0;
       max-width: 40rem;
-      color: #8a8a8a;
+      color: var(--muted);
       font-size: 0.92rem;
       line-height: 1.45;
     }
@@ -113,7 +113,7 @@
       flex-wrap: wrap;
       margin: 0 0 0.45rem;
       padding-bottom: 0.4rem;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid var(--line);
     }
     .comm-section > .section-head h2,
     .admin-block > .section-head h2,
@@ -125,12 +125,12 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #ddd;
+      color: var(--text);
     }
     .comm-section .help {
       margin: 0 0 0.95rem;
       max-width: 44rem;
-      color: #9a9a9a;
+      color: var(--muted);
       font-size: 0.92rem;
       line-height: 1.5;
     }
@@ -175,18 +175,18 @@
     body[data-page="league-tools"] .status-note.err { color: #fca5a5; }
     body[data-page="league-tools"] .field {
       border: 0;
-      border-bottom: 1px solid rgba(255,255,255,0.22);
+      border-bottom: 1px solid var(--line);
       background: transparent;
       border-radius: 0;
       padding-left: 0;
       padding-right: 0;
     }
     body[data-page="league-tools"] .field:focus {
-      border-bottom-color: #fff;
+      border-bottom-color: var(--text);
     }
     body[data-page="league-tools"] .field-hint {
       margin: 0.2rem 0 0.7rem;
-      color: #8a8a8a;
+      color: var(--muted);
       font-size: 0.88rem;
       line-height: 1.4;
       max-width: 36rem;
@@ -205,10 +205,10 @@
       min-height: 5.75rem;
       margin: 0 0 0.85rem;
       padding: 0.8rem 0.9rem;
-      border: 1px solid rgba(255,255,255,0.22);
+      border: 1px solid var(--line);
       border-radius: 0;
-      background: rgba(255,255,255,0.04);
-      color: #fff;
+      background: var(--row-hover);
+      color: var(--text);
       font-family: var(--body);
       font-size: 1rem;
       line-height: 1.45;
@@ -245,9 +245,9 @@
     }
     body[data-page="league-tools"] .data-table select {
       background: transparent;
-      color: #fff;
+      color: var(--text);
       border: 0;
-      border-bottom: 1px solid rgba(255,255,255,0.28);
+      border-bottom: 1px solid var(--line);
       border-radius: 0;
       padding: 0.35rem 0;
       max-width: 16rem;
@@ -262,7 +262,7 @@
       margin-bottom: 1.15rem;
     }
     .sync-tools .hint {
-      color: #8a8a8a;
+      color: var(--muted);
       font-size: 0.88rem;
     }
 
@@ -273,7 +273,7 @@
       align-items: center;
       margin-bottom: 1.25rem;
       padding: 0 0 1.15rem;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid var(--line);
     }
     .conf {
       display: flex;
@@ -299,7 +299,7 @@
     .conf.overtime .name { color: var(--overtime); }
     .conf .meta {
       margin-top: 0.2rem;
-      color: #8a8a8a;
+      color: var(--muted);
       font-size: 0.82rem;
     }
     .sync-badge { text-align: center; min-width: 9rem; }
@@ -314,7 +314,7 @@
     .sync-badge .label.warn { color: #ef4444; }
     .sync-badge .sub {
       margin-top: 0.25rem;
-      color: #8a8a8a;
+      color: var(--muted);
       font-size: 0.78rem;
       line-height: 1.35;
     }
@@ -331,7 +331,7 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #8a8a8a;
+      color: var(--muted);
     }
     .stat strong {
       display: block;
@@ -340,7 +340,7 @@
       font-size: 1.35rem;
       font-weight: 600;
       letter-spacing: 0.02em;
-      color: #fff;
+      color: var(--text);
     }
     .stat strong.detail { color: var(--detail); }
     .stat strong.overtime { color: var(--overtime); }
@@ -353,7 +353,7 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #b0b0b0;
+      color: var(--muted);
     }
     .diff-table {
       width: 100%;
@@ -362,7 +362,7 @@
     .diff-table th,
     .diff-table td {
       padding: 0.65rem 0.75rem 0.65rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid var(--line);
       text-align: left;
       font-size: 0.92rem;
     }
@@ -371,7 +371,7 @@
       font-weight: 600;
       letter-spacing: 0.07em;
       text-transform: uppercase;
-      color: #8a8a8a;
+      color: var(--muted);
     }
     .diff-table th.num,
     .diff-table td.num { text-align: right; }
@@ -390,7 +390,7 @@
       text-align: right;
     }
     .diff-table tr:last-child td { border-bottom: 0; }
-    .diff-table .item { font-weight: 600; color: #eee; }
+    .diff-table .item { font-weight: 600; color: var(--text); }
 
     .sync-box {
       margin-bottom: 1.35rem;
@@ -408,7 +408,7 @@
     }
     .sync-box p {
       margin: 0 0 0.65rem;
-      color: #9a9a9a;
+      color: var(--muted);
       font-size: 0.92rem;
       line-height: 1.5;
       max-width: 44rem;
@@ -416,7 +416,7 @@
     .sync-box ol {
       margin: 0;
       padding-left: 1.15rem;
-      color: #ddd;
+      color: var(--text);
       font-size: 0.92rem;
       line-height: 1.55;
     }
@@ -458,7 +458,7 @@
       background: currentColor;
     }
     .playoff-table .hint-cell {
-      color: #8a8a8a;
+      color: var(--muted);
       font-size: 0.82rem;
       font-weight: 400;
     }
@@ -479,7 +479,7 @@
       gap: 0.35rem;
     }
     .playoff-checklist li {
-      color: #b0b0b0;
+      color: var(--muted);
       font-size: 0.92rem;
       line-height: 1.4;
     }
@@ -503,18 +503,18 @@
       color: #8eb6ff;
       text-decoration: none;
     }
-    .links a:hover { color: #fff; }
+    .links a:hover { color: var(--nav-hover); }
 
     .role-pill {
       display: inline-block;
       font-size: 0.72rem;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #9a9a9a;
+      color: var(--muted);
     }
     .role-pill.commissioner { color: #f0d78c; }
     .role-pill.conference_admin { color: #8eb6ff; }
-    .muted-sm { color: #8a8a8a; font-size: 0.78rem; }
+    .muted-sm { color: var(--muted); font-size: 0.78rem; }
 
     .invite-links {
       margin: 0.85rem 0 1.15rem;
@@ -526,13 +526,13 @@
       font-size: 0.78rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #8a8a8a;
+      color: var(--muted);
     }
     .invite-link-row {
       display: grid;
       gap: 0.4rem;
       padding-top: 0.85rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid var(--line);
     }
     .invite-link-row:first-of-type { border-top: 0; padding-top: 0; }
     .invite-link-meta {
@@ -541,8 +541,8 @@
       gap: 0.4rem 0.75rem;
       align-items: baseline;
     }
-    .invite-link-meta strong { color: #fff; }
-    .invite-link-meta span { color: #8a8a8a; font-size: 0.88rem; }
+    .invite-link-meta strong { color: var(--text); }
+    .invite-link-meta span { color: var(--muted); font-size: 0.88rem; }
     .invite-url {
       display: block;
       padding: 0.35rem 0;
@@ -561,11 +561,11 @@
     }
     .btn-secondary {
       background: transparent;
-      color: #fff;
+      color: var(--text);
       border-color: rgba(255,255,255,0.35);
     }
     .btn-secondary:hover {
-      border-color: #fff;
+      border-color: var(--text);
     }
 
     body[data-page="league-tools"] .msg {
@@ -616,10 +616,10 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #9a9a9a;
+      color: var(--muted);
       text-decoration: none;
     }
-    body[data-page="league-tools"] .tools-back:hover { color: #fff; }
+    body[data-page="league-tools"] .tools-back:hover { color: var(--nav-hover); }
   </style>
 </head>
 <body data-page="league-tools">

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=54" />
+  <link rel="stylesheet" href="/css/site.css?v=55" />
   <style>
     .tree {
       display: flex;
@@ -123,13 +123,13 @@
 
     .slot {
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, #141414, #0a0a0a);
+      background: linear-gradient(180deg, var(--panel-2), var(--panel));
       padding: 0.65rem 0.7rem;
       position: relative;
       transition: border-color 0.2s ease, transform 0.2s ease;
     }
     .slot:hover {
-      border-color: rgba(255,255,255,0.2);
+      border-color: var(--chip-border-active);
       transform: translateX(2px);
     }
     .conf-tree.overtime .slot:hover { transform: translateX(-2px); }
@@ -196,7 +196,7 @@
       font-size: 0.9rem;
       font-weight: 600;
       letter-spacing: 0.01em;
-      color: #fff;
+      color: var(--text);
       line-height: 1.25;
     }
 
@@ -239,7 +239,7 @@
       border: 1px solid rgba(47, 109, 255, 0.45);
       background:
         radial-gradient(ellipse at 50% 40%, rgba(47,109,255,0.22), transparent 65%),
-        linear-gradient(180deg, #10141c, #080a0e);
+        linear-gradient(180deg, var(--panel-2), var(--panel));
       text-align: center;
       padding: 1.35rem 1.35rem 1.5rem;
       min-height: 0;
@@ -304,7 +304,7 @@
       letter-spacing: 0.03em;
       text-transform: uppercase;
       line-height: 1.25;
-      color: #fff;
+      color: var(--text);
       max-width: 100%;
       word-break: break-word;
       overflow-wrap: anywhere;
@@ -327,7 +327,7 @@
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #fff;
+      color: var(--text);
       line-height: 1;
     }
 

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=54" />
+  <link rel="stylesheet" href="/css/site.css?v=55" />
   <style>
     body.landing {
       min-height: 100vh;
@@ -18,8 +18,7 @@
       background:
         radial-gradient(ellipse 80% 55% at 50% 0%, rgba(47, 109, 255, 0.14), transparent 55%),
         radial-gradient(ellipse 40% 40% at 12% 80%, rgba(255, 122, 24, 0.08), transparent 50%),
-        radial-gradient(ellipse 40% 40% at 88% 75%, rgba(226, 35, 42, 0.08), transparent 50%),
-        #050505;
+        radial-gradient(ellipse 40% 40% at 88% 75%, rgba(226, 35, 42, 0.08), transparent 50%), var(--bg);
     }
 
     .landing-top {
@@ -44,7 +43,7 @@
       border-bottom: 2px solid transparent;
       transition: color 0.2s ease, border-color 0.2s ease;
     }
-    .landing-top a:hover { color: #fff; border-bottom-color: var(--blue); }
+    .landing-top a:hover { color: var(--nav-hover); border-bottom-color: var(--blue); }
 
     .landing-hero {
       flex: 1;
@@ -83,7 +82,7 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       line-height: 0.95;
-      color: #fff;
+      color: var(--text);
       animation: crest-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
     .wordmark span {
@@ -105,7 +104,7 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
       line-height: 1.25;
-      color: #fff;
+      color: var(--text);
       animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
     }
     .tag .t { color: var(--blue); }
@@ -172,7 +171,7 @@
     }
     .cta a.primary {
       background: var(--blue);
-      color: #fff;
+      color: var(--text);
       border: 1px solid var(--blue);
     }
     .cta a.primary:hover {
@@ -181,11 +180,11 @@
     }
     .cta a.ghost {
       background: transparent;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.28);
+      color: var(--text);
+      border: 1px solid var(--line);
     }
     .cta a.ghost:hover {
-      border-color: #fff;
+      border-color: var(--text);
       transform: translateY(-2px);
     }
 

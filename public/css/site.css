@@ -76,6 +76,16 @@ html[data-theme="night"] {
   --link-hover: #fff;
   --status-ok-text: #86efac;
   --status-err-text: #fca5a5;
+  --logo-tile-bg: #141414;
+  --logo-tile-border: rgba(255, 255, 255, 0.08);
+  --row-hover: rgba(255, 255, 255, 0.03);
+  --ticker-face-top: #101820;
+  --ticker-face-bottom: #0a1018;
+  --ticker-fade-left: #0a1018;
+  --ticker-fade-right: #060606;
+  --ticker-item: rgba(255, 255, 255, 0.9);
+  --ticker-item-hover: #fff;
+  --ticker-shadow: 0 6px 28px rgba(0, 0, 0, 0.35);
 
   --fs-xs: 0.75rem;
   --fs-sm: 0.875rem;
@@ -127,6 +137,16 @@ html[data-theme="day"] {
   --link-hover: #14181f;
   --status-ok-text: #166534;
   --status-err-text: #b91c1c;
+  --logo-tile-bg: #eef2f7;
+  --logo-tile-border: rgba(20, 24, 31, 0.12);
+  --row-hover: rgba(20, 24, 31, 0.04);
+  --ticker-face-top: #d9e4f5;
+  --ticker-face-bottom: #c5d4ea;
+  --ticker-fade-left: #c5d4ea;
+  --ticker-fade-right: #c5d4ea;
+  --ticker-item: rgba(20, 24, 31, 0.88);
+  --ticker-item-hover: #14181f;
+  --ticker-shadow: 0 6px 20px rgba(31, 94, 240, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -181,9 +201,9 @@ body {
   border-radius: 999px;
   background:
     linear-gradient(90deg, rgba(47, 109, 255, 0.18), rgba(47, 109, 255, 0.06) 42%, rgba(47, 109, 255, 0.1)),
-    linear-gradient(180deg, #101820 0%, #0a1018 100%);
+    linear-gradient(180deg, var(--ticker-face-top) 0%, var(--ticker-face-bottom) 100%);
   box-shadow:
-    0 6px 28px rgba(0, 0, 0, 0.35),
+    var(--ticker-shadow),
     inset 0 1px 0 rgba(142, 182, 255, 0.12);
   overflow: hidden;
   min-height: 2.35rem;
@@ -247,11 +267,11 @@ body {
 }
 .ticker-viewport::before {
   left: 0;
-  background: linear-gradient(90deg, #0a1018, transparent);
+  background: linear-gradient(90deg, var(--ticker-fade-left), transparent);
 }
 .ticker-viewport::after {
   right: 0;
-  background: linear-gradient(270deg, #060606, transparent);
+  background: linear-gradient(270deg, var(--ticker-fade-right), transparent);
 }
 .ticker-track {
   display: inline-flex;
@@ -269,7 +289,7 @@ body {
   align-items: center;
   gap: 0.6rem;
   padding: 0 1.15rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--ticker-item);
   font-family: var(--body);
   font-size: 0.9rem;
   font-weight: 500;
@@ -279,7 +299,7 @@ body {
   transition: color 0.15s ease;
   min-height: 100%;
 }
-.ticker-item:hover { color: #fff; }
+.ticker-item:hover { color: var(--ticker-item-hover); }
 .ticker-item .tag {
   flex: 0 0 auto;
   padding: 0.14rem 0.48rem;
@@ -307,7 +327,7 @@ body {
   height: 3px;
   margin: 0 0.35rem;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--muted-2);
   transform: none;
   vertical-align: middle;
 }
@@ -571,7 +591,7 @@ a.user-chip {
   border-radius: 0.55rem;
   overflow: hidden;
   border: 1px solid var(--line);
-  background: #171717;
+  background: var(--panel-2);
   flex: 0 0 auto;
   display: grid;
   place-items: center;
@@ -583,7 +603,7 @@ a.user-chip {
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--chip-team);
   line-height: 1.15;
 }
 
@@ -591,7 +611,7 @@ a.user-chip {
   margin-top: 0.12rem;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #c8c8c8;
+  color: var(--chip-owner);
   line-height: 1.2;
 }
 
@@ -629,8 +649,8 @@ a.user-chip {
   min-width: 0;
   padding: 0.45rem 0.55rem;
   border: 1px solid var(--line);
-  background: #0a0a0a;
-  color: #fff;
+  background: var(--field-bg);
+  color: var(--field-text);
   font-family: var(--body);
   font-size: 0.88rem;
 }
@@ -638,9 +658,9 @@ a.user-chip {
 .user-menu-row button,
 .user-menu-logout {
   appearance: none;
-  border: 1px solid #fff;
-  background: #fff;
-  color: #050505;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
   font-family: var(--display);
   font-size: 0.68rem;
   font-weight: 600;
@@ -656,13 +676,13 @@ a.user-chip {
   width: 100%;
   margin-top: 0.55rem;
   background: transparent;
-  color: #fff;
+  color: var(--text);
 }
 
 .user-menu-link {
   display: block;
   margin-top: 0.65rem;
-  color: #fff;
+  color: var(--text);
   font-size: 0.84rem;
   font-weight: 600;
   text-decoration: underline;
@@ -689,8 +709,8 @@ a.user-chip {
   object-fit: contain;
   flex: 0 0 auto;
   display: block;
-  background: #141414;
-  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--logo-tile-bg);
+  border: 1px solid var(--logo-tile-border);
 }
 
 .team-logo-fallback {
@@ -700,8 +720,8 @@ a.user-chip {
   flex: 0 0 auto;
   display: inline-block;
   object-fit: contain;
-  background: #141414;
-  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--logo-tile-bg);
+  border: 1px solid var(--logo-tile-border);
 }
 
 .nav {
@@ -810,7 +830,7 @@ body[data-page="payouts"] .page-hero::before {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: var(--lh-tight);
-  color: #fff;
+  color: var(--text);
 }
 
 .page-hero p {
@@ -850,7 +870,7 @@ body[data-page="payouts"] .page-hero::before {
   letter-spacing: var(--track-display);
   text-transform: uppercase;
   line-height: 1.2;
-  color: #fff;
+  color: var(--text);
 }
 
 .panel-title img {
@@ -940,7 +960,7 @@ footer.shell {
 }
 .field:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.32);
+  border-color: var(--chip-border-active);
 }
 .field:disabled {
   opacity: 0.5;
@@ -1066,7 +1086,7 @@ footer.shell {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--text);
 }
 .admin-block .help {
   margin: 0 0 0.95rem;
@@ -1162,7 +1182,7 @@ body.auth-page {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--text);
 }
 .auth-help {
   margin: -0.35rem 0 1rem;
@@ -1187,7 +1207,7 @@ body.auth-page {
   margin-bottom: 0.4rem;
   font-size: 0.88rem;
   letter-spacing: 0.08em;
-  color: #c8c8c8;
+  color: var(--muted);
 }
 .auth-card .btn {
   width: 100%;

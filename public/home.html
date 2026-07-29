@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=54" />
+  <link rel="stylesheet" href="/css/site.css?v=55" />
   <style>
     .hq-hero {
       text-align: center;
@@ -26,6 +26,9 @@
       margin: 0 auto;
       filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.75));
     }
+    html[data-theme="day"] .hq-hero img {
+      filter: drop-shadow(0 10px 22px rgba(20, 24, 31, 0.18));
+    }
     .hq-hero .tag {
       margin: 1rem 0 0;
       font-family: var(--display);
@@ -34,18 +37,22 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
       line-height: 1.3;
-      color: #fff;
+      color: var(--text);
     }
     .hq-hero .tag .t { color: var(--blue); }
-    .hq-hero .tag .d { color: #c8d0dc; }
+    .hq-hero .tag .d { color: var(--muted); }
     .hq-hero .tag .c {
+      color: var(--text);
+      font-weight: 700;
+    }
+    html[data-theme="night"] .hq-hero .tag .c {
       color: #f2f5fa;
       background: linear-gradient(180deg, #ffffff 0%, #c5cedb 52%, #9aa8ba 100%);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .hq-hero .tag .sep { color: #666; margin: 0 0.3em; }
+    .hq-hero .tag .sep { color: var(--muted-2); margin: 0 0.3em; }
 
     .hq-main {
       padding-top: 1.35rem;
@@ -67,7 +74,7 @@
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #fff;
+      color: var(--text);
       line-height: 1.1;
     }
     .section-head a,
@@ -77,7 +84,11 @@
       font-weight: 600;
       text-decoration: none;
     }
-    .section-head a:hover { color: #fff; }
+    html[data-theme="day"] .section-head a,
+    html[data-theme="day"] .section-head .hint {
+      color: var(--blue);
+    }
+    .section-head a:hover { color: var(--nav-hover); }
 
     .hq-section {
       margin-bottom: 2.15rem;
@@ -103,8 +114,7 @@
       padding: 0 0 1.25rem;
       border: 1px solid rgba(47, 109, 255, 0.22);
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%),
-        #0a0a0a;
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%), var(--panel);
       overflow: hidden;
     }
     .hq-board .hq-section > :not(.section-head) {
@@ -148,7 +158,7 @@
     @media (min-width: 641px) {
       .standings-preview .conf-block:last-child {
         padding-left: 1.15rem;
-        border-left: 1px solid rgba(255,255,255,0.1);
+        border-left: 1px solid var(--line);
       }
     }
 
@@ -159,7 +169,7 @@
       gap: 0.65rem;
       margin-bottom: 0.7rem;
       padding-bottom: 0.55rem;
-      border-bottom: 2px solid rgba(255,255,255,0.12);
+      border-bottom: 2px solid var(--line);
     }
     .conf-head.detail { border-bottom-color: rgba(255, 122, 24, 0.55); }
     .conf-head.overtime { border-bottom-color: rgba(226, 35, 42, 0.55); }
@@ -190,9 +200,9 @@
       font-size: 0.78rem;
       letter-spacing: 0.07em;
       text-transform: uppercase;
-      color: #8f8f8f;
+      color: var(--muted);
       font-weight: 600;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid var(--line);
     }
     .mini-table th.num,
     .mini-table td.num {
@@ -202,21 +212,21 @@
     }
     .mini-table td {
       padding: 0.42rem 0.35rem;
-      border-bottom: 1px solid rgba(255,255,255,0.045);
+      border-bottom: 1px solid var(--line);
       vertical-align: middle;
-      color: #f0f0f0;
+      color: var(--text);
     }
     .mini-table tr:last-child td { border-bottom: 0; }
     .mini-table .rank {
       width: 1.35rem;
-      color: #9a9a9a;
+      color: var(--muted);
       font-variant-numeric: tabular-nums;
       font-weight: 600;
     }
     .mini-table .team {
       width: 100%;
       overflow: hidden;
-      color: #fff;
+      color: var(--text);
       font-weight: 600;
     }
     .mini-table .team-cell {
@@ -249,7 +259,7 @@
     .mini-table tr.cut-line td {
       padding: 0.45rem 0.35rem;
       border-top: 2px solid rgba(47, 109, 255, 0.7);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid var(--line);
       background: transparent;
       text-align: center;
       font-family: var(--display);
@@ -292,7 +302,7 @@
     .motw-side .nm {
       font-size: 1rem;
       font-weight: 700;
-      color: #fff;
+      color: var(--text);
       line-height: 1.25;
       max-width: 100%;
       display: -webkit-box;
@@ -309,19 +319,19 @@
     }
     .motw-mid .vs {
       font-size: 0.78rem;
-      color: #9a9a9a;
+      color: var(--muted);
       margin-bottom: 0.2rem;
     }
     .motw-mid .score {
       font-size: 1.15rem;
       font-weight: 600;
-      color: #fff;
+      color: var(--text);
       font-variant-numeric: tabular-nums;
     }
     .motw-mid .proj {
       margin-top: 0.2rem;
       font-size: 0.72rem;
-      color: #8a8a8a;
+      color: var(--muted);
       letter-spacing: 0.04em;
     }
 
@@ -382,7 +392,7 @@
     .hotnot-team .nm {
       font-size: 1.05rem;
       font-weight: 700;
-      color: #fff;
+      color: var(--text);
       line-height: 1.25;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -393,7 +403,7 @@
     .hotnot-team .sub {
       margin-top: 0.2rem;
       font-size: 0.8rem;
-      color: #a0a0a0;
+      color: var(--muted);
     }
 
     .bottom-stack {
@@ -401,7 +411,7 @@
       flex-direction: column;
       gap: 1.5rem;
       padding-top: 0.35rem;
-      border-top: 1px solid rgba(255,255,255,0.12);
+      border-top: 1px solid var(--line);
     }
     .news-block,
     .board-block {
@@ -409,8 +419,7 @@
       padding: 0 0 1.25rem;
       border: 1px solid rgba(47, 109, 255, 0.22);
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%),
-        #0a0a0a;
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%), var(--panel);
       overflow: hidden;
     }
     .news-block > :not(.section-head),
@@ -452,7 +461,7 @@
       gap: 0;
     }
     .empty {
-      color: #9a9a9a;
+      color: var(--muted);
       font-size: 1.08rem;
       line-height: 1.45;
       padding: 0.15rem 0;
@@ -461,7 +470,7 @@
     .msg-item + .msg-item {
       margin-top: 0.9rem;
       padding-top: 0.9rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid var(--line);
     }
     .news-item h4 {
       margin: 0 0 0.3rem;
@@ -470,20 +479,20 @@
       font-weight: 600;
       letter-spacing: 0.03em;
       text-transform: uppercase;
-      color: #fff;
+      color: var(--text);
       line-height: 1.25;
     }
     .news-item p,
     .msg-item p {
       margin: 0;
-      color: rgba(255,255,255,0.9);
+      color: var(--text);
       font-size: 1.12rem;
       line-height: 1.5;
       white-space: pre-wrap;
     }
     .meta {
       margin: 0.35rem 0 0;
-      color: #9a9a9a;
+      color: var(--muted);
       font-size: 0.95rem;
     }
     .meta button {
@@ -491,7 +500,7 @@
       padding: 0;
       border: 0;
       background: none;
-      color: #b0b0b0;
+      color: var(--muted);
       font: inherit;
       text-decoration: underline;
       cursor: pointer;
@@ -501,7 +510,7 @@
     .composer {
       margin-top: 1rem;
       padding-top: 1rem;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      border-top: 1px solid var(--line);
     }
     .composer label {
       display: block;
@@ -510,16 +519,16 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #b0b0b0;
+      color: var(--muted);
     }
     .composer textarea {
       width: 100%;
       margin-bottom: 0.55rem;
       padding: 0.65rem 0.75rem;
       border: 0;
-      border-bottom: 1px solid rgba(255,255,255,0.22);
+      border-bottom: 1px solid var(--line);
       background: transparent;
-      color: #fff;
+      color: var(--text);
       font-family: var(--body);
       font-size: 1.05rem;
       line-height: 1.45;
@@ -528,13 +537,13 @@
     }
     .composer textarea:focus {
       outline: none;
-      border-bottom-color: #fff;
+      border-bottom-color: var(--text);
     }
     .composer button {
       padding: 0.55rem 1rem;
-      border: 1px solid #fff;
-      background: #fff;
-      color: #050505;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
       font-family: var(--display);
       font-size: 0.9rem;
       font-weight: 600;
@@ -543,8 +552,8 @@
       cursor: pointer;
     }
     .composer button:hover:not(:disabled) {
-      background: transparent;
-      color: #fff;
+      background: var(--btn-hover-bg);
+      color: var(--btn-hover-text);
     }
     .composer button:disabled {
       opacity: 0.55;
@@ -560,17 +569,17 @@
 
     .msg {
       padding: 0.35rem 0;
-      color: #c8c8c8;
+      color: var(--muted);
       font-size: 1.05rem;
       line-height: 1.45;
     }
-    .msg strong { display: block; color: #fff; margin-bottom: 0.2rem; font-size: 1.1rem; }
+    .msg strong { display: block; color: var(--text); margin-bottom: 0.2rem; font-size: 1.1rem; }
 
     footer.shell {
       padding-top: 1rem;
       padding-bottom: 1.35rem;
       font-size: 0.95rem;
-      color: #9a9a9a;
+      color: var(--muted);
       line-height: 1.45;
     }
 

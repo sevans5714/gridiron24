@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=54" />
+  <link rel="stylesheet" href="/css/site.css?v=55" />
   <style>
     body.league-reg {
       min-height: 100vh;
@@ -17,7 +17,7 @@
       background:
         radial-gradient(ellipse 80% 50% at 50% -10%, rgba(47, 109, 255, 0.16), transparent 55%),
         #070707;
-      color: #f2f2f2;
+      color: var(--text);
     }
     .reg-shell {
       width: min(100% - 2rem, 44rem);
@@ -35,8 +35,8 @@
       width: 3.25rem;
       height: 3.25rem;
       margin-bottom: 0.85rem;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: #101010;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
       font-family: var(--page-title), Oswald, sans-serif;
       font-size: 1.15rem;
       font-weight: 700;
@@ -54,7 +54,7 @@
     .reg-top p {
       margin: 0 auto;
       max-width: 34rem;
-      color: #9a9a9a;
+      color: var(--muted);
       font-size: 0.98rem;
       line-height: 1.5;
     }
@@ -68,8 +68,8 @@
     .steps button {
       appearance: none;
       border: 1px solid rgba(255,255,255,0.1);
-      background: #101010;
-      color: #8a8a8a;
+      background: var(--panel-2);
+      color: var(--muted);
       font-family: var(--display), Bebas Neue, sans-serif;
       font-size: 0.78rem;
       letter-spacing: 0.08em;
@@ -79,13 +79,13 @@
     }
     .steps button.on {
       border-color: rgba(47, 109, 255, 0.45);
-      color: #fff;
+      color: var(--text);
       background: rgba(47, 109, 255, 0.16);
     }
     .steps button.done { color: #b8d0ff; }
     .panel {
       border: 1px solid rgba(255,255,255,0.1);
-      background: #0d0d0d;
+      background: var(--panel);
       padding: 1.25rem 1.35rem 1.4rem;
     }
     .panel h2 {
@@ -97,7 +97,7 @@
     }
     .panel .lead {
       margin: 0 0 1.1rem;
-      color: #9a9a9a;
+      color: var(--muted);
       font-size: 0.92rem;
       line-height: 1.45;
     }
@@ -109,7 +109,7 @@
     @media (max-width: 640px) {
       .grid-2 { grid-template-columns: 1fr; }
     }
-    .field-label { display: block; margin: 0.65rem 0 0.3rem; color: #b0b0b0; font-size: 0.82rem; }
+    .field-label { display: block; margin: 0.65rem 0 0.3rem; color: var(--muted); font-size: 0.82rem; }
     .field, .field-area, .field-file {
       width: 100%;
       box-sizing: border-box;
@@ -118,16 +118,16 @@
       min-height: 4.5rem;
       resize: vertical;
       padding: 0.65rem 0.75rem;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: #0a0a0a;
-      color: #f0f0f0;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
       font: inherit;
     }
     .conf-card {
       margin-top: 1rem;
       padding: 1rem;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: #0a0a0a;
+      border: 1px solid var(--line);
+      background: var(--panel);
     }
     .conf-card h3 {
       margin: 0 0 0.75rem;
@@ -148,9 +148,9 @@
       height: 3rem;
       object-fit: contain;
       border: 1px solid rgba(255,255,255,0.1);
-      background: #050505;
+      background: var(--bg);
     }
-    .upload-row .meta { font-size: 0.82rem; color: #8a8a8a; }
+    .upload-row .meta { font-size: 0.82rem; color: var(--muted); }
     .nav-row {
       display: flex;
       justify-content: space-between;
@@ -173,11 +173,11 @@
       font-size: 0.75rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #8a8a8a;
+      color: var(--muted);
     }
     .review dd {
       margin: 0.15rem 0 0.55rem;
-      color: #eee;
+      color: var(--text);
       line-height: 1.4;
     }
     .legal {
@@ -198,7 +198,7 @@
       align-items: flex-start;
       gap: 0.55rem;
       margin-top: 1rem;
-      color: #c8c8c8;
+      color: var(--muted);
       font-size: 0.92rem;
       line-height: 1.4;
     }

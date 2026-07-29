@@ -8,19 +8,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=54" />
+  <link rel="stylesheet" href="/css/site.css?v=55" />
   <style>
     .rank-board {
       max-width: 44rem;
     }
     .rank-meta-line {
       margin: 0 0 1.25rem;
-      color: #9a9a9a;
+      color: var(--muted);
       font-size: 0.95rem;
     }
     .rank-notes {
       margin: 0 0 1.5rem;
-      color: #c8c8c8;
+      color: var(--muted);
       line-height: 1.45;
     }
     .rank-row {
@@ -29,7 +29,7 @@
       gap: 0.75rem 0.85rem;
       align-items: center;
       padding: 0.7rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid var(--line);
     }
     .rank-num {
       font-family: var(--display);
@@ -44,12 +44,12 @@
       height: 2.5rem;
       border-radius: 0.4rem;
       object-fit: contain;
-      background: #141414;
-      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
     }
     .rank-name {
       font-weight: 700;
-      color: #fff;
+      color: var(--text);
       font-size: 1.02rem;
       line-height: 1.25;
     }
@@ -64,11 +64,11 @@
     .rank-conf.overtime { color: var(--overtime); }
     .rank-note {
       margin-top: 0.3rem;
-      color: #b0b0b0;
+      color: var(--muted);
       font-size: 0.9rem;
       line-height: 1.4;
     }
-    .empty { color: #9a9a9a; }
+    .empty { color: var(--muted); }
   </style>
 </head>
 <body data-page="rankings">

@@ -8,13 +8,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=54" />
+  <link rel="stylesheet" href="/css/site.css?v=55" />
   <style>
-    .event { display:grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 0.95rem 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .event { display:grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 0.95rem 0; border-bottom: 1px solid var(--line); }
     .when { font-family: var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: #8eb6ff; }
-    .title { font-size: 1.15rem; font-weight: 700; color: #fff; }
-    .type { display:inline-block; margin-top:0.25rem; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:#9a9a9a; }
-    .notes { margin-top: 0.35rem; color: #b0b0b0; line-height: 1.45; }
+    .title { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+    .type { display:inline-block; margin-top:0.25rem; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color: var(--muted); }
+    .notes { margin-top: 0.35rem; color: var(--muted); line-height: 1.45; }
     @media (max-width: 560px) { .event { grid-template-columns: 1fr; gap: 0.35rem; } }
   </style>
 </head>

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=54" />
+  <link rel="stylesheet" href="/css/site.css?v=55" />
   <style>
     body[data-page="beta-scoring"] .page-hero {
       padding-top: 1.35rem;
@@ -38,7 +38,7 @@
     .beta-sub {
       margin: 0.4rem 0 0;
       max-width: 40rem;
-      color: #9a9a9a;
+      color: var(--muted);
       font-size: 0.95rem;
       line-height: 1.45;
     }
@@ -66,25 +66,25 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #8a8a8a;
+      color: var(--muted);
     }
     .beta-filters select {
       min-width: 8.5rem;
       padding: 0.45rem 0.55rem;
       border: 1px solid rgba(255,255,255,0.2);
-      background: #0c0c0c;
-      color: #fff;
+      background: var(--panel-2);
+      color: var(--text);
       font-family: var(--body);
       font-size: 0.95rem;
     }
     .beta-meta {
       text-align: right;
-      color: #8a8a8a;
+      color: var(--muted);
       font-size: 0.88rem;
       line-height: 1.4;
     }
     .beta-meta strong {
-      color: #c8c8c8;
+      color: var(--muted);
       font-weight: 600;
     }
     .beta-counts {
@@ -97,10 +97,10 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #8a8a8a;
+      color: var(--muted);
     }
     .beta-counts span[data-live] { color: #86efac; }
-    .beta-counts span[data-final] { color: #c8c8c8; }
+    .beta-counts span[data-final] { color: var(--muted); }
     .beta-board {
       display: grid;
       gap: 0.75rem;
@@ -112,8 +112,7 @@
       padding: 0.95rem 1rem;
       border: 1px solid rgba(255,255,255,0.1);
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 50%),
-        #0a0a0a;
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 50%), var(--panel);
     }
     .beta-game.is-live {
       border-color: rgba(134, 239, 172, 0.28);
@@ -132,7 +131,7 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #8a8a8a;
+      color: var(--muted);
     }
     .beta-game.is-live .beta-status { color: #86efac; }
     .beta-side {
@@ -156,7 +155,7 @@
       font-weight: 600;
       letter-spacing: 0.03em;
       text-transform: uppercase;
-      color: #fff;
+      color: var(--text);
     }
     .beta-team .name small {
       display: block;
@@ -166,14 +165,14 @@
       font-weight: 500;
       letter-spacing: 0;
       text-transform: none;
-      color: #8a8a8a;
+      color: var(--muted);
     }
     .beta-team .score {
       font-family: var(--display);
       font-size: 1.55rem;
       font-weight: 700;
       letter-spacing: 0.02em;
-      color: #fff;
+      color: var(--text);
       min-width: 2.2rem;
       text-align: right;
     }
@@ -184,7 +183,7 @@
     .beta-extra {
       align-self: center;
       text-align: right;
-      color: #8a8a8a;
+      color: var(--muted);
       font-size: 0.85rem;
       line-height: 1.4;
       max-width: 11rem;
@@ -192,7 +191,7 @@
     .beta-empty,
     .beta-error {
       padding: 1.5rem 0;
-      color: #9a9a9a;
+      color: var(--muted);
       font-size: 0.98rem;
     }
     .beta-error { color: #fca5a5; }
