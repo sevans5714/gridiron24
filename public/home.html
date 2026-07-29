@@ -165,9 +165,10 @@
     .conf-block { min-width: 0; }
     .conf-head {
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.55rem;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
       margin-bottom: 0.7rem;
       padding-bottom: 0.55rem;
       border-bottom: 2px solid var(--line);
@@ -178,6 +179,7 @@
       display: flex;
       align-items: center;
       gap: 0.65rem;
+      min-width: 0;
     }
     .conf-head img {
       width: 3.25rem;
@@ -194,8 +196,10 @@
       text-transform: uppercase;
     }
     .conf-admin {
-      text-align: center;
-      padding: 0.15rem 0.25rem 0;
+      text-align: right;
+      padding: 0;
+      flex: 0 1 auto;
+      min-width: 0;
     }
     .conf-admin-name {
       margin: 0;
@@ -205,6 +209,9 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
       line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .conf-admin-role {
       margin: 0.2rem 0 0;
@@ -219,6 +226,15 @@
     .conf-head.detail .conf-admin-name { color: var(--detail); }
     .conf-head.overtime h3,
     .conf-head.overtime .conf-admin-name { color: var(--overtime); }
+    @media (max-width: 520px) {
+      .conf-head {
+        flex-wrap: wrap;
+      }
+      .conf-admin {
+        width: 100%;
+        text-align: right;
+      }
+    }
 
     .mini-table {
       width: 100%;
