@@ -29,10 +29,10 @@
 
     .board-head {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 0.65rem 1rem;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.55rem;
+      padding: 0.75rem 1rem 0.7rem;
       border-bottom: 1px solid var(--line);
       background: var(--panel-2);
     }
@@ -53,7 +53,6 @@
       display: block;
       flex: 0 0 auto;
       filter: none;
-
       box-shadow: var(--logo-lift);
     }
 
@@ -67,15 +66,32 @@
       line-height: 1.15;
     }
 
-    .board-head.detail h2 { color: var(--detail); }
-    .board-head.overtime h2 { color: var(--overtime); }
+    .board-head.detail h2,
+    .board-head.detail .board-admin-name { color: var(--detail); }
+    .board-head.overtime h2,
+    .board-head.overtime .board-admin-name { color: var(--overtime); }
 
-    .board-head .admin {
-      margin-top: 0.2rem;
-      color: var(--text);
-      font-size: 0.88rem;
+    .board-admin {
+      text-align: center;
+      padding: 0.1rem 0.35rem 0.15rem;
+    }
+    .board-admin-name {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.15rem;
       font-weight: 600;
-      letter-spacing: 0.01em;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.15;
+    }
+    .board-admin-role {
+      margin: 0.22rem 0 0;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
     }
 
     .board-head .meta {
@@ -288,7 +304,10 @@
       const tone = conf.key === 'detail' ? 'detail' : 'overtime';
       const week = conf.currentMatchupPeriod != null ? ` · Week ${conf.currentMatchupPeriod}` : '';
       const admin = conf.admin
-        ? `<div class="admin">Admin · ${escapeHtml(conf.admin)}</div>`
+        ? `<div class="board-admin">
+            <div class="board-admin-name">${escapeHtml(conf.admin)}</div>
+            <div class="board-admin-role">Conference Admin</div>
+          </div>`
         : '';
       return `
         <div class="board-head ${tone}">
@@ -296,10 +315,10 @@
             ${confLogo(conf.key, conf.name)}
             <div>
               <h2>${escapeHtml(conf.name)}</h2>
-              ${admin}
               <div class="meta">ESPN ${conf.leagueId}${week}</div>
             </div>
           </div>
+          ${admin}
         </div>`;
     }
 

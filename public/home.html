@@ -165,19 +165,24 @@
     .conf-block { min-width: 0; }
     .conf-head {
       display: flex;
-      align-items: center;
-      gap: 0.65rem;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.55rem;
       margin-bottom: 0.7rem;
       padding-bottom: 0.55rem;
       border-bottom: 2px solid var(--line);
     }
     .conf-head.detail { border-bottom-color: rgba(255, 122, 24, 0.55); }
     .conf-head.overtime { border-bottom-color: rgba(226, 35, 42, 0.55); }
+    .conf-head-top {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
     .conf-head img {
       width: 3.25rem;
       height: auto;
       filter: none;
-
       box-shadow: var(--logo-lift);
     }
     .conf-head h3 {
@@ -188,19 +193,32 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
-    .conf-head-text { min-width: 0; }
     .conf-admin {
-      margin-top: 0.2rem;
-      color: var(--muted);
-      font-size: 0.82rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      text-align: center;
+      padding: 0.15rem 0.25rem 0;
     }
-    .conf-head.detail h3 { color: var(--detail); }
-    .conf-head.overtime h3 { color: var(--overtime); }
+    .conf-admin-name {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.15;
+    }
+    .conf-admin-role {
+      margin: 0.2rem 0 0;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .conf-head.detail h3,
+    .conf-head.detail .conf-admin-name { color: var(--detail); }
+    .conf-head.overtime h3,
+    .conf-head.overtime .conf-admin-name { color: var(--overtime); }
 
     .mini-table {
       width: 100%;
@@ -726,15 +744,18 @@
     function confHead(conf) {
       const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
       const admin = conf?.admin
-        ? `<div class="conf-admin">Admin · ${esc(conf.admin)}</div>`
+        ? `<div class="conf-admin">
+            <div class="conf-admin-name">${esc(conf.admin)}</div>
+            <div class="conf-admin-role">Conference Admin</div>
+          </div>`
         : '';
       return `
         <div class="conf-head ${tone}">
-          ${conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-          <div class="conf-head-text">
+          <div class="conf-head-top">
+            ${conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
             <h3>${esc(conf?.shortName || conf?.name || 'Conference')}</h3>
-            ${admin}
           </div>
+          ${admin}
         </div>`;
     }
 
