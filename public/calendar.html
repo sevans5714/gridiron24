@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=56" />
+  <link rel="stylesheet" href="/css/site.css?v=57" />
   <style>
     .event { display:grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 0.95rem 0; border-bottom: 1px solid var(--line); }
     .when { font-family: var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: #8eb6ff; }
@@ -30,8 +30,11 @@
     <h1>Calendar</h1>
   </section>
   <main class="page-main shell" id="list"><div class="msg">Loading calendar…</div></main>
-  <footer class="shell">ESPN remains the system of record for drafts, rosters, scoring, and transactions.</footer>
-  <script src="/js/nav.js?v=32"></script>
+  <footer class="shell site-footer">
+    <span class="site-footer-credit">Designed and Created by S.Evans of the Patrol Division</span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=33"></script>
   <script>
     const esc = (v='') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     function fmtDate(d) {

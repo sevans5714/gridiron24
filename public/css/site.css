@@ -956,12 +956,30 @@ body[data-page="payouts"] .page-hero::before {
 .reveal-delay-3 { animation-delay: 0.15s; }
 .reveal-delay-4 { animation-delay: 0.2s; }
 
-footer.shell {
+footer.shell,
+footer.site-footer {
+  padding-top: 1rem;
   padding-bottom: 1.75rem;
   text-align: center;
   color: var(--muted-2);
   font-size: var(--fs-xs);
   line-height: var(--lh-snug);
+}
+.site-footer-credit {
+  display: block;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+.site-footer-build {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--muted-2);
+  font-family: var(--display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* Shared form + action chrome */

@@ -243,10 +243,41 @@
     }
   }
 
+  function footerHtml(buildLabel) {
+    const build = esc(buildLabel || 'Build …');
+    return `<span class="site-footer-credit">Designed and Created by S.Evans of the Patrol Division</span><span class="site-footer-build" id="site-build">${build}</span>`;
+  }
+
+  function ensureFooter(buildLabel) {
+    let el = document.querySelector('footer.shell, footer.site-footer');
+    if (!el) {
+      el = document.createElement('footer');
+      el.className = 'shell site-footer';
+      const main = document.querySelector('main');
+      if (main && main.parentNode) main.insertAdjacentElement('afterend', el);
+      else document.body.appendChild(el);
+    }
+    el.classList.add('site-footer');
+    el.innerHTML = footerHtml(buildLabel);
+    return el;
+  }
+
+  async function loadBuildFooter() {
+    let label = 'Build …';
+    try {
+      const data = await fetch('/api/health', { cache: 'no-store' }).then((r) => r.json());
+      if (data?.build) label = `Build ${data.build}`;
+      else if (data?.version) label = `Build ${data.version}`;
+    } catch { /* ignore */ }
+    ensureFooter(label);
+  }
+
   renderNav();
   ensureTickerMount();
   ensureUserMenuMount();
   applyTheme(getTheme());
+  ensureFooter('Build …');
+  loadBuildFooter();
   loadTicker();
   document.addEventListener('click', closeUserMenuOnOutside);
 

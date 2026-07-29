@@ -28,6 +28,7 @@ const { URL } = require('url');
 
 const config = require('./league-runtime');
 const staticConfig = require('./config');
+const buildInfo = require('./build-info');
 const users = require('./users-store');
 const board = require('./board-store');
 const logos = require('./logos-store');
@@ -1799,7 +1800,9 @@ const server = http.createServer(async (req, res) => {
         app: config.brand.name,
         season: config.season,
         conferenceLeagueIds: config.conferences.map((c) => c.espnLeagueId),
-        authConfigured: true
+        authConfigured: true,
+        version: buildInfo.version,
+        build: buildInfo.build
       });
     }
 
