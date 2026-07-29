@@ -299,7 +299,7 @@
 
   function footerHtml(buildLabel) {
     const build = esc(buildLabel || 'Build …');
-    return `<span class="site-footer-credit">Designed and Created by S.Evans of the Patrol Division</span><span class="site-footer-build" id="site-build">${build}</span>`;
+    return `<span class="site-footer-credit">Designed and created by S.Evans of the Patrol Division</span><span class="site-footer-build" id="site-build">${build}</span>`;
   }
 
   function ensureFooter(buildLabel) {
