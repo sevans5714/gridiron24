@@ -45,7 +45,18 @@
     const rememberInput = document.getElementById('remember');
     const loginInput = document.getElementById('loginName');
     const passwordInput = document.getElementById('password');
-    const next = new URLSearchParams(window.location.search).get('next') || '/home.html';
+    const nextParam = new URLSearchParams(window.location.search).get('next');
+    const next = nextParam || '/hq';
+
+    function resolveHomePath(data) {
+      if (nextParam && !isDefaultHomeNext(nextParam)) return nextParam;
+      return data?.homePath || '/home.html';
+    }
+
+    function isDefaultHomeNext(value) {
+      const path = String(value || '').split('?')[0].replace(/\/+$/, '') || '/';
+      return path === '/' || path === '/home' || path === '/home.html' || path === '/hq' || path === '/index.html';
+    }
 
     function showErr(msg) {
       errEl.textContent = msg || '';
@@ -85,7 +96,7 @@
       const res = await fetch('/api/auth', { cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
       if (data.authenticated) {
-        window.location.replace(next);
+        window.location.replace(resolveHomePath(data));
         return true;
       }
       return false;
@@ -98,10 +109,10 @@
       const password = passwordInput.value;
       setBusy(true);
       try {
-        await login(loginName, password);
+        const data = await login(loginName, password);
         if (rememberInput.checked) writeSaved(loginName, password);
         else clearSaved();
-        window.location.href = next;
+        window.location.href = resolveHomePath(data);
       } catch (err) {
         showErr(err.message);
         setBusy(false);

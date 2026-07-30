@@ -248,7 +248,7 @@ function requireAuth(req, res, pathname) {
     sendJson(res, 401, { ok: false, error: 'Authentication required' });
     return false;
   }
-  const next = encodeURIComponent(pathname === '/' ? '/home.html' : pathname);
+  const next = encodeURIComponent(pathname === '/' ? '/hq' : pathname);
   res.writeHead(302, { Location: `/enter?next=${next}` });
   res.end();
   return false;
@@ -1997,6 +1997,43 @@ async function buildSurvivalPayload() {
   };
 }
 
+function isAffiliateLeagueKey(key) {
+  const k = String(key || '').trim().toLowerCase();
+  if (!k) return false;
+  return (config.affiliatedLeagues || []).some((l) => String(l.key || '').toLowerCase() === k);
+}
+
+/** Profile-based HQ landing: AAA claim/admin → AAA portal; otherwise GridIron 24 home. */
+function homePathForUser(user) {
+  if (!user) return '/home.html';
+  try {
+    const claim = logos.getClaimForUser(user.id);
+    if (claim?.conferenceKey && isAffiliateLeagueKey(claim.conferenceKey)) {
+      return claim.conferenceKey === 'aaa' ? '/aaa.html' : `/${claim.conferenceKey}.html`;
+    }
+  } catch { /* ignore */ }
+  if (user.role === 'conference_admin' && isAffiliateLeagueKey(user.conference)) {
+    return user.conference === 'aaa' ? '/aaa.html' : `/${user.conference}.html`;
+  }
+  return '/home.html';
+}
+
+function isDefaultHomeNext(nextPath) {
+  const value = String(nextPath || '').trim();
+  if (!value) return true;
+  try {
+    const url = new URL(value, 'http://local');
+    const path = url.pathname.replace(/\/+$/, '') || '/';
+    return path === '/'
+      || path === '/home'
+      || path === '/home.html'
+      || path === '/hq'
+      || path === '/index.html';
+  } catch {
+    return value === '/home.html' || value === '/home' || value === '/hq' || value === '/';
+  }
+}
+
 function getAffiliatedLeague(key = 'aaa') {
   const list = Array.isArray(config.affiliatedLeagues) ? config.affiliatedLeagues : [];
   return list.find((l) => l.key === key) || list[0] || null;
@@ -2571,7 +2608,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         authenticated: Boolean(user),
         authConfigured: true,
-        user
+        user,
+        homePath: homePathForUser(user)
       });
     }
 
@@ -2667,7 +2705,11 @@ const server = http.createServer(async (req, res) => {
       }
       const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
       const token = signSession(user.id, expiresAt);
-      return sendJson(res, 200, { ok: true, user }, { 'Set-Cookie': sessionCookieHeader(token) });
+      return sendJson(res, 200, {
+        ok: true,
+        user,
+        homePath: homePathForUser(user)
+      }, { 'Set-Cookie': sessionCookieHeader(token) });
     }
 
     if (pathname === '/api/forgot-password' && req.method === 'POST') {
@@ -2780,6 +2822,35 @@ const server = http.createServer(async (req, res) => {
         Pragma: 'no-cache'
       });
       return res.end();
+    }
+
+    if (pathname === '/hq' || pathname === '/home') {
+      const user = getSessionUser(req);
+      if (!user) {
+        res.writeHead(302, { Location: '/enter?next=' + encodeURIComponent('/hq') });
+        return res.end();
+      }
+      res.writeHead(302, {
+        Location: homePathForUser(user),
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        Pragma: 'no-cache'
+      });
+      return res.end();
+    }
+
+    if (pathname === '/home.html') {
+      const user = getSessionUser(req);
+      if (user) {
+        const dest = homePathForUser(user);
+        if (dest !== '/home.html') {
+          res.writeHead(302, {
+            Location: dest,
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            Pragma: 'no-cache'
+          });
+          return res.end();
+        }
+      }
     }
 
     if (pathname === '/login.html') {
@@ -3855,7 +3926,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/commissioner.html' || pathname === '/admin.html') {
       const user = getSessionUser(req);
       if (!canAccessCommissionerPage(user)) {
-        res.writeHead(302, { Location: '/home.html' });
+        res.writeHead(302, { Location: homePathForUser(user) || '/hq' });
         return res.end();
       }
       res.writeHead(302, { Location: '/league-tools.html' });
@@ -3951,6 +4022,7 @@ const server = http.createServer(async (req, res) => {
         claim,
         logo,
         team,
+        homePath: homePathForUser(user),
         user: users.publicUser(user),
         specs: logos.LOGO_SPECS
       });

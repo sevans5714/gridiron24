@@ -279,11 +279,11 @@
         const enter = document.getElementById('cta-enter');
         const link = document.getElementById('auth-link');
         if (enter) {
-          enter.href = '/home.html';
+          enter.href = data.homePath || '/hq';
           enter.textContent = 'Open League HQ';
         }
         if (link) {
-          link.href = '/home.html';
+          link.href = data.homePath || '/hq';
           link.textContent = 'League HQ';
         }
       } catch {

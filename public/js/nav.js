@@ -1,6 +1,8 @@
 (function () {
+  const HOME_DEFAULT = '/home.html';
+  let homePath = HOME_DEFAULT;
   const allLinks = [
-    { href: '/home.html', label: 'Home', key: 'home' },
+    { href: HOME_DEFAULT, label: 'Home', key: 'home' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
     { href: '/standings.html', label: 'Standings', key: 'standings' },
     { href: '/teams.html', label: 'Teams', key: 'teams' },
@@ -14,9 +16,14 @@
 
   const THEME_KEY = 'gi-theme';
   const active = document.body.dataset.page || 'home';
-  const navActive = (active === 'scoring' || active === 'rulebook' || active === 'payouts') ? 'rulebook' : active;
   const nav = document.getElementById('site-nav');
   const sync = document.getElementById('lastUpdated');
+
+  function navActiveKey() {
+    if (active === 'scoring' || active === 'rulebook' || active === 'payouts') return 'rulebook';
+    if (active === 'aaa' && String(homePath).includes('aaa')) return 'home';
+    return active;
+  }
 
   function esc(v = '') {
     return String(v)
@@ -111,6 +118,8 @@
 
   function renderNav() {
     if (!nav) return;
+    allLinks[0].href = homePath || HOME_DEFAULT;
+    const navActive = navActiveKey();
     nav.innerHTML = allLinks.map((link) => {
       const cls = link.key === navActive ? 'active' : '';
       return `<a class="${cls}" href="${link.href}">${link.label}</a>`;
@@ -278,22 +287,27 @@
     try {
       const data = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json());
       const user = data.authenticated ? data.user : null;
+      if (data.homePath) homePath = data.homePath;
       renderNav();
       let myTeam = null;
       if (user) {
         try {
           const res = await fetch('/api/my-team', { cache: 'no-store' });
           const body = await res.json();
-          if (res.ok && body.ok) myTeam = body;
+          if (res.ok && body.ok) {
+            myTeam = body;
+            if (body.homePath) homePath = body.homePath;
+            renderNav();
+          }
         } catch { /* ignore */ }
       }
-      authState = { user, authenticated: Boolean(user), myTeam };
+      authState = { user, authenticated: Boolean(user), myTeam, homePath };
       syncThemeFromUser(user);
       renderUserMenu(user, myTeam);
       document.dispatchEvent(new CustomEvent('gi:auth', { detail: authState }));
       return authState;
     } catch {
-      authState = { user: null, authenticated: false, myTeam: null };
+      authState = { user: null, authenticated: false, myTeam: null, homePath };
       renderUserMenu(null);
       document.dispatchEvent(new CustomEvent('gi:auth', { detail: authState }));
       return authState;

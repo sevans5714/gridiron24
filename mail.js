@@ -387,7 +387,7 @@ function buildConferenceOwnerEmail({
   const confLabel = conferenceName || (conferenceKey === 'overtime' ? 'Overtime Conference' : 'Detail Conference');
   const resolvedCtaUrl = ctaUrl
     ? (String(ctaUrl).startsWith('http') ? String(ctaUrl) : `${origin}${String(ctaUrl).startsWith('/') ? '' : '/'}${ctaUrl}`)
-    : `${origin}/home.html`;
+    : `${origin}/hq`;
   const resolvedCtaLabel = ctaLabel || 'Open League HQ';
   const bodyText = String(body || '').trim();
   const text =
@@ -591,7 +591,7 @@ function buildWeeklyWrapEmail({
   const logoUrl = `${origin}/assets/gridiron24-logo.png`;
   const detailLogo = `${origin}/assets/detail-conference.png`;
   const overtimeLogo = `${origin}/assets/overtime-conference.png`;
-  const homeUrl = `${origin}/home.html`;
+  const homeUrl = `${origin}/hq`;
   const who = recipientName || 'Manager';
   const headline = title || `Week ${week} Wrap-Up · ${season || ''}`;
 
