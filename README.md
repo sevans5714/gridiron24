@@ -54,13 +54,17 @@ Members create personal accounts, then sign in with their own login name and pas
 
 Access levels:
 - **User** — default member access to HQ pages
-- **Conference Admin** — Detail or Overtime admin; can open the Commissioner tools page
-- **Commissioner** — overall league admin; can assign roles under Commissioner → Member Access
+- **Conference / League Admin** — Detail, Overtime, or AAA admin; can open League Tools for their scope
+- **Commissioner** — overall GridIron 24 admin; can assign roles under League Tools → Member Access
+
+Owner bootstrap accounts (recreated on deploy if missing):
+- **GridIron 24 commissioner** — `COMMISSIONER_LOGIN` (default `sevans`)
+- **AAA league admin** — `AAA_ADMIN_LOGIN` (default `sevans-aaa`)
 
 1. Copy `.env.example` to `.env` and set `LEAGUE_NAME` and `LEAGUE_PASSWORD` (used only to unlock account creation).
-2. Set `COMMISSIONER_LOGIN` to your login name so that account becomes overall commissioner.
+2. Set `COMMISSIONER_LOGIN` / `COMMISSIONER_PASSWORD` and optionally `AAA_ADMIN_LOGIN` / `AAA_ADMIN_PASSWORD`.
 3. On Render, add the same vars (and optionally `SESSION_SECRET`, `APP_BASE_URL`, `RESEND_API_KEY`, `MAIL_FROM`).
-4. Create an account at `/register`, then sign in at `/enter`.
+4. Create member accounts at `/register`, then sign in at `/enter`.
 5. Password reset: `/forgot` emails a link when Resend is configured; otherwise the reset URL is logged (and shown in local/dev responses).
 
 Accounts are stored under `data/` (or `DATA_DIR`). On Render’s free plan the filesystem is ephemeral unless you attach a persistent disk.

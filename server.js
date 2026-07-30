@@ -4401,7 +4401,7 @@ server.listen(PORT, '0.0.0.0', () => {
   } catch (err) {
     console.warn('League bootstrap failed:', err.message || err);
   }
-  users.ensureBootstrapCommissioner();
+  users.ensureBootstrapOwnerAccounts();
   try { users.migrateApprovalFlags(); } catch (err) {
     console.warn('Approval migration failed:', err.message || err);
   }
@@ -4419,7 +4419,10 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`Auth: invite + commissioner approval`);
   console.log(`Users: ${users.DATA_DIR}`);
   if (process.env.COMMISSIONER_LOGIN) {
-    console.log(`Commissioner login: ${process.env.COMMISSIONER_LOGIN}`);
+    console.log(`GridIron 24 commissioner: ${process.env.COMMISSIONER_LOGIN}`);
+  }
+  if (process.env.AAA_ADMIN_LOGIN) {
+    console.log(`AAA league admin: ${process.env.AAA_ADMIN_LOGIN}`);
   }
   console.log('');
 });

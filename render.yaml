@@ -21,9 +21,15 @@ services:
         value: "sevans"
       - key: COMMISSIONER_EMAIL
         value: "sevans5714@gmail.com"
+      - key: AAA_ADMIN_LOGIN
+        value: "sevans-aaa"
+      - key: AAA_ADMIN_EMAIL
+        value: "sevans5714+aaa@gmail.com"
       - key: APP_BASE_URL
         value: "https://www.gridiron24.com"
       - key: COMMISSIONER_PASSWORD
+        sync: false
+      - key: AAA_ADMIN_PASSWORD
         sync: false
       - key: SESSION_SECRET
         sync: false

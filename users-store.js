@@ -393,9 +393,20 @@ function ensureCommissionerFromEnv() {
 }
 
 /**
- * Free Render disks wipe users.json on every deploy. Recreate the commissioner
- * account from env (with safe defaults) whenever that login is missing.
+ * Free Render disks wipe users.json on every deploy. Recreate owner admin
+ * accounts from env (with safe defaults) whenever those logins are missing.
+ *
+ * GridIron 24 overall commissioner: COMMISSIONER_LOGIN (default sevans)
+ * AAA League Admin: AAA_ADMIN_LOGIN (default sevans-aaa)
  */
+function syncBootstrapPassword(store, idx, password) {
+  const { salt, hash } = hashPassword(password);
+  store.users[idx].passwordSalt = salt;
+  store.users[idx].passwordHash = hash;
+  store.users[idx].approved = true;
+  store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
+}
+
 function ensureBootstrapCommissioner() {
   if (!process.env.COMMISSIONER_LOGIN) {
     process.env.COMMISSIONER_LOGIN = 'sevans';
@@ -407,14 +418,11 @@ function ensureBootstrapCommissioner() {
 
   const existing = findByLoginName(login);
   if (existing) {
-    // Keep password in sync when COMMISSIONER_PASSWORD is explicitly set in env.
     if (process.env.COMMISSIONER_PASSWORD) {
       const store = readStore();
       const idx = store.users.findIndex((u) => normalizeLoginName(u.loginName) === login);
       if (idx !== -1) {
-        const { salt, hash } = hashPassword(password);
-        store.users[idx].passwordSalt = salt;
-        store.users[idx].passwordHash = hash;
+        syncBootstrapPassword(store, idx, password);
         store.users[idx].role = ROLES.COMMISSIONER;
         store.users[idx].conference = null;
         writeStore(store);
@@ -439,12 +447,86 @@ function ensureBootstrapCommissioner() {
       role: ROLES.COMMISSIONER,
       approved: true
     });
-    console.log(`Bootstrap commissioner created: ${login}`);
+    console.log(`Bootstrap GridIron 24 commissioner created: ${login}`);
     return user;
   } catch (err) {
     console.warn(`Bootstrap commissioner failed: ${err.message}`);
     return ensureCommissionerFromEnv();
   }
+}
+
+function ensureBootstrapAaaAdmin() {
+  if (!process.env.AAA_ADMIN_LOGIN) {
+    process.env.AAA_ADMIN_LOGIN = 'sevans-aaa';
+  }
+  const login = normalizeLoginName(process.env.AAA_ADMIN_LOGIN);
+  const password = String(
+    process.env.AAA_ADMIN_PASSWORD
+      || process.env.COMMISSIONER_PASSWORD
+      || 'ChangeMe123!'
+  );
+  const email = normalizeEmail(process.env.AAA_ADMIN_EMAIL || 'sevans5714+aaa@gmail.com');
+  const name = String(process.env.AAA_ADMIN_NAME || 'Steve Evans').trim() || 'Steve Evans';
+  const conference = 'aaa';
+
+  // Claim AAA admin slot for this bootstrap login.
+  const store0 = readStore();
+  const otherAdmin = findConferenceAdmin(store0, conference);
+  if (otherAdmin && normalizeLoginName(otherAdmin.loginName) !== login) {
+    const idx = store0.users.findIndex((u) => u.id === otherAdmin.id);
+    if (idx !== -1) {
+      store0.users[idx].role = ROLES.USER;
+      store0.users[idx].conference = null;
+      writeStore(store0);
+      console.warn(`Bootstrap AAA admin: demoted ${otherAdmin.loginName} so ${login} can own AAA`);
+    }
+  }
+
+  const existing = findByLoginName(login);
+  if (existing) {
+    const store = readStore();
+    const idx = store.users.findIndex((u) => normalizeLoginName(u.loginName) === login);
+    if (idx === -1) return publicUser(existing);
+    if (process.env.AAA_ADMIN_PASSWORD || process.env.COMMISSIONER_PASSWORD) {
+      syncBootstrapPassword(store, idx, password);
+    }
+    store.users[idx].role = ROLES.CONFERENCE_ADMIN;
+    store.users[idx].conference = conference;
+    store.users[idx].approved = true;
+    store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
+    writeStore(store);
+    console.log(`Bootstrap AAA league admin ready: ${login}`);
+    return publicUser(store.users[idx]);
+  }
+
+  const emailOwner = findByEmail(email);
+  if (emailOwner && normalizeLoginName(emailOwner.loginName) !== login) {
+    console.warn(`Bootstrap AAA admin skipped: email ${email} belongs to ${emailOwner.loginName}`);
+    return null;
+  }
+
+  try {
+    const user = createUser({
+      name,
+      email,
+      loginName: login,
+      password,
+      role: ROLES.CONFERENCE_ADMIN,
+      conference,
+      approved: true
+    });
+    console.log(`Bootstrap AAA league admin created: ${login}`);
+    return user;
+  } catch (err) {
+    console.warn(`Bootstrap AAA admin failed: ${err.message}`);
+    return null;
+  }
+}
+
+function ensureBootstrapOwnerAccounts() {
+  const commissioner = ensureBootstrapCommissioner();
+  const aaaAdmin = ensureBootstrapAaaAdmin();
+  return { commissioner, aaaAdmin };
 }
 
 function authenticate(loginName, password) {
@@ -551,6 +633,8 @@ module.exports = {
   migrateApprovalFlags,
   ensureCommissionerFromEnv,
   ensureBootstrapCommissioner,
+  ensureBootstrapAaaAdmin,
+  ensureBootstrapOwnerAccounts,
   isStaff,
   isCommissioner,
   publicUser
