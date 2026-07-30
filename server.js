@@ -1597,8 +1597,29 @@ async function notifyRosterViolationManagers(openRows, { force = false, week } =
 async function runRosterViolationsJob({
   triggeredBy = 'system',
   notify = true,
-  forceNotify = false
+  forceNotify = false,
+  onlyIfFirstQuarter = false
 } = {}) {
+  let firstQuarter = null;
+  if (onlyIfFirstQuarter) {
+    firstQuarter = await nflverseLive.getFirstQuarterPatrolState({
+      season: config.season,
+      seasontype: 2
+    });
+    if (!firstQuarter.active) {
+      return {
+        ok: true,
+        skipped: true,
+        reason: 'no_first_quarter_games',
+        triggeredBy,
+        season: config.season,
+        firstQuarter,
+        openCount: rosterViolations.listOpen({ season: config.season }).length,
+        generatedAt: new Date().toISOString()
+      };
+    }
+  }
+
   const { findings, week, conferenceErrors } = await scanRosterViolationsAcrossConferences();
   const merged = rosterViolations.mergeScan({
     season: config.season,
@@ -1613,6 +1634,7 @@ async function runRosterViolationsJob({
   }
   return {
     ok: true,
+    skipped: false,
     season: config.season,
     week,
     lastScan: merged.lastScan,
@@ -1623,6 +1645,7 @@ async function runRosterViolationsJob({
     unchanged: merged.unchanged,
     conferenceErrors,
     notifications,
+    firstQuarter,
     mail: mailConfig(),
     generatedAt: new Date().toISOString()
   };
@@ -1725,31 +1748,60 @@ function extractConferenceLeaders(raw, conference, week) {
   };
 }
 
-async function apiFantasyLeaders(res, weekParam) {
-  const results = await Promise.all(
-    config.conferences.map(async (conference) => {
-      try {
-        const base = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], 'matchup');
-        const week = Number(weekParam || base.status?.currentMatchupPeriod || 1);
-        const raw = await fetchEspnRaw(
-          conference,
-          ['mTeam', 'mMatchup', 'mScoreboard', 'mStatus'],
-          `leaders:${week}`,
-          { scoringPeriodId: week }
-        );
-        return { ok: true, key: conference.key, week, ...extractConferenceLeaders(raw, conference, week) };
-      } catch (error) {
-        return {
-          ok: false,
-          key: conference.key,
-          name: conference.name,
-          error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message,
-          players: [],
-          teams: []
-        };
-      }
-    })
-  );
+async function fantasyLeadersForConference(conference, weekParam, cachePrefix = 'leaders') {
+  try {
+    const base = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], `${cachePrefix}-base`);
+    const week = Number(weekParam || base.status?.currentMatchupPeriod || 1);
+    const raw = await fetchEspnRaw(
+      conference,
+      ['mTeam', 'mMatchup', 'mScoreboard', 'mStatus'],
+      `${cachePrefix}:${week}`,
+      { scoringPeriodId: week }
+    );
+    return { ok: true, key: conference.key, week, ...extractConferenceLeaders(raw, conference, week) };
+  } catch (error) {
+    return {
+      ok: false,
+      key: conference.key,
+      name: conference.name,
+      error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message,
+      players: [],
+      teams: []
+    };
+  }
+}
+
+async function apiFantasyLeaders(res, weekParam, leagueScope = null) {
+  let results;
+  if (leagueScope?.scope === 'aaa') {
+    const affiliate = getAffiliatedLeague(leagueScope.conferenceKey || 'aaa');
+    const espnId = Number(affiliate?.espnLeagueId);
+    if (!affiliate || !Number.isFinite(espnId) || espnId <= 0) {
+      return sendJson(res, 200, {
+        ok: true,
+        season: config.season,
+        week: Number(weekParam || 1),
+        hasLivePoints: false,
+        leagueScope,
+        generatedAt: new Date().toISOString(),
+        players: [],
+        teams: [],
+        conferences: []
+      });
+    }
+    const conference = {
+      key: affiliate.key,
+      name: affiliate.name,
+      shortName: affiliate.shortName || 'AAA',
+      espnLeagueId: espnId,
+      logo: affiliate.logo || '/assets/aaa-league.png'
+    };
+    results = [await fantasyLeadersForConference(conference, weekParam, 'aaa-leaders')];
+  } else {
+    results = await Promise.all(
+      config.conferences.map((conference) => fantasyLeadersForConference(conference, weekParam))
+    );
+  }
 
   const week = results.find((r) => r.ok)?.week || Number(weekParam || 1);
   const players = results.flatMap((r) => r.players || [])
@@ -1765,6 +1817,7 @@ async function apiFantasyLeaders(res, weekParam) {
     season: config.season,
     week,
     hasLivePoints,
+    leagueScope: leagueScope || { scope: 'gridiron' },
     generatedAt: new Date().toISOString(),
     players,
     teams,
@@ -1919,28 +1972,63 @@ async function apiOfficialScoring(res) {
   });
 }
 
-async function apiSchedule(res, weekParam) {
-  const results = await Promise.all(
-    config.conferences.map(async (conference) => {
-      try {
-        const raw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], 'matchup');
-        const week = Number(weekParam || raw.status?.currentMatchupPeriod || 1);
-        return { ok: true, ...normalizeSchedule(raw, conference, week) };
-      } catch (error) {
-        return {
+async function scheduleForConference(conference, weekParam, cacheTag = 'matchup') {
+  try {
+    const raw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], cacheTag);
+    const week = Number(weekParam || raw.status?.currentMatchupPeriod || 1);
+    return { ok: true, ...normalizeSchedule(raw, conference, week) };
+  } catch (error) {
+    return {
+      ok: false,
+      key: conference.key,
+      name: conference.name,
+      shortName: conference.shortName,
+      logo: conference.logo || null,
+      error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
+    };
+  }
+}
+
+async function apiSchedule(res, weekParam, leagueScope = null) {
+  let results;
+  if (leagueScope?.scope === 'aaa') {
+    const affiliate = getAffiliatedLeague(leagueScope.conferenceKey || 'aaa');
+    const espnId = Number(affiliate?.espnLeagueId);
+    if (!affiliate || !Number.isFinite(espnId) || espnId <= 0) {
+      return sendJson(res, 200, {
+        season: config.season,
+        week: Number(weekParam || 1),
+        leagueScope,
+        generatedAt: new Date().toISOString(),
+        conferences: [{
           ok: false,
-          key: conference.key,
-          name: conference.name,
-          error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
-        };
-      }
-    })
-  );
+          key: 'aaa',
+          name: affiliate?.name || 'AAA League',
+          shortName: affiliate?.shortName || 'AAA',
+          logo: affiliate?.logo || '/assets/aaa-league.png',
+          error: 'AAA League ESPN ID is not configured yet'
+        }]
+      });
+    }
+    const conference = {
+      key: affiliate.key,
+      name: affiliate.name,
+      shortName: affiliate.shortName || 'AAA',
+      espnLeagueId: espnId,
+      logo: affiliate.logo || '/assets/aaa-league.png'
+    };
+    results = [await scheduleForConference(conference, weekParam, 'aaa-matchup')];
+  } else {
+    results = await Promise.all(
+      config.conferences.map((conference) => scheduleForConference(conference, weekParam))
+    );
+  }
 
   const week = results.find((r) => r.ok)?.week || Number(weekParam || 1);
   sendJson(res, 200, {
     season: config.season,
     week,
+    leagueScope: leagueScope || { scope: 'gridiron' },
     generatedAt: new Date().toISOString(),
     conferences: results
   });
@@ -2365,6 +2453,58 @@ function homePathForUser(user) {
   }
   return '/home.html';
 }
+
+/**
+ * Which league HQ/nav/scoreboard a user should see.
+ * Claim conferenceKey is source of truth for members; conference_admin uses user.conference.
+ * Commissioners / unassigned → GridIron 24.
+ */
+function leagueScopeForUser(user) {
+  const homePath = homePathForUser(user);
+  if (!user) {
+    return {
+      scope: 'gridiron',
+      conferenceKey: null,
+      homePath,
+      label: 'GridIron 24'
+    };
+  }
+  let conferenceKey = null;
+  try {
+    const claim = logos.getClaimForUser(user.id);
+    if (claim?.conferenceKey) conferenceKey = String(claim.conferenceKey).toLowerCase();
+  } catch { /* ignore */ }
+  if (!conferenceKey && user.role === 'conference_admin' && user.conference) {
+    conferenceKey = String(user.conference).toLowerCase();
+  }
+  if (conferenceKey && isAffiliateLeagueKey(conferenceKey)) {
+    const affiliate = getAffiliatedLeague(conferenceKey);
+    return {
+      scope: 'aaa',
+      conferenceKey,
+      homePath,
+      label: affiliate?.name || (conferenceKey === 'aaa' ? 'AAA League' : conferenceKey)
+    };
+  }
+  return {
+    scope: 'gridiron',
+    conferenceKey: conferenceKey || null,
+    homePath,
+    label: 'GridIron 24'
+  };
+}
+
+/** GridIron-only HTML pages — AAA assignees are redirected to the AAA portal. */
+const GRIDIRON_ONLY_PAGES = new Set([
+  '/standings.html',
+  '/teams.html',
+  '/draft.html',
+  '/history.html',
+  '/transactions.html',
+  '/rankings.html',
+  '/schedules.html',
+  '/playoffs.html'
+]);
 
 function isDefaultHomeNext(nextPath) {
   const value = String(nextPath || '').trim();
@@ -2939,10 +3079,13 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 401, { ok: false, error: 'Invalid cron secret' });
       }
       try {
+        const when = String(requestUrl.searchParams.get('when') || '').trim().toLowerCase();
+        const onlyIfFirstQuarter = when === 'first-quarter' || when === 'q1';
         const result = await runRosterViolationsJob({
-          triggeredBy: 'cron',
+          triggeredBy: onlyIfFirstQuarter ? 'cron-q1' : 'cron',
           notify: requestUrl.searchParams.get('notify') !== '0',
-          forceNotify: requestUrl.searchParams.get('force') === '1'
+          forceNotify: requestUrl.searchParams.get('force') === '1',
+          onlyIfFirstQuarter
         });
         return sendJson(res, 200, result);
       } catch (err) {
@@ -2957,7 +3100,8 @@ const server = http.createServer(async (req, res) => {
         authenticated: Boolean(user),
         authConfigured: true,
         user,
-        homePath: homePathForUser(user)
+        homePath: homePathForUser(user),
+        leagueScope: leagueScopeForUser(user)
       });
     }
 
@@ -3198,6 +3342,18 @@ const server = http.createServer(async (req, res) => {
           });
           return res.end();
         }
+      }
+    }
+
+    if (GRIDIRON_ONLY_PAGES.has(pathname)) {
+      const user = getSessionUser(req);
+      if (user && leagueScopeForUser(user).scope === 'aaa') {
+        res.writeHead(302, {
+          Location: '/aaa.html',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache'
+        });
+        return res.end();
       }
     }
 
@@ -4604,6 +4760,7 @@ const server = http.createServer(async (req, res) => {
         keeperWindow,
         career: career.listForUser(user.id),
         homePath: homePathForUser(user),
+        leagueScope: leagueScopeForUser(user),
         user: users.publicUser(user),
         specs: logos.LOGO_SPECS
       });
@@ -4859,11 +5016,13 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/schedule') {
-      return await apiSchedule(res, requestUrl.searchParams.get('week'));
+      const scope = leagueScopeForUser(getSessionUser(req));
+      return await apiSchedule(res, requestUrl.searchParams.get('week'), scope);
     }
 
     if (pathname === '/api/fantasy-leaders') {
-      return await apiFantasyLeaders(res, requestUrl.searchParams.get('week'));
+      const scope = leagueScopeForUser(getSessionUser(req));
+      return await apiFantasyLeaders(res, requestUrl.searchParams.get('week'), scope);
     }
 
     if (pathname === '/api/bowl') {

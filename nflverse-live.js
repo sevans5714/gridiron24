@@ -154,7 +154,54 @@ async function getLiveScoring(query = {}) {
   };
 }
 
+function isFirstQuarterGame(game) {
+  if (!game || game.status?.bucket !== 'live') return false;
+  const period = Number(game.status?.period);
+  if (period === 1) return true;
+  const detail = `${game.status?.shortDetail || ''} ${game.status?.detail || ''} ${game.status?.description || ''}`.toLowerCase();
+  return /\b1st\b/.test(detail) || /\bfirst quarter\b/.test(detail);
+}
+
+/**
+ * Live NFL scoreboard check used by roster-violation Q1 patrol.
+ * Returns active=true when any regular-season (or current) game is in the first quarter.
+ */
+async function getFirstQuarterPatrolState({ season, week, seasontype } = {}) {
+  const query = {};
+  if (seasontype != null) query.seasontype = String(seasontype);
+  else query.seasontype = '2';
+  if (week != null && String(week).trim() !== '') query.week = String(week);
+  if (season != null && String(season).trim() !== '') query.season = String(season);
+
+  let live;
+  try {
+    live = await getLiveScoring(query);
+  } catch (err) {
+    // Fall back to "current" scoreboard if week/season query fails.
+    live = await getLiveScoring({});
+  }
+
+  const firstQuarterGames = (live.games || []).filter(isFirstQuarterGame);
+  return {
+    ok: true,
+    active: firstQuarterGames.length > 0,
+    fetchedAt: live.fetchedAt,
+    season: live.season,
+    week: live.week,
+    counts: live.counts,
+    games: firstQuarterGames.map((g) => ({
+      id: g.id,
+      name: g.shortName || g.name,
+      period: g.status?.period || 1,
+      clock: g.status?.clock || null,
+      detail: g.status?.shortDetail || g.status?.detail || null
+    }))
+  };
+}
+
 module.exports = {
   getLiveScoring,
+  getFirstQuarterPatrolState,
+  isFirstQuarterGame,
   SCOREBOARD_URL
 };
