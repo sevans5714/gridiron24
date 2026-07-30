@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=66" />
+  <link rel="stylesheet" href="/css/site.css?v=67" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -558,6 +558,7 @@
   <main class="page-main shell">
     <nav class="profile-jump" aria-label="Profile sections">
       <a href="#account">Account</a>
+      <a href="#inbox">Inbox</a>
       <a href="#appearance">Appearance</a>
       <a href="#franchise">Franchise</a>
       <a href="#career">Career</a>
@@ -575,6 +576,20 @@
         </div>
       </div>
       <div id="account-body"><div class="msg">Loading…</div></div>
+    </section>
+
+    <section class="profile-card" id="inbox">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Inbox</h2>
+          <p>Rule proposals, league votes, and messages from league staff.</p>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-ghost" id="profile-inbox-mark-all">Mark all read</button>
+          <a class="btn btn-ghost" href="/inbox.html">Open inbox</a>
+        </div>
+      </div>
+      <div id="profile-inbox-list"><div class="msg">Loading inbox…</div></div>
     </section>
 
     <section class="profile-card" id="appearance">
@@ -685,8 +700,9 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=48"></script>
-  <script src="/js/team-icons.js?v=9"></script>
+  <script src="/js/nav.js?v=49"></script>
+  <script src="/js/inbox-ui.js?v=1"></script>
+  <script src="/js/team-icons.js?v=10"></script>
   <script>
     const escP = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -1379,12 +1395,24 @@
       const staff = isStaffRole(user);
       renderAppearance(user.theme || 'night');
       wireAppearance();
+      const inboxMount = document.getElementById('profile-inbox-list');
+      window.GridIronInbox?.wireInbox(inboxMount, {
+        onChange: () => window.GridIronNav?.refreshInboxBadge?.()
+      });
+      document.getElementById('profile-inbox-mark-all')?.addEventListener('click', async () => {
+        await fetch('/api/inbox/read-all', { method: 'POST' });
+        await window.GridIronInbox?.renderInbox(inboxMount);
+        window.GridIronNav?.refreshInboxBadge?.();
+      });
       try {
-        await loadProfile();
+        await Promise.all([
+          loadProfile(),
+          window.GridIronInbox?.renderInbox(inboxMount)
+        ]);
         wirePasswordForm();
         if (location.hash === '#logo') {
           document.getElementById('logo')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (location.hash === '#franchise' || location.hash === '#career' || location.hash === '#keeper' || location.hash === '#account' || location.hash === '#appearance') {
+        } else if (location.hash === '#franchise' || location.hash === '#career' || location.hash === '#keeper' || location.hash === '#account' || location.hash === '#appearance' || location.hash === '#inbox') {
           document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' });
         } else if (location.hash === '#password') {
           document.getElementById('password')?.scrollIntoView({ behavior: 'smooth' });

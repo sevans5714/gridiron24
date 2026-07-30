@@ -40,6 +40,9 @@ const rulesSyncStore = require('./rules-sync-store');
 const rosterViolations = require('./roster-violations-store');
 const keepers = require('./keepers-store');
 const career = require('./career-store');
+const polls = require('./polls-store');
+const inbox = require('./inbox-store');
+const ruleProposals = require('./rule-proposals-store');
 const leagues = require('./leagues-store');
 const { compareSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
@@ -289,6 +292,79 @@ function requireAuth(req, res, pathname) {
   return false;
 }
 
+function requireSiteOwner(req, res) {
+  const user = getSessionUser(req);
+  if (!user) {
+    sendJson(res, 401, { ok: false, error: 'Authentication required' });
+    return null;
+  }
+  if (!users.isSiteOwner(user)) {
+    sendJson(res, 403, { ok: false, error: 'Site owner access required' });
+    return null;
+  }
+  return user;
+}
+
+function staffRecipients() {
+  return users.listUsers().filter((u) => users.isStaff(u) && u.approved !== false);
+}
+
+function eligibleVoters() {
+  return users.listUsers().filter((u) => u.approved !== false);
+}
+
+let draftGateCache = { at: 0, value: null };
+
+async function getDraftGateStatus() {
+  if (process.env.RULE_PROPOSALS_FORCE_OPEN === '1') {
+    return {
+      proposalsOpen: true,
+      forced: true,
+      leagues: [],
+      generatedAt: new Date().toISOString()
+    };
+  }
+  const now = Date.now();
+  if (draftGateCache.value && now - draftGateCache.at < 5 * 60 * 1000) {
+    return draftGateCache.value;
+  }
+
+  const targets = listEspnLeagues();
+  const leaguesStatus = [];
+  for (const league of targets) {
+    try {
+      const board = await loadDraftBoard(league.key);
+      leaguesStatus.push({
+        key: league.key,
+        name: league.shortName || league.name,
+        ok: true,
+        drafted: Boolean(board?.draft?.drafted),
+        inProgress: Boolean(board?.draft?.inProgress)
+      });
+    } catch (err) {
+      leaguesStatus.push({
+        key: league.key,
+        name: league.shortName || league.name,
+        ok: false,
+        drafted: false,
+        inProgress: false,
+        error: err.message || 'Unavailable'
+      });
+    }
+  }
+
+  // Button stays until every league draft is complete (not in progress).
+  const proposalsOpen = !leaguesStatus.every((l) => l.ok && l.drafted && !l.inProgress);
+  const value = {
+    proposalsOpen,
+    forced: false,
+    leagues: leaguesStatus,
+    generatedAt: new Date().toISOString()
+  };
+  draftGateCache = { at: now, value };
+  return value;
+}
+
 function requireStaff(req, res) {
   const user = getSessionUser(req);
   if (!user) {
@@ -333,6 +409,19 @@ function resolveStaffConferenceKey(user, requestedKey) {
     throw err;
   }
   return key;
+}
+
+/** Franchise claim conference, else conference_admin assignment. */
+function memberConferenceKey(user) {
+  if (!user?.id) return null;
+  if (user.role === 'conference_admin' && user.conference) {
+    return String(user.conference).toLowerCase();
+  }
+  try {
+    const claim = logos.getClaimForUser(user.id);
+    if (claim?.conferenceKey) return String(claim.conferenceKey).toLowerCase();
+  } catch { /* ignore */ }
+  return null;
 }
 
 async function loadConferenceOwnerRoster(conferenceKey) {
@@ -4611,6 +4700,401 @@ const server = http.createServer(async (req, res) => {
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete message' });
       }
+    }
+
+    if (pathname === '/api/polls' && req.method === 'GET') {
+      const user = getSessionUser(req);
+      const conferenceKey = memberConferenceKey(user);
+      return sendJson(res, 200, {
+        ok: true,
+        polls: polls.listPollsForBoard({ user, conferenceKey, includeClosed: true }),
+        myConference: conferenceKey,
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/polls/admin' && req.method === 'GET') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      return sendJson(res, 200, {
+        ok: true,
+        polls: polls.listPollsAdmin(),
+        leagues: listAdminLeagues().map((l) => ({
+          key: l.key,
+          name: l.name,
+          shortName: l.shortName,
+          kind: l.kind
+        })),
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/polls' && req.method === 'POST') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const limitToConference = body.limitToConference === true
+          || String(body.audience || '').toLowerCase() === 'conference';
+        let audienceConference = null;
+        if (limitToConference) {
+          audienceConference = resolveStaffConferenceKey(user, body.conference || body.audienceConference);
+        }
+        const item = polls.createPoll({
+          question: body.question,
+          options: body.options,
+          audience: limitToConference ? 'conference' : 'all',
+          audienceConference,
+          author: user
+        });
+        return sendJson(res, 201, {
+          ok: true,
+          poll: polls.publicPoll(item, { user, includeAdmin: true })
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not create poll' });
+      }
+    }
+
+    if (pathname.startsWith('/api/polls/') && pathname.endsWith('/vote') && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const id = pathname.slice('/api/polls/'.length, -'/vote'.length);
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const conferenceKey = memberConferenceKey(user);
+        const updated = polls.castVote(id, body.optionId, { user, conferenceKey });
+        return sendJson(res, 200, {
+          ok: true,
+          poll: polls.publicPoll(updated, { user, conferenceKey })
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not record vote' });
+      }
+    }
+
+    if (pathname.startsWith('/api/polls/') && pathname.endsWith('/close') && req.method === 'POST') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      const id = pathname.slice('/api/polls/'.length, -'/close'.length);
+      try {
+        const updated = polls.closePoll(id, { by: user });
+        return sendJson(res, 200, {
+          ok: true,
+          poll: polls.publicPoll(updated, { user, includeAdmin: true })
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not close poll' });
+      }
+    }
+
+    if (pathname.startsWith('/api/polls/') && req.method === 'DELETE') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      const id = pathname.slice('/api/polls/'.length);
+      try {
+        polls.deletePoll(id);
+        return sendJson(res, 200, { ok: true });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete poll' });
+      }
+    }
+
+    if (pathname === '/api/inbox' && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      return sendJson(res, 200, {
+        ok: true,
+        messages: inbox.listForUser(user.id),
+        unread: inbox.unreadCount(user.id),
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/inbox/unread' && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      return sendJson(res, 200, {
+        ok: true,
+        unread: inbox.unreadCount(user.id)
+      });
+    }
+
+    if (pathname === '/api/inbox/read-all' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const marked = inbox.markAllRead(user.id);
+      return sendJson(res, 200, { ok: true, marked, unread: 0 });
+    }
+
+    if (pathname.startsWith('/api/inbox/') && pathname.endsWith('/read') && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const id = pathname.slice('/api/inbox/'.length, -'/read'.length);
+      try {
+        const message = inbox.markRead(id, user.id);
+        return sendJson(res, 200, {
+          ok: true,
+          message,
+          unread: inbox.unreadCount(user.id)
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not mark read' });
+      }
+    }
+
+    if (pathname.startsWith('/api/inbox/') && req.method === 'DELETE') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const id = pathname.slice('/api/inbox/'.length);
+      try {
+        inbox.deleteMessage(id, user.id);
+        return sendJson(res, 200, {
+          ok: true,
+          unread: inbox.unreadCount(user.id)
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete message' });
+      }
+    }
+
+    if (pathname === '/api/rule-proposals/status' && req.method === 'GET') {
+      try {
+        const status = await getDraftGateStatus();
+        return sendJson(res, 200, { ok: true, ...status });
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Could not load draft status',
+          proposalsOpen: true
+        });
+      }
+    }
+
+    if (pathname === '/api/rule-proposals' && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const filter = String(requestUrl.searchParams.get('status') || '').trim().toLowerCase() || null;
+      const isOwner = users.isSiteOwner(user);
+      const isStaffUser = users.isStaff(user);
+      let list = ruleProposals.listProposals({ status: filter || undefined, limit: 60 });
+      if (!isStaffUser) {
+        list = list.filter((p) =>
+          p.status === ruleProposals.STATUS.VOTING
+          || p.status === ruleProposals.STATUS.PASSED
+          || p.status === ruleProposals.STATUS.FAILED
+          || p.authorId === user.id
+        );
+      }
+      return sendJson(res, 200, {
+        ok: true,
+        proposals: list.map((p) => ruleProposals.publicProposal(p, { user, includeVotes: isOwner })),
+        isOwner,
+        isStaff: isStaffUser,
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/rule-proposals' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const gate = await getDraftGateStatus();
+        if (!gate.proposalsOpen) {
+          return sendJson(res, 400, {
+            ok: false,
+            error: 'Rule change proposals are closed — drafts are complete for all leagues'
+          });
+        }
+        const item = ruleProposals.createProposal({ text: body.text || body.proposal, author: user });
+        const staff = staffRecipients().filter((u) => u.id !== user.id);
+        const subject = `Rule change proposal from ${user.name || user.loginName || 'member'}`;
+        const msgBody = [
+          `${user.name || user.loginName || 'A member'} submitted a rule change proposal:`,
+          '',
+          item.text,
+          '',
+          'Open Inbox to review. The site owner can send this to a league-wide vote.'
+        ].join('\n');
+        inbox.sendToUsers({
+          toUserIds: staff.map((u) => u.id),
+          from: user,
+          subject,
+          body: msgBody,
+          type: 'rule_proposal',
+          relatedId: item.id,
+          meta: { proposalId: item.id, status: item.status }
+        });
+        // Also leave a copy in the author's inbox for tracking.
+        inbox.sendMessage({
+          toUserId: user.id,
+          from: user,
+          subject: 'Your rule change proposal was submitted',
+          body: [
+            'Your proposal was sent to league admins and the site owner:',
+            '',
+            item.text
+          ].join('\n'),
+          type: 'rule_proposal',
+          relatedId: item.id,
+          meta: { proposalId: item.id, status: item.status }
+        });
+        return sendJson(res, 201, {
+          ok: true,
+          proposal: ruleProposals.publicProposal(item, { user })
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not submit proposal'
+        });
+      }
+    }
+
+    if (pathname.startsWith('/api/rule-proposals/') && pathname.endsWith('/open-vote') && req.method === 'POST') {
+      const user = requireSiteOwner(req, res);
+      if (!user) return;
+      const id = pathname.slice('/api/rule-proposals/'.length, -'/open-vote'.length);
+      try {
+        const eligible = eligibleVoters();
+        const updated = ruleProposals.openVote(id, { by: user, eligibleUsers: eligible });
+        const pub = ruleProposals.publicProposal(updated, { user });
+        const subject = 'League vote: rule change proposal';
+        const msgBody = [
+          'The site owner opened a league-wide vote on this rule change proposal.',
+          '',
+          updated.text,
+          '',
+          `Majority needed to pass or fail: ${pub.majorityNeeded} of ${pub.eligibleCount} members.`,
+          '',
+          'Vote Yes or No from your Inbox.'
+        ].join('\n');
+        inbox.sendToUsers({
+          toUserIds: eligible.map((u) => u.id),
+          from: user,
+          subject,
+          body: msgBody,
+          type: 'rule_vote',
+          relatedId: updated.id,
+          meta: {
+            proposalId: updated.id,
+            status: updated.status,
+            majorityNeeded: pub.majorityNeeded,
+            eligibleCount: pub.eligibleCount
+          }
+        });
+        return sendJson(res, 200, { ok: true, proposal: pub });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not open vote'
+        });
+      }
+    }
+
+    if (pathname.startsWith('/api/rule-proposals/') && pathname.endsWith('/dismiss') && req.method === 'POST') {
+      const user = requireSiteOwner(req, res);
+      if (!user) return;
+      const id = pathname.slice('/api/rule-proposals/'.length, -'/dismiss'.length);
+      try {
+        const updated = ruleProposals.dismissProposal(id, { by: user });
+        return sendJson(res, 200, {
+          ok: true,
+          proposal: ruleProposals.publicProposal(updated, { user })
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not dismiss proposal'
+        });
+      }
+    }
+
+    if (pathname.startsWith('/api/rule-proposals/') && pathname.endsWith('/vote') && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const id = pathname.slice('/api/rule-proposals/'.length, -'/vote'.length);
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const before = ruleProposals.findProposal(id);
+        const updated = ruleProposals.castVote(id, body.choice || body.vote, { user });
+        const pub = ruleProposals.publicProposal(updated, { user });
+        if (before?.status === ruleProposals.STATUS.VOTING
+          && (updated.status === ruleProposals.STATUS.PASSED || updated.status === ruleProposals.STATUS.FAILED)) {
+          const staff = staffRecipients();
+          const resultLabel = updated.status === ruleProposals.STATUS.PASSED ? 'PASSED' : 'FAILED';
+          inbox.sendToUsers({
+            toUserIds: staff.map((u) => u.id),
+            from: null,
+            subject: `Rule vote ${resultLabel}`,
+            body: [
+              `The rule change proposal has ${resultLabel} by majority vote.`,
+              '',
+              updated.text,
+              '',
+              `Final tally: Yes ${pub.yes} · No ${pub.no} (needed ${pub.majorityNeeded} of ${pub.eligibleCount}).`
+            ].join('\n'),
+            type: 'rule_result',
+            relatedId: updated.id,
+            meta: {
+              proposalId: updated.id,
+              status: updated.status,
+              yes: pub.yes,
+              no: pub.no
+            }
+          });
+        }
+        return sendJson(res, 200, { ok: true, proposal: pub });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not record vote'
+        });
+      }
+    }
+
+    if (pathname.startsWith('/api/rule-proposals/') && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const id = pathname.slice('/api/rule-proposals/'.length);
+      const item = ruleProposals.findProposal(id);
+      if (!item) return sendJson(res, 404, { ok: false, error: 'Proposal not found' });
+      const isStaffUser = users.isStaff(user);
+      if (!isStaffUser
+        && item.authorId !== user.id
+        && item.status === ruleProposals.STATUS.SUBMITTED) {
+        return sendJson(res, 403, { ok: false, error: 'Not allowed' });
+      }
+      return sendJson(res, 200, {
+        ok: true,
+        proposal: ruleProposals.publicProposal(item, {
+          user,
+          includeVotes: users.isSiteOwner(user)
+        }),
+        isOwner: users.isSiteOwner(user),
+        isStaff: isStaffUser
+      });
     }
 
     if (pathname === '/api/ticker' && req.method === 'GET') {

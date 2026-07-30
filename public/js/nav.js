@@ -213,6 +213,173 @@
     return el;
   }
 
+  function ensureInboxMount() {
+    let el = document.getElementById('inbox-btn');
+    if (el) return el;
+    const topbarInner = document.querySelector('.topbar-inner');
+    if (!topbarInner) return null;
+    let right = topbarInner.querySelector('.topbar-right');
+    if (!right) {
+      right = document.createElement('div');
+      right.className = 'topbar-right';
+      topbarInner.appendChild(right);
+    }
+    el = document.createElement('a');
+    el.id = 'inbox-btn';
+    el.className = 'inbox-btn';
+    el.href = '/inbox.html';
+    el.title = 'Inbox';
+    el.setAttribute('aria-label', 'Inbox');
+    el.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M3.5 7.5 12 13l8.5-5.5" />
+        <rect x="3" y="5.5" width="18" height="13" rx="1.2" />
+      </svg>
+      <span class="inbox-badge" id="inbox-badge" hidden>0</span>`;
+    const switcher = document.getElementById('league-switch');
+    const menu = document.getElementById('user-menu');
+    if (switcher) right.insertBefore(el, switcher);
+    else if (menu) right.insertBefore(el, menu);
+    else right.appendChild(el);
+    return el;
+  }
+
+  function renderInboxBadge(count) {
+    const btn = ensureInboxMount();
+    if (!btn) return;
+    const badge = document.getElementById('inbox-badge');
+    const n = Math.max(0, Number(count) || 0);
+    if (active === 'inbox') btn.classList.add('is-active');
+    else btn.classList.remove('is-active');
+    if (!badge) return;
+    if (n > 0) {
+      badge.hidden = false;
+      badge.textContent = n > 99 ? '99+' : String(n);
+      btn.title = `Inbox (${n} unread)`;
+      btn.setAttribute('aria-label', `Inbox, ${n} unread`);
+    } else {
+      badge.hidden = true;
+      badge.textContent = '0';
+      btn.title = 'Inbox';
+      btn.setAttribute('aria-label', 'Inbox');
+    }
+  }
+
+  async function refreshInboxBadge() {
+    if (!authState?.user) {
+      const btn = document.getElementById('inbox-btn');
+      if (btn) btn.hidden = true;
+      return;
+    }
+    const btn = ensureInboxMount();
+    if (btn) btn.hidden = false;
+    try {
+      const res = await fetch('/api/inbox/unread', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error('unread failed');
+      renderInboxBadge(data.unread || 0);
+    } catch {
+      renderInboxBadge(0);
+    }
+  }
+
+  function ensureRuleProposalMount() {
+    let slot = document.getElementById('rule-proposal-slot');
+    if (slot) return slot;
+    const topbarInner = document.querySelector('.topbar-inner');
+    if (!topbarInner) return null;
+    slot = document.createElement('div');
+    slot.id = 'rule-proposal-slot';
+    slot.className = 'rule-proposal-slot';
+    slot.hidden = true;
+    const right = topbarInner.querySelector('.topbar-right');
+    if (right) topbarInner.insertBefore(slot, right);
+    else topbarInner.appendChild(slot);
+    return slot;
+  }
+
+  function closeRuleProposalModal() {
+    document.getElementById('rule-proposal-modal')?.remove();
+  }
+
+  function openRuleProposalModal() {
+    closeRuleProposalModal();
+    const backdrop = document.createElement('div');
+    backdrop.id = 'rule-proposal-modal';
+    backdrop.className = 'gi-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="gi-modal" role="dialog" aria-modal="true" aria-labelledby="rule-proposal-title">
+        <h2 id="rule-proposal-title">Rule Change Proposal</h2>
+        <p class="gi-modal-help">Write your proposed rule in free form. It goes to every conference admin and the site owner. The owner can then send it for a league-wide majority vote.</p>
+        <div class="gi-modal-err" id="rule-proposal-err"></div>
+        <label class="field-label" for="rule-proposal-text">Proposed rule</label>
+        <textarea id="rule-proposal-text" maxlength="4000" placeholder="Describe the rule change you want…"></textarea>
+        <div class="btn-row">
+          <button type="button" class="btn" id="rule-proposal-submit">Submit Proposal</button>
+          <button type="button" class="btn btn-ghost" id="rule-proposal-cancel">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const err = backdrop.querySelector('#rule-proposal-err');
+    const area = backdrop.querySelector('#rule-proposal-text');
+    area?.focus();
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeRuleProposalModal();
+    });
+    backdrop.querySelector('#rule-proposal-cancel')?.addEventListener('click', closeRuleProposalModal);
+    backdrop.querySelector('#rule-proposal-submit')?.addEventListener('click', async () => {
+      const btn = backdrop.querySelector('#rule-proposal-submit');
+      err.classList.remove('show');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/rule-proposals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: area.value })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not submit proposal');
+        closeRuleProposalModal();
+        await refreshInboxBadge();
+        window.alert('Proposal submitted. Admins and the owner will see it in their inbox.');
+      } catch (e) {
+        err.textContent = e.message || 'Could not submit';
+        err.classList.add('show');
+        btn.disabled = false;
+      }
+    });
+  }
+
+  function renderRuleProposalButton(show) {
+    const slot = ensureRuleProposalMount();
+    if (!slot) return;
+    if (!show) {
+      slot.hidden = true;
+      slot.innerHTML = '';
+      return;
+    }
+    slot.hidden = false;
+    if (!slot.querySelector('.rule-proposal-btn')) {
+      slot.innerHTML = `<button type="button" class="rule-proposal-btn" id="rule-proposal-btn">Rule Change Proposal</button>`;
+      slot.querySelector('#rule-proposal-btn')?.addEventListener('click', openRuleProposalModal);
+    }
+  }
+
+  async function refreshRuleProposalGate(user) {
+    if (!user) {
+      renderRuleProposalButton(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/rule-proposals/status', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      renderRuleProposalButton(Boolean(data.ok && data.proposalsOpen));
+    } catch {
+      renderRuleProposalButton(true);
+    }
+  }
+
   function hasChosenLogo(logo) {
     return logo?.type === 'icon' || logo?.type === 'upload';
   }
@@ -457,12 +624,24 @@
       syncThemeFromUser(user);
       renderUserMenu(user, myTeam);
       renderLeagueSwitcher(user, leagueScope);
+      if (user) {
+        ensureInboxMount();
+        refreshInboxBadge();
+        refreshRuleProposalGate(user);
+      } else {
+        renderRuleProposalButton(false);
+        const inboxBtn = document.getElementById('inbox-btn');
+        if (inboxBtn) inboxBtn.hidden = true;
+      }
       document.dispatchEvent(new CustomEvent('gi:auth', { detail: authState }));
       return authState;
     } catch {
       authState = { user: null, authenticated: false, myTeam: null, homePath, leagueScope };
       renderUserMenu(null);
       renderLeagueSwitcher(null, leagueScope);
+      renderRuleProposalButton(false);
+      const inboxBtn = document.getElementById('inbox-btn');
+      if (inboxBtn) inboxBtn.hidden = true;
       document.dispatchEvent(new CustomEvent('gi:auth', { detail: authState }));
       return authState;
     }
@@ -500,12 +679,18 @@
   renderNav();
   ensureTickerMount();
   ensureUserMenuMount();
+  const earlyInbox = ensureInboxMount();
+  if (earlyInbox) earlyInbox.hidden = true;
+  ensureRuleProposalMount();
   applyTheme(getTheme());
   watchConferenceLogos();
   ensureFooter('Build …');
   loadBuildFooter();
   loadTicker();
   document.addEventListener('click', closeUserMenuOnOutside);
+  setInterval(() => {
+    if (authState?.user) refreshInboxBadge();
+  }, 60_000);
 
   const authReady = refreshAuth();
 
@@ -513,6 +698,7 @@
     authReady,
     refresh: refreshAuth,
     reloadTicker: loadTicker,
+    refreshInboxBadge,
     setSync() {
       /* Top-right header shows identity (team / owner / access), not sync text. */
     },

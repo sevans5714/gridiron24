@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=66" />
+  <link rel="stylesheet" href="/css/site.css?v=67" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -707,7 +707,17 @@
     }
 
     .stack-form { margin-bottom: 1.15rem; }
-    .list-gap { margin-top: 1.15rem; }
+    .list-gap { margin-top: 1.15rem; display: flex; flex-direction: column; gap: 0.45rem; }
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+    .check-row input { margin-top: 0.2rem; }
 
     @media (max-width: 900px) {
       .comm-layout {
@@ -787,6 +797,7 @@
           <p class="comm-nav-label">Comms</p>
           <a href="#conference-owners">Email Owners</a>
           <a href="#news-admin">News</a>
+          <a href="#polls-admin">Polls</a>
           <a href="#ticker-admin">Ticker</a>
           <a href="#wrap-admin" id="jump-wrap" hidden>Wrap-Up</a>
         </div>
@@ -949,6 +960,44 @@
               <div id="news-admin-list"><div class="msg">Loading news…</div></div>
             </section>
 
+            <section class="admin-block" id="polls-admin" hidden>
+              <div class="section-head">
+                <h3>Polls</h3>
+              </div>
+              <p class="help">Polls appear on the league message board. Optionally limit voting to one conference (or AAA).</p>
+              <div class="status-note" id="polls-msg" role="status"></div>
+              <div class="stack-form">
+                <div>
+                  <label class="field-label" for="poll-question">Question</label>
+                  <input class="field" id="poll-question" type="text" maxlength="240" placeholder="Who wins Week 1?" />
+                </div>
+                <div>
+                  <label class="field-label">Options</label>
+                  <div class="list-gap" id="poll-options">
+                    <input class="field poll-option" type="text" maxlength="120" placeholder="Option 1" />
+                    <input class="field poll-option" type="text" maxlength="120" placeholder="Option 2" />
+                  </div>
+                  <div class="btn-row" style="margin-top:0.45rem;">
+                    <button type="button" class="btn btn-ghost" id="poll-add-option">Add option</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="check-row" for="poll-limit">
+                    <input type="checkbox" id="poll-limit" />
+                    <span>Limit voting to one conference</span>
+                  </label>
+                  <div id="poll-conf-wrap" hidden style="margin-top:0.45rem;">
+                    <label class="field-label" for="poll-conference">Conference</label>
+                    <select class="field" id="poll-conference"></select>
+                  </div>
+                </div>
+                <div class="btn-row">
+                  <button type="button" class="btn" id="poll-create">Create Poll</button>
+                </div>
+              </div>
+              <div id="polls-admin-list"><div class="msg">Loading polls…</div></div>
+            </section>
+
             <section class="admin-block" id="ticker-admin" hidden>
               <div class="section-head">
                 <h3>Ticker</h3>
@@ -1045,7 +1094,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=48"></script>
+  <script src="/js/nav.js?v=49"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1976,6 +2025,170 @@
       });
     }
 
+    let pollsAdminUser = null;
+
+    function showPollsMsg(text, ok) {
+      const el = document.getElementById('polls-msg');
+      el.textContent = text;
+      el.className = `status-note show ${ok ? 'ok' : 'err'}`;
+    }
+
+    function pollConfLabel(key) {
+      const leagues = window.__pollLeagues || window.__giAdminLeagues || [];
+      const hit = leagues.find((l) => l.key === key);
+      return hit?.shortName || hit?.name || key || 'Conference';
+    }
+
+    function resetPollForm() {
+      document.getElementById('poll-question').value = '';
+      const wrap = document.getElementById('poll-options');
+      wrap.innerHTML = `
+        <input class="field poll-option" type="text" maxlength="120" placeholder="Option 1" />
+        <input class="field poll-option" type="text" maxlength="120" placeholder="Option 2" />`;
+      document.getElementById('poll-limit').checked = false;
+      document.getElementById('poll-conf-wrap').hidden = true;
+    }
+
+    async function loadPollsAdmin() {
+      const wrap = document.getElementById('polls-admin');
+      wrap.hidden = false;
+      const res = await fetch('/api/polls/admin', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load polls (${res.status})`);
+      const data = await res.json();
+      window.__pollLeagues = data.leagues || [];
+      const select = document.getElementById('poll-conference');
+      const leagues = data.leagues || [];
+      const confAdmin = pollsAdminUser?.role === 'conference_admin' && !isPlatformAdmin(pollsAdminUser);
+      const options = confAdmin
+        ? leagues.filter((l) => l.key === pollsAdminUser.conference)
+        : leagues;
+      select.innerHTML = options.map((l) =>
+        `<option value="${esc(l.key)}">${esc(l.shortName || l.name)}</option>`
+      ).join('');
+      if (confAdmin && pollsAdminUser.conference) select.value = pollsAdminUser.conference;
+      else if (pollsAdminUser?.conference) select.value = pollsAdminUser.conference;
+
+      const list = document.getElementById('polls-admin-list');
+      const polls = data.polls || [];
+      if (!polls.length) {
+        list.innerHTML = `<div class="msg">No polls yet.</div>`;
+        return;
+      }
+      list.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>Audience</th>
+              <th>Votes</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${polls.map((p) => `
+              <tr>
+                <td>
+                  <strong>${esc(p.question)}</strong>
+                  <div class="muted-sm">${esc(p.createdByName)} · ${esc(fmtWhen(p.createdAt))}</div>
+                </td>
+                <td>${p.audience === 'conference'
+                  ? esc(pollConfLabel(p.audienceConference))
+                  : 'All leagues'}</td>
+                <td>${Number(p.voterCount || p.totalVotes || 0)}</td>
+                <td>${p.status === 'closed' ? 'Closed' : 'Open'}</td>
+                <td style="white-space:nowrap">
+                  ${p.status === 'open'
+                    ? `<button type="button" data-close-poll="${esc(p.id)}" class="link-action">Close</button> · `
+                    : ''}
+                  <button type="button" data-del-poll="${esc(p.id)}" class="link-action">Delete</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function wirePollsAdmin(user) {
+      pollsAdminUser = user;
+      const limit = document.getElementById('poll-limit');
+      const confWrap = document.getElementById('poll-conf-wrap');
+      limit.addEventListener('change', () => {
+        const confOnly = user.role === 'conference_admin' && !isPlatformAdmin(user);
+        // Conference admins always limit to their own league — no picker needed.
+        confWrap.hidden = !limit.checked || confOnly;
+      });
+
+      document.getElementById('poll-add-option').addEventListener('click', () => {
+        const wrap = document.getElementById('poll-options');
+        if (wrap.querySelectorAll('.poll-option').length >= 6) {
+          showPollsMsg('At most 6 options.', false);
+          return;
+        }
+        const input = document.createElement('input');
+        input.className = 'field poll-option';
+        input.type = 'text';
+        input.maxLength = 120;
+        input.placeholder = `Option ${wrap.children.length + 1}`;
+        wrap.appendChild(input);
+      });
+
+      document.getElementById('poll-create').addEventListener('click', async () => {
+        const btn = document.getElementById('poll-create');
+        btn.disabled = true;
+        try {
+          const options = [...document.querySelectorAll('#poll-options .poll-option')]
+            .map((el) => el.value.trim())
+            .filter(Boolean);
+          const res = await fetch('/api/polls', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: document.getElementById('poll-question').value,
+              options,
+              limitToConference: document.getElementById('poll-limit').checked,
+              conference: document.getElementById('poll-conference').value
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not create poll');
+          resetPollForm();
+          showPollsMsg('Poll created. It will show on the message board.', true);
+          await loadPollsAdmin();
+        } catch (err) {
+          showPollsMsg(err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('polls-admin-list').addEventListener('click', async (e) => {
+        const closeId = e.target?.dataset?.closePoll;
+        const delId = e.target?.dataset?.delPoll;
+        if (closeId) {
+          if (!confirm('Close this poll? Results stay visible; no new votes.')) return;
+          const res = await fetch(`/api/polls/${encodeURIComponent(closeId)}/close`, { method: 'POST' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) {
+            showPollsMsg(data.error || 'Could not close poll', false);
+            return;
+          }
+          showPollsMsg('Poll closed.', true);
+          await loadPollsAdmin();
+          return;
+        }
+        if (!delId) return;
+        if (!confirm('Delete this poll and all votes?')) return;
+        const res = await fetch(`/api/polls/${encodeURIComponent(delId)}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          showPollsMsg(data.error || 'Could not delete', false);
+          return;
+        }
+        showPollsMsg('Poll deleted.', true);
+        await loadPollsAdmin();
+      });
+    }
+
     function showInvitesMsg(text, ok) {
       const el = document.getElementById('invites-msg');
       el.textContent = text;
@@ -2658,7 +2871,7 @@
     }
 
     async function bootCommissionerTools(user) {
-      if (!user || (user.role !== 'commissioner' && user.role !== 'conference_admin')) {
+      if (!user || (!isPlatformAdmin(user) && user.role !== 'conference_admin')) {
         window.location.replace('/profile.html');
         return;
       }
@@ -2668,6 +2881,7 @@
           `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
       wireNewsAdmin();
+      wirePollsAdmin(user);
       wireTickerAdmin();
       wireConferenceOwners(user);
       try { await loadConferenceOwners(); } catch (err) {
@@ -2677,6 +2891,10 @@
       try { await loadNewsAdmin(); } catch (err) {
         document.getElementById('news-admin').hidden = false;
         document.getElementById('news-admin-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
+      try { await loadPollsAdmin(); } catch (err) {
+        document.getElementById('polls-admin').hidden = false;
+        document.getElementById('polls-admin-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
       try { await loadTickerAdmin(); } catch (err) {
         document.getElementById('ticker-admin').hidden = false;

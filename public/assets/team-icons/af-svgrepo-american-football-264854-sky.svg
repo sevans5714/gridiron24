@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="12" fill="#0a1620"/>
-  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="11.25" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
-  <svg x="7" y="7" width="50" height="50" viewBox="0 0 472.637 472.637" preserveAspectRatio="xMidYMid meet">
+  <svg x="4" y="4" width="56" height="56" viewBox="0 0 472.637 472.637" preserveAspectRatio="xMidYMid meet">
     <g>
 	<g>
 		<path fill="#7ec8f5" d="M464.095,22.463l-70.917,70.919l-13.923-13.923L450.174,8.54C402.965-0.554,219.266-26.11,96.579,96.578

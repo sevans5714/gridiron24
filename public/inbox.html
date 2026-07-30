@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inbox · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=67" />
+  <style>
+    body[data-page="inbox"] .page-hero {
+      padding-top: 1.5rem;
+      padding-bottom: 1.15rem;
+    }
+    body[data-page="inbox"] .page-hero::before,
+    body[data-page="inbox"] .page-hero::after { display: none; }
+    body[data-page="inbox"] .page-main {
+      padding-top: 0.85rem;
+      padding-bottom: 3rem;
+      max-width: 52rem;
+    }
+    .inbox-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 0 1.1rem;
+    }
+    .inbox-toolbar .hint {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body data-page="inbox">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="topbar-right">
+        <div class="sync" id="lastUpdated">Inbox</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="page-hero shell">
+    <p class="eyebrow">Mail</p>
+    <h1>Inbox</h1>
+  </section>
+
+  <main class="page-main shell">
+    <div class="inbox-toolbar">
+      <p class="hint" id="inbox-hint">Loading…</p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="inbox-mark-all">Mark all read</button>
+        <a class="btn btn-ghost" href="/profile.html#inbox">Profile view</a>
+      </div>
+    </div>
+    <div id="inbox-list"><div class="msg">Loading inbox…</div></div>
+  </main>
+
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=49"></script>
+  <script src="/js/inbox-ui.js?v=1"></script>
+  <script>
+    const mount = document.getElementById('inbox-list');
+    const hint = document.getElementById('inbox-hint');
+
+    async function refresh() {
+      const data = await window.GridIronInbox.renderInbox(mount);
+      if (!data) {
+        hint.textContent = 'Could not load inbox.';
+        return;
+      }
+      const n = Number(data.unread || 0);
+      hint.textContent = n
+        ? `${n} unread message${n === 1 ? '' : 's'}`
+        : `${data.messages.length} message${data.messages.length === 1 ? '' : 's'}`;
+      window.GridIronNav?.refreshInboxBadge?.();
+    }
+
+    document.getElementById('inbox-mark-all').addEventListener('click', async () => {
+      await fetch('/api/inbox/read-all', { method: 'POST' });
+      await refresh();
+    });
+
+    window.GridIronNav?.authReady?.then(async ({ user }) => {
+      if (!user) {
+        window.location.replace('/enter?next=' + encodeURIComponent('/inbox.html'));
+        return;
+      }
+      window.GridIronInbox.wireInbox(mount, { onChange: () => window.GridIronNav?.refreshInboxBadge?.() });
+      await refresh();
+    });
+  </script>
+</body>
+</html>
