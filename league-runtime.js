@@ -51,7 +51,7 @@ function leagueToConfig(league) {
     survival: league.survival || staticConfig.survival || {
       enabled: true,
       week: 17,
-      name: 'Stay in League'
+      name: 'Toilet Bowl'
     },
     affiliatedLeagues: Array.isArray(league.affiliatedLeagues)
       ? league.affiliatedLeagues

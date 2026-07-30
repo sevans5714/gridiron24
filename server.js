@@ -1722,23 +1722,23 @@ function survivalSideFromConference(standConf, survivalConf, confMeta, label) {
 }
 
 async function buildSurvivalPayload() {
-  const survivalCfg = config.survival || { enabled: true, week: 17, name: 'Stay in League' };
+  const survivalCfg = config.survival || { enabled: true, week: 17, name: 'Toilet Bowl' };
   if (survivalCfg.enabled === false) {
     return {
       ok: true,
       enabled: false,
       season: config.season,
-      name: survivalCfg.name || 'Stay in League',
+      name: survivalCfg.name || 'Toilet Bowl',
       week: Number(survivalCfg.week) || 17,
       sides: [],
       phase: 'disabled',
-      message: 'Stay in League is disabled for this season.',
+      message: 'Toilet Bowl is disabled for this season.',
       generatedAt: new Date().toISOString()
     };
   }
 
   const SURVIVAL_WEEK = Number(survivalCfg.week) || Number(config.championship?.bowlWeek) || 17;
-  const survivalName = survivalCfg.name || 'Stay in League';
+  const survivalName = survivalCfg.name || 'Toilet Bowl';
   const [standings, survivalWeek] = await Promise.all([
     loadStandingsPayload(),
     loadSchedulePayload(SURVIVAL_WEEK)
@@ -3717,7 +3717,7 @@ const server = http.createServer(async (req, res) => {
         const payload = await buildSurvivalPayload();
         return sendJson(res, 200, payload);
       } catch (err) {
-        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load Stay in League' });
+        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load Toilet Bowl' });
       }
     }
 

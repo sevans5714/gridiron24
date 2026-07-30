@@ -619,7 +619,7 @@
           </div>
           <div class="bowl survival" id="survival-card">
             <div class="eyebrow" id="survival-week">Week 17</div>
-            <h2 id="survival-title">Stay in League</h2>
+            <h2 id="survival-title">Toilet Bowl</h2>
             <div class="bowl-scoreboard" id="survival-scoreboard">
               <div class="bowl-side detail">
                 <div class="nm" id="survival-detail-name">Detail Last Place</div>
@@ -694,7 +694,7 @@
       }
       if (card) card.hidden = false;
       const title = document.getElementById('survival-title');
-      if (title) title.textContent = data.name || 'Stay in League';
+      if (title) title.textContent = data.name || 'Toilet Bowl';
       const week = document.getElementById('survival-week');
       if (week) week.textContent = `Week ${data.week || 17}`;
       fillSurvivalSide('detail', data.detail, data.leader === 'detail' || data.leader === 'tie');

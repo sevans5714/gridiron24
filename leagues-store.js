@@ -84,7 +84,7 @@ function defaultSurvival(seed = {}) {
   return {
     enabled: seed.enabled !== false,
     week: Number(seed.week) || 17,
-    name: String(seed.name || 'Stay in League').trim() || 'Stay in League'
+    name: String(seed.name || 'Toilet Bowl').trim() || 'Toilet Bowl'
   };
 }
 
@@ -387,7 +387,7 @@ function ensureSystemLeague(seed) {
     }
     const hasSurvivalCal = (system.calendarDefaults || []).some(
       (e) => String(e.type || '').toLowerCase() === 'survival'
-        || /stay in league/i.test(String(e.title || ''))
+        || /stay in league|toilet bowl/i.test(String(e.title || ''))
     );
     if (!hasSurvivalCal) {
       const fromSeed = (seed.calendarDefaults || []).find(
@@ -396,12 +396,24 @@ function ensureSystemLeague(seed) {
       system.calendarDefaults = [
         ...(system.calendarDefaults || []),
         fromSeed || {
-          title: 'Stay in League',
+          title: 'Toilet Bowl',
           type: 'survival',
           date: '2026-12-29',
-          notes: 'Week 17 — Detail last place vs Overtime last place.'
+          notes: 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).'
         }
       ];
+      dirty = true;
+    }
+    if (system.survival && /stay in league/i.test(String(system.survival.name || ''))) {
+      system.survival.name = 'Toilet Bowl';
+      dirty = true;
+    }
+    const calStay = (system.calendarDefaults || []).find((e) => /stay in league/i.test(String(e.title || '')));
+    if (calStay) {
+      calStay.title = 'Toilet Bowl';
+      if (!/toilet|relegat|pf/i.test(String(calStay.notes || ''))) {
+        calStay.notes = 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).';
+      }
       dirty = true;
     }
     if (!store.activeLeagueId) {
