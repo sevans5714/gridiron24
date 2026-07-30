@@ -2678,13 +2678,13 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/invites/preview-email' && req.method === 'GET') {
-      const user = requireCommissioner(req, res);
+      const user = requireStaff(req, res);
       if (!user) return;
       const { buildInviteEmail } = require('./mail');
       const origin = requestOrigin(req);
       const content = buildInviteEmail({
         inviteUrl: `${origin}/register?invite=preview-sample-token`,
-        invitedByName: user.name || user.loginName || 'Commissioner',
+        invitedByName: user.name || user.loginName || 'Staff',
         leagueName: config.brand.name,
         baseUrl: origin
       });
@@ -2888,7 +2888,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/invites' && req.method === 'GET') {
-      if (!requireCommissioner(req, res)) return;
+      if (!requireStaff(req, res)) return;
       return sendJson(res, 200, {
         ok: true,
         invites: invites.listInvites(),
@@ -2897,7 +2897,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/invites' && req.method === 'POST') {
-      const user = requireCommissioner(req, res);
+      const user = requireStaff(req, res);
       if (!user) return;
       let body;
       try {
@@ -2972,7 +2972,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname.match(/^\/api\/invites\/[^/]+\/resend$/) && req.method === 'POST') {
-      const user = requireCommissioner(req, res);
+      const user = requireStaff(req, res);
       if (!user) return;
       const id = pathname.split('/')[3];
       try {
@@ -3012,7 +3012,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname.startsWith('/api/invites/') && req.method === 'DELETE') {
-      if (!requireCommissioner(req, res)) return;
+      if (!requireStaff(req, res)) return;
       const id = pathname.slice('/api/invites/'.length);
       if (id.includes('/')) {
         return sendJson(res, 404, { ok: false, error: 'Not found' });

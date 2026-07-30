@@ -769,14 +769,14 @@
         <section class="comm-group" id="group-people" hidden>
           <header>
             <h2>People</h2>
-            <p>Invite managers and set access roles.</p>
+            <p>Invite managers to create accounts. Commissioners also approve access and assign franchises.</p>
           </header>
           <div class="comm-group-body">
             <section class="admin-block" id="invites-admin" hidden>
               <div class="section-head">
                 <h3>Email Invites</h3>
               </div>
-              <p class="help">Send invite links by email. If mail is offline, copy the link after sending. Preview: <a href="/api/invites/preview-email" target="_blank" rel="noopener">Invite</a> · <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Approved</a> · <a href="/api/mail/preview-reset" target="_blank" rel="noopener">Password reset</a></p>
+              <p class="help">Send invite links by email. Commissioners and conference admins can invite managers. If mail is offline, copy the link after sending. Preview: <a href="/api/invites/preview-email" target="_blank" rel="noopener">Invite</a></p>
               <div class="status-note" id="invites-mail-status" role="status"></div>
               <div class="status-note" id="invites-msg" role="status"></div>
               <div class="invite-compose">
@@ -2186,6 +2186,17 @@
         document.getElementById('ticker-admin').hidden = false;
         document.getElementById('ticker-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
+
+      // Invites: commissioner + conference admin
+      wireInvitesAdmin();
+      try { await loadInvitesAdmin(); } catch (err) {
+        document.getElementById('group-people').hidden = false;
+        document.getElementById('nav-people').hidden = false;
+        document.getElementById('invites-admin').hidden = false;
+        document.getElementById('jump-invites').hidden = false;
+        document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
+
       if (user.role === 'commissioner') {
         document.getElementById('group-people').hidden = false;
         document.getElementById('nav-people').hidden = false;
@@ -2194,14 +2205,8 @@
         wireWrapAdmin();
         wireCalendarAdmin();
         wireRankingsAdmin();
-        wireInvitesAdmin();
         try { await loadCalendarAdmin(); } catch { /* ignore */ }
         try { await loadRankingsAdmin(); } catch { /* ignore */ }
-        try { await loadInvitesAdmin(); } catch (err) {
-          document.getElementById('invites-admin').hidden = false;
-          document.getElementById('jump-invites').hidden = false;
-          document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
-        }
         try { await loadMembers(); } catch (err) {
           document.getElementById('members').hidden = false;
           document.getElementById('jump-members').hidden = false;
