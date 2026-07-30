@@ -3,369 +3,695 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AAA League · Feeder Portal</title>
-  <meta name="description" content="AAA League feeder standings, hot/cold, GridIron-matched scoring, and $50 buy-in payouts." />
+  <title>AAA League · Headquarters</title>
+  <meta name="description" content="AAA League feeder headquarters — standings, matchups, and form." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=62" />
   <style>
-    .promotee {
-      margin: 0 0 1.25rem;
-      padding: 1.15rem 1.25rem;
-      border: 1px solid rgba(239, 215, 130, 0.4);
+    .hq-hero {
+      text-align: center;
+      padding: 1.55rem 0 1.35rem;
+      border-bottom: 1px solid var(--line);
       background:
-        radial-gradient(ellipse at 20% 30%, rgba(239,215,130,0.14), transparent 60%),
-        linear-gradient(180deg, var(--panel-2), var(--panel));
+        radial-gradient(ellipse 70% 80% at 50% 25%, rgba(47, 109, 255, 0.12), transparent 60%),
+        var(--bg);
     }
-    .promotee .eyebrow {
-      margin: 0 0 0.35rem;
-      font-family: var(--body);
-      font-size: var(--fs-xs);
+    .hq-hero img {
+      width: min(520px, 82vw);
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.75));
+    }
+    html[data-theme="day"] .hq-hero img {
+      filter: drop-shadow(0 10px 22px rgba(20, 24, 31, 0.18));
+    }
+    .hq-hero .tag {
+      margin: 1rem 0 0;
+      font-family: var(--display);
+      font-size: clamp(1rem, 2.6vw, 1.35rem);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      line-height: 1.3;
+      color: var(--text);
+    }
+    .hq-hero .tag .t { color: var(--blue); }
+    .hq-hero .tag .d { color: var(--muted); }
+    .hq-hero .tag .c {
+      color: var(--text);
+      font-weight: 700;
+    }
+    html[data-theme="night"] .hq-hero .tag .c {
+      color: #f2f5fa;
+      background: linear-gradient(180deg, #ffffff 0%, #c5cedb 52%, #9aa8ba 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hq-hero .tag .sep { color: var(--muted-2); margin: 0 0.3em; }
+
+    .hq-main {
+      padding-top: 1.35rem;
+      padding-bottom: 2.25rem;
+      font-size: 1.12rem;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.85rem;
+      margin: 0 0 0.85rem;
+    }
+    .section-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.25rem, 2.5vw, 1.55rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text);
+      line-height: 1.1;
+    }
+    .section-head a,
+    .section-head .hint {
+      color: #9ec0ff;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    html[data-theme="day"] .section-head a,
+    html[data-theme="day"] .section-head .hint {
+      color: var(--blue);
+    }
+    .section-head a:hover { color: var(--nav-hover); }
+
+    .hq-section {
+      margin-bottom: 2.15rem;
+    }
+
+    .hq-board {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(17rem, 0.78fr);
+      gap: 1.75rem 2rem;
+      align-items: start;
+      margin-bottom: 2.5rem;
+    }
+    .hq-board-main,
+    .hq-board-side {
+      min-width: 0;
+    }
+    .hq-board-side {
+      display: grid;
+      gap: 1.35rem;
+    }
+    .hq-board .hq-section {
+      margin-bottom: 0;
+      padding: 0 0 1.25rem;
+      border: 1px solid rgba(47, 109, 255, 0.22);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%), var(--panel);
+      overflow: hidden;
+    }
+    .hq-board .hq-section > :not(.section-head) {
+      padding-left: 1.2rem;
+      padding-right: 1.2rem;
+    }
+    .hq-board .section-head {
+      margin: 0 0 0.9rem;
+      min-height: 2.85rem;
+      padding: 0.55rem 1.2rem;
+      border-bottom: 1px solid rgba(47, 109, 255, 0.28);
+      background:
+        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
+        linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: left;
+    }
+    .hq-board .section-head::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      height: auto;
+      transform: none;
+      background: var(--blue);
+    }
+
+    .standings-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.35rem 1.5rem;
+    }
+    .standings-preview .conf-block + .conf-block {
+      padding-left: 0;
+    }
+    @media (min-width: 641px) {
+      .standings-preview .conf-block:last-child {
+        padding-left: 1.15rem;
+        border-left: 1px solid var(--line);
+      }
+    }
+
+    .conf-block { min-width: 0; }
+    .conf-head {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      margin-bottom: 0.7rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 2px solid var(--line);
+    }
+    .conf-head.detail { border-bottom-color: rgba(255, 122, 24, 0.55); }
+    .conf-head.overtime { border-bottom-color: rgba(226, 35, 42, 0.55); }
+    .conf-head-top {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+    .conf-head img {
+      width: 3.25rem;
+      height: auto;
+      filter: none;
+      box-shadow: var(--logo-lift);
+    }
+    .conf-head h3 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .conf-admin {
+      text-align: right;
+      padding: 0;
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+    .conf-admin-name {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .conf-admin-role {
+      margin: 0.2rem 0 0;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .conf-head.detail h3,
+    .conf-head.detail .conf-admin-name { color: var(--detail); }
+    .conf-head.overtime h3,
+    .conf-head.overtime .conf-admin-name { color: var(--overtime); }
+    @media (max-width: 520px) {
+      .conf-head {
+        flex-wrap: wrap;
+      }
+      .conf-admin {
+        width: 100%;
+        text-align: right;
+      }
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1rem;
+    }
+    .mini-table th {
+      padding: 0.4rem 0.35rem 0.5rem;
+      text-align: left;
+      font-size: 0.78rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--line);
+    }
+    .mini-table th.num,
+    .mini-table td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .mini-table td {
+      padding: 0.42rem 0.35rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+      color: var(--text);
+    }
+    .mini-table tr:last-child td { border-bottom: 0; }
+    .mini-table .rank {
+      width: 1.35rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .mini-table .team {
+      width: 100%;
+      overflow: hidden;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .mini-table .team-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 100%;
+      min-width: 0;
+      width: 100%;
+    }
+    .mini-table .team-name {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mini-table .team-logo-sm {
+      width: 2.5rem;
+      height: 2.5rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      border-radius: 0.4rem;
+    }
+    .mini-table th.num,
+    .mini-table td.num { width: 2.9rem; }
+    .mini-table th:nth-child(3),
+    .mini-table td.num:nth-child(3) { width: 3.8rem; }
+    .mini-table .out td { opacity: 0.72; }
+    .mini-table tr.cut-line td {
+      padding: 0.45rem 0.35rem;
+      border-top: 2px solid rgba(47, 109, 255, 0.7);
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      text-align: center;
+      font-family: var(--display);
+      font-size: 0.72rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: #8eb6ff;
+      opacity: 1;
     }
-    .promotee h2 {
-      margin: 0 0 0.35rem;
-      font-family: var(--display);
-      font-size: clamp(1.35rem, 3vw, 1.85rem);
+    .mini-table tr.cut-line.relegation td {
+      border-top-color: rgba(196, 90, 48, 0.85);
+      color: #e8a078;
+    }
+    .mini-table .relegation-zone td { opacity: 0.78; }
+
+    .motw-col {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.15rem;
+      min-width: 0;
+    }
+    .motw-block { min-width: 0; }
+    .motw {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.45rem;
+      align-items: center;
+      padding: 0.35rem 0 0;
+    }
+    .motw-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      text-align: center;
+      min-width: 0;
+    }
+    .motw-side img {
+      width: 4.25rem;
+      height: 4.25rem;
+      object-fit: contain;
+      background: transparent;
+      border: 0;
+      filter: none;
+      box-shadow: var(--logo-lift);
+    }
+    .motw-side .nm {
+      font-size: 1rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      color: var(--text);
+      line-height: 1.25;
+      max-width: 100%;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    .motw-mid {
+      text-align: center;
+      font-family: var(--display);
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #efd782;
     }
-    .promotee p {
-      margin: 0;
+    .motw-mid .vs {
+      font-size: 0.78rem;
       color: var(--muted);
-      font-size: var(--fs-sm);
-      line-height: 1.5;
+      margin-bottom: 0.2rem;
     }
-    .promotee-team {
+    .motw-mid .score {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .motw-mid .proj {
+      margin-top: 0.2rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .hotnot-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.15rem;
+      margin-bottom: 0;
+    }
+    .hotnot {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.1rem 1.25rem;
+      padding-top: 0.15rem;
+    }
+    .hotnot-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      min-width: 0;
+    }
+    .hotnot-col .label {
+      font-family: var(--display);
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .hotnot-col.hot .label {
+      color: #ef4444;
+      text-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
+    }
+    .hotnot-col.cold .label {
+      color: #2f6dff;
+      text-shadow: 0 0 18px rgba(47, 109, 255, 0.35);
+    }
+    .hotnot-col.hot {
+      border-left: 3px solid #ef4444;
+      padding-left: 0.75rem;
+    }
+    .hotnot-col.cold {
+      border-left: 3px solid #2f6dff;
+      padding-left: 0.75rem;
+    }
+    .hotnot-team {
       display: flex;
       align-items: center;
-      gap: 0.85rem;
-      margin: 0.75rem 0 0.55rem;
+      gap: 0.7rem;
+      min-width: 0;
     }
-    .promotee-team img {
+    .hotnot-team img {
       width: 3.5rem;
       height: 3.5rem;
       object-fit: contain;
+      flex: 0 0 auto;
+      background: transparent;
+      border: 0;
+      filter: none;
       box-shadow: var(--logo-lift);
     }
-    .promotee-team .nm {
+    .hotnot-team .nm {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    .hotnot-team .sub {
+      margin-top: 0.2rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .bottom-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      padding-top: 0.35rem;
+      border-top: 1px solid var(--line);
+    }
+    .news-block,
+    .board-block {
+      min-width: 0;
+      padding: 0 0 1.25rem;
+      border: 1px solid rgba(47, 109, 255, 0.22);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%), var(--panel);
+      overflow: hidden;
+    }
+    .news-block > :not(.section-head),
+    .board-block > :not(.section-head) {
+      padding-left: 1.2rem;
+      padding-right: 1.2rem;
+    }
+    .news-block .section-head,
+    .board-block .section-head {
+      margin: 0 0 0.9rem;
+      min-height: 2.85rem;
+      padding: 0.55rem 1.2rem;
+      border-bottom: 1px solid rgba(47, 109, 255, 0.28);
+      background:
+        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
+        linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: left;
+    }
+    .news-block .section-head::before,
+    .board-block .section-head::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      height: auto;
+      transform: none;
+      background: var(--blue);
+    }
+    .news-list,
+    .msg-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .empty {
+      color: var(--muted);
+      font-size: 1.08rem;
+      line-height: 1.45;
+      padding: 0.15rem 0;
+    }
+    .news-item + .news-item,
+    .msg-item + .msg-item {
+      margin-top: 0.9rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid var(--line);
+    }
+    .news-item h4 {
+      margin: 0 0 0.3rem;
       font-family: var(--display);
       font-size: 1.2rem;
       font-weight: 600;
       letter-spacing: 0.03em;
       text-transform: uppercase;
       color: var(--text);
+      line-height: 1.25;
     }
-
-    .board {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      overflow: hidden;
-      max-width: 48rem;
-      margin-bottom: 1.25rem;
-    }
-    .board-head {
-      padding: 0.85rem 1rem;
-      border-bottom: 1px solid var(--line);
-      background: var(--panel-2);
-      border-left: 4px solid #efd782;
-    }
-    .board-head h2 {
+    .news-item p,
+    .msg-item p {
       margin: 0;
-      font-family: var(--display);
-      font-size: 1.15rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #efd782;
-    }
-    .board-head .sub {
-      margin: 0.25rem 0 0;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-    }
-    .aaa-crest {
-      display: block;
-      width: min(16rem, 72vw);
-      height: auto;
-      margin: 0 auto 1rem;
-      filter: none;
-      box-shadow: var(--logo-lift);
-    }
-    body[data-page="aaa"] .page-hero {
-      text-align: center;
-    }
-    body[data-page="aaa"] .page-hero h1 {
-      margin-top: 0.35rem;
-    }
-    body[data-page="aaa"] .page-hero .lede {
-      margin: 0.5rem auto 0;
-      max-width: 36rem;
-      color: var(--muted);
-      font-size: var(--fs-sm);
+      color: var(--text);
+      font-size: 1.12rem;
       line-height: 1.5;
+      white-space: pre-wrap;
     }
-
-    .row {
-      display: grid;
-      grid-template-columns: 2rem minmax(0, 1fr) 2.2rem 2.2rem 2.2rem minmax(3rem, 0.4fr);
-      gap: 0.35rem 0.55rem;
-      align-items: center;
-      padding: 0.6rem 1rem;
-      border-bottom: 1px solid var(--line);
-    }
-    .row.head {
+    .meta {
+      margin: 0.35rem 0 0;
       color: var(--muted);
-      font-family: var(--display);
-      font-size: 0.72rem;
+      font-size: 0.95rem;
+    }
+    .meta button {
+      margin-left: 0.4rem;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--muted);
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .meta button:hover { color: #fca5a5; }
+
+    .composer {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+    }
+    .composer label {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-size: 0.82rem;
+      font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      background: rgba(255,255,255,0.02);
-    }
-    .rk {
-      font-family: var(--display);
-      font-weight: 600;
-      color: #cfcfcf;
-      text-align: center;
-    }
-    .team {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      min-width: 0;
-    }
-    .team img {
-      width: 2.25rem;
-      height: 2.25rem;
-      object-fit: contain;
-      flex: 0 0 auto;
-      box-shadow: var(--logo-lift);
-    }
-    .name {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-weight: 600;
-    }
-    .wl, .pts {
-      font-family: var(--display);
-      font-weight: 600;
-      text-align: center;
-    }
-    .pts { color: #d0d0d0; }
-    .msg-panel {
-      padding: 1.25rem;
-      color: var(--muted);
-      border: 1px solid var(--line);
-      background: var(--panel);
-      max-width: 48rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .hotnot {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
-      max-width: 48rem;
-      margin-bottom: 1.25rem;
-      border: 1px solid var(--line);
-      background: var(--panel);
-    }
-    .hotnot-col {
-      padding: 1rem 1.1rem;
-    }
-    .hotnot-col.hot {
-      border-right: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(239, 120, 60, 0.12), transparent 70%);
-    }
-    .hotnot-col.cold {
-      background: linear-gradient(180deg, rgba(90, 140, 220, 0.12), transparent 70%);
-    }
-    .hotnot-col .label {
-      margin: 0 0 0.65rem;
-      font-family: var(--display);
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
       color: var(--muted);
     }
-    .hotnot-team {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      min-width: 0;
-    }
-    .hotnot-team img {
-      width: 3.25rem;
-      height: 3.25rem;
-      object-fit: contain;
-      box-shadow: var(--logo-lift);
-    }
-    .hotnot-team .nm {
-      font-family: var(--display);
-      font-size: 1.05rem;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: var(--text);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .hotnot-team .sub {
-      margin-top: 0.2rem;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-    }
-
-    .payout-board,
-    .scoring-board {
-      max-width: 48rem;
-      margin-bottom: 1.25rem;
-    }
-    .pool-line {
-      margin: 0 0 0.85rem;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-    }
-    .pool-line strong { color: var(--text); }
-    .payout-table {
+    .composer textarea {
       width: 100%;
-      border-collapse: collapse;
-      background: var(--panel);
-      border: 1px solid var(--line);
-    }
-    .payout-table th,
-    .payout-table td {
-      padding: 0.7rem 1rem;
+      margin-bottom: 0.55rem;
+      padding: 0.65rem 0.75rem;
+      border: 0;
       border-bottom: 1px solid var(--line);
-      text-align: left;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 1.05rem;
+      line-height: 1.45;
+      min-height: 3.5rem;
+      resize: vertical;
     }
-    .payout-table th {
+    .composer textarea:focus {
+      outline: none;
+      border-bottom-color: var(--text);
+    }
+    .composer button {
+      padding: 0.55rem 1rem;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
       font-family: var(--display);
-      font-size: 0.72rem;
+      font-size: 0.9rem;
+      font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+      cursor: pointer;
+    }
+    .composer button:hover:not(:disabled) {
+      background: var(--btn-hover-bg);
+      color: var(--btn-hover-text);
+    }
+    .composer button:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+    .composer-err {
+      display: none;
+      margin: 0 0 0.4rem;
+      color: #fca5a5;
+      font-size: 0.95rem;
+    }
+    .composer-err.show { display: block; }
+
+    .msg {
+      padding: 0.35rem 0;
       color: var(--muted);
-      background: var(--panel-2);
-    }
-    .payout-table td.amount {
-      font-family: var(--display);
-      font-weight: 700;
-      text-align: right;
-      white-space: nowrap;
-    }
-    .payout-table tr.total-row td {
-      border-bottom: 0;
-      font-weight: 700;
-      color: #efd782;
-    }
-    .payout-notes,
-    .scoring-note {
-      margin: 0.75rem 0 0;
-      color: var(--muted);
-      font-size: var(--fs-sm);
+      font-size: 1.05rem;
       line-height: 1.45;
     }
-    .sync-pill {
-      display: inline-block;
-      margin-top: 0.45rem;
-      padding: 0.2rem 0.55rem;
-      border: 1px solid var(--line);
-      font-family: var(--display);
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .sync-pill.ok {
-      color: #9fd89f;
-      border-color: rgba(159, 216, 159, 0.45);
-    }
-    .sync-pill.warn {
-      color: #efd782;
-      border-color: rgba(239, 215, 130, 0.45);
-    }
-    .lineup-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
-      padding: 0.85rem 1rem;
-      border: 1px solid var(--line);
-      border-top: 0;
-      background: var(--panel);
-    }
-    .lineup-row .slot {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 0.3rem;
-      padding: 0.35rem 0.55rem;
-      border: 1px solid var(--line);
-      background: var(--panel-2);
-      font-size: var(--fs-sm);
-    }
-    .lineup-row .slot.bench { opacity: 0.75; }
-    .lineup-row .pos {
-      font-family: var(--display);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    .rules-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-      gap: 0.65rem;
-      padding: 0.85rem 1rem 1rem;
-      border: 1px solid var(--line);
-      border-top: 0;
-      background: var(--panel);
-    }
-    .group-panel {
-      border: 1px solid var(--line);
-      background: var(--panel-2);
-      padding: 0.65rem 0.75rem;
-    }
-    .group-panel h3 {
-      margin: 0 0 0.45rem;
-      font-family: var(--display);
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #efd782;
-    }
-    .rule {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.5rem;
-      padding: 0.22rem 0;
-      font-size: var(--fs-sm);
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-    }
-    .rule .label { color: var(--text); min-width: 0; }
-    .rule .pts {
-      font-family: var(--display);
-      font-weight: 600;
-      color: var(--muted);
-      white-space: nowrap;
+    .msg strong { display: block; color: var(--text); margin-bottom: 0.2rem; font-size: 1.1rem; }
+
+    footer.shell {
+      padding-top: 1rem;
+      padding-bottom: 1.35rem;
     }
 
-    @media (max-width: 700px) {
-      .row {
-        grid-template-columns: 1.6rem minmax(0, 1fr) 1.8rem 1.8rem minmax(2.6rem, 0.4fr);
+    @media (max-width: 1100px) {
+      .hq-board {
+        grid-template-columns: 1fr;
+        gap: 2rem;
       }
-      .col-ties { display: none; }
-      .hotnot { grid-template-columns: 1fr; }
-      .hotnot-col.hot { border-right: 0; border-bottom: 1px solid var(--line); }
     }
+    @media (max-width: 900px) {
+      .motw-col,
+      .hotnot-row,
+      .hotnot { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .standings-preview { grid-template-columns: 1fr; }
+      .motw-side img { width: 4.75rem; height: 4.75rem; }
+      .hotnot-team img { width: 4rem; height: 4rem; }
+      .hq-main { font-size: 1.06rem; }
+    }
+
+    body[data-page="aaa"] .hq-hero {
+      background:
+        radial-gradient(ellipse 70% 80% at 50% 25%, rgba(239, 215, 130, 0.12), transparent 60%),
+        var(--bg);
+    }
+    body[data-page="aaa"] .standings-preview {
+      grid-template-columns: 1fr;
+      max-width: 28rem;
+    }
+    body[data-page="aaa"] .hotnot-row {
+      grid-template-columns: 1fr;
+    }
+    body[data-page="aaa"] .motw-col {
+      grid-template-columns: 1fr;
+    }
+    body[data-page="aaa"] .conf-head.aaa {
+      border-left-color: #efd782;
+      border-bottom-color: rgba(239, 215, 130, 0.55);
+    }
+    body[data-page="aaa"] .conf-head.aaa h3 {
+      color: #efd782;
+    }
+    body[data-page="aaa"] .mini-table tr.promotee-row td {
+      background: rgba(239, 215, 130, 0.06);
+    }
+    .rules-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .rules-link:hover { color: var(--nav-hover); }
+
   </style>
 </head>
 <body data-page="aaa">
@@ -376,15 +702,47 @@
     </div>
   </header>
 
-  <section class="page-hero shell reveal">
-    <img class="aaa-crest" id="aaa-crest" src="/assets/aaa-league.png" alt="AAA Fantasy Football League" width="320" height="320" decoding="async" />
-    <p class="eyebrow">Affiliated Feeder · Not GridIron 24</p>
-    <h1>AAA League</h1>
-    <p class="lede">Separate portal for standings, form, and GridIron-matched scoring. Enter from the crest on the home header.</p>
+  <section class="hq-hero shell">
+    <img id="aaa-hero-crest" src="/assets/aaa-league.png" alt="AAA League" width="520" height="520" decoding="async" />
+    <p class="tag">
+      <span class="t">Feeder League</span><span class="sep">·</span><span class="d">10–14 Teams</span><span class="sep">·</span><span class="c">One Promotee</span>
+    </p>
   </section>
 
-  <main class="page-main shell" id="main">
-    <div class="msg">Loading AAA League…</div>
+  <main class="hq-main shell">
+    <div class="hq-board">
+      <div class="hq-board-main">
+        <section class="hq-section">
+          <div class="section-head">
+            <h2>Standings</h2>
+            <a class="rules-link" href="/rulebook.html#article-vii">Rules &amp; payouts</a>
+          </div>
+          <div class="standings-preview" id="standings">
+            <div class="msg">Loading standings…</div>
+          </div>
+        </section>
+      </div>
+
+      <div class="hq-board-side">
+        <section class="hq-section">
+          <div class="section-head">
+            <h2>Matchup of the Week</h2>
+          </div>
+          <div class="motw-col" id="motw">
+            <div class="msg">Loading matchups…</div>
+          </div>
+        </section>
+
+        <section class="hq-section">
+          <div class="section-head">
+            <h2>Who’s Hot / Who’s Not</h2>
+          </div>
+          <div class="hotnot-row" id="hotnot">
+            <div class="msg">Loading…</div>
+          </div>
+        </section>
+      </div>
+    </div>
   </main>
 
   <footer class="shell site-footer">
@@ -392,45 +750,140 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=38"></script>
-  <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
-    const GROUP_ORDER = [
-      'Passing', 'Rushing', 'Receiving', 'Misc. Offense',
-      'Kicking', 'Defense / Special Teams', 'Other'
-    ];
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
-    function money(amount, currency = 'USD') {
-      if (amount == null || amount === '') return 'TBD';
-      try {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency,
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }).format(Number(amount));
-      } catch {
-        return `$${Number(amount).toFixed(2)}`;
-      }
+    function record(team) {
+      const ties = Number(team.ties || 0);
+      return ties > 0
+        ? `${team.wins}-${team.losses}-${ties}`
+        : `${team.wins}-${team.losses}`;
     }
 
-    function fmtPts(n) {
-      return Number(n || 0).toFixed(1);
+    function teamLogo(team) {
+      const src = team?.logo || PLACEHOLDER;
+      return `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+    }
+
+    function confHead(conf) {
+      return `
+        <div class="conf-head aaa">
+          <div class="conf-head-top">
+            <h3>${esc(conf?.shortName || conf?.name || 'AAA')}</h3>
+          </div>
+        </div>`;
+    }
+
+    function standingsBoard(data) {
+      if (!data?.configured) {
+        return `
+          <div class="conf-block">
+            ${confHead(data)}
+            <div class="empty">ESPN league ID not set yet. Rules and payouts live in the <a href="/rulebook.html#article-vii">rule book</a>.</div>
+          </div>`;
+      }
+      if (!data?.ok) {
+        return `
+          <div class="conf-block">
+            ${confHead(data)}
+            <div class="empty">${esc(data.error || 'Unavailable')}</div>
+          </div>`;
+      }
+      const teams = data.teams || [];
+      if (!teams.length) {
+        return `
+          <div class="conf-block">
+            ${confHead(data)}
+            <div class="empty">No teams yet</div>
+          </div>`;
+      }
+      const rows = teams.map((t, i) => `
+        <tr class="${i === 0 ? 'promotee-row' : ''}">
+          <td class="rank">${i + 1}</td>
+          <td class="team" title="${esc(t.name)}">
+            <span class="team-cell">
+              <img class="team-logo-sm" src="${esc(t.logo || PLACEHOLDER)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
+              <span class="team-name">${esc(t.name)}</span>
+            </span>
+          </td>
+          <td class="num">${esc(record(t))}</td>
+          <td class="num">${Number(t.pointsFor || 0).toFixed(0)}</td>
+        </tr>`).join('');
+      return `
+        <div class="conf-block">
+          ${confHead({ ...data, shortName: data.shortName || 'AAA' })}
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Team</th>
+                <th class="num">W-L</th>
+                <th class="num">PF</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function pickMatchupOfWeek(matchups) {
+      const list = matchups || [];
+      if (!list.length) return null;
+      return list.slice().sort((a, b) => {
+        const aLive = Number(a.home?.score || 0) + Number(a.away?.score || 0);
+        const bLive = Number(b.home?.score || 0) + Number(b.away?.score || 0);
+        if (bLive !== aLive) return bLive - aLive;
+        const aProj = Number(a.home?.projected || 0) + Number(a.away?.projected || 0);
+        const bProj = Number(b.home?.projected || 0) + Number(b.away?.projected || 0);
+        return bProj - aProj;
+      })[0];
+    }
+
+    function motwBoard(data) {
+      if (!data?.configured) {
+        return `<div class="motw-block">${confHead(data)}<div class="empty">Matchups unlock with the AAA ESPN league.</div></div>`;
+      }
+      if (!data?.ok) {
+        return `<div class="motw-block">${confHead(data)}<div class="empty">Unavailable</div></div>`;
+      }
+      const m = pickMatchupOfWeek(data.matchups);
+      if (!m) {
+        return `<div class="motw-block">${confHead(data)}<div class="empty">No matchups this week</div></div>`;
+      }
+      const weekLabel = data.week ? `AAA · Week ${data.week}` : (data.shortName || 'AAA');
+      return `
+        <div class="motw-block">
+          ${confHead({ ...data, shortName: weekLabel })}
+          <div class="motw">
+            <div class="motw-side">
+              ${teamLogo(m.away)}
+              <div class="nm" title="${esc(m.away.name)}">${esc(m.away.name)}</div>
+            </div>
+            <div class="motw-mid">
+              <div class="vs">VS</div>
+              <div class="score">${Number(m.away.score || 0).toFixed(1)} – ${Number(m.home.score || 0).toFixed(1)}</div>
+              <div class="proj">Proj ${Number(m.away.projected || 0).toFixed(1)}–${Number(m.home.projected || 0).toFixed(1)}</div>
+            </div>
+            <div class="motw-side">
+              ${teamLogo(m.home)}
+              <div class="nm" title="${esc(m.home.name)}">${esc(m.home.name)}</div>
+            </div>
+          </div>
+        </div>`;
     }
 
     function streakText(t) {
-      const n = Number(t?.streakLength || 0);
-      if (n <= 0 || !t?.streakType || t.streakType === 'NONE') return null;
+      const n = Number(t.streakLength || 0);
+      if (n <= 0 || !t.streakType || t.streakType === 'NONE') return null;
       if (t.streakType === 'WIN') return `${n}W streak`;
       if (t.streakType === 'LOSS') return `${n}L streak`;
       return null;
     }
 
     function formSub(t) {
-      if (!t) return '';
       const parts = [];
       const streak = streakText(t);
       if (streak) parts.push(streak);
@@ -441,208 +894,68 @@
         parts.push(`${ppg.toFixed(1)} PPG`);
         parts.push(`${pf.toFixed(1)} PF`);
       } else {
-        parts.push(`${t.wins || 0}-${t.losses || 0}${t.ties ? `-${t.ties}` : ''}`);
+        parts.push(record(t));
       }
       return parts.join(' · ');
     }
 
-    function hotColdBlock(hot, cold) {
-      if (!hot && !cold) return '';
-      const card = (kind, label, team) => {
-        if (!team) {
-          return `<div class="hotnot-col ${kind}"><div class="label">${label}</div><div class="sub" style="color:var(--muted)">TBD</div></div>`;
-        }
-        return `
-          <div class="hotnot-col ${kind}">
-            <div class="label">${label}</div>
-            <div class="hotnot-team">
-              <img src="${esc(team.logo || PLACEHOLDER)}" alt="" />
-              <div style="min-width:0">
-                <div class="nm" title="${esc(team.name)}">${esc(team.name)}</div>
-                <div class="sub">${esc(formSub(team))}</div>
+    function hotNotBoard(data) {
+      if (!data?.configured || !data?.ok) {
+        return `<div class="conf-block">${confHead(data)}<div class="empty">Form unlocks with AAA standings.</div></div>`;
+      }
+      const hot = data.hot;
+      const cold = data.cold;
+      if (!hot || !cold) {
+        return `<div class="conf-block">${confHead(data)}<div class="empty">Not enough teams yet</div></div>`;
+      }
+      return `
+        <div class="conf-block">
+          ${confHead(data)}
+          <div class="hotnot">
+            <div class="hotnot-col hot">
+              <div class="label">Who’s Hot</div>
+              <div class="hotnot-team">
+                ${teamLogo(hot)}
+                <div style="min-width:0">
+                  <div class="nm" title="${esc(hot.name)}">${esc(hot.name)}</div>
+                  <div class="sub">${esc(formSub(hot))}</div>
+                </div>
               </div>
             </div>
-          </div>`;
-      };
-      return `<div class="hotnot">${card('hot', 'Who’s Hot', hot)}${card('cold', 'Who’s Not', cold)}</div>`;
-    }
-
-    function payoutsBlock(p) {
-      if (!p) return '';
-      const currency = p.currency || 'USD';
-      const prizes = p.prizes || [];
-      const buyIn = money(p.buyInPerTeam, currency);
-      const teamLabel = p.teamCountLabel || String(p.teamCount || '10–14');
-      const pool = p.pool != null
-        ? money(p.pool, currency)
-        : (p.poolMin != null && p.poolMax != null
-          ? `${money(p.poolMin, currency)}–${money(p.poolMax, currency)}`
-          : 'TBD');
-      const prizesTotal = prizes.reduce((sum, prize) => sum + Number(prize.amount || 0), 0);
-      const rows = prizes.map((prize) => `
-        <tr>
-          <td>${esc(prize.label)}</td>
-          <td class="amount">${money(prize.amount, currency)}</td>
-        </tr>`).join('');
-      return `
-        <div class="payout-board">
-          <div class="board-head" style="border:1px solid var(--line);border-bottom:0;margin:0">
-            <h2>Payouts</h2>
-            <p class="sub">${esc(p.seasonLabel || 'AAA Season')}</p>
+            <div class="hotnot-col cold">
+              <div class="label">Who’s Not</div>
+              <div class="hotnot-team">
+                ${teamLogo(cold)}
+                <div style="min-width:0">
+                  <div class="nm" title="${esc(cold.name)}">${esc(cold.name)}</div>
+                  <div class="sub">${esc(formSub(cold))}</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <p class="pool-line"><strong>${buyIn}</strong> buy-in · <strong>${esc(String(teamLabel))}</strong> teams · <strong>${pool}</strong> prize pool</p>
-          <table class="payout-table">
-            <thead><tr><th>Award</th><th>Payout</th></tr></thead>
-            <tbody>
-              ${rows || '<tr><td colspan="2">No payouts configured.</td></tr>'}
-              <tr class="total-row"><td>Total (12-team table)</td><td class="amount">${money(prizesTotal, currency)}</td></tr>
-            </tbody>
-          </table>
-          ${p.notes ? `<p class="payout-notes">${esc(p.notes)}</p>` : ''}
-        </div>`;
-    }
-
-    function lineupRow(lineup) {
-      const starterOrder = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K', 'Bench', 'IR'];
-      const sorted = [...(lineup || [])].sort((a, b) => {
-        const ai = starterOrder.indexOf(a.label);
-        const bi = starterOrder.indexOf(b.label);
-        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-      });
-      if (!sorted.length) return '';
-      return `<div class="lineup-row">${sorted.map((s) => `
-        <div class="slot${['Bench', 'IR'].includes(s.label) ? ' bench' : ''}">
-          <span class="pos">${esc(s.label)}</span>
-          <span class="cnt">×${esc(String(s.count))}</span>
-        </div>`).join('')}</div>`;
-    }
-
-    function groupPanels(items) {
-      const buckets = new Map();
-      for (const item of items || []) {
-        const g = item.group || 'Other';
-        if (!buckets.has(g)) buckets.set(g, []);
-        buckets.get(g).push(item);
-      }
-      const order = GROUP_ORDER.filter((g) => buckets.has(g));
-      for (const g of buckets.keys()) {
-        if (!order.includes(g)) order.push(g);
-      }
-      if (!order.length) return '<p class="scoring-note" style="padding:0 1rem 1rem">Scoring settings unavailable.</p>';
-      const fmt = window.GridIronDiff?.fmtItem || ((item) => item.display || item.points);
-      return `<div class="rules-grid">${order.map((group) => {
-        const rules = buckets.get(group).map((item) => `
-          <div class="rule">
-            <span class="label">${esc(item.label)}</span>
-            <span class="pts">${esc(fmt(item))}</span>
-          </div>`).join('');
-        return `<section class="group-panel"><h3>${esc(group)}</h3>${rules}</section>`;
-      }).join('')}</div>`;
-    }
-
-    function scoringBlock(data) {
-      const scoring = data.scoring;
-      const policy = data.scoringPolicy || {};
-      const sync = data.scoringSync;
-      let pill = '';
-      if (sync) {
-        pill = sync.matched
-          ? `<span class="sync-pill ok">ESPN synced with GridIron 24</span>`
-          : `<span class="sync-pill warn">${esc(String(sync.diffCount || 0))} scoring/lineup diffs vs GridIron</span>`;
-      } else if (scoring) {
-        pill = `<span class="sync-pill ok">Matches GridIron 24 official scoring</span>`;
-      }
-      if (!scoring && !policy.note) return '';
-      return `
-        <div class="scoring-board">
-          <div class="board-head" style="border:1px solid var(--line);margin:0">
-            <h2>Scoring</h2>
-            <p class="sub">${esc(policy.note || 'Same scoring as GridIron 24')}</p>
-            ${pill}
-          </div>
-          ${scoring ? lineupRow(scoring.lineup) : ''}
-          ${scoring ? groupPanels(scoring.scoringItems) : ''}
         </div>`;
     }
 
     async function loadAaa() {
-      const main = document.getElementById('main');
       try {
         const res = await fetch('/api/aaa', { cache: 'no-store' });
         const data = await res.json();
-        if (!data.ok && data.configured) {
-          throw new Error(data.error || 'Could not load AAA League');
-        }
-
-        const crest = document.getElementById('aaa-crest');
+        const crest = document.getElementById('aaa-hero-crest');
         if (crest && data.logo) crest.src = data.logo;
-
-        const payoutHtml = payoutsBlock(data.payouts);
-        const scoringHtml = scoringBlock(data);
-
-        if (!data.configured) {
-          main.innerHTML = `
-            ${payoutHtml}
-            ${scoringHtml}
-            <div class="msg-panel">
-              <p><strong>AAA League</strong> is a separate feeder — not part of GridIron 24 boards. Standings and hot/cold unlock when the ESPN league ID is configured.</p>
-              <p style="margin-top:0.65rem;">${esc(data.message || '')}</p>
-            </div>`;
-          window.GridIronNav?.setSync('AAA · payouts & scoring');
-          return;
+        document.getElementById('standings').innerHTML = standingsBoard(data);
+        document.getElementById('motw').innerHTML = motwBoard(data);
+        document.getElementById('hotnot').innerHTML = hotNotBoard(data);
+        if (data.generatedAt) {
+          const t = new Date(data.generatedAt);
+          window.GridIronNav?.setSync(`AAA sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+        } else {
+          window.GridIronNav?.setSync('AAA League');
         }
-
-        const champ = data.champion || data.promotee;
-        const promoteeHtml = champ
-          ? `<div class="promotee">
-              <p class="eyebrow">Next season</p>
-              <h2>Promotes to GridIron 24</h2>
-              <div class="promotee-team">
-                <img src="${esc(champ.logo || PLACEHOLDER)}" alt="" />
-                <div class="nm">${esc(champ.name)}</div>
-              </div>
-              <p>${esc(data.promotee?.label || 'Promotes to GridIron 24 next season')} (display only — franchise moves are handled by the commissioner).</p>
-            </div>`
-          : '';
-
-        const rows = (data.teams || []).map((t, i) => `
-          <div class="row">
-            <div class="rk">${i + 1}</div>
-            <div class="team">
-              <img src="${esc(t.logo || PLACEHOLDER)}" alt="" />
-              <div class="name">${esc(t.name)}</div>
-            </div>
-            <div class="wl">${t.wins}</div>
-            <div class="wl">${t.losses}</div>
-            <div class="wl col-ties">${t.ties || 0}</div>
-            <div class="pts">${fmtPts(t.pointsFor)}</div>
-          </div>`).join('');
-
-        main.innerHTML = `
-          ${promoteeHtml}
-          ${hotColdBlock(data.hot, data.cold)}
-          ${payoutHtml}
-          <div class="board">
-            <div class="board-head">
-              <h2>${esc(data.name || 'AAA League')}</h2>
-              <p class="sub">${esc(data.espnLeagueName || '')}${data.teamCount ? ` · ${data.teamCount} teams` : ''}</p>
-            </div>
-            <div class="row head">
-              <div>#</div>
-              <div>Team</div>
-              <div>W</div>
-              <div>L</div>
-              <div class="col-ties">T</div>
-              <div>PF</div>
-            </div>
-            ${rows || '<div class="row"><div style="grid-column:1/-1;color:var(--muted)">No teams yet.</div></div>'}
-          </div>
-          ${scoringHtml}`;
-
-        const t = new Date(data.generatedAt);
-        window.GridIronNav?.setSync(`AAA sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
-        main.innerHTML = `<div class="msg-panel">${esc(err.message)}</div>`;
+        const msg = `<div class="msg"><strong>Unavailable</strong>${esc(err.message)}</div>`;
+        document.getElementById('standings').innerHTML = msg;
+        document.getElementById('motw').innerHTML = msg;
+        document.getElementById('hotnot').innerHTML = msg;
         window.GridIronNav?.setSync('AAA sync error', false);
       }
     }

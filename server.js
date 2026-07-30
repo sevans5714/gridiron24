@@ -2173,6 +2173,8 @@ async function buildAaaPayload() {
     },
     hot: null,
     cold: null,
+    week: null,
+    matchups: [],
     generatedAt: new Date().toISOString()
   };
 
@@ -2197,9 +2199,10 @@ async function buildAaaPayload() {
   };
 
   try {
-    const [data, settingsRaw] = await Promise.all([
+    const [data, settingsRaw, scheduleRaw] = await Promise.all([
       fetchEspnLeague(conference),
-      fetchEspnRaw(conference, ['mSettings', 'mStatus'], 'aaa-settings').catch(() => null)
+      fetchEspnRaw(conference, ['mSettings', 'mStatus'], 'aaa-settings').catch(() => null),
+      fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], 'aaa-matchup').catch(() => null)
     ]);
     const teams = data.teams || [];
     const { hot, cold } = pickHotCold(teams);
@@ -2215,6 +2218,17 @@ async function buildAaaPayload() {
         }
       : null;
 
+    let week = null;
+    let matchups = [];
+    if (scheduleRaw) {
+      week = Number(scheduleRaw.status?.currentMatchupPeriod || 1);
+      try {
+        matchups = normalizeSchedule(scheduleRaw, conference, week).matchups || [];
+      } catch {
+        matchups = [];
+      }
+    }
+
     let scoringSync = null;
     if (settingsRaw && officialPack.scoring) {
       const aaaSettings = normalizeSettings(settingsRaw, conference);
@@ -2227,6 +2241,8 @@ async function buildAaaPayload() {
       espnLeagueId: espnId,
       espnLeagueName: data.espnLeagueName || null,
       teamCount: teams.length,
+      week,
+      matchups,
       teams,
       champion,
       promotee: champion
@@ -2251,6 +2267,8 @@ async function buildAaaPayload() {
       champion: null,
       promotee: null,
       scoringSync: null,
+      week: null,
+      matchups: [],
       error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
     };
   }

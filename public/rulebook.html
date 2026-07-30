@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=61" />
+  <link rel="stylesheet" href="/css/site.css?v=62" />
   <style>
     .book {
       max-width: 52rem;
@@ -89,19 +89,61 @@
       color: var(--text);
       line-height: 1.1;
     }
-    .aaa-rule-brand {
+    .article-head-aaa {
       display: flex;
-      justify-content: center;
-      margin: 0 0 1.35rem;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem 1.5rem;
+      border-bottom-color: rgba(239, 215, 130, 0.45);
     }
-    .aaa-rule-brand img {
-      width: min(10rem, 42vw);
+    .article-head-aaa .article-head-copy {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .article-head-aaa .article-num {
+      color: #efd782;
+    }
+    .article-head-crest {
+      width: min(5.75rem, 24vw);
       height: auto;
+      flex: 0 0 auto;
       display: block;
+      margin: 0 0 0.1rem;
       background: transparent;
-      filter: none;
-      box-shadow: var(--logo-lift);
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
     }
+    html[data-theme="day"] .article-head-crest {
+      filter: drop-shadow(0 4px 10px rgba(20, 24, 31, 0.14));
+    }
+    .aaa-payout-table {
+      width: 100%;
+      max-width: 28rem;
+      border-collapse: collapse;
+      margin: 0.35rem 0 0.75rem;
+    }
+    .aaa-payout-table th,
+    .aaa-payout-table td {
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      color: #d0d0d0;
+      font-size: var(--fs-md);
+    }
+    .aaa-payout-table th {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .aaa-payout-table td.amt {
+      text-align: right;
+      font-family: var(--display);
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .aaa-payout-table tr:last-child td { border-bottom: 0; }
 
     .section {
       margin: 0 0 1.35rem;
@@ -355,6 +397,7 @@
             <li><strong>Detail Conference</strong> — twelve franchises.</li>
             <li><strong>Overtime Conference</strong> — twelve franchises.</li>
           </ol>
+          <p>AAA League is a separate affiliated feeder and is not a GridIron 24 conference (Article VII).</p>
         </section>
         <section class="section">
           <h3 class="section-title">§1.03 System of Record</h3>
@@ -405,7 +448,7 @@
         </header>
         <section class="section">
           <h3 class="section-title">§4.01 Uniform Rules</h3>
-          <p>Detail and Overtime use the same official scoring settings. When the conferences disagree on ESPN, Detail Conference settings are the source of truth until staff re-syncs Overtime.</p>
+          <p>Detail and Overtime use the same official scoring settings. AAA League uses those same settings (see Article VII). When the GridIron conferences disagree on ESPN, Detail Conference settings are the source of truth until staff re-syncs Overtime.</p>
           <div id="scoring-banner"></div>
         </section>
         <section class="section">
@@ -476,38 +519,47 @@
       </article>
 
       <article class="article reveal" id="article-vii">
-        <header class="article-head">
-          <p class="article-num">Article VII</p>
-          <h2>AAA League</h2>
+        <header class="article-head article-head-aaa">
+          <div class="article-head-copy">
+            <p class="article-num">Article VII</p>
+            <h2>AAA League</h2>
+          </div>
+          <img class="article-head-crest" src="/assets/aaa-league.png" alt="" width="92" height="92" decoding="async" />
         </header>
-        <div class="aaa-rule-brand">
-          <img src="/assets/aaa-league.png" alt="AAA Fantasy Football League" width="160" height="160" decoding="async" />
-        </div>
         <section class="section">
-          <h3 class="section-title">§7.01 Feeder League</h3>
-          <p>AAA League is the affiliated feeder league for GridIron 24. It is <strong>not</strong> part of GridIron 24 and is not a third conference. Headquarters entry is via the AAA crest on the home page header. Final roster size is set by interest and shall be between <strong>ten (10) and fourteen (14)</strong> franchises.</p>
+          <h3 class="section-title">§7.01 Status</h3>
+          <p>AAA League is the affiliated feeder for GridIron 24. It is <strong>not</strong> a third conference and is not part of GridIron 24 standings, schedules, or championship boards. Managers enter the AAA portal from the crest on the GridIron 24 home header.</p>
         </section>
         <section class="section">
-          <h3 class="section-title">§7.02 Buy-In &amp; Prize Pool</h3>
+          <h3 class="section-title">§7.02 Membership</h3>
+          <p>Final roster size is set by interest and shall be between <strong>ten (10) and fourteen (14)</strong> franchises. ESPN Fantasy is the system of record for AAA drafts, rosters, scoring, and transactions.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§7.03 Buy-In &amp; Prize Pool</h3>
           <p>Each AAA franchise pays a <strong>$50.00</strong> buy-in. The prize pool equals <strong>$50.00 × final roster size</strong> (expected range <strong>$500.00–$700.00</strong> for 10–14 teams).</p>
         </section>
         <section class="section">
-          <h3 class="section-title">§7.03 Payout Schedule</h3>
-          <p>The following award schedule assumes a twelve-franchise field and may be adjusted by the commissioner when the roster locks:</p>
-          <ol>
-            <li><strong>AAA Champion</strong> — $300.00</li>
-            <li><strong>AAA Runner-Up</strong> — $150.00</li>
-            <li><strong>AAA Third Place</strong> — $100.00</li>
-            <li><strong>AAA Most Points</strong> — $50.00</li>
-          </ol>
+          <h3 class="section-title">§7.04 Payout Schedule</h3>
+          <p>The award schedule below assumes a twelve-franchise field and may be adjusted by the commissioner when the roster locks:</p>
+          <table class="aaa-payout-table">
+            <thead>
+              <tr><th>Award</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>AAA Champion</td><td class="amt">$300.00</td></tr>
+              <tr><td>AAA Runner-Up</td><td class="amt">$150.00</td></tr>
+              <tr><td>AAA Third Place</td><td class="amt">$100.00</td></tr>
+              <tr><td>AAA Most Points</td><td class="amt">$50.00</td></tr>
+            </tbody>
+          </table>
         </section>
         <section class="section">
-          <h3 class="section-title">§7.04 Scoring &amp; Lineup</h3>
-          <p>AAA League uses the <strong>same official scoring and lineup settings</strong> as GridIron 24 (Detail Conference source of truth). Scoring drift between AAA and GridIron 24 shall be corrected through commissioner administration.</p>
+          <h3 class="section-title">§7.05 Scoring &amp; Lineups</h3>
+          <p>AAA uses the <strong>same official scoring and lineup settings</strong> as GridIron 24. Detail Conference remains the source of truth (see <a class="book-link" href="#article-iv">Article IV</a> and <a class="book-link" href="#article-iii">Article III</a>). Scoring or lineup drift between AAA and GridIron 24 shall be corrected by the commissioner.</p>
         </section>
         <section class="section">
-          <h3 class="section-title">§7.05 Promotion</h3>
-          <p>The AAA League champion is recognized as the next-season promotee to GridIron 24. Promotion and any corresponding franchise vacancy (including after the Toilet Bowl) are handled by the commissioner; the AAA portal displays the promotee for clarity.</p>
+          <h3 class="section-title">§7.06 Promotion</h3>
+          <p>The AAA champion is the next-season promotee into GridIron 24. Promotion and any corresponding GridIron vacancy (including after the Toilet Bowl under <a class="book-link" href="#article-v">Article V</a>) are administered by the commissioner. The AAA portal may display the current promotee for clarity only.</p>
           <p><a class="book-link" href="/aaa.html">Open AAA League portal →</a></p>
         </section>
       </article>
