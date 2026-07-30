@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Members Lounge · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=73" />
+  <style>
+    body[data-page="members"] {
+      --mo-cyan: #00a3ff;
+      --mo-cyan-dim: rgba(0, 163, 255, 0.18);
+      --mo-cyan-line: rgba(0, 163, 255, 0.35);
+      --mo-slate: #2b3d51;
+      --mo-slate-2: #1a2734;
+      --mo-ink: #05070a;
+      --mo-panel: #0b1016;
+      --mo-panel-2: #111822;
+      --mo-muted: #7f93a8;
+      --mo-text: #e8eef5;
+      --mo-good: #3dd68c;
+      --mo-due: #ff9b6a;
+      color: var(--mo-text);
+      background:
+        radial-gradient(ellipse 70% 45% at 50% -8%, rgba(0, 163, 255, 0.16), transparent 55%),
+        radial-gradient(ellipse 50% 35% at 100% 20%, rgba(43, 61, 81, 0.45), transparent 50%),
+        linear-gradient(180deg, #000 0%, var(--mo-ink) 28%, #070b10 100%);
+    }
+
+    body[data-page="members"] .page-hero {
+      display: none;
+    }
+
+    .mo-hero {
+      text-align: center;
+      padding: 1.35rem 0 0.35rem;
+      margin-bottom: 0.35rem;
+      border-bottom: 1px solid rgba(0, 163, 255, 0.18);
+      background:
+        radial-gradient(ellipse 55% 90% at 50% 30%, rgba(0, 163, 255, 0.14), transparent 60%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent);
+    }
+    .mo-hero img {
+      display: block;
+      width: min(28rem, 88vw);
+      height: auto;
+      margin: 0 auto;
+      filter: drop-shadow(0 0 28px rgba(0, 163, 255, 0.22));
+      animation: mo-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .mo-hero .tag {
+      margin: 0.55rem 0 1rem;
+      font-family: var(--display);
+      font-size: 0.82rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+      animation: mo-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+    }
+    @keyframes mo-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    body[data-page="members"] .page-main {
+      padding-top: 0.85rem;
+    }
+
+    .lounge-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(16rem, 0.85fr);
+      gap: 1.15rem;
+      align-items: stretch;
+      margin-bottom: 1.5rem;
+    }
+    .lounge-side {
+      display: grid;
+      gap: 1rem;
+      align-content: start;
+    }
+    .lounge-card {
+      border: 1px solid rgba(43, 61, 81, 0.95);
+      background: linear-gradient(180deg, var(--mo-panel-2), var(--mo-panel));
+      padding: 0.95rem 1rem;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+    }
+    .lounge-card h2 {
+      margin: 0 0 0.45rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mo-cyan);
+    }
+    .lounge-card p {
+      margin: 0 0 0.5rem;
+      color: var(--mo-muted);
+      line-height: 1.45;
+      font-size: 0.95rem;
+    }
+    .presence-list {
+      display: grid;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+    }
+    .presence-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(43, 61, 81, 0.45);
+      font-size: 0.92rem;
+    }
+    .presence-row:last-child { border-bottom: 0; }
+    .presence-row .nm { font-weight: 700; color: var(--mo-text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .presence-row .lg {
+      font-family: var(--display);
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+      flex: 0 0 auto;
+    }
+    .presence-empty { color: var(--mo-muted); font-size: 0.9rem; }
+
+    .roll-section {
+      margin-bottom: 1.75rem;
+    }
+    .roll-section > .section-label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin: 0 0 0.75rem;
+    }
+    .roll-section > .section-label h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .roll-section > .section-label p {
+      margin: 0;
+      color: var(--mo-muted);
+      font-size: 0.88rem;
+    }
+
+    .pay-panel {
+      display: grid;
+      gap: 0.75rem;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .pay-panel h2 {
+      margin: 0 0 0.35rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mo-cyan);
+    }
+    .pay-panel p {
+      margin: 0 0 0.45rem;
+      color: var(--mo-muted);
+      line-height: 1.45;
+      font-size: 0.92rem;
+    }
+    .pay-panel .treasurer {
+      color: var(--mo-text);
+      font-weight: 600;
+    }
+    .pay-panel a { color: var(--mo-cyan); }
+    .pay-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+      margin-top: 0.55rem;
+    }
+    .btn-venmo {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      min-height: 2.4rem;
+      padding: 0.5rem 0.95rem;
+      border: 0;
+      background: var(--mo-cyan);
+      color: #001018;
+      font-family: var(--display);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 0 18px rgba(0, 163, 255, 0.35);
+    }
+    .btn-venmo:hover { filter: brightness(1.08); }
+    .btn-ghost {
+      appearance: none;
+      min-height: 2.4rem;
+      padding: 0.45rem 0.75rem;
+      border: 1px solid rgba(43, 61, 81, 0.95);
+      background: transparent;
+      color: var(--mo-text);
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-ghost:hover {
+      border-color: var(--mo-cyan);
+      color: var(--mo-cyan);
+    }
+    .dues-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.6rem;
+      border: 1px solid rgba(43, 61, 81, 0.95);
+      background: rgba(0, 0, 0, 0.35);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+    .dues-chip.paid { color: var(--mo-good); border-color: rgba(61, 214, 140, 0.4); }
+    .dues-chip.due { color: var(--mo-due); border-color: rgba(255, 155, 106, 0.4); }
+
+    .boards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.15rem;
+      margin-bottom: 0;
+    }
+    .board {
+      border: 1px solid rgba(43, 61, 81, 0.9);
+      background: linear-gradient(180deg, var(--mo-panel-2), var(--mo-panel));
+      min-width: 0;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+    }
+    .board-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.8rem 0.95rem;
+      border-bottom: 1px solid rgba(0, 163, 255, 0.16);
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .board-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-text);
+    }
+    .board.gridiron .board-head {
+      border-left: 4px solid var(--mo-cyan);
+    }
+    .board.aaa .board-head {
+      border-left: 4px solid var(--mo-slate);
+    }
+    .board.aaa .board-head h2 { color: #9eb2c6; }
+    .board-head .count {
+      color: var(--mo-muted);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.9rem;
+    }
+    .board-body { padding: 0.35rem 0.55rem 0.65rem; }
+    .member-row {
+      display: grid;
+      grid-template-columns: 2rem minmax(0, 1fr) auto;
+      gap: 0.55rem;
+      align-items: center;
+      padding: 0.55rem 0.4rem;
+      border-bottom: 1px solid rgba(43, 61, 81, 0.55);
+    }
+    .member-row:last-child { border-bottom: 0; }
+    .member-row.is-open { opacity: 0.62; }
+    .member-row .slot {
+      color: var(--mo-slate);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      text-align: right;
+      font-family: var(--display);
+      letter-spacing: 0.04em;
+    }
+    .member-row .name-wrap { min-width: 0; }
+    .member-row .name {
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--mo-text);
+    }
+    .member-row .name-input {
+      width: 100%;
+      min-width: 0;
+      padding: 0.35rem 0.45rem;
+      border: 1px solid rgba(43, 61, 81, 0.9);
+      background: #06090d;
+      color: var(--mo-text);
+      font: inherit;
+      font-weight: 600;
+    }
+    .member-row .name-input:focus {
+      outline: none;
+      border-color: var(--mo-cyan);
+    }
+    .member-row .meta {
+      color: var(--mo-muted);
+      font-size: 0.78rem;
+      margin-top: 0.15rem;
+    }
+    .member-row .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .status-pill {
+      font-family: var(--display);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 0.2rem 0.45rem;
+      border: 1px solid rgba(43, 61, 81, 0.9);
+    }
+    .status-pill.paid { color: var(--mo-good); border-color: rgba(61, 214, 140, 0.45); }
+    .status-pill.due { color: var(--mo-due); border-color: rgba(255, 155, 106, 0.45); }
+    .status-pill.open { color: var(--mo-muted); }
+    .linkish {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--mo-cyan);
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.15rem 0.2rem;
+      text-decoration: none;
+    }
+    .linkish:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+    .assign-bar {
+      margin-bottom: 1.35rem;
+      padding: 0.9rem 1rem;
+      border: 1px solid rgba(43, 61, 81, 0.95);
+      background: var(--mo-panel);
+    }
+    .assign-bar h2 {
+      margin: 0 0 0.55rem;
+      font-family: var(--display);
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-cyan);
+    }
+    .assign-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: center;
+    }
+    .assign-row select,
+    .assign-row button { min-height: 2.4rem; }
+    .assign-row select {
+      min-width: min(16rem, 100%);
+      padding: 0.4rem 0.55rem;
+      border: 1px solid rgba(43, 61, 81, 0.95);
+      background: #06090d;
+      color: var(--mo-text);
+      font: inherit;
+    }
+    .assign-row .btn {
+      background: var(--mo-cyan);
+      border-color: var(--mo-cyan);
+      color: #001018;
+    }
+    .assign-row .btn:hover {
+      background: transparent;
+      color: var(--mo-cyan);
+    }
+
+    .flash {
+      margin: 0 0 1rem;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid rgba(43, 61, 81, 0.95);
+      color: var(--mo-text);
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .flash.ok { border-color: rgba(61, 214, 140, 0.45); color: var(--mo-good); }
+    .flash.err { border-color: rgba(239, 68, 68, 0.45); color: #fca5a5; }
+    .flash[hidden] { display: none !important; }
+
+    .chat-panel {
+      display: grid;
+      grid-template-rows: auto minmax(22rem, 1fr) auto;
+      margin: 0;
+      min-height: 28rem;
+      height: 100%;
+      border: 1px solid var(--mo-cyan-line);
+      background:
+        linear-gradient(180deg, rgba(0, 163, 255, 0.08), transparent 22%),
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 163, 255, 0.08), transparent 55%),
+        var(--mo-panel);
+      box-shadow:
+        0 0 40px rgba(0, 163, 255, 0.1),
+        0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+    .chat-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid rgba(0, 163, 255, 0.18);
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .chat-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.1rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-cyan);
+    }
+    .chat-head .sub {
+      display: block;
+      margin-top: 0.15rem;
+      font-family: var(--body);
+      font-size: 0.78rem;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--mo-muted);
+      font-weight: 500;
+    }
+    .chat-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-cyan);
+    }
+    .chat-live .dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--mo-cyan);
+      box-shadow: 0 0 10px rgba(0, 163, 255, 0.7);
+      animation: chat-pulse 1.4s ease-in-out infinite;
+    }
+    .chat-live.is-idle { color: var(--mo-muted); }
+    .chat-live.is-idle .dot {
+      background: var(--mo-muted);
+      box-shadow: none;
+      animation: none;
+    }
+    @keyframes chat-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .chat-log {
+      overflow-y: auto;
+      padding: 0.85rem 0.95rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      scroll-behavior: smooth;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 11px,
+          rgba(43, 61, 81, 0.12) 11px,
+          rgba(43, 61, 81, 0.12) 12px
+        );
+    }
+    .chat-empty {
+      margin: auto;
+      color: var(--mo-muted);
+      text-align: center;
+      padding: 1.5rem 1rem;
+      font-family: var(--display);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+    .chat-msg {
+      display: grid;
+      gap: 0.15rem;
+      max-width: min(36rem, 92%);
+      padding: 0.5rem 0.7rem;
+      border: 1px solid rgba(43, 61, 81, 0.85);
+      background: rgba(26, 39, 52, 0.75);
+    }
+    .chat-msg.mine {
+      align-self: end;
+      border-color: rgba(0, 163, 255, 0.45);
+      background: rgba(0, 163, 255, 0.14);
+      box-shadow: 0 0 18px rgba(0, 163, 255, 0.08);
+    }
+    .chat-msg-meta {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.65rem;
+      font-size: 0.78rem;
+      color: var(--mo-muted);
+    }
+    .chat-msg-meta .who {
+      font-weight: 700;
+      color: #7ec8ef;
+    }
+    .chat-msg.mine .chat-msg-meta .who { color: var(--mo-cyan); }
+    .chat-msg-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.4;
+      color: var(--mo-text);
+    }
+    .chat-msg-del {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--mo-muted);
+      font: inherit;
+      font-size: 0.72rem;
+      cursor: pointer;
+      padding: 0;
+    }
+    .chat-msg-del:hover { color: #fca5a5; }
+    .chat-compose {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.55rem;
+      padding: 0.75rem 0.85rem;
+      border-top: 1px solid rgba(0, 163, 255, 0.18);
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .chat-compose textarea {
+      width: 100%;
+      min-height: 2.6rem;
+      max-height: 7rem;
+      resize: vertical;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid rgba(43, 61, 81, 0.95);
+      background: #06090d;
+      color: var(--mo-text);
+      font: inherit;
+      line-height: 1.35;
+    }
+    .chat-compose textarea:focus {
+      outline: none;
+      border-color: var(--mo-cyan);
+      box-shadow: 0 0 0 1px rgba(0, 163, 255, 0.25);
+    }
+    .chat-compose button {
+      appearance: none;
+      align-self: end;
+      min-height: 2.6rem;
+      padding: 0.55rem 1.05rem;
+      border: 0;
+      background: var(--mo-cyan);
+      color: #001018;
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 0 16px rgba(0, 163, 255, 0.3);
+    }
+    .chat-compose button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+    .chat-compose button:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    body[data-page="members"] .site-footer {
+      border-top-color: rgba(0, 163, 255, 0.16);
+      color: var(--mo-muted);
+    }
+    body[data-page="members"] .site-footer-brand {
+      color: var(--mo-cyan);
+    }
+
+    .mo-lock {
+      display: inline-grid;
+      place-items: center;
+      width: 0.95rem;
+      height: 0.95rem;
+      border-radius: 50%;
+      background: var(--mo-cyan);
+      color: #000;
+      margin-right: 0.35rem;
+      vertical-align: -0.1rem;
+    }
+    .mo-lock svg { width: 0.55rem; height: 0.55rem; display: block; }
+
+    @media (max-width: 900px) {
+      .lounge-grid { grid-template-columns: 1fr; }
+      .boards { grid-template-columns: 1fr; }
+      .member-row { grid-template-columns: 1.75rem minmax(0, 1fr); }
+      .member-row .actions {
+        grid-column: 2;
+        justify-content: flex-start;
+      }
+      .chat-panel {
+        min-height: 20rem;
+        grid-template-rows: auto minmax(16rem, 45vh) auto;
+      }
+      .mo-hero img { width: min(22rem, 92vw); }
+    }
+  </style>
+</head>
+<body data-page="members">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Lounge</div>
+    </div>
+  </header>
+  <section class="mo-hero shell">
+    <img src="/assets/members-only.jpg?v=1" alt="Members Only" width="1024" height="682" />
+    <p class="tag">Welcome to the lounge</p>
+  </section>
+  <section class="page-hero shell" hidden>
+    <p class="eyebrow">Members lounge</p>
+    <h1>Members</h1>
+  </section>
+  <main class="page-main shell">
+    <div class="flash" id="flash" hidden></div>
+    <div class="lounge-grid">
+      <section class="chat-panel" aria-label="Lounge chat">
+        <div class="chat-head">
+          <div>
+            <h2><span class="mo-lock" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 1.2a2.4 2.4 0 0 0-2.4 2.4v1.2H2.4v6h7.2v-6H8.4V3.6A2.4 2.4 0 0 0 6 1.2Zm0 1.2c.66 0 1.2.54 1.2 1.2v1.2H4.8V3.6c0-.66.54-1.2 1.2-1.2Z"/></svg></span>The Room</h2>
+            <span class="sub">Talk smack, trade tips, settle bets — members only.</span>
+          </div>
+          <div class="chat-live is-idle" id="chat-live"><span class="dot" aria-hidden="true"></span><span id="chat-live-label">Connecting</span></div>
+        </div>
+        <div class="chat-log" id="chat-log" aria-live="polite"><div class="chat-empty">Loading the lounge…</div></div>
+        <form class="chat-compose" id="chat-form">
+          <textarea id="chat-input" maxlength="1000" rows="2" placeholder="Pull up a seat…" autocomplete="off"></textarea>
+          <button type="submit" id="chat-send">Send</button>
+        </form>
+      </section>
+      <aside class="lounge-side">
+        <div class="lounge-card" id="presence-card">
+          <h2>In the lounge</h2>
+          <p>Assigned members on the roll.</p>
+          <div class="presence-list" id="presence-list"><div class="presence-empty">Loading…</div></div>
+        </div>
+        <div class="lounge-card" id="pay-panel"></div>
+      </aside>
+    </div>
+    <div id="assign-bar" hidden></div>
+    <section class="roll-section">
+      <div class="section-label">
+        <h2>The membership roll</h2>
+        <p>GridIron 24 · AAA</p>
+      </div>
+      <div class="boards" id="boards"><div class="msg">Loading the roll…</div></div>
+    </section>
+  </main>
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=55"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    let state = null;
+    let chatMessages = [];
+    let chatViewerId = null;
+    let chatPollTimer = null;
+    let chatSending = false;
+    const CHAT_POLL_MS = 2500;
+
+    function money(n) {
+      const v = Number(n || 0);
+      return `$${v.toFixed(v % 1 ? 2 : 0)}`;
+    }
+
+    function flash(text, ok = true) {
+      const el = document.getElementById('flash');
+      if (!text) {
+        el.hidden = true;
+        el.textContent = '';
+        return;
+      }
+      el.hidden = false;
+      el.className = `flash ${ok ? 'ok' : 'err'}`;
+      el.textContent = text;
+    }
+
+    function duesFor(league) {
+      if (!state) return 0;
+      return league === 'aaa' ? state.dues.aaa : state.dues.gridiron;
+    }
+
+    function venmoUrl({ amount, note }) {
+      const user = state?.treasurer?.venmoUsername || 'jaceto53';
+      const params = new URLSearchParams({
+        txn: 'pay',
+        audience: 'private',
+        recipients: user,
+        amount: String(amount || ''),
+        note: note || state?.treasurer?.note || 'League dues'
+      });
+      return `https://venmo.com/${encodeURIComponent(user)}?${params.toString()}`;
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      return Promise.resolve();
+    }
+
+    function fmtChatTime(iso) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString([], {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+      } catch {
+        return '';
+      }
+    }
+
+    function setChatLive(on) {
+      const el = document.getElementById('chat-live');
+      const label = document.getElementById('chat-live-label');
+      if (!el || !label) return;
+      el.classList.toggle('is-idle', !on);
+      label.textContent = on ? 'Live' : 'Reconnecting';
+    }
+
+    function nearBottom(el, px = 80) {
+      return el.scrollHeight - el.scrollTop - el.clientHeight < px;
+    }
+
+    function renderChat() {
+      const log = document.getElementById('chat-log');
+      if (!log) return;
+      const stick = nearBottom(log) || chatMessages.length <= 1;
+      if (!chatMessages.length) {
+        log.innerHTML = `<div class="chat-empty">Quiet in here — break the ice.</div>`;
+        return;
+      }
+      const canModerate = Boolean(state?.canManage);
+      log.innerHTML = chatMessages.map((m) => {
+        const mine = m.authorId && m.authorId === chatViewerId;
+        const canDelete = mine || canModerate;
+        const league = m.authorLeague === 'aaa' ? 'AAA' : (m.authorLeague === 'gridiron' ? 'GI24' : '');
+        return `<article class="chat-msg${mine ? ' mine' : ''}" data-id="${esc(m.id)}">
+          <div class="chat-msg-meta">
+            <span><span class="who">${esc(m.authorName || 'Member')}</span>${league ? ` · ${esc(league)}` : ''}</span>
+            <span>
+              ${esc(fmtChatTime(m.createdAt))}
+              ${canDelete ? ` · <button type="button" class="chat-msg-del" data-del-chat="${esc(m.id)}">Delete</button>` : ''}
+            </span>
+          </div>
+          <div class="chat-msg-body">${esc(m.body)}</div>
+        </article>`;
+      }).join('');
+      log.querySelectorAll('[data-del-chat]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            const res = await fetch(`/api/members-chat/${encodeURIComponent(btn.dataset.delChat)}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Delete failed');
+            chatMessages = chatMessages.filter((m) => m.id !== btn.dataset.delChat);
+            renderChat();
+          } catch (err) {
+            flash(err.message, false);
+          }
+        });
+      });
+      if (stick) log.scrollTop = log.scrollHeight;
+    }
+
+    function mergeChat(incoming) {
+      if (!incoming?.length) return false;
+      const seen = new Set(chatMessages.map((m) => m.id));
+      let added = false;
+      for (const m of incoming) {
+        if (!m?.id || seen.has(m.id)) continue;
+        chatMessages.push(m);
+        seen.add(m.id);
+        added = true;
+      }
+      if (added) {
+        chatMessages.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+        if (chatMessages.length > 200) chatMessages = chatMessages.slice(-200);
+      }
+      return added;
+    }
+
+    async function loadChat({ incremental = false } = {}) {
+      const after = incremental && chatMessages.length
+        ? chatMessages[chatMessages.length - 1].id
+        : '';
+      const qs = after ? `?after=${encodeURIComponent(after)}` : '';
+      const res = await fetch(`/api/members-chat${qs}`, { cache: 'no-store' });
+      if (res.status === 401) {
+        setChatLive(false);
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Chat unavailable');
+      chatViewerId = data.viewerId || chatViewerId;
+      if (!incremental) {
+        chatMessages = Array.isArray(data.messages) ? data.messages.slice() : [];
+        renderChat();
+      } else if (mergeChat(data.messages)) {
+        renderChat();
+      }
+      setChatLive(true);
+    }
+
+    function startChatPoll() {
+      clearInterval(chatPollTimer);
+      chatPollTimer = setInterval(async () => {
+        try {
+          await loadChat({ incremental: true });
+        } catch {
+          setChatLive(false);
+        }
+      }, CHAT_POLL_MS);
+    }
+
+    async function sendChat(text) {
+      if (chatSending) return;
+      const body = String(text || '').trim();
+      if (!body) return;
+      chatSending = true;
+      const btn = document.getElementById('chat-send');
+      const input = document.getElementById('chat-input');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('/api/members-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ body })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not send');
+        if (data.item) mergeChat([data.item]);
+        renderChat();
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        await loadChat({ incremental: true });
+      } finally {
+        chatSending = false;
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    function wireChatForm() {
+      const form = document.getElementById('chat-form');
+      const input = document.getElementById('chat-input');
+      if (!form || !input) return;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await sendChat(input.value);
+        } catch (err) {
+          flash(err.message, false);
+        }
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          form.requestSubmit();
+        }
+      });
+    }
+
+    function padSlots(members, cap) {
+      const rows = members.slice();
+      while (rows.length < cap) {
+        rows.push({ open: true, slot: rows.length + 1 });
+      }
+      return rows.map((m, i) => ({ ...m, slot: i + 1 }));
+    }
+
+    async function patchMember(userId, body) {
+      const res = await fetch(`/api/members/${encodeURIComponent(userId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
+      return data;
+    }
+
+    function renderPresence() {
+      const el = document.getElementById('presence-list');
+      if (!el) return;
+      const people = [...(state.gridiron || []), ...(state.aaa || [])]
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+      if (!people.length) {
+        el.innerHTML = `<div class="presence-empty">Nobody on the roll yet — assign members below.</div>`;
+        return;
+      }
+      el.innerHTML = people.slice(0, 18).map((m) => `
+        <div class="presence-row">
+          <span class="nm">${esc(m.name)}</span>
+          <span class="lg">${m.membershipLeague === 'aaa' ? 'AAA' : 'GI24'}${m.duesPaid ? ' · paid' : ''}</span>
+        </div>`).join('')
+        + (people.length > 18 ? `<div class="presence-empty">+${people.length - 18} more on the full roll</div>` : '');
+    }
+
+    function renderPayPanel() {
+      const el = document.getElementById('pay-panel');
+      const me = state.viewer;
+      const t = state.treasurer;
+      const myLeague = me?.membershipLeague;
+      const amount = myLeague ? duesFor(myLeague) : state.dues.gridiron;
+      const leagueLabel = myLeague === 'aaa' ? 'AAA' : (myLeague === 'gridiron' ? 'GridIron 24' : 'your league');
+      const paid = Boolean(me?.duesPaid);
+      const note = `${t.note || 'League dues'} — ${me?.name || 'Member'}${myLeague ? ` (${leagueLabel})` : ''}`;
+      const href = venmoUrl({ amount, note });
+
+      el.innerHTML = `
+        <div class="pay-panel">
+          <h2><span class="mo-lock" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 1.2a2.4 2.4 0 0 0-2.4 2.4v1.2H2.4v6h7.2v-6H8.4V3.6A2.4 2.4 0 0 0 6 1.2Zm0 1.2c.66 0 1.2.54 1.2 1.2v1.2H4.8V3.6c0-.66.54-1.2 1.2-1.2Z"/></svg></span>Cover charge</h2>
+          <p>
+            Buy-in goes to treasurer
+            <span class="treasurer">${esc(t.name)}</span>
+            via Venmo
+            (<a href="mailto:${esc(t.email)}">${esc(t.email)}</a>).
+          </p>
+          <p>
+            GridIron <strong>${esc(money(state.dues.gridiron))}</strong>
+            · AAA <strong>${esc(money(state.dues.aaa))}</strong>
+            · <strong>@${esc(t.venmoUsername)}</strong>
+          </p>
+          ${myLeague
+            ? `<div class="dues-chip ${paid ? 'paid' : 'due'}">
+                 ${paid ? "You're marked paid — enjoy the lounge" : `Your tab: ${esc(money(amount))} for ${esc(leagueLabel)}`}
+               </div>`
+            : `<p>Get assigned to a league and your tab shows here.</p>`}
+          <div class="pay-actions">
+            <a class="btn-venmo" href="${esc(href)}" target="_blank" rel="noopener noreferrer">Pay with Venmo</a>
+            <button type="button" class="btn-ghost" id="copy-note">Copy note</button>
+          </div>
+        </div>`;
+
+      document.getElementById('copy-note')?.addEventListener('click', async () => {
+        try {
+          await copyText(note);
+          flash('Payment note copied.', true);
+        } catch {
+          flash('Could not copy note.', false);
+        }
+      });
+    }
+
+    function renderAssignBar() {
+      const el = document.getElementById('assign-bar');
+      if (!state.canManage) {
+        el.hidden = true;
+        el.innerHTML = '';
+        return;
+      }
+      el.hidden = false;
+      const openGi = Math.max(0, state.caps.gridiron - state.gridiron.length);
+      const openAaa = Math.max(0, state.caps.aaa - state.aaa.length);
+      const opts = (state.unassigned || []).map((u) =>
+        `<option value="${esc(u.id)}">${esc(u.name)} (${esc(u.loginName)})</option>`
+      ).join('');
+      el.innerHTML = `
+        <div class="assign-bar">
+          <h2><span class="mo-lock" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 1.2a2.4 2.4 0 0 0-2.4 2.4v1.2H2.4v6h7.2v-6H8.4V3.6A2.4 2.4 0 0 0 6 1.2Zm0 1.2c.66 0 1.2.54 1.2 1.2v1.2H4.8V3.6c0-.66.54-1.2 1.2-1.2Z"/></svg></span>Door list</h2>
+          <div class="assign-row">
+            <select id="assign-user" ${opts ? '' : 'disabled'}>
+              <option value="">${opts ? 'Choose member…' : 'No unassigned registered users'}</option>
+              ${opts}
+            </select>
+            <select id="assign-league" ${opts ? '' : 'disabled'}>
+              <option value="gridiron">GridIron 24 (${openGi} open)</option>
+              <option value="aaa">AAA (${openAaa} open)</option>
+            </select>
+            <button type="button" class="btn" id="assign-btn" ${opts ? '' : 'disabled'}>Assign</button>
+          </div>
+        </div>`;
+      document.getElementById('assign-btn')?.addEventListener('click', async () => {
+        const userId = document.getElementById('assign-user')?.value;
+        const league = document.getElementById('assign-league')?.value;
+        if (!userId || !league) return;
+        try {
+          await patchMember(userId, { league });
+          flash('Member assigned.', true);
+          await load();
+        } catch (err) {
+          flash(err.message, false);
+        }
+      });
+    }
+
+    function memberRow(m, league) {
+      if (m.open) {
+        return `
+          <div class="member-row is-open">
+            <div class="slot">${esc(String(m.slot))}</div>
+            <div class="name-wrap">
+              <div class="name">Open</div>
+              <div class="meta">Waiting for assignment</div>
+            </div>
+            <div class="actions"><span class="status-pill open">Open</span></div>
+          </div>`;
+      }
+
+      const amount = duesFor(league);
+      const note = `${state.treasurer.note || 'League dues'} — ${m.name} (${league === 'aaa' ? 'AAA' : 'GridIron 24'})`;
+      const payHref = venmoUrl({ amount, note });
+      const canManage = state.canManage;
+      const isMe = state.viewer?.id === m.id;
+
+      const nameCell = canManage
+        ? `<input class="name-input" data-name-id="${esc(m.id)}" value="${esc(m.name)}" aria-label="Member name" />`
+        : `<div class="name">${esc(m.name)}</div>`;
+
+      const actions = `
+        <span class="status-pill ${m.duesPaid ? 'paid' : 'due'}">${m.duesPaid ? 'Paid' : `Due ${esc(money(amount))}`}</span>
+        ${canManage
+          ? `<button type="button" class="linkish" data-dues="${esc(m.id)}" data-paid="${m.duesPaid ? '0' : '1'}">${m.duesPaid ? 'Mark unpaid' : 'Mark paid'}</button>
+             <button type="button" class="linkish" data-remove="${esc(m.id)}">Remove</button>`
+          : ''}
+        ${(isMe || canManage) && !m.duesPaid
+          ? `<a class="linkish" href="${esc(payHref)}" target="_blank" rel="noopener noreferrer">Venmo</a>`
+          : ''}
+      `;
+
+      return `
+        <div class="member-row" data-user-id="${esc(m.id)}">
+          <div class="slot">${esc(String(m.slot))}</div>
+          <div class="name-wrap">
+            ${nameCell}
+            <div class="meta">${esc(m.loginName)}${isMe ? ' · you' : ''}</div>
+          </div>
+          <div class="actions">${actions}</div>
+        </div>`;
+    }
+
+    function board(leagueKey, title, members, cap) {
+      const rows = padSlots(members, cap);
+      const paid = members.filter((m) => m.duesPaid).length;
+      return `
+        <section class="board ${esc(leagueKey)}">
+          <div class="board-head">
+            <h2>${esc(title)}</h2>
+            <div class="count">${members.length}/${cap} · ${paid} paid</div>
+          </div>
+          <div class="board-body">
+            ${rows.map((m) => memberRow(m, leagueKey)).join('')}
+          </div>
+        </section>`;
+    }
+
+    function bindBoardActions() {
+      document.querySelectorAll('[data-name-id]').forEach((input) => {
+        let timer = null;
+        const save = async () => {
+          const userId = input.dataset.nameId;
+          const name = input.value.trim();
+          if (!name) {
+            flash('Name cannot be empty.', false);
+            return;
+          }
+          try {
+            await patchMember(userId, { name });
+            flash('Name updated.', true);
+            await load({ quiet: true });
+          } catch (err) {
+            flash(err.message, false);
+          }
+        };
+        input.addEventListener('change', save);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            input.blur();
+          }
+        });
+        input.addEventListener('input', () => {
+          clearTimeout(timer);
+          timer = setTimeout(() => {}, 400);
+        });
+      });
+
+      document.querySelectorAll('[data-dues]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            await patchMember(btn.dataset.dues, { duesPaid: btn.dataset.paid === '1' });
+            flash(btn.dataset.paid === '1' ? 'Marked paid.' : 'Marked unpaid.', true);
+            await load();
+          } catch (err) {
+            flash(err.message, false);
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-remove]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!window.confirm('Remove this member from the league roll?')) return;
+          try {
+            await patchMember(btn.dataset.remove, { league: null, clearDues: true });
+            flash('Member removed from league roll.', true);
+            await load();
+          } catch (err) {
+            flash(err.message, false);
+          }
+        });
+      });
+    }
+
+    function render() {
+      renderPayPanel();
+      renderPresence();
+      renderAssignBar();
+      document.getElementById('boards').innerHTML =
+        board('gridiron', 'GridIron 24', state.gridiron || [], state.caps.gridiron || 24)
+        + board('aaa', 'AAA League', state.aaa || [], state.caps.aaa || 12);
+      bindBoardActions();
+    }
+
+    async function load({ quiet = false } = {}) {
+      const res = await fetch('/api/members', { cache: 'no-store' });
+      if (res.status === 401) {
+        window.location.replace('/enter?next=' + encodeURIComponent('/members.html'));
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load members');
+      state = data;
+      render();
+      if (!quiet) {
+        window.GridIronNav?.setSync(`Lounge · ${new Date(data.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      }
+    }
+
+    (async () => {
+      wireChatForm();
+      try {
+        await load();
+        await loadChat();
+        startChatPoll();
+      } catch (err) {
+        document.getElementById('boards').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+        setChatLive(false);
+      }
+    })();
+  </script>
+</body>
+</html>

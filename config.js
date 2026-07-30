@@ -37,6 +37,12 @@ module.exports = {
       { place: 8, label: 'Overtime Most Points', amount: 100 }
     ]
   },
+  treasurer: {
+    name: 'Jamie Aceto',
+    email: 'jaceto53@gmail.com',
+    venmoUsername: 'jaceto53',
+    note: 'League dues — GridIron 24 HQ'
+  },
   // Prior seasons for Teams → History / Draft Results.
   // Prefer League Tools → Season Archive (saved live). Example seed:
   // { season: 2025, yearNumber: 3, espnLeagueId: 1856396051, label: 'Year 3 (2025)' }

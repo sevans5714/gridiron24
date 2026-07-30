@@ -122,6 +122,7 @@ function publicUser(user) {
   const role = normalizeRole(user.role);
   const approved = user.approved !== false;
   const siteOwner = Boolean(user.siteOwner);
+  const membershipLeague = normalizeMembershipLeague(user.membershipLeague);
   return {
     id: user.id,
     name: user.name,
@@ -135,8 +136,120 @@ function publicUser(user) {
     canSwitchLeagues: siteOwner,
     approved,
     theme: normalizeTheme(user.theme),
+    membershipLeague,
+    duesPaid: Boolean(user.duesPaid),
+    duesPaidAt: user.duesPaidAt || null,
     createdAt: user.createdAt || null,
     approvedAt: user.approvedAt || null
+  };
+}
+
+function normalizeMembershipLeague(league) {
+  const key = String(league || '').trim().toLowerCase();
+  if (key === 'gridiron' || key === 'gridiron24' || key === 'gi24') return 'gridiron';
+  if (key === 'aaa') return 'aaa';
+  return null;
+}
+
+const LEAGUE_MEMBERSHIP_CAPS = {
+  gridiron: 24,
+  aaa: 12
+};
+
+function membershipCap(league) {
+  return LEAGUE_MEMBERSHIP_CAPS[normalizeMembershipLeague(league)] || 0;
+}
+
+function countMembership(store, league, exceptUserId = null) {
+  const key = normalizeMembershipLeague(league);
+  if (!key) return 0;
+  return store.users.filter((u) => {
+    if (exceptUserId && u.id === exceptUserId) return false;
+    if (u.approved === false) return false;
+    return normalizeMembershipLeague(u.membershipLeague) === key;
+  }).length;
+}
+
+/**
+ * Assign / update league membership, display name, and dues.
+ * league: 'gridiron' | 'aaa' | null (clear)
+ */
+function setLeagueMembership(userId, patch = {}) {
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Account not found'), { status: 404 });
+  }
+  const user = store.users[idx];
+  if (user.approved === false) {
+    throw Object.assign(new Error('Approve the account before assigning a league'), { status: 400 });
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'league')) {
+    const raw = patch.league;
+    const nextLeague = raw === '' || raw == null ? null : normalizeMembershipLeague(raw);
+    if (raw != null && raw !== '' && !nextLeague) {
+      throw Object.assign(new Error('League must be GridIron 24 or AAA'), { status: 400 });
+    }
+    if (nextLeague) {
+      const cap = membershipCap(nextLeague);
+      const current = normalizeMembershipLeague(user.membershipLeague);
+      if (current !== nextLeague && countMembership(store, nextLeague, userId) >= cap) {
+        throw Object.assign(
+          new Error(`${nextLeague === 'aaa' ? 'AAA' : 'GridIron 24'} is full (${cap} members).`),
+          { status: 409 }
+        );
+      }
+    }
+    user.membershipLeague = nextLeague;
+    if (!nextLeague) {
+      user.duesPaid = false;
+      user.duesPaidAt = null;
+    }
+  }
+
+  if (typeof patch.name === 'string') {
+    const nextName = patch.name.trim();
+    if (!nextName) {
+      throw Object.assign(new Error('Name is required'), { status: 400 });
+    }
+    if (nextName.length > 80) {
+      throw Object.assign(new Error('Name is too long'), { status: 400 });
+    }
+    user.name = nextName;
+  }
+
+  if (patch.clearDues) {
+    user.duesPaid = false;
+    user.duesPaidAt = null;
+  } else if (typeof patch.duesPaid === 'boolean') {
+    user.duesPaid = patch.duesPaid;
+    user.duesPaidAt = patch.duesPaid ? (user.duesPaidAt || new Date().toISOString()) : null;
+  }
+
+  writeStore(store);
+  return publicUser(user);
+}
+
+function listLeagueMembers() {
+  const store = readStore();
+  const approved = store.users
+    .filter((u) => u.approved !== false)
+    .map(publicUser);
+
+  const byLeague = (key) => approved
+    .filter((u) => u.membershipLeague === key)
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+
+  const unassigned = approved
+    .filter((u) => !u.membershipLeague)
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+
+  return {
+    gridiron: byLeague('gridiron'),
+    aaa: byLeague('aaa'),
+    unassigned,
+    caps: { ...LEAGUE_MEMBERSHIP_CAPS }
   };
 }
 
@@ -662,6 +775,7 @@ module.exports = {
   DATA_DIR,
   ROLES,
   CONFERENCE_KEYS,
+  LEAGUE_MEMBERSHIP_CAPS,
   setAllowedConferenceKeys,
   getAllowedConferenceKeys,
   createUser,
@@ -679,6 +793,9 @@ module.exports = {
   setUserRole,
   setUserApproved,
   deleteUser,
+  setLeagueMembership,
+  listLeagueMembers,
+  normalizeMembershipLeague,
   migrateApprovalFlags,
   ensureCommissionerFromEnv,
   ensureBootstrapCommissioner,

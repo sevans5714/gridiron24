@@ -4,7 +4,14 @@
   let leagueScope = { scope: 'gridiron', conferenceKey: null, homePath: HOME_DEFAULT, label: 'GridIron 24' };
 
   const GRIDIRON_LINKS = [
-    { href: HOME_DEFAULT, label: 'Home', key: 'home' },
+    {
+      href: HOME_DEFAULT,
+      label: 'Home',
+      key: 'home',
+      menu: [
+        { href: '/members.html', label: 'Members Lounge' }
+      ]
+    },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
     {
       href: '/standings.html',
@@ -27,7 +34,15 @@
   ];
 
   const AAA_LINKS = [
-    { href: '/aaa.html', label: 'Home', key: 'home' },
+    {
+      href: '/aaa.html',
+      label: 'Home',
+      key: 'home',
+      menu: [
+        { href: '/members.html', label: 'Members Lounge' },
+        { href: '/aaa-rulebook.html', label: 'AAA Rules' }
+      ]
+    },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
     {
       href: '/aaa.html',
@@ -36,8 +51,7 @@
       menu: [
         { href: '/aaa.html', label: 'Standings' },
         { href: '/my-roster.html', label: 'My Roster' },
-        { href: '/team-rosters.html', label: 'Team Rosters' },
-        { href: '/aaa-rulebook.html', label: 'AAA Rules' }
+        { href: '/team-rosters.html', label: 'Team Rosters' }
       ]
     },
     { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
@@ -60,7 +74,7 @@
     if (active === 'standings' || active === 'teams' || active === 'my-roster' || active === 'team-rosters' || active === 'draft' || active === 'history' || active === 'transactions' || active === 'rankings' || active === 'schedules') {
       return 'league';
     }
-    if (active === 'aaa') {
+    if (active === 'aaa' || active === 'members') {
       return 'home';
     }
     return active;

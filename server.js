@@ -31,6 +31,7 @@ const staticConfig = require('./config');
 const buildInfo = require('./build-info');
 const users = require('./users-store');
 const board = require('./board-store');
+const membersChat = require('./members-chat-store');
 const logos = require('./logos-store');
 const invites = require('./invites-store');
 const weeklyWrap = require('./weekly-wrap');
@@ -4055,6 +4056,128 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, err.status || 400, {
           ok: false,
           error: err.message || 'Draft action failed'
+        });
+      }
+    }
+
+    if (pathname === '/api/members-chat' && req.method === 'GET') {
+      const viewer = getSessionUser(req);
+      if (!viewer) {
+        return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      }
+      const since = requestUrl.searchParams.get('since');
+      const after = requestUrl.searchParams.get('after');
+      const limit = Number(requestUrl.searchParams.get('limit') || 120);
+      return sendJson(res, 200, {
+        ok: true,
+        messages: membersChat.listMessages({ limit, since, after }),
+        viewerId: viewer.id,
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/members-chat' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const publicAuthor = users.publicUser(user);
+        const item = membersChat.addMessage({
+          body: body.body,
+          author: publicAuthor
+        });
+        return sendJson(res, 201, { ok: true, item });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not post message'
+        });
+      }
+    }
+
+    if (pathname.startsWith('/api/members-chat/') && req.method === 'DELETE') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const id = pathname.slice('/api/members-chat/'.length).replace(/\/+$/, '');
+      try {
+        membersChat.deleteMessage(id, users.publicUser(user));
+        return sendJson(res, 200, { ok: true });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not delete message'
+        });
+      }
+    }
+
+    if (pathname === '/api/members' && req.method === 'GET') {
+      const viewer = getSessionUser(req);
+      if (!viewer) {
+        return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      }
+      const roster = users.listLeagueMembers();
+      const giBuyIn = Number(config.payouts?.buyInPerTeam || 100);
+      const aaaBuyIn = Number(getAffiliatedLeague('aaa')?.payouts?.buyInPerTeam || 50);
+      const treasurer = {
+        name: config.treasurer?.name || 'Jamie Aceto',
+        email: config.treasurer?.email || 'jaceto53@gmail.com',
+        venmoUsername: config.treasurer?.venmoUsername || 'jaceto53',
+        note: config.treasurer?.note || 'League dues — GridIron 24 HQ'
+      };
+      const canManage = users.isCommissioner(viewer) || users.isSiteOwner(viewer);
+      return sendJson(res, 200, {
+        ok: true,
+        canManage,
+        viewer: users.publicUser(viewer),
+        treasurer,
+        dues: {
+          gridiron: giBuyIn,
+          aaa: aaaBuyIn,
+          currency: 'USD'
+        },
+        caps: roster.caps,
+        gridiron: roster.gridiron,
+        aaa: roster.aaa,
+        unassigned: canManage ? roster.unassigned : [],
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname.startsWith('/api/members/') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/members/'.length).replace(/\/+$/, '');
+      if (!userId || userId.includes('/')) {
+        return sendJson(res, 400, { ok: false, error: 'Invalid member id' });
+      }
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const patch = {};
+        if (Object.prototype.hasOwnProperty.call(body, 'league')) patch.league = body.league;
+        if (Object.prototype.hasOwnProperty.call(body, 'name')) patch.name = body.name;
+        if (Object.prototype.hasOwnProperty.call(body, 'duesPaid')) patch.duesPaid = Boolean(body.duesPaid);
+        if (body.clearDues) patch.clearDues = true;
+        const updated = users.setLeagueMembership(userId, patch);
+        return sendJson(res, 200, {
+          ok: true,
+          user: updated,
+          roster: users.listLeagueMembers()
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not update member',
+          code: err.code || null
         });
       }
     }
