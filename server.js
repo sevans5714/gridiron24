@@ -659,6 +659,48 @@ const PRO_TEAM_ABBREV = {
   25: 'SF', 26: 'SEA', 27: 'TB', 28: 'WSH', 29: 'CAR', 30: 'JAX', 33: 'BAL', 34: 'HOU'
 };
 
+/** 2026 NFL bye weeks by ESPN proTeamId (NFL.com schedule release). */
+const NFL_BYE_WEEK_BY_PRO_TEAM = {
+  1: 11, // ATL
+  2: 7,  // BUF
+  3: 10, // CHI
+  4: 6,  // CIN
+  5: 11, // CLE
+  6: 14, // DAL
+  7: 10, // DEN
+  8: 6,  // DET
+  9: 11, // GB
+  10: 9, // TEN
+  11: 13, // IND
+  12: 5, // KC
+  13: 13, // LV
+  14: 11, // LAR
+  15: 6, // MIA
+  16: 6, // MIN
+  17: 11, // NE
+  18: 8, // NO
+  19: 8, // NYG
+  20: 13, // NYJ
+  21: 10, // PHI
+  22: 14, // ARI
+  23: 9, // PIT
+  24: 7, // LAC
+  25: 8, // SF
+  26: 11, // SEA
+  27: 10, // TB
+  28: 7, // WSH
+  29: 5, // CAR
+  30: 7, // JAX
+  33: 13, // BAL
+  34: 8  // HOU
+};
+
+function byeWeekForProTeam(proTeamId) {
+  const id = Number(proTeamId);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  return NFL_BYE_WEEK_BY_PRO_TEAM[id] || null;
+}
+
 async function fetchEspnPlayersByIds(playerIds, season) {
   const unique = [...new Set((playerIds || []).map(Number).filter((id) => Number.isFinite(id) && id > 0))];
   const map = new Map();
@@ -1001,15 +1043,20 @@ function normalizeRosterTeam(team, conference, membersById) {
     const pool = entry.playerPoolEntry || {};
     const player = pool.player || {};
     const slotId = Number(entry.lineupSlotId);
+    const proTeamId = player.proTeamId || null;
     return {
       id: player.id || entry.playerId || null,
       name: playerName(player),
       position: POSITION_LABELS[player.defaultPositionId] || '—',
       slotId,
       slot: SLOT_LABELS[slotId] || `Slot ${slotId}`,
-      proTeamId: player.proTeamId || null,
+      proTeamId,
+      proTeam: PRO_TEAM_ABBREV[proTeamId] || 'FA',
+      byeWeek: byeWeekForProTeam(proTeamId),
       injuryStatus: player.injuryStatus || null,
-      acquisitionType: entry.acquisitionType || pool.acquisitionType || null
+      acquisitionType: entry.acquisitionType || pool.acquisitionType || null,
+      weekPoints: null,
+      weekProjected: null
     };
   }).sort((a, b) => {
     const order = { QB: 1, RB: 2, WR: 3, TE: 4, FLEX: 5, 'D/ST': 6, K: 7, Bench: 8, IR: 9 };
@@ -1034,6 +1081,40 @@ function normalizeRosterTeam(team, conference, membersById) {
   };
 }
 
+function collectPlayerWeekStats(raw, teamId, week) {
+  const map = new Map();
+  const tid = Number(teamId);
+  for (const match of (raw?.schedule || [])) {
+    if (Number(match.matchupPeriodId) !== Number(week)) continue;
+    for (const sideKey of ['home', 'away']) {
+      const side = match[sideKey];
+      if (!side || Number(side.teamId) !== tid) continue;
+      for (const entry of matchupSideEntries(side)) {
+        const pool = entry.playerPoolEntry || {};
+        const player = pool.player || {};
+        const pid = Number(player.id || entry.playerId);
+        if (!Number.isFinite(pid) || pid <= 0) continue;
+        map.set(pid, {
+          points: playerWeekPoints(entry, week),
+          projected: playerWeekProjected(entry, week)
+        });
+      }
+    }
+  }
+  return map;
+}
+
+function applyWeekStatsToRoster(roster, statsMap) {
+  return (roster || []).map((p) => {
+    const hit = p?.id != null ? statsMap.get(Number(p.id)) : null;
+    return {
+      ...p,
+      weekPoints: hit?.points ?? null,
+      weekProjected: hit?.projected ?? null
+    };
+  });
+}
+
 async function loadTeamDetail(conferenceKey, teamId) {
   const conference = resolveEspnLeague(conferenceKey);
   if (!conference) throw Object.assign(new Error('Unknown conference'), { status: 404 });
@@ -1042,9 +1123,28 @@ async function loadTeamDetail(conferenceKey, teamId) {
   const team = (raw.teams || []).find((t) => Number(t.id) === Number(teamId));
   if (!team) throw Object.assign(new Error('Team not found'), { status: 404 });
   const detail = normalizeRosterTeam(team, conference, membersById);
-  const scheduleRaw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], 'matchup');
+  const scheduleRaw = await fetchEspnRaw(
+    conference,
+    ['mTeam', 'mMatchup', 'mScoreboard', 'mStatus'],
+    'matchup-scoreboard'
+  );
   const currentWeek = Number(scheduleRaw.status?.currentMatchupPeriod || 1);
   const schedule = normalizeSchedule(scheduleRaw, conference, currentWeek);
+  const weekStats = collectPlayerWeekStats(scheduleRaw, teamId, currentWeek);
+  detail.roster = applyWeekStatsToRoster(detail.roster, weekStats);
+
+  let currentMatchup = null;
+  for (const m of schedule.matchups || []) {
+    if (Number(m.home?.id) === Number(teamId) || Number(m.away?.id) === Number(teamId)) {
+      currentMatchup = {
+        week: currentWeek,
+        ...m,
+        isHome: Number(m.home?.id) === Number(teamId)
+      };
+      break;
+    }
+  }
+
   const recent = [];
   for (let w = Math.max(1, currentWeek - 2); w <= currentWeek; w += 1) {
     const weekSched = w === currentWeek ? schedule : normalizeSchedule(scheduleRaw, conference, w);
@@ -1064,10 +1164,53 @@ async function loadTeamDetail(conferenceKey, teamId) {
       kind: conference.kind || 'conference'
     },
     team: detail,
+    currentMatchup,
     recentMatchups: recent,
     currentMatchupPeriod: currentWeek,
     keeper: keepers.getKeeper(conference.key, teamId, Number(config.season) + 1),
     keeperWindow: keepers.getKeeperWindow(calendar.listEvents(), config.season),
+    generatedAt: new Date().toISOString()
+  };
+}
+
+async function loadConferenceRosters(conferenceKey) {
+  const conference = resolveEspnLeague(conferenceKey);
+  if (!conference) throw Object.assign(new Error('Unknown conference'), { status: 404 });
+  const raw = await fetchEspnRaw(conference, ['mTeam', 'mRoster', 'mMatchup', 'mScoreboard', 'mStatus'], `rosters:${conference.key}`);
+  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
+  const currentWeek = Number(raw.status?.currentMatchupPeriod || 1);
+  const schedule = normalizeSchedule(raw, conference, currentWeek);
+  const teams = (raw.teams || [])
+    .map((t) => {
+      const detail = normalizeRosterTeam(t, conference, membersById);
+      const weekStats = collectPlayerWeekStats(raw, detail.id, currentWeek);
+      detail.roster = applyWeekStatsToRoster(detail.roster, weekStats);
+      let currentMatchup = null;
+      for (const m of schedule.matchups || []) {
+        if (Number(m.home?.id) === Number(detail.id) || Number(m.away?.id) === Number(detail.id)) {
+          currentMatchup = {
+            week: currentWeek,
+            ...m,
+            isHome: Number(m.home?.id) === Number(detail.id)
+          };
+          break;
+        }
+      }
+      return { ...detail, currentMatchup };
+    })
+    .sort((a, b) => Number(a.playoffSeed || 99) - Number(b.playoffSeed || 99) || a.name.localeCompare(b.name));
+
+  return {
+    ok: true,
+    conference: {
+      key: conference.key,
+      name: conference.name,
+      shortName: conference.shortName,
+      logo: conference.logo,
+      kind: conference.kind || 'conference'
+    },
+    week: currentWeek,
+    teams,
     generatedAt: new Date().toISOString()
   };
 }
@@ -5267,6 +5410,10 @@ const server = http.createServer(async (req, res) => {
       let team = null;
       let roster = [];
       let keeper = null;
+      let currentMatchup = null;
+      let currentMatchupPeriod = null;
+      let recentMatchups = [];
+      let conferenceMeta = null;
       if (claim) {
         const nameEntry = logos.getDisplayName(claim.conferenceKey, claim.teamId);
         try {
@@ -5313,9 +5460,21 @@ const server = http.createServer(async (req, res) => {
                   losses: detail.team.losses ?? team?.losses,
                   ties: detail.team.ties ?? team?.ties,
                   pointsFor: detail.team.pointsFor ?? team?.pointsFor,
+                  playoffSeed: detail.team.playoffSeed ?? team?.playoffSeed,
+                  waiverRank: detail.team.waiverRank ?? team?.waiverRank,
                   owner: detail.team.owner
                 };
               }
+              currentMatchup = detail?.currentMatchup || null;
+              currentMatchupPeriod = detail?.currentMatchupPeriod || null;
+              recentMatchups = detail?.recentMatchups || [];
+              conferenceMeta = detail?.conference || {
+                key: conference.key,
+                name: conference.name,
+                shortName: conference.shortName,
+                logo: conference.logo,
+                kind: conference.kind || 'conference'
+              };
             } catch { /* roster optional if ESPN roster view fails */ }
           }
         } catch { /* ignore ESPN lookup failures for avatar */ }
@@ -5335,6 +5494,10 @@ const server = http.createServer(async (req, res) => {
         logo,
         team,
         roster,
+        currentMatchup,
+        currentMatchupPeriod,
+        recentMatchups,
+        conference: conferenceMeta,
         keeper,
         keeperWindow,
         career: career.listForUser(user.id),
@@ -5660,6 +5823,19 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, payload);
       } catch (err) {
         return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Could not load team' });
+      }
+    }
+
+    if (pathname === '/api/rosters' && req.method === 'GET') {
+      const conferenceKey = String(requestUrl.searchParams.get('conference') || '').trim();
+      if (!conferenceKey) {
+        return sendJson(res, 400, { ok: false, error: 'conference is required' });
+      }
+      try {
+        const payload = await loadConferenceRosters(conferenceKey);
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Could not load rosters' });
       }
     }
 

@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Roster · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=71" />
+  <style>
+    .roster-hero {
+      display: flex;
+      align-items: center;
+      gap: 1.15rem;
+      margin-bottom: 1.35rem;
+      flex-wrap: wrap;
+    }
+    .roster-hero img {
+      width: 5.5rem;
+      height: 5.5rem;
+      object-fit: contain;
+      background: transparent;
+      border: 0;
+      box-shadow: var(--logo-lift);
+    }
+    .roster-hero h1 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.7rem, 4vw, 2.4rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .roster-hero .meta { margin-top: 0.35rem; color: var(--muted); }
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.65rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-cell {
+      padding: 0.75rem 0.85rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .stat-cell .lbl {
+      display: block;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    .stat-cell .val {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.35fr 0.85fr;
+      gap: 1.75rem;
+    }
+    .section-head h2 {
+      margin: 0 0 0.75rem;
+      font-family: var(--display);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 1.1rem;
+    }
+    .matchup-card {
+      padding: 0.9rem 1rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      margin-bottom: 1rem;
+    }
+    .matchup-card .wk {
+      font-family: var(--display);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-bottom: 0.55rem;
+    }
+    .matchup-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .matchup-side { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
+    .matchup-side.away { justify-content: flex-start; }
+    .matchup-side.home { justify-content: flex-end; text-align: right; }
+    .matchup-side img {
+      width: 2.2rem;
+      height: 2.2rem;
+      object-fit: contain;
+      box-shadow: var(--logo-lift);
+      flex-shrink: 0;
+    }
+    .matchup-side .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .matchup-side.mine .nm { color: #8eb6ff; }
+    .matchup-score {
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      font-size: 1.15rem;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .matchup-proj {
+      margin-top: 0.55rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+      text-align: center;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.45rem 0.35rem; border-bottom: 1px solid var(--line); text-align: left; }
+    th {
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .slot { color: #8eb6ff; font-weight: 700; font-size: 0.82rem; width: 3.5rem; }
+    .pro { color: var(--muted); font-size: 0.85rem; }
+    .bye { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .inj {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .inj.bad { color: #e8a078; }
+    .inj.ok { color: var(--muted); }
+    .row-bad td { background: rgba(196, 90, 48, 0.08); }
+    tr.row-keeper td {
+      background: rgba(239, 215, 130, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(239, 215, 130, 0.55);
+    }
+    tr.row-keeper td:first-child {
+      box-shadow: inset 3px 0 0 #efd782, inset 0 0 0 1px rgba(239, 215, 130, 0.55);
+    }
+    .keeper-tag {
+      display: inline-block;
+      margin-left: 0.4rem;
+      padding: 0.12rem 0.4rem;
+      border: 1px solid rgba(239, 215, 130, 0.55);
+      color: #efd782;
+      font-family: var(--display);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+    .empty { color: var(--muted); padding: 0.5rem 0; }
+    .game { padding: 0.55rem 0; border-bottom: 1px solid var(--line); color: var(--text); }
+    .totals-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 0.65rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--line);
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+    }
+    .totals-bar strong { color: var(--text); }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .roster-hero img { width: 4.25rem; height: 4.25rem; }
+    }
+  </style>
+</head>
+<body data-page="my-roster">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">My Roster</div>
+    </div>
+  </header>
+  <section class="page-hero shell">
+    <p class="eyebrow">Your franchise</p>
+    <h1>My Roster</h1>
+  </section>
+  <main class="page-main shell" id="main"><div class="msg">Loading your roster…</div></main>
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=52"></script>
+  <script>
+    const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+    function record(t) {
+      if (!t) return '—';
+      return Number(t.ties || 0) > 0 ? `${t.wins}-${t.losses}-${t.ties}` : `${t.wins}-${t.losses}`;
+    }
+    function fmt(n, digits = 1) {
+      if (n == null || !Number.isFinite(Number(n))) return '—';
+      return Number(n).toFixed(digits);
+    }
+    function injClass(status) {
+      const s = String(status || '').toUpperCase();
+      if (!s || s === 'ACTIVE') return 'ok';
+      if (['OUT', 'DOUBTFUL', 'IR', 'INJURY_RESERVE', 'INJURED_RESERVE'].includes(s)) return 'bad';
+      return 'ok';
+    }
+    function starterSlots(slot) {
+      return !['Bench', 'IR'].includes(slot);
+    }
+    function sumField(roster, field, startersOnly) {
+      return (roster || []).reduce((sum, p) => {
+        if (startersOnly && !starterSlots(p.slot)) return sum;
+        const n = Number(p[field]);
+        return sum + (Number.isFinite(n) ? n : 0);
+      }, 0);
+    }
+
+    (async () => {
+      const main = document.getElementById('main');
+      try {
+        const res = await fetch('/api/my-team', { cache: 'no-store' });
+        if (res.status === 401) {
+          window.location.replace('/enter?next=' + encodeURIComponent('/my-roster.html'));
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load roster');
+
+        if (!data.claim) {
+          main.innerHTML = `
+            <div class="msg">
+              No franchise is linked to your account yet.
+              <a href="/profile.html" style="color:#8eb6ff;text-decoration:none;">Open Profile</a>
+              to claim a team, or ask a league admin to assign you.
+            </div>`;
+          return;
+        }
+
+        const t = data.team || { id: data.claim.teamId, name: data.claim.teamName || 'Your team', wins: 0, losses: 0, ties: 0 };
+        const roster = data.roster || [];
+        const week = data.currentMatchupPeriod;
+        const matchup = data.currentMatchup;
+        const keeperId = data.keeper ? Number(data.keeper.playerId) : null;
+        const confName = data.conference?.shortName || data.conference?.name || t.conferenceName || '';
+        const logo = data.logo?.url || t.logo || '/assets/team-logo-placeholder.svg';
+
+        document.title = `${t.name || 'My Roster'} · GridIron 24`;
+
+        const starterPts = sumField(roster, 'weekPoints', true);
+        const starterProj = sumField(roster, 'weekProjected', true);
+        const byeCount = roster.filter((p) => week && Number(p.byeWeek) === Number(week)).length;
+
+        let matchupHtml = `<div class="empty">No matchup scheduled for this week.</div>`;
+        if (matchup) {
+          const mineId = Number(t.id);
+          const awayMine = Number(matchup.away?.id) === mineId;
+          const homeMine = Number(matchup.home?.id) === mineId;
+          matchupHtml = `
+            <div class="matchup-card">
+              <div class="wk">Week ${esc(String(matchup.week || week || ''))} matchup</div>
+              <div class="matchup-row">
+                <div class="matchup-side away ${awayMine ? 'mine' : ''}">
+                  <img src="${esc(matchup.away?.logo || '/assets/team-logo-placeholder.svg')}" alt="" />
+                  <span class="nm">${esc(matchup.away?.name || 'Away')}</span>
+                </div>
+                <div class="matchup-score">${fmt(matchup.away?.score)} – ${fmt(matchup.home?.score)}</div>
+                <div class="matchup-side home ${homeMine ? 'mine' : ''}">
+                  <span class="nm">${esc(matchup.home?.name || 'Home')}</span>
+                  <img src="${esc(matchup.home?.logo || '/assets/team-logo-placeholder.svg')}" alt="" />
+                </div>
+              </div>
+              <div class="matchup-proj">Projected ${fmt(matchup.away?.projected)} – ${fmt(matchup.home?.projected)}</div>
+            </div>`;
+        }
+
+        const keeperNote = data.keeper
+          ? `<p class="empty" style="margin:0 0 0.75rem;color:#efd782;">${esc(String(data.keeperWindow?.forSeason || ''))} keeper: ${esc(data.keeper.playerName)} · Round ${esc(String(data.keeper.costRound))}</p>`
+          : '';
+
+        main.innerHTML = `
+          <div class="roster-hero">
+            <img src="${esc(logo)}" alt="" />
+            <div>
+              <h1>${esc(t.name || 'Your team')}</h1>
+              <div class="meta">${esc(confName)}${confName ? ' · ' : ''}${esc(record(t))} · PF ${fmt(t.pointsFor)}${t.playoffSeed ? ` · Seed #${esc(String(t.playoffSeed))}` : ''}</div>
+              <div class="meta">Manager: ${esc(t.owner || data.user?.displayName || '—')}${week ? ` · Scoring week ${esc(String(week))}` : ''}</div>
+            </div>
+          </div>
+          <div class="stat-strip">
+            <div class="stat-cell"><span class="lbl">Record</span><span class="val">${esc(record(t))}</span></div>
+            <div class="stat-cell"><span class="lbl">Wk ${esc(String(week || '—'))} pts</span><span class="val">${fmt(starterPts)}</span></div>
+            <div class="stat-cell"><span class="lbl">Projected</span><span class="val">${fmt(starterProj)}</span></div>
+            <div class="stat-cell"><span class="lbl">On bye</span><span class="val">${esc(String(byeCount))}</span></div>
+          </div>
+          <div class="layout">
+            <section>
+              <div class="section-head"><h2>Roster</h2></div>
+              ${keeperNote}
+              ${roster.length ? `<table>
+                <thead>
+                  <tr>
+                    <th>Slot</th>
+                    <th>Player</th>
+                    <th>NFL</th>
+                    <th>Bye</th>
+                    <th class="num">Pts</th>
+                    <th class="num">Proj</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${roster.map((p) => {
+                    const status = p.injuryStatus || '—';
+                    const isKeeper = keeperId != null && Number(p.id) === keeperId;
+                    const bad = injClass(p.injuryStatus) === 'bad' && starterSlots(p.slot);
+                    const onBye = week && Number(p.byeWeek) === Number(week);
+                    const rowClass = [bad ? 'row-bad' : '', isKeeper ? 'row-keeper' : ''].filter(Boolean).join(' ');
+                    return `<tr class="${rowClass}">
+                      <td class="slot">${esc(p.slot)}</td>
+                      <td>${esc(p.name)}${isKeeper ? '<span class="keeper-tag">Keeper</span>' : ''}</td>
+                      <td class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}</td>
+                      <td class="${onBye ? 'bye' : ''}">${p.byeWeek != null ? esc(String(p.byeWeek)) : '—'}</td>
+                      <td class="num">${fmt(p.weekPoints)}</td>
+                      <td class="num">${fmt(p.weekProjected)}</td>
+                      <td class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+              <div class="totals-bar">
+                <span>Starters pts <strong>${fmt(starterPts)}</strong></span>
+                <span>Starters proj <strong>${fmt(starterProj)}</strong></span>
+              </div>` : `<div class="empty">No roster yet — opens after the draft.</div>`}
+            </section>
+            <section>
+              <div class="section-head"><h2>This week</h2></div>
+              ${matchupHtml}
+              <div class="section-head"><h2>Recent matchups</h2></div>
+              ${(data.recentMatchups || []).length
+                ? data.recentMatchups.map((m) => `
+                  <div class="game">Wk ${esc(String(m.week))} · ${esc(m.away?.name)} ${fmt(m.away?.score)} – ${fmt(m.home?.score)} ${esc(m.home?.name)}</div>
+                `).join('')
+                : `<div class="empty">No scored matchups yet.</div>`}
+              <p class="empty" style="margin-top:1rem;">
+                <a href="/team-rosters.html" style="color:#8eb6ff;text-decoration:none;">Browse all team rosters →</a>
+              </p>
+            </section>
+          </div>`;
+
+        window.GridIronNav?.setSync(`ESPN sync · ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        main.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

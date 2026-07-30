@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=67" />
+  <link rel="stylesheet" href="/css/site.css?v=71" />
   <style>
     :root,
     html[data-theme="night"] {
@@ -123,7 +123,7 @@
 
     .sb-controls {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 0.85rem 1rem;
       margin: 1.15rem 0 0.65rem;
@@ -137,47 +137,8 @@
       .sb-controls {
         grid-template-columns: 1fr auto;
       }
-      .sb-live { grid-column: 1; }
-      .sb-week { grid-column: 2; justify-self: end; }
+      .sb-week { justify-self: end; }
       .nfl-slate { grid-column: 1 / -1; }
-    }
-    .sb-live {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.55rem;
-      font-family: var(--display);
-      font-size: 0.95rem;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--led-green);
-      position: relative;
-    }
-    .sb-live .dot {
-      width: 0.65rem;
-      height: 0.65rem;
-      border-radius: 50%;
-      background: var(--led-green);
-      box-shadow: 0 0 10px var(--led-green);
-      animation: sb-pulse 1.2s ease-in-out infinite;
-    }
-    .sb-live.is-idle {
-      color: var(--sb-idle);
-    }
-    .sb-live.is-idle .dot {
-      background: var(--sb-idle);
-      box-shadow: none;
-      animation: none;
-    }
-    .sb-live.is-refreshing {
-      color: var(--led);
-    }
-    .sb-live.is-refreshing .dot {
-      background: transparent;
-      box-shadow: none;
-      border: 2px solid rgba(255, 184, 74, 0.25);
-      border-top-color: var(--led);
-      animation: sb-spin 0.7s linear infinite;
     }
     .sb-refresh-bar {
       position: relative;
@@ -420,17 +381,18 @@
     }
     .nfl-rolodex {
       position: relative;
-      min-height: 3.6rem;
+      min-height: 5.5rem;
       overflow: hidden;
       perspective: 900px;
     }
     .nfl-rolodex.is-static {
       overflow: visible;
+      min-height: 0;
     }
     .nfl-page {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.4rem;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0.35rem;
       width: 100%;
       align-items: stretch;
     }
@@ -458,43 +420,47 @@
     .nfl-game {
       display: grid;
       grid-template-rows: auto 1fr;
-      gap: 0.28rem;
-      padding: 0.35rem 0.45rem 0.35rem;
+      gap: 0.3rem;
+      padding: 0.38rem 0.38rem 0.42rem;
       border: 1px solid var(--sb-game-border);
       background: var(--sb-game-bg);
       min-width: 0;
+      min-height: 5.15rem;
+      box-sizing: border-box;
     }
     .nfl-game .nfl-status {
-      font-size: 0.58rem;
+      font-size: 0.56rem;
       font-weight: 600;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
       color: var(--sb-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      line-height: 1.1;
+      line-height: 1.15;
     }
     .nfl-game .nfl-sides {
       display: grid;
-      gap: 0.28rem;
+      gap: 0.32rem;
+      align-content: start;
     }
     .nfl-game .nfl-side {
       display: grid;
-      grid-template-columns: 1.05rem minmax(0, 1fr) auto;
+      grid-template-columns: 1.15rem minmax(0, 1fr) auto;
       align-items: center;
-      column-gap: 0.35rem;
+      column-gap: 0.3rem;
       min-width: 0;
     }
     .nfl-game .nfl-logo {
-      width: 1.05rem;
-      height: 1.05rem;
+      width: 1.15rem;
+      height: 1.15rem;
       object-fit: contain;
       display: block;
+      flex-shrink: 0;
     }
     .nfl-game .nfl-logo-fallback {
-      width: 1.05rem;
-      height: 1.05rem;
+      width: 1.15rem;
+      height: 1.15rem;
       border-radius: 2px;
       background: color-mix(in srgb, var(--sb-muted) 25%, transparent);
     }
@@ -555,8 +521,11 @@
       font-size: 0.8rem;
       padding: 0.35rem 0;
     }
+    @media (max-width: 1100px) {
+      .nfl-page { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    }
     @media (max-width: 900px) {
-      .nfl-page { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .nfl-page { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
     @media (max-width: 640px) {
       .nfl-page { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -850,10 +819,6 @@
 
   <main class="shell">
     <div class="sb-controls">
-      <div class="sb-live is-idle" id="live-badge" aria-live="polite">
-        <span class="dot" aria-hidden="true"></span>
-        <span id="live-label">Stand by</span>
-      </div>
       <div class="nfl-slate" aria-live="polite">
         <div class="nfl-slate-label" id="nfl-slate-label">NFL slate</div>
         <div class="nfl-rolodex is-static" id="nfl-rolodex">
@@ -877,7 +842,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=49"></script>
+  <script src="/js/nav.js?v=52"></script>
   <script>
     const REFRESH_MS = 30_000;
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
@@ -894,7 +859,7 @@
     let liveMode = false;
     let loading = false;
     let nflHasLive = false;
-    const NFL_PAGE_SIZE = 4;
+    const NFL_PAGE_SIZE = 6;
     const NFL_FLIP_MS = 4500;
     const NFL_POLL_LIVE_MS = 12_000;
     const NFL_POLL_IDLE_MS = 45_000;
@@ -914,8 +879,11 @@
       if (!iso) return 'TBD';
       try {
         const d = new Date(iso);
-        let time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        return time;
+        if (Number.isNaN(d.getTime())) return 'TBD';
+        const day = d.toLocaleDateString([], { weekday: 'short' });
+        const date = d.toLocaleDateString([], { month: 'numeric', day: 'numeric' });
+        const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        return `${day} ${date} · ${time}`;
       } catch {
         return 'TBD';
       }
@@ -947,15 +915,19 @@
     function nflGameHtml(g) {
       const bucket = g.status?.bucket || 'upcoming';
       const showScore = bucket === 'final' || bucket === 'live';
+      const kick = nflKickShort(g.date);
       let status = '';
       if (bucket === 'live') {
-        status = g.status?.shortDetail || g.status?.detail || 'LIVE';
+        const live = g.status?.shortDetail || g.status?.detail || 'LIVE';
+        // Keep the calendar day in front of the live clock/quarter.
+        const day = kick !== 'TBD' ? kick.split(' · ')[0] : '';
+        status = day ? `${day} · ${live}` : live;
       } else if (bucket === 'final') {
-        status = 'Final';
+        const day = kick !== 'TBD' ? kick.split(' · ')[0] : '';
+        status = day ? `${day} · Final` : 'Final';
       } else {
-        const kick = nflKickShort(g.date);
         const net = (g.broadcasts || []).slice(0, 1)[0];
-        status = net ? `${kick} - ${net}` : kick;
+        status = net ? `${kick} · ${net}` : kick;
       }
       const awayWin = bucket === 'final' && Boolean(g.away?.winner);
       const homeWin = bucket === 'final' && Boolean(g.home?.winner);
@@ -1025,7 +997,9 @@
 
       const pageSize = window.matchMedia('(max-width: 640px)').matches
         ? 2
-        : (window.matchMedia('(max-width: 900px)').matches ? 3 : NFL_PAGE_SIZE);
+        : (window.matchMedia('(max-width: 900px)').matches
+          ? 4
+          : (window.matchMedia('(max-width: 1100px)').matches ? 5 : NFL_PAGE_SIZE));
 
       // Always show the full week slate — live, upcoming, and final with scores.
       const displayGames = games;
@@ -1183,20 +1157,16 @@
 
     function setRefreshing(on) {
       loading = on;
-      const badge = document.getElementById('live-badge');
-      const label = document.getElementById('live-label');
       const bar = document.getElementById('refresh-bar');
       const boards = document.getElementById('boards');
       const note = document.getElementById('refresh-note');
-      badge.classList.toggle('is-refreshing', on);
-      bar.classList.toggle('is-on', on);
-      boards.classList.toggle('is-refreshing', on);
+      bar?.classList.toggle('is-on', on);
+      boards?.classList.toggle('is-refreshing', on);
       if (on) {
-        label.textContent = 'Refreshing';
-        note.textContent = 'Pulling latest scores from ESPN…';
+        if (note) note.textContent = 'Pulling latest scores from ESPN…';
       } else {
-        setLiveState(liveMode);
-        note.textContent = 'Updates every 30 seconds from ESPN';
+        liveMode = currentWeek != null && currentWeek === currentMatchupPeriod;
+        if (note) note.textContent = 'Updates every 30 seconds from ESPN';
       }
     }
 
@@ -1279,17 +1249,6 @@
 
     function setLiveState(viewingCurrent) {
       liveMode = viewingCurrent;
-      if (loading) return;
-      const badge = document.getElementById('live-badge');
-      const label = document.getElementById('live-label');
-      badge.classList.remove('is-refreshing');
-      if (viewingCurrent) {
-        badge.classList.remove('is-idle');
-        label.textContent = 'Live board';
-      } else {
-        badge.classList.add('is-idle');
-        label.textContent = 'Archive week';
-      }
     }
 
     async function load(week, { quiet = false } = {}) {

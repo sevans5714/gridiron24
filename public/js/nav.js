@@ -12,7 +12,8 @@
       key: 'league',
       menu: [
         { href: '/standings.html', label: 'Standings' },
-        { href: '/teams.html', label: 'Roster' },
+        { href: '/my-roster.html', label: 'My Roster' },
+        { href: '/team-rosters.html', label: 'Team Rosters' },
         { href: '/draft.html', label: 'Draft Results' },
         { href: '/history.html', label: 'History' },
         { href: '/transactions.html', label: 'Transactions' },
@@ -34,6 +35,8 @@
       key: 'league',
       menu: [
         { href: '/aaa.html', label: 'Standings' },
+        { href: '/my-roster.html', label: 'My Roster' },
+        { href: '/team-rosters.html', label: 'Team Rosters' },
         { href: '/aaa-rulebook.html', label: 'AAA Rules' }
       ]
     },
@@ -54,7 +57,7 @@
     if (active === 'scoring' || active === 'rulebook' || active === 'payouts' || active === 'aaa-rulebook') {
       return 'rulebook';
     }
-    if (active === 'standings' || active === 'teams' || active === 'draft' || active === 'history' || active === 'transactions' || active === 'rankings' || active === 'schedules') {
+    if (active === 'standings' || active === 'teams' || active === 'my-roster' || active === 'team-rosters' || active === 'draft' || active === 'history' || active === 'transactions' || active === 'rankings' || active === 'schedules') {
       return 'league';
     }
     if (active === 'aaa') {
@@ -154,6 +157,8 @@
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
+  let ruleProposalVisible = false;
+
   function renderNav() {
     if (!nav) return;
     const links = linksForScope(leagueScope).map((link) => ({
@@ -189,6 +194,8 @@
         trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
       });
     });
+
+    placeRuleProposalInNav();
   }
 
   function ensureUserMenuMount() {
@@ -231,9 +238,9 @@
     el.title = 'Inbox';
     el.setAttribute('aria-label', 'Inbox');
     el.innerHTML = `
-      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M3.5 7.5 12 13l8.5-5.5" />
-        <rect x="3" y="5.5" width="18" height="13" rx="1.2" />
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3.25" y="6" width="17.5" height="12" rx="1" />
+        <path d="m3.75 7.25 8.25 6.1 8.25-6.1" />
       </svg>
       <span class="inbox-badge" id="inbox-badge" hidden>0</span>`;
     const switcher = document.getElementById('league-switch');
@@ -286,16 +293,33 @@
   function ensureRuleProposalMount() {
     let slot = document.getElementById('rule-proposal-slot');
     if (slot) return slot;
-    const topbarInner = document.querySelector('.topbar-inner');
-    if (!topbarInner) return null;
     slot = document.createElement('div');
     slot.id = 'rule-proposal-slot';
     slot.className = 'rule-proposal-slot';
     slot.hidden = true;
-    const right = topbarInner.querySelector('.topbar-right');
-    if (right) topbarInner.insertBefore(slot, right);
-    else topbarInner.appendChild(slot);
     return slot;
+  }
+
+  function placeRuleProposalInNav() {
+    if (!nav) return;
+    const slot = ensureRuleProposalMount();
+    if (!ruleProposalVisible) {
+      slot.hidden = true;
+      slot.innerHTML = '';
+      slot.remove();
+      return;
+    }
+    if (!slot.querySelector('.rule-proposal-btn')) {
+      slot.innerHTML = `<button type="button" class="rule-proposal-btn" id="rule-proposal-btn">Rule Change Proposal</button>`;
+      slot.querySelector('#rule-proposal-btn')?.addEventListener('click', openRuleProposalModal);
+    }
+    slot.hidden = false;
+    const rulebook = [...nav.querySelectorAll('a.nav-link')].find((a) =>
+      /rulebook/i.test(a.getAttribute('href') || '')
+    );
+    const anchor = rulebook?.closest('.nav-item') || rulebook;
+    if (anchor) anchor.after(slot);
+    else nav.appendChild(slot);
   }
 
   function closeRuleProposalModal() {
@@ -352,18 +376,8 @@
   }
 
   function renderRuleProposalButton(show) {
-    const slot = ensureRuleProposalMount();
-    if (!slot) return;
-    if (!show) {
-      slot.hidden = true;
-      slot.innerHTML = '';
-      return;
-    }
-    slot.hidden = false;
-    if (!slot.querySelector('.rule-proposal-btn')) {
-      slot.innerHTML = `<button type="button" class="rule-proposal-btn" id="rule-proposal-btn">Rule Change Proposal</button>`;
-      slot.querySelector('#rule-proposal-btn')?.addEventListener('click', openRuleProposalModal);
-    }
+    ruleProposalVisible = Boolean(show);
+    placeRuleProposalInNav();
   }
 
   async function refreshRuleProposalGate(user) {

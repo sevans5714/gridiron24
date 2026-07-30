@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Team Rosters · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=71" />
+  <style>
+    .roster-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .conf-tabs { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+    .conf-tab {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-family: var(--body);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.45rem 0.85rem;
+      cursor: pointer;
+    }
+    .conf-tab:hover { color: var(--text); border-color: rgba(255,255,255,0.22); }
+    .conf-tab.active {
+      color: var(--text);
+      border-color: rgba(142, 182, 255, 0.55);
+      box-shadow: inset 0 -2px 0 #8eb6ff;
+    }
+    .conf-tab.detail.active { box-shadow: inset 0 -2px 0 var(--detail); border-color: rgba(255,122,24,0.45); }
+    .conf-tab.overtime.active { box-shadow: inset 0 -2px 0 var(--overtime); border-color: rgba(226,35,42,0.45); }
+    .week-note { color: var(--muted); margin-left: auto; font-size: 0.9rem; }
+    .rosters-layout {
+      display: grid;
+      grid-template-columns: minmax(13rem, 16rem) 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .team-list {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      max-height: min(70vh, 42rem);
+      overflow: auto;
+    }
+    .team-btn {
+      display: grid;
+      grid-template-columns: 2rem 1fr auto;
+      gap: 0.55rem;
+      align-items: center;
+      width: 100%;
+      text-align: left;
+      padding: 0.55rem 0.7rem;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+    }
+    .team-btn:last-child { border-bottom: 0; }
+    .team-btn:hover { background: rgba(255,255,255,0.03); }
+    .team-btn.active {
+      background: rgba(142, 182, 255, 0.08);
+      box-shadow: inset 3px 0 0 #8eb6ff;
+    }
+    .team-btn img {
+      width: 2rem;
+      height: 2rem;
+      object-fit: contain;
+      box-shadow: var(--logo-lift);
+    }
+    .team-btn .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .team-btn .rec { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+    .detail-panel { min-width: 0; }
+    .team-hero {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .team-hero img {
+      width: 4.5rem;
+      height: 4.5rem;
+      object-fit: contain;
+      box-shadow: var(--logo-lift);
+    }
+    .team-hero h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 3vw, 1.9rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .team-hero .meta { margin-top: 0.3rem; color: var(--muted); }
+    .matchup-line {
+      margin-bottom: 1rem;
+      padding: 0.7rem 0.85rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+    }
+    .matchup-line .lbl {
+      font-family: var(--display);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-size: 0.72rem;
+      margin-bottom: 0.25rem;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.45rem 0.35rem; border-bottom: 1px solid var(--line); text-align: left; }
+    th {
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .slot { color: #8eb6ff; font-weight: 700; font-size: 0.82rem; width: 3.5rem; }
+    .pro { color: var(--muted); font-size: 0.85rem; }
+    .bye { color: var(--gold); font-weight: 700; }
+    .inj {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .inj.bad { color: #e8a078; }
+    .inj.ok { color: var(--muted); }
+    .row-bad td { background: rgba(196, 90, 48, 0.08); }
+    .empty { color: var(--muted); padding: 0.5rem 0; }
+    .open-link { color: #8eb6ff; text-decoration: none; font-weight: 600; }
+    .open-link:hover { text-decoration: underline; }
+    @media (max-width: 800px) {
+      .rosters-layout { grid-template-columns: 1fr; }
+      .team-list { max-height: 14rem; }
+      .week-note { margin-left: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body data-page="team-rosters">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Team Rosters</div>
+    </div>
+  </header>
+  <section class="page-hero shell">
+    <p class="eyebrow">League</p>
+    <h1>Team Rosters</h1>
+  </section>
+  <main class="page-main shell">
+    <div class="roster-controls" id="controls"></div>
+    <div id="boards"><div class="msg">Loading rosters…</div></div>
+  </main>
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=52"></script>
+  <script>
+    const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+    function record(t) {
+      return Number(t.ties || 0) > 0 ? `${t.wins}-${t.losses}-${t.ties}` : `${t.wins}-${t.losses}`;
+    }
+    function fmt(n, digits = 1) {
+      if (n == null || !Number.isFinite(Number(n))) return '—';
+      return Number(n).toFixed(digits);
+    }
+    function injClass(status) {
+      const s = String(status || '').toUpperCase();
+      if (!s || s === 'ACTIVE') return 'ok';
+      if (['OUT', 'DOUBTFUL', 'IR', 'INJURY_RESERVE', 'INJURED_RESERVE'].includes(s)) return 'bad';
+      return 'ok';
+    }
+    function starterSlots(slot) {
+      return !['Bench', 'IR'].includes(slot);
+    }
+
+    let conferences = [];
+    let activeConf = null;
+    let activeTeamId = null;
+    let payloadCache = new Map();
+
+    function renderControls() {
+      const el = document.getElementById('controls');
+      if (conferences.length <= 1) {
+        el.innerHTML = activeConf
+          ? `<div class="week-note" id="week-note"></div>`
+          : '';
+        return;
+      }
+      el.innerHTML = `
+        <div class="conf-tabs" role="tablist" aria-label="Conference">
+          ${conferences.map((c) => `
+            <button type="button" class="conf-tab ${esc(c.key)} ${c.key === activeConf ? 'active' : ''}" data-conf="${esc(c.key)}">${esc(c.shortName || c.name)}</button>
+          `).join('')}
+        </div>
+        <div class="week-note" id="week-note"></div>`;
+      el.querySelectorAll('[data-conf]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (btn.dataset.conf === activeConf) return;
+          activeConf = btn.dataset.conf;
+          activeTeamId = null;
+          loadConference(activeConf);
+        });
+      });
+    }
+
+    function renderRoster(data) {
+      const boards = document.getElementById('boards');
+      const teams = data.teams || [];
+      const week = data.week;
+      const weekNote = document.getElementById('week-note');
+      if (weekNote) weekNote.textContent = week ? `Scoring week ${week}` : '';
+
+      if (!teams.length) {
+        boards.innerHTML = `<div class="msg">No teams found for this conference.</div>`;
+        return;
+      }
+
+      if (activeTeamId == null || !teams.some((t) => Number(t.id) === Number(activeTeamId))) {
+        activeTeamId = teams[0].id;
+      }
+      const team = teams.find((t) => Number(t.id) === Number(activeTeamId)) || teams[0];
+      const roster = team.roster || [];
+      const m = team.currentMatchup;
+
+      boards.innerHTML = `
+        <div class="rosters-layout">
+          <div class="team-list" role="listbox" aria-label="Teams">
+            ${teams.map((t) => `
+              <button type="button" class="team-btn ${Number(t.id) === Number(team.id) ? 'active' : ''}" data-team="${esc(String(t.id))}">
+                <img src="${esc(t.logo || '/assets/team-logo-placeholder.svg')}" alt="" />
+                <span class="nm">${esc(t.name)}</span>
+                <span class="rec">${esc(record(t))}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div class="detail-panel">
+            <div class="team-hero">
+              <img src="${esc(team.logo || '/assets/team-logo-placeholder.svg')}" alt="" />
+              <div>
+                <h2>${esc(team.name)}</h2>
+                <div class="meta">${esc(data.conference?.shortName || '')} · ${esc(record(team))} · PF ${fmt(team.pointsFor)}${team.playoffSeed ? ` · Seed #${esc(String(team.playoffSeed))}` : ''}</div>
+                <div class="meta">Manager: ${esc(team.owner || '—')} · <a class="open-link" href="/team.html?conference=${esc(data.conference.key)}&amp;teamId=${esc(String(team.id))}">Full team page</a></div>
+              </div>
+            </div>
+            ${m ? `
+              <div class="matchup-line">
+                <div class="lbl">Week ${esc(String(m.week || week || ''))} matchup</div>
+                ${esc(m.away?.name)} ${fmt(m.away?.score)} – ${fmt(m.home?.score)} ${esc(m.home?.name)}
+                <span style="color:var(--muted);"> · Proj ${fmt(m.away?.projected)} – ${fmt(m.home?.projected)}</span>
+              </div>` : `<div class="empty">No matchup this week.</div>`}
+            ${roster.length ? `<table>
+              <thead>
+                <tr>
+                  <th>Slot</th>
+                  <th>Player</th>
+                  <th>NFL</th>
+                  <th>Bye</th>
+                  <th class="num">Pts</th>
+                  <th class="num">Proj</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${roster.map((p) => {
+                  const status = p.injuryStatus || '—';
+                  const bad = injClass(p.injuryStatus) === 'bad' && starterSlots(p.slot);
+                  const onBye = week && Number(p.byeWeek) === Number(week);
+                  return `<tr class="${bad ? 'row-bad' : ''}">
+                    <td class="slot">${esc(p.slot)}</td>
+                    <td>${esc(p.name)}</td>
+                    <td class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}</td>
+                    <td class="${onBye ? 'bye' : ''}">${p.byeWeek != null ? esc(String(p.byeWeek)) : '—'}</td>
+                    <td class="num">${fmt(p.weekPoints)}</td>
+                    <td class="num">${fmt(p.weekProjected)}</td>
+                    <td class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>` : `<div class="empty">No roster yet — opens after the draft.</div>`}
+          </div>
+        </div>`;
+
+      boards.querySelectorAll('[data-team]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeTeamId = Number(btn.dataset.team);
+          renderRoster(data);
+        });
+      });
+    }
+
+    async function loadConference(key) {
+      const boards = document.getElementById('boards');
+      boards.innerHTML = `<div class="msg">Loading ${esc(key)} rosters…</div>`;
+      renderControls();
+      try {
+        let data = payloadCache.get(key);
+        if (!data) {
+          const res = await fetch(`/api/rosters?conference=${encodeURIComponent(key)}`, { cache: 'no-store' });
+          data = await res.json();
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load rosters');
+          payloadCache.set(key, data);
+        }
+        renderRoster(data);
+        window.GridIronNav?.setSync(`ESPN sync · ${new Date(data.generatedAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        boards.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+      }
+    }
+
+    (async () => {
+      try {
+        const meRes = await fetch('/api/auth', { cache: 'no-store' }).catch(() => null);
+        let scope = 'gridiron';
+        if (meRes?.ok) {
+          const me = await meRes.json();
+          scope = me?.leagueScope?.scope || 'gridiron';
+        }
+
+        if (scope === 'aaa') {
+          conferences = [{ key: 'aaa', name: 'AAA League', shortName: 'AAA' }];
+          activeConf = 'aaa';
+          renderControls();
+          await loadConference('aaa');
+          return;
+        }
+
+        const res = await fetch('/api/leagues', { cache: 'no-store' });
+        const data = await res.json();
+        const detail = (data.conferences || []).find((c) => c.key === 'detail');
+        const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
+        conferences = [detail, overtime].filter(Boolean).map((c) => ({
+          key: c.key,
+          name: c.name,
+          shortName: c.shortName || c.name
+        }));
+        if (!conferences.length) throw new Error('No conferences available');
+        activeConf = conferences[0].key;
+        renderControls();
+        await loadConference(activeConf);
+      } catch (err) {
+        document.getElementById('boards').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

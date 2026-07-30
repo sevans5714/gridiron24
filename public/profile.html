@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=67" />
+  <link rel="stylesheet" href="/css/site.css?v=71" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -700,7 +700,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=49"></script>
+  <script src="/js/nav.js?v=52"></script>
   <script src="/js/inbox-ui.js?v=1"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
@@ -886,7 +886,7 @@
           <button type="button" class="btn" id="profile-save-name">Save Name</button>
         </div>
         <p class="profile-note" id="franchise-status" role="status"></p>
-        ${team ? `<p class="profile-note"><a href="/team.html?conference=${escP(claim.conferenceKey)}&teamId=${escP(claim.teamId)}" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Open team page →</a></p>` : ''}`;
+        ${team ? `<p class="profile-note"><a href="/my-roster.html" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Open My Roster →</a></p>` : ''}`;
 
       document.getElementById('profile-save-name')?.addEventListener('click', async () => {
         const status = document.getElementById('franchise-status');

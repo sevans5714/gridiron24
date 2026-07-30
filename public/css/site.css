@@ -66,7 +66,7 @@ html[data-theme="night"] {
   --nav-hover: #fff;
   --chip-border: rgba(255, 255, 255, 0.22);
   --chip-border-active: rgba(142, 182, 255, 0.7);
-  --chip-team: #fff;
+  --chip-team: #8eb6ff;
   --chip-owner: #c8c8c8;
   --chip-access: #8a8a8a;
   --chip-avatar-bg: #0c0c0c;
@@ -136,7 +136,7 @@ html[data-theme="day"] {
   --nav-hover: #14181f;
   --chip-border: rgba(20, 24, 31, 0.18);
   --chip-border-active: rgba(31, 94, 240, 0.55);
-  --chip-team: #14181f;
+  --chip-team: #2f6dff;
   --chip-owner: #4a5563;
   --chip-access: #7a8494;
   --chip-avatar-bg: #111111;
@@ -385,7 +385,7 @@ body {
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.45rem;
   margin-left: auto;
   flex: 0 1 auto;
   min-width: 0;
@@ -393,10 +393,17 @@ body {
 }
 
 .rule-proposal-slot {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
-  margin-left: 0.35rem;
+  align-self: center;
+  margin-left: 0.15rem;
+  padding-left: 0.55rem;
+}
+.nav > .rule-proposal-slot::before {
+  height: 1rem;
+  opacity: 0.7;
+  background: color-mix(in srgb, var(--topbar-border) 80%, var(--blue) 20%);
 }
 
 .rule-proposal-btn {
@@ -404,12 +411,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.45rem 0.75rem;
+  padding: 0.38rem 0.65rem;
   border: 1px solid rgba(90, 150, 255, 0.85);
   background: linear-gradient(180deg, rgba(47, 109, 255, 0.42), rgba(47, 109, 255, 0.18));
   color: #dbe7ff;
   font-family: var(--display);
-  font-size: clamp(0.62rem, 1.3vw, 0.72rem);
+  font-size: clamp(0.58rem, 1.2vw, 0.68rem);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -450,44 +457,55 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.45rem;
-  height: 2.45rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
   text-decoration: none;
   cursor: pointer;
   flex: 0 0 auto;
+  border-radius: 0;
 }
 .inbox-btn:hover,
 .inbox-btn.is-active {
-  border-color: rgba(47, 109, 255, 0.55);
-  background: rgba(47, 109, 255, 0.12);
-  color: #dbe7ff;
+  color: var(--text);
+  border-color: var(--chip-border-active);
+  background: rgba(255, 255, 255, 0.04);
 }
 .inbox-btn svg {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.15rem;
+  height: 1.15rem;
   display: block;
+  stroke: currentColor;
+}
+html[data-theme="day"] .inbox-btn {
+  color: #5a6270;
+}
+html[data-theme="day"] .inbox-btn:hover,
+html[data-theme="day"] .inbox-btn.is-active {
+  color: #152033;
+  border-color: rgba(47, 109, 255, 0.4);
+  background: rgba(47, 109, 255, 0.06);
 }
 .inbox-badge {
   position: absolute;
-  top: -0.35rem;
-  right: -0.35rem;
-  min-width: 1.15rem;
-  height: 1.15rem;
-  padding: 0 0.28rem;
+  top: -0.2rem;
+  right: -0.2rem;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.22rem;
   border-radius: 999px;
   background: #e11d48;
   color: #fff;
   font-family: var(--display);
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  line-height: 1.15rem;
+  line-height: 1.05rem;
   text-align: center;
-  box-shadow: 0 0 0 2px var(--bg);
+  box-shadow: 0 0 0 2px var(--topbar-bg);
 }
 .inbox-badge[hidden] { display: none !important; }
 
@@ -719,11 +737,11 @@ html[data-theme="day"] .league-switch img {
   appearance: none;
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.55rem;
   width: 100%;
   max-width: 100%;
-  min-height: 2.75rem;
-  padding: 0.1rem 0.1rem 0.1rem 0.75rem;
+  min-height: 2.55rem;
+  padding: 0.1rem 0.1rem 0.1rem 0.55rem;
   border: 0;
   border-left: 1px solid var(--chip-border);
   border-radius: 0;
@@ -746,10 +764,15 @@ html[data-theme="day"] .league-switch img {
   width: 2rem;
   height: 2rem;
   flex: 0 0 2rem;
-  border-radius: 999px;
+  border-radius: 0;
   overflow: hidden;
   display: grid;
   place-items: center;
+  background: transparent;
+  border: 0;
+}
+.user-chip-avatar:has(.user-avatar-fallback) {
+  border-radius: 999px;
   background: var(--chip-avatar-bg);
   border: 1px solid var(--chip-avatar-border);
 }
@@ -757,10 +780,10 @@ html[data-theme="day"] .league-switch img {
 .user-chip-text {
   display: flex;
   flex-direction: column;
-  gap: 0.06rem;
+  gap: 0.04rem;
   min-width: 0;
   flex: 1 1 auto;
-  padding: 0.05rem 0.1rem 0.05rem 0.7rem;
+  padding: 0.05rem 0.1rem 0.05rem 0.55rem;
   border-left: 1px solid var(--chip-border);
 }
 
@@ -771,16 +794,20 @@ html[data-theme="day"] .league-switch img {
 
 .user-chip-team {
   font-family: var(--display);
-  font-size: clamp(0.95rem, 1.85vw, 1.15rem);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: clamp(0.9rem, 1.7vw, 1.05rem);
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--chip-team);
+  text-shadow: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.1;
+  line-height: 1.15;
   max-width: 100%;
+}
+html[data-theme="day"] .user-chip-team {
+  text-shadow: none;
 }
 
 .user-chip-owner {
@@ -846,7 +873,7 @@ a.user-chip {
 .user-menu-preview .user-avatar-fallback {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 

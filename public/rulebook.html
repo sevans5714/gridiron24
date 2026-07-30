@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=67" />
+  <link rel="stylesheet" href="/css/site.css?v=71" />
   <style>
     .book {
       max-width: 52rem;
@@ -61,20 +61,6 @@
       font-weight: 600;
     }
     .book-toc a:hover { color: var(--nav-hover); }
-    .toc-affiliate {
-      margin: 1rem 0 0;
-      padding-top: 0.85rem;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: var(--fs-sm);
-      line-height: 1.45;
-    }
-    .toc-affiliate a {
-      color: #efd782;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .toc-affiliate a:hover { text-decoration: underline; }
 
     .article {
       margin: 0 0 2.5rem;
@@ -103,61 +89,6 @@
       color: var(--text);
       line-height: 1.1;
     }
-    .article-head-aaa {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 1rem 1.5rem;
-      border-bottom-color: rgba(239, 215, 130, 0.45);
-    }
-    .article-head-aaa .article-head-copy {
-      min-width: 0;
-      flex: 1 1 auto;
-    }
-    .article-head-aaa .article-num {
-      color: #efd782;
-    }
-    .article-head-crest {
-      width: min(5.75rem, 24vw);
-      height: auto;
-      flex: 0 0 auto;
-      display: block;
-      margin: 0 0 0.1rem;
-      background: transparent;
-      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
-    }
-    html[data-theme="day"] .article-head-crest {
-      filter: drop-shadow(0 4px 10px rgba(20, 24, 31, 0.14));
-    }
-    .aaa-payout-table {
-      width: 100%;
-      max-width: 28rem;
-      border-collapse: collapse;
-      margin: 0.35rem 0 0.75rem;
-    }
-    .aaa-payout-table th,
-    .aaa-payout-table td {
-      padding: 0.45rem 0;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      color: #d0d0d0;
-      font-size: var(--fs-md);
-    }
-    .aaa-payout-table th {
-      font-family: var(--display);
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .aaa-payout-table td.amt {
-      text-align: right;
-      font-family: var(--display);
-      font-weight: 700;
-      color: var(--text);
-      white-space: nowrap;
-    }
-    .aaa-payout-table tr:last-child td { border-bottom: 0; }
 
     .section {
       margin: 0 0 1.35rem;
@@ -172,12 +103,14 @@
     }
     .section p,
     .section li {
-      color: #d0d0d0;
+      color: var(--text);
+      opacity: 0.88;
       font-size: var(--fs-md);
       line-height: 1.55;
     }
     .section p { margin: 0 0 0.75rem; max-width: 44rem; }
     .section p:last-child { margin-bottom: 0; }
+    .section strong { opacity: 1; color: var(--text); }
 
     .section ol,
     .section ul {
@@ -340,13 +273,6 @@
     }
     .prize-table tr.total td.amt { color: #efd782; }
 
-    .book-link {
-      color: #8eb6ff;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .book-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
-
     .source-note {
       margin: 0.85rem 0 0;
       color: var(--muted);
@@ -376,8 +302,8 @@
   </header>
 
   <section class="page-hero shell reveal">
-    <p class="eyebrow">Official Rules</p>
-    <h1>Rule Book</h1>
+    <p class="eyebrow">GridIron 24</p>
+    <h1>Official Rule Book</h1>
   </section>
 
   <main class="page-main shell">
@@ -389,11 +315,10 @@
           <li><a href="#article-ii">Season &amp; Calendar</a></li>
           <li><a href="#article-iii">Rosters &amp; Lineups</a></li>
           <li><a href="#article-iv">Scoring</a></li>
-          <li><a href="#article-v">Playoffs, Bowl &amp; Relegation</a></li>
+          <li><a href="#article-v">Playoffs, Relegation &amp; Promotion</a></li>
           <li><a href="#article-vi">Prize Pool &amp; Payouts</a></li>
-          <li><a href="#article-vii">Authority</a></li>
+          <li><a href="#article-vii">Governance</a></li>
         </ol>
-        <p class="toc-affiliate">AAA League has its own <a href="/aaa-rulebook.html">AAA Rule Book</a>.</p>
       </nav>
 
       <article class="article reveal" id="article-i">
@@ -402,25 +327,24 @@
           <h2>League Structure</h2>
         </header>
         <section class="section">
-          <h3 class="section-title">§1.01 Name</h3>
-          <p>This league is GridIron 24 — twenty-four franchises, two conferences, one champion.</p>
+          <h3 class="section-title">§1.01 Establishment</h3>
+          <p>These rules govern GridIron 24, a twenty-four (24) franchise fantasy football league organized into two conferences of twelve (12) franchises each.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§1.02 Conferences</h3>
           <ol>
-            <li><strong>Detail Conference</strong> — twelve franchises.</li>
-            <li><strong>Overtime Conference</strong> — twelve franchises.</li>
+            <li><strong>Detail Conference</strong> — twelve (12) franchises.</li>
+            <li><strong>Overtime Conference</strong> — twelve (12) franchises.</li>
           </ol>
-          <p>Each season, all twenty-four GridIron 24 franchises are <strong>randomly drawn</strong> into the two conferences (twelve per conference). Conference membership does not carry over from the prior season except by chance of the draw.</p>
-          <p>AAA League is a separate affiliated feeder and is not a GridIron 24 conference. See the <a class="book-link" href="/aaa-rulebook.html">AAA Rule Book</a>.</p>
+          <p>Prior to each season, all twenty-four (24) franchises shall be randomly assigned to the two conferences, twelve (12) per conference. Conference assignment does not carry forward from the prior season except by chance of the draw.</p>
         </section>
         <section class="section">
-          <h3 class="section-title">§1.03 Conference Admins</h3>
-          <p>After the annual conference draw is complete, the commissioner shall appoint one conference admin for Detail and one for Overtime. Conference admin assignments are set for that season and may change when conferences are redrawn.</p>
+          <h3 class="section-title">§1.03 Conference Administrators</h3>
+          <p>Following the annual conference draw, the Commissioner shall appoint one Conference Administrator for Detail and one for Overtime. Appointments apply for that season only and may be revised when conferences are redrawn.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§1.04 System of Record</h3>
-          <p>ESPN Fantasy is the system of record for drafts, rosters, scoring, waivers, and transactions. GridIron 24 is the league headquarters for standings, rules, payouts, and championship presentation.</p>
+          <p>ESPN Fantasy is the system of record for drafts, rosters, scoring, waivers, and transactions. GridIron 24 headquarters is authoritative for standings presentation, these rules, payouts, and championship determination under this Rule Book.</p>
         </section>
       </article>
 
@@ -431,10 +355,11 @@
         </header>
         <section class="section">
           <h3 class="section-title">§2.01 Regular Season</h3>
-          <p>Each conference plays a thirteen-week regular season. Conference standings and playoff seeding follow ESPN results for that conference.</p>
+          <p>Each conference shall play a thirteen (13) week regular season. Standings and playoff seeding shall follow ESPN results for that conference.</p>
         </section>
         <section class="section">
-          <h3 class="section-title">§2.02 Key Dates</h3>
+          <h3 class="section-title">§2.02 Official Calendar</h3>
+          <p>Key dates for the season are set forth below and may be updated by the Commissioner.</p>
           <div id="calendar-rules"><div class="msg">Loading calendar…</div></div>
         </section>
       </article>
@@ -446,46 +371,41 @@
         </header>
         <section class="section">
           <h3 class="section-title">§3.01 Starting Lineup</h3>
-          <p>Owners must set a legal starting lineup before each week’s games. Bench and IR slots do not score unless moved into an active roster slot.</p>
+          <p>Each franchise shall set a legal starting lineup prior to the commencement of that week’s games. Bench and Injured Reserve slots do not score unless the player is moved into an active roster slot.</p>
           <div id="lineup-rules"><div class="msg">Loading lineup…</div></div>
         </section>
         <section class="section">
-          <h3 class="section-title">§3.02 Injured Starters</h3>
-          <p>Managers shall not start a player who is listed as Out, Doubtful, or on Injured Reserve. GridIron 24 Patrol monitors active lineups (daily pre-kickoff and automatically during the first quarter of NFL games) and issues automated warnings to the franchise manager. Questionable designations are permitted at the manager’s risk and are not treated as automatic violations.</p>
+          <h3 class="section-title">§3.02 Prohibited Starters</h3>
+          <p>No franchise shall start a player listed as Out, Doubtful, or on Injured Reserve. Questionable designations are permitted at the manager’s risk and are not automatic violations. Lineups are monitored for prohibited starters; automated warnings may be issued to the franchise manager.</p>
           <ol>
-            <li>Each week a franchise starts one or more players in a prohibited injury status counts as one roster violation for that franchise, regardless of how many such players appear in the lineup.</li>
-            <li>A third roster violation in the same season subjects the franchise and its manager to removal from GridIron 24, at the discretion of the commissioner.</li>
-            <li>Staff may review and clear open violations in League Tools. Cleared records remain available for enforcement history.</li>
+            <li>Each week in which a franchise starts one or more players in a prohibited status constitutes one (1) roster violation for that franchise, regardless of the number of such players.</li>
+            <li>A third roster violation in the same season may result in removal of the franchise and its manager from GridIron 24, at the Commissioner’s discretion.</li>
+            <li>The Commissioner may review, clear, or retain violation records for enforcement purposes.</li>
           </ol>
         </section>
         <section class="section">
-          <h3 class="section-title">§3.03 Single-Player Keeper</h3>
-          <p>Each franchise may keep <strong>one (1) player</strong> from its roster into the following season. Keeping a player forfeits a draft pick in the round cost described below. A player may remain with the same franchise under this rule for a maximum of <strong>three (3) seasons</strong> (the acquisition / draft season plus up to two keeper seasons), after which the player must return to the player pool.</p>
+          <h3 class="section-title">§3.03 Keepers</h3>
+          <p>Each franchise may retain one (1) player into the following season. Retention forfeits a draft selection as provided in §3.04. A player may remain with the same franchise under this Article for a maximum of three (3) seasons (the acquisition season plus up to two keeper seasons), after which the player shall return to the player pool.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§3.04 Keeper Cost</h3>
           <ol>
-            <li><strong>First keep</strong> — The franchise forfeits its draft pick in the same round the player was originally selected in that conference’s draft.</li>
-            <li><strong>Each additional keep</strong> — The forfeited round moves down one round (Round N becomes Round N+1). The franchise loses that later-round pick instead.</li>
-            <li>If the calculated cost round is later than the final round of the draft, the franchise forfeits its last-round pick.</li>
-            <li>Players acquired outside the draft (waivers, free agency, or trade of an undrafted player) use the <strong>final draft round</strong> as the first-keep cost, then follow the same one-round drop each later keep.</li>
-            <li>Only one keeper is allowed per franchise per offseason. Declaring a keeper is optional.</li>
+            <li><strong>First retention.</strong> The franchise forfeits its draft selection in the round in which the player was originally selected.</li>
+            <li><strong>Subsequent retention.</strong> The forfeited round advances one round later (Round N becomes Round N+1).</li>
+            <li>If the calculated cost exceeds the final round of the draft, the franchise forfeits its last-round selection.</li>
+            <li>Players acquired other than by draft (waivers, free agency, or trade of an undrafted player) use the final draft round as the first-retention cost, then advance one round for each subsequent retention.</li>
+            <li>No more than one keeper is permitted per franchise per offseason. Declaring a keeper is optional.</li>
           </ol>
-          <p><strong>Example.</strong> Josh Allen is drafted in Round 2.</p>
-          <ol>
-            <li>Keep him for the next season → franchise loses its <strong>Round 2</strong> pick.</li>
-            <li>Keep him again the following season → franchise loses its <strong>Round 3</strong> pick.</li>
-            <li>After that second keeper season (third season with the franchise), Josh Allen returns to the player pool and cannot be kept again by that franchise under this rule.</li>
-          </ol>
+          <p><strong>Illustration.</strong> A player drafted in Round 2: first retention costs Round 2; second retention costs Round 3. After the second keeper season, the player returns to the pool and may not again be retained by that franchise under this Article.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§3.05 Keeper Administration</h3>
           <ol>
-            <li>Keeper declarations are due <strong>before the draft date</strong> published on the season calendar (or an earlier keeper deadline announced by the commissioner). After that date, declarations are locked.</li>
-            <li>Managers declare their keeper in <a class="book-link" href="/profile.html#keeper">Profile → Keeper</a>. The keeper is highlighted in gold on the franchise roster.</li>
+            <li>Keeper declarations are due before the draft date published on the official calendar, or any earlier deadline announced by the Commissioner. Declarations lock after that deadline.</li>
+            <li>Managers shall declare keepers through league headquarters. Declared keepers are identified on the franchise roster.</li>
             <li>Original draft round and keeper-season count travel with the player on trades between GridIron 24 franchises.</li>
-            <li>ESPN Fantasy is the system of record for the draft; headquarters and the commissioner administer keeper lists and pick forfeitures before the draft.</li>
-            <li>Disputes over draft round, keeper clock, or eligibility are decided by the commissioner.</li>
+            <li>ESPN Fantasy remains the system of record for the draft. The Commissioner administers keeper lists and pick forfeitures prior to the draft.</li>
+            <li>Disputes regarding draft round, keeper eligibility, or the keeper clock are resolved by the Commissioner.</li>
           </ol>
         </section>
       </article>
@@ -496,8 +416,8 @@
           <h2>Scoring</h2>
         </header>
         <section class="section">
-          <h3 class="section-title">§4.01 Uniform Rules</h3>
-          <p>Detail and Overtime use the same official scoring settings. When the conferences disagree on ESPN, Detail Conference settings are the source of truth until staff re-syncs Overtime.</p>
+          <h3 class="section-title">§4.01 Uniform Scoring</h3>
+          <p>Detail and Overtime shall use identical scoring settings. If the conferences diverge on ESPN, Detail Conference settings are controlling until Overtime is restored to conformity.</p>
           <div id="scoring-banner"></div>
         </section>
         <section class="section">
@@ -509,43 +429,50 @@
       <article class="article reveal" id="article-v">
         <header class="article-head">
           <p class="article-num">Article V</p>
-          <h2>Playoffs, Bowl &amp; Relegation</h2>
+          <h2>Playoffs, Relegation &amp; Promotion</h2>
         </header>
         <section class="section">
           <h3 class="section-title">§5.01 Conference Playoffs</h3>
           <ol>
-            <li>Six teams qualify per conference.</li>
-            <li>Playoffs begin Week 14 (Wild Card).</li>
+            <li>Six (6) teams qualify in each conference.</li>
+            <li>Playoffs begin in Week 14 (Wild Card).</li>
             <li>Conferences reseed after each round.</li>
-            <li>Conference champions are decided by Week 16.</li>
+            <li>Conference champions are determined by Week 16.</li>
           </ol>
         </section>
         <section class="section">
           <h3 class="section-title">§5.02 GridIron Bowl</h3>
-          <p>In Week 17, the Detail champion and Overtime champion meet for the GridIron Bowl. Championship ranking uses each conference champ’s Week 17 ESPN score.</p>
-          <p><a class="book-link" href="/playoffs.html">View playoff bracket →</a></p>
+          <p>In Week 17, the Detail Conference champion and the Overtime Conference champion shall meet in the GridIron Bowl. The champion is determined by each entrant’s Week 17 ESPN fantasy score.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§5.03 Relegation</h3>
-          <p>Relegation from GridIron 24 is determined solely by final conference standings at the conclusion of the regular season and conference playoffs, as reflected on headquarters.</p>
+          <p>Relegation is determined solely by final conference standings after the regular season and conference playoffs.</p>
           <ol>
             <li>Within each conference, franchises are ranked by overall record: wins, then losses, then ties, then points for (PF).</li>
-            <li>The franchise finishing last in each conference is designated the relegated franchise for that conference.</li>
-            <li>If two or more franchises are tied for last place, the franchise with the fewest points for (PF) is relegated. The lowest PF among those tied occupies the relegation position.</li>
-            <li>Each conference standings board shall display a relegation line immediately above the relegated franchise.</li>
+            <li>The franchise finishing last in each conference is the relegated franchise for that conference.</li>
+            <li>If two or more franchises are tied for last, the franchise with the fewest points for (PF) is relegated.</li>
+            <li>Conference standings shall display a relegation line immediately above the relegated franchise.</li>
           </ol>
         </section>
         <section class="section">
           <h3 class="section-title">§5.04 Toilet Bowl</h3>
           <p>In Week 17, the relegated Detail franchise and the relegated Overtime franchise shall meet in the Toilet Bowl.</p>
           <ol>
-            <li>The Toilet Bowl is a cross-conference score duel. Ranking uses each entrant’s Week 17 ESPN fantasy score.</li>
-            <li>The franchise with the higher Week 17 score remains in GridIron 24 for the following season.</li>
-            <li>The franchise with the lower Week 17 score is <strong>relegated to AAA League</strong> for the following season and is removed from GridIron 24.</li>
-            <li>The resulting GridIron 24 vacancy is filled by the AAA League champion, subject to commissioner administration and the <a class="book-link" href="/aaa-rulebook.html">AAA Rule Book</a>.</li>
-            <li>In the event of a Toilet Bowl score tie, the commissioner shall resolve the outcome under league authority.</li>
+            <li>The Toilet Bowl is decided by each entrant’s Week 17 ESPN fantasy score.</li>
+            <li>The franchise with the higher score remains in GridIron 24 for the following season.</li>
+            <li>The franchise with the lower score is relegated to AAA League for the following season and is removed from GridIron 24.</li>
+            <li>The resulting vacancy is filled by promotion under §5.05.</li>
+            <li>A score tie is resolved by the Commissioner.</li>
           </ol>
-          <p><a class="book-link" href="/playoffs.html">View Toilet Bowl →</a></p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§5.05 Promotion</h3>
+          <p>The AAA Super Bowl winner is promoted into GridIron 24 for the following season.</p>
+          <ol>
+            <li>Promotion fills the vacancy created by Toilet Bowl relegation (§5.04), or another vacancy designated by the Commissioner.</li>
+            <li>The promoted franchise joins the twenty-four (24) franchise field and is included in the next season’s conference draw (§1.02).</li>
+            <li>Promotion is administered by the Commissioner in coordination with the AAA League Administrator.</li>
+          </ol>
         </section>
       </article>
 
@@ -559,11 +486,11 @@
           <div id="payout-summary"><div class="msg">Loading payouts…</div></div>
         </section>
         <section class="section">
-          <h3 class="section-title">§6.02 Award Schedule</h3>
+          <h3 class="section-title">§6.02 Awards</h3>
           <div id="payout-table"><div class="msg">Loading award schedule…</div></div>
         </section>
         <section class="section">
-          <h3 class="section-title">§6.03 Distribution Notes</h3>
+          <h3 class="section-title">§6.03 Notes</h3>
           <div id="payout-notes"></div>
         </section>
       </article>
@@ -571,15 +498,19 @@
       <article class="article reveal" id="article-vii">
         <header class="article-head">
           <p class="article-num">Article VII</p>
-          <h2>Authority</h2>
+          <h2>Governance</h2>
         </header>
         <section class="section">
           <h3 class="section-title">§7.01 Commissioner</h3>
-          <p>The GridIron 24 commissioner administers membership, franchise assignments, invites, the annual conference draw, and league tools for Detail and Overtime. Conference admins are appointed <strong>after</strong> the random conference draw (§1.02–§1.03) and may assist within their conference for that season. AAA League is governed by the <a class="book-link" href="/aaa-rulebook.html">AAA Rule Book</a> and administered by the AAA league admin.</p>
+          <p>The Commissioner administers membership, franchise assignments, invitations, the annual conference draw, and league operations for Detail and Overtime. Conference Administrators, appointed under §1.03, may assist within their assigned conference for that season.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§7.02 Amendments</h3>
-          <p>Material rule changes should be communicated before they affect active competition. ESPN setting changes that create conference drift are corrected through League Tools rules sync.</p>
+          <p>Material amendments to this Rule Book shall be communicated before they affect active competition. Scoring or lineup settings that drift between conferences shall be restored to the uniform standard under Article IV.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§7.03 Final Authority</h3>
+          <p>Matters not expressly covered by this Rule Book, and disputes arising under it, are decided by the Commissioner.</p>
         </section>
       </article>
     </div>
@@ -589,7 +520,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=49"></script>
+  <script src="/js/nav.js?v=52"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -631,7 +562,7 @@
         .split(/(?<=\.)\s+/)
         .map((s) => s.trim())
         .filter(Boolean);
-      if (!parts.length) return '<p>No additional payout notes.</p>';
+      if (!parts.length) return '<p>None.</p>';
       return `<ol>${parts.map((p) => `<li>${esc(p)}</li>`).join('')}</ol>`;
     }
 
@@ -713,18 +644,18 @@
           : '';
 
         if (synced) {
-          bannerMount.innerHTML = `<div class="banner ok">Conferences synced<span class="sync-pill">Official</span>${when ? ` · Updated ${esc(when)}` : ''}</div>`;
+          bannerMount.innerHTML = `<div class="banner ok">Conferences in conformity<span class="sync-pill">Official</span>${when ? ` · As of ${esc(when)}` : ''}</div>`;
         } else if (data.compare?.bothOk === false) {
-          bannerMount.innerHTML = `<div class="banner">Could not verify both ESPN leagues. Showing Detail Conference rules.</div>`;
+          bannerMount.innerHTML = `<div class="banner">Unable to verify both conferences. Detail Conference settings are shown.</div>`;
         } else {
           const n = data.compare?.diffCount || 0;
-          bannerMount.innerHTML = `<div class="banner">Conferences are out of sync on ESPN (${n} difference${n === 1 ? '' : 's'}). Showing Detail as source of truth. See <a href="/league-tools.html#rules-sync">League Tools</a>.</div>`;
+          bannerMount.innerHTML = `<div class="banner">Conferences diverge on ESPN (${n} difference${n === 1 ? '' : 's'}). Detail Conference is controlling. See <a href="/league-tools.html#rules-sync">League Tools</a>.</div>`;
         }
 
         lineupMount.innerHTML = lineupRow(rules.lineup);
         scoringMount.innerHTML = `
           ${groupPanels(rules.scoringItems)}
-          <p class="source-note">Source: ${source === 'official' ? 'Official synced snapshot (Detail)' : 'Live Detail ESPN settings'}</p>
+          <p class="source-note">${source === 'official' ? 'Official scoring snapshot (Detail Conference).' : 'Live Detail Conference ESPN settings.'}</p>
         `;
       } catch (err) {
         lineupMount.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
@@ -749,7 +680,7 @@
         const prizes = p.prizes || [];
         const total = prizes.reduce((sum, prize) => sum + Number(prize.amount || 0), 0);
 
-        summary.innerHTML = `<p>Each franchise pays a <strong style="color:var(--text)">${buyIn}</strong> buy-in. With <strong style="color:var(--text)">${esc(String(p.teamCount || 24))}</strong> franchises, the prize pool is <strong style="color:var(--text)">${pool}</strong>.</p>`;
+        summary.innerHTML = `<p>Each franchise shall pay a buy-in of <strong style="color:var(--text)">${buyIn}</strong>. With <strong style="color:var(--text)">${esc(String(p.teamCount || 24))}</strong> franchises, the prize pool is <strong style="color:var(--text)">${pool}</strong>.</p>`;
 
         table.innerHTML = `
           <div class="table-scroll">
