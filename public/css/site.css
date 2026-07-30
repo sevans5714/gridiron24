@@ -68,6 +68,7 @@ html[data-theme="night"] {
   --chip-border-active: rgba(142, 182, 255, 0.7);
   --chip-team: #fff;
   --chip-owner: #c8c8c8;
+  --chip-access: #8a8a8a;
   --chip-avatar-bg: #0c0c0c;
   --chip-avatar-border: rgba(255, 255, 255, 0.12);
   --btn-border: #fff;
@@ -137,6 +138,7 @@ html[data-theme="day"] {
   --chip-border-active: rgba(31, 94, 240, 0.55);
   --chip-team: #14181f;
   --chip-owner: #4a5563;
+  --chip-access: #7a8494;
   --chip-avatar-bg: #111111;
   --chip-avatar-border: rgba(20, 24, 31, 0.2);
   --btn-border: #14181f;
@@ -494,31 +496,48 @@ body {
 
 .user-chip-team {
   font-family: var(--display);
-  font-size: clamp(0.72rem, 1.35vw, 0.84rem);
+  font-size: clamp(0.95rem, 1.85vw, 1.15rem);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--chip-team);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.15;
+  line-height: 1.1;
   max-width: 100%;
 }
 
 .user-chip-owner {
-  font-size: clamp(0.66rem, 1.15vw, 0.74rem);
+  font-family: var(--body);
+  font-size: clamp(0.72rem, 1.2vw, 0.82rem);
   font-weight: 600;
   color: var(--chip-owner);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.15;
+  line-height: 1.2;
   max-width: 100%;
+}
+
+.user-chip-access {
+  font-family: var(--body);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--chip-access);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  max-width: 100%;
+  opacity: 0.9;
 }
 
 .user-chip.needs-logo .user-chip-access {
   color: #8eb6ff;
+  opacity: 1;
 }
 
 a.user-chip {
