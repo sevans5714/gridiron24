@@ -84,7 +84,7 @@ function defaultSurvival(seed = {}) {
   return {
     enabled: seed.enabled !== false,
     week: Number(seed.week) || 17,
-    name: String(seed.name || 'Toilet Bowl').trim() || 'Toilet Bowl'
+    name: String(seed.name || "Mayor's Cup").trim() || "Mayor's Cup"
   };
 }
 
@@ -458,7 +458,7 @@ function ensureSystemLeague(seed) {
     }
     const hasSurvivalCal = (system.calendarDefaults || []).some(
       (e) => String(e.type || '').toLowerCase() === 'survival'
-        || /stay in league|toilet bowl/i.test(String(e.title || ''))
+        || /stay in league|toilet\s*bowl|mayor's cup/i.test(String(e.title || ''))
     );
     if (!hasSurvivalCal) {
       const fromSeed = (seed.calendarDefaults || []).find(
@@ -467,7 +467,7 @@ function ensureSystemLeague(seed) {
       system.calendarDefaults = [
         ...(system.calendarDefaults || []),
         fromSeed || {
-          title: 'Toilet Bowl',
+          title: "Mayor's Cup",
           type: 'survival',
           date: '2026-12-29',
           notes: 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).'
@@ -475,14 +475,14 @@ function ensureSystemLeague(seed) {
       ];
       dirty = true;
     }
-    if (system.survival && /stay in league/i.test(String(system.survival.name || ''))) {
-      system.survival.name = 'Toilet Bowl';
+    if (system.survival && /stay in league|toilet\s*bowl/i.test(String(system.survival.name || ''))) {
+      system.survival.name = "Mayor's Cup";
       dirty = true;
     }
-    const calStay = (system.calendarDefaults || []).find((e) => /stay in league/i.test(String(e.title || '')));
+    const calStay = (system.calendarDefaults || []).find((e) => /stay in league|toilet\s*bowl/i.test(String(e.title || '')));
     if (calStay) {
-      calStay.title = 'Toilet Bowl';
-      if (!/toilet|relegat|pf/i.test(String(calStay.notes || ''))) {
+      calStay.title = "Mayor's Cup";
+      if (!/relegat|pf|mayor/i.test(String(calStay.notes || ''))) {
         calStay.notes = 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).';
       }
       dirty = true;
@@ -520,8 +520,8 @@ function ensureSystemLeague(seed) {
     brand: {
       name: seed.brand?.name || 'GridIron 24',
       tagline: seed.brand?.tagline || '',
-      logo: '/assets/gridiron24-crest.png',
-      crest: '/assets/login-crest.png'
+      logo: '/assets/gridiron24-crest.png?v=3',
+      crest: '/assets/gridiron24-crest.png?v=3'
     },
     conferences: confs,
     championship: {

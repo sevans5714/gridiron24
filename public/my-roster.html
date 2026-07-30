@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     .roster-hero {
       display: flex;
@@ -176,6 +176,15 @@
       .stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .roster-hero img { width: 4.25rem; height: 4.25rem; }
     }
+    @media (max-width: 560px) {
+      .matchup-row {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 0.35rem;
+      }
+      .matchup-row .vs { order: 0; }
+      .stat-strip { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body data-page="my-roster">
@@ -191,10 +200,10 @@
   </section>
   <main class="page-main shell" id="main"><div class="msg">Loading your roster…</div></main>
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
+  <script src="/js/nav.js?v=64"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     function record(t) {
@@ -303,7 +312,7 @@
             <section>
               <div class="section-head"><h2>Roster</h2></div>
               ${keeperNote}
-              ${roster.length ? `<table>
+              ${roster.length ? `<div class="table-scroll"><table>
                 <thead>
                   <tr>
                     <th>Slot</th>
@@ -333,7 +342,7 @@
                     </tr>`;
                   }).join('')}
                 </tbody>
-              </table>
+              </table></div>
               <div class="totals-bar">
                 <span>Starters pts <strong>${fmt(starterPts)}</strong></span>
                 <span>Starters proj <strong>${fmt(starterProj)}</strong></span>

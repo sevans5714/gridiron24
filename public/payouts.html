@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     body[data-page="payouts"] .page-hero {
       text-align: center;
@@ -187,10 +187,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
+  <script src="/js/nav.js?v=64"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -212,6 +212,9 @@
 
     function prizeLogo(label = '') {
       const l = label.toLowerCase();
+      if (l.includes('mayor') || l.includes("mayor's cup") || l.includes('mayors cup') || l.includes('relegation')) {
+        return '/assets/mayors-cup.png?v=1';
+      }
       if ((l.includes('third') || l.includes('3rd')) && l.includes('detail')) return '/assets/detail-3rd-place.png';
       if ((l.includes('third') || l.includes('3rd')) && l.includes('overtime')) return '/assets/overtime-3rd-place.png';
       if (l.includes('third') || l.includes('3rd')) return '/assets/detail-3rd-place.png';
@@ -256,6 +259,7 @@
           <p class="pool-line reveal">
             <strong>${buyIn}</strong> buy-in · <strong>${pool}</strong> total prize pool
           </p>
+          <div class="table-scroll">
           <table class="payout-table reveal reveal-delay-1">
             <thead>
               <tr><th>Award</th><th>Payout</th></tr>
@@ -268,6 +272,7 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </div>`;
     }
 

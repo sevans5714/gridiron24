@@ -212,7 +212,16 @@ async function fetchLeagueRaw(meta) {
       status: 502
     });
   }
-  const raw = await res.json();
+  const text = await res.text();
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    throw Object.assign(
+      new Error(`${meta.label} scoreboard returned non-JSON`),
+      { status: 502 }
+    );
+  }
   cache.set(url, { at: Date.now(), data: raw });
   return raw;
 }

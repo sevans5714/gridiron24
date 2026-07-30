@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     .team-hero { display: flex; align-items: center; gap: 1.1rem; margin-bottom: 1.5rem; }
     .team-hero img {
@@ -74,10 +74,10 @@
   </header>
   <main class="page-main shell" id="main"><div class="msg">Loading team…</div></main>
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
+  <script src="/js/nav.js?v=64"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     const params = new URLSearchParams(location.search);
@@ -128,7 +128,7 @@
             <section>
               <div class="section-head"><h2>Roster</h2></div>
               ${keeperNote}
-              ${roster.length ? `<table><thead><tr><th>Slot</th><th>Player</th><th>Pos</th><th>Status</th></tr></thead><tbody>
+              ${roster.length ? `<div class="table-scroll"><table><thead><tr><th>Slot</th><th>Player</th><th>Pos</th><th>Status</th></tr></thead><tbody>
                 ${roster.map(p => {
                   const status = p.injuryStatus || '—';
                   const isKeeper = keeperId != null && Number(p.id) === keeperId;
@@ -136,7 +136,7 @@
                   const rowClass = [bad ? 'row-bad' : '', isKeeper ? 'row-keeper' : ''].filter(Boolean).join(' ');
                   return `<tr class="${rowClass}"><td class="slot">${esc(p.slot)}</td><td>${esc(p.name)}${isKeeper ? '<span class="keeper-tag">Keeper</span>' : ''}</td><td>${esc(p.position)}</td><td class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</td></tr>`;
                 }).join('')}
-              </tbody></table>` : `<div class="empty">No roster yet — opens after the draft.</div>`}
+              </tbody></table></div>` : `<div class="empty">No roster yet — opens after the draft.</div>`}
             </section>
             <section>
               <div class="section-head"><h2>Recent matchups</h2></div>

@@ -153,7 +153,9 @@ const PUBLIC_PATHS = new Set([
   '/api/league-registration/espn-peek',
   '/api/cron/weekly-wrap',
   '/api/cron/rules-sync',
-  '/api/cron/roster-violations'
+  '/api/cron/roster-violations',
+  '/manifest.webmanifest',
+  '/sw.js'
 ]);
 
 function sendJson(res, status, payload, extraHeaders = {}) {
@@ -486,6 +488,8 @@ function sendFile(res, filePath) {
       '.html': 'text/html; charset=utf-8',
       '.css': 'text/css; charset=utf-8',
       '.js': 'application/javascript; charset=utf-8',
+      '.webmanifest': 'application/manifest+json; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
       '.svg': 'image/svg+xml',
       '.png': 'image/png',
       '.jpg': 'image/jpeg',
@@ -2574,23 +2578,23 @@ function survivalSideFromConference(standConf, survivalConf, confMeta, label) {
 }
 
 async function buildSurvivalPayload() {
-  const survivalCfg = config.survival || { enabled: true, week: 17, name: 'Toilet Bowl' };
+  const survivalCfg = config.survival || { enabled: true, week: 17, name: "Mayor's Cup" };
   if (survivalCfg.enabled === false) {
     return {
       ok: true,
       enabled: false,
       season: config.season,
-      name: survivalCfg.name || 'Toilet Bowl',
+      name: survivalCfg.name || "Mayor's Cup",
       week: Number(survivalCfg.week) || 17,
       sides: [],
       phase: 'disabled',
-      message: 'Toilet Bowl is disabled for this season.',
+      message: "Mayor's Cup is disabled for this season.",
       generatedAt: new Date().toISOString()
     };
   }
 
   const SURVIVAL_WEEK = Number(survivalCfg.week) || Number(config.championship?.bowlWeek) || 17;
-  const survivalName = survivalCfg.name || 'Toilet Bowl';
+  const survivalName = survivalCfg.name || "Mayor's Cup";
   const [standings, survivalWeek] = await Promise.all([
     loadStandingsPayload(),
     loadSchedulePayload(SURVIVAL_WEEK)
@@ -3517,6 +3521,7 @@ const server = http.createServer(async (req, res) => {
             message: 'Account created. A commissioner must approve you before you can sign in.'
           });
         }
+        deliverWelcomeInboxIfNeeded(user);
         const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
         const token = signSession(user.id, expiresAt);
         return sendJson(res, 201, { ok: true, user }, { 'Set-Cookie': sessionCookieHeader(token) });
@@ -3996,6 +4001,10 @@ const server = http.createServer(async (req, res) => {
 
     if (!requireAuth(req, res, pathname)) return;
 
+    if (pathname === '/app' || pathname === '/app/' || pathname === '/app/index.html') {
+      return sendFile(res, path.join(PUBLIC_DIR, 'app', 'index.html'));
+    }
+
     if (pathname === '/scoreboard' || pathname === '/scoreboard.html') {
       return sendFile(res, path.join(PUBLIC_DIR, 'scoreboard.html'));
     }
@@ -4223,33 +4232,41 @@ const server = http.createServer(async (req, res) => {
       if (!viewer) {
         return sendJson(res, 401, { ok: false, error: 'Authentication required' });
       }
-      const roster = users.listLeagueMembers();
-      const giBuyIn = Number(config.payouts?.buyInPerTeam || 100);
-      const aaaBuyIn = Number(getAffiliatedLeague('aaa')?.payouts?.buyInPerTeam || 50);
-      const treasurer = {
-        name: config.treasurer?.name || 'Jamie Aceto',
-        email: config.treasurer?.email || 'jaceto53@gmail.com',
-        venmoUsername: config.treasurer?.venmoUsername || 'jaceto53',
-        note: config.treasurer?.note || 'League dues — GridIron 24 HQ'
-      };
-      const canManage = users.isCommissioner(viewer) || users.isSiteOwner(viewer);
-      return sendJson(res, 200, {
-        ok: true,
-        canManage,
-        viewer: users.publicUser(viewer),
-        treasurer,
-        dues: {
-          gridiron: giBuyIn,
-          aaa: aaaBuyIn,
-          currency: 'USD'
-        },
-        caps: roster.caps,
-        gridiron: roster.gridiron,
-        aaa: roster.aaa,
-        members: roster.members || [],
-        unassigned: canManage ? roster.unassigned : [],
-        generatedAt: new Date().toISOString()
-      });
+      try {
+        const roster = users.listLeagueMembers();
+        const giBuyIn = Number(config.payouts?.buyInPerTeam || 100);
+        const aaaBuyIn = Number(getAffiliatedLeague('aaa')?.payouts?.buyInPerTeam || 50);
+        const treasurer = {
+          name: config.treasurer?.name || 'Jamie Aceto',
+          email: config.treasurer?.email || 'jaceto53@gmail.com',
+          venmoUsername: config.treasurer?.venmoUsername || 'jaceto53',
+          note: config.treasurer?.note || 'League dues — GridIron 24 HQ'
+        };
+        const canManage = users.isCommissioner(viewer) || users.isSiteOwner(viewer);
+        return sendJson(res, 200, {
+          ok: true,
+          canManage,
+          viewer: users.publicUser(viewer),
+          treasurer,
+          dues: {
+            gridiron: giBuyIn,
+            aaa: aaaBuyIn,
+            currency: 'USD'
+          },
+          caps: roster.caps,
+          gridiron: roster.gridiron,
+          aaa: roster.aaa,
+          members: roster.members || [],
+          unassigned: canManage ? roster.unassigned : [],
+          generatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('[members]', err);
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Could not load members'
+        });
+      }
     }
 
     if (pathname.startsWith('/api/members/') && req.method === 'POST') {
@@ -5203,43 +5220,6 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    if (pathname === '/api/welcome-message' && req.method === 'GET') {
-      const user = getSessionUser(req);
-      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      const preview = welcomeMessage.buildWelcome({ name: user.name || user.loginName || 'Member' });
-      return sendJson(res, 200, {
-        ok: true,
-        ...preview,
-        sourceFile: 'welcome-message.js',
-        alreadySent: users.hasReceivedWelcomeInbox(user.id)
-      });
-    }
-
-    if (pathname === '/api/welcome-message/send-me' && req.method === 'POST') {
-      const user = getSessionUser(req);
-      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      if (!users.isSiteOwner(user) && !users.isCommissioner(user)) {
-        return sendJson(res, 403, { ok: false, error: 'Owner or commissioner only' });
-      }
-      try {
-        const msg = welcomeMessage.buildWelcome({ name: user.name || user.loginName });
-        const item = inbox.sendMessage({
-          toUserId: user.id,
-          from: { name: msg.fromName },
-          subject: msg.subject,
-          body: msg.body,
-          type: msg.type || 'welcome',
-          meta: { kind: 'welcome_preview' }
-        });
-        return sendJson(res, 200, { ok: true, message: item });
-      } catch (err) {
-        return sendJson(res, err.status || 400, {
-          ok: false,
-          error: err.message || 'Could not send welcome preview'
-        });
-      }
-    }
-
     if (pathname === '/api/inbox/unread' && req.method === 'GET') {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
@@ -5264,7 +5244,8 @@ const server = http.createServer(async (req, res) => {
         const message = inbox.markRead(id, user.id);
         return sendJson(res, 200, {
           ok: true,
-          message,
+          message: message || null,
+          removed: !message,
           unread: inbox.unreadCount(user.id)
         });
       } catch (err) {
@@ -6057,7 +6038,7 @@ const server = http.createServer(async (req, res) => {
         const payload = await buildSurvivalPayload();
         return sendJson(res, 200, payload);
       } catch (err) {
-        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load Toilet Bowl' });
+        return sendJson(res, 500, { ok: false, error: err.message || "Could not load Mayor's Cup" });
       }
     }
 
@@ -6205,6 +6186,10 @@ const server = http.createServer(async (req, res) => {
         payouts: config.payouts || null,
         generatedAt: new Date().toISOString()
       });
+    }
+
+    if (pathname.startsWith('/api/')) {
+      return sendJson(res, 404, { ok: false, error: `Unknown API route: ${pathname}` });
     }
 
     const requested = pathname === '/' ? '/index.html' : pathname;

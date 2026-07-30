@@ -1,10 +1,9 @@
 /**
  * First-login welcome inbox message.
  *
- * Edit `subject` and `body` below anytime — next first-time logins get the new copy.
- * Placeholders in body: {{name}}
- *
- * Preview: GET /api/welcome-message (signed-in), or open Inbox after a fresh login.
+ * Sent automatically the first time an approved user signs in.
+ * Edit `subject` / `bodyFor` anytime — the next first-time login gets the new copy.
+ * Welcome messages dismiss (delete) when the member marks them read.
  */
 
 const subject = 'Welcome to GridIron 24 HQ';
@@ -27,8 +26,8 @@ function bodyFor(name = 'Member') {
     'WHAT YOU CAN DO',
     '• Scoreboard — live fantasy matchups + the NFL slate',
     '• League — standings, My Roster, Team Rosters, draft, history, schedules',
-    '• Playoffs — Bowl, Stay in League, and the road to the title',
-    '• Members Lounge — multi-sport board, live chat, buddy list, dues',
+    '• Playoffs — Bowl, Mayor\'s Cup, and the road to the title',
+    '• Members Lounge — multi-sport board, Roll Call Room chat, dues',
     '• Rule Book — the law of the land (and Rule Change Proposals when open)',
     '• Inbox (you are here) — votes, mentions, and HQ messages',
     '',

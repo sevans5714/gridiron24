@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -141,6 +141,39 @@
       flex-wrap: wrap;
       gap: 0.75rem;
       margin-top: 0.35rem;
+    }
+    .tools-card .tools-menu {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem 1rem;
+      margin: 0.35rem 0 1rem;
+    }
+    .tools-card .tools-menu a {
+      display: grid;
+      gap: 0.15rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid rgba(240, 215, 140, 0.22);
+      text-decoration: none;
+      color: inherit;
+      min-width: 0;
+    }
+    .tools-card .tools-menu a:hover { border-bottom-color: rgba(240, 215, 140, 0.7); }
+    .tools-card .tools-menu a[hidden] { display: none !important; }
+    .tools-card .tools-menu strong {
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f0d78c;
+    }
+    .tools-card .tools-menu span {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+    @media (max-width: 560px) {
+      .tools-card .tools-menu { grid-template-columns: 1fr; }
     }
     .tools-card .btn-tools {
       display: inline-flex;
@@ -487,6 +520,7 @@
     }
     @media (max-width: 560px) {
       .stat-grid { grid-template-columns: 1fr; }
+      .logo-bar .filters > div { min-width: 0; flex: 1 1 100%; }
       .profile-jump a {
         min-height: 2.75rem;
         padding: 0.65rem 0.9rem;
@@ -565,6 +599,7 @@
       <a href="#keeper">Keeper</a>
       <a href="#logo">Avatar / Logo</a>
       <a href="#password">Password</a>
+      <a href="#mobile-app" id="jump-app">Mobile App</a>
       <a href="#tools" id="jump-tools" hidden>League Tools</a>
     </nav>
 
@@ -614,12 +649,46 @@
       </div>
     </section>
 
+    <section class="profile-card" id="mobile-app">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Mobile App</h2>
+          <p>Installable PWA — standings and fantasy scoreboard on your phone home screen.</p>
+        </div>
+      </div>
+      <div class="tools-actions" style="margin-top:0.35rem;">
+        <a class="btn-tools" href="/app/">Open GridIron 24 App</a>
+      </div>
+      <p class="profile-note" style="margin-top:0.85rem;">
+        On iPhone: open the app link, tap Share, then <strong>Add to Home Screen</strong>.
+        On Android Chrome: use Install when prompted, or the browser menu.
+      </p>
+    </section>
+
     <section class="profile-card tools-card" id="tools" hidden>
       <div class="section-head">
         <div class="section-head-block">
           <h2>League Tools</h2>
-          <p>Commissioner controls — invites, franchise assignments, ticker, rankings, and ESPN sync.</p>
+          <p id="tools-card-blurb">Staff controls for this HQ — jump to a section or open the full desk.</p>
         </div>
+      </div>
+      <div class="tools-menu" aria-label="League Tools sections">
+        <a href="/league-tools.html#group-espn">
+          <strong>Sync</strong>
+          <span>Rules, playoffs, roster patrol</span>
+        </a>
+        <a href="/league-tools.html#group-people" id="profile-tools-people">
+          <strong>People</strong>
+          <span>Invites, access, owner email</span>
+        </a>
+        <a href="/league-tools.html#group-comms">
+          <strong>Broadcast</strong>
+          <span>News, polls, ticker</span>
+        </a>
+        <a href="/league-tools.html#group-season" id="profile-tools-season" hidden>
+          <strong>Season</strong>
+          <span>Calendar, rankings, archive</span>
+        </a>
       </div>
       <div class="tools-actions">
         <a class="btn-tools" href="/league-tools.html">Open League Tools</a>
@@ -697,11 +766,11 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
-  <script src="/js/inbox-ui.js?v=2"></script>
+  <script src="/js/nav.js?v=64"></script>
+  <script src="/js/inbox-ui.js?v=3"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -773,7 +842,8 @@
       const origin = window.location.origin.replace(/\/$/, '');
       return {
         portal: `${origin}/home`,
-        customer: `${origin}/enter`
+        customer: `${origin}/enter`,
+        app: `${origin}/app/`
       };
     }
 
@@ -829,6 +899,17 @@
       const jumpTools = document.getElementById('jump-tools');
       if (toolsCard) toolsCard.hidden = !staff;
       if (jumpTools) jumpTools.hidden = !staff;
+      const seasonLink = document.getElementById('profile-tools-season');
+      const blurb = document.getElementById('tools-card-blurb');
+      const isOwnerOrComm = Boolean(
+        user.siteOwner || user.canSwitchLeagues || user.role === 'commissioner'
+      );
+      if (seasonLink) seasonLink.hidden = !isOwnerOrComm;
+      if (blurb) {
+        blurb.textContent = isOwnerOrComm
+          ? 'Owner / commissioner desk — Sync, People, Broadcast, and Season.'
+          : 'Conference admin desk — Sync, invites, owner email, and Broadcast.';
+      }
       const urls = portalUrls();
       const accountBody = document.getElementById('account-body');
       accountBody.innerHTML = `
@@ -848,7 +929,8 @@
           <h3>Portal links</h3>
           ${portalRowHtml('Portal URL', urls.portal)}
           ${portalRowHtml('Customer URL', urls.customer)}
-          <p class="profile-note">Portal URL opens League HQ. Customer URL is the general sign-in page for managers.</p>
+          ${portalRowHtml('Mobile App', urls.app)}
+          <p class="profile-note">Portal URL opens League HQ. Customer URL is the general sign-in page. Mobile App is the installable standings + scoreboard PWA.</p>
         </div>`;
       bindPortalCopy(accountBody);
     }
@@ -932,6 +1014,7 @@
         return Number(e.ties || 0) > 0 ? `${e.wins}-${e.losses}-${e.ties}` : `${e.wins}-${e.losses}`;
       };
       mount.innerHTML = `
+        <div class="table-scroll">
         <table class="career-table">
           <thead>
             <tr>
@@ -960,6 +1043,7 @@
             `).join('')}
           </tbody>
         </table>
+        </div>
         <p class="profile-note"><a href="/history.html" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Browse full league history →</a></p>`;
     }
 

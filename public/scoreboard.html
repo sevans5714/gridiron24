@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     :root,
     html[data-theme="night"] {
@@ -135,9 +135,15 @@
     }
     @media (max-width: 900px) {
       .sb-controls {
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 1fr;
       }
-      .sb-week { justify-self: end; }
+      .sb-week {
+        justify-self: stretch;
+      }
+      .sb-week select {
+        width: 100%;
+        min-width: 0;
+      }
       .nfl-slate { grid-column: 1 / -1; }
     }
     .sb-refresh-bar {
@@ -343,6 +349,7 @@
     .sb-week select {
       appearance: none;
       min-width: 9rem;
+      max-width: 100%;
       color: var(--led);
       border: 1px solid rgba(255, 184, 74, 0.35);
       padding: 0.55rem 2.2rem 0.55rem 0.85rem;
@@ -522,10 +529,10 @@
       padding: 0.35rem 0;
     }
     @media (max-width: 1100px) {
-      .nfl-page { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .nfl-page { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 900px) {
-      .nfl-page { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .nfl-page { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 640px) {
       .nfl-page { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -800,7 +807,7 @@
   </header>
 
   <section class="sb-hero shell">
-    <img class="brand-logo" src="/assets/gridiron24-crest.png?v=1" alt="GridIron 24" width="280" height="280" />
+    <img class="brand-logo" src="/assets/gridiron24-crest.png?v=3" alt="GridIron 24" width="280" height="280" />
     <h1>Scoreboard</h1>
   </section>
 
@@ -839,10 +846,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
+  <script src="/js/nav.js?v=64"></script>
   <script>
     const REFRESH_MS = 30_000;
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
@@ -995,11 +1002,9 @@
         return;
       }
 
-      const pageSize = window.matchMedia('(max-width: 640px)').matches
+      const pageSize = window.matchMedia('(max-width: 900px)').matches
         ? 2
-        : (window.matchMedia('(max-width: 900px)').matches
-          ? 4
-          : (window.matchMedia('(max-width: 1100px)').matches ? 5 : NFL_PAGE_SIZE));
+        : (window.matchMedia('(max-width: 1100px)').matches ? 3 : NFL_PAGE_SIZE);
 
       // Always show the full week slate — live, upcoming, and final with scores.
       const displayGames = games;

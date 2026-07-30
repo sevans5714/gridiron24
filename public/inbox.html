@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     body[data-page="inbox"] .page-hero {
       padding-top: 1.5rem;
@@ -33,38 +33,6 @@
       color: var(--muted);
       font-size: 0.92rem;
     }
-    .welcome-preview {
-      margin: 0 0 1.15rem;
-      padding: 0.95rem 1.05rem;
-      border: 1px solid color-mix(in srgb, var(--blue) 35%, var(--line));
-      background: color-mix(in srgb, var(--blue) 8%, var(--panel));
-    }
-    .welcome-preview[hidden] { display: none !important; }
-    .welcome-preview h2 {
-      margin: 0 0 0.35rem;
-      font-family: var(--display);
-      font-size: 0.95rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .welcome-preview .hint {
-      margin: 0 0 0.65rem;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-    .welcome-preview pre {
-      margin: 0 0 0.75rem;
-      padding: 0.75rem 0.85rem;
-      max-height: 16rem;
-      overflow: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: var(--body);
-      font-size: 0.92rem;
-      line-height: 1.45;
-      background: color-mix(in srgb, var(--bg) 70%, transparent);
-      border: 1px solid var(--line);
-    }
   </style>
 </head>
 <body data-page="inbox">
@@ -83,14 +51,6 @@
   </section>
 
   <main class="page-main shell">
-    <div class="welcome-preview" id="welcome-preview" hidden>
-      <h2>Welcome message (first login)</h2>
-      <p class="hint">Edit copy in <code>welcome-message.js</code>. Staff can drop a fresh copy into their own inbox to review.</p>
-      <pre id="welcome-preview-body"></pre>
-      <div class="btn-row">
-        <button type="button" class="btn" id="welcome-send-me">Send me this welcome</button>
-      </div>
-    </div>
     <div class="inbox-toolbar">
       <p class="hint" id="inbox-hint">Loading…</p>
       <div class="btn-row">
@@ -102,11 +62,11 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
-  <script src="/js/inbox-ui.js?v=2"></script>
+  <script src="/js/nav.js?v=64"></script>
+  <script src="/js/inbox-ui.js?v=3"></script>
   <script>
     const mount = document.getElementById('inbox-list');
     const hint = document.getElementById('inbox-hint');
@@ -124,44 +84,9 @@
       window.GridIronNav?.refreshInboxBadge?.();
     }
 
-    async function loadWelcomePreview(user) {
-      const box = document.getElementById('welcome-preview');
-      if (!box) return;
-      const staff = Boolean(user?.siteOwner || user?.role === 'commissioner');
-      if (!staff) {
-        box.hidden = true;
-        return;
-      }
-      try {
-        const res = await fetch('/api/welcome-message', { cache: 'no-store' });
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error || 'Preview unavailable');
-        document.getElementById('welcome-preview-body').textContent =
-          `${data.subject}\n\n${data.body}`;
-        box.hidden = false;
-      } catch {
-        box.hidden = true;
-      }
-    }
-
     document.getElementById('inbox-mark-all').addEventListener('click', async () => {
       await fetch('/api/inbox/read-all', { method: 'POST' });
       await refresh();
-    });
-
-    document.getElementById('welcome-send-me')?.addEventListener('click', async () => {
-      const btn = document.getElementById('welcome-send-me');
-      if (btn) btn.disabled = true;
-      try {
-        const res = await fetch('/api/welcome-message/send-me', { method: 'POST' });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not send');
-        await refresh();
-      } catch (err) {
-        window.alert(err.message || 'Could not send welcome preview');
-      } finally {
-        if (btn) btn.disabled = false;
-      }
     });
 
     window.GridIronNav?.authReady?.then(async ({ user }) => {
@@ -170,7 +95,6 @@
         return;
       }
       window.GridIronInbox.wireInbox(mount, { onChange: () => window.GridIronNav?.refreshInboxBadge?.() });
-      await loadWelcomePreview(user);
       await refresh();
     });
   </script>

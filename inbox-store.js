@@ -129,12 +129,26 @@ function getMessage(id, userId) {
   return publicMessage(msg);
 }
 
+function isDisposableMessage(msg) {
+  if (!msg) return false;
+  if (msg.type === 'welcome') return true;
+  const kind = msg.meta?.kind;
+  return kind === 'first_login_welcome' || kind === 'welcome_preview';
+}
+
 function markRead(id, userId) {
   const store = readStore();
   const idx = store.messages.findIndex((m) => m.id === id && m.toUserId === userId);
   if (idx === -1) throw Object.assign(new Error('Message not found'), { status: 404 });
-  if (!store.messages[idx].readAt) {
-    store.messages[idx].readAt = new Date().toISOString();
+  const msg = store.messages[idx];
+  // Welcome (and similar one-shots) disappear once read.
+  if (isDisposableMessage(msg)) {
+    store.messages.splice(idx, 1);
+    writeStore(store);
+    return null;
+  }
+  if (!msg.readAt) {
+    msg.readAt = new Date().toISOString();
     writeStore(store);
   }
   return publicMessage(store.messages[idx]);
@@ -145,13 +159,26 @@ function markAllRead(userId) {
   const store = readStore();
   let n = 0;
   const now = new Date().toISOString();
+  const kept = [];
   for (const msg of store.messages) {
-    if (msg.toUserId === userId && !msg.readAt) {
+    if (msg.toUserId !== userId) {
+      kept.push(msg);
+      continue;
+    }
+    if (isDisposableMessage(msg)) {
+      n += 1;
+      continue; // drop welcome once "read"
+    }
+    if (!msg.readAt) {
       msg.readAt = now;
       n += 1;
     }
+    kept.push(msg);
   }
-  if (n) writeStore(store);
+  if (n) {
+    store.messages = kept;
+    writeStore(store);
+  }
   return n;
 }
 

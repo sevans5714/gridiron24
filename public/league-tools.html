@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -737,7 +737,9 @@
       .conf, .conf.right { justify-content: center; text-align: center; }
       .summary { grid-template-columns: 1fr 1fr; }
       .data-table,
-      .diff-table {
+      .diff-table,
+      .owners-table,
+      .violations-table {
         display: block;
         width: 100%;
         overflow-x: auto;
@@ -762,6 +764,86 @@
       text-decoration: none;
     }
     body[data-page="league-tools"] .tools-back:hover { color: var(--nav-hover); }
+
+    .tools-hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.65rem 1rem;
+      margin-top: 0.75rem;
+    }
+    .tools-role-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.28rem 0.65rem;
+      border: 1px solid rgba(255,255,255,0.22);
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .tools-role-scope {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.4;
+      max-width: 36rem;
+    }
+
+    .tools-overview {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin: 0 0 1.75rem;
+    }
+    .tools-overview a {
+      display: grid;
+      gap: 0.25rem;
+      padding: 0.85rem 0.9rem;
+      border-bottom: 2px solid rgba(255,255,255,0.14);
+      text-decoration: none;
+      color: inherit;
+      min-width: 0;
+    }
+    .tools-overview a:hover { border-bottom-color: var(--text); }
+    .tools-overview a[hidden] { display: none !important; }
+    .tools-overview strong {
+      font-family: var(--display);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .tools-overview span {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .access-tag {
+      display: inline-block;
+      margin-left: 0.45rem;
+      padding: 0.12rem 0.4rem;
+      border: 1px solid rgba(255,255,255,0.18);
+      font-family: var(--display);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      vertical-align: middle;
+    }
+
+    @media (max-width: 900px) {
+      .tools-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .tools-overview { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body data-page="league-tools">
@@ -775,15 +857,38 @@
   <section class="page-hero shell">
     <p class="eyebrow">Staff</p>
     <h1>League Tools</h1>
+    <div class="tools-hero-meta">
+      <span class="tools-role-pill" id="tools-role">Staff</span>
+      <p class="tools-role-scope" id="tools-role-scope">Loading your access…</p>
+    </div>
   </section>
 
   <main class="page-main shell">
     <a class="tools-back" href="/profile.html">← Profile</a>
     <div id="league-tools">
+      <div class="tools-overview" aria-label="Tool groups">
+        <a href="#group-espn">
+          <strong>Sync</strong>
+          <span>Rules, playoffs, roster patrol</span>
+        </a>
+        <a href="#group-people" id="overview-people" hidden>
+          <strong>People</strong>
+          <span>Invites, access, owner email</span>
+        </a>
+        <a href="#group-comms">
+          <strong>Broadcast</strong>
+          <span>News, polls, ticker, wrap-up</span>
+        </a>
+        <a href="#group-season" id="overview-season" hidden>
+          <strong>Season</strong>
+          <span>Calendar, rankings, archive</span>
+        </a>
+      </div>
+
       <div class="comm-layout">
-      <nav class="comm-nav" aria-label="Commissioner sections">
+      <nav class="comm-nav" aria-label="League Tools sections">
         <div class="comm-nav-group">
-          <p class="comm-nav-label">ESPN</p>
+          <p class="comm-nav-label">Sync</p>
           <a href="#rules-sync">Rules</a>
           <a href="#playoff-sync">Playoffs</a>
           <a href="#roster-violations">Roster Violations</a>
@@ -791,11 +896,11 @@
         <div class="comm-nav-group" id="nav-people" hidden>
           <p class="comm-nav-label">People</p>
           <a href="#invites-admin" id="jump-invites" hidden>Invites</a>
-          <a href="#members" id="jump-members" hidden>Members</a>
+          <a href="#members" id="jump-members" hidden>Member Access</a>
+          <a href="#conference-owners" id="jump-owners">Email Owners</a>
         </div>
         <div class="comm-nav-group" id="nav-comms">
-          <p class="comm-nav-label">Comms</p>
-          <a href="#conference-owners">Email Owners</a>
+          <p class="comm-nav-label">Broadcast</p>
           <a href="#news-admin">News</a>
           <a href="#polls-admin">Polls</a>
           <a href="#ticker-admin">Ticker</a>
@@ -812,15 +917,15 @@
       <div class="comm-groups">
         <section class="comm-group" id="group-espn">
           <header>
-            <h2>ESPN Sync</h2>
-            <p>Detail is the source of truth. Match Overtime until both read synced.</p>
+            <h2>Sync</h2>
+            <p>Keep Detail and Overtime aligned on ESPN. Detail is the source of truth.</p>
           </header>
           <div class="comm-group-body">
             <section class="comm-section" id="rules-sync">
               <div class="section-head">
                 <h3>Rules Sync</h3>
               </div>
-              <p class="help">Scoring, lineup, and playoff settings from ESPN. When synced, the public Scoring page is updated to the official Detail rules. Automatic checks run Mondays and Thursdays.</p>
+              <p class="help">Scoring, lineup, and playoff settings from ESPN. When synced, the public Scoring page follows Detail. Automatic checks run Mondays and Thursdays.</p>
               <div class="sync-tools">
                 <span class="hint">Live pull from both leagues</span>
                 <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
@@ -840,7 +945,7 @@
               <div class="section-head">
                 <h3>Roster Violations</h3>
               </div>
-              <p class="help">Flags managers who start players listed as Out, Doubtful, or on Injured Reserve. Patrol runs daily mid-morning and automatically again whenever any NFL game is in the 1st quarter. Scan anytime; warning emails re-send at most about once per day unless you force.</p>
+              <p class="help">Flags managers who start players listed as Out, Doubtful, or on Injured Reserve. Patrol runs daily mid-morning and again when any NFL game is in the 1st quarter. Warning emails re-send about once per day unless you force.</p>
               <div class="sync-tools">
                 <span class="hint" id="violations-hint">Loading…</span>
                 <button type="button" class="btn" id="violations-scan">Scan &amp; Warn</button>
@@ -855,19 +960,19 @@
         <section class="comm-group" id="group-people" hidden>
           <header>
             <h2>People</h2>
-            <p>Invite managers to create accounts. Commissioners also approve access and assign franchises.</p>
+            <p>Invite managers, assign franchises, and email team owners.</p>
           </header>
           <div class="comm-group-body">
             <section class="admin-block" id="invites-admin" hidden>
               <div class="section-head">
                 <h3>Email Invites</h3>
               </div>
-              <p class="help">Send invite links by email. Commissioners and conference admins can invite managers. If mail is offline, copy the link after sending. Preview invite email: <a href="/api/invites/preview-email" target="_blank" rel="noopener">HTML</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">Subject + text (JSON)</a>. Edit copy in <code>invite-email-message.js</code>.</p>
+              <p class="help">Send invite links by email. If mail is offline, copy the link after sending. Preview: <a href="/api/invites/preview-email" target="_blank" rel="noopener">HTML</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">JSON</a>.</p>
               <div class="status-note" id="invites-mail-status" role="status"></div>
               <div class="status-note" id="invites-msg" role="status"></div>
               <div class="invite-compose">
                 <label class="field-label" for="invite-emails">Email addresses</label>
-                <p class="field-hint" id="invite-emails-hint">Type one or more addresses below. Separate with commas or new lines.</p>
+                <p class="field-hint" id="invite-emails-hint">One or more addresses — commas or new lines.</p>
                 <textarea
                   class="field field-area field-box"
                   id="invite-emails"
@@ -888,26 +993,18 @@
 
             <section class="admin-block" id="members" hidden>
               <div class="section-head">
-                <h3>Member Access</h3>
+                <h3>Member Access <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
-              <p class="help">Approve new accounts, assign current franchises, link <strong>prior-year teams</strong> to each profile as managers sign up, and set access roles. One conference admin per conference — appoint after the annual random conference draw. Demote the current admin to Member before assigning someone else. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
+              <p class="help">Approve accounts, assign franchises, link prior-year teams, and set roles. One conference admin per conference — demote the current admin before appointing another. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
               <div class="status-note" id="members-msg" role="status"></div>
               <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
-          </div>
-        </section>
 
-        <section class="comm-group" id="group-comms">
-          <header>
-            <h2>Communications</h2>
-            <p>What members see on Home and in the ticker.</p>
-          </header>
-          <div class="comm-group-body">
             <section class="admin-block" id="conference-owners">
               <div class="section-head">
                 <h3>Email Owners</h3>
               </div>
-              <p class="help">Conference roster with GridIron owner names and emails. Select teams and send a branded mass email. Unclaimed franchises cannot receive mail until assigned in Members.</p>
+              <p class="help">Select claimed franchises and send a branded mass email. Unclaimed teams need a Member Access assignment first.</p>
               <div class="status-note" id="owners-mail-status" role="status"></div>
               <div class="status-note" id="owners-msg" role="status"></div>
               <div class="owners-toolbar" id="owners-conf-picker" hidden>
@@ -937,7 +1034,15 @@
                 </div>
               </div>
             </section>
+          </div>
+        </section>
 
+        <section class="comm-group" id="group-comms">
+          <header>
+            <h2>Broadcast</h2>
+            <p>What members see on Home, the message board, and the ticker.</p>
+          </header>
+          <div class="comm-group-body">
             <section class="admin-block" id="news-admin" hidden>
               <div class="section-head">
                 <h3>League News</h3>
@@ -964,7 +1069,7 @@
               <div class="section-head">
                 <h3>Polls</h3>
               </div>
-              <p class="help">Polls appear on the league message board. Optionally limit voting to one conference (or AAA).</p>
+              <p class="help">Appear on the league message board. Optionally limit voting to one conference (or AAA).</p>
               <div class="status-note" id="polls-msg" role="status"></div>
               <div class="stack-form">
                 <div>
@@ -1013,7 +1118,7 @@
 
             <section class="admin-block" id="wrap-admin" hidden>
               <div class="section-head">
-                <h3>Weekly Wrap-Up</h3>
+                <h3>Weekly Wrap-Up <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
               <p class="help">Generate a Week N wrap from ESPN scores, post to News, and email managers. Needs an AI API key for custom copy.</p>
               <div class="status-note" id="wrap-msg" role="status"></div>
@@ -1031,8 +1136,8 @@
 
         <section class="comm-group" id="group-season" hidden>
           <header>
-            <h2>Season</h2>
-            <p>League calendar and power rankings.</p>
+            <h2>Season <span class="access-tag">Owner / Commissioner</span></h2>
+            <p>Calendar, power rankings, and ESPN history archive.</p>
           </header>
           <div class="comm-group-body">
             <section class="admin-block" id="calendar-admin" hidden>
@@ -1042,12 +1147,13 @@
               <div class="toolbar">
                 <input class="field" id="cal-title" type="text" maxlength="120" placeholder="Event title" />
                 <input class="field" id="cal-date" type="date" style="max-width:11rem;" />
-                <select class="field" id="cal-type" style="max-width:9rem;">
+                <select class="field" id="cal-type" style="max-width:10rem;">
                   <option value="event">Event</option>
                   <option value="draft">Draft</option>
                   <option value="dues">Dues</option>
                   <option value="deadline">Deadline</option>
                   <option value="bowl">Bowl</option>
+                  <option value="survival">Mayor's Cup</option>
                 </select>
                 <button type="button" class="btn" id="cal-add">Add</button>
               </div>
@@ -1070,10 +1176,10 @@
             <section class="admin-block" id="history-admin" hidden>
               <div class="section-head"><h3>Season Archive</h3></div>
               <p class="help">
-                Past seasons power <a href="/history.html">League → History</a> and draft boards.
-                Use the ESPN settings URL for each year (<code>leagueId</code> + <code>seasonId</code>).
-                Pre-split years can use one league ID for both columns.
-                Seasons must be publicly viewable on ESPN, or set <code>ESPN_SWID</code> / <code>ESPN_S2</code> on the server for private history.
+                Powers <a href="/history.html">League → History</a> and draft boards.
+                Use ESPN settings URLs (<code>leagueId</code> + <code>seasonId</code>).
+                Pre-split years can share one league ID.
+                Private seasons need <code>ESPN_SWID</code> / <code>ESPN_S2</code> on the server.
               </p>
               <div class="status-note" id="history-msg" role="status"></div>
               <p class="help" id="history-auth-note" hidden></p>
@@ -1091,10 +1197,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
+  <script src="/js/nav.js?v=64"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1696,8 +1802,7 @@
       }
       if (!res.ok) throw new Error(`Could not load members (${res.status})`);
       const data = await res.json();
-      document.getElementById('group-people').hidden = false;
-      document.getElementById('nav-people').hidden = false;
+      revealPeopleTools();
       document.getElementById('members').hidden = false;
       document.getElementById('jump-members').hidden = false;
       renderMembers(data);
@@ -2244,8 +2349,7 @@
     }
 
     async function loadInvitesAdmin() {
-      document.getElementById('group-people').hidden = false;
-      document.getElementById('nav-people').hidden = false;
+      revealPeopleTools();
       const wrap = document.getElementById('invites-admin');
       wrap.hidden = false;
       document.getElementById('jump-invites').hidden = false;
@@ -2470,8 +2574,7 @@
     }
 
     function wireCalendarAdmin() {
-      document.getElementById('group-season').hidden = false;
-      document.getElementById('nav-season').hidden = false;
+      revealSeasonTools();
       document.getElementById('calendar-admin').hidden = false;
       document.getElementById('jump-calendar').hidden = false;
       document.getElementById('cal-add').addEventListener('click', async () => {
@@ -2521,8 +2624,7 @@
     }
 
     function wireRankingsAdmin() {
-      document.getElementById('group-season').hidden = false;
-      document.getElementById('nav-season').hidden = false;
+      revealSeasonTools();
       document.getElementById('rankings-admin').hidden = false;
       document.getElementById('jump-rankings').hidden = false;
       document.getElementById('rank-fill').addEventListener('click', async () => {
@@ -2666,8 +2768,7 @@
     }
 
     function wireHistoryAdmin() {
-      document.getElementById('group-season').hidden = false;
-      document.getElementById('nav-season').hidden = false;
+      revealSeasonTools();
       document.getElementById('history-admin').hidden = false;
       document.getElementById('jump-history').hidden = false;
       document.getElementById('history-fill-example').addEventListener('click', () => {
@@ -2758,6 +2859,7 @@
           </tr>`;
       }).join('');
       document.getElementById('owners-table').innerHTML = `
+        <div class="table-scroll">
         <table class="owners-table">
           <thead>
             <tr>
@@ -2769,7 +2871,8 @@
             </tr>
           </thead>
           <tbody>${rows}</tbody>
-        </table>`;
+        </table>
+        </div>`;
       updateOwnersSelectedCount();
     }
 
@@ -2870,11 +2973,55 @@
       });
     }
 
+    function roleAccessScope(user) {
+      if (user?.siteOwner || user?.canSwitchLeagues) {
+        return 'Full HQ access — Sync, People, Broadcast, Season, and league switcher.';
+      }
+      if (user?.role === 'commissioner') {
+        return 'Full HQ access — Sync, People, Broadcast, and Season.';
+      }
+      if (user?.role === 'conference_admin') {
+        const conf = user.conference === 'aaa'
+          ? 'AAA'
+          : (user.conference === 'overtime' ? 'Overtime' : user.conference === 'detail' ? 'Detail' : 'your conference');
+        return `Conference tools for ${conf} — Sync, invites, owner email, and Broadcast.`;
+      }
+      return 'Staff tools for this league.';
+    }
+
+    function revealPeopleTools() {
+      const group = document.getElementById('group-people');
+      const nav = document.getElementById('nav-people');
+      const overview = document.getElementById('overview-people');
+      if (group) group.hidden = false;
+      if (nav) nav.hidden = false;
+      if (overview) overview.hidden = false;
+    }
+
+    function revealSeasonTools() {
+      const group = document.getElementById('group-season');
+      const nav = document.getElementById('nav-season');
+      const overview = document.getElementById('overview-season');
+      if (group) group.hidden = false;
+      if (nav) nav.hidden = false;
+      if (overview) overview.hidden = false;
+    }
+
+    function applyToolsAccess(user) {
+      const roleEl = document.getElementById('tools-role');
+      const scopeEl = document.getElementById('tools-role-scope');
+      if (roleEl) roleEl.textContent = roleDisplayLabel(user);
+      if (scopeEl) scopeEl.textContent = roleAccessScope(user);
+      revealPeopleTools();
+      if (isPlatformAdmin(user)) revealSeasonTools();
+    }
+
     async function bootCommissionerTools(user) {
       if (!user || (!isPlatformAdmin(user) && user.role !== 'conference_admin')) {
         window.location.replace('/profile.html');
         return;
       }
+      applyToolsAccess(user);
       await load();
       try { await loadViolations(); } catch (err) {
         document.getElementById('violations-content').innerHTML =
@@ -2904,18 +3051,15 @@
       // Invites: commissioner + conference admin
       wireInvitesAdmin();
       try { await loadInvitesAdmin(); } catch (err) {
-        document.getElementById('group-people').hidden = false;
-        document.getElementById('nav-people').hidden = false;
+        revealPeopleTools();
         document.getElementById('invites-admin').hidden = false;
         document.getElementById('jump-invites').hidden = false;
         document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
 
       if (isPlatformAdmin(user)) {
-        document.getElementById('group-people').hidden = false;
-        document.getElementById('nav-people').hidden = false;
-        document.getElementById('group-season').hidden = false;
-        document.getElementById('nav-season').hidden = false;
+        revealPeopleTools();
+        revealSeasonTools();
         wireWrapAdmin();
         wireCalendarAdmin();
         wireRankingsAdmin();

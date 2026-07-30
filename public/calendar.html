@@ -8,11 +8,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     .event { display:grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 0.95rem 0; border-bottom: 1px solid var(--line); }
     .when { font-family: var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: #8eb6ff; }
     .title { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+    .title-row img {
+      width: 2.75rem;
+      height: auto;
+      object-fit: contain;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.35));
+    }
     .type { display:inline-block; margin-top:0.25rem; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color: var(--muted); }
     .notes { margin-top: 0.35rem; color: var(--muted); line-height: 1.45; }
     @media (max-width: 560px) { .event { grid-template-columns: 1fr; gap: 0.35rem; } }
@@ -31,12 +44,23 @@
   </section>
   <main class="page-main shell" id="list"><div class="msg">Loading calendar…</div></main>
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
+  <script src="/js/nav.js?v=64"></script>
   <script>
     const esc = (v='') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+    function eventMark(e) {
+      const type = String(e.type || '').toLowerCase();
+      const title = String(e.title || '').toLowerCase();
+      if (type === 'survival' || title.includes('mayor')) {
+        return `<img src="/assets/mayors-cup.png?v=1" alt="" width="1024" height="768" />`;
+      }
+      if (type === 'bowl' || title.includes('bowl')) {
+        return `<img src="/assets/gridiron-bowl.png" alt="" />`;
+      }
+      return '';
+    }
     function fmtDate(d) {
       if (!d) return 'TBD';
       try { return new Date(d+'T12:00:00').toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' }); }
@@ -51,7 +75,10 @@
           <article class="event">
             <div class="when">${esc(fmtDate(e.date))}</div>
             <div>
-              <div class="title">${esc(e.title)}</div>
+              <div class="title-row">
+                ${eventMark(e)}
+                <div class="title">${esc(e.title)}</div>
+              </div>
               <div class="type">${esc(e.type)}</div>
               ${e.notes ? `<div class="notes">${esc(e.notes)}</div>` : ''}
             </div>

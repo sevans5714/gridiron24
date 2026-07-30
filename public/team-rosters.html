@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     .roster-controls {
       display: flex;
@@ -165,10 +165,10 @@
     <div id="boards"><div class="msg">Loading rosters…</div></div>
   </main>
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
+  <script src="/js/nav.js?v=64"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     function record(t) {
@@ -263,7 +263,7 @@
                 ${esc(m.away?.name)} ${fmt(m.away?.score)} – ${fmt(m.home?.score)} ${esc(m.home?.name)}
                 <span style="color:var(--muted);"> · Proj ${fmt(m.away?.projected)} – ${fmt(m.home?.projected)}</span>
               </div>` : `<div class="empty">No matchup this week.</div>`}
-            ${roster.length ? `<table>
+            ${roster.length ? `<div class="table-scroll"><table>
               <thead>
                 <tr>
                   <th>Slot</th>
@@ -291,7 +291,7 @@
                   </tr>`;
                 }).join('')}
               </tbody>
-            </table>` : `<div class="empty">No roster yet — opens after the draft.</div>`}
+            </table></div>` : `<div class="empty">No roster yet — opens after the draft.</div>`}
           </div>
         </div>`;
 

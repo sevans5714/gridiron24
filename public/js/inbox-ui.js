@@ -73,8 +73,10 @@
             <p class="inbox-meta">${esc(msg.fromName)} · ${esc(fmtWhen(msg.createdAt))}${msg.unread ? ' · Unread' : ''}</p>
           </div>
           <div class="btn-row">
-            ${msg.unread ? `<button type="button" class="btn btn-ghost" data-mark-read="${esc(msg.id)}">Mark read</button>` : ''}
-            <button type="button" class="btn btn-ghost" data-del-msg="${esc(msg.id)}">Delete</button>
+            ${msg.unread
+              ? `<button type="button" class="btn btn-ghost" data-mark-read="${esc(msg.id)}">${msg.type === 'welcome' ? 'Dismiss' : 'Mark read'}</button>`
+              : ''}
+            ${msg.type === 'welcome' ? '' : `<button type="button" class="btn btn-ghost" data-del-msg="${esc(msg.id)}">Delete</button>`}
           </div>
         </div>
         <p class="inbox-body">${esc(msg.body).replaceAll('\n', '<br>')}</p>

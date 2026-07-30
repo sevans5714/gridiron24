@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=79" />
+  <link rel="stylesheet" href="/css/site.css?v=82" />
   <style>
     .aaa-portal {
       display: inline-flex;
@@ -805,7 +805,7 @@
   </header>
 
   <section class="hq-hero shell">
-    <img src="/assets/gridiron24-crest.png?v=1" alt="GridIron 24" />
+    <img src="/assets/gridiron24-crest.png?v=3" alt="GridIron 24" />
     <p class="tag">
       <span class="t">24 Teams</span><span class="sep">·</span><span class="d">Two Conferences</span><span class="sep">·</span><span class="c">One Champion</span>
     </p>
@@ -870,10 +870,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=61"></script>
+  <script src="/js/nav.js?v=64"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -902,9 +902,9 @@
       return `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
     }
 
-    function confHead(conf) {
+    function confHead(conf, { showAdmin = true } = {}) {
       const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
-      const admin = conf?.admin
+      const admin = showAdmin && conf?.admin
         ? `<div class="conf-admin">
             <div class="conf-admin-name">${esc(conf.admin)}</div>
             <div class="conf-admin-role">Conference Admin</div>
@@ -937,7 +937,7 @@
           bodyRows.push(`<tr class="cut-line"><td colspan="4">Playoff cut</td></tr>`);
         }
         if (lastRank > 1 && rank === lastRank) {
-          bodyRows.push(`<tr class="cut-line relegation"><td colspan="4">Relegation · Toilet Bowl</td></tr>`);
+          bodyRows.push(`<tr class="cut-line relegation"><td colspan="4">Relegation · Mayor's Cup</td></tr>`);
         }
         const zoneClass = [
           rank > 6 ? 'out' : '',
@@ -1070,19 +1070,19 @@
 
     function hotNotCard(conf) {
       if (!conf?.ok) {
-        return `<div class="conf-block">${confHead(conf)}<div class="empty">Unavailable</div></div>`;
+        return `<div class="conf-block">${confHead(conf, { showAdmin: false })}<div class="empty">Unavailable</div></div>`;
       }
       const teams = (conf.teams || []).slice();
       if (!teams.length) {
-        return `<div class="conf-block">${confHead(conf)}<div class="empty">No teams yet</div></div>`;
+        return `<div class="conf-block">${confHead(conf, { showAdmin: false })}<div class="empty">No teams yet</div></div>`;
       }
       const pick = pickHotNot(teams);
       if (!pick.ready || !pick.hot || !pick.cold) {
-        return `<div class="conf-block">${confHead(conf)}</div>`;
+        return `<div class="conf-block">${confHead(conf, { showAdmin: false })}</div>`;
       }
       return `
         <div class="conf-block">
-          ${confHead(conf)}
+          ${confHead(conf, { showAdmin: false })}
           <div class="hotnot">
             <div class="hotnot-col hot">
               <div class="label">Who’s Hot</div>

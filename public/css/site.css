@@ -167,10 +167,13 @@ html[data-theme="day"] {
 }
 
 * { box-sizing: border-box; }
-html, body { overflow-x: hidden; }
+html {
+  overflow-x: clip;
+}
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: clip;
   color: var(--text);
   font-family: var(--body);
   font-size: var(--fs-base);
@@ -185,12 +188,13 @@ body {
 
 .shell {
   width: 100%;
-  padding-left: clamp(2rem, 7vw, 5rem);
-  padding-right: clamp(2rem, 7vw, 5rem);
+  padding-left: clamp(1.15rem, 5vw, 5rem);
+  padding-right: clamp(1.15rem, 5vw, 5rem);
 }
 
 .table-scroll {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
@@ -1172,6 +1176,7 @@ img.team-logo {
   top: calc(100% + 0.35rem);
   left: 0;
   min-width: 16.5rem;
+  max-width: min(18rem, calc(100vw - 1.25rem));
   padding: 0;
   background:
     linear-gradient(180deg, rgba(47, 109, 255, 0.14), transparent 38%),
@@ -1498,8 +1503,8 @@ body[data-page="payouts"] .page-hero::before {
 
 footer.shell,
 footer.site-footer {
-  padding-top: 1.15rem;
-  padding-bottom: 1.85rem;
+  padding-top: 2rem;
+  padding-bottom: 2.5rem;
   text-align: center;
   color: var(--muted-2);
   font-size: var(--fs-xs);
@@ -1507,21 +1512,22 @@ footer.site-footer {
 }
 .site-footer-credit {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 0.45rem 0.65rem;
+  gap: 0.85rem;
   color: var(--muted);
   font-size: var(--fs-sm);
   font-weight: 500;
 }
 .site-footer-mark {
-  width: 2rem;
-  height: 2rem;
+  width: clamp(10rem, 28vw, 14rem);
+  height: clamp(10rem, 28vw, 14rem);
   object-fit: contain;
   display: block;
   flex: 0 0 auto;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.5));
 }
 .site-footer-by {
   font-family: "Bebas Neue", var(--display), Impact, sans-serif;
@@ -1870,6 +1876,11 @@ body.auth-page {
   .user-chip-access {
     display: none;
   }
+  .shell {
+    padding-left: max(1.15rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.15rem, env(safe-area-inset-right, 0px));
+  }
+  .toolbar .field { min-width: 0; }
 }
 
 @media (max-width: 900px) {
@@ -1885,23 +1896,13 @@ body.auth-page {
     height: 1.85rem;
     flex-basis: 1.85rem;
   }
-}
-
-@media (max-width: 760px) {
-  .shell {
-    padding-left: max(1rem, env(safe-area-inset-left, 0px));
-    padding-right: max(1rem, env(safe-area-inset-right, 0px));
-  }
 
   .topbar-inner {
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
     gap: 0.45rem;
   }
-
   .nav {
     flex: 1 1 auto;
     min-width: 0;
@@ -1914,11 +1915,37 @@ body.auth-page {
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 0.75rem, #000 calc(100% - 0.75rem), transparent);
   }
   .nav::-webkit-scrollbar { display: none; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar .btn { width: 100%; }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  }
+
+  .topbar-inner {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
   .nav a {
     display: inline-flex;
     align-items: center;
     min-height: 2.75rem;
     padding: 0.65rem 0.85rem;
+  }
+
+  .nav-submenu {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 3.6rem);
+    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    transform-origin: top center;
   }
 
   .topbar-right {
@@ -1968,7 +1995,9 @@ body.auth-page {
   }
   .page-hero h1 { font-size: clamp(1.65rem, 8vw, 2.2rem); }
   .panel-title .meta { display: none; }
-  .toolbar { flex-direction: column; align-items: stretch; }
-  .toolbar .btn { width: 100%; }
-  .toolbar .field { min-width: 0; }
+
+  .site-footer-mark {
+    width: clamp(7.5rem, 42vw, 10rem);
+    height: clamp(7.5rem, 42vw, 10rem);
+  }
 }

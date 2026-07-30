@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-sticky" />
+  <meta name="apple-mobile-web-app-title" content="GridIron 24" />
+  <meta name="description" content="GridIron 24 standings and fantasy scoreboard." />
+  <title>GridIron 24</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app/app.css?v=1" />
+</head>
+<body>
+  <header class="app-top">
+    <div class="app-top-row">
+      <a class="brand" href="/app/">
+        <img src="/assets/pwa/icon-192.png" alt="" width="192" height="192" />
+        <div class="brand-copy">
+          <strong>GridIron 24</strong>
+          <span id="subtitle">League pulse</span>
+        </div>
+      </a>
+      <div class="sync-pill" id="sync">Loading…</div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="install-banner" id="install-banner" hidden>
+      <p>Install GridIron 24 on your home screen for one-tap standings and scores.</p>
+      <div class="row">
+        <button type="button" class="primary" id="install-btn">Install</button>
+        <button type="button" id="install-dismiss">Not now</button>
+      </div>
+    </div>
+
+    <section class="view" id="view-standings" data-view="standings">
+      <div class="seg" role="tablist" aria-label="Conference">
+        <button type="button" class="is-on" data-conf="detail" id="tab-detail">Detail</button>
+        <button type="button" data-conf="overtime" id="tab-overtime">Overtime</button>
+      </div>
+      <div id="standings-mount"><div class="msg">Loading standings…</div></div>
+    </section>
+
+    <section class="view" id="view-scoreboard" data-view="scoreboard" hidden>
+      <div class="toolbar-row">
+        <div>
+          <label for="week">Week</label>
+          <select id="week" aria-label="Scoring week"></select>
+        </div>
+        <button type="button" class="refresh-btn" id="refresh-scores">Refresh</button>
+      </div>
+      <div class="seg" role="tablist" aria-label="Scoreboard conference" id="score-seg">
+        <button type="button" class="is-on" data-score-conf="detail">Detail</button>
+        <button type="button" data-score-conf="overtime">Overtime</button>
+      </div>
+      <div id="scoreboard-mount"><div class="msg">Loading scoreboard…</div></div>
+    </section>
+
+    <section class="view" id="view-more" data-view="more" hidden>
+      <p class="user-line" id="user-line">Signed in</p>
+      <div class="more-links">
+        <a href="/home.html">Full site <span>HQ</span></a>
+        <a href="/my-roster.html">My Roster <span>Franchise</span></a>
+        <a href="/playoffs.html">Playoffs <span>Bracket</span></a>
+        <a href="/profile.html">Profile <span>Account</span></a>
+        <a href="#" id="sign-out">Sign out <span>Exit</span></a>
+      </div>
+    </section>
+  </main>
+
+  <nav class="app-tabs" aria-label="App">
+    <button type="button" class="is-on" data-tab="standings" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      Standings
+    </button>
+    <button type="button" data-tab="scoreboard">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM8 7v10M16 7v10M4 12h16"/></svg>
+      Scores
+    </button>
+    <button type="button" data-tab="more">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="18" r="1.2"/></svg>
+      More
+    </button>
+  </nav>
+
+  <script src="/app/app.js?v=1"></script>
+</body>
+</html>

@@ -45,9 +45,12 @@ function escapeHtml(value) {
 
 function brandedAssets(baseUrl) {
   const origin = siteBaseUrl(baseUrl);
+  // Cache-bust so mail clients refresh the crest after brand updates.
+  const crest = `${origin}/assets/gridiron24-crest.png?v=3`;
   return {
     origin,
-    logoUrl: `${origin}/assets/gridiron24-crest.png`,
+    logoUrl: crest,
+    crestUrl: crest,
     detailLogo: `${origin}/assets/detail-conference.png`,
     overtimeLogo: `${origin}/assets/overtime-conference.png`,
     enterUrl: `${origin}/enter`
@@ -140,9 +143,9 @@ function brandedEmailHtml({
       <td align="center" style="padding:28px 16px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;border:1px solid rgba(255,255,255,0.10);background:#0d0d0d;">
           <tr>
-            <td align="center" style="padding:28px 28px 8px;background:radial-gradient(ellipse at 50% 0%, rgba(47,109,255,0.18), transparent 60%), #0d0d0d;">
+            <td align="center" style="padding:32px 28px 10px;background:radial-gradient(ellipse at 50% 0%, rgba(47,109,255,0.18), transparent 60%), #0d0d0d;">
               <a href="${escapeHtml(origin)}" style="text-decoration:none;">
-                <img src="${escapeHtml(logoUrl)}" width="220" alt="GridIron 24" style="display:block;width:220px;max-width:70%;height:auto;border:0;margin:0 auto;" />
+                <img src="${escapeHtml(logoUrl)}" width="260" alt="GridIron 24" style="display:block;width:260px;max-width:78%;height:auto;border:0;margin:0 auto;" />
               </a>
             </td>
           </tr>
@@ -166,7 +169,10 @@ function brandedEmailHtml({
           ${note}
           ${fallback}
           <tr>
-            <td style="border-top:1px solid rgba(255,255,255,0.08);padding:16px 28px 22px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.5;color:#666666;text-align:center;">
+            <td style="border-top:1px solid rgba(255,255,255,0.08);padding:18px 28px 22px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.5;color:#666666;text-align:center;">
+              <a href="${escapeHtml(origin)}" style="text-decoration:none;">
+                <img src="${escapeHtml(logoUrl)}" width="64" alt="GridIron 24" style="display:block;width:64px;height:auto;border:0;margin:0 auto 10px;" />
+              </a>
               ${footerLine}
             </td>
           </tr>
@@ -595,10 +601,7 @@ function buildWeeklyWrapEmail({
   baseUrl
 }) {
   const league = stats?.leagueName || 'GridIron 24';
-  const origin = siteBaseUrl(baseUrl);
-  const logoUrl = `${origin}/assets/gridiron24-crest.png`;
-  const detailLogo = `${origin}/assets/detail-conference.png`;
-  const overtimeLogo = `${origin}/assets/overtime-conference.png`;
+  const { origin, logoUrl, detailLogo, overtimeLogo } = brandedAssets(baseUrl);
   const homeUrl = `${origin}/hq`;
   const who = recipientName || 'Manager';
   const headline = title || `Week ${week} Wrap-Up · ${season || ''}`;
@@ -659,7 +662,7 @@ function buildWeeklyWrapEmail({
           <tr>
             <td align="center" style="padding:26px 28px 6px;background:radial-gradient(ellipse at 50% 0%, rgba(47,109,255,0.16), transparent 58%), #0d0d0d;">
               <a href="${escapeHtml(origin)}" style="text-decoration:none;">
-                <img src="${escapeHtml(logoUrl)}" width="200" alt="${escapeHtml(league)}" style="display:block;width:200px;max-width:65%;height:auto;border:0;margin:0 auto;" />
+                <img src="${escapeHtml(logoUrl)}" width="260" alt="${escapeHtml(league)}" style="display:block;width:260px;max-width:78%;height:auto;border:0;margin:0 auto;" />
               </a>
             </td>
           </tr>
@@ -700,6 +703,9 @@ function buildWeeklyWrapEmail({
           </tr>
           <tr>
             <td style="border-top:1px solid rgba(255,255,255,0.08);padding:16px 28px 22px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.5;color:#666666;text-align:center;">
+              <a href="${escapeHtml(origin)}" style="text-decoration:none;">
+                <img src="${escapeHtml(logoUrl)}" width="64" alt="${escapeHtml(league)}" style="display:block;width:64px;height:auto;border:0;margin:0 auto 10px;" />
+              </a>
               ${escapeHtml(league)} · Detail &amp; Overtime · Season ${escapeHtml(String(season || ''))}<br />
               You’re receiving this as a league manager at GridIron 24 HQ.
             </td>
@@ -763,18 +769,25 @@ async function sendRulesSyncAlert({ to, matched, diffs, checkedAt, baseUrl }) {
     : `Detail and Overtime scoring/lineup/playoff settings differ.\n\nChecked: ${when}\nDifferences (${(diffs || []).length}):\n${lines.join('\n')}\n\nOpen League Tools to fix:\n${toolsUrl}\n`;
 
   const htmlDiffs = matched
-    ? `<p style="color:#86efac;">Both conferences match. Official scoring was refreshed.</p>`
-    : `<p style="color:#fca5a5;">${(diffs || []).length} difference(s) found.</p>
-       <ul style="color:#c8c8c8;font-size:13px;line-height:1.5;">${lines.map((l) => `<li>${escapeHtml(l.replace(/^• /, ''))}</li>`).join('')}</ul>`;
+    ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#86efac;">Both conferences match. Official scoring was refreshed.</p>`
+    : `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#fca5a5;">${(diffs || []).length} difference(s) found.</p>
+       <ul style="margin:0 0 14px;padding-left:1.2rem;color:#c8c8c8;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;text-align:left;">${lines.map((l) => `<li>${escapeHtml(l.replace(/^• /, ''))}</li>`).join('')}</ul>`;
 
-  const html = `<!DOCTYPE html><html><body style="background:#050505;color:#f2f2f2;font-family:Arial,sans-serif;padding:24px;">
-    <div style="max-width:560px;margin:0 auto;border:1px solid rgba(255,255,255,0.1);background:#0d0d0d;padding:24px;">
-      <h1 style="margin:0 0 12px;font-size:20px;">Rules sync check</h1>
-      <p style="color:#9a9a9a;font-size:13px;">Checked ${escapeHtml(when)} (Eastern)</p>
-      ${htmlDiffs}
-      <p style="margin-top:20px;"><a href="${escapeHtml(toolsUrl)}" style="color:#8eb6ff;">Open League Tools →</a></p>
-    </div>
-  </body></html>`;
+  const html = brandedEmailHtml({
+    title: subject,
+    preheader: matched ? 'Detail and Overtime match.' : 'Conference rules differ — open League Tools.',
+    eyebrow: 'GridIron 24 · Rules Patrol',
+    headline: matched ? 'Conferences synced' : 'Rules out of sync',
+    bodyHtml:
+      `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#9a9a9a;">Checked ${escapeHtml(when)} (Eastern)</p>` +
+      htmlDiffs,
+    showConferences: true,
+    ctaLabel: 'Open League Tools',
+    ctaUrl: toolsUrl,
+    linkFallbackUrl: toolsUrl,
+    footerExtra: 'Automated rules sync · GridIron 24 created by S.Evans',
+    baseUrl: origin
+  });
 
   if (cfg.configured) {
     return sendViaResend({
@@ -787,7 +800,7 @@ async function sendRulesSyncAlert({ to, matched, diffs, checkedAt, baseUrl }) {
     });
   }
   console.log(`[rules-sync] ${to}: ${subject}`);
-  return { sent: false, method: 'log' };
+  return { sent: false, method: 'log', previewHtml: html };
 }
 
 function buildRosterViolationEmail({
