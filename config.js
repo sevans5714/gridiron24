@@ -56,7 +56,20 @@ module.exports = {
       name: 'AAA League',
       shortName: 'AAA',
       espnLeagueId: null,
-      role: 'feeder'
+      role: 'feeder',
+      payouts: {
+        seasonLabel: '2026 AAA Season',
+        buyInPerTeam: 50,
+        teamCount: 12,
+        currency: 'USD',
+        notes: 'Prize pool is $600 from twelve AAA franchises at $50 buy-in. Champion promotes to GridIron 24 next season (display / commissioner-administered).',
+        prizes: [
+          { place: 1, label: 'AAA Champion', amount: 300 },
+          { place: 2, label: 'AAA Runner-Up', amount: 150 },
+          { place: 3, label: 'AAA Third Place', amount: 100 },
+          { place: 4, label: 'AAA Most Points', amount: 50 }
+        ]
+      }
     }
   ]
 };

@@ -1842,16 +1842,43 @@ function getAffiliatedLeague(key = 'aaa') {
   return list.find((l) => l.key === key) || list[0] || null;
 }
 
+function aaaPayoutsFromAffiliate(affiliate) {
+  const p = affiliate?.payouts || {};
+  const buyIn = Number(p.buyInPerTeam);
+  const teamCount = Number(p.teamCount) || 12;
+  const prizes = Array.isArray(p.prizes) ? p.prizes : [];
+  return {
+    seasonLabel: p.seasonLabel || 'AAA Season',
+    buyInPerTeam: Number.isFinite(buyIn) ? buyIn : 50,
+    teamCount,
+    currency: p.currency || 'USD',
+    notes: p.notes || '',
+    prizes: prizes.map((row, index) => ({
+      place: Number(row.place) || index + 1,
+      label: String(row.label || `Place ${index + 1}`).trim(),
+      amount: Number(row.amount) || 0
+    })),
+    pool: (Number.isFinite(buyIn) ? buyIn : 50) * teamCount
+  };
+}
+
 async function buildAaaPayload() {
   const affiliate = getAffiliatedLeague('aaa') || {
     key: 'aaa',
     name: 'AAA League',
     shortName: 'AAA',
     espnLeagueId: null,
-    role: 'feeder'
+    role: 'feeder',
+    payouts: {
+      buyInPerTeam: 50,
+      teamCount: 12,
+      currency: 'USD',
+      prizes: []
+    }
   };
   const espnId = Number(affiliate.espnLeagueId);
   const configured = Number.isFinite(espnId) && espnId > 0;
+  const payouts = aaaPayoutsFromAffiliate(affiliate);
 
   if (!configured) {
     return {
@@ -1863,10 +1890,11 @@ async function buildAaaPayload() {
       role: affiliate.role || 'feeder',
       season: config.season,
       espnLeagueId: null,
+      payouts,
       teams: [],
       champion: null,
       promotee: null,
-      message: 'AAA League ESPN ID is not configured yet. Set affiliatedLeagues.aaa.espnLeagueId when ready.',
+      message: 'AAA League ESPN ID is not configured yet. Buy-in and payouts are published below; standings unlock when the ESPN league ID is set.',
       generatedAt: new Date().toISOString()
     };
   }
@@ -1905,6 +1933,7 @@ async function buildAaaPayload() {
       espnLeagueId: espnId,
       espnLeagueName: data.espnLeagueName || null,
       teamCount: teams.length,
+      payouts,
       teams,
       champion,
       promotee: champion
@@ -1928,6 +1957,7 @@ async function buildAaaPayload() {
       role: affiliate.role || 'feeder',
       season: config.season,
       espnLeagueId: espnId,
+      payouts,
       teams: [],
       champion: null,
       promotee: null,

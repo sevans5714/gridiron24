@@ -88,6 +88,28 @@ function defaultSurvival(seed = {}) {
   };
 }
 
+function defaultAaaPayouts(seed = {}) {
+  return {
+    seasonLabel: String(seed.seasonLabel || 'AAA Season').trim() || 'AAA Season',
+    buyInPerTeam: Number(seed.buyInPerTeam) === 0 ? 0 : (Number(seed.buyInPerTeam) || 50),
+    teamCount: Number(seed.teamCount) || 12,
+    currency: String(seed.currency || 'USD').trim() || 'USD',
+    notes: String(seed.notes || '').trim(),
+    prizes: Array.isArray(seed.prizes) && seed.prizes.length
+      ? seed.prizes.map((row, index) => ({
+          place: Number(row.place) || index + 1,
+          label: String(row.label || `Place ${index + 1}`).trim(),
+          amount: Number(row.amount) || 0
+        }))
+      : [
+          { place: 1, label: 'AAA Champion', amount: 300 },
+          { place: 2, label: 'AAA Runner-Up', amount: 150 },
+          { place: 3, label: 'AAA Third Place', amount: 100 },
+          { place: 4, label: 'AAA Most Points', amount: 50 }
+        ]
+  };
+}
+
 function defaultAffiliatedLeagues(seedList) {
   const list = Array.isArray(seedList) ? seedList : [];
   if (!list.length) {
@@ -96,7 +118,8 @@ function defaultAffiliatedLeagues(seedList) {
       name: 'AAA League',
       shortName: 'AAA',
       espnLeagueId: null,
-      role: 'feeder'
+      role: 'feeder',
+      payouts: defaultAaaPayouts()
     }];
   }
   return list.map((row) => ({
@@ -104,7 +127,8 @@ function defaultAffiliatedLeagues(seedList) {
     name: String(row.name || 'AAA League').trim() || 'AAA League',
     shortName: String(row.shortName || 'AAA').trim() || 'AAA',
     espnLeagueId: Number(row.espnLeagueId) > 0 ? Number(row.espnLeagueId) : null,
-    role: String(row.role || 'feeder').trim() || 'feeder'
+    role: String(row.role || 'feeder').trim() || 'feeder',
+    payouts: defaultAaaPayouts(row.payouts || {})
   }));
 }
 
@@ -347,6 +371,19 @@ function ensureSystemLeague(seed) {
     if (!Array.isArray(system.affiliatedLeagues)) {
       system.affiliatedLeagues = defaultAffiliatedLeagues(seed.affiliatedLeagues);
       dirty = true;
+    } else {
+      const seeded = defaultAffiliatedLeagues(seed.affiliatedLeagues);
+      system.affiliatedLeagues = system.affiliatedLeagues.map((row) => {
+        const match = seeded.find((s) => s.key === row.key) || seeded[0] || {};
+        if (row.payouts?.buyInPerTeam != null && Array.isArray(row.payouts?.prizes) && row.payouts.prizes.length) {
+          return row;
+        }
+        dirty = true;
+        return {
+          ...row,
+          payouts: defaultAaaPayouts(match.payouts || row.payouts || {})
+        };
+      });
     }
     const hasSurvivalCal = (system.calendarDefaults || []).some(
       (e) => String(e.type || '').toLowerCase() === 'survival'

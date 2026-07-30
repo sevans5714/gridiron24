@@ -172,6 +172,12 @@
       color: #8eb6ff;
       text-align: center;
     }
+    .cut-line.relegation {
+      border-top-color: rgba(196, 90, 48, 0.85);
+      background: rgba(196, 90, 48, 0.1);
+      color: #e8a078;
+    }
+    .row.body.relegation-zone { opacity: 0.78; }
 
     .row .num { text-align: right; }
     .row .center { text-align: center; }
@@ -359,13 +365,21 @@
       }
 
       const rows = [];
+      const lastRank = teams.length;
       teams.forEach((team, index) => {
         const rank = index + 1;
         if (rank === 7) {
           rows.push(`<div class="cut-line">Playoff cut · places 7–12 out · tiebreaker: points for</div>`);
         }
+        if (lastRank > 1 && rank === lastRank) {
+          rows.push(`<div class="cut-line relegation">Relegation line · last place → Stay in League (Week 17)</div>`);
+        }
+        const zoneClass = [
+          rank > 6 ? 'out' : '',
+          rank === lastRank ? 'relegation-zone' : ''
+        ].filter(Boolean).join(' ');
         rows.push(`
-          <div class="row body ${rank > 6 ? 'out' : ''}">
+          <div class="row body ${zoneClass}">
             <div class="rank">${rank}</div>
             <div class="team">
               <img class="team-logo-sm" src="${escapeHtml(team.logo || '/assets/team-logo-placeholder.svg')}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />

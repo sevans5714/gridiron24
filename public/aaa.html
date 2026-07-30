@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AAA League · GridIron 24</title>
-  <meta name="description" content="AAA League feeder standings and next-season GridIron 24 promotee." />
+  <meta name="description" content="AAA League feeder standings, $50 buy-in payouts, and next-season GridIron 24 promotee." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -69,6 +69,7 @@
       border: 1px solid var(--line);
       overflow: hidden;
       max-width: 48rem;
+      margin-bottom: 1.25rem;
     }
     .board-head {
       padding: 0.85rem 1rem;
@@ -145,6 +146,55 @@
       border: 1px solid var(--line);
       background: var(--panel);
       max-width: 48rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .payout-board {
+      max-width: 48rem;
+      margin-bottom: 1.25rem;
+    }
+    .pool-line {
+      margin: 0 0 0.85rem;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+    }
+    .pool-line strong { color: var(--text); }
+    .payout-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+    .payout-table th,
+    .payout-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+    .payout-table th {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--panel-2);
+    }
+    .payout-table td.amount {
+      font-family: var(--display);
+      font-weight: 700;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .payout-table tr.total-row td {
+      border-bottom: 0;
+      font-weight: 700;
+      color: #efd782;
+    }
+    .payout-notes {
+      margin: 0.75rem 0 0;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+      line-height: 1.45;
     }
 
     @media (max-width: 700px) {
@@ -183,14 +233,52 @@
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
-    function wl(t) {
-      const ties = Number(t.ties || 0);
-      return ties > 0 ? `${t.wins}-${t.losses}-${ties}` : `${t.wins}-${t.losses}`;
+    function money(amount, currency = 'USD') {
+      if (amount == null || amount === '') return 'TBD';
+      try {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(Number(amount));
+      } catch {
+        return `$${Number(amount).toFixed(2)}`;
+      }
     }
 
     function fmtPts(n) {
-      const v = Number(n || 0);
-      return v.toFixed(1);
+      return Number(n || 0).toFixed(1);
+    }
+
+    function payoutsBlock(p) {
+      if (!p) return '';
+      const currency = p.currency || 'USD';
+      const prizes = p.prizes || [];
+      const buyIn = money(p.buyInPerTeam, currency);
+      const pool = money(p.pool != null ? p.pool : (Number(p.buyInPerTeam || 0) * Number(p.teamCount || 0)), currency);
+      const prizesTotal = prizes.reduce((sum, prize) => sum + Number(prize.amount || 0), 0);
+      const rows = prizes.map((prize) => `
+        <tr>
+          <td>${esc(prize.label)}</td>
+          <td class="amount">${money(prize.amount, currency)}</td>
+        </tr>`).join('');
+      return `
+        <div class="payout-board">
+          <div class="board-head" style="border:1px solid var(--line);border-bottom:0;margin:0">
+            <h2>Payouts</h2>
+            <p class="sub">${esc(p.seasonLabel || 'AAA Season')}</p>
+          </div>
+          <p class="pool-line"><strong>${buyIn}</strong> buy-in · <strong>${esc(String(p.teamCount || 12))}</strong> teams · <strong>${pool}</strong> prize pool</p>
+          <table class="payout-table">
+            <thead><tr><th>Award</th><th>Payout</th></tr></thead>
+            <tbody>
+              ${rows || '<tr><td colspan="2">No payouts configured.</td></tr>'}
+              <tr class="total-row"><td>Total</td><td class="amount">${money(prizesTotal, currency)}</td></tr>
+            </tbody>
+          </table>
+          ${p.notes ? `<p class="payout-notes">${esc(p.notes)}</p>` : ''}
+        </div>`;
     }
 
     async function loadAaa() {
@@ -198,17 +286,21 @@
       try {
         const res = await fetch('/api/aaa', { cache: 'no-store' });
         const data = await res.json();
+        if (!data.ok && data.configured) {
+          throw new Error(data.error || 'Could not load AAA League');
+        }
+
+        const payoutHtml = payoutsBlock(data.payouts);
+
         if (!data.configured) {
           main.innerHTML = `
+            ${payoutHtml}
             <div class="msg-panel">
-              <p><strong>AAA League</strong> is the GridIron 24 feeder. The ESPN league ID is not configured yet.</p>
-              <p style="margin-top:0.65rem;">${esc(data.message || 'Set affiliatedLeagues.aaa.espnLeagueId when ready.')}</p>
+              <p><strong>AAA League</strong> is the GridIron 24 feeder. Standings unlock when the ESPN league ID is configured.</p>
+              <p style="margin-top:0.65rem;">${esc(data.message || '')}</p>
             </div>`;
-          window.GridIronNav?.setSync('AAA · not configured');
+          window.GridIronNav?.setSync('AAA · payouts ready');
           return;
-        }
-        if (!data.ok) {
-          throw new Error(data.error || 'Could not load AAA League');
         }
 
         const champ = data.champion || data.promotee;
@@ -239,6 +331,7 @@
 
         main.innerHTML = `
           ${promoteeHtml}
+          ${payoutHtml}
           <div class="board">
             <div class="board-head">
               <h2>${esc(data.name || 'AAA League')}</h2>

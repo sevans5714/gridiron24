@@ -317,6 +317,11 @@
       color: #8eb6ff;
       opacity: 1;
     }
+    .mini-table tr.cut-line.relegation td {
+      border-top-color: rgba(196, 90, 48, 0.85);
+      color: #e8a078;
+    }
+    .mini-table .relegation-zone td { opacity: 0.78; }
 
     .motw-col {
       display: grid;
@@ -785,13 +790,21 @@
       }
       const teams = (conf.teams || []).slice(0, 12);
       const bodyRows = [];
+      const lastRank = teams.length;
       teams.forEach((t, i) => {
         const rank = i + 1;
         if (rank === 7) {
-          bodyRows.push(`<tr class="cut-line"><td colspan="4"></td></tr>`);
+          bodyRows.push(`<tr class="cut-line"><td colspan="4">Playoff cut</td></tr>`);
         }
+        if (lastRank > 1 && rank === lastRank) {
+          bodyRows.push(`<tr class="cut-line relegation"><td colspan="4">Relegation line</td></tr>`);
+        }
+        const zoneClass = [
+          rank > 6 ? 'out' : '',
+          rank === lastRank ? 'relegation-zone' : ''
+        ].filter(Boolean).join(' ');
         bodyRows.push(`
-          <tr class="${rank > 6 ? 'out' : ''}">
+          <tr class="${zoneClass}">
             <td class="rank">${rank}</td>
             <td class="team" title="${esc(t.name)}">
               <span class="team-cell">
