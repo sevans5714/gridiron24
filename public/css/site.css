@@ -822,6 +822,24 @@ img.team-logo {
   min-width: 0;
 }
 
+.nav > * + * {
+  position: relative;
+  margin-left: 0.2rem;
+  padding-left: 0.2rem;
+}
+
+.nav > * + *::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 1.15rem;
+  transform: translateY(-50%);
+  background: var(--topbar-border);
+  pointer-events: none;
+}
+
 .nav a,
 .nav .nav-link {
   color: var(--muted);
