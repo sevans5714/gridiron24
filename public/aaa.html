@@ -91,6 +91,20 @@
       color: var(--muted);
       font-size: var(--fs-sm);
     }
+    .aaa-crest {
+      display: block;
+      width: min(16rem, 72vw);
+      height: auto;
+      margin: 0 auto 1rem;
+      filter: none;
+      box-shadow: var(--logo-lift);
+    }
+    body[data-page="aaa"] .page-hero {
+      text-align: center;
+    }
+    body[data-page="aaa"] .page-hero h1 {
+      margin-top: 0.35rem;
+    }
 
     .row {
       display: grid;
@@ -214,6 +228,7 @@
   </header>
 
   <section class="page-hero shell reveal">
+    <img class="aaa-crest" id="aaa-crest" src="/assets/aaa-league.png" alt="AAA Fantasy Football League · GridIron 24" width="320" height="320" decoding="async" />
     <p class="eyebrow">Feeder League</p>
     <h1>AAA League</h1>
   </section>
@@ -289,6 +304,9 @@
         if (!data.ok && data.configured) {
           throw new Error(data.error || 'Could not load AAA League');
         }
+
+        const crest = document.getElementById('aaa-crest');
+        if (crest && data.logo) crest.src = data.logo;
 
         const payoutHtml = payoutsBlock(data.payouts);
 
