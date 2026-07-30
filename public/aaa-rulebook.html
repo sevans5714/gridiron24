@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AAA Rule Book · AAA League</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=62" />
+  <style>
+    .book { max-width: 52rem; margin: 0 auto; }
+
+    .book-toc {
+      margin: 0 0 2.25rem;
+      padding: 1.25rem 1.35rem 1.4rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .book-toc h2 {
+      margin: 0 0 0.85rem;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .book-toc ol {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: toc;
+    }
+    .book-toc li {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--line);
+      counter-increment: toc;
+    }
+    .book-toc li:last-child { border-bottom: 0; }
+    .book-toc li::before {
+      content: "Article " counter(toc, upper-roman);
+      flex: 0 0 auto;
+      font-family: var(--display);
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #efd782;
+      min-width: 6.5rem;
+    }
+    .book-toc a {
+      color: var(--text);
+      text-decoration: none;
+      font-size: var(--fs-md);
+      font-weight: 600;
+    }
+    .book-toc a:hover { color: var(--nav-hover); }
+    .toc-affiliate {
+      margin: 1rem 0 0;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: var(--fs-sm);
+      line-height: 1.45;
+    }
+    .toc-affiliate a {
+      color: #8eb6ff;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .toc-affiliate a:hover { text-decoration: underline; }
+
+    .article {
+      margin: 0 0 2.5rem;
+      scroll-margin-top: 5.5rem;
+    }
+    .article-head {
+      margin: 0 0 1.15rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid rgba(239, 215, 130, 0.45);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem 1.5rem;
+    }
+    .article-head.plain {
+      display: block;
+    }
+    .article-num {
+      margin: 0 0 0.25rem;
+      font-family: var(--display);
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .article-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.65rem, 4vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+      line-height: 1.1;
+    }
+    .article-head-copy { min-width: 0; flex: 1 1 auto; }
+    .article-head-crest {
+      width: min(5.75rem, 24vw);
+      height: auto;
+      flex: 0 0 auto;
+      display: block;
+      margin: 0 0 0.1rem;
+      background: transparent;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+    }
+    html[data-theme="day"] .article-head-crest {
+      filter: drop-shadow(0 4px 10px rgba(20, 24, 31, 0.14));
+    }
+
+    .aaa-payout-table {
+      width: 100%;
+      max-width: 28rem;
+      border-collapse: collapse;
+      margin: 0.35rem 0 0.75rem;
+    }
+    .aaa-payout-table th,
+    .aaa-payout-table td {
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      color: #d0d0d0;
+      font-size: var(--fs-md);
+    }
+    .aaa-payout-table th {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .aaa-payout-table td.amt {
+      text-align: right;
+      font-family: var(--display);
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .aaa-payout-table tr:last-child td { border-bottom: 0; }
+
+    .section { margin: 0 0 1.35rem; }
+    .section-title {
+      margin: 0 0 0.55rem;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .section p,
+    .section li {
+      color: #d0d0d0;
+      font-size: var(--fs-md);
+      line-height: 1.55;
+    }
+    .section p { margin: 0 0 0.75rem; max-width: 44rem; }
+    .section p:last-child { margin-bottom: 0; }
+    .section ol,
+    .section ul {
+      margin: 0;
+      padding: 0 0 0 1.15rem;
+    }
+    .section li { margin: 0 0 0.45rem; padding-left: 0.15rem; }
+    .section li:last-child { margin-bottom: 0; }
+
+    .book-link {
+      color: #efd782;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .book-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+    html[data-theme="day"] .section p,
+    html[data-theme="day"] .section li { color: #3a4250; }
+    html[data-theme="day"] .aaa-payout-table th,
+    html[data-theme="day"] .aaa-payout-table td { color: #3a4250; }
+
+    @media (max-width: 640px) {
+      .book-toc li { flex-wrap: wrap; }
+      .book-toc li::before { min-width: 0; }
+      .article { scroll-margin-top: 4.75rem; }
+    }
+  </style>
+</head>
+<body data-page="aaa">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated" hidden></div>
+    </div>
+  </header>
+
+  <section class="page-hero shell">
+    <p class="eyebrow">AAA League · Official Rules</p>
+    <h1>AAA Rule Book</h1>
+  </section>
+
+  <main class="page-main shell">
+    <div class="book">
+      <nav class="book-toc" aria-label="Table of contents">
+        <h2>Table of Contents</h2>
+        <ol>
+          <li><a href="#article-i">League Status</a></li>
+          <li><a href="#article-ii">Membership &amp; Draft</a></li>
+          <li><a href="#article-iii">Rosters, Lineups &amp; Keepers</a></li>
+          <li><a href="#article-iv">Scoring</a></li>
+          <li><a href="#article-v">Championship &amp; Promotion</a></li>
+          <li><a href="#article-vi">Prize Pool &amp; Payouts</a></li>
+          <li><a href="#article-vii">Authority</a></li>
+        </ol>
+        <p class="toc-affiliate">GridIron 24 rules live in the <a href="/rulebook.html">GridIron 24 Rule Book</a>.</p>
+      </nav>
+
+      <article class="article" id="article-i">
+        <header class="article-head">
+          <div class="article-head-copy">
+            <p class="article-num">Article I</p>
+            <h2>League Status</h2>
+          </div>
+          <img class="article-head-crest" src="/assets/aaa-league.png" alt="" width="92" height="92" decoding="async" />
+        </header>
+        <section class="section">
+          <h3 class="section-title">§1.01 Name</h3>
+          <p>This league is <strong>AAA League</strong> — the affiliated feeder for GridIron 24.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§1.02 Relationship to GridIron 24</h3>
+          <p>AAA League is <strong>not</strong> a GridIron 24 conference. It is not part of GridIron 24 standings, schedules, drafts, or championship boards. Managers enter the AAA portal from the crest on the GridIron 24 home header.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§1.03 System of Record</h3>
+          <p>ESPN Fantasy is the system of record for AAA drafts, rosters, scoring, waivers, and transactions. The AAA portal is headquarters for standings presentation, rules, and payouts.</p>
+        </section>
+      </article>
+
+      <article class="article" id="article-ii">
+        <header class="article-head plain">
+          <p class="article-num">Article II</p>
+          <h2>Membership &amp; Draft</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§2.01 Membership</h3>
+          <p>Final roster size is set by interest and shall be between <strong>ten (10) and fourteen (14)</strong> franchises.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§2.02 Draft &amp; Player Pool</h3>
+          <p>AAA conducts its <strong>own draft</strong> on its own schedule. AAA uses its <strong>own player pool</strong> — it does not share draft order, keepers, or rostered players with Detail or Overtime. GridIron 24 drafts and AAA drafts are independent events.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§2.03 Relegated Entrants</h3>
+          <p>A franchise relegated from GridIron 24 via the Toilet Bowl (GridIron 24 Rule Book §5.04) joins AAA League for the following season, subject to AAA league admin placement and roster availability.</p>
+        </section>
+      </article>
+
+      <article class="article" id="article-iii">
+        <header class="article-head plain">
+          <p class="article-num">Article III</p>
+          <h2>Rosters, Lineups &amp; Keepers</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§3.01 Lineups</h3>
+          <p>Owners must set a legal starting lineup before each week’s games. AAA mirrors GridIron 24 lineup structure so promotees enter familiar rules. See the <a class="book-link" href="/rulebook.html#article-iii">GridIron 24 Rule Book, Article III</a> for the official slot configuration mirrored by AAA.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§3.02 Injured Starters</h3>
+          <p>Managers shall not start a player who is listed as Out, Doubtful, or on Injured Reserve. Roster patrol and violation policy for AAA are administered by the AAA league admin under the same standards used in GridIron 24.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§3.03 Single-Player Keeper</h3>
+          <p>AAA uses the <strong>same single-player keeper rule</strong> as GridIron 24 (Rule Book §3.03–§3.05): one keeper per franchise; first keep costs the original draft round; each later keep costs one round later; maximum three seasons with the franchise, then back to the pool. The AAA league admin administers AAA keeper declarations for the AAA draft.</p>
+        </section>
+      </article>
+
+      <article class="article" id="article-iv">
+        <header class="article-head plain">
+          <p class="article-num">Article IV</p>
+          <h2>Scoring</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§4.01 Mirror Settings</h3>
+          <p>AAA mirrors the <strong>official GridIron 24 scoring settings</strong> (Detail Conference is the source of truth). Scoring or lineup drift shall be corrected by the AAA league admin. Full point values are published in the <a class="book-link" href="/rulebook.html#article-iv">GridIron 24 Rule Book, Article IV</a>.</p>
+        </section>
+      </article>
+
+      <article class="article" id="article-v">
+        <header class="article-head plain">
+          <p class="article-num">Article V</p>
+          <h2>Championship &amp; Promotion</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§5.01 AAA Champion</h3>
+          <p>The AAA League champion is determined by AAA’s ESPN playoff / championship result for the season, as administered by the AAA league admin.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§5.02 Promotion to GridIron 24</h3>
+          <p>The <strong>AAA League champion is promoted to GridIron 24</strong> for the following season.</p>
+          <ol>
+            <li>Promotion fills a GridIron 24 vacancy created by Toilet Bowl relegation (GridIron 24 Rule Book §5.04) or another vacancy designated by the GridIron 24 commissioner.</li>
+            <li>Promotion is coordinated between the AAA league admin and the GridIron 24 commissioner, including conference assignment and franchise claim.</li>
+            <li>The AAA portal may display the current promotee for clarity only.</li>
+          </ol>
+        </section>
+      </article>
+
+      <article class="article" id="article-vi">
+        <header class="article-head plain">
+          <p class="article-num">Article VI</p>
+          <h2>Prize Pool &amp; Payouts</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§6.01 Buy-In &amp; Pool</h3>
+          <p>Each AAA franchise pays a <strong>$50.00</strong> buy-in. The prize pool equals <strong>$50.00 × final roster size</strong> (expected range <strong>$500.00–$700.00</strong> for 10–14 teams).</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§6.02 Award Schedule</h3>
+          <p>The award schedule below assumes a twelve-franchise field and may be adjusted by the AAA league admin when the roster locks:</p>
+          <table class="aaa-payout-table">
+            <thead>
+              <tr><th>Award</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>AAA Champion</td><td class="amt">$300.00</td></tr>
+              <tr><td>AAA Runner-Up</td><td class="amt">$150.00</td></tr>
+              <tr><td>AAA Third Place</td><td class="amt">$100.00</td></tr>
+              <tr><td>AAA Most Points</td><td class="amt">$50.00</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </article>
+
+      <article class="article" id="article-vii">
+        <header class="article-head plain">
+          <p class="article-num">Article VII</p>
+          <h2>Authority</h2>
+        </header>
+        <section class="section">
+          <h3 class="section-title">§7.01 League Admin</h3>
+          <p>AAA League has its <strong>own league admin</strong>, separate from the GridIron 24 commissioner. The overall commissioner may appoint the AAA league admin in League Tools. The AAA league admin administers AAA membership, franchise assignments, invites, draft logistics, roster patrol, and day-to-day league operations.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§7.02 Amendments</h3>
+          <p>Material AAA rule changes should be communicated before they affect active competition. Changes that affect promotion into GridIron 24 should be coordinated with the GridIron 24 commissioner.</p>
+        </section>
+        <section class="section">
+          <p><a class="book-link" href="/aaa.html">Open AAA League portal →</a></p>
+        </section>
+      </article>
+    </div>
+  </main>
+
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=41"></script>
+</body>
+</html>

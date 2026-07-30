@@ -64,6 +64,9 @@ function leagueToConfig(league) {
     affiliatedLeagues: Array.isArray(league.affiliatedLeagues)
       ? league.affiliatedLeagues
       : (staticConfig.affiliatedLeagues || []),
+    historySeasons: Array.isArray(league.historySeasons)
+      ? league.historySeasons
+      : (staticConfig.historySeasons || []),
     leagueId: league.id,
     slug: league.slug,
     isSystem: Boolean(league.isSystem)

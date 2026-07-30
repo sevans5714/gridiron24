@@ -766,7 +766,8 @@ img.team-logo {
   min-width: 0;
 }
 
-.nav a {
+.nav a,
+.nav .nav-link {
   color: var(--muted);
   text-decoration: none;
   font-family: var(--display);
@@ -780,10 +781,65 @@ img.team-logo {
   white-space: nowrap;
 }
 
-.nav a:hover { color: var(--nav-hover); }
-.nav a.active {
+.nav a:hover,
+.nav .nav-link:hover { color: var(--nav-hover); }
+.nav a.active,
+.nav .nav-link.active {
   color: var(--nav-hover);
   border-bottom-color: var(--blue);
+}
+
+.nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-submenu {
+  position: absolute;
+  top: calc(100% - 0.15rem);
+  left: 0;
+  min-width: 11.5rem;
+  padding: 0.35rem 0;
+  background: var(--topbar-bg-top);
+  border: 1px solid var(--topbar-border);
+  box-shadow: var(--topbar-shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.25rem);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  z-index: 80;
+}
+
+.nav-submenu-link {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.9rem !important;
+  border-bottom: 0 !important;
+  font-size: 0.95rem !important;
+  color: var(--muted) !important;
+  box-sizing: border-box;
+}
+
+.nav-submenu-link:hover {
+  color: var(--nav-hover) !important;
+  background: rgba(47, 109, 255, 0.1);
+}
+
+.nav-item.has-menu:hover .nav-submenu,
+.nav-item.has-menu:focus-within .nav-submenu,
+.nav-item.has-menu.is-open .nav-submenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav-item.has-menu:hover .nav-submenu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
 }
 
 .sync {

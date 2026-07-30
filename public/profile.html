@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=61" />
+  <link rel="stylesheet" href="/css/site.css?v=62" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -263,6 +263,36 @@
       flex-wrap: wrap;
       gap: 0.55rem;
       align-items: center;
+    }
+    .career-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+    .career-table th {
+      text-align: left;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0.35rem 0.4rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .career-table th.num,
+    .career-table td.num { text-align: right; }
+    .career-table td {
+      padding: 0.55rem 0.4rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    .career-table .nm { font-weight: 700; }
+    .career-table .sub {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 500;
     }
     .portal-links {
       margin-top: 1.35rem;
@@ -530,6 +560,7 @@
       <a href="#account">Account</a>
       <a href="#appearance">Appearance</a>
       <a href="#franchise">Franchise</a>
+      <a href="#career">Career</a>
       <a href="#keeper">Keeper</a>
       <a href="#logo">Avatar / Logo</a>
       <a href="#password">Password</a>
@@ -590,6 +621,16 @@
       <div id="franchise-body"><div class="msg">Loading…</div></div>
     </section>
 
+    <section class="profile-card" id="career">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Career</h2>
+          <p>Prior seasons linked to your account by the commissioner as you join GridIron 24.</p>
+        </div>
+      </div>
+      <div id="career-body"><div class="msg">Loading…</div></div>
+    </section>
+
     <section class="profile-card" id="keeper">
       <div class="section-head">
         <div class="section-head-block">
@@ -644,7 +685,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=40"></script>
+  <script src="/js/nav.js?v=41"></script>
   <script src="/js/team-icons.js?v=9"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -850,6 +891,51 @@
       const o = Math.max(1, Number(originalRound) || 1);
       const n = Math.max(1, Math.min(2, Number(keepNumber) || 1));
       return o + (n - 1);
+    }
+
+    function renderCareer(data) {
+      const mount = document.getElementById('career-body');
+      if (!mount) return;
+      const rows = Array.isArray(data.career) ? data.career : [];
+      if (!rows.length) {
+        mount.innerHTML = `<p class="profile-note">No prior seasons are linked yet. As you join GridIron 24, the commissioner can attach your Year 1–3 franchises here so your career stats stay on your profile.</p>`;
+        return;
+      }
+      const fmt = (n) => (n == null || n === '' || !Number.isFinite(Number(n)) ? '—' : Number(n).toFixed(1));
+      const rec = (e) => {
+        if (e.wins == null) return '—';
+        return Number(e.ties || 0) > 0 ? `${e.wins}-${e.losses}-${e.ties}` : `${e.wins}-${e.losses}`;
+      };
+      mount.innerHTML = `
+        <table class="career-table">
+          <thead>
+            <tr>
+              <th>Season</th>
+              <th>Franchise</th>
+              <th class="num">W-L</th>
+              <th class="num">PF</th>
+              <th class="num">PA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((e) => `
+              <tr>
+                <td>
+                  <span class="nm">${escP(e.label || (e.yearNumber ? `Year ${e.yearNumber}` : String(e.season)))}</span>
+                  <span class="sub">${escP(String(e.season))}${e.playoffSeed ? ` · Seed ${escP(String(e.playoffSeed))}` : ''}</span>
+                </td>
+                <td>
+                  <span class="nm">${escP(e.teamName)}</span>
+                  ${e.ownerName ? `<span class="sub">${escP(e.ownerName)}</span>` : ''}
+                </td>
+                <td class="num">${escP(rec(e))}</td>
+                <td class="num">${escP(fmt(e.pointsFor))}</td>
+                <td class="num">${escP(fmt(e.pointsAgainst))}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <p class="profile-note"><a href="/history.html" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Browse full league history →</a></p>`;
     }
 
     function renderKeeper(data) {
@@ -1231,6 +1317,7 @@
       renderAccount(myTeamData);
       renderAppearance(myTeamData.user?.theme || window.GridIronNav?.getTheme?.() || 'night');
       renderFranchise(myTeamData);
+      renderCareer(myTeamData);
       renderKeeper(myTeamData);
       renderLogoSection(myTeamData);
       if (withSync) {
@@ -1288,7 +1375,7 @@
         wirePasswordForm();
         if (location.hash === '#logo') {
           document.getElementById('logo')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (location.hash === '#franchise' || location.hash === '#keeper' || location.hash === '#account' || location.hash === '#appearance') {
+        } else if (location.hash === '#franchise' || location.hash === '#career' || location.hash === '#keeper' || location.hash === '#account' || location.hash === '#appearance') {
           document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' });
         } else if (location.hash === '#password') {
           document.getElementById('password')?.scrollIntoView({ behavior: 'smooth' });

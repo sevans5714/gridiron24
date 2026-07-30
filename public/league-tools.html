@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=61" />
+  <link rel="stylesheet" href="/css/site.css?v=62" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -554,6 +554,28 @@
     .role-pill.commissioner { color: #f0d78c; }
     .role-pill.conference_admin { color: #8eb6ff; }
     .muted-sm { color: var(--muted); font-size: 0.78rem; }
+    .career-assign select {
+      display: block;
+      width: 100%;
+      max-width: 16rem;
+      margin-top: 0.25rem;
+    }
+    .career-mini-list {
+      list-style: none;
+      margin: 0.55rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 0.35rem;
+    }
+    .career-mini-list li {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.75rem;
+      align-items: baseline;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text);
+    }
 
     .invite-links {
       margin: 0.85rem 0 1.15rem;
@@ -772,6 +794,7 @@
           <p class="comm-nav-label">Season</p>
           <a href="#calendar-admin" id="jump-calendar" hidden>Calendar</a>
           <a href="#rankings-admin" id="jump-rankings" hidden>Rankings</a>
+          <a href="#history-admin" id="jump-history" hidden>Season Archive</a>
         </div>
       </nav>
 
@@ -856,7 +879,7 @@
               <div class="section-head">
                 <h3>Member Access</h3>
               </div>
-              <p class="help">Approve new accounts, assign or remove franchises, and set access roles. One conference admin per conference — demote the current admin to Member before assigning someone else. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
+              <p class="help">Approve new accounts, assign current franchises, link <strong>prior-year teams</strong> to each profile as managers sign up, and set access roles. One conference admin per conference — appoint after the annual random conference draw. Demote the current admin to Member before assigning someone else. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
               <div class="status-note" id="members-msg" role="status"></div>
               <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
@@ -994,6 +1017,23 @@
               <textarea class="field field-area" id="rank-lines" placeholder="detail|1|Team Name|Looking sharp" style="margin-top:0.75rem;min-height:16rem;"></textarea>
               <div class="list-gap" id="rankings-list"></div>
             </section>
+
+            <section class="admin-block" id="history-admin" hidden>
+              <div class="section-head"><h3>Season Archive</h3></div>
+              <p class="help">
+                Past seasons power <a href="/history.html">Teams → History</a> and draft boards.
+                Use the ESPN settings URL for each year (<code>leagueId</code> + <code>seasonId</code>).
+                Pre-split years can use one league ID for both columns.
+                Seasons must be publicly viewable on ESPN, or set <code>ESPN_SWID</code> / <code>ESPN_S2</code> on the server for private history.
+              </p>
+              <div class="status-note" id="history-msg" role="status"></div>
+              <p class="help" id="history-auth-note" hidden></p>
+              <textarea class="field field-area" id="history-lines" style="min-height:9rem;" placeholder="yearNumber|season|espnLeagueId|optional label&#10;1|2023|1856396051|Year 1&#10;2|2024|1856396051|Year 2&#10;3|2025|1856396051|Year 3"></textarea>
+              <div class="toolbar" style="margin-top:0.75rem;">
+                <button type="button" class="btn btn-secondary" id="history-fill-example">Fill Years 1–3 example</button>
+                <button type="button" class="btn" id="history-save">Save archive</button>
+              </div>
+            </section>
           </div>
         </section>
       </div>
@@ -1005,7 +1045,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=40"></script>
+  <script src="/js/nav.js?v=41"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1230,6 +1270,44 @@
       return `${claim.conferenceKey}:${claim.teamId}`;
     }
 
+    function recordLabel(t) {
+      if (t == null || t.wins == null) return '';
+      return Number(t.ties || 0) > 0 ? `${t.wins}-${t.losses}-${t.ties}` : `${t.wins}-${t.losses}`;
+    }
+
+    function careerListHtml(entries) {
+      const list = entries || [];
+      if (!list.length) return `<p class="muted-sm" style="margin:0.45rem 0 0;">No prior seasons linked.</p>`;
+      return `<ul class="career-mini-list">${list.map((e) => `
+        <li>
+          <span><strong>${esc(e.label || `Year ${e.yearNumber || e.season}`)}</strong> · ${esc(e.teamName)}${recordLabel(e) ? ` · ${esc(recordLabel(e))}` : ''}</span>
+          <button type="button" class="link-action" data-remove-career="${esc(e.id)}" data-user-id="${esc(e.userId)}">Remove</button>
+        </li>
+      `).join('')}</ul>`;
+    }
+
+    function careerAssignHtml(user) {
+      if (user.approved === false) return '';
+      const seasons = window.__giArchiveSeasons || [];
+      const prior = seasons.filter((s) => !String(s.label || '').toLowerCase().includes('current'));
+      if (!prior.length) {
+        return `<p class="muted-sm" style="margin:0.45rem 0 0;">Add seasons in Season Archive first, then link past teams here.</p>`;
+      }
+      return `
+        <div class="career-assign" data-career-user="${esc(user.id)}">
+          <label class="muted-sm" style="display:block;margin:0.55rem 0 0.25rem;">Prior season</label>
+          <select class="career-season" data-user-id="${esc(user.id)}" aria-label="Prior season">
+            <option value="">Select season…</option>
+            ${prior.map((s) => `<option value="${esc(String(s.season))}">${esc(s.label || s.season)}</option>`).join('')}
+          </select>
+          <select class="career-team" data-user-id="${esc(user.id)}" aria-label="Prior team" disabled>
+            <option value="">Select team…</option>
+          </select>
+          <button type="button" class="btn btn-secondary career-add" data-user-id="${esc(user.id)}" style="margin-top:0.4rem;" disabled>Link to profile</button>
+          ${careerListHtml(user.career)}
+        </div>`;
+    }
+
     function teamOptionsHtml(conferences, claim) {
       const current = teamAssignValue(claim);
       const opts = [`<option value="">No franchise</option>`];
@@ -1251,11 +1329,69 @@
       return opts.join('');
     }
 
+    async function fillCareerTeamSelect(userId, season) {
+      const wrap = document.querySelector(`.career-assign[data-career-user="${String(userId).replace(/"/g, '')}"]`);
+      if (!wrap) return;
+      const teamSelect = wrap.querySelector('.career-team');
+      const addBtn = wrap.querySelector('.career-add');
+      teamSelect.disabled = true;
+      addBtn.disabled = true;
+      teamSelect.innerHTML = `<option value="">Loading teams…</option>`;
+      if (!season) {
+        teamSelect.innerHTML = `<option value="">Select team…</option>`;
+        return;
+      }
+      try {
+        const cacheKey = String(season);
+        if (!window.__giArchiveTeams) window.__giArchiveTeams = {};
+        if (!window.__giArchiveTeams[cacheKey]) {
+          const res = await fetch(`/api/history?season=${encodeURIComponent(season)}`, { cache: 'no-store' });
+          const data = await res.json();
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load season');
+          const teams = [];
+          for (const conf of (data.conferences || [])) {
+            if (!conf.ok) continue;
+            for (const t of (conf.teams || [])) {
+              teams.push({
+                season: Number(data.season),
+                yearNumber: data.entry?.yearNumber || null,
+                label: data.entry?.label || null,
+                espnLeagueId: conf.leagueId || data.entry?.detailEspnLeagueId || null,
+                conferenceKey: conf.key === 'archive' ? null : conf.key,
+                teamId: t.id,
+                teamName: t.name,
+                ownerName: t.owner || null,
+                wins: t.wins,
+                losses: t.losses,
+                ties: t.ties,
+                pointsFor: t.pointsFor,
+                pointsAgainst: t.pointsAgainst,
+                playoffSeed: t.playoffSeed
+              });
+            }
+          }
+          window.__giArchiveTeams[cacheKey] = teams;
+        }
+        const teams = window.__giArchiveTeams[cacheKey] || [];
+        if (!teams.length) {
+          teamSelect.innerHTML = `<option value="">No teams found (check ESPN access)</option>`;
+          return;
+        }
+        teamSelect.innerHTML = `<option value="">Select team…</option>` + teams.map((t, i) => (
+          `<option value="${i}">${esc(t.teamName)}${t.ownerName ? ` · ${esc(t.ownerName)}` : ''} · ${esc(recordLabel(t) || '—')}</option>`
+        )).join('');
+        teamSelect.disabled = false;
+      } catch (err) {
+        teamSelect.innerHTML = `<option value="">${esc(err.message || 'Unavailable')}</option>`;
+      }
+    }
+
     function renderMembers(payload) {
       const list = payload.users || [];
       const conferences = payload.conferences || [];
       window.__giClaims = payload.claims || list.map((u) => u.claim).filter(Boolean);
       window.__giAdminLeagues = conferences;
+      window.__giArchiveSeasons = payload.archiveSeasons || [];
       if (!list.length) {
         document.getElementById('members-list').innerHTML = `<div class="msg">No member accounts yet.</div>`;
         return;
@@ -1270,7 +1406,7 @@
             <tr>
               <th>Member</th>
               <th>Status</th>
-              <th>Franchise</th>
+              <th>Franchise &amp; career</th>
               <th>Access</th>
             </tr>
           </thead>
@@ -1294,7 +1430,8 @@
                   <select class="team-select" data-user-id="${esc(u.id)}" aria-label="Assign franchise" ${u.approved === false ? 'disabled' : ''}>
                     ${teamOptionsHtml(conferences, u.claim)}
                   </select>
-                  ${u.claim ? `<button type="button" class="link-action" style="margin-top:0.4rem;" data-remove-team="${esc(u.id)}">Remove team</button>` : ''}
+                  ${u.claim ? `<button type="button" class="link-action" style="margin-top:0.4rem;" data-remove-team="${esc(u.id)}">Remove current team</button>` : ''}
+                  ${careerAssignHtml(u)}
                 </td>
                 <td>
                   <select class="role-select" data-user-id="${esc(u.id)}" ${u.approved === false ? 'disabled' : ''}>
@@ -1336,6 +1473,66 @@
             await loadMembers();
           } finally {
             select.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll('.career-season').forEach((select) => {
+        select.addEventListener('change', async () => {
+          await fillCareerTeamSelect(select.dataset.userId, select.value);
+        });
+      });
+      document.querySelectorAll('.career-team').forEach((select) => {
+        select.addEventListener('change', () => {
+          const wrap = select.closest('.career-assign');
+          const addBtn = wrap?.querySelector('.career-add');
+          if (addBtn) addBtn.disabled = !select.value;
+        });
+      });
+      document.querySelectorAll('.career-add').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const userId = btn.dataset.userId;
+          const wrap = btn.closest('.career-assign');
+          const season = wrap?.querySelector('.career-season')?.value;
+          const teamIdx = wrap?.querySelector('.career-team')?.value;
+          const teams = window.__giArchiveTeams?.[String(season)] || [];
+          const team = teams[Number(teamIdx)];
+          if (!team) {
+            showMembersMsg('Pick a prior season and team.', false);
+            return;
+          }
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/career`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(team)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not link past team');
+            showMembersMsg(`Linked ${data.entry.teamName} (${data.entry.label || data.entry.season}) to profile.`, true);
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            btn.disabled = false;
+          }
+        });
+      });
+      document.querySelectorAll('[data-remove-career]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const entryId = btn.dataset.removeCareer;
+          const userId = btn.dataset.userId;
+          if (!confirm('Remove this prior-season team from the member profile?')) return;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/career/${encodeURIComponent(entryId)}`, {
+              method: 'DELETE'
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not remove');
+            showMembersMsg('Removed prior-season link.', true);
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
           }
         });
       });
@@ -2189,6 +2386,98 @@
       });
     }
 
+    function showHistoryMsg(text, ok) {
+      const el = document.getElementById('history-msg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.className = `status-note show ${ok === true ? 'ok' : ok === false ? 'err' : ''}`;
+    }
+
+    function historyLinesFromConfigured(configured) {
+      return (configured || []).map((row) => {
+        const shared = row.detailEspnLeagueId
+          && row.overtimeEspnLeagueId
+          && Number(row.detailEspnLeagueId) === Number(row.overtimeEspnLeagueId);
+        const idPart = shared
+          ? String(row.detailEspnLeagueId)
+          : [
+              row.detailEspnLeagueId || '',
+              row.overtimeEspnLeagueId || ''
+            ].join('/');
+        return [
+          row.yearNumber || '',
+          row.season,
+          idPart,
+          row.label || ''
+        ].join('|');
+      }).join('\n');
+    }
+
+    function parseHistoryLines(text) {
+      return String(text || '')
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [yearNumber, season, ids, label] = line.split('|').map((p) => String(p || '').trim());
+          const parts = String(ids || '').split(/[\/,\s]+/).map((p) => p.trim()).filter(Boolean);
+          const detailEspnLeagueId = Number(parts[0]) || null;
+          const overtimeEspnLeagueId = Number(parts[1] || parts[0]) || null;
+          return {
+            yearNumber: Number(yearNumber) || null,
+            season: Number(season),
+            detailEspnLeagueId,
+            overtimeEspnLeagueId,
+            label: label || undefined
+          };
+        });
+    }
+
+    async function loadHistoryAdmin() {
+      const res = await fetch('/api/history-seasons', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load archive');
+      document.getElementById('history-lines').value = historyLinesFromConfigured(data.configured || []);
+      const authNote = document.getElementById('history-auth-note');
+      if (authNote) {
+        authNote.hidden = false;
+        authNote.textContent = data.espnAuthConfigured
+          ? 'ESPN private-league cookies are configured on the server.'
+          : 'No ESPN_SWID/ESPN_S2 on server — past private seasons need to be publicly viewable on ESPN.';
+      }
+    }
+
+    function wireHistoryAdmin() {
+      document.getElementById('group-season').hidden = false;
+      document.getElementById('nav-season').hidden = false;
+      document.getElementById('history-admin').hidden = false;
+      document.getElementById('jump-history').hidden = false;
+      document.getElementById('history-fill-example').addEventListener('click', () => {
+        document.getElementById('history-lines').value = [
+          '1|2023|1856396051|Year 1 (2023)',
+          '2|2024|1856396051|Year 2 (2024)',
+          '3|2025|1856396051|Year 3 (2025)'
+        ].join('\n');
+        showHistoryMsg('Example Years 1–3 filled using leagueId 1856396051. Confirm IDs from each year’s ESPN settings URL, then Save.', true);
+      });
+      document.getElementById('history-save').addEventListener('click', async () => {
+        try {
+          const seasons = parseHistoryLines(document.getElementById('history-lines').value);
+          const res = await fetch('/api/history-seasons', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seasons })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save archive');
+          document.getElementById('history-lines').value = historyLinesFromConfigured(data.configured || []);
+          showHistoryMsg(`Saved ${((data.configured || []).length)} prior season(s). Managers can open Teams → History.`, true);
+        } catch (err) {
+          showHistoryMsg(err.message, false);
+        }
+      });
+    }
+
     let ownersRoster = { teams: [], conference: null, mail: null };
     let ownersViewer = null;
 
@@ -2407,8 +2696,12 @@
         wireWrapAdmin();
         wireCalendarAdmin();
         wireRankingsAdmin();
+        wireHistoryAdmin();
         try { await loadCalendarAdmin(); } catch { /* ignore */ }
         try { await loadRankingsAdmin(); } catch { /* ignore */ }
+        try { await loadHistoryAdmin(); } catch (err) {
+          showHistoryMsg(err.message || 'Could not load season archive', false);
+        }
         try { await loadMembers(); } catch (err) {
           document.getElementById('members').hidden = false;
           document.getElementById('jump-members').hidden = false;

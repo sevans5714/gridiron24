@@ -156,12 +156,54 @@ function publicLeague(league) {
     affiliatedLeagues: Array.isArray(league.affiliatedLeagues)
       ? league.affiliatedLeagues
       : defaultAffiliatedLeagues(),
+    historySeasons: Array.isArray(league.historySeasons) ? league.historySeasons : [],
     payouts: league.payouts,
     calendarDefaults: league.calendarDefaults,
     ownerUserId: league.ownerUserId || null,
     createdAt: league.createdAt,
     activatedAt: league.activatedAt || null
   };
+}
+
+function normalizeHistorySeasons(list) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  return list
+    .map((row) => {
+      const season = Number(row.season);
+      if (!Number.isFinite(season) || season < 2000 || season > 2100) return null;
+      const sharedId = Number(row.espnLeagueId || 0) || null;
+      const detailId = Number(row.detailEspnLeagueId || sharedId || 0) || null;
+      const overtimeId = Number(row.overtimeEspnLeagueId || sharedId || 0) || null;
+      if (!detailId && !overtimeId) return null;
+      const yearNumber = Number(row.yearNumber) || null;
+      return {
+        season,
+        yearNumber: Number.isFinite(yearNumber) && yearNumber > 0 ? yearNumber : null,
+        label: String(row.label || '').trim()
+          || (yearNumber ? `Year ${yearNumber} (${season})` : String(season)),
+        detailEspnLeagueId: detailId,
+        overtimeEspnLeagueId: overtimeId,
+        notes: String(row.notes || '').trim() || null
+      };
+    })
+    .filter(Boolean)
+    .filter((row) => {
+      if (seen.has(row.season)) return false;
+      seen.add(row.season);
+      return true;
+    })
+    .sort((a, b) => b.season - a.season);
+}
+
+function setHistorySeasons(leagueId, seasons) {
+  const store = readStore();
+  const league = store.leagues.find((l) => l.id === leagueId);
+  if (!league) throw Object.assign(new Error('League not found'), { status: 404 });
+  league.historySeasons = normalizeHistorySeasons(seasons);
+  league.updatedAt = new Date().toISOString();
+  writeStore(store);
+  return publicLeague(league);
 }
 
 function listLeagues() {
@@ -402,6 +444,15 @@ function ensureSystemLeague(seed) {
             logo: match.logo || '/assets/aaa-league.png'
           };
         }
+        const seedEspn = Number(match.espnLeagueId);
+        const rowEspn = Number(row.espnLeagueId);
+        if (Number.isFinite(seedEspn) && seedEspn > 0 && seedEspn !== rowEspn) {
+          dirty = true;
+          next = {
+            ...next,
+            espnLeagueId: seedEspn
+          };
+        }
         return next;
       });
     }
@@ -438,6 +489,12 @@ function ensureSystemLeague(seed) {
     }
     if (!store.activeLeagueId) {
       store.activeLeagueId = system.id;
+      dirty = true;
+    }
+    if (!Array.isArray(system.historySeasons)) {
+      system.historySeasons = Array.isArray(seed.historySeasons)
+        ? normalizeHistorySeasons(seed.historySeasons)
+        : [];
       dirty = true;
     }
     if (dirty) writeStore(store);
@@ -498,6 +555,7 @@ function ensureSystemLeague(seed) {
     calendarDefaults: seed.calendarDefaults || [],
     survival: defaultSurvival(seed.survival),
     affiliatedLeagues: defaultAffiliatedLeagues(seed.affiliatedLeagues),
+    historySeasons: normalizeHistorySeasons(seed.historySeasons || []),
     ownerUserId: null,
     createdAt: new Date().toISOString(),
     activatedAt: new Date().toISOString()
@@ -583,6 +641,8 @@ module.exports = {
   attachOwner,
   registrationEnabled,
   publicLeague,
+  setHistorySeasons,
+  normalizeHistorySeasons,
   slugify,
   conferenceKeyFromName
 };

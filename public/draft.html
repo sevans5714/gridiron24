@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Draft Results · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=62" />
+  <style>
+    .draft-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0.5rem 0 1rem;
+    }
+    .draft-tabs {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .draft-tabs button {
+      font-family: var(--display);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 0.45rem 0.85rem;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .draft-tabs button.active {
+      color: var(--text);
+      border-color: var(--blue);
+      background: rgba(47, 109, 255, 0.12);
+    }
+    .draft-meta {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .draft-scroll {
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: #f4f4f2;
+      max-height: min(78vh, 920px);
+    }
+    [data-theme="night"] .draft-scroll { background: #121212; }
+    .draft-board {
+      display: grid;
+      gap: 2px;
+      min-width: max-content;
+      padding: 2px;
+      background: #c8c8c4;
+    }
+    [data-theme="night"] .draft-board { background: #2a2a2a; }
+    .draft-corner,
+    .draft-team-head,
+    .draft-round,
+    .draft-cell {
+      background: #fff;
+    }
+    [data-theme="night"] .draft-corner,
+    [data-theme="night"] .draft-team-head,
+    [data-theme="night"] .draft-round {
+      background: #1a1a1a;
+      color: var(--text);
+    }
+    .draft-corner {
+      position: sticky;
+      left: 0;
+      top: 0;
+      z-index: 5;
+      min-width: 2.4rem;
+    }
+    .draft-team-head {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      min-width: 7.6rem;
+      max-width: 8.4rem;
+      padding: 0.45rem 0.35rem;
+      text-align: center;
+      border-bottom: 2px solid #111;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      line-height: 1.2;
+      color: #111;
+    }
+    [data-theme="night"] .draft-team-head {
+      border-bottom-color: rgba(255,255,255,0.35);
+      color: var(--text);
+    }
+    .draft-team-head .owner {
+      display: block;
+      margin-top: 0.15rem;
+      font-family: var(--body);
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      color: #555;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    [data-theme="night"] .draft-team-head .owner { color: var(--muted); }
+    .draft-round {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1rem;
+      color: #111;
+      min-width: 2.4rem;
+    }
+    .draft-cell {
+      min-height: 3.55rem;
+      min-width: 7.6rem;
+      max-width: 8.4rem;
+      padding: 0.28rem 0.32rem 0.35rem;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 0.1rem;
+      color: #111;
+    }
+    .draft-cell.empty {
+      background: #ecece8;
+    }
+    [data-theme="night"] .draft-cell.empty {
+      background: #222;
+    }
+    .draft-cell .top {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.2rem;
+      align-items: baseline;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      opacity: 0.92;
+    }
+    .draft-cell .first {
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+    }
+    .draft-cell .last {
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      line-height: 1.05;
+      text-align: center;
+      align-self: center;
+      word-break: break-word;
+    }
+    .draft-cell.pos-QB { background: #e85d5d; }
+    .draft-cell.pos-RB { background: #5fbf6a; }
+    .draft-cell.pos-WR { background: #5aa8e8; }
+    .draft-cell.pos-TE { background: #f0b24a; }
+    .draft-cell.pos-K { background: #c9a0e8; }
+    .draft-cell.pos-DST { background: #8a9aa8; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0.85rem 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-right: 0.35rem;
+    }
+    .swatch {
+      width: 0.85rem;
+      height: 0.85rem;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .swatch.QB { background: #e85d5d; }
+    .swatch.RB { background: #5fbf6a; }
+    .swatch.WR { background: #5aa8e8; }
+    .swatch.TE { background: #f0b24a; }
+    .swatch.K { background: #c9a0e8; }
+    .swatch.DST { background: #8a9aa8; }
+  </style>
+</head>
+<body data-page="draft">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Draft</div>
+    </div>
+  </header>
+  <section class="page-hero shell">
+    <p class="eyebrow">Teams · Draft</p>
+    <h1>Draft Results</h1>
+  </section>
+  <main class="page-main shell">
+    <div class="draft-toolbar">
+      <div class="draft-tabs" id="conf-tabs" role="tablist" aria-label="Conference"></div>
+      <p class="draft-meta" id="draft-meta">Loading…</p>
+    </div>
+    <div id="draft-mount"><div class="msg">Loading draft board…</div></div>
+    <div class="legend" id="legend" hidden>
+      <span><i class="swatch QB"></i>QB</span>
+      <span><i class="swatch RB"></i>RB</span>
+      <span><i class="swatch WR"></i>WR</span>
+      <span><i class="swatch TE"></i>TE</span>
+      <span><i class="swatch K"></i>K</span>
+      <span><i class="swatch DST"></i>D/ST</span>
+    </div>
+  </main>
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=41"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    const CONFS = [
+      { key: 'detail', label: 'Detail' },
+      { key: 'overtime', label: 'Overtime' }
+    ];
+    let activeConf = new URLSearchParams(location.search).get('conference') || 'detail';
+    if (!CONFS.some((c) => c.key === activeConf)) activeConf = 'detail';
+    let activeSeason = new URLSearchParams(location.search).get('season') || '';
+
+    function posClass(pos) {
+      if (pos === 'D/ST' || pos === 'DST') return 'pos-DST';
+      const clean = String(pos || '').replace(/[^A-Za-z0-9]/g, '');
+      return clean ? `pos-${clean}` : '';
+    }
+
+    function renderTabs() {
+      document.getElementById('conf-tabs').innerHTML = CONFS.map((c) => (
+        `<button type="button" class="${c.key === activeConf ? 'active' : ''}" data-conf="${esc(c.key)}">${esc(c.label)}</button>`
+      )).join('');
+      document.querySelectorAll('#conf-tabs button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeConf = btn.dataset.conf;
+          const url = new URL(location.href);
+          url.searchParams.set('conference', activeConf);
+          if (activeSeason) url.searchParams.set('season', activeSeason);
+          history.replaceState({}, '', url);
+          loadDraft();
+          renderTabs();
+        });
+      });
+    }
+
+    function cellHtml(pick) {
+      if (!pick?.filled) {
+        return `<div class="draft-cell empty" title="Undrafted slot"></div>`;
+      }
+      const pos = pick.position === 'D/ST' ? 'D/ST' : pick.position;
+      return `<div class="draft-cell ${posClass(pos)}" title="${esc(pick.fullName)} · Rd ${esc(String(pick.round))} · Overall ${esc(String(pick.overall || ''))}">
+        <div class="top">
+          <span>${esc(pos)}</span>
+          <span class="first">${esc(pick.firstName)}</span>
+          <span>${esc(pick.proTeam)}</span>
+        </div>
+        <div class="last">${esc(pick.lastName)}</div>
+      </div>`;
+    }
+
+    function renderBoard(data) {
+      const mount = document.getElementById('draft-mount');
+      const meta = document.getElementById('draft-meta');
+      const legend = document.getElementById('legend');
+      if (!data.ok) {
+        mount.innerHTML = `<div class="msg">${esc(data.error || 'Draft unavailable')}</div>`;
+        meta.textContent = '';
+        legend.hidden = true;
+        return;
+      }
+
+      const d = data.draft || {};
+      if (!d.visible) {
+        mount.innerHTML = `<div class="msg">Draft board unlocks once the ${esc(String(data.season))} draft starts or completes on ESPN.</div>`;
+        meta.textContent = `${data.conference?.name || ''} · ${d.type || 'SNAKE'} · not started`;
+        legend.hidden = true;
+        return;
+      }
+
+      const cols = data.columns || [];
+      const rows = data.board || [];
+      const colCount = cols.length + 1;
+      meta.textContent = [
+        data.conference?.name || '',
+        d.type || 'SNAKE',
+        d.inProgress ? 'in progress' : (d.drafted ? 'complete' : 'partial'),
+        `${d.filledCount || 0}/${d.totalSlots || 0} picks`
+      ].filter(Boolean).join(' · ');
+
+      const head = [
+        `<div class="draft-corner"></div>`,
+        ...cols.map((t) => `<div class="draft-team-head" title="${esc(t.name)}">${esc(t.abbreviation || t.name)}${t.owner ? `<span class="owner">${esc(t.owner)}</span>` : ''}</div>`)
+      ].join('');
+
+      const body = rows.map((row) => {
+        const cells = (row.cells || []).map(cellHtml).join('');
+        return `<div class="draft-round">${esc(String(row.round))}</div>${cells}`;
+      }).join('');
+
+      mount.innerHTML = `<div class="draft-scroll"><div class="draft-board" style="grid-template-columns: 2.4rem repeat(${cols.length}, minmax(7.6rem, 8.4rem));">${head}${body}</div></div>`;
+      legend.hidden = false;
+    }
+
+    async function loadDraft() {
+      const mount = document.getElementById('draft-mount');
+      mount.innerHTML = `<div class="msg">Loading draft board…</div>`;
+      try {
+        const qs = new URLSearchParams({ conference: activeConf });
+        if (activeSeason) qs.set('season', activeSeason);
+        const res = await fetch(`/api/draft?${qs}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not load draft');
+        if (data.season) activeSeason = String(data.season);
+        renderBoard(data);
+      } catch (err) {
+        renderBoard({ ok: false, error: err.message || 'Could not load draft' });
+      }
+    }
+
+    renderTabs();
+    loadDraft();
+  </script>
+</body>
+</html>

@@ -39,6 +39,7 @@ const powerRankings = require('./power-rankings-store');
 const rulesSyncStore = require('./rules-sync-store');
 const rosterViolations = require('./roster-violations-store');
 const keepers = require('./keepers-store');
+const career = require('./career-store');
 const leagues = require('./leagues-store');
 const { compareSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
@@ -62,6 +63,19 @@ const CACHE_MS = 30_000;
 const cache = new Map();
 const ESPN_NEWS_CACHE_MS = 5 * 60_000;
 let espnNewsCache = { at: 0, items: [] };
+
+function espnAuthHeaders() {
+  const headers = {
+    Accept: 'application/json,text/plain,*/*',
+    'User-Agent': 'GridIron24/0.1 (+local proof-of-concept)'
+  };
+  const swid = String(process.env.ESPN_SWID || '').trim();
+  const s2 = String(process.env.ESPN_S2 || '').trim();
+  if (swid && s2) {
+    headers.Cookie = `SWID=${swid}; espn_s2=${s2}`;
+  }
+  return headers;
+}
 
 async function fetchEspnNflNews(limit = 10) {
   if (Date.now() - espnNewsCache.at < ESPN_NEWS_CACHE_MS && espnNewsCache.items.length) {
@@ -480,17 +494,18 @@ function normalizeLeague(raw, conference) {
   };
 }
 
-async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}) {
+async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}, seasonOverride = null) {
+  const season = Number(seasonOverride) || Number(config.season);
   const queryKey = Object.keys(query || {})
     .sort()
     .map((k) => `${k}=${query[k]}`)
     .join('&');
-  const cacheKey = `${config.season}:${conference.espnLeagueId}:${cacheSuffix || views.join(',')}${queryKey ? `:${queryKey}` : ''}`;
+  const cacheKey = `${season}:${conference.espnLeagueId}:${cacheSuffix || views.join(',')}${queryKey ? `:${queryKey}` : ''}`;
   const existing = cache.get(cacheKey);
   if (existing && Date.now() - existing.at < CACHE_MS) return existing.data;
 
   const endpoint = new URL(
-    `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${config.season}/segments/0/leagues/${conference.espnLeagueId}`
+    `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leagues/${conference.espnLeagueId}`
   );
   for (const view of views) endpoint.searchParams.append('view', view);
   for (const [key, value] of Object.entries(query || {})) {
@@ -502,16 +517,19 @@ async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}) {
 
   try {
     const response = await fetch(endpoint, {
-      headers: {
-        Accept: 'application/json,text/plain,*/*',
-        'User-Agent': 'GridIron24/0.1 (+local proof-of-concept)'
-      },
+      headers: espnAuthHeaders(),
       signal: controller.signal
     });
 
     if (!response.ok) {
       const text = await response.text();
-      const err = new Error(`ESPN returned ${response.status}`);
+      const err = new Error(
+        response.status === 401
+          ? 'ESPN league is private for that season — make it publicly viewable in ESPN settings'
+          : response.status === 404
+            ? 'No ESPN league found for that season / league ID'
+            : `ESPN returned ${response.status}`
+      );
       err.status = response.status;
       err.detail = text.slice(0, 300);
       throw err;
@@ -523,6 +541,333 @@ async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+const PRO_TEAM_ABBREV = {
+  0: 'FA', 1: 'ATL', 2: 'BUF', 3: 'CHI', 4: 'CIN', 5: 'CLE', 6: 'DAL', 7: 'DEN', 8: 'DET',
+  9: 'GB', 10: 'TEN', 11: 'IND', 12: 'KC', 13: 'LV', 14: 'LAR', 15: 'MIA', 16: 'MIN',
+  17: 'NE', 18: 'NO', 19: 'NYG', 20: 'NYJ', 21: 'PHI', 22: 'ARI', 23: 'PIT', 24: 'LAC',
+  25: 'SF', 26: 'SEA', 27: 'TB', 28: 'WSH', 29: 'CAR', 30: 'JAX', 33: 'BAL', 34: 'HOU'
+};
+
+async function fetchEspnPlayersByIds(playerIds, season) {
+  const unique = [...new Set((playerIds || []).map(Number).filter((id) => Number.isFinite(id) && id > 0))];
+  const map = new Map();
+  if (!unique.length) return map;
+  const seasonNum = Number(season) || Number(config.season);
+  const chunkSize = 40;
+  for (let i = 0; i < unique.length; i += chunkSize) {
+    const chunk = unique.slice(i, i + chunkSize);
+    const endpoint = new URL(
+      `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${seasonNum}/players`
+    );
+    endpoint.searchParams.set('scoringPeriodId', '0');
+    endpoint.searchParams.set('view', 'players_wl');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const response = await fetch(endpoint, {
+        headers: {
+          ...espnAuthHeaders(),
+          'X-Fantasy-Filter': JSON.stringify({ filterIds: { value: chunk } })
+        },
+        signal: controller.signal
+      });
+      if (!response.ok) continue;
+      const raw = await response.json();
+      const list = Array.isArray(raw) ? raw : (raw.players || []);
+      for (const player of list) {
+        if (!player?.id) continue;
+        map.set(Number(player.id), {
+          id: Number(player.id),
+          fullName: playerName(player),
+          firstName: player.firstName || '',
+          lastName: player.lastName || player.fullName || 'Unknown',
+          position: POSITION_LABELS[player.defaultPositionId] || '—',
+          proTeamId: player.proTeamId || 0,
+          proTeam: PRO_TEAM_ABBREV[player.proTeamId] || 'FA'
+        });
+      }
+    } catch {
+      /* ignore chunk failures */
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  return map;
+}
+
+function splitPlayerName(fullName, firstName, lastName) {
+  const first = String(firstName || '').trim();
+  const last = String(lastName || '').trim();
+  if (first || last) return { firstName: first, lastName: last || fullName || 'Unknown' };
+  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return { firstName: '', lastName: 'Unknown' };
+  if (parts.length === 1) return { firstName: '', lastName: parts[0] };
+  return { firstName: parts.slice(0, -1).join(' '), lastName: parts[parts.length - 1] };
+}
+
+async function loadDraftBoard(conferenceKey, seasonOverride = null) {
+  const conference = resolveEspnLeague(conferenceKey);
+  if (!conference) {
+    const err = new Error('Unknown conference');
+    err.status = 400;
+    throw err;
+  }
+  const season = Number(seasonOverride) || Number(config.season);
+  const historyEntry = historySeasonEntries().find((e) => e.season === season);
+  let espnLeagueId = conference.espnLeagueId;
+  if (historyEntry) {
+    if (conference.key === 'detail' && historyEntry.detailEspnLeagueId) {
+      espnLeagueId = historyEntry.detailEspnLeagueId;
+    } else if (conference.key === 'overtime' && historyEntry.overtimeEspnLeagueId) {
+      espnLeagueId = historyEntry.overtimeEspnLeagueId;
+    }
+  }
+  if (!espnLeagueId) {
+    const err = new Error('Conference has no ESPN league ID for that season');
+    err.status = 400;
+    throw err;
+  }
+  const conferenceForFetch = { ...conference, espnLeagueId };
+  const raw = await fetchEspnRaw(
+    conferenceForFetch,
+    ['mDraftDetail', 'mTeam', 'mSettings', 'mStatus'],
+    'draft',
+    {},
+    season
+  );
+  const draftDetail = raw.draftDetail || {};
+  const settings = raw.settings?.draftSettings || {};
+  const nameOverrides = logos.getNameOverrideMap();
+  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
+  const teamsById = new Map();
+  for (const team of raw.teams || []) {
+    const key = logos.logoKey(conference.key, team.id);
+    const overrideLogo = logos.getOverrideMap().get(key);
+    const espnName = (team.name || `${team.location || ''} ${team.nickname || ''}`).trim() || `Team ${team.id}`;
+    const ownerId = team.primaryOwner || (team.owners || [])[0];
+    teamsById.set(Number(team.id), {
+      id: Number(team.id),
+      name: nameOverrides.get(key) || espnName,
+      abbreviation: team.abbrev || '',
+      logo: logos.displayLogoUrl(overrideLogo),
+      owner: ownerName(membersById.get(ownerId))
+    });
+  }
+
+  const pickOrder = (settings.pickOrder || []).map(Number).filter((id) => teamsById.has(id));
+  const columnIds = pickOrder.length
+    ? pickOrder
+    : [...teamsById.keys()].sort((a, b) => a - b);
+
+  const rawPicks = Array.isArray(draftDetail.picks) ? draftDetail.picks : [];
+  const playerIds = rawPicks.map((p) => Number(p.playerId)).filter((id) => id > 0);
+  const playersById = await fetchEspnPlayersByIds(playerIds, season);
+
+  const picks = rawPicks.map((pick) => {
+    const playerId = Number(pick.playerId);
+    const player = playersById.get(playerId);
+    const names = splitPlayerName(player?.fullName, player?.firstName, player?.lastName);
+    const filled = Number.isFinite(playerId) && playerId > 0;
+    return {
+      id: pick.id,
+      overall: Number(pick.overallPickNumber) || null,
+      round: Number(pick.roundId) || null,
+      roundPick: Number(pick.roundPickNumber) || null,
+      teamId: Number(pick.teamId) || null,
+      playerId: filled ? playerId : null,
+      firstName: filled ? names.firstName : '',
+      lastName: filled ? names.lastName : '',
+      fullName: filled ? (player?.fullName || names.lastName) : '',
+      position: filled ? (player?.position || '—') : '',
+      proTeam: filled ? (player?.proTeam || 'FA') : '',
+      keeper: Boolean(pick.keeper),
+      filled
+    };
+  });
+
+  const rounds = Math.max(
+    0,
+    ...picks.map((p) => Number(p.round) || 0),
+    Number(settings.availableSlots || 0) && columnIds.length
+      ? Math.ceil(Number(settings.availableSlots) / columnIds.length)
+      : 0
+  );
+
+  const byTeamRound = new Map();
+  for (const pick of picks) {
+    if (!pick.teamId || !pick.round) continue;
+    byTeamRound.set(`${pick.teamId}:${pick.round}`, pick);
+  }
+
+  const board = [];
+  for (let round = 1; round <= rounds; round += 1) {
+    board.push({
+      round,
+      cells: columnIds.map((teamId) => byTeamRound.get(`${teamId}:${round}`) || {
+        overall: null,
+        round,
+        roundPick: null,
+        teamId,
+        playerId: null,
+        firstName: '',
+        lastName: '',
+        fullName: '',
+        position: '',
+        proTeam: '',
+        keeper: false,
+        filled: false
+      })
+    });
+  }
+
+  const filledCount = picks.filter((p) => p.filled).length;
+  const drafted = Boolean(draftDetail.drafted) || (filledCount > 0 && !draftDetail.inProgress);
+  const inProgress = Boolean(draftDetail.inProgress);
+
+  return {
+    ok: true,
+    season,
+    conference: {
+      key: conference.key,
+      name: conference.name,
+      shortName: conference.shortName,
+      logo: conference.logo || null,
+      leagueId: espnLeagueId
+    },
+    draft: {
+      type: settings.type || 'SNAKE',
+      drafted,
+      inProgress,
+      visible: drafted || inProgress || filledCount > 0,
+      filledCount,
+      totalSlots: picks.length || (rounds * columnIds.length),
+      rounds,
+      auctionBudget: settings.auctionBudget || null
+    },
+    columns: columnIds.map((id) => teamsById.get(id)),
+    board,
+    picks,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+function historySeasonEntries() {
+  const configured = leagues.normalizeHistorySeasons
+    ? leagues.normalizeHistorySeasons(config.historySeasons || [])
+    : (Array.isArray(config.historySeasons) ? config.historySeasons : []);
+  const current = Number(config.season);
+  const maxPriorYear = configured.reduce((max, row) => Math.max(max, Number(row.yearNumber) || 0), 0);
+  const currentYearNumber = maxPriorYear > 0 ? maxPriorYear + 1 : (configured.length ? configured.length + 1 : null);
+  const entries = [
+    {
+      season: current,
+      yearNumber: currentYearNumber,
+      label: currentYearNumber
+        ? `Year ${currentYearNumber} (${current}) · current`
+        : `${current} (current)`,
+      inaugural: configured.length === 0,
+      detailEspnLeagueId: config.conferences.find((c) => c.key === 'detail')?.espnLeagueId || null,
+      overtimeEspnLeagueId: config.conferences.find((c) => c.key === 'overtime')?.espnLeagueId || null,
+      notes: configured.length
+        ? null
+        : 'Add prior seasons in League Tools → Season Archive so managers can view standings and draft boards.'
+    },
+    ...configured.map((row) => ({
+      season: Number(row.season),
+      yearNumber: row.yearNumber || null,
+      label: row.label || String(row.season),
+      inaugural: false,
+      detailEspnLeagueId: row.detailEspnLeagueId || null,
+      overtimeEspnLeagueId: row.overtimeEspnLeagueId || null,
+      notes: row.notes || null
+    }))
+  ];
+  const seen = new Set();
+  return entries.filter((e) => {
+    if (!Number.isFinite(e.season) || seen.has(e.season)) return false;
+    seen.add(e.season);
+    return true;
+  }).sort((a, b) => b.season - a.season);
+}
+
+async function loadHistorySeason(seasonParam) {
+  const season = Number(seasonParam) || Number(config.season);
+  const catalog = historySeasonEntries();
+  const entry = catalog.find((e) => e.season === season) || catalog[0];
+  const conferences = [];
+  const fetchedIds = new Map();
+
+  for (const conf of config.conferences) {
+    const leagueId = conf.key === 'detail'
+      ? entry.detailEspnLeagueId
+      : (conf.key === 'overtime' ? entry.overtimeEspnLeagueId : conf.espnLeagueId);
+    if (!leagueId) {
+      // Pre-split archives often only have one ESPN league — skip empty side quietly.
+      if (entry.detailEspnLeagueId || entry.overtimeEspnLeagueId) continue;
+      conferences.push({
+        ok: false,
+        key: conf.key,
+        name: conf.name,
+        shortName: conf.shortName,
+        logo: conf.logo || null,
+        error: 'No ESPN league ID configured for this season'
+      });
+      continue;
+    }
+    if (fetchedIds.has(leagueId)) {
+      // Same ESPN league mapped to both conferences (legacy single-league years).
+      continue;
+    }
+    const confForFetch = { ...conf, espnLeagueId: leagueId };
+    try {
+      const raw = await fetchEspnRaw(confForFetch, ['mTeam', 'mSettings', 'mStatus'], 'history', {}, season);
+      const data = normalizeLeague(raw, confForFetch);
+      const singleLeague = entry.detailEspnLeagueId
+        && entry.overtimeEspnLeagueId
+        && Number(entry.detailEspnLeagueId) === Number(entry.overtimeEspnLeagueId);
+      const onlyOneConfigured = Boolean(entry.detailEspnLeagueId) !== Boolean(entry.overtimeEspnLeagueId)
+        || singleLeague
+        || (!entry.overtimeEspnLeagueId && entry.detailEspnLeagueId)
+        || (!entry.detailEspnLeagueId && entry.overtimeEspnLeagueId);
+      fetchedIds.set(leagueId, true);
+      conferences.push({
+        ok: true,
+        ...data,
+        key: onlyOneConfigured ? 'archive' : conf.key,
+        name: onlyOneConfigured
+          ? (data.espnLeagueName || `Season ${season}`)
+          : conf.name,
+        shortName: onlyOneConfigured ? String(season) : conf.shortName,
+        logo: onlyOneConfigured ? (config.brand?.logo || conf.logo || null) : (conf.logo || null),
+        leagueId,
+        admin: data.admin || conferenceAdminName(conf.key)
+      });
+    } catch (error) {
+      conferences.push({
+        ok: false,
+        key: conf.key,
+        name: conf.name,
+        shortName: conf.shortName,
+        logo: conf.logo || null,
+        leagueId,
+        error: error.message || 'Could not load season',
+        detail: error.detail || null
+      });
+    }
+  }
+
+  return {
+    ok: true,
+    season,
+    seasons: catalog,
+    entry,
+    brand: config.brand,
+    espnAuthConfigured: Boolean(process.env.ESPN_SWID && process.env.ESPN_S2),
+    conferences,
+    generatedAt: new Date().toISOString()
+  };
 }
 
 async function fetchEspnLeague(conference) {
@@ -3270,9 +3615,11 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         users: users.listUsers().map((u) => ({
           ...u,
-          claim: claimByUser.get(u.id) || null
+          claim: claimByUser.get(u.id) || null,
+          career: career.listForUser(u.id)
         })),
         claims,
+        archiveSeasons: historySeasonEntries(),
         conferences: adminLeagues.map((c) => ({
           key: c.key,
           name: c.name,
@@ -3319,6 +3666,142 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true, claim, user: users.publicUser(target) });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not assign team' });
+      }
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/career') && req.method === 'GET') {
+      if (!requireCommissioner(req, res)) return;
+      const userId = pathname.slice('/api/users/'.length, -'/career'.length);
+      const target = users.findById(userId);
+      if (!target) return sendJson(res, 404, { ok: false, error: 'User not found' });
+      return sendJson(res, 200, {
+        ok: true,
+        user: users.publicUser(target),
+        career: career.listForUser(userId)
+      });
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/career') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/career'.length);
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const target = users.findById(userId);
+        if (!target) return sendJson(res, 404, { ok: false, error: 'User not found' });
+
+        const season = Number(body.season);
+        let espnLeagueId = Number(body.espnLeagueId) || null;
+        let conferenceKey = String(body.conferenceKey || '').trim().toLowerCase() || null;
+        let teamId = Number(body.teamId);
+        let teamName = String(body.teamName || '').trim();
+        let yearNumber = Number(body.yearNumber) || null;
+        let label = String(body.label || '').trim() || null;
+        let snapshot = {
+          ownerName: null,
+          wins: null,
+          losses: null,
+          ties: null,
+          pointsFor: null,
+          pointsAgainst: null,
+          playoffSeed: null
+        };
+
+        const archive = historySeasonEntries().find((e) => Number(e.season) === season);
+        if (archive) {
+          yearNumber = yearNumber || archive.yearNumber || null;
+          label = label || archive.label || null;
+          if (!espnLeagueId) {
+            if (conferenceKey === 'overtime' && archive.overtimeEspnLeagueId) {
+              espnLeagueId = Number(archive.overtimeEspnLeagueId);
+            } else if (archive.detailEspnLeagueId) {
+              espnLeagueId = Number(archive.detailEspnLeagueId);
+            } else if (archive.overtimeEspnLeagueId) {
+              espnLeagueId = Number(archive.overtimeEspnLeagueId);
+            }
+          }
+        }
+
+        if (espnLeagueId && Number.isFinite(teamId)) {
+          try {
+            const confForFetch = {
+              key: conferenceKey || 'archive',
+              name: label || `Season ${season}`,
+              shortName: String(season),
+              espnLeagueId
+            };
+            const raw = await fetchEspnRaw(confForFetch, ['mTeam', 'mSettings', 'mStatus'], 'career', {}, season);
+            const data = normalizeLeague(raw, confForFetch);
+            const found = (data.teams || []).find((t) => Number(t.id) === teamId);
+            if (found) {
+              teamName = teamName || found.name;
+              snapshot = {
+                ownerName: found.owner || null,
+                wins: found.wins,
+                losses: found.losses,
+                ties: found.ties,
+                pointsFor: found.pointsFor,
+                pointsAgainst: found.pointsAgainst,
+                playoffSeed: found.playoffSeed
+              };
+            }
+          } catch { /* keep manual fields */ }
+        }
+
+        const entry = career.assignPastTeam({
+          userId,
+          season,
+          yearNumber,
+          label,
+          espnLeagueId,
+          conferenceKey,
+          teamId,
+          teamName,
+          ownerName: body.ownerName || snapshot.ownerName,
+          wins: body.wins ?? snapshot.wins,
+          losses: body.losses ?? snapshot.losses,
+          ties: body.ties ?? snapshot.ties,
+          pointsFor: body.pointsFor ?? snapshot.pointsFor,
+          pointsAgainst: body.pointsAgainst ?? snapshot.pointsAgainst,
+          playoffSeed: body.playoffSeed ?? snapshot.playoffSeed,
+          notes: body.notes,
+          assignedBy: admin.id
+        });
+        return sendJson(res, 200, {
+          ok: true,
+          entry,
+          career: career.listForUser(userId),
+          user: users.publicUser(target)
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not assign past team'
+        });
+      }
+    }
+
+    if (pathname.match(/^\/api\/users\/[^/]+\/career\/[^/]+$/) && req.method === 'DELETE') {
+      if (!requireCommissioner(req, res)) return;
+      const parts = pathname.split('/');
+      const userId = parts[3];
+      const entryId = parts[5];
+      try {
+        career.removeEntry(userId, entryId);
+        return sendJson(res, 200, {
+          ok: true,
+          career: career.listForUser(userId)
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not remove career entry'
+        });
       }
     }
 
@@ -3973,6 +4456,73 @@ const server = http.createServer(async (req, res) => {
       return await apiLeagues(res);
     }
 
+    if (pathname === '/api/draft' && req.method === 'GET') {
+      const conferenceKey = String(requestUrl.searchParams.get('conference') || 'detail').trim();
+      const seasonParam = requestUrl.searchParams.get('season');
+      try {
+        const payload = await loadDraftBoard(conferenceKey, seasonParam);
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Could not load draft',
+          detail: err.detail || null
+        });
+      }
+    }
+
+    if (pathname === '/api/history' && req.method === 'GET') {
+      const seasonParam = requestUrl.searchParams.get('season');
+      try {
+        const payload = await loadHistorySeason(seasonParam);
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Could not load history',
+          detail: err.detail || null
+        });
+      }
+    }
+
+    if (pathname === '/api/history-seasons' && req.method === 'GET') {
+      if (!requireCommissioner(req, res)) return;
+      return sendJson(res, 200, {
+        ok: true,
+        seasons: historySeasonEntries(),
+        configured: config.historySeasons || [],
+        espnAuthConfigured: Boolean(process.env.ESPN_SWID && process.env.ESPN_S2)
+      });
+    }
+
+    if (pathname === '/api/history-seasons' && req.method === 'POST') {
+      const user = requireCommissioner(req, res);
+      if (!user) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const leagueId = config.leagueId || leagues.getActiveLeagueId();
+        if (!leagueId) {
+          return sendJson(res, 400, { ok: false, error: 'No active league' });
+        }
+        const updated = leagues.setHistorySeasons(leagueId, body.seasons || []);
+        return sendJson(res, 200, {
+          ok: true,
+          seasons: historySeasonEntries(),
+          configured: updated.historySeasons || []
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not save history seasons'
+        });
+      }
+    }
+
     if (pathname === '/api/my-team' && req.method === 'GET') {
       const user = getSessionUser(req);
       const claim = logos.getClaimForUser(user.id);
@@ -4051,6 +4601,7 @@ const server = http.createServer(async (req, res) => {
         roster,
         keeper,
         keeperWindow,
+        career: career.listForUser(user.id),
         homePath: homePathForUser(user),
         user: users.publicUser(user),
         specs: logos.LOGO_SPECS

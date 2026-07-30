@@ -5,7 +5,16 @@
     { href: HOME_DEFAULT, label: 'Home', key: 'home' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
     { href: '/standings.html', label: 'Standings', key: 'standings' },
-    { href: '/teams.html', label: 'Teams', key: 'teams' },
+    {
+      href: '/teams.html',
+      label: 'Teams',
+      key: 'teams',
+      menu: [
+        { href: '/teams.html', label: 'Roster' },
+        { href: '/draft.html', label: 'Draft Results' },
+        { href: '/history.html', label: 'History' }
+      ]
+    },
     { href: '/schedules.html', label: 'Schedules', key: 'schedules' },
     { href: '/transactions.html', label: 'Transactions', key: 'transactions' },
     { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
@@ -21,6 +30,7 @@
 
   function navActiveKey() {
     if (active === 'scoring' || active === 'rulebook' || active === 'payouts') return 'rulebook';
+    if (active === 'draft' || active === 'history') return 'teams';
     if (active === 'aaa' && String(homePath).includes('aaa')) return 'home';
     return active;
   }
@@ -122,8 +132,31 @@
     const navActive = navActiveKey();
     nav.innerHTML = allLinks.map((link) => {
       const cls = link.key === navActive ? 'active' : '';
-      return `<a class="${cls}" href="${link.href}">${link.label}</a>`;
+      if (link.menu?.length) {
+        const items = link.menu.map((item) => (
+          `<a class="nav-submenu-link" href="${esc(item.href)}">${esc(item.label)}</a>`
+        )).join('');
+        return `<div class="nav-item has-menu">
+          <a class="nav-link ${cls}" href="${esc(link.href)}" aria-haspopup="true">${esc(link.label)}</a>
+          <div class="nav-submenu" role="menu">${items}</div>
+        </div>`;
+      }
+      return `<a class="nav-link ${cls}" href="${esc(link.href)}">${esc(link.label)}</a>`;
     }).join('');
+
+    nav.querySelectorAll('.nav-item.has-menu').forEach((item) => {
+      const trigger = item.querySelector('.nav-link');
+      if (!trigger) return;
+      trigger.addEventListener('click', (e) => {
+        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+        e.preventDefault();
+        const open = item.classList.toggle('is-open');
+        nav.querySelectorAll('.nav-item.has-menu.is-open').forEach((other) => {
+          if (other !== item) other.classList.remove('is-open');
+        });
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
   }
 
   function ensureUserMenuMount() {
@@ -204,8 +237,13 @@
       </a>`;
   }
 
-  function closeUserMenuOnOutside() {
-    /* Identity chip links straight to profile; no dropdown. */
+  function closeUserMenuOnOutside(e) {
+    if (!nav) return;
+    if (e.target.closest?.('.nav-item.has-menu')) return;
+    nav.querySelectorAll('.nav-item.has-menu.is-open').forEach((item) => {
+      item.classList.remove('is-open');
+      item.querySelector('.nav-link')?.setAttribute('aria-expanded', 'false');
+    });
   }
 
     function ensureTickerMount() {

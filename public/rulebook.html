@@ -61,6 +61,20 @@
       font-weight: 600;
     }
     .book-toc a:hover { color: var(--nav-hover); }
+    .toc-affiliate {
+      margin: 1rem 0 0;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: var(--fs-sm);
+      line-height: 1.45;
+    }
+    .toc-affiliate a {
+      color: #efd782;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .toc-affiliate a:hover { text-decoration: underline; }
 
     .article {
       margin: 0 0 2.5rem;
@@ -377,9 +391,9 @@
           <li><a href="#article-iv">Scoring</a></li>
           <li><a href="#article-v">Playoffs, Bowl &amp; Relegation</a></li>
           <li><a href="#article-vi">Prize Pool &amp; Payouts</a></li>
-          <li><a href="#article-vii">AAA League</a></li>
-          <li><a href="#article-viii">Authority</a></li>
+          <li><a href="#article-vii">Authority</a></li>
         </ol>
+        <p class="toc-affiliate">AAA League has its own <a href="/aaa-rulebook.html">AAA Rule Book</a>.</p>
       </nav>
 
       <article class="article reveal" id="article-i">
@@ -397,10 +411,15 @@
             <li><strong>Detail Conference</strong> — twelve franchises.</li>
             <li><strong>Overtime Conference</strong> — twelve franchises.</li>
           </ol>
-          <p>AAA League is a separate affiliated feeder and is not a GridIron 24 conference (Article VII).</p>
+          <p>Each season, all twenty-four GridIron 24 franchises are <strong>randomly drawn</strong> into the two conferences (twelve per conference). Conference membership does not carry over from the prior season except by chance of the draw.</p>
+          <p>AAA League is a separate affiliated feeder and is not a GridIron 24 conference. See the <a class="book-link" href="/aaa-rulebook.html">AAA Rule Book</a>.</p>
         </section>
         <section class="section">
-          <h3 class="section-title">§1.03 System of Record</h3>
+          <h3 class="section-title">§1.03 Conference Admins</h3>
+          <p>After the annual conference draw is complete, the commissioner shall appoint one conference admin for Detail and one for Overtime. Conference admin assignments are set for that season and may change when conferences are redrawn.</p>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§1.04 System of Record</h3>
           <p>ESPN Fantasy is the system of record for drafts, rosters, scoring, waivers, and transactions. GridIron 24 is the league headquarters for standings, rules, payouts, and championship presentation.</p>
         </section>
       </article>
@@ -478,7 +497,7 @@
         </header>
         <section class="section">
           <h3 class="section-title">§4.01 Uniform Rules</h3>
-          <p>Detail and Overtime use the same official scoring settings. AAA League uses those same settings (see Article VII). When the GridIron conferences disagree on ESPN, Detail Conference settings are the source of truth until staff re-syncs Overtime.</p>
+          <p>Detail and Overtime use the same official scoring settings. When the conferences disagree on ESPN, Detail Conference settings are the source of truth until staff re-syncs Overtime.</p>
           <div id="scoring-banner"></div>
         </section>
         <section class="section">
@@ -522,7 +541,8 @@
           <ol>
             <li>The Toilet Bowl is a cross-conference score duel. Ranking uses each entrant’s Week 17 ESPN fantasy score.</li>
             <li>The franchise with the higher Week 17 score remains in GridIron 24 for the following season.</li>
-            <li>The franchise with the lower Week 17 score is removed from GridIron 24. The resulting vacancy may be filled by the AAA League champion, subject to commissioner administration.</li>
+            <li>The franchise with the lower Week 17 score is <strong>relegated to AAA League</strong> for the following season and is removed from GridIron 24.</li>
+            <li>The resulting GridIron 24 vacancy is filled by the AAA League champion, subject to commissioner administration and the <a class="book-link" href="/aaa-rulebook.html">AAA Rule Book</a>.</li>
             <li>In the event of a Toilet Bowl score tie, the commissioner shall resolve the outcome under league authority.</li>
           </ol>
           <p><a class="book-link" href="/playoffs.html">View Toilet Bowl →</a></p>
@@ -549,74 +569,16 @@
       </article>
 
       <article class="article reveal" id="article-vii">
-        <header class="article-head article-head-aaa">
-          <div class="article-head-copy">
-            <p class="article-num">Article VII</p>
-            <h2>AAA League</h2>
-          </div>
-          <img class="article-head-crest" src="/assets/aaa-league.png" alt="" width="92" height="92" decoding="async" />
-        </header>
-        <section class="section">
-          <h3 class="section-title">§7.01 Status</h3>
-          <p>AAA League is the affiliated feeder for GridIron 24. It is <strong>not</strong> a third conference and is not part of GridIron 24 standings, schedules, drafts, or championship boards. Managers enter the AAA portal from the crest on the GridIron 24 home header.</p>
-        </section>
-        <section class="section">
-          <h3 class="section-title">§7.02 League Admin</h3>
-          <p>AAA League has its <strong>own league admin</strong>, separate from the GridIron 24 commissioner. The overall commissioner may appoint the AAA league admin in League Tools. The AAA league admin administers AAA membership, franchise assignments, invites, draft logistics, roster patrol, and day-to-day league operations.</p>
-        </section>
-        <section class="section">
-          <h3 class="section-title">§7.03 Membership</h3>
-          <p>Final roster size is set by interest and shall be between <strong>ten (10) and fourteen (14)</strong> franchises. ESPN Fantasy is the system of record for AAA drafts, rosters, scoring, and transactions.</p>
-        </section>
-        <section class="section">
-          <h3 class="section-title">§7.04 Draft &amp; Player Pool</h3>
-          <p>AAA conducts its <strong>own draft</strong> on its own schedule. AAA uses its <strong>own player pool</strong> — it does not share draft order, keepers, or rostered players with Detail or Overtime. GridIron 24 drafts and AAA drafts are independent events.</p>
-        </section>
-        <section class="section">
-          <h3 class="section-title">§7.05 Buy-In &amp; Prize Pool</h3>
-          <p>Each AAA franchise pays a <strong>$50.00</strong> buy-in. The prize pool equals <strong>$50.00 × final roster size</strong> (expected range <strong>$500.00–$700.00</strong> for 10–14 teams).</p>
-        </section>
-        <section class="section">
-          <h3 class="section-title">§7.06 Payout Schedule</h3>
-          <p>The award schedule below assumes a twelve-franchise field and may be adjusted by the AAA league admin when the roster locks:</p>
-          <table class="aaa-payout-table">
-            <thead>
-              <tr><th>Award</th><th>Amount</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>AAA Champion</td><td class="amt">$300.00</td></tr>
-              <tr><td>AAA Runner-Up</td><td class="amt">$150.00</td></tr>
-              <tr><td>AAA Third Place</td><td class="amt">$100.00</td></tr>
-              <tr><td>AAA Most Points</td><td class="amt">$50.00</td></tr>
-            </tbody>
-          </table>
-        </section>
-        <section class="section">
-          <h3 class="section-title">§7.07 Scoring &amp; Lineups</h3>
-          <p>AAA mirrors the <strong>official GridIron 24 scoring and lineup settings</strong> so promotees enter familiar rules (see <a class="book-link" href="#article-iv">Article IV</a> and <a class="book-link" href="#article-iii">Article III</a>). Detail Conference remains the settings source of truth for that mirror. Scoring or lineup drift shall be corrected by the AAA league admin.</p>
-        </section>
-        <section class="section">
-          <h3 class="section-title">§7.08 Keepers</h3>
-          <p>AAA uses the <strong>same single-player keeper rule</strong> as GridIron 24 (Article III, §3.03–§3.05), administered by the AAA league admin for the AAA draft.</p>
-        </section>
-        <section class="section">
-          <h3 class="section-title">§7.09 Promotion</h3>
-          <p>The AAA champion is the next-season promotee into GridIron 24. Promotion into a GridIron vacancy (including after the Toilet Bowl under <a class="book-link" href="#article-v">Article V</a>) is coordinated between the AAA league admin and the GridIron 24 commissioner. The AAA portal may display the current promotee for clarity only.</p>
-          <p><a class="book-link" href="/aaa.html">Open AAA League portal →</a></p>
-        </section>
-      </article>
-
-      <article class="article reveal" id="article-viii">
         <header class="article-head">
-          <p class="article-num">Article VIII</p>
+          <p class="article-num">Article VII</p>
           <h2>Authority</h2>
         </header>
         <section class="section">
-          <h3 class="section-title">§8.01 Commissioner</h3>
-          <p>The GridIron 24 commissioner administers membership, franchise assignments, invites, and league tools for Detail and Overtime. Conference admins may assist within their conference. AAA League is run by its own league admin under Article VII.</p>
+          <h3 class="section-title">§7.01 Commissioner</h3>
+          <p>The GridIron 24 commissioner administers membership, franchise assignments, invites, the annual conference draw, and league tools for Detail and Overtime. Conference admins are appointed <strong>after</strong> the random conference draw (§1.02–§1.03) and may assist within their conference for that season. AAA League is governed by the <a class="book-link" href="/aaa-rulebook.html">AAA Rule Book</a> and administered by the AAA league admin.</p>
         </section>
         <section class="section">
-          <h3 class="section-title">§8.02 Amendments</h3>
+          <h3 class="section-title">§7.02 Amendments</h3>
           <p>Material rule changes should be communicated before they affect active competition. ESPN setting changes that create conference drift are corrected through League Tools rules sync.</p>
         </section>
       </article>
@@ -627,7 +589,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=40"></script>
+  <script src="/js/nav.js?v=41"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
