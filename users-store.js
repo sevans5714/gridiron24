@@ -121,6 +121,7 @@ function publicUser(user) {
   if (!user) return null;
   const role = normalizeRole(user.role);
   const approved = user.approved !== false;
+  const siteOwner = Boolean(user.siteOwner);
   return {
     id: user.id,
     name: user.name,
@@ -130,6 +131,8 @@ function publicUser(user) {
     conference: role === ROLES.CONFERENCE_ADMIN ? normalizeConference(user.conference) : null,
     leagueId: user.leagueId || null,
     leagueOwner: Boolean(user.leagueOwner),
+    siteOwner,
+    canSwitchLeagues: siteOwner,
     approved,
     theme: normalizeTheme(user.theme),
     createdAt: user.createdAt || null,
@@ -156,19 +159,26 @@ function listUsers() {
     .map(publicUser)
     .sort((a, b) => {
       const rank = { commissioner: 0, conference_admin: 1, user: 2 };
-      const roleDiff = (rank[a.role] ?? 9) - (rank[b.role] ?? 9);
+      const aRank = a.siteOwner ? -1 : (rank[a.role] ?? 9);
+      const bRank = b.siteOwner ? -1 : (rank[b.role] ?? 9);
+      const roleDiff = aRank - bRank;
       if (roleDiff !== 0) return roleDiff;
       return String(a.name || '').localeCompare(String(b.name || ''));
     });
 }
 
-function isStaff(user) {
-  const role = normalizeRole(user?.role);
-  return role === ROLES.COMMISSIONER || role === ROLES.CONFERENCE_ADMIN;
+function isSiteOwner(user) {
+  return Boolean(user?.siteOwner);
 }
 
+function isStaff(user) {
+  const role = normalizeRole(user?.role);
+  return role === ROLES.COMMISSIONER || role === ROLES.CONFERENCE_ADMIN || isSiteOwner(user);
+}
+
+/** Platform-wide ops: commissioners and the site owner. */
 function isCommissioner(user) {
-  return normalizeRole(user?.role) === ROLES.COMMISSIONER;
+  return normalizeRole(user?.role) === ROLES.COMMISSIONER || isSiteOwner(user);
 }
 
 function createUser({ name, email, loginName, password, role, conference, approved, leagueId, leagueOwner }) {
@@ -276,7 +286,7 @@ function setUserRole(userId, role, conference) {
     }
   }
 
-  // Keep at least one commissioner if demoting.
+  // Keep at least one commissioner if demoting — site owner covers platform ops.
   if (
     normalizeRole(store.users[idx].role) === ROLES.COMMISSIONER &&
     nextRole !== ROLES.COMMISSIONER
@@ -284,7 +294,9 @@ function setUserRole(userId, role, conference) {
     const otherCommissioners = store.users.filter(
       (u, i) => i !== idx && normalizeRole(u.role) === ROLES.COMMISSIONER
     );
-    if (otherCommissioners.length === 0) {
+    const ownerCovers = Boolean(store.users[idx].siteOwner)
+      || store.users.some((u, i) => i !== idx && u.siteOwner);
+    if (otherCommissioners.length === 0 && !ownerCovers) {
       throw Object.assign(new Error('Cannot remove the last commissioner'), { status: 400 });
     }
   }
@@ -407,42 +419,42 @@ function syncBootstrapPassword(store, idx, password) {
   store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
 }
 
+/**
+ * Site owner (default login: sevans) — platform owner with league switching.
+ * Not labeled "commissioner"; retains commissioner-level tools via siteOwner flag.
+ */
 function ensureBootstrapCommissioner() {
-  if (!process.env.COMMISSIONER_LOGIN) {
+  if (!process.env.COMMISSIONER_LOGIN && !process.env.SITE_OWNER_LOGIN) {
     process.env.COMMISSIONER_LOGIN = 'sevans';
   }
-  const login = normalizeLoginName(process.env.COMMISSIONER_LOGIN);
-  const password = String(process.env.COMMISSIONER_PASSWORD || 'ChangeMe123!');
-  const email = normalizeEmail(process.env.COMMISSIONER_EMAIL || 'sevans5714@gmail.com');
-  const name = String(process.env.COMMISSIONER_NAME || 'Steve Evans').trim() || 'Steve Evans';
+  const login = normalizeLoginName(process.env.SITE_OWNER_LOGIN || process.env.COMMISSIONER_LOGIN);
+  const password = String(
+    process.env.SITE_OWNER_PASSWORD
+      || process.env.COMMISSIONER_PASSWORD
+      || 'ChangeMe123!'
+  );
+  const email = normalizeEmail(
+    process.env.SITE_OWNER_EMAIL || process.env.COMMISSIONER_EMAIL || 'sevans5714@gmail.com'
+  );
+  const name = String(
+    process.env.SITE_OWNER_NAME || process.env.COMMISSIONER_NAME || 'Steve Evans'
+  ).trim() || 'Steve Evans';
 
   const existing = findByLoginName(login);
   if (existing) {
     const store = readStore();
     const idx = store.users.findIndex((u) => normalizeLoginName(u.loginName) === login);
     if (idx !== -1) {
-      if (process.env.COMMISSIONER_PASSWORD) {
+      if (process.env.SITE_OWNER_PASSWORD || process.env.COMMISSIONER_PASSWORD) {
         syncBootstrapPassword(store, idx, password);
       }
-      // Always keep the designated overall commissioner login as commissioner.
-      store.users[idx].role = ROLES.COMMISSIONER;
+      // Owner account: siteOwner flag, not overall commissioner role.
+      store.users[idx].siteOwner = true;
+      store.users[idx].role = ROLES.USER;
       store.users[idx].conference = null;
       store.users[idx].approved = true;
       store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
       writeStore(store);
-      // AAA franchise claims would force AAA HQ routing — clear those for the overall commissioner.
-      try {
-        const logos = require('./logos-store');
-        const claim = logos.getClaimForUser(store.users[idx].id);
-        if (claim && String(claim.conferenceKey || '').toLowerCase() === 'aaa') {
-          logos.unassignTeam(store.users[idx].id);
-          console.warn(`Bootstrap commissioner: cleared AAA team claim from ${login}`);
-        }
-      } catch (err) {
-        if (err.status !== 404) {
-          console.warn(`Bootstrap commissioner claim cleanup: ${err.message}`);
-        }
-      }
       return publicUser(store.users[idx]);
     }
     return ensureCommissionerFromEnv() || publicUser(existing);
@@ -450,7 +462,7 @@ function ensureBootstrapCommissioner() {
 
   const emailOwner = findByEmail(email);
   if (emailOwner && normalizeLoginName(emailOwner.loginName) !== login) {
-    console.warn(`Bootstrap commissioner skipped: email ${email} belongs to ${emailOwner.loginName}`);
+    console.warn(`Bootstrap site owner skipped: email ${email} belongs to ${emailOwner.loginName}`);
     return ensureCommissionerFromEnv();
   }
 
@@ -460,13 +472,20 @@ function ensureBootstrapCommissioner() {
       email,
       loginName: login,
       password,
-      role: ROLES.COMMISSIONER,
+      role: ROLES.USER,
       approved: true
     });
-    console.log(`Bootstrap GridIron 24 commissioner created: ${login}`);
+    const store = readStore();
+    const idx = store.users.findIndex((u) => u.id === user.id);
+    if (idx !== -1) {
+      store.users[idx].siteOwner = true;
+      writeStore(store);
+      console.log(`Bootstrap GridIron 24 site owner created: ${login}`);
+      return publicUser(store.users[idx]);
+    }
     return user;
   } catch (err) {
-    console.warn(`Bootstrap commissioner failed: ${err.message}`);
+    console.warn(`Bootstrap site owner failed: ${err.message}`);
     return ensureCommissionerFromEnv();
   }
 }
@@ -486,16 +505,19 @@ function ensureBootstrapAaaAdmin() {
   const conference = 'aaa';
 
   // Claim AAA admin slot for this bootstrap login.
-  // Never demote the overall commissioner login to a plain user — restore commissioner instead.
+  // Never demote the site owner login to a plain member — restore owner instead.
   const store0 = readStore();
   const otherAdmin = findConferenceAdmin(store0, conference);
-  const commissionerLogin = normalizeLoginName(process.env.COMMISSIONER_LOGIN || 'sevans');
+  const ownerLogin = normalizeLoginName(
+    process.env.SITE_OWNER_LOGIN || process.env.COMMISSIONER_LOGIN || 'sevans'
+  );
   if (otherAdmin && normalizeLoginName(otherAdmin.loginName) !== login) {
     const idx = store0.users.findIndex((u) => u.id === otherAdmin.id);
     if (idx !== -1) {
       const otherLogin = normalizeLoginName(store0.users[idx].loginName);
-      if (otherLogin === commissionerLogin) {
-        store0.users[idx].role = ROLES.COMMISSIONER;
+      if (otherLogin === ownerLogin || store0.users[idx].siteOwner) {
+        store0.users[idx].siteOwner = true;
+        store0.users[idx].role = ROLES.USER;
         store0.users[idx].conference = null;
       } else {
         store0.users[idx].role = ROLES.USER;
@@ -651,6 +673,9 @@ module.exports = {
   findById,
   findByEmail,
   listUsers,
+  isStaff,
+  isCommissioner,
+  isSiteOwner,
   setUserRole,
   setUserApproved,
   deleteUser,

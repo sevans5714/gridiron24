@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=63" />
+  <link rel="stylesheet" href="/css/site.css?v=65" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -685,7 +685,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=46"></script>
+  <script src="/js/nav.js?v=48"></script>
   <script src="/js/team-icons.js?v=9"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -699,6 +699,7 @@
     };
 
     function accessLabel(user) {
+      if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner';
       if (user?.role === 'conference_admin' && user.conference === 'aaa') return 'AAA League Admin';
       return ROLE_LABELS_P[user?.role] || user?.role || 'Member';
     }
@@ -740,8 +741,16 @@
       el.className = `profile-note ${kind}`;
     }
 
-    function isStaffRole(role) {
-      return role === 'commissioner' || role === 'conference_admin';
+    function isStaffRole(userOrRole) {
+      if (userOrRole && typeof userOrRole === 'object') {
+        return Boolean(
+          userOrRole.siteOwner
+          || userOrRole.canSwitchLeagues
+          || userOrRole.role === 'commissioner'
+          || userOrRole.role === 'conference_admin'
+        );
+      }
+      return userOrRole === 'commissioner' || userOrRole === 'conference_admin';
     }
 
     function portalUrls() {
@@ -799,7 +808,7 @@
     function renderAccount(data) {
       const user = data.user || {};
       const logoUrl = isChosenLogo(data.logo) ? data.logo.url : '';
-      const staff = isStaffRole(user.role);
+      const staff = isStaffRole(user);
       const toolsCard = document.getElementById('tools');
       const jumpTools = document.getElementById('jump-tools');
       if (toolsCard) toolsCard.hidden = !staff;
@@ -1367,7 +1376,7 @@
         window.location.replace('/enter?next=' + encodeURIComponent('/profile.html'));
         return;
       }
-      const staff = isStaffRole(user.role);
+      const staff = isStaffRole(user);
       renderAppearance(user.theme || 'night');
       wireAppearance();
       try {

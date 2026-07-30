@@ -1,7 +1,9 @@
 (function () {
   const HOME_DEFAULT = '/home.html';
   let homePath = HOME_DEFAULT;
-  const allLinks = [
+  let leagueScope = { scope: 'gridiron', conferenceKey: null, homePath: HOME_DEFAULT, label: 'GridIron 24' };
+
+  const GRIDIRON_LINKS = [
     { href: HOME_DEFAULT, label: 'Home', key: 'home' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
     {
@@ -23,17 +25,41 @@
     { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' }
   ];
 
+  const AAA_LINKS = [
+    { href: '/aaa.html', label: 'Home', key: 'home' },
+    { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
+    {
+      href: '/aaa.html',
+      label: 'League',
+      key: 'league',
+      menu: [
+        { href: '/aaa.html', label: 'Standings' },
+        { href: '/aaa-rulebook.html', label: 'AAA Rules' }
+      ]
+    },
+    { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
+    { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' }
+  ];
+
+  function linksForScope(scope) {
+    return scope?.scope === 'aaa' ? AAA_LINKS : GRIDIRON_LINKS;
+  }
+
   const THEME_KEY = 'gi-theme';
   const active = document.body.dataset.page || 'home';
   const nav = document.getElementById('site-nav');
   const sync = document.getElementById('lastUpdated');
 
   function navActiveKey() {
-    if (active === 'scoring' || active === 'rulebook' || active === 'payouts') return 'rulebook';
+    if (active === 'scoring' || active === 'rulebook' || active === 'payouts' || active === 'aaa-rulebook') {
+      return 'rulebook';
+    }
     if (active === 'standings' || active === 'teams' || active === 'draft' || active === 'history' || active === 'transactions' || active === 'rankings' || active === 'schedules') {
       return 'league';
     }
-    if (active === 'aaa' && String(homePath).includes('aaa')) return 'home';
+    if (active === 'aaa') {
+      return 'home';
+    }
     return active;
   }
 
@@ -130,9 +156,13 @@
 
   function renderNav() {
     if (!nav) return;
-    allLinks[0].href = homePath || HOME_DEFAULT;
+    const links = linksForScope(leagueScope).map((link) => ({
+      ...link,
+      menu: link.menu ? link.menu.map((m) => ({ ...m })) : undefined
+    }));
+    if (links[0]) links[0].href = homePath || links[0].href || HOME_DEFAULT;
     const navActive = navActiveKey();
-    nav.innerHTML = allLinks.map((link) => {
+    nav.innerHTML = links.map((link) => {
       const cls = link.key === navActive ? 'active' : '';
       if (link.menu?.length) {
         const items = link.menu.map((item) => (
@@ -198,7 +228,8 @@
     return `<span class="user-avatar-fallback" aria-hidden="true">${esc(initials(label))}</span>`;
   }
 
-  function roleLabel(role, conference) {
+  function roleLabel(role, conference, user = null) {
+    if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner';
     if (role === 'commissioner') return 'Commissioner';
     if (role === 'conference_admin') {
       if (conference === 'aaa') return 'AAA League Admin';
@@ -224,7 +255,7 @@
     mount.onmouseleave = null;
     const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || 'Unassigned';
     const ownerName = user.name || 'Owner';
-    const access = roleLabel(user.role, user.conference);
+    const access = roleLabel(user.role, user.conference, user);
     const onProfile = active === 'profile';
     const needsLogo = !hasChosenLogo(myTeam?.logo);
     const href = needsLogo ? '/profile.html#logo' : '/profile.html';
@@ -239,6 +270,79 @@
       </a>`;
   }
 
+  function ensureLeagueSwitchMount() {
+    let el = document.getElementById('league-switch');
+    if (el) return el;
+    const topbarInner = document.querySelector('.topbar-inner');
+    if (!topbarInner) return null;
+    let right = topbarInner.querySelector('.topbar-right');
+    if (!right) {
+      right = document.createElement('div');
+      right.className = 'topbar-right';
+      topbarInner.appendChild(right);
+    }
+    el = document.createElement('button');
+    el.type = 'button';
+    el.id = 'league-switch';
+    el.className = 'league-switch';
+    el.hidden = true;
+    const syncEl = document.getElementById('lastUpdated');
+    const menu = document.getElementById('user-menu');
+    if (menu) right.insertBefore(el, menu);
+    else if (syncEl) right.insertBefore(el, syncEl);
+    else right.appendChild(el);
+    return el;
+  }
+
+  async function switchLeague(league) {
+    try {
+      const res = await fetch('/api/preferred-league', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ league })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not switch league');
+      window.location.href = data.homePath || (league === 'aaa' ? '/aaa.html' : '/home.html');
+    } catch (err) {
+      console.error(err);
+      window.alert(err.message || 'Could not switch league');
+    }
+  }
+
+  function renderLeagueSwitcher(user, scope) {
+    // Remove any legacy public AAA crest links — only the owner switcher is allowed.
+    document.querySelectorAll('a.aaa-portal').forEach((node) => node.remove());
+    const el = ensureLeagueSwitchMount();
+    if (!el) return;
+    const canSwitch = Boolean(user?.siteOwner || user?.canSwitchLeagues || scope?.canSwitchLeagues);
+    if (!canSwitch) {
+      el.hidden = true;
+      el.onclick = null;
+      el.innerHTML = '';
+      return;
+    }
+    const onAaa = scope?.scope === 'aaa' || scope?.preferredLeague === 'aaa';
+    el.hidden = false;
+    if (onAaa) {
+      el.title = 'Switch to GridIron 24';
+      el.setAttribute('aria-label', 'Switch to GridIron 24');
+      el.innerHTML = `<img src="/assets/gridiron24-logo.png?v=3" alt="" width="50" height="50" decoding="async" />`;
+      el.onclick = (e) => {
+        e.preventDefault();
+        switchLeague('gridiron');
+      };
+    } else {
+      el.title = 'Switch to AAA League';
+      el.setAttribute('aria-label', 'Switch to AAA League');
+      el.innerHTML = `<img src="/assets/aaa-league.png" alt="" width="50" height="50" decoding="async" />`;
+      el.onclick = (e) => {
+        e.preventDefault();
+        switchLeague('aaa');
+      };
+    }
+  }
+
   function closeUserMenuOnOutside(e) {
     if (!nav) return;
     if (e.target.closest?.('.nav-item.has-menu')) return;
@@ -248,7 +352,7 @@
     });
   }
 
-    function ensureTickerMount() {
+  function ensureTickerMount() {
     let el = document.getElementById('site-ticker');
     if (el) return el;
     el = document.createElement('div');
@@ -316,13 +420,25 @@
     }
   }
 
-  let authState = { user: null, authenticated: false, myTeam: null };
+  let authState = { user: null, authenticated: false, myTeam: null, leagueScope };
+
+  function applyLeagueScope(next) {
+    if (!next || typeof next !== 'object') return;
+    leagueScope = {
+      scope: next.scope === 'aaa' ? 'aaa' : 'gridiron',
+      conferenceKey: next.conferenceKey || null,
+      homePath: next.homePath || homePath,
+      label: next.label || (next.scope === 'aaa' ? 'AAA League' : 'GridIron 24')
+    };
+    if (leagueScope.homePath) homePath = leagueScope.homePath;
+  }
 
   async function refreshAuth() {
     try {
       const data = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json());
       const user = data.authenticated ? data.user : null;
       if (data.homePath) homePath = data.homePath;
+      if (data.leagueScope) applyLeagueScope(data.leagueScope);
       renderNav();
       let myTeam = null;
       if (user) {
@@ -332,18 +448,21 @@
           if (res.ok && body.ok) {
             myTeam = body;
             if (body.homePath) homePath = body.homePath;
+            if (body.leagueScope) applyLeagueScope(body.leagueScope);
             renderNav();
           }
         } catch { /* ignore */ }
       }
-      authState = { user, authenticated: Boolean(user), myTeam, homePath };
+      authState = { user, authenticated: Boolean(user), myTeam, homePath, leagueScope };
       syncThemeFromUser(user);
       renderUserMenu(user, myTeam);
+      renderLeagueSwitcher(user, leagueScope);
       document.dispatchEvent(new CustomEvent('gi:auth', { detail: authState }));
       return authState;
     } catch {
-      authState = { user: null, authenticated: false, myTeam: null, homePath };
+      authState = { user: null, authenticated: false, myTeam: null, homePath, leagueScope };
       renderUserMenu(null);
+      renderLeagueSwitcher(null, leagueScope);
       document.dispatchEvent(new CustomEvent('gi:auth', { detail: authState }));
       return authState;
     }
@@ -401,6 +520,7 @@
     setTheme: applyTheme,
     syncThemeFromUser,
     conferenceLogoForTheme,
-    syncConferenceLogos
+    syncConferenceLogos,
+    getLeagueScope: () => leagueScope
   };
 })();

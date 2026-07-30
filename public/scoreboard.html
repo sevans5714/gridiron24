@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=63" />
+  <link rel="stylesheet" href="/css/site.css?v=65" />
   <style>
     :root,
     html[data-theme="night"] {
@@ -410,10 +410,10 @@
     .nfl-slate {
       min-width: 0;
       display: grid;
-      gap: 0.35rem;
+      gap: 0.28rem;
     }
     .nfl-slate-label {
-      font-size: 0.68rem;
+      font-size: 0.62rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -421,7 +421,7 @@
     }
     .nfl-rolodex {
       position: relative;
-      min-height: 3.35rem;
+      min-height: 3.6rem;
       overflow: hidden;
       perspective: 900px;
     }
@@ -430,9 +430,10 @@
     }
     .nfl-page {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.45rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.4rem;
       width: 100%;
+      align-items: stretch;
     }
     .nfl-rolodex:not(.is-static) .nfl-page {
       position: absolute;
@@ -454,60 +455,114 @@
       transform: rotateX(-75deg);
       transform-origin: center bottom;
     }
+    /* ESPN-style: status on top, stacked teams, scores right */
     .nfl-game {
       display: grid;
-      gap: 0.12rem;
-      padding: 0.4rem 0.5rem;
+      grid-template-rows: auto 1fr;
+      gap: 0.28rem;
+      padding: 0.35rem 0.45rem 0.35rem;
       border: 1px solid var(--sb-game-border);
       background: var(--sb-game-bg);
       min-width: 0;
     }
-    .nfl-game .match {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 0.35rem;
-      font-family: var(--display);
-      font-size: 0.82rem;
-      font-weight: 700;
+    .nfl-game .nfl-status {
+      font-size: 0.58rem;
+      font-weight: 600;
       letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--sb-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.1;
+    }
+    .nfl-game .nfl-sides {
+      display: grid;
+      gap: 0.28rem;
+    }
+    .nfl-game .nfl-side {
+      display: grid;
+      grid-template-columns: 1.05rem minmax(0, 1fr) auto;
+      align-items: center;
+      column-gap: 0.35rem;
+      min-width: 0;
+    }
+    .nfl-game .nfl-logo {
+      width: 1.05rem;
+      height: 1.05rem;
+      object-fit: contain;
+      display: block;
+    }
+    .nfl-game .nfl-logo-fallback {
+      width: 1.05rem;
+      height: 1.05rem;
+      border-radius: 2px;
+      background: color-mix(in srgb, var(--sb-muted) 25%, transparent);
+    }
+    .nfl-game .nfl-team {
+      display: grid;
+      gap: 0.05rem;
+      min-width: 0;
+    }
+    .nfl-game .abbr {
+      font-family: var(--display);
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
       color: var(--sb-team);
-      line-height: 1.15;
-    }
-    .nfl-game .match .vs {
-      color: var(--sb-muted);
-      font-weight: 600;
-      font-size: 0.7rem;
-    }
-    .nfl-game .scoreline {
-      font-family: "Share Tech Mono", ui-monospace, monospace;
-      font-size: 0.95rem;
-      letter-spacing: 0.04em;
-      color: var(--sb-score);
-      font-variant-numeric: tabular-nums;
-    }
-    .nfl-game .meta {
-      font-size: 0.72rem;
-      color: var(--sb-muted);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      line-height: 1.05;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .nfl-game.is-live .meta { color: var(--led-green); }
-    .nfl-game.is-final .scoreline { color: var(--sb-team); }
+    .nfl-game .rec {
+      font-size: 0.55rem;
+      color: var(--sb-muted);
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nfl-game .pts {
+      font-family: "Share Tech Mono", ui-monospace, monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--sb-score);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-align: right;
+      min-width: 1.65rem;
+      justify-self: end;
+    }
+    .nfl-game .pts.is-pre {
+      color: var(--sb-muted);
+      font-weight: 600;
+      opacity: 0.55;
+    }
+    .nfl-game .nfl-side.is-winner .abbr,
+    .nfl-game .nfl-side.is-winner .pts {
+      color: var(--sb-team);
+      font-weight: 800;
+    }
+    .nfl-game.is-live .nfl-status { color: var(--led-green); }
+    .nfl-game.is-live .pts {
+      color: var(--led-green);
+      text-shadow: 0 0 10px color-mix(in srgb, var(--led-green) 45%, transparent);
+    }
     .nfl-empty {
       color: var(--sb-muted);
-      font-size: 0.88rem;
-      padding: 0.55rem 0;
+      font-size: 0.8rem;
+      padding: 0.35rem 0;
     }
-    @media (max-width: 720px) {
+    @media (max-width: 900px) {
+      .nfl-page { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px) {
       .nfl-page { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 480px) {
-      .nfl-page { grid-template-columns: 1fr; }
+      .nfl-game .abbr { font-size: 0.84rem; }
+      .nfl-game .pts { font-size: 0.88rem; }
     }
     @media (prefers-reduced-motion: reduce) {
       .nfl-rolodex:not(.is-static) .nfl-page {
@@ -522,6 +577,12 @@
       gap: 1.15rem;
       margin-bottom: 2rem;
     }
+    .sb-boards.is-single {
+      grid-template-columns: 1fr;
+      max-width: 42rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
 
     .board {
       border: 3px solid var(--sb-board-border);
@@ -532,6 +593,7 @@
     }
     .board.detail { animation-delay: 0.05s; }
     .board.overtime { animation-delay: 0.12s; }
+    .board.aaa { animation-delay: 0.05s; }
 
     .board-top {
       display: flex;
@@ -566,6 +628,7 @@
     }
     .board.detail .board-top h2 { color: var(--detail); }
     .board.overtime .board-top h2 { color: var(--overtime); }
+    .board.aaa .board-top h2 { color: var(--led); }
     .board-top .week-chip {
       font-family: "Share Tech Mono", ui-monospace, monospace;
       font-size: 0.85rem;
@@ -812,7 +875,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=46"></script>
+  <script src="/js/nav.js?v=48"></script>
   <script>
     const REFRESH_MS = 30_000;
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
@@ -822,13 +885,17 @@
 
     let pollTimer = null;
     let nflFlipTimer = null;
+    let nflPollTimer = null;
     let currentWeek = null;
     let currentMatchupPeriod = null;
     let fantasySeason = null;
     let liveMode = false;
     let loading = false;
-    const NFL_PAGE_SIZE = 3;
+    let nflHasLive = false;
+    const NFL_PAGE_SIZE = 4;
     const NFL_FLIP_MS = 4500;
+    const NFL_POLL_LIVE_MS = 12_000;
+    const NFL_POLL_IDLE_MS = 45_000;
 
     function selectedMatchupWeek() {
       const raw = document.getElementById('week')?.value;
@@ -841,49 +908,61 @@
       return v.toFixed(1);
     }
 
-    function fmtKickoff(iso) {
+    function nflKickShort(iso) {
       if (!iso) return 'TBD';
       try {
         const d = new Date(iso);
-        return d.toLocaleString([], {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit'
-        });
+        let time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        return time;
       } catch {
         return 'TBD';
       }
     }
 
-    function nflGameHtml(g) {
-      const away = g.away?.abbreviation || g.away?.shortName || 'TBD';
-      const home = g.home?.abbreviation || g.home?.shortName || 'TBD';
-      const bucket = g.status?.bucket || 'upcoming';
-      let scoreline = '';
-      let meta = g.status?.shortDetail || g.status?.description || '';
-      if (bucket === 'final' || bucket === 'live') {
-        const as = g.away?.score;
-        const hs = g.home?.score;
-        scoreline = `${as == null ? '—' : as} – ${hs == null ? '—' : hs}`;
-        if (bucket === 'live') {
-          meta = g.status?.shortDetail || g.status?.detail || 'LIVE';
-        } else {
-          meta = g.status?.shortDetail || 'FINAL';
-        }
+    function nflSideHtml(side, { showScore, winner }) {
+      const abbr = side?.abbreviation || side?.shortName || 'TBD';
+      const rec = side?.record ? `(${side.record})` : '';
+      const logo = side?.logo
+        ? `<img class="nfl-logo" src="${esc(side.logo)}" alt="" width="20" height="20" loading="lazy" />`
+        : `<span class="nfl-logo-fallback" aria-hidden="true"></span>`;
+      let pts;
+      if (!showScore) {
+        pts = `<span class="pts is-pre">—</span>`;
       } else {
-        scoreline = fmtKickoff(g.date);
-        meta = (g.broadcasts || []).slice(0, 2).join(' · ') || 'Upcoming';
+        const v = side?.score == null ? '0' : String(side.score);
+        pts = `<span class="pts">${esc(v)}</span>`;
       }
-      return `<article class="nfl-game is-${esc(bucket)}" title="${esc(g.name || '')}">
-        <div class="match">
-          <span>${esc(away)}</span>
-          <span class="vs">@</span>
-          <span>${esc(home)}</span>
+      return `<div class="nfl-side${winner ? ' is-winner' : ''}">
+        ${logo}
+        <div class="nfl-team">
+          <span class="abbr">${esc(abbr)}</span>
+          ${rec ? `<span class="rec">${esc(rec)}</span>` : ''}
         </div>
-        <div class="scoreline">${esc(scoreline)}</div>
-        <div class="meta">${esc(meta)}</div>
+        ${pts}
+      </div>`;
+    }
+
+    function nflGameHtml(g) {
+      const bucket = g.status?.bucket || 'upcoming';
+      const showScore = bucket === 'final' || bucket === 'live';
+      let status = '';
+      if (bucket === 'live') {
+        status = g.status?.shortDetail || g.status?.detail || 'LIVE';
+      } else if (bucket === 'final') {
+        status = 'Final';
+      } else {
+        const kick = nflKickShort(g.date);
+        const net = (g.broadcasts || []).slice(0, 1)[0];
+        status = net ? `${kick} - ${net}` : kick;
+      }
+      const awayWin = bucket === 'final' && Boolean(g.away?.winner);
+      const homeWin = bucket === 'final' && Boolean(g.home?.winner);
+      return `<article class="nfl-game is-${esc(bucket)}" data-game-id="${esc(g.id || '')}" title="${esc(g.name || '')}">
+        <div class="nfl-status">${esc(status)}</div>
+        <div class="nfl-sides">
+          ${nflSideHtml(g.away, { showScore, winner: awayWin })}
+          ${nflSideHtml(g.home, { showScore, winner: homeWin })}
+        </div>
       </article>`;
     }
 
@@ -900,10 +979,74 @@
       nflFlipTimer = null;
     }
 
-    function startNflFlip(pageCount) {
+    function renderNflSlate(data, fantasyWeek) {
+      const root = document.getElementById('nfl-rolodex');
+      const label = document.getElementById('nfl-slate-label');
+      if (!root) return;
+
+      const activePage = Number(root.querySelector('.nfl-page.is-active')?.dataset?.page || 0);
+      stopNflFlip();
+
+      const games = Array.isArray(data?.games) ? data.games.slice() : [];
+      // Live first, then still upcoming, then finals — scores stay visible for every state.
+      games.sort((a, b) => {
+        const order = { live: 0, upcoming: 1, final: 2 };
+        const ao = order[a.status?.bucket] ?? 3;
+        const bo = order[b.status?.bucket] ?? 3;
+        if (ao !== bo) return ao - bo;
+        return String(a.date || '').localeCompare(String(b.date || ''));
+      });
+
+      const counts = data?.counts || {};
+      nflHasLive = Number(counts.live || 0) > 0;
+      const remaining = Number(counts.live || 0) + Number(counts.upcoming || 0);
+      const matchupWeek = Number(fantasyWeek) || selectedMatchupWeek() || '—';
+      const weekText = `Matchup week ${matchupWeek}`;
+      if (label) {
+        if (nflHasLive) {
+          label.textContent = `${weekText} · NFL · LIVE · ${counts.live} in progress`;
+        } else if (remaining > 0) {
+          label.textContent = `${weekText} · NFL · ${remaining} remaining`;
+        } else if (games.length) {
+          label.textContent = `${weekText} · NFL · final`;
+        } else {
+          label.textContent = `${weekText} · NFL`;
+        }
+      }
+
+      if (!games.length) {
+        root.className = 'nfl-rolodex is-static';
+        root.innerHTML = `<div class="nfl-empty">No NFL games posted for this week yet</div>`;
+        scheduleNflPoll();
+        return;
+      }
+
+      const pageSize = window.matchMedia('(max-width: 640px)').matches
+        ? 2
+        : (window.matchMedia('(max-width: 900px)').matches ? 3 : NFL_PAGE_SIZE);
+
+      // Always show the full week slate — live, upcoming, and final with scores.
+      const displayGames = games;
+      const fitsOnePage = displayGames.length <= pageSize;
+      const pages = chunkGames(displayGames, pageSize);
+      const flip = !fitsOnePage && pages.length > 1;
+      const startPage = Math.min(activePage, Math.max(pages.length - 1, 0));
+
+      root.className = flip ? 'nfl-rolodex' : 'nfl-rolodex is-static';
+      root.innerHTML = pages.map((page, i) => `
+        <div class="nfl-page${i === startPage ? ' is-active' : ''}" data-page="${i}">
+          ${page.map(nflGameHtml).join('')}
+        </div>
+      `).join('');
+
+      if (flip) startNflFlip(pages.length, startPage);
+      scheduleNflPoll();
+    }
+
+    function startNflFlip(pageCount, startIdx = 0) {
       stopNflFlip();
       if (pageCount <= 1) return;
-      let idx = 0;
+      let idx = startIdx % pageCount;
       const root = document.getElementById('nfl-rolodex');
       nflFlipTimer = setInterval(() => {
         const pages = [...root.querySelectorAll('.nfl-page')];
@@ -919,66 +1062,13 @@
       }, NFL_FLIP_MS);
     }
 
-    function renderNflSlate(data, fantasyWeek) {
-      const root = document.getElementById('nfl-rolodex');
-      const label = document.getElementById('nfl-slate-label');
-      if (!root) return;
-      stopNflFlip();
-
-      const games = Array.isArray(data?.games) ? data.games.slice() : [];
-      // Prefer live, then upcoming, then final — keeps "games remaining" up front.
-      games.sort((a, b) => {
-        const order = { live: 0, upcoming: 1, final: 2 };
-        const ao = order[a.status?.bucket] ?? 3;
-        const bo = order[b.status?.bucket] ?? 3;
-        if (ao !== bo) return ao - bo;
-        return String(a.date || '').localeCompare(String(b.date || ''));
-      });
-
-      const counts = data?.counts || {};
-      const remaining = Number(counts.live || 0) + Number(counts.upcoming || 0);
-      const matchupWeek = Number(fantasyWeek) || selectedMatchupWeek() || '—';
-      const weekText = `Matchup week ${matchupWeek}`;
-      if (label) {
-        if (remaining > 0) {
-          label.textContent = `${weekText} · NFL · ${remaining} remaining`;
-        } else if (games.length) {
-          label.textContent = `${weekText} · NFL · final`;
-        } else {
-          label.textContent = `${weekText} · NFL`;
-        }
-      }
-
-      if (!games.length) {
-        root.className = 'nfl-rolodex is-static';
-        root.innerHTML = `<div class="nfl-empty">No NFL games posted for this week yet</div>`;
-        return;
-      }
-
-      const pageSize = window.matchMedia('(max-width: 480px)').matches
-        ? 2
-        : (window.matchMedia('(max-width: 720px)').matches ? 2 : NFL_PAGE_SIZE);
-
-      // Current week: emphasize live + upcoming. Past weeks: show final results.
-      const isCurrentWeek = Number(fantasyWeek) === Number(currentMatchupPeriod);
-      let displayGames = games;
-      if (isCurrentWeek && remaining > 0) {
-        displayGames = games.filter((g) => g.status?.bucket !== 'final');
-      }
-
-      // Small fixed remainder (e.g. only MNF left): keep those cards up, no flip.
-      const fitsOnePage = displayGames.length <= pageSize;
-      const pages = chunkGames(displayGames, pageSize);
-      const flip = !fitsOnePage && pages.length > 1;
-
-      root.className = flip ? 'nfl-rolodex' : 'nfl-rolodex is-static';
-      root.innerHTML = pages.map((page, i) => `
-        <div class="nfl-page${i === 0 ? ' is-active' : ''}" data-page="${i}">
-          ${page.map(nflGameHtml).join('')}
-        </div>
-      `).join('');
-
-      if (flip) startNflFlip(pages.length);
+    function scheduleNflPoll() {
+      clearInterval(nflPollTimer);
+      const ms = nflHasLive ? NFL_POLL_LIVE_MS : NFL_POLL_IDLE_MS;
+      nflPollTimer = setInterval(() => {
+        const week = document.getElementById('week')?.value || currentWeek;
+        loadNflSlate(week);
+      }, ms);
     }
 
     async function loadNflSlate(matchupWeek) {
@@ -1148,7 +1238,7 @@
     }
 
     function board(conf, idx) {
-      const tone = conf.key === 'detail' ? 'detail' : 'overtime';
+      const tone = conf.key === 'detail' ? 'detail' : (conf.key === 'aaa' ? 'aaa' : 'overtime');
       if (!conf.ok) {
         return `
           <section class="board ${tone}">
@@ -1221,7 +1311,10 @@
         }
         fillWeeks(currentWeek);
         document.getElementById('week').value = String(currentWeek);
-        document.getElementById('boards').innerHTML = (data.conferences || []).map(board).join('');
+        const boardsEl = document.getElementById('boards');
+        const confs = data.conferences || [];
+        boardsEl.classList.toggle('is-single', confs.length <= 1);
+        boardsEl.innerHTML = confs.map(board).join('');
         setRefreshing(false);
         setLiveState(currentWeek === currentMatchupPeriod);
         const t = new Date(data.generatedAt);

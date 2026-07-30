@@ -106,6 +106,7 @@ async function fetchEspnNflNews(limit = 10) {
 }
 
 const SESSION_COOKIE = 'gi24_session';
+const LEAGUE_COOKIE = 'gi24_league';
 const SESSION_DAYS = 30;
 const APP_BASE_URL = (process.env.APP_BASE_URL || '').replace(/\/$/, '');
 
@@ -214,6 +215,25 @@ function sessionCookieHeader(token) {
   const maxAge = SESSION_DAYS * 24 * 60 * 60;
   const secure = process.env.NODE_ENV === 'production' || process.env.RENDER ? '; Secure' : '';
   return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+}
+
+function preferredLeagueCookieHeader(league) {
+  const value = league === 'aaa' ? 'aaa' : 'gridiron';
+  const maxAge = SESSION_DAYS * 24 * 60 * 60;
+  const secure = process.env.NODE_ENV === 'production' || process.env.RENDER ? '; Secure' : '';
+  return `${LEAGUE_COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+}
+
+function clearPreferredLeagueCookieHeader() {
+  const secure = process.env.NODE_ENV === 'production' || process.env.RENDER ? '; Secure' : '';
+  return `${LEAGUE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+}
+
+function getPreferredLeague(req) {
+  const cookies = parseCookies(req?.headers?.cookie);
+  const value = String(cookies[LEAGUE_COOKIE] || '').trim().toLowerCase();
+  if (value === 'aaa' || value === 'gridiron') return value;
+  return null;
 }
 
 function requestOrigin(req) {
@@ -2439,9 +2459,13 @@ function isAffiliateLeagueKey(key) {
   return (config.affiliatedLeagues || []).some((l) => String(l.key || '').toLowerCase() === k);
 }
 
-/** Profile-based HQ landing: AAA claim/admin → AAA portal; otherwise GridIron 24 home. */
-function homePathForUser(user) {
+/** Profile-based HQ landing. Site owner uses preferred-league cookie; others use claim/admin. */
+function homePathForUser(user, req = null) {
   if (!user) return '/home.html';
+  if (users.isSiteOwner(user)) {
+    const preferred = getPreferredLeague(req) || 'gridiron';
+    return preferred === 'aaa' ? '/aaa.html' : '/home.html';
+  }
   try {
     const claim = logos.getClaimForUser(user.id);
     if (claim?.conferenceKey && isAffiliateLeagueKey(claim.conferenceKey)) {
@@ -2456,19 +2480,45 @@ function homePathForUser(user) {
 
 /**
  * Which league HQ/nav/scoreboard a user should see.
- * Claim conferenceKey is source of truth for members; conference_admin uses user.conference.
- * Commissioners / unassigned → GridIron 24.
+ * Site owner: preferred-league cookie (exclusive switcher).
+ * Members: claim / conference_admin assignment.
  */
-function leagueScopeForUser(user) {
-  const homePath = homePathForUser(user);
+function leagueScopeForUser(user, req = null) {
+  const canSwitch = users.isSiteOwner(user);
   if (!user) {
     return {
       scope: 'gridiron',
       conferenceKey: null,
-      homePath,
-      label: 'GridIron 24'
+      homePath: '/home.html',
+      label: 'GridIron 24',
+      canSwitchLeagues: false,
+      preferredLeague: null
     };
   }
+
+  if (canSwitch) {
+    const preferred = getPreferredLeague(req) || 'gridiron';
+    if (preferred === 'aaa') {
+      const affiliate = getAffiliatedLeague('aaa');
+      return {
+        scope: 'aaa',
+        conferenceKey: 'aaa',
+        homePath: '/aaa.html',
+        label: affiliate?.name || 'AAA League',
+        canSwitchLeagues: true,
+        preferredLeague: 'aaa'
+      };
+    }
+    return {
+      scope: 'gridiron',
+      conferenceKey: null,
+      homePath: '/home.html',
+      label: 'GridIron 24',
+      canSwitchLeagues: true,
+      preferredLeague: 'gridiron'
+    };
+  }
+
   let conferenceKey = null;
   try {
     const claim = logos.getClaimForUser(user.id);
@@ -2482,15 +2532,19 @@ function leagueScopeForUser(user) {
     return {
       scope: 'aaa',
       conferenceKey,
-      homePath,
-      label: affiliate?.name || (conferenceKey === 'aaa' ? 'AAA League' : conferenceKey)
+      homePath: homePathForUser(user, req),
+      label: affiliate?.name || (conferenceKey === 'aaa' ? 'AAA League' : conferenceKey),
+      canSwitchLeagues: false,
+      preferredLeague: null
     };
   }
   return {
     scope: 'gridiron',
     conferenceKey: conferenceKey || null,
-    homePath,
-    label: 'GridIron 24'
+    homePath: homePathForUser(user, req),
+    label: 'GridIron 24',
+    canSwitchLeagues: false,
+    preferredLeague: null
   };
 }
 
@@ -3100,9 +3154,48 @@ const server = http.createServer(async (req, res) => {
         authenticated: Boolean(user),
         authConfigured: true,
         user,
-        homePath: homePathForUser(user),
-        leagueScope: leagueScopeForUser(user)
+        homePath: homePathForUser(user, req),
+        leagueScope: leagueScopeForUser(user, req)
       });
+    }
+
+    if (pathname === '/api/preferred-league' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      if (!users.isSiteOwner(user)) {
+        return sendJson(res, 403, { ok: false, error: 'Only the site owner can switch leagues' });
+      }
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      const league = String(body.league || '').trim().toLowerCase() === 'aaa' ? 'aaa' : 'gridiron';
+      const affiliate = getAffiliatedLeague('aaa');
+      const scope = league === 'aaa'
+        ? {
+            scope: 'aaa',
+            conferenceKey: 'aaa',
+            homePath: '/aaa.html',
+            label: affiliate?.name || 'AAA League',
+            canSwitchLeagues: true,
+            preferredLeague: 'aaa'
+          }
+        : {
+            scope: 'gridiron',
+            conferenceKey: null,
+            homePath: '/home.html',
+            label: 'GridIron 24',
+            canSwitchLeagues: true,
+            preferredLeague: 'gridiron'
+          };
+      return sendJson(res, 200, {
+        ok: true,
+        preferredLeague: league,
+        homePath: scope.homePath,
+        leagueScope: scope
+      }, { 'Set-Cookie': preferredLeagueCookieHeader(league) });
     }
 
     if (pathname === '/api/setup' && req.method === 'POST') {
@@ -3200,7 +3293,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         ok: true,
         user,
-        homePath: homePathForUser(user)
+        homePath: homePathForUser(user, req),
+        leagueScope: leagueScopeForUser(user, req)
       }, { 'Set-Cookie': sessionCookieHeader(token) });
     }
 
@@ -3323,7 +3417,7 @@ const server = http.createServer(async (req, res) => {
         return res.end();
       }
       res.writeHead(302, {
-        Location: homePathForUser(user),
+        Location: homePathForUser(user, req),
         'Cache-Control': 'no-store, no-cache, must-revalidate',
         Pragma: 'no-cache'
       });
@@ -3333,7 +3427,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/home.html') {
       const user = getSessionUser(req);
       if (user) {
-        const dest = homePathForUser(user);
+        const dest = homePathForUser(user, req);
         if (dest !== '/home.html') {
           res.writeHead(302, {
             Location: dest,
@@ -3347,7 +3441,8 @@ const server = http.createServer(async (req, res) => {
 
     if (GRIDIRON_ONLY_PAGES.has(pathname)) {
       const user = getSessionUser(req);
-      if (user && leagueScopeForUser(user).scope === 'aaa') {
+      // Site owner may browse either league; members stay scoped to their assignment.
+      if (user && !users.isSiteOwner(user) && leagueScopeForUser(user, req).scope === 'aaa') {
         res.writeHead(302, {
           Location: '/aaa.html',
           'Cache-Control': 'no-store, no-cache, must-revalidate',
@@ -4569,7 +4664,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/commissioner.html' || pathname === '/admin.html') {
       const user = getSessionUser(req);
       if (!canAccessCommissionerPage(user)) {
-        res.writeHead(302, { Location: homePathForUser(user) || '/hq' });
+        res.writeHead(302, { Location: homePathForUser(user, req) || '/hq' });
         return res.end();
       }
       res.writeHead(302, { Location: '/league-tools.html' });
@@ -4759,8 +4854,8 @@ const server = http.createServer(async (req, res) => {
         keeper,
         keeperWindow,
         career: career.listForUser(user.id),
-        homePath: homePathForUser(user),
-        leagueScope: leagueScopeForUser(user),
+        homePath: homePathForUser(user, req),
+        leagueScope: leagueScopeForUser(user, req),
         user: users.publicUser(user),
         specs: logos.LOGO_SPECS
       });
@@ -5016,12 +5111,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/schedule') {
-      const scope = leagueScopeForUser(getSessionUser(req));
+      const scope = leagueScopeForUser(getSessionUser(req), req);
       return await apiSchedule(res, requestUrl.searchParams.get('week'), scope);
     }
 
     if (pathname === '/api/fantasy-leaders') {
-      const scope = leagueScopeForUser(getSessionUser(req));
+      const scope = leagueScopeForUser(getSessionUser(req), req);
       return await apiFantasyLeaders(res, requestUrl.searchParams.get('week'), scope);
     }
 
@@ -5213,10 +5308,11 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
   console.log(`Active league: ${active?.slug || 'none'} (${active?.brand?.name || '—'})`);
   console.log(`Register a league: http://localhost:${PORT}/register-league`);
-  console.log(`Auth: invite + commissioner approval`);
+  console.log(`Auth: invite + owner / commissioner approval`);
   console.log(`Users: ${users.DATA_DIR}`);
-  if (process.env.COMMISSIONER_LOGIN) {
-    console.log(`GridIron 24 commissioner: ${process.env.COMMISSIONER_LOGIN}`);
+  const ownerLogin = process.env.SITE_OWNER_LOGIN || process.env.COMMISSIONER_LOGIN;
+  if (ownerLogin) {
+    console.log(`GridIron 24 site owner: ${ownerLogin}`);
   }
   if (process.env.AAA_ADMIN_LOGIN) {
     console.log(`AAA league admin: ${process.env.AAA_ADMIN_LOGIN}`);
