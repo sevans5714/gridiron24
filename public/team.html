@@ -28,6 +28,16 @@
     th, td { padding: 0.45rem 0.35rem; border-bottom: 1px solid var(--line); text-align: left; }
     th { color: var(--muted); font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
     .slot { color: #8eb6ff; font-weight: 700; font-size: 0.82rem; width: 3.5rem; }
+    .inj {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .inj.bad { color: #e8a078; }
+    .inj.ok { color: var(--muted); }
+    .row-bad td { background: rgba(196, 90, 48, 0.08); }
     .empty { color: var(--muted); padding: 0.5rem 0; }
     .game { padding: 0.55rem 0; border-bottom: 1px solid var(--line); color: var(--text); }
     @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } .team-hero img { width: 4.5rem; height: 4.5rem; } }
@@ -67,6 +77,13 @@
         const t = data.team;
         document.title = `${t.name} · GridIron 24`;
         const roster = (t.roster||[]);
+        const injClass = (status, slot) => {
+          const s = String(status || '').toUpperCase();
+          const starter = !['Bench', 'IR'].includes(slot);
+          if (!s || s === 'ACTIVE') return starter ? 'ok' : 'ok';
+          if (['OUT', 'DOUBTFUL', 'IR', 'INJURY_RESERVE', 'INJURED_RESERVE'].includes(s)) return 'bad';
+          return 'ok';
+        };
         main.innerHTML = `
           <p style="margin:0 0 0.75rem;"><a href="/teams.html" style="color:#8eb6ff;text-decoration:none;">← All teams</a></p>
           <div class="team-hero">
@@ -80,8 +97,12 @@
           <div class="layout">
             <section>
               <div class="section-head"><h2>Roster</h2></div>
-              ${roster.length ? `<table><thead><tr><th>Slot</th><th>Player</th><th>Pos</th></tr></thead><tbody>
-                ${roster.map(p => `<tr><td class="slot">${esc(p.slot)}</td><td>${esc(p.name)}</td><td>${esc(p.position)}</td></tr>`).join('')}
+              ${roster.length ? `<table><thead><tr><th>Slot</th><th>Player</th><th>Pos</th><th>Status</th></tr></thead><tbody>
+                ${roster.map(p => {
+                  const status = p.injuryStatus || '—';
+                  const bad = injClass(p.injuryStatus, p.slot) === 'bad' && !['Bench', 'IR'].includes(p.slot);
+                  return `<tr class="${bad ? 'row-bad' : ''}"><td class="slot">${esc(p.slot)}</td><td>${esc(p.name)}</td><td>${esc(p.position)}</td><td class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</td></tr>`;
+                }).join('')}
               </tbody></table>` : `<div class="empty">No roster yet — opens after the draft.</div>`}
             </section>
             <section>

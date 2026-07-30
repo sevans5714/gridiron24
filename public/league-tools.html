@@ -265,6 +265,43 @@
       color: var(--muted);
       font-size: 0.88rem;
     }
+    .violations-table-wrap { overflow-x: auto; }
+    .violations-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .violations-table th,
+    .violations-table td {
+      padding: 0.65rem 0.55rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    .violations-table th {
+      color: var(--muted);
+      font-family: var(--display);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .v-team, .v-player { font-weight: 600; color: var(--text); }
+    .v-meta { margin-top: 0.15rem; color: var(--muted); font-size: 0.78rem; line-height: 1.35; }
+    .v-meta.warn-status { color: #e8a078; font-weight: 700; letter-spacing: 0.04em; }
+    .conf-tag {
+      display: inline-block;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 0.15rem 0.4rem;
+      border: 1px solid var(--line);
+    }
+    .conf-tag.detail { color: var(--detail); border-color: rgba(255,122,24,0.45); }
+    .conf-tag.overtime { color: var(--overtime); border-color: rgba(226,35,42,0.45); }
+    .btn.small {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+    }
 
     .status-bar {
       display: grid;
@@ -717,6 +754,7 @@
           <p class="comm-nav-label">ESPN</p>
           <a href="#rules-sync">Rules</a>
           <a href="#playoff-sync">Playoffs</a>
+          <a href="#roster-violations">Roster Violations</a>
         </div>
         <div class="comm-nav-group" id="nav-people" hidden>
           <p class="comm-nav-label">People</p>
@@ -762,6 +800,20 @@
               </div>
               <p class="help">Target: 13 regular-season weeks, 6 teams, reseed on, Weeks 14–16 bracket, Week 17 Bowl.</p>
               <div id="playoff-content"><div class="msg">Loading playoff settings…</div></div>
+            </section>
+
+            <section class="comm-section" id="roster-violations">
+              <div class="section-head">
+                <h3>Roster Violations</h3>
+              </div>
+              <p class="help">Flags managers who start players listed as Out, Doubtful, or on Injured Reserve. Daily patrol emails warned managers automatically. Scan anytime; warnings re-send at most about once per day unless you force.</p>
+              <div class="sync-tools">
+                <span class="hint" id="violations-hint">Loading…</span>
+                <button type="button" class="btn" id="violations-scan">Scan &amp; Warn</button>
+                <button type="button" class="btn btn-ghost" id="violations-scan-quiet">Scan Only</button>
+              </div>
+              <div class="status-note" id="violations-status" role="status"></div>
+              <div id="violations-content"><div class="msg">Loading roster violations…</div></div>
             </section>
           </div>
         </section>
@@ -1419,6 +1471,134 @@
     }
 
     document.getElementById('check-sync')?.addEventListener('click', () => { load(); });
+
+    function fmtWhen(iso) {
+      if (!iso) return '—';
+      try {
+        return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      } catch {
+        return iso;
+      }
+    }
+
+    function renderViolations(data) {
+      const mount = document.getElementById('violations-content');
+      const hint = document.getElementById('violations-hint');
+      const status = document.getElementById('violations-status');
+      const open = data.open || [];
+      const last = data.lastScan;
+      if (hint) {
+        hint.textContent = last?.scannedAt
+          ? `Last scan · ${fmtWhen(last.scannedAt)} · Week ${last.week || '—'} · ${open.length} open`
+          : 'No scan yet';
+      }
+      if (status) {
+        const mailNote = data.mail?.configured ? 'Mail ready' : 'Mail offline (warnings log only)';
+        status.textContent = `${mailNote}. Questionable starters are not auto-flagged — only Out, Doubtful, and IR.`;
+      }
+      if (!open.length) {
+        mount.innerHTML = `<div class="msg">No open injured-starter violations.</div>`;
+        return;
+      }
+      const rows = open.map((v) => `
+        <tr data-id="${esc(v.id)}">
+          <td><span class="conf-tag ${esc(v.conferenceKey)}">${esc(v.conferenceKey === 'overtime' ? 'OT' : 'DET')}</span></td>
+          <td>
+            <div class="v-team">${esc(v.teamName)}</div>
+            <div class="v-meta">${esc(v.slot || 'Starter')} · ${esc(v.position || '—')}</div>
+          </td>
+          <td>
+            <div class="v-player">${esc(v.playerName)}</div>
+            <div class="v-meta warn-status">${esc(v.injuryStatus)}</div>
+          </td>
+          <td class="v-meta">Warned ${v.warnCount || 0}×${v.warnedAt ? `<br />${esc(fmtWhen(v.warnedAt))}` : ''}</td>
+          <td><button type="button" class="btn small" data-ack="${esc(v.id)}">Clear</button></td>
+        </tr>`).join('');
+      mount.innerHTML = `
+        <div class="violations-table-wrap">
+          <table class="violations-table">
+            <thead>
+              <tr>
+                <th>Conf</th>
+                <th>Franchise</th>
+                <th>Player</th>
+                <th>Warnings</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+      mount.querySelectorAll('[data-ack]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            const res = await fetch('/api/roster-violations/acknowledge', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: btn.dataset.ack })
+            });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok || !payload.ok) throw new Error(payload.error || 'Could not clear');
+            await loadViolations();
+          } catch (err) {
+            if (status) status.textContent = err.message;
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function loadViolations() {
+      const res = await fetch('/api/roster-violations', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load violations (${res.status})`);
+      const data = await res.json();
+      renderViolations(data);
+      return data;
+    }
+
+    async function scanViolations({ notify, force = false }) {
+      const scanBtn = document.getElementById('violations-scan');
+      const quietBtn = document.getElementById('violations-scan-quiet');
+      const status = document.getElementById('violations-status');
+      [scanBtn, quietBtn].forEach((b) => { if (b) b.disabled = true; });
+      if (scanBtn && notify) scanBtn.textContent = 'Scanning…';
+      if (quietBtn && !notify) quietBtn.textContent = 'Scanning…';
+      try {
+        const res = await fetch('/api/roster-violations/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notify, force })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Scan failed');
+        renderViolations(data);
+        const mailed = (data.notifications || []).filter((n) => n.sent || n.method === 'log').length;
+        const skipped = (data.notifications || []).filter((n) => n.skipped).length;
+        if (status) {
+          status.textContent = notify
+            ? `Scan complete · ${data.openCount || 0} open · ${mailed} warned · ${skipped} skipped (unclaimed / no email)`
+            : `Scan complete · ${data.openCount || 0} open · no emails sent`;
+        }
+        window.GridIronNav?.setSync(`Roster patrol · ${data.openCount || 0} open`, true);
+      } catch (err) {
+        if (status) status.textContent = err.message;
+        document.getElementById('violations-content').innerHTML =
+          `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      } finally {
+        if (scanBtn) {
+          scanBtn.disabled = false;
+          scanBtn.textContent = 'Scan & Warn';
+        }
+        if (quietBtn) {
+          quietBtn.disabled = false;
+          quietBtn.textContent = 'Scan Only';
+        }
+      }
+    }
+
+    document.getElementById('violations-scan')?.addEventListener('click', () => scanViolations({ notify: true }));
+    document.getElementById('violations-scan-quiet')?.addEventListener('click', () => scanViolations({ notify: false }));
 
     async function loadTickerAdmin() {
       const wrap = document.getElementById('ticker-admin');
@@ -2171,6 +2351,10 @@
         return;
       }
       await load();
+      try { await loadViolations(); } catch (err) {
+        document.getElementById('violations-content').innerHTML =
+          `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
       wireNewsAdmin();
       wireTickerAdmin();
       wireConferenceOwners(user);

@@ -782,6 +782,103 @@ async function sendRulesSyncAlert({ to, matched, diffs, checkedAt, baseUrl }) {
   return { sent: false, method: 'log' };
 }
 
+function buildRosterViolationEmail({
+  recipientName,
+  teamName,
+  conferenceName,
+  conferenceKey,
+  week,
+  players,
+  baseUrl
+}) {
+  const origin = siteBaseUrl(baseUrl);
+  const who = String(recipientName || '').trim() || 'Manager';
+  const team = String(teamName || 'Your franchise').trim();
+  const conf = String(conferenceName || '').trim() || 'GridIron 24';
+  const weekLabel = week != null ? `Week ${week}` : 'this week';
+  const list = Array.isArray(players) ? players : [];
+  const cleanLines = list.map((p) => {
+    const slot = p.slot ? `${p.slot}` : 'Starter';
+    const status = p.injuryStatus || 'INJURED';
+    return `• ${p.playerName || 'Player'} (${p.position || '—'}) — ${slot} · ${status}`;
+  });
+  const subject = `Roster alert · ${team} · injured starter${list.length === 1 ? '' : 's'} (${weekLabel})`;
+  const headline = 'Injured starter on your active lineup';
+  const bodyText =
+    `GridIron 24 Patrol flagged ${list.length === 1 ? 'an injured player' : 'injured players'} in your starting lineup for ${weekLabel}.\n\n` +
+    `${cleanLines.join('\n')}\n\n` +
+    `Starting a player who is Out, Doubtful, or on Injured Reserve is a roster violation. ` +
+    `Please adjust your ESPN lineup before kickoff.\n\n` +
+    `Franchise: ${team}\nConference: ${conf}`;
+
+  const playerRows = list.map((p) => (
+    `<tr>` +
+    `<td style="padding:8px 10px;border-bottom:1px solid #2a2a2a;color:#f2f2f2;font-family:Arial,Helvetica,sans-serif;font-size:14px;">${escapeHtml(p.playerName || 'Player')}</td>` +
+    `<td style="padding:8px 10px;border-bottom:1px solid #2a2a2a;color:#9a9a9a;font-family:Arial,Helvetica,sans-serif;font-size:13px;">${escapeHtml(p.position || '—')}</td>` +
+    `<td style="padding:8px 10px;border-bottom:1px solid #2a2a2a;color:#9a9a9a;font-family:Arial,Helvetica,sans-serif;font-size:13px;">${escapeHtml(p.slot || 'Starter')}</td>` +
+    `<td style="padding:8px 10px;border-bottom:1px solid #2a2a2a;color:#f59e0b;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;">${escapeHtml(p.injuryStatus || 'INJURED')}</td>` +
+    `</tr>`
+  )).join('');
+
+  const table =
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:12px 0 18px;border:1px solid #2a2a2a;">` +
+    `<thead><tr>` +
+    `<th align="left" style="padding:8px 10px;background:#161616;color:#9a9a9a;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">Player</th>` +
+    `<th align="left" style="padding:8px 10px;background:#161616;color:#9a9a9a;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">Pos</th>` +
+    `<th align="left" style="padding:8px 10px;background:#161616;color:#9a9a9a;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">Slot</th>` +
+    `<th align="left" style="padding:8px 10px;background:#161616;color:#9a9a9a;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">Status</th>` +
+    `</tr></thead><tbody>${playerRows}</tbody></table>`;
+
+  const greeting = `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#d4d4d4;">Hi ${escapeHtml(who)},</p>`;
+  const outro =
+    `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#d4d4d4;">` +
+    `Starting a player who is <strong style="color:#f2f2f2;">Out</strong>, <strong style="color:#f2f2f2;">Doubtful</strong>, or on <strong style="color:#f2f2f2;">Injured Reserve</strong> is a roster violation. ` +
+    `Please adjust your ESPN lineup before kickoff.</p>` +
+    `<p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#9a9a9a;">` +
+    `${escapeHtml(team)} · ${escapeHtml(conf)} · ${escapeHtml(weekLabel)}</p>`;
+
+  const html = brandedEmailHtml({
+    title: subject,
+    preheader: `${list.length} injured starter${list.length === 1 ? '' : 's'} on ${team}`,
+    eyebrow: 'GridIron 24 · Roster Patrol',
+    headline,
+    bodyHtml: `${greeting}${table}${outro}`,
+    showConferences: false,
+    ctaLabel: 'Open League HQ',
+    ctaUrl: `${origin}/home.html`,
+    linkFallbackUrl: `${origin}/home.html`,
+    footerExtra: 'Automated warning from GridIron 24 Patrol · created by S.Evans',
+    baseUrl: origin
+  });
+
+  return { subject, text: `${subject}\n\nHi ${who},\n\n${bodyText}\n\nOpen League HQ: ${origin}/home.html\n`, html };
+}
+
+async function sendRosterViolationEmail(opts) {
+  const content = buildRosterViolationEmail(opts);
+  const to = String(opts.to || '').trim();
+  if (!to) return { sent: false, method: 'skip', error: 'missing_email' };
+  const cfg = mailConfig();
+  if (cfg.configured) {
+    try {
+      await sendViaResend({
+        from: cfg.from,
+        apiKey: process.env.RESEND_API_KEY,
+        to,
+        subject: content.subject,
+        text: content.text,
+        html: content.html
+      });
+      return { sent: true, method: 'resend', subject: content.subject };
+    } catch (err) {
+      console.error(`[roster-violation] failed ${to}:`, err.message || err);
+      return { sent: false, method: 'error', error: err.message || 'send failed', subject: content.subject };
+    }
+  }
+  console.log(`[roster-violation] ${to}: ${content.subject}`);
+  return { sent: false, method: 'log', subject: content.subject, previewHtml: content.html };
+}
+
 module.exports = {
   sendPasswordResetEmail,
   sendInviteEmail,
@@ -789,11 +886,13 @@ module.exports = {
   sendWeeklyWrapEmail,
   sendRulesSyncAlert,
   sendConferenceOwnerEmail,
+  sendRosterViolationEmail,
   mailConfig,
   buildInviteEmail,
   buildAccountApprovedEmail,
   buildPasswordResetEmail,
   buildWeeklyWrapEmail,
   buildConferenceOwnerEmail,
+  buildRosterViolationEmail,
   siteBaseUrl
 };

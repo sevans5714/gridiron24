@@ -37,6 +37,7 @@ const weeklyWrap = require('./weekly-wrap');
 const calendar = require('./calendar-store');
 const powerRankings = require('./power-rankings-store');
 const rulesSyncStore = require('./rules-sync-store');
+const rosterViolations = require('./roster-violations-store');
 const leagues = require('./leagues-store');
 const { compareSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
@@ -48,6 +49,7 @@ const {
   sendWeeklyWrapEmail,
   sendRulesSyncAlert,
   sendConferenceOwnerEmail,
+  sendRosterViolationEmail,
   buildWeeklyWrapEmail,
   buildConferenceOwnerEmail,
   mailConfig
@@ -127,7 +129,8 @@ const PUBLIC_PATHS = new Set([
   '/api/league-registration/asset',
   '/api/league-registration/espn-peek',
   '/api/cron/weekly-wrap',
-  '/api/cron/rules-sync'
+  '/api/cron/rules-sync',
+  '/api/cron/roster-violations'
 ]);
 
 function sendJson(res, status, payload, extraHeaders = {}) {
@@ -1119,6 +1122,160 @@ function normalizeSchedule(raw, conference, week) {
 }
 
 const BENCH_OR_IR_SLOTS = new Set([20, 21]);
+
+function collectInjuredStarterFindings(raw, conference) {
+  const findings = [];
+  const logoOverrides = logos.getOverrideMap();
+  const nameOverrides = logos.getNameOverrideMap();
+  for (const team of raw.teams || []) {
+    const key = logos.logoKey(conference.key, team.id);
+    const espnName = (team.name || `${team.location || ''} ${team.nickname || ''}`).trim() || `Team ${team.id}`;
+    const teamName = nameOverrides.get(key) || espnName;
+    const teamLogo = logos.displayLogoUrl(logoOverrides.get(key));
+    for (const entry of team.roster?.entries || []) {
+      const slotId = Number(entry.lineupSlotId);
+      if (BENCH_OR_IR_SLOTS.has(slotId)) continue;
+      const pool = entry.playerPoolEntry || {};
+      const player = pool.player || {};
+      const injuryStatus = player.injuryStatus || null;
+      if (!rosterViolations.isViolationInjuryStatus(injuryStatus)) continue;
+      const playerId = player.id || entry.playerId;
+      if (playerId == null) continue;
+      findings.push({
+        conferenceKey: conference.key,
+        conferenceName: conference.name,
+        teamId: Number(team.id),
+        teamName,
+        teamLogo,
+        playerId: Number(playerId),
+        playerName: playerName(player),
+        position: POSITION_LABELS[player.defaultPositionId] || '—',
+        slotId,
+        slot: SLOT_LABELS[slotId] || `Slot ${slotId}`,
+        injuryStatus: rosterViolations.normalizeInjuryLabel(injuryStatus)
+      });
+    }
+  }
+  return findings;
+}
+
+async function scanRosterViolationsAcrossConferences() {
+  const weekCandidates = [];
+  const findings = [];
+  const conferenceErrors = [];
+
+  for (const conference of config.conferences || []) {
+    try {
+      const raw = await fetchEspnRaw(conference, ['mTeam', 'mRoster', 'mStatus'], 'roster-violations');
+      const week = Number(raw.status?.currentMatchupPeriod || 0) || null;
+      if (week) weekCandidates.push(week);
+      findings.push(...collectInjuredStarterFindings(raw, conference));
+    } catch (err) {
+      conferenceErrors.push({
+        conferenceKey: conference.key,
+        error: err.name === 'AbortError' ? 'ESPN request timed out' : (err.message || 'ESPN error')
+      });
+    }
+  }
+
+  const week = weekCandidates.sort((a, b) => b - a)[0] || 1;
+  return { findings, week, conferenceErrors };
+}
+
+async function notifyRosterViolationManagers(openRows, { force = false, week } = {}) {
+  const byTeam = new Map();
+  for (const row of openRows || []) {
+    if (!rosterViolations.needsWarning(row, { force })) continue;
+    const key = `${row.conferenceKey}:${row.teamId}`;
+    if (!byTeam.has(key)) byTeam.set(key, []);
+    byTeam.get(key).push(row);
+  }
+
+  const results = [];
+  const warnedKeys = [];
+
+  for (const [, rows] of byTeam) {
+    const sample = rows[0];
+    const claim = logos.getClaimForTeam(sample.conferenceKey, sample.teamId);
+    const ownerUser = claim ? users.findById(claim.userId) : null;
+    const email = ownerUser?.email || null;
+    if (!email) {
+      results.push({
+        conferenceKey: sample.conferenceKey,
+        teamId: sample.teamId,
+        teamName: sample.teamName,
+        sent: false,
+        skipped: claim ? 'missing_email' : 'unclaimed',
+        playerCount: rows.length
+      });
+      continue;
+    }
+
+    const sendResult = await sendRosterViolationEmail({
+      to: email,
+      recipientName: ownerUser.name || claim.ownerName || 'Manager',
+      teamName: sample.teamName,
+      conferenceName: sample.conferenceName,
+      conferenceKey: sample.conferenceKey,
+      week: week || sample.week,
+      players: rows.map((r) => ({
+        playerName: r.playerName,
+        position: r.position,
+        slot: r.slot,
+        injuryStatus: r.injuryStatus
+      }))
+    });
+
+    if (sendResult.sent || sendResult.method === 'log') {
+      for (const r of rows) warnedKeys.push(r.key);
+    }
+    results.push({
+      conferenceKey: sample.conferenceKey,
+      teamId: sample.teamId,
+      teamName: sample.teamName,
+      email,
+      playerCount: rows.length,
+      ...sendResult
+    });
+  }
+
+  if (warnedKeys.length) rosterViolations.markWarned(warnedKeys);
+  return results;
+}
+
+async function runRosterViolationsJob({
+  triggeredBy = 'system',
+  notify = true,
+  forceNotify = false
+} = {}) {
+  const { findings, week, conferenceErrors } = await scanRosterViolationsAcrossConferences();
+  const merged = rosterViolations.mergeScan({
+    season: config.season,
+    week,
+    findings,
+    triggeredBy
+  });
+  const open = rosterViolations.listOpen({ season: config.season, week });
+  let notifications = [];
+  if (notify) {
+    notifications = await notifyRosterViolationManagers(open, { force: forceNotify, week });
+  }
+  return {
+    ok: true,
+    season: config.season,
+    week,
+    lastScan: merged.lastScan,
+    openCount: open.length,
+    open,
+    created: merged.created,
+    resolved: merged.resolved,
+    unchanged: merged.unchanged,
+    conferenceErrors,
+    notifications,
+    mail: mailConfig(),
+    generatedAt: new Date().toISOString()
+  };
+}
 
 function weekStatTotal(entry, week, sourceId) {
   const stats = entry?.playerPoolEntry?.player?.stats || [];
@@ -2201,6 +2358,23 @@ const server = http.createServer(async (req, res) => {
       } catch (err) {
         console.error('[rules-sync] cron failed', err);
         return sendJson(res, 500, { ok: false, error: err.message || 'Rules sync check failed' });
+      }
+    }
+
+    if (pathname === '/api/cron/roster-violations' && (req.method === 'POST' || req.method === 'GET')) {
+      if (!authorizeCron(req)) {
+        return sendJson(res, 401, { ok: false, error: 'Invalid cron secret' });
+      }
+      try {
+        const result = await runRosterViolationsJob({
+          triggeredBy: 'cron',
+          notify: requestUrl.searchParams.get('notify') !== '0',
+          forceNotify: requestUrl.searchParams.get('force') === '1'
+        });
+        return sendJson(res, 200, result);
+      } catch (err) {
+        console.error('[roster-violations] cron failed', err);
+        return sendJson(res, 500, { ok: false, error: err.message || 'Roster violations scan failed' });
       }
     }
 
@@ -3695,6 +3869,78 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 500, { ok: false, error: err.message || 'Rules sync check failed' });
+      }
+    }
+
+    if (pathname === '/api/roster-violations' && req.method === 'GET') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      const weekParam = requestUrl.searchParams.get('week');
+      const filters = { season: config.season };
+      if (weekParam) filters.week = Number(weekParam);
+      if (user.role === 'conference_admin' && user.conference) {
+        filters.conferenceKey = user.conference;
+      }
+      return sendJson(res, 200, {
+        ok: true,
+        ...rosterViolations.getStatus(),
+        open: rosterViolations.listOpen(filters),
+        history: rosterViolations.listHistory(40),
+        mail: mailConfig(),
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/roster-violations/scan' && req.method === 'POST') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const result = await runRosterViolationsJob({
+          triggeredBy: user.loginName || user.name || 'staff',
+          notify: body.notify !== false,
+          forceNotify: Boolean(body.force)
+        });
+        if (user.role === 'conference_admin' && user.conference) {
+          result.open = (result.open || []).filter((v) => v.conferenceKey === user.conference);
+          result.openCount = result.open.length;
+          result.notifications = (result.notifications || []).filter((n) => n.conferenceKey === user.conference);
+        }
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err.message || 'Roster violations scan failed' });
+      }
+    }
+
+    if (pathname === '/api/roster-violations/acknowledge' && req.method === 'POST') {
+      const user = requireStaff(req, res);
+      if (!user) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const openRow = rosterViolations.listOpen().find((v) => v.id === String(body.id || ''));
+        if (!openRow) {
+          return sendJson(res, 404, { ok: false, error: 'Violation not found' });
+        }
+        if (user.role === 'conference_admin' && user.conference && openRow.conferenceKey !== user.conference) {
+          return sendJson(res, 403, { ok: false, error: 'Not your conference' });
+        }
+        const closed = rosterViolations.acknowledge(String(body.id || ''), {
+          by: user.loginName || user.name || 'staff',
+          notes: body.notes
+        });
+        return sendJson(res, 200, { ok: true, violation: closed });
+      } catch (err) {
+        return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Could not acknowledge' });
       }
     }
 
