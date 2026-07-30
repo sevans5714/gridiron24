@@ -8,18 +8,26 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=82" />
+  <link rel="stylesheet" href="/css/site.css?v=87" />
   <style>
     body[data-page="inbox"] .page-hero {
-      padding-top: 1.5rem;
-      padding-bottom: 1.15rem;
+      padding-top: 1.35rem;
+      padding-bottom: 1rem;
+      text-align: center;
     }
     body[data-page="inbox"] .page-hero::before,
     body[data-page="inbox"] .page-hero::after { display: none; }
     body[data-page="inbox"] .page-main {
       padding-top: 0.85rem;
       padding-bottom: 3rem;
-      max-width: 52rem;
+      max-width: 40rem;
+    }
+    .inbox-hero-crest {
+      width: min(7.5rem, 28vw);
+      height: auto;
+      display: block;
+      margin: 0 auto 0.65rem;
+      filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55));
     }
     .inbox-toolbar {
       display: flex;
@@ -46,7 +54,8 @@
   </header>
 
   <section class="page-hero shell">
-    <p class="eyebrow">Mail</p>
+    <img class="inbox-hero-crest" src="/assets/gridiron24-crest.png?v=7" alt="" width="160" height="160" decoding="async" />
+    <p class="eyebrow">Communications</p>
     <h1>Inbox</h1>
   </section>
 
@@ -62,11 +71,11 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=64"></script>
-  <script src="/js/inbox-ui.js?v=3"></script>
+  <script src="/js/nav.js?v=68"></script>
+  <script src="/js/inbox-ui.js?v=4"></script>
   <script>
     const mount = document.getElementById('inbox-list');
     const hint = document.getElementById('inbox-hint');

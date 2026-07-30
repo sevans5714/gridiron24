@@ -2,6 +2,8 @@
  * Shared inbox + rule-proposal rendering for profile and /inbox.html
  */
 (function (global) {
+  const CREST = '/assets/gridiron24-crest.png?v=7';
+
   const esc = (v = '') => String(v)
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
@@ -28,6 +30,17 @@
       dismissed: 'Dismissed'
     };
     return map[status] || status;
+  }
+
+  function typeEyebrow(type) {
+    const map = {
+      welcome: 'GridIron 24 HQ · Welcome',
+      chat_mention: 'Members Lounge · Mention',
+      rule_proposal: 'Rule Book · Proposal',
+      rule_vote: 'Rule Book · League Vote',
+      rule_result: 'Rule Book · Result'
+    };
+    return map[type] || 'GridIron 24 HQ';
   }
 
   function renderProposalActions(proposal, { isOwner = false } = {}) {
@@ -60,32 +73,104 @@
     return bits.join('');
   }
 
+  function isSectionHeading(line) {
+    const t = String(line || '').trim();
+    if (t.length < 3 || t.length > 40) return false;
+    if (!/^[A-Z0-9][A-Z0-9 &'’\-]+$/.test(t)) return false;
+    return t === t.toUpperCase();
+  }
+
+  function formatBodyHtml(body) {
+    const lines = String(body || '').split('\n');
+    const chunks = [];
+    let listItems = [];
+
+    const flushList = () => {
+      if (!listItems.length) return;
+      chunks.push(`<ul class="inbox-list">${listItems.map((li) => `<li>${li}</li>`).join('')}</ul>`);
+      listItems = [];
+    };
+
+    for (const raw of lines) {
+      const line = String(raw || '');
+      const trimmed = line.trim();
+      if (!trimmed) {
+        flushList();
+        continue;
+      }
+      if (/^[•\-–]\s+/.test(trimmed)) {
+        listItems.push(esc(trimmed.replace(/^[•\-–]\s+/, '')));
+        continue;
+      }
+      flushList();
+      if (isSectionHeading(trimmed)) {
+        chunks.push(`<p class="inbox-section">${esc(trimmed)}</p>`);
+      } else if (trimmed.startsWith('— ')) {
+        chunks.push(`<p class="inbox-signoff">${esc(trimmed)}</p>`);
+      } else {
+        chunks.push(`<p class="inbox-p">${esc(trimmed)}</p>`);
+      }
+    }
+    flushList();
+    return chunks.join('') || `<p class="inbox-p">${esc(body)}</p>`;
+  }
+
+  function renderCta(msg) {
+    if (msg.type === 'welcome') {
+      return `
+        <div class="inbox-cta-row">
+          <a class="btn inbox-cta" href="/home.html">Home</a>
+          <a class="btn btn-ghost inbox-cta" href="/members.html">Members Lounge</a>
+          <a class="btn btn-ghost inbox-cta" href="/scoreboard">Scoreboard</a>
+        </div>`;
+    }
+    if (msg.type === 'chat_mention' && msg.meta?.link) {
+      return `
+        <div class="inbox-cta-row">
+          <a class="btn inbox-cta" href="${esc(msg.meta.link)}">${esc(msg.meta.linkLabel || 'Open Roll Call Room')}</a>
+        </div>`;
+    }
+    return '';
+  }
+
+  function renderQuote(msg) {
+    const quote = String(msg.meta?.quote || '').trim();
+    if (!quote || msg.type !== 'chat_mention') return '';
+    const who = msg.meta?.authorName || msg.fromName || 'Member';
+    return `
+      <blockquote class="inbox-quote">
+        <p class="inbox-quote-from">${esc(who)}</p>
+        <p class="inbox-quote-body">${esc(quote)}</p>
+      </blockquote>`;
+  }
+
   function renderMessageCard(msg, { proposal = null, isOwner = false } = {}) {
     const unread = msg.unread ? ' is-unread' : '';
+    const typeClass = msg.type ? ` is-${esc(msg.type).replace(/_/g, '-')}` : '';
     const related = proposal
       ? `<div class="inbox-proposal-box"><pre class="inbox-proposal-text">${esc(proposal.text)}</pre>${renderProposalActions(proposal, { isOwner })}</div>`
       : '';
     return `
-      <article class="inbox-card${unread}" data-msg-id="${esc(msg.id)}">
+      <article class="inbox-card${unread}${typeClass}" data-msg-id="${esc(msg.id)}" data-type="${esc(msg.type || '')}">
+        <header class="inbox-brand">
+          <img class="inbox-crest" src="${CREST}" alt="GridIron 24" width="96" height="96" decoding="async" />
+          <p class="inbox-eyebrow">${esc(typeEyebrow(msg.type))}</p>
+        </header>
         <div class="inbox-card-head">
-          <div>
+          <div class="inbox-card-titles">
             <h3>${esc(msg.subject)}</h3>
             <p class="inbox-meta">${esc(msg.fromName)} · ${esc(fmtWhen(msg.createdAt))}${msg.unread ? ' · Unread' : ''}</p>
           </div>
-          <div class="btn-row">
+          <div class="btn-row inbox-card-actions">
             ${msg.unread
               ? `<button type="button" class="btn btn-ghost" data-mark-read="${esc(msg.id)}">${msg.type === 'welcome' ? 'Dismiss' : 'Mark read'}</button>`
               : ''}
             ${msg.type === 'welcome' ? '' : `<button type="button" class="btn btn-ghost" data-del-msg="${esc(msg.id)}">Delete</button>`}
           </div>
         </div>
-        <p class="inbox-body">${esc(msg.body).replaceAll('\n', '<br>')}</p>
-        ${msg.type === 'welcome'
-          ? `<p class="inbox-note"><a class="inbox-jump" href="/home.html">Go to Home</a> · <a class="inbox-jump" href="/members.html">Members Lounge</a> · <a class="inbox-jump" href="/scoreboard">Scoreboard</a></p>`
-          : ''}
-        ${msg.type === 'chat_mention' && msg.meta?.link
-          ? `<p class="inbox-note"><a class="inbox-jump" href="${esc(msg.meta.link)}">${esc(msg.meta.linkLabel || 'Go to lounge chat')}</a></p>`
-          : ''}
+        <div class="inbox-body">${formatBodyHtml(msg.body)}</div>
+        ${renderQuote(msg)}
+        ${renderCta(msg)}
         ${related}
       </article>`;
   }
@@ -117,7 +202,7 @@
     try {
       const data = await fetchInboxBundle();
       if (!data.messages.length) {
-        mount.innerHTML = `<div class="empty">${esc(emptyText)}</div>`;
+        mount.innerHTML = `<div class="empty inbox-empty">${esc(emptyText)}</div>`;
         return data;
       }
       mount.innerHTML = data.messages.map((msg) => {

@@ -46,7 +46,7 @@ function escapeHtml(value) {
 function brandedAssets(baseUrl) {
   const origin = siteBaseUrl(baseUrl);
   // Cache-bust so mail clients refresh the crest after brand updates.
-  const crest = `${origin}/assets/gridiron24-crest.png?v=3`;
+  const crest = `${origin}/assets/gridiron24-crest.png?v=6`;
   return {
     origin,
     logoUrl: crest,

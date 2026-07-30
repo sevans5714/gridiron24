@@ -6,34 +6,32 @@
  * Welcome messages dismiss (delete) when the member marks them read.
  */
 
-const subject = 'Welcome to GridIron 24 HQ';
+const subject = 'Welcome to GridIron 24';
 
 const fromName = 'GridIron 24 HQ';
 
 /**
  * Structured welcome — fun, clear, scannable.
- * Keep blank lines; the inbox turns newlines into line breaks.
+ * Section headings (ALL CAPS) and bullets render with branded inbox chrome.
  */
 function bodyFor(name = 'Member') {
   const who = String(name || 'Member').trim() || 'Member';
   return [
     `Hey ${who} —`,
     '',
-    'You are IN.',
-    '',
-    'Welcome to GridIron 24 HQ: the home base for GridIron 24, AAA, and every conference under this roof. Lace up. The season (and the trash talk) starts here.',
+    'You are in. Welcome to GridIron 24 HQ: home of GridIron 24, AAA, and every conference under this roof.',
     '',
     'WHAT YOU CAN DO',
-    '• Scoreboard — live fantasy matchups + the NFL slate',
+    '• Scoreboard — live fantasy matchups and the NFL slate',
     '• League — standings, My Roster, Team Rosters, draft, history, schedules',
     '• Playoffs — Bowl, Mayor\'s Cup, and the road to the title',
-    '• Members Lounge — multi-sport board, Roll Call Room chat, dues',
-    '• Rule Book — the law of the land (and Rule Change Proposals when open)',
-    '• Inbox (you are here) — votes, mentions, and HQ messages',
+    '• Members Lounge — sports board, Roll Call Room, dues',
+    '• Rule Book — the law of the land',
+    '• Inbox — votes, mentions, and HQ messages',
     '',
     'PRO MOVES',
-    '• Claim / check your team under League → My Roster',
-    '• Flip Day / Night theme from your profile',
+    '• Claim or check your team under League → My Roster',
+    '• Set Day / Night theme from your profile',
     '• Watch the Wire ticker for league news',
     '',
     'This is your league. Own the week.',

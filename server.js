@@ -4179,21 +4179,20 @@ const server = http.createServer(async (req, res) => {
             inbox.sendMessage({
               toUserId: target.id,
               from: publicAuthor,
-              subject: 'Mentioned in lounge chat',
+              subject: `${publicAuthor.name} mentioned you`,
               body: [
-                'A user has mentioned your name in chat.',
+                `${publicAuthor.name} tagged you in the Roll Call Room.`,
                 '',
-                `From: ${publicAuthor.name}`,
-                `Message: ${item.body}`,
-                '',
-                'Open the Members Lounge to jump back into the conversation:'
+                'Jump back into the Members Lounge to reply.'
               ].join('\n'),
               type: 'chat_mention',
               relatedId: item.id,
               meta: {
                 link: '/members.html#room',
-                linkLabel: 'Go to lounge chat',
-                chatMessageId: item.id
+                linkLabel: 'Open Roll Call Room',
+                chatMessageId: item.id,
+                quote: item.body,
+                authorName: publicAuthor.name
               }
             });
           } catch { /* don't fail the chat post if inbox write fails */ }

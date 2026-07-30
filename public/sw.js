@@ -1,15 +1,19 @@
-/* GridIron 24 PWA service worker — shell cache only */
-const CACHE = 'gi24-app-v1';
+/* GridIron24 PWA service worker — shell cache only */
+const CACHE = 'gi24-app-v6';
 const SHELL = [
   '/app/',
   '/app/index.html',
-  '/app/app.css',
-  '/app/app.js',
-  '/manifest.webmanifest',
-  '/assets/pwa/icon-192.png',
-  '/assets/pwa/icon-512.png',
-  '/assets/pwa/apple-touch-icon.png',
-  '/assets/team-logo-placeholder.svg'
+  '/app/app.css?v=5',
+  '/app/app.js?v=4',
+  '/manifest.webmanifest?v=9',
+  '/assets/pwa/icon-192.png?v=7',
+  '/assets/pwa/icon-512.png?v=7',
+  '/assets/pwa/icon-maskable-512.png?v=7',
+  '/assets/pwa/icon-192-transparent.png?v=7',
+  '/assets/pwa/apple-touch-icon.png?v=7',
+  '/assets/team-logo-placeholder.svg',
+  '/assets/gridiron-bowl.png',
+  '/assets/mayors-cup.png?v=1'
 ];
 
 self.addEventListener('install', (event) => {

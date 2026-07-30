@@ -3,27 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#050505" />
+  <meta name="theme-color" content="#02060f" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-sticky" />
-  <meta name="apple-mobile-web-app-title" content="GridIron 24" />
-  <meta name="description" content="GridIron 24 standings and fantasy scoreboard." />
-  <title>GridIron 24</title>
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GridIron24" />
+  <meta name="description" content="GridIron24 — standings, scores, roster, lounge, and playoffs." />
+  <title>GridIron24</title>
+  <link rel="manifest" href="/manifest.webmanifest?v=9" />
+  <link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png?v=7" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=7" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/app/app.css?v=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app/app.css?v=5" />
 </head>
 <body>
   <header class="app-top">
     <div class="app-top-row">
       <a class="brand" href="/app/">
-        <img src="/assets/pwa/icon-192.png" alt="" width="192" height="192" />
+        <img src="/assets/pwa/icon-192-transparent.png?v=7" alt="GridIron24" width="192" height="192" />
         <div class="brand-copy">
-          <strong>GridIron 24</strong>
+          <strong>GridIron24</strong>
           <span id="subtitle">League pulse</span>
         </div>
       </a>
@@ -33,19 +33,15 @@
 
   <main class="app-main">
     <div class="install-banner" id="install-banner" hidden>
-      <p>Install GridIron 24 on your home screen for one-tap standings and scores.</p>
+      <p>Install GridIron24 on your home screen for one-tap league updates.</p>
       <div class="row">
         <button type="button" class="primary" id="install-btn">Install</button>
         <button type="button" id="install-dismiss">Not now</button>
       </div>
     </div>
 
-    <section class="view" id="view-standings" data-view="standings">
-      <div class="seg" role="tablist" aria-label="Conference">
-        <button type="button" class="is-on" data-conf="detail" id="tab-detail">Detail</button>
-        <button type="button" data-conf="overtime" id="tab-overtime">Overtime</button>
-      </div>
-      <div id="standings-mount"><div class="msg">Loading standings…</div></div>
+    <section class="view" id="view-home" data-view="home">
+      <div id="home-mount"><div class="msg">Loading HQ…</div></div>
     </section>
 
     <section class="view" id="view-scoreboard" data-view="scoreboard" hidden>
@@ -63,12 +59,53 @@
       <div id="scoreboard-mount"><div class="msg">Loading scoreboard…</div></div>
     </section>
 
+    <section class="view" id="view-team" data-view="team" hidden>
+      <div id="team-mount"><div class="msg">Loading your team…</div></div>
+    </section>
+
+    <section class="view" id="view-lounge" data-view="lounge" hidden>
+      <div class="lounge-head">
+        <h2>Roll Call</h2>
+        <div class="chat-live is-idle" id="chat-live"><span class="dot" aria-hidden="true"></span><span id="chat-live-label">Connecting</span></div>
+      </div>
+      <div class="lounge-grid">
+        <div class="chat-log" id="chat-log" aria-live="polite"><div class="msg">Signing on…</div></div>
+        <aside class="online-panel">
+          <h3 id="online-head">Online</h3>
+          <div id="online-list"><div class="msg">…</div></div>
+        </aside>
+      </div>
+      <form class="chat-compose" id="chat-form">
+        <input id="chat-input" maxlength="1000" placeholder="Message the lounge…" autocomplete="off" />
+        <button type="submit" id="chat-send">Send</button>
+      </form>
+      <a class="text-link" href="/members.html#room">Open full Members Lounge</a>
+    </section>
+
     <section class="view" id="view-more" data-view="more" hidden>
       <p class="user-line" id="user-line">Signed in</p>
+
+      <div class="seg" role="tablist" aria-label="League board">
+        <button type="button" class="is-on" data-conf="detail">Detail</button>
+        <button type="button" data-conf="overtime">Overtime</button>
+      </div>
+      <div id="standings-mount"><div class="msg">Loading standings…</div></div>
+
+      <div class="seg seg-3" role="tablist" aria-label="Feed" style="margin-top:1.25rem;">
+        <button type="button" class="is-on" data-feed="news">News</button>
+        <button type="button" data-feed="calendar">Calendar</button>
+        <button type="button" data-feed="rankings">Rankings</button>
+      </div>
+      <div id="feed-mount"><div class="msg">Loading feed…</div></div>
+
+      <div id="more-pulse" style="margin-top:1.25rem;"><div class="msg">Loading playoff pulse…</div></div>
+
       <div class="more-links">
+        <a href="/inbox.html" id="inbox-link">Inbox <span id="inbox-count">Messages</span></a>
+        <a href="/playoffs.html">Playoff Tree <span>Full bracket</span></a>
+        <a href="/transactions.html">Transactions <span>Moves</span></a>
+        <a href="/members.html">Members Lounge <span>Full site</span></a>
         <a href="/home.html">Full site <span>HQ</span></a>
-        <a href="/my-roster.html">My Roster <span>Franchise</span></a>
-        <a href="/playoffs.html">Playoffs <span>Bracket</span></a>
         <a href="/profile.html">Profile <span>Account</span></a>
         <a href="#" id="sign-out">Sign out <span>Exit</span></a>
       </div>
@@ -76,13 +113,21 @@
   </main>
 
   <nav class="app-tabs" aria-label="App">
-    <button type="button" class="is-on" data-tab="standings" aria-current="page">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-      Standings
+    <button type="button" class="is-on" data-tab="home" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/></svg>
+      Home
     </button>
     <button type="button" data-tab="scoreboard">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM8 7v10M16 7v10M4 12h16"/></svg>
       Scores
+    </button>
+    <button type="button" data-tab="team">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l3 5h5l-4 4 2 6-6-3.5L6 19l2-6-4-4h5z"/></svg>
+      Team
+    </button>
+    <button type="button" data-tab="lounge">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14v9H8l-3 3z"/></svg>
+      Lounge
     </button>
     <button type="button" data-tab="more">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="18" r="1.2"/></svg>
@@ -90,6 +135,6 @@
     </button>
   </nav>
 
-  <script src="/app/app.js?v=1"></script>
+  <script src="/app/app.js?v=4"></script>
 </body>
 </html>

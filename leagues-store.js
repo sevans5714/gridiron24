@@ -520,8 +520,8 @@ function ensureSystemLeague(seed) {
     brand: {
       name: seed.brand?.name || 'GridIron 24',
       tagline: seed.brand?.tagline || '',
-      logo: '/assets/gridiron24-crest.png?v=3',
-      crest: '/assets/gridiron24-crest.png?v=3'
+      logo: '/assets/gridiron24-crest.png?v=6',
+      crest: '/assets/gridiron24-crest.png?v=6'
     },
     conferences: confs,
     championship: {

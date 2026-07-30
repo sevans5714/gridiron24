@@ -3,6 +3,17 @@
   let homePath = HOME_DEFAULT;
   let leagueScope = { scope: 'gridiron', conferenceKey: null, homePath: HOME_DEFAULT, label: 'GridIron 24' };
 
+  const LEAGUE_MENU = [
+    { href: '/standings.html', label: 'Standings' },
+    { href: '/schedules.html', label: 'Schedules' },
+    { href: '/rankings.html', label: 'Rankings' },
+    { href: '/my-roster.html', label: 'My Roster' },
+    { href: '/team-rosters.html', label: 'Team Rosters' },
+    { href: '/draft.html', label: 'Draft Results' },
+    { href: '/transactions.html', label: 'Transactions' },
+    { href: '/history.html', label: 'History' }
+  ];
+
   const GRIDIRON_LINKS = [
     { href: HOME_DEFAULT, label: 'Home', key: 'home' },
     { href: '/members.html', label: 'Members Lounge', key: 'members' },
@@ -11,17 +22,7 @@
       href: '/standings.html',
       label: 'League',
       key: 'league',
-      menuTitle: 'League desk',
-      menu: [
-        { href: '/standings.html', label: 'Standings', hint: 'The race by conference', group: 'Board' },
-        { href: '/schedules.html', label: 'Schedules', hint: 'Who plays whom', group: 'Board' },
-        { href: '/rankings.html', label: 'Rankings', hint: 'Power board', group: 'Board' },
-        { href: '/my-roster.html', label: 'My Roster', hint: 'Your franchise', group: 'Rosters' },
-        { href: '/team-rosters.html', label: 'Team Rosters', hint: 'Browse the field', group: 'Rosters' },
-        { href: '/draft.html', label: 'Draft Results', hint: 'How the board fell', group: 'Archive' },
-        { href: '/transactions.html', label: 'Transactions', hint: 'Moves & claims', group: 'Archive' },
-        { href: '/history.html', label: 'History', hint: 'Seasons past', group: 'Archive' }
-      ]
+      menu: LEAGUE_MENU
     },
     { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
     { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
@@ -29,20 +30,17 @@
   ];
 
   const AAA_LINKS = [
-    {
-      href: '/aaa.html',
-      label: 'Home',
-      key: 'home',
-      menuTitle: 'AAA Home',
-      menu: [
-        { href: '/aaa-rulebook.html', label: 'AAA Rules', hint: 'Feeder league law' }
-      ]
-    },
+    { href: '/aaa.html', label: 'Home', key: 'home' },
     { href: '/members.html', label: 'Members Lounge', key: 'members' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
-    { href: '/aaa.html', label: 'League', key: 'league' },
+    {
+      href: '/standings.html',
+      label: 'League',
+      key: 'league',
+      menu: LEAGUE_MENU
+    },
     { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
-    { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' }
+    { href: '/aaa-rulebook.html', label: 'Rule Book', key: 'rulebook' }
   ];
 
   function linksForScope(scope) {
@@ -166,31 +164,12 @@
   function renderSubmenu(link) {
     const items = Array.isArray(link.menu) ? link.menu : [];
     if (!items.length) return '';
-    const title = link.menuTitle || link.label || 'Menu';
-    const byGroup = new Map();
-    for (const item of items) {
-      const g = item.group || '_';
-      if (!byGroup.has(g)) byGroup.set(g, []);
-      byGroup.get(g).push(item);
-    }
-    const body = [...byGroup.entries()].map(([group, rows]) => {
-      const label = group !== '_'
-        ? `<div class="nav-submenu-label">${esc(group)}</div>`
-        : '';
-      const links = rows.map((item) => `
-        <a class="nav-submenu-link" href="${esc(item.href)}" role="menuitem">
-          <span class="nav-submenu-copy">
-            <span class="nav-submenu-title">${esc(item.label)}</span>
-            ${item.hint ? `<span class="nav-submenu-hint">${esc(item.hint)}</span>` : ''}
-          </span>
-          <span class="nav-submenu-chev" aria-hidden="true">›</span>
-        </a>`).join('');
-      return `<div class="nav-submenu-group">${label}${links}</div>`;
-    }).join('');
-    return `<div class="nav-submenu" role="menu">
-      <div class="nav-submenu-head">${esc(title)}</div>
-      ${body}
-    </div>`;
+    const links = items.map((item) => `
+      <a class="nav-submenu-link" href="${esc(item.href)}" role="menuitem">
+        <span class="nav-submenu-title">${esc(item.label)}</span>
+        <span class="nav-submenu-chev" aria-hidden="true">›</span>
+      </a>`).join('');
+    return `<div class="nav-submenu" role="menu">${links}</div>`;
   }
 
   function renderNav() {
@@ -560,7 +539,7 @@
     if (onAaa) {
       el.title = 'Switch to GridIron 24';
       el.setAttribute('aria-label', 'Switch to GridIron 24');
-      el.innerHTML = `<img src="/assets/gridiron24-crest-sm.png?v=3" alt="" width="50" height="50" decoding="async" />`;
+      el.innerHTML = `<img src="/assets/gridiron24-crest-sm.png?v=6" alt="" width="50" height="50" decoding="async" />`;
       el.onclick = (e) => {
         e.preventDefault();
         switchLeague('gridiron');
@@ -716,7 +695,7 @@
 
   function footerHtml(buildLabel) {
     const build = esc(buildLabel || 'Build …');
-    return `<span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=4" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
+    return `<span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
   }
 
   function ensureFooter(buildLabel) {
