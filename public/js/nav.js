@@ -12,11 +12,11 @@
       menu: [
         { href: '/teams.html', label: 'Roster' },
         { href: '/draft.html', label: 'Draft Results' },
-        { href: '/history.html', label: 'History' }
+        { href: '/history.html', label: 'History' },
+        { href: '/transactions.html', label: 'Transactions' }
       ]
     },
     { href: '/schedules.html', label: 'Schedules', key: 'schedules' },
-    { href: '/transactions.html', label: 'Transactions', key: 'transactions' },
     { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
     { href: '/rankings.html', label: 'Rankings', key: 'rankings' },
     { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
@@ -30,7 +30,7 @@
 
   function navActiveKey() {
     if (active === 'scoring' || active === 'rulebook' || active === 'payouts') return 'rulebook';
-    if (active === 'draft' || active === 'history') return 'teams';
+    if (active === 'draft' || active === 'history' || active === 'transactions') return 'teams';
     if (active === 'aaa' && String(homePath).includes('aaa')) return 'home';
     return active;
   }
