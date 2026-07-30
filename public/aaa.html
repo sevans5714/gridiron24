@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AAA League · GridIron 24</title>
+  <meta name="description" content="AAA League feeder standings and next-season GridIron 24 promotee." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=61" />
+  <style>
+    .promotee {
+      margin: 0 0 1.25rem;
+      padding: 1.15rem 1.25rem;
+      border: 1px solid rgba(239, 215, 130, 0.4);
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(239,215,130,0.14), transparent 60%),
+        linear-gradient(180deg, var(--panel-2), var(--panel));
+    }
+    .promotee .eyebrow {
+      margin: 0 0 0.35rem;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .promotee h2 {
+      margin: 0 0 0.35rem;
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 3vw, 1.85rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .promotee p {
+      margin: 0;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+      line-height: 1.5;
+    }
+    .promotee-team {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin: 0.75rem 0 0.55rem;
+    }
+    .promotee-team img {
+      width: 3.5rem;
+      height: 3.5rem;
+      object-fit: contain;
+      box-shadow: var(--logo-lift);
+    }
+    .promotee-team .nm {
+      font-family: var(--display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .board {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      max-width: 48rem;
+    }
+    .board-head {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+      border-left: 4px solid #efd782;
+    }
+    .board-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .board-head .sub {
+      margin: 0.25rem 0 0;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 2rem minmax(0, 1fr) 2.2rem 2.2rem 2.2rem minmax(3rem, 0.4fr);
+      gap: 0.35rem 0.55rem;
+      align-items: center;
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .row.head {
+      color: var(--muted);
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.02);
+    }
+    .rk {
+      font-family: var(--display);
+      font-weight: 600;
+      color: #cfcfcf;
+      text-align: center;
+    }
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+    .team img {
+      width: 2.25rem;
+      height: 2.25rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      box-shadow: var(--logo-lift);
+    }
+    .name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+    .wl, .pts {
+      font-family: var(--display);
+      font-weight: 600;
+      text-align: center;
+    }
+    .pts { color: #d0d0d0; }
+    .msg-panel {
+      padding: 1.25rem;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      max-width: 48rem;
+    }
+
+    @media (max-width: 700px) {
+      .row {
+        grid-template-columns: 1.6rem minmax(0, 1fr) 1.8rem 1.8rem minmax(2.6rem, 0.4fr);
+      }
+      .col-ties { display: none; }
+    }
+  </style>
+</head>
+<body data-page="aaa">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">AAA League</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell reveal">
+    <p class="eyebrow">Feeder League</p>
+    <h1>AAA League</h1>
+  </section>
+
+  <main class="page-main shell" id="main">
+    <div class="msg">Loading AAA League…</div>
+  </main>
+
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=37"></script>
+  <script>
+    const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    function wl(t) {
+      const ties = Number(t.ties || 0);
+      return ties > 0 ? `${t.wins}-${t.losses}-${ties}` : `${t.wins}-${t.losses}`;
+    }
+
+    function fmtPts(n) {
+      const v = Number(n || 0);
+      return v.toFixed(1);
+    }
+
+    async function loadAaa() {
+      const main = document.getElementById('main');
+      try {
+        const res = await fetch('/api/aaa', { cache: 'no-store' });
+        const data = await res.json();
+        if (!data.configured) {
+          main.innerHTML = `
+            <div class="msg-panel">
+              <p><strong>AAA League</strong> is the GridIron 24 feeder. The ESPN league ID is not configured yet.</p>
+              <p style="margin-top:0.65rem;">${esc(data.message || 'Set affiliatedLeagues.aaa.espnLeagueId when ready.')}</p>
+            </div>`;
+          window.GridIronNav?.setSync('AAA · not configured');
+          return;
+        }
+        if (!data.ok) {
+          throw new Error(data.error || 'Could not load AAA League');
+        }
+
+        const champ = data.champion || data.promotee;
+        const promoteeHtml = champ
+          ? `<div class="promotee">
+              <p class="eyebrow">Next season</p>
+              <h2>Promotes to GridIron 24</h2>
+              <div class="promotee-team">
+                <img src="${esc(champ.logo || PLACEHOLDER)}" alt="" />
+                <div class="nm">${esc(champ.name)}</div>
+              </div>
+              <p>${esc(data.promotee?.label || 'Promotes to GridIron 24 next season')} (display only — franchise moves are handled by the commissioner).</p>
+            </div>`
+          : '';
+
+        const rows = (data.teams || []).map((t, i) => `
+          <div class="row">
+            <div class="rk">${i + 1}</div>
+            <div class="team">
+              <img src="${esc(t.logo || PLACEHOLDER)}" alt="" />
+              <div class="name">${esc(t.name)}</div>
+            </div>
+            <div class="wl">${t.wins}</div>
+            <div class="wl">${t.losses}</div>
+            <div class="wl col-ties">${t.ties || 0}</div>
+            <div class="pts">${fmtPts(t.pointsFor)}</div>
+          </div>`).join('');
+
+        main.innerHTML = `
+          ${promoteeHtml}
+          <div class="board">
+            <div class="board-head">
+              <h2>${esc(data.name || 'AAA League')}</h2>
+              <p class="sub">${esc(data.espnLeagueName || '')}${data.teamCount ? ` · ${data.teamCount} teams` : ''}</p>
+            </div>
+            <div class="row head">
+              <div>#</div>
+              <div>Team</div>
+              <div>W</div>
+              <div>L</div>
+              <div class="col-ties">T</div>
+              <div>PF</div>
+            </div>
+            ${rows || '<div class="row"><div style="grid-column:1/-1;color:var(--muted)">No teams yet.</div></div>'}
+          </div>`;
+
+        const t = new Date(data.generatedAt);
+        window.GridIronNav?.setSync(`AAA sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        main.innerHTML = `<div class="msg-panel">${esc(err.message)}</div>`;
+        window.GridIronNav?.setSync('AAA sync error', false);
+      }
+    }
+
+    loadAaa();
+    setInterval(loadAaa, 60_000);
+  </script>
+</body>
+</html>

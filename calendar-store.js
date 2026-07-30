@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'calendar.json');
 
-const TYPES = new Set(['draft', 'deadline', 'dues', 'bowl', 'event', 'other']);
+const TYPES = new Set(['draft', 'deadline', 'dues', 'bowl', 'survival', 'event', 'other']);
 
 function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -46,6 +46,35 @@ function seedIfEmpty(defaults = []) {
   }));
   writeStore(store);
   return store.events;
+}
+
+/** Add any default events that are missing (by type or title), without replacing existing ones. */
+function ensureDefaults(defaults = []) {
+  if (!Array.isArray(defaults) || !defaults.length) return listEvents();
+  seedIfEmpty(defaults);
+  const store = readStore();
+  let dirty = false;
+  for (const e of defaults) {
+    const type = TYPES.has(e.type) ? e.type : 'event';
+    const title = String(e.title || '').trim();
+    const exists = store.events.some((ev) => {
+      if (type !== 'event' && ev.type === type) return true;
+      return title && String(ev.title || '').toLowerCase() === title.toLowerCase();
+    });
+    if (exists) continue;
+    store.events.push({
+      id: crypto.randomUUID(),
+      title: title || 'League Event',
+      type,
+      date: e.date || null,
+      notes: e.notes || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    dirty = true;
+  }
+  if (dirty) writeStore(store);
+  return listEvents();
 }
 
 function listEvents() {
@@ -106,5 +135,6 @@ module.exports = {
   addEvent,
   updateEvent,
   deleteEvent,
-  seedIfEmpty
+  seedIfEmpty,
+  ensureDefaults
 };

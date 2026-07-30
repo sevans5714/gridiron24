@@ -7,6 +7,7 @@
     { href: '/schedules.html', label: 'Schedules', key: 'schedules' },
     { href: '/transactions.html', label: 'Transactions', key: 'transactions' },
     { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
+    { href: '/aaa.html', label: 'AAA League', key: 'aaa' },
     { href: '/rankings.html', label: 'Rankings', key: 'rankings' },
     { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
     { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' }

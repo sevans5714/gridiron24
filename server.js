@@ -699,7 +699,10 @@ async function buildPlayoffsPayload() {
   for (const w of [14, 15, 16]) {
     weeks[w] = await loadSchedulePayload(w);
   }
-  const bowl = await buildBowlPayload();
+  const [bowl, survival] = await Promise.all([
+    buildBowlPayload(),
+    buildSurvivalPayload()
+  ]);
 
   const conferences = config.conferences.map((conf) => {
     const stand = (standings.conferences || []).find((c) => c.key === conf.key);
@@ -802,7 +805,8 @@ async function buildPlayoffsPayload() {
     season: config.season,
     generatedAt: new Date().toISOString(),
     conferences,
-    bowl
+    bowl,
+    survival
   };
 }
 
@@ -1689,6 +1693,250 @@ async function buildBowlPayload() {
   };
 }
 
+function survivalSideFromConference(standConf, survivalConf, confMeta, label) {
+  const teams = standConf?.ok ? (standConf.teams || []) : [];
+  const last = teams.length ? teams[teams.length - 1] : null;
+  const scoring = last ? teamWeekEntry(survivalConf, last.id) : null;
+  const matchupCount = (survivalConf?.matchups || []).length;
+  return {
+    conferenceKey: confMeta?.key || standConf?.key || survivalConf?.key || null,
+    conferenceName: label,
+    ok: Boolean(standConf?.ok && survivalConf?.ok),
+    team: last
+      ? {
+          id: last.id,
+          name: last.name,
+          logo: last.logo || null,
+          wins: last.wins,
+          losses: last.losses,
+          ties: last.ties,
+          pointsFor: last.pointsFor
+        }
+      : null,
+    score: scoring ? Number(scoring.score || 0) : null,
+    projected: scoring ? Number(scoring.projected || 0) : null,
+    hasWeek17Matchup: Boolean(scoring),
+    week17MatchupCount: matchupCount,
+    espnOpponent: scoring?.opponentName || null
+  };
+}
+
+async function buildSurvivalPayload() {
+  const survivalCfg = config.survival || { enabled: true, week: 17, name: 'Stay in League' };
+  if (survivalCfg.enabled === false) {
+    return {
+      ok: true,
+      enabled: false,
+      season: config.season,
+      name: survivalCfg.name || 'Stay in League',
+      week: Number(survivalCfg.week) || 17,
+      sides: [],
+      phase: 'disabled',
+      message: 'Stay in League is disabled for this season.',
+      generatedAt: new Date().toISOString()
+    };
+  }
+
+  const SURVIVAL_WEEK = Number(survivalCfg.week) || Number(config.championship?.bowlWeek) || 17;
+  const survivalName = survivalCfg.name || 'Stay in League';
+  const [standings, survivalWeek] = await Promise.all([
+    loadStandingsPayload(),
+    loadSchedulePayload(SURVIVAL_WEEK)
+  ]);
+
+  const standByKey = new Map((standings.conferences || []).map((c) => [c.key, c]));
+  const weekByKey = new Map((survivalWeek.conferences || []).map((c) => [c.key, c]));
+  const confs = config.conferences || [];
+  const sides = confs.map((conf) =>
+    survivalSideFromConference(
+      standByKey.get(conf.key),
+      weekByKey.get(conf.key),
+      conf,
+      `${conf.shortName || conf.name} Last Place`
+    )
+  );
+
+  while (sides.length < 2) {
+    sides.push({
+      team: null,
+      score: null,
+      hasWeek17Matchup: false,
+      conferenceKey: null,
+      conferenceName: null
+    });
+  }
+
+  const left = sides[0];
+  const right = sides[1];
+  const teamsReady = Boolean(left.team && right.team);
+  const scoresReady = Boolean(left.hasWeek17Matchup && right.hasWeek17Matchup);
+  let phase = 'waiting';
+  let message = `${survivalName}: last place in each conference meet in Week ${SURVIVAL_WEEK}. Scores pull from each team’s ESPN Week ${SURVIVAL_WEEK} lineup.`;
+
+  if (teamsReady && scoresReady) {
+    const d = Number(left.score || 0);
+    const o = Number(right.score || 0);
+    if (d > 0 || o > 0) {
+      phase = 'live';
+      message = `Live ESPN Week ${SURVIVAL_WEEK} scoring · ${confs[0]?.shortName || 'A'} last vs ${confs[1]?.shortName || 'B'} last`;
+    } else {
+      phase = 'ready';
+      message = `Cellar dwellers locked. Waiting on Week ${SURVIVAL_WEEK} NFL kickoff for ESPN scores.`;
+    }
+  } else if (teamsReady && !scoresReady) {
+    phase = 'needs_week17';
+    message = `Last-place teams are set, but ESPN needs a Week ${SURVIVAL_WEEK} matchup for each so lineups score.`;
+  } else if ((weekByKey.get(confs[0]?.key)?.matchups || []).length || (weekByKey.get(confs[1]?.key)?.matchups || []).length) {
+    phase = 'week17_open';
+    message = `Week ${SURVIVAL_WEEK} ESPN matchups exist. Survival names fill from conference standings.`;
+  }
+
+  let leader = null;
+  let winner = null;
+  let loser = null;
+  if (teamsReady && scoresReady) {
+    const d = Number(left.score || 0);
+    const o = Number(right.score || 0);
+    if (d > o) {
+      leader = confs[0]?.key || 'left';
+      winner = left.team;
+      loser = right.team;
+    } else if (o > d) {
+      leader = confs[1]?.key || 'right';
+      winner = right.team;
+      loser = left.team;
+    } else if (d > 0 || o > 0) {
+      leader = 'tie';
+    }
+  }
+
+  const byKey = {};
+  confs.forEach((c, i) => {
+    byKey[c.key] = sides[i];
+  });
+
+  return {
+    ok: true,
+    enabled: true,
+    season: config.season,
+    name: survivalName,
+    week: SURVIVAL_WEEK,
+    phase,
+    message,
+    leader,
+    winner,
+    loser,
+    stakes: {
+      winner: 'Stays in GridIron 24',
+      loser: 'Leaves GridIron 24'
+    },
+    sides,
+    detail: byKey.detail || left,
+    overtime: byKey.overtime || right,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+function getAffiliatedLeague(key = 'aaa') {
+  const list = Array.isArray(config.affiliatedLeagues) ? config.affiliatedLeagues : [];
+  return list.find((l) => l.key === key) || list[0] || null;
+}
+
+async function buildAaaPayload() {
+  const affiliate = getAffiliatedLeague('aaa') || {
+    key: 'aaa',
+    name: 'AAA League',
+    shortName: 'AAA',
+    espnLeagueId: null,
+    role: 'feeder'
+  };
+  const espnId = Number(affiliate.espnLeagueId);
+  const configured = Number.isFinite(espnId) && espnId > 0;
+
+  if (!configured) {
+    return {
+      ok: true,
+      configured: false,
+      key: affiliate.key,
+      name: affiliate.name,
+      shortName: affiliate.shortName,
+      role: affiliate.role || 'feeder',
+      season: config.season,
+      espnLeagueId: null,
+      teams: [],
+      champion: null,
+      promotee: null,
+      message: 'AAA League ESPN ID is not configured yet. Set affiliatedLeagues.aaa.espnLeagueId when ready.',
+      generatedAt: new Date().toISOString()
+    };
+  }
+
+  const conference = {
+    key: affiliate.key,
+    name: affiliate.name,
+    shortName: affiliate.shortName,
+    espnLeagueId: espnId,
+    logo: affiliate.logo || null
+  };
+
+  try {
+    const data = await fetchEspnLeague(conference);
+    const teams = data.teams || [];
+    const champion = teams[0]
+      ? {
+          id: teams[0].id,
+          name: teams[0].name,
+          logo: teams[0].logo || null,
+          wins: teams[0].wins,
+          losses: teams[0].losses,
+          ties: teams[0].ties,
+          pointsFor: teams[0].pointsFor
+        }
+      : null;
+
+    return {
+      ok: true,
+      configured: true,
+      key: affiliate.key,
+      name: affiliate.name,
+      shortName: affiliate.shortName,
+      role: affiliate.role || 'feeder',
+      season: config.season,
+      espnLeagueId: espnId,
+      espnLeagueName: data.espnLeagueName || null,
+      teamCount: teams.length,
+      teams,
+      champion,
+      promotee: champion
+        ? {
+            ...champion,
+            label: 'Promotes to GridIron 24 next season'
+          }
+        : null,
+      message: champion
+        ? `${champion.name} is the current AAA standings leader and next-season GridIron 24 promotee (display only).`
+        : 'AAA standings loaded; champion TBD.',
+      generatedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      configured: true,
+      key: affiliate.key,
+      name: affiliate.name,
+      shortName: affiliate.shortName,
+      role: affiliate.role || 'feeder',
+      season: config.season,
+      espnLeagueId: espnId,
+      teams: [],
+      champion: null,
+      promotee: null,
+      error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message,
+      generatedAt: new Date().toISOString()
+    };
+  }
+}
+
 function authorizeCron(req) {
   const secret = String(process.env.CRON_SECRET || '').trim();
   if (!secret) return false;
@@ -2347,7 +2595,7 @@ const server = http.createServer(async (req, res) => {
         if (activate) {
           config.refresh();
           try {
-            calendar.seedIfEmpty(league.calendarDefaults || []);
+            calendar.ensureDefaults(league.calendarDefaults || []);
           } catch { /* ignore */ }
         }
 
@@ -3434,6 +3682,24 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/survival') {
+      try {
+        const payload = await buildSurvivalPayload();
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load Stay in League' });
+      }
+    }
+
+    if (pathname === '/api/aaa') {
+      try {
+        const payload = await buildAaaPayload();
+        return sendJson(res, payload.ok === false ? 502 : 200, payload);
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load AAA League' });
+      }
+    }
+
     if (pathname === '/api/playoffs') {
       try {
         const payload = await buildPlayoffsPayload();
@@ -3468,7 +3734,7 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/calendar' && req.method === 'GET') {
       try {
-        calendar.seedIfEmpty(config.calendarDefaults || []);
+        calendar.ensureDefaults(config.calendarDefaults || []);
       } catch { /* ignore */ }
       return sendJson(res, 200, {
         ok: true,
@@ -3585,7 +3851,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.warn('Approval migration failed:', err.message || err);
   }
   try {
-    calendar.seedIfEmpty(config.calendarDefaults || []);
+    calendar.ensureDefaults(config.calendarDefaults || []);
   } catch (err) {
     console.warn('Calendar seed failed:', err.message || err);
   }

@@ -42,6 +42,21 @@ module.exports = {
     { title: 'Dues Due', type: 'dues', date: '2026-09-01', notes: '$100 buy-in per franchise.' },
     { title: 'Trade Deadline', type: 'deadline', date: '2026-11-18', notes: 'No trades after this date.' },
     { title: 'Conference Playoffs Begin', type: 'event', date: '2026-12-08', notes: 'Week 14 Wild Card round.' },
-    { title: 'GridIron Bowl I', type: 'bowl', date: '2026-12-29', notes: 'Week 17 — Detail champ vs Overtime champ.' }
+    { title: 'GridIron Bowl I', type: 'bowl', date: '2026-12-29', notes: 'Week 17 — Detail champ vs Overtime champ.' },
+    { title: 'Stay in League', type: 'survival', date: '2026-12-29', notes: 'Week 17 — Detail last place vs Overtime last place.' }
+  ],
+  survival: {
+    enabled: true,
+    week: 17,
+    name: 'Stay in League'
+  },
+  affiliatedLeagues: [
+    {
+      key: 'aaa',
+      name: 'AAA League',
+      shortName: 'AAA',
+      espnLeagueId: null,
+      role: 'feeder'
+    }
   ]
 };

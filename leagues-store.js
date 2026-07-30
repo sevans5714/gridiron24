@@ -80,6 +80,34 @@ function conferenceKeyFromName(name, fallback) {
   return key || fallback;
 }
 
+function defaultSurvival(seed = {}) {
+  return {
+    enabled: seed.enabled !== false,
+    week: Number(seed.week) || 17,
+    name: String(seed.name || 'Stay in League').trim() || 'Stay in League'
+  };
+}
+
+function defaultAffiliatedLeagues(seedList) {
+  const list = Array.isArray(seedList) ? seedList : [];
+  if (!list.length) {
+    return [{
+      key: 'aaa',
+      name: 'AAA League',
+      shortName: 'AAA',
+      espnLeagueId: null,
+      role: 'feeder'
+    }];
+  }
+  return list.map((row) => ({
+    key: String(row.key || 'aaa').trim() || 'aaa',
+    name: String(row.name || 'AAA League').trim() || 'AAA League',
+    shortName: String(row.shortName || 'AAA').trim() || 'AAA',
+    espnLeagueId: Number(row.espnLeagueId) > 0 ? Number(row.espnLeagueId) : null,
+    role: String(row.role || 'feeder').trim() || 'feeder'
+  }));
+}
+
 function publicLeague(league) {
   if (!league) return null;
   return {
@@ -92,6 +120,10 @@ function publicLeague(league) {
     conferences: league.conferences,
     championship: league.championship,
     structure: league.structure,
+    survival: league.survival || defaultSurvival(),
+    affiliatedLeagues: Array.isArray(league.affiliatedLeagues)
+      ? league.affiliatedLeagues
+      : defaultAffiliatedLeagues(),
     payouts: league.payouts,
     calendarDefaults: league.calendarDefaults,
     ownerUserId: league.ownerUserId || null,
@@ -286,6 +318,8 @@ function createLeague({
       prizes: (Array.isArray(payouts?.prizes) ? payouts.prizes : []).map(normalizePrize)
     },
     calendarDefaults: Array.isArray(calendarDefaults) ? calendarDefaults : [],
+    survival: defaultSurvival(),
+    affiliatedLeagues: defaultAffiliatedLeagues(),
     ownerUserId: ownerUserId || null,
     createdAt: new Date().toISOString(),
     activatedAt: activate ? new Date().toISOString() : null
@@ -305,10 +339,39 @@ function ensureSystemLeague(seed) {
   const store = readStore();
   let system = store.leagues.find((l) => l.isSystem || l.slug === 'gridiron24');
   if (system) {
+    let dirty = false;
+    if (!system.survival) {
+      system.survival = defaultSurvival(seed.survival);
+      dirty = true;
+    }
+    if (!Array.isArray(system.affiliatedLeagues)) {
+      system.affiliatedLeagues = defaultAffiliatedLeagues(seed.affiliatedLeagues);
+      dirty = true;
+    }
+    const hasSurvivalCal = (system.calendarDefaults || []).some(
+      (e) => String(e.type || '').toLowerCase() === 'survival'
+        || /stay in league/i.test(String(e.title || ''))
+    );
+    if (!hasSurvivalCal) {
+      const fromSeed = (seed.calendarDefaults || []).find(
+        (e) => String(e.type || '').toLowerCase() === 'survival'
+      );
+      system.calendarDefaults = [
+        ...(system.calendarDefaults || []),
+        fromSeed || {
+          title: 'Stay in League',
+          type: 'survival',
+          date: '2026-12-29',
+          notes: 'Week 17 — Detail last place vs Overtime last place.'
+        }
+      ];
+      dirty = true;
+    }
     if (!store.activeLeagueId) {
       store.activeLeagueId = system.id;
-      writeStore(store);
+      dirty = true;
     }
+    if (dirty) writeStore(store);
     return publicLeague(system);
   }
 
@@ -364,6 +427,8 @@ function ensureSystemLeague(seed) {
       prizes: []
     },
     calendarDefaults: seed.calendarDefaults || [],
+    survival: defaultSurvival(seed.survival),
+    affiliatedLeagues: defaultAffiliatedLeagues(seed.affiliatedLeagues),
     ownerUserId: null,
     createdAt: new Date().toISOString(),
     activatedAt: new Date().toISOString()

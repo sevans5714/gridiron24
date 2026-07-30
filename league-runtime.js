@@ -48,6 +48,14 @@ function leagueToConfig(league) {
       playoffTeamCount: 6,
       playoffWeeks: [14, 15, 16]
     },
+    survival: league.survival || staticConfig.survival || {
+      enabled: true,
+      week: 17,
+      name: 'Stay in League'
+    },
+    affiliatedLeagues: Array.isArray(league.affiliatedLeagues)
+      ? league.affiliatedLeagues
+      : (staticConfig.affiliatedLeagues || []),
     leagueId: league.id,
     slug: league.slug,
     isSystem: Boolean(league.isSystem)
