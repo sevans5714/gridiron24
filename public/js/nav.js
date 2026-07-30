@@ -4,12 +4,12 @@
   const allLinks = [
     { href: HOME_DEFAULT, label: 'Home', key: 'home' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
-    { href: '/standings.html', label: 'Standings', key: 'standings' },
     {
-      href: '/teams.html',
-      label: 'Teams',
-      key: 'teams',
+      href: '/standings.html',
+      label: 'League',
+      key: 'league',
       menu: [
+        { href: '/standings.html', label: 'Standings' },
         { href: '/teams.html', label: 'Roster' },
         { href: '/draft.html', label: 'Draft Results' },
         { href: '/history.html', label: 'History' },
@@ -30,7 +30,9 @@
 
   function navActiveKey() {
     if (active === 'scoring' || active === 'rulebook' || active === 'payouts') return 'rulebook';
-    if (active === 'draft' || active === 'history' || active === 'transactions') return 'teams';
+    if (active === 'standings' || active === 'teams' || active === 'draft' || active === 'history' || active === 'transactions') {
+      return 'league';
+    }
     if (active === 'aaa' && String(homePath).includes('aaa')) return 'home';
     return active;
   }
