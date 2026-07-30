@@ -4,16 +4,22 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta name="theme-color" content="#02060f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GridIron24" />
   <title>Sign In · GridIron 24</title>
+  <link rel="manifest" href="/manifest.webmanifest?v=8" />
+  <link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png?v=8" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=87" />
+  <link rel="stylesheet" href="/css/site.css?v=99" />
 </head>
 <body class="auth-page">
   <form class="auth-card wide" id="login-form" autocomplete="on">
-    <img class="auth-crest hero" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="1024" height="1024" />
+    <img class="auth-crest hero" src="/assets/gridiron24-crest.png?v=8" alt="GridIron 24" width="1024" height="1024" />
     <div class="auth-fields">
       <div class="status-note err" id="err" role="alert"></div>
       <label class="field-label" for="loginName">Login Name</label>
@@ -30,8 +36,30 @@
         <a href="/forgot">Forgot password?</a><br />
         <a href="/register-league">Register a new league</a>
       </p>
+      <button type="button" class="auth-get-app" id="install-app-btn">
+        <svg class="auth-get-app-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="7" y="2.5" width="10" height="19" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <circle cx="12" cy="18.2" r="0.9" fill="currentColor"/>
+          <path d="M9.5 5.2h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span>Want to install the mobile app?</span>
+      </button>
+      <p class="auth-install-status" id="install-status" role="status" hidden></p>
     </div>
   </form>
+
+  <div class="auth-install-sheet" id="install-sheet" hidden>
+    <div class="auth-install-sheet-card" role="dialog" aria-modal="true" aria-labelledby="ios-install-title">
+      <h3 id="ios-install-title">Add GridIron24</h3>
+      <ol>
+        <li>Tap <strong>Share</strong></li>
+        <li>Tap <strong>Add to Home Screen</strong></li>
+        <li>Tap <strong>Add</strong></li>
+      </ol>
+      <button type="button" class="btn" id="install-sheet-close">Done</button>
+    </div>
+  </div>
+
   <p class="auth-legal">
     <strong>GridIron 24</strong> is an independent fantasy football league headquarters.
     Not affiliated with the NFL, ESPN, or any professional sports league.
@@ -39,14 +67,27 @@
   </p>
   <script>
     const STORAGE_KEY = 'gi24.savedLogin';
+    const INSTALL_PENDING_KEY = 'gi-pwa-install-pending';
     const errEl = document.getElementById('err');
     const form = document.getElementById('login-form');
     const submit = document.getElementById('submit');
     const rememberInput = document.getElementById('remember');
     const loginInput = document.getElementById('loginName');
     const passwordInput = document.getElementById('password');
+    const installBtn = document.getElementById('install-app-btn');
+    const installLabel = installBtn?.querySelector('span') || null;
+    const installStatus = document.getElementById('install-status');
+    const installSheet = document.getElementById('install-sheet');
     const nextParam = new URLSearchParams(window.location.search).get('next');
-    const next = nextParam || '/hq';
+    const defaultInstallLabel = 'Want to install the mobile app?';
+
+    let deferredInstall = null;
+    let installIntent = false;
+
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || navigator.standalone === true;
 
     function resolveHomePath(data) {
       if (nextParam && !isDefaultHomeNext(nextParam)) return nextParam;
@@ -82,6 +123,118 @@
     }
     function clearSaved() { localStorage.removeItem(STORAGE_KEY); }
 
+    function setInstallStatus(msg) {
+      if (!installStatus) return;
+      installStatus.textContent = msg || '';
+      installStatus.hidden = !msg;
+    }
+
+    function setInstallLabel(text) {
+      if (installLabel) installLabel.textContent = text;
+    }
+
+    function resetInstallBtn() {
+      if (!installBtn) return;
+      installBtn.disabled = false;
+      setInstallLabel(defaultInstallLabel);
+    }
+
+    function hideInstallPanel() {
+      if (installBtn) installBtn.hidden = true;
+      if (installStatus) installStatus.hidden = true;
+      closeIosSheet();
+    }
+
+    function openIosSheet() {
+      if (!installSheet) return;
+      installSheet.hidden = false;
+      document.body.classList.add('has-install-sheet');
+    }
+
+    function closeIosSheet() {
+      if (!installSheet) return;
+      installSheet.hidden = true;
+      document.body.classList.remove('has-install-sheet');
+    }
+
+    function markPending() {
+      try { localStorage.setItem(INSTALL_PENDING_KEY, '1'); } catch { /* ignore */ }
+    }
+
+    function clearPending() {
+      try { localStorage.removeItem(INSTALL_PENDING_KEY); } catch { /* ignore */ }
+    }
+
+    async function runNativeInstall() {
+      if (!deferredInstall) return false;
+      const evt = deferredInstall;
+      deferredInstall = null;
+      try {
+        evt.prompt();
+        const choice = await evt.userChoice;
+        if (choice?.outcome === 'accepted') {
+          clearPending();
+          hideInstallPanel();
+          return true;
+        }
+        setInstallStatus('');
+        resetInstallBtn();
+      } catch {
+        deferredInstall = evt;
+        return false;
+      }
+      return false;
+    }
+
+    async function installApp() {
+      if (isStandalone) {
+        hideInstallPanel();
+        return;
+      }
+
+      installIntent = true;
+      if (installBtn) {
+        installBtn.disabled = true;
+        setInstallLabel('Installing…');
+      }
+      setInstallStatus('');
+
+      if (isIos) {
+        resetInstallBtn();
+        openIosSheet();
+        return;
+      }
+
+      if (deferredInstall) {
+        const ok = await runNativeInstall();
+        if (!ok) resetInstallBtn();
+        return;
+      }
+
+      const gotPrompt = await new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(false), 2000);
+        const onPrompt = () => {
+          clearTimeout(timer);
+          window.removeEventListener('gi:install-ready', onPrompt);
+          resolve(true);
+        };
+        window.addEventListener('gi:install-ready', onPrompt);
+      });
+
+      if (gotPrompt && deferredInstall) {
+        const ok = await runNativeInstall();
+        if (!ok) resetInstallBtn();
+        return;
+      }
+
+      markPending();
+      installIntent = true;
+      resetInstallBtn();
+      setInstallLabel('Finish after you sign in');
+      setInstallStatus('');
+      loginInput?.focus();
+    }
+
     async function login(loginName, password) {
       const res = await fetch('/api/login', {
         method: 'POST',
@@ -92,11 +245,21 @@
       if (!res.ok || !data.ok) throw new Error(data.error || 'Sign in failed');
       return data;
     }
+
+    function postLoginUrl(data) {
+      const pending = localStorage.getItem(INSTALL_PENDING_KEY) === '1' || installIntent;
+      if (pending) {
+        markPending();
+        return '/app/?install=1';
+      }
+      return resolveHomePath(data);
+    }
+
     async function checkExisting() {
       const res = await fetch('/api/auth', { cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
       if (data.authenticated) {
-        window.location.replace(resolveHomePath(data));
+        window.location.replace(postLoginUrl(data));
         return true;
       }
       return false;
@@ -112,15 +275,40 @@
         const data = await login(loginName, password);
         if (rememberInput.checked) writeSaved(loginName, password);
         else clearSaved();
-        window.location.href = resolveHomePath(data);
+        window.location.href = postLoginUrl(data);
       } catch (err) {
         showErr(err.message);
         setBusy(false);
       }
     });
 
+    installBtn?.addEventListener('click', () => { installApp(); });
+    document.getElementById('install-sheet-close')?.addEventListener('click', closeIosSheet);
+    installSheet?.addEventListener('click', (e) => {
+      if (e.target === installSheet) closeIosSheet();
+    });
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstall = e;
+      window.dispatchEvent(new Event('gi:install-ready'));
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstall = null;
+      clearPending();
+      hideInstallPanel();
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
+    if (isStandalone) {
+      hideInstallPanel();
+    }
+
     (async () => {
-      // Fresh logout: never auto-sign back in from saved credentials.
       const params = new URLSearchParams(window.location.search);
       if (params.get('logout') === '1') {
         clearSaved();
@@ -133,7 +321,6 @@
       if (await checkExisting()) return;
       const saved = readSaved();
       if (!saved) return;
-      // Prefill only — do not auto-login (that made Log Out bounce straight back in).
       loginInput.value = saved.loginName;
       passwordInput.value = saved.password;
       rememberInput.checked = true;

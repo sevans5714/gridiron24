@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=87" />
+  <link rel="stylesheet" href="/css/site.css?v=99" />
   <style>
     .hq-hero {
       text-align: center;
@@ -666,7 +666,7 @@
       color: var(--muted);
       font-size: 0.92rem;
     }
-    .poll-signin a { color: #efd782; }
+    .poll-signin a { color: #7ec8ff; }
 
     .composer {
       margin-top: 1rem;
@@ -736,10 +736,6 @@
     }
     .msg strong { display: block; color: var(--text); margin-bottom: 0.2rem; font-size: 1.1rem; }
 
-    footer.shell {
-      padding-top: 1rem;
-      padding-bottom: 1.35rem;
-    }
 
     @media (max-width: 1100px) {
       .hq-board {
@@ -761,8 +757,14 @@
 
     body[data-page="aaa"] .hq-hero {
       background:
-        radial-gradient(ellipse 70% 80% at 50% 25%, rgba(239, 215, 130, 0.12), transparent 60%),
+        radial-gradient(ellipse 70% 80% at 50% 25%, rgba(126, 200, 255, 0.12), transparent 60%),
         var(--bg);
+    }
+    body[data-page="aaa"] .hq-hero .tag {
+      margin-top: 1.15rem;
+      font-size: clamp(1.55rem, 4.2vw, 2.25rem);
+      letter-spacing: 0.06em;
+      line-height: 1.2;
     }
     body[data-page="aaa"] .standings-preview {
       grid-template-columns: 1fr;
@@ -775,14 +777,14 @@
       grid-template-columns: 1fr;
     }
     body[data-page="aaa"] .conf-head.aaa {
-      border-left-color: #efd782;
-      border-bottom-color: rgba(239, 215, 130, 0.55);
+      border-left-color: #7ec8ff;
+      border-bottom-color: rgba(126, 200, 255, 0.55);
     }
     body[data-page="aaa"] .conf-head.aaa h3 {
-      color: #efd782;
+      color: #7ec8ff;
     }
     body[data-page="aaa"] .mini-table tr.promotee-row td {
-      background: rgba(239, 215, 130, 0.06);
+      background: rgba(126, 200, 255, 0.06);
     }
     .rules-link {
       color: var(--muted);
@@ -865,10 +867,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=68"></script>
+  <script src="/js/nav.js?v=70"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)

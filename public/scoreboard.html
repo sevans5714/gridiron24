@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=87" />
+  <link rel="stylesheet" href="/css/site.css?v=99" />
   <style>
     :root,
     html[data-theme="night"] {
@@ -586,7 +586,7 @@
       min-width: 0;
     }
     .board-top img {
-      width: 3.75rem;
+      width: 3rem;
       height: auto;
       filter: none;
       background: transparent;
@@ -605,7 +605,7 @@
     }
     .board.detail .board-top h2 { color: var(--detail); }
     .board.overtime .board-top h2 { color: var(--overtime); }
-    .board.aaa .board-top h2 { color: var(--led); }
+    .board.aaa .board-top h2 { color: #7ec8ff; }
     .board-top .week-chip {
       font-family: "Share Tech Mono", ui-monospace, monospace;
       font-size: 0.85rem;
@@ -774,7 +774,7 @@
     @media (max-width: 900px) {
       .sb-boards { grid-template-columns: 1fr; }
       .board.overtime { animation-delay: 0.05s; }
-      .board-top img { width: 3.35rem; }
+      .board-top img { width: 2.68rem; }
       .team img { width: 3.85rem; height: 3.85rem; }
       .game {
         grid-template-columns: 1fr;
@@ -794,7 +794,7 @@
     @media (max-width: 560px) {
       .sb-hero .brand-logo { width: min(11rem, 58vw); }
       .team img { width: 4.5rem; height: 4.5rem; }
-      .board-top img { width: 3.5rem; }
+      .board-top img { width: 2.8rem; }
     }
   </style>
 </head>
@@ -807,7 +807,7 @@
   </header>
 
   <section class="sb-hero shell">
-    <img class="brand-logo" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="280" height="280" />
+    <img class="brand-logo" src="/assets/gridiron24-league.png?v=1" alt="GridIron 24" width="280" height="280" />
     <h1>Scoreboard</h1>
   </section>
 
@@ -846,10 +846,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=68"></script>
+  <script src="/js/nav.js?v=70"></script>
   <script>
     const REFRESH_MS = 30_000;
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
@@ -1225,7 +1225,9 @@
             <div class="board-face"><div class="board-empty">${esc(conf.error || 'Unavailable')}</div></div>
           </section>`;
       }
-      const logo = conf.logo ? `<img src="${esc(conf.logo)}" alt="" width="60" height="60">` : '';
+      const logo = conf.logo
+        ? `<span class="conf-mark"><img src="${esc(conf.logo)}" alt="" width="48" height="48"></span>`
+        : '';
       const games = (conf.matchups || []).map(gameRow).join('');
       return `
         <section class="board ${tone}">

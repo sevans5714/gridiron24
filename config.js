@@ -40,7 +40,7 @@ module.exports = {
   treasurer: {
     name: 'Jamie Aceto',
     email: 'jaceto53@gmail.com',
-    venmoUsername: 'jaceto53',
+    venmoUsername: 'James-Aceto',
     note: 'League dues — GridIron 24 HQ'
   },
   // Prior seasons for Teams → History / Draft Results.
@@ -54,6 +54,7 @@ module.exports = {
     { title: 'Conference Playoffs Begin', type: 'event', date: '2026-12-08', notes: 'Week 14 Wild Card round.' },
     { title: 'GridIron Bowl I', type: 'bowl', date: '2026-12-29', notes: 'Week 17 — Detail champ vs Overtime champ.' },
     { title: "Mayor's Cup", type: 'survival', date: '2026-12-29', notes: 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).' },
+    { title: 'AAA Super Bowl', type: 'aaa', date: '2026-12-29', notes: 'AAA League championship — ESPN title game. Winner promotes to GridIron 24 next season.' },
     { title: 'Keeper Declarations Due', type: 'deadline', date: '2027-08-17', notes: 'One keeper per franchise. First keep costs the original draft round; each later keep drops one round. Max three seasons with the franchise, then back to the pool.' }
   ],
   survival: {

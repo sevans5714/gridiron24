@@ -1,59 +1,78 @@
 /**
  * Multi-sport live scores for the Members Lounge.
- * Upstream: ESPN public site scoreboard / golf leaderboard APIs.
+ * Primary: ESPN public site scoreboard / golf leaderboard APIs (multi-host).
+ * Fallback: free public APIs (MLB Stats, NHL Web, TheSportsDB, optional CFBD).
  */
+
+const espnResilient = require('./espn-resilient');
+const sportsFallbacks = require('./sports-fallbacks');
 
 const CACHE_MS = 20_000;
 
 const LEAGUES = {
+  nfl: {
+    id: 'nfl',
+    label: 'NFL',
+    sport: 'football',
+    league: 'nfl',
+    kind: 'team',
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png'
+  },
   ncaaf: {
     id: 'ncaaf',
     label: 'College FB',
     sport: 'football',
     league: 'college-football',
-    kind: 'team'
+    kind: 'team',
+    logo: 'https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-football-college.png'
   },
   mlb: {
     id: 'mlb',
     label: 'MLB',
     sport: 'baseball',
     league: 'mlb',
-    kind: 'team'
+    kind: 'team',
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png'
   },
   llws: {
     id: 'llws',
     label: 'LLWS',
     sport: 'baseball',
     league: 'llb',
-    kind: 'team'
+    kind: 'team',
+    logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-baseball.png'
   },
   cbase: {
     id: 'cbase',
     label: 'College BB',
     sport: 'baseball',
     league: 'college-baseball',
-    kind: 'team'
+    kind: 'team',
+    logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-baseball.png'
   },
   nhl: {
     id: 'nhl',
     label: 'NHL',
     sport: 'hockey',
     league: 'nhl',
-    kind: 'team'
+    kind: 'team',
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png'
   },
   wnba: {
     id: 'wnba',
     label: 'WNBA',
     sport: 'basketball',
     league: 'wnba',
-    kind: 'team'
+    kind: 'team',
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/wnba.png'
   },
   mls: {
     id: 'mls',
     label: 'MLS',
     sport: 'soccer',
     league: 'usa.1',
-    kind: 'team'
+    kind: 'team',
+    logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/19.png'
   },
   golf: {
     id: 'golf',
@@ -62,18 +81,24 @@ const LEAGUES = {
     league: 'leaderboard',
     kind: 'golf',
     // Golf uses a dedicated leaderboard endpoint (not …/scoreboard).
-    url: 'https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard'
+    url: 'https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard',
+    logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-golf.png'
   }
 };
 
-const DEFAULT_LEAGUES = ['ncaaf', 'mlb', 'llws', 'cbase', 'nhl', 'wnba', 'mls', 'golf'];
+const DEFAULT_LEAGUES = ['nfl', 'ncaaf', 'mlb', 'llws', 'cbase', 'nhl', 'wnba', 'mls', 'golf'];
 const GOLF_LEADER_LIMIT = 12;
 
-const cache = new Map(); // url -> { at, data }
-
-function scoreboardUrl(meta) {
-  if (meta.url) return meta.url;
-  return `https://site.api.espn.com/apis/site/v2/sports/${meta.sport}/${meta.league}/scoreboard`;
+function sitePathForMeta(meta) {
+  if (meta.url) {
+    try {
+      const u = new URL(meta.url);
+      return `${u.pathname.replace(/^\//, '')}${u.search || ''}`;
+    } catch {
+      return null;
+    }
+  }
+  return `apis/site/v2/sports/${meta.sport}/${meta.league}/scoreboard`;
 }
 
 function statusBucket(state, completed) {
@@ -197,33 +222,33 @@ function normalizeGolfEvent(event) {
 }
 
 async function fetchLeagueRaw(meta) {
-  const url = scoreboardUrl(meta);
-  const hit = cache.get(url);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.data;
-
-  const res = await fetch(url, {
+  const pathAndQuery = sitePathForMeta(meta);
+  if (!pathAndQuery) {
+    throw Object.assign(new Error(`${meta.label} scoreboard URL invalid`), { status: 502 });
+  }
+  const hit = await espnResilient.fetchJsonResilient({
+    urls: espnResilient.siteApiUrls(pathAndQuery),
+    cacheKey: `site:${meta.id}:${pathAndQuery}`,
+    ttlMs: CACHE_MS,
     headers: {
       Accept: 'application/json',
       'User-Agent': 'GridIron24-MembersLounge/1.0'
-    }
+    },
+    lane: 'site'
   });
-  if (!res.ok) {
-    throw Object.assign(new Error(`${meta.label} scoreboard failed (${res.status})`), {
-      status: 502
-    });
-  }
-  const text = await res.text();
-  let raw;
-  try {
-    raw = JSON.parse(text);
-  } catch {
-    throw Object.assign(
-      new Error(`${meta.label} scoreboard returned non-JSON`),
-      { status: 502 }
-    );
-  }
-  cache.set(url, { at: Date.now(), data: raw });
-  return raw;
+  return { raw: hit.data, source: hit.source, from: hit.from };
+}
+
+function pickLeagueLogo(raw, fallback) {
+  const logos = raw?.leagues?.[0]?.logos;
+  if (!Array.isArray(logos) || !logos.length) return fallback || null;
+  const ranked = [...logos].sort((a, b) => {
+    const ra = Array.isArray(a.rel) ? a.rel : [];
+    const rb = Array.isArray(b.rel) ? b.rel : [];
+    const score = (rel) => (rel.includes('dark') ? 2 : 0) + (rel.includes('full') ? 1 : 0) + (rel.includes('default') ? 1 : 0);
+    return score(rb) - score(ra);
+  });
+  return ranked[0]?.href || fallback || null;
 }
 
 function parseLeagueList(param) {
@@ -235,14 +260,44 @@ function parseLeagueList(param) {
   return ids.length ? [...new Set(ids)] : DEFAULT_LEAGUES.slice();
 }
 
+function boardFromGames(meta, games, { source, provider, from = 'fallback' } = {}) {
+  const counts = { live: 0, final: 0, upcoming: 0 };
+  const list = Array.isArray(games) ? games.slice() : [];
+  for (const g of list) {
+    counts[g.status?.bucket] = (counts[g.status?.bucket] || 0) + 1;
+  }
+  list.sort((a, b) => {
+    const order = { live: 0, upcoming: 1, final: 2 };
+    const ao = order[a.status?.bucket] ?? 3;
+    const bo = order[b.status?.bucket] ?? 3;
+    if (ao !== bo) return ao - bo;
+    return String(a.date || '').localeCompare(String(b.date || ''));
+  });
+  return {
+    ok: true,
+    id: meta.id,
+    label: meta.label,
+    kind: meta.kind,
+    logo: meta.logo || null,
+    from,
+    source: source || from,
+    provider: provider || null,
+    counts,
+    games: list,
+    season: null,
+    week: null
+  };
+}
+
 async function getSportsScores({ leagues } = {}) {
   const ids = parseLeagueList(leagues);
   const fetchedAt = new Date().toISOString();
+  let usedFallback = false;
   const boards = await Promise.all(
     ids.map(async (id) => {
       const meta = LEAGUES[id];
       try {
-        const raw = await fetchLeagueRaw(meta);
+        const { raw, from } = await fetchLeagueRaw(meta);
         const games = (raw.events || []).map((ev) =>
           meta.kind === 'golf' ? normalizeGolfEvent(ev) : normalizeTeamEvent(ev, id)
         );
@@ -262,6 +317,9 @@ async function getSportsScores({ leagues } = {}) {
           id: meta.id,
           label: meta.label,
           kind: meta.kind,
+          logo: pickLeagueLogo(raw, meta.logo),
+          from: from || 'live',
+          source: 'espn',
           counts,
           games,
           season: raw.season
@@ -276,11 +334,25 @@ async function getSportsScores({ leagues } = {}) {
             : null
         };
       } catch (err) {
+        try {
+          const fb = await sportsFallbacks.fetchFallbackBoard(id);
+          if (fb?.games) {
+            usedFallback = true;
+            return boardFromGames(meta, fb.games, {
+              source: fb.source,
+              provider: fb.provider,
+              from: 'fallback'
+            });
+          }
+        } catch {
+          /* fall through */
+        }
         return {
           ok: false,
           id: meta.id,
           label: meta.label,
           kind: meta.kind,
+          logo: meta.logo || null,
           error: err.message || 'Unavailable',
           counts: { live: 0, final: 0, upcoming: 0 },
           games: []
@@ -299,7 +371,9 @@ async function getSportsScores({ leagues } = {}) {
 
   return {
     ok: true,
-    source: 'espn-site-scoreboard',
+    source: usedFallback ? 'sports-fallback' : 'espn-site-scoreboard',
+    fallbackUsed: usedFallback,
+    upstream: espnResilient.getUpstreamStatus().site,
     fetchedAt,
     cacheMs: CACHE_MS,
     totals,

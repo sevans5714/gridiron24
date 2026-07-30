@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=87" />
+  <link rel="stylesheet" href="/css/site.css?v=99" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -599,7 +599,6 @@
       <a href="#keeper">Keeper</a>
       <a href="#logo">Avatar / Logo</a>
       <a href="#password">Password</a>
-      <a href="#mobile-app" id="jump-app">Mobile App</a>
       <a href="#tools" id="jump-tools" hidden>League Tools</a>
     </nav>
 
@@ -647,22 +646,6 @@
         </div>
         <p class="profile-note" id="appearance-status" role="status"></p>
       </div>
-    </section>
-
-    <section class="profile-card" id="mobile-app">
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2>Mobile App</h2>
-          <p>Installable PWA — standings and fantasy scoreboard on your phone home screen.</p>
-        </div>
-      </div>
-      <div class="tools-actions" style="margin-top:0.35rem;">
-        <a class="btn-tools" href="/app/">Open GridIron 24 App</a>
-      </div>
-      <p class="profile-note" style="margin-top:0.85rem;">
-        On iPhone: open the app link, tap Share, then <strong>Add to Home Screen</strong>.
-        On Android Chrome: use Install when prompted, or the browser menu.
-      </p>
     </section>
 
     <section class="profile-card tools-card" id="tools" hidden>
@@ -766,11 +749,11 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=68"></script>
-  <script src="/js/inbox-ui.js?v=4"></script>
+  <script src="/js/nav.js?v=70"></script>
+  <script src="/js/inbox-ui.js?v=6"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -930,7 +913,7 @@
           ${portalRowHtml('Portal URL', urls.portal)}
           ${portalRowHtml('Customer URL', urls.customer)}
           ${portalRowHtml('Mobile App', urls.app)}
-          <p class="profile-note">Portal URL opens League HQ. Customer URL is the general sign-in page. Mobile App is the installable standings + scoreboard PWA.</p>
+          <p class="profile-note">Portal URL opens League HQ. Customer URL is the general sign-in page.</p>
         </div>`;
       bindPortalCopy(accountBody);
     }

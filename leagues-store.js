@@ -487,6 +487,25 @@ function ensureSystemLeague(seed) {
       }
       dirty = true;
     }
+    const hasAaaCal = (system.calendarDefaults || []).some(
+      (e) => String(e.type || '').toLowerCase() === 'aaa'
+        || /aaa\s*(super\s*)?bowl|aaa\s*championship/i.test(String(e.title || ''))
+    );
+    if (!hasAaaCal) {
+      const fromSeed = (seed.calendarDefaults || []).find(
+        (e) => String(e.type || '').toLowerCase() === 'aaa'
+      );
+      system.calendarDefaults = [
+        ...(system.calendarDefaults || []),
+        fromSeed || {
+          title: 'AAA Super Bowl',
+          type: 'aaa',
+          date: '2026-12-29',
+          notes: 'AAA League championship — ESPN title game. Winner promotes to GridIron 24 next season.'
+        }
+      ];
+      dirty = true;
+    }
     if (!store.activeLeagueId) {
       store.activeLeagueId = system.id;
       dirty = true;

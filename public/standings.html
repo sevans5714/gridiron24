@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=87" />
+  <link rel="stylesheet" href="/css/site.css?v=99" />
   <style>
     .section {
       padding: 1.75rem 0 0;
@@ -50,7 +50,7 @@
     }
 
     .conf-logo {
-      width: clamp(3.5rem, 8vw, 5rem);
+      width: clamp(2.8rem, 6.4vw, 4rem);
       height: auto;
       display: block;
       flex: 0 0 auto;
@@ -299,7 +299,7 @@
       .col-ties,
       .col-pa { display: none; }
       .board-head h2 { font-size: 1.1rem; }
-      .conf-logo { width: 3.25rem; }
+      .conf-logo { width: 2.6rem; }
     }
   </style>
 </head>
@@ -326,11 +326,11 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=68"></script>
+  <script src="/js/nav.js?v=70"></script>
   <script>
     const escapeHtml = (value = '') => String(value)
       .replaceAll('&', '&amp;')
@@ -347,7 +347,7 @@
       const src = key === 'detail'
         ? '/assets/detail-conference.png'
         : '/assets/overtime-conference.png';
-      return `<img class="conf-logo" src="${src}" alt="${escapeHtml(name)}" width="80" height="80" decoding="async" />`;
+      return `<span class="conf-mark"><img class="conf-logo" src="${src}" alt="${escapeHtml(name)}" width="64" height="64" decoding="async" /></span>`;
     }
 
     function boardHead(conf) {

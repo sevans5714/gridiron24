@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=87" />
+  <link rel="stylesheet" href="/css/site.css?v=99" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -995,7 +995,7 @@
               <div class="section-head">
                 <h3>Member Access <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
-              <p class="help">Approve accounts, assign franchises, link prior-year teams, and set roles. One conference admin per conference — demote the current admin before appointing another. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
+              <p class="help">Invite tokens admit members to the lounge. Use this desk to approve any leftover pending accounts, assign franchises, link prior-year teams, and set roles. One conference admin per conference — demote the current admin before appointing another. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
               <div class="status-note" id="members-msg" role="status"></div>
               <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
@@ -1154,6 +1154,7 @@
                   <option value="deadline">Deadline</option>
                   <option value="bowl">Bowl</option>
                   <option value="survival">Mayor's Cup</option>
+                  <option value="aaa">AAA Championship</option>
                 </select>
                 <button type="button" class="btn" id="cal-add">Add</button>
               </div>
@@ -1197,10 +1198,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=68"></script>
+  <script src="/js/nav.js?v=70"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=87" />
+  <link rel="stylesheet" href="/css/site.css?v=99" />
   <style>
     .toolbar {
       display: flex;
@@ -61,6 +61,109 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
+    }
+    .special-slot {
+      margin-top: 1rem;
+    }
+    .mayor-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1rem 1.25rem;
+      align-items: center;
+      padding: 1.1rem 1.2rem 1.2rem;
+      border: 1px solid rgba(126, 200, 255, 0.35);
+      background:
+        radial-gradient(ellipse 70% 90% at 12% 40%, rgba(47, 109, 255, 0.2), transparent 60%),
+        linear-gradient(180deg, var(--panel-2), var(--panel));
+      overflow: hidden;
+    }
+    .mayor-card .mark {
+      width: clamp(5.5rem, 14vw, 7.5rem);
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+    }
+    .mayor-card .eyebrow {
+      margin: 0 0 0.25rem;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .mayor-card h2 {
+      margin: 0 0 0.35rem;
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .mayor-card .blurb {
+      margin: 0 0 0.85rem;
+      color: var(--muted);
+      line-height: 1.45;
+      max-width: 38rem;
+    }
+    .mayor-score {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.75rem;
+      align-items: center;
+      max-width: 36rem;
+    }
+    .mayor-side {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-width: 0;
+    }
+    .mayor-side.home { flex-direction: row-reverse; text-align: right; }
+    .mayor-side img {
+      width: 2.75rem;
+      height: 2.75rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+    .mayor-side .nm {
+      font-weight: 700;
+      font-size: 0.95rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mayor-mid {
+      text-align: center;
+      font-family: var(--display);
+      letter-spacing: 0.06em;
+    }
+    .mayor-mid .vs {
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+    .mayor-mid .pts {
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    .mayor-card .playoffs-link {
+      display: inline-flex;
+      margin-top: 0.85rem;
+      color: #9ec0ff;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.92rem;
+    }
+    .mayor-card .playoffs-link:hover { color: #fff; }
+    @media (max-width: 720px) {
+      .mayor-card {
+        grid-template-columns: 1fr;
+        text-align: center;
+        justify-items: center;
+      }
+      .mayor-score { width: 100%; }
     }
     .matchups {
       padding: 0.75rem;
@@ -183,13 +286,14 @@
     <div class="grid-2" id="boards">
       <div class="msg">Loading schedules…</div>
     </div>
+    <div class="special-slot" id="special-slot" hidden></div>
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=68"></script>
+  <script src="/js/nav.js?v=70"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -209,12 +313,50 @@
       return `<div class="side away">${logo}${name}</div>`;
     }
 
+    function mayorSide(side, align) {
+      if (!side) return `<div class="mayor-side ${align}"><div class="nm">TBD</div></div>`;
+      const team = side.team || side.champion || {};
+      const logo = team.logo || '/assets/team-logo-placeholder.svg';
+      const name = team.name || side.conferenceName || 'TBD';
+      return `
+        <div class="mayor-side ${align}">
+          <img src="${esc(logo)}" alt="" width="44" height="44" loading="lazy" referrerpolicy="no-referrer" />
+          <div class="nm" title="${esc(name)}">${esc(name)}</div>
+        </div>`;
+    }
+
+    function mayorCardHtml(survival) {
+      if (!survival || survival.enabled === false) return '';
+      const d = survival.detail;
+      const o = survival.overtime;
+      const dScore = d?.score;
+      const oScore = o?.score;
+      const scoreline = (dScore != null && oScore != null)
+        ? `<div class="pts">${Number(dScore).toFixed(1)} – ${Number(oScore).toFixed(1)}</div>`
+        : `<div class="vs">VS</div>`;
+      return `
+        <div class="mayor-card">
+          <img class="mark" src="/assets/mayors-cup.png?v=4" alt="Mayor's Cup" width="1024" height="768" decoding="async" />
+          <div>
+            <p class="eyebrow">Week ${esc(String(survival.week || 17))} · Season finale</p>
+            <h2>${esc(survival.name || "Mayor's Cup")}</h2>
+            <p class="blurb">${esc(survival.message || 'Last place in each conference. Winner stays in GridIron 24; loser leaves.')}</p>
+            <div class="mayor-score">
+              ${mayorSide(d, 'away')}
+              <div class="mayor-mid">${scoreline}</div>
+              ${mayorSide(o, 'home')}
+            </div>
+            <a class="playoffs-link" href="/playoffs.html">Open playoff board →</a>
+          </div>
+        </div>`;
+    }
+
     function board(conf, idx) {
       if (!conf.ok) {
         return `<div class="panel reveal reveal-delay-${idx + 1}"><div class="panel-title">${esc(conf.name || 'Conference')}</div><div class="msg"><strong>Unavailable</strong>${esc(conf.error || '')}</div></div>`;
       }
       const tone = conf.key === 'detail' ? 'detail' : 'overtime';
-      const logoImg = conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
+      const logoImg = conf.logo ? `<span class="conf-mark"><img src="${esc(conf.logo)}" alt=""></span>` : '';
       const cards = (conf.matchups || []).map((m) => `
         <div class="matchup">
           ${side(m.away, 'away')}
@@ -245,6 +387,33 @@
       }).join('');
     }
 
+    async function loadSpecial(week) {
+      const slot = document.getElementById('special-slot');
+      if (!slot) return;
+      const w = Number(week);
+      if (!Number.isFinite(w) || w < 17) {
+        slot.hidden = true;
+        slot.innerHTML = '';
+        return;
+      }
+      try {
+        const res = await fetch('/api/survival', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`survival ${res.status}`);
+        const survival = await res.json();
+        const html = mayorCardHtml(survival);
+        if (!html) {
+          slot.hidden = true;
+          slot.innerHTML = '';
+          return;
+        }
+        slot.innerHTML = html;
+        slot.hidden = false;
+      } catch {
+        slot.hidden = true;
+        slot.innerHTML = '';
+      }
+    }
+
     async function load(week) {
       document.getElementById('boards').innerHTML = '<div class="msg">Loading schedules…</div>';
       try {
@@ -255,10 +424,12 @@
         if (!document.getElementById('week').options.length) fillWeeks(data.week);
         document.getElementById('week').value = String(data.week);
         document.getElementById('boards').innerHTML = data.conferences.map(board).join('');
+        await loadSpecial(data.week);
         const t = new Date(data.generatedAt);
         window.GridIronNav?.setSync(`ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
         document.getElementById('boards').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        document.getElementById('special-slot').hidden = true;
         window.GridIronNav?.setSync('Connection error', false);
       }
     }

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=87" />
+  <link rel="stylesheet" href="/css/site.css?v=99" />
   <style>
     .tree {
       display: flex;
@@ -58,7 +58,7 @@
     .conf-tree.detail .conf-head { color: var(--detail); }
     .conf-tree.overtime .conf-head { color: var(--overtime); }
     .conf-head img {
-      width: 3rem;
+      width: 2.4rem;
       height: auto;
       filter: none;
 
@@ -273,12 +273,11 @@
     }
 
     .bowl > img {
-      width: min(100%, 14rem);
+      width: min(100%, 18rem);
       height: auto;
       display: block;
-      filter: none;
-
-      box-shadow: var(--logo-lift);
+      background: transparent;
+      filter: drop-shadow(0 10px 28px rgba(20, 80, 200, 0.35));
     }
 
     .bowl-scoreboard {
@@ -348,35 +347,26 @@
       letter-spacing: 0.04em;
       color: var(--text);
     }
-    .bowl-msg {
-      margin: 0.85rem 0 0;
-      max-width: 36rem;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-      line-height: 1.45;
-    }
     .bowl.survival {
       margin-top: 1rem;
-      border-color: rgba(47, 109, 255, 0.45);
+      border-color: rgba(80, 160, 255, 0.4);
       background:
-        radial-gradient(ellipse at 50% 40%, rgba(47,109,255,0.2), transparent 65%),
-        linear-gradient(180deg, var(--panel-2), var(--panel));
+        radial-gradient(ellipse 70% 55% at 50% 42%, rgba(40, 120, 255, 0.28), transparent 62%),
+        radial-gradient(ellipse 110% 90% at 50% 100%, rgba(8, 24, 56, 0.55), transparent 55%),
+        linear-gradient(180deg, #0a1220 0%, var(--panel) 72%);
       animation: survival-glow 3.5s ease-in-out infinite;
     }
     @keyframes survival-glow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(47,109,255,0.14), inset 0 0 40px rgba(47,109,255,0.06); }
-      50% { box-shadow: 0 0 24px 0 rgba(47,109,255,0.26), inset 0 0 50px rgba(47,109,255,0.12); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(80, 160, 255, 0.12), inset 0 0 48px rgba(30, 90, 200, 0.08); }
+      50% { box-shadow: 0 0 28px 0 rgba(80, 160, 255, 0.22), inset 0 0 60px rgba(40, 120, 255, 0.14); }
     }
     .bowl.survival > img {
       width: min(100%, 18rem);
+      height: auto;
+      display: block;
+      background: transparent;
+      filter: drop-shadow(0 10px 28px rgba(20, 80, 200, 0.35));
     }
-    .bowl.survival .stakes {
-      margin-top: 0.85rem;
-      font-size: var(--fs-sm);
-      color: var(--muted);
-      line-height: 1.45;
-    }
-    .bowl.survival .stakes strong { color: var(--text); font-weight: 700; }
 
     .third-place {
       border: 1px solid rgba(239, 215, 130, 0.35);
@@ -516,10 +506,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=68"></script>
+  <script src="/js/nav.js?v=70"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -559,7 +549,7 @@
       return `
         <section class="conf-tree ${tone}">
           <div class="conf-head">
-            ${conf.logo ? `<img src="${esc(conf.logo)}" alt="" />` : ''}
+            ${conf.logo ? `<span class="conf-mark"><img src="${esc(conf.logo)}" alt="" /></span>` : ''}
             ${esc(conf.name)}
             <span class="wk">Weeks 14–16</span>
           </div>
@@ -609,11 +599,10 @@
                 <div class="nm" id="bowl-overtime-name">Overtime Champion</div>
               </div>
             </div>
-            <p class="bowl-msg" id="bowl-msg"></p>
           </div>
           <div class="bowl survival" id="survival-card">
             <div class="eyebrow" id="survival-week">Week 17</div>
-            <img src="/assets/mayors-cup.png?v=1" alt="Mayor's Cup" width="1024" height="768" />
+            <img src="/assets/mayors-cup.png?v=4" alt="Mayor's Cup" width="1024" height="768" />
             <div class="bowl-scoreboard" id="survival-scoreboard">
               <div class="bowl-side detail">
                 <div class="nm" id="survival-detail-name">Detail Last Place</div>
@@ -626,8 +615,6 @@
                 <div class="nm" id="survival-overtime-name">Overtime Last Place</div>
               </div>
             </div>
-            <p class="bowl-msg" id="survival-msg"></p>
-            <p class="stakes" id="survival-stakes">Winner stays in GridIron 24. Loser leaves.</p>
           </div>
         </div>`;
     }
@@ -676,8 +663,6 @@
         const o = data.overtime?.score;
         scoreEl.textContent = (d != null && o != null) ? `${fmt(d)} – ${fmt(o)}` : '';
       }
-      const msg = document.getElementById('bowl-msg');
-      if (msg) msg.textContent = data.message || '';
     }
 
     function applySurvival(data) {
@@ -698,14 +683,6 @@
         const d = data.detail?.score;
         const o = data.overtime?.score;
         scoreEl.textContent = (d != null && o != null) ? `${fmt(d)} – ${fmt(o)}` : '';
-      }
-      const msg = document.getElementById('survival-msg');
-      if (msg) msg.textContent = data.message || '';
-      const stakes = document.getElementById('survival-stakes');
-      if (stakes) {
-        const winLabel = data.stakes?.winner || 'Stays in GridIron 24';
-        const loseLabel = data.stakes?.loser || 'Leaves GridIron 24';
-        stakes.innerHTML = `<strong>Winner:</strong> ${esc(winLabel)}. <strong>Loser:</strong> ${esc(loseLabel)}.`;
       }
     }
 

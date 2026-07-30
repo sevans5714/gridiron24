@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'calendar.json');
 
-const TYPES = new Set(['draft', 'deadline', 'dues', 'bowl', 'survival', 'event', 'other']);
+const TYPES = new Set(['draft', 'deadline', 'dues', 'bowl', 'survival', 'aaa', 'event', 'other']);
 
 function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -31,6 +31,28 @@ function writeStore(data) {
   fs.renameSync(tmp, FILE);
 }
 
+/** Rename legacy toilet-bowl titles and normalize Mayor's Cup notes. */
+function migrateLegacyEvents(store) {
+  let dirty = false;
+  for (const ev of store.events || []) {
+    const title = String(ev.title || '');
+    if (/stay in league|toilet\s*bowl/i.test(title)) {
+      ev.title = "Mayor's Cup";
+      ev.type = 'survival';
+      if (!/relegat|pf|mayor/i.test(String(ev.notes || ''))) {
+        ev.notes = 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).';
+      }
+      ev.updatedAt = new Date().toISOString();
+      dirty = true;
+    }
+    if (String(ev.type || '').toLowerCase() === 'survival' && /stay in league|toilet/i.test(title)) {
+      ev.title = "Mayor's Cup";
+      dirty = true;
+    }
+  }
+  return dirty;
+}
+
 function seedIfEmpty(defaults = []) {
   const store = readStore();
   if (store.events.length) return store.events;
@@ -53,12 +75,12 @@ function ensureDefaults(defaults = []) {
   if (!Array.isArray(defaults) || !defaults.length) return listEvents();
   seedIfEmpty(defaults);
   const store = readStore();
-  let dirty = false;
+  let dirty = migrateLegacyEvents(store);
   for (const e of defaults) {
     const type = TYPES.has(e.type) ? e.type : 'event';
     const title = String(e.title || '').trim();
     const exists = store.events.some((ev) => {
-      if (type !== 'event' && ev.type === type) return true;
+      if (type !== 'event' && type !== 'aaa' && ev.type === type) return true;
       return title && String(ev.title || '').toLowerCase() === title.toLowerCase();
     });
     if (exists) continue;
@@ -78,7 +100,9 @@ function ensureDefaults(defaults = []) {
 }
 
 function listEvents() {
-  return readStore().events
+  const store = readStore();
+  if (migrateLegacyEvents(store)) writeStore(store);
+  return store.events
     .slice()
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999')));
 }

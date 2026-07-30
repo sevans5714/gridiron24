@@ -1,16 +1,20 @@
 /**
- * Live NFL scoring feed for GridIron BETA (own-platform sandbox).
+ * Live NFL scoring feed for GridIron BETA + scoreboard NFL slate.
  *
  * Production fantasy Scoreboard / standings / schedules stay on ESPN Fantasy.
- * This module powers the separate Beta area while that platform is built.
+ * This module powers NFL game scores with silent multi-source failover:
+ *   1. ESPN site API (multi-host)
+ *   2. ESPN CDN scoreboard
+ *   3. TheSportsDB NFL round / day schedule
  *
- * Upstream: ESPN NFL scoreboard — the live surface used by nflverse /
- * sportsdataverse tooling. (nflverse release files are historical only.)
+ * Callers get a single unified payload — no degraded/stale banners.
  */
-const CACHE_MS = 15_000;
-const SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+const espnResilient = require('./espn-resilient');
+const sportsFallbacks = require('./sports-fallbacks');
 
-let cache = { key: '', at: 0, data: null };
+const CACHE_MS = 15_000;
+const SCOREBOARD_PATH = 'apis/site/v2/sports/football/nfl/scoreboard';
+const SCOREBOARD_URL = `https://site.api.espn.com/${SCOREBOARD_PATH}`;
 
 function seasonTypeLabel(type) {
   const n = Number(type);
@@ -95,47 +99,21 @@ function buildQuery({ week, seasontype, dates, season } = {}) {
   if (dates) params.set('dates', String(dates));
   else if (season != null && String(season).trim() !== '') params.set('dates', String(season));
   const qs = params.toString();
-  return qs ? `${SCOREBOARD_URL}?${qs}` : SCOREBOARD_URL;
+  return qs ? `${SCOREBOARD_PATH}?${qs}` : SCOREBOARD_PATH;
 }
 
-async function fetchScoreboardRaw(query) {
-  const url = buildQuery(query);
-  const key = url;
-  if (cache.data && cache.key === key && Date.now() - cache.at < CACHE_MS) {
-    return cache.data;
-  }
-
-  const res = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      'User-Agent': 'GridIron24-BetaScoring/1.0'
-    }
-  });
-  if (!res.ok) {
-    throw Object.assign(new Error(`Live scoring upstream failed (${res.status})`), {
-      status: 502
-    });
-  }
-  const raw = await res.json();
-  cache = { key, at: Date.now(), data: raw };
-  return raw;
-}
-
-async function getLiveScoring(query = {}) {
-  const raw = await fetchScoreboardRaw(query);
+function payloadFromEspnRaw(raw) {
   const season = raw.season || {};
   const week = raw.week || {};
   const games = (raw.events || []).map(normalizeEvent);
-
   const counts = { live: 0, final: 0, upcoming: 0 };
   for (const g of games) {
     counts[g.status.bucket] = (counts[g.status.bucket] || 0) + 1;
   }
-
   return {
     ok: true,
-    source: 'nflverse-espn-scoreboard',
-    provider: 'ESPN NFL Scoreboard (nflverse / sportsdataverse live surface)',
+    source: 'nfl',
+    provider: 'NFL',
     fetchedAt: new Date().toISOString(),
     cacheMs: CACHE_MS,
     season: {
@@ -152,6 +130,101 @@ async function getLiveScoring(query = {}) {
     counts,
     games
   };
+}
+
+function payloadFromFallback(fb) {
+  const games = Array.isArray(fb.games) ? fb.games : [];
+  const counts = { live: 0, final: 0, upcoming: 0 };
+  for (const g of games) {
+    counts[g.status?.bucket] = (counts[g.status?.bucket] || 0) + 1;
+  }
+  const season = fb.season || {};
+  const week = fb.week || {};
+  return {
+    ok: true,
+    source: 'nfl',
+    provider: 'NFL',
+    fetchedAt: new Date().toISOString(),
+    cacheMs: CACHE_MS,
+    season: {
+      year: season.year || null,
+      type: season.type || null,
+      typeLabel: seasonTypeLabel(season.type),
+      name: season.name || null,
+      slug: season.slug || null
+    },
+    week: {
+      number: week.number || null,
+      text: week.text || null
+    },
+    counts,
+    games
+  };
+}
+
+async function fetchEspnSiteScoreboard(query) {
+  const pathAndQuery = buildQuery(query);
+  const hit = await espnResilient.fetchJsonResilient({
+    urls: espnResilient.siteApiUrls(pathAndQuery),
+    cacheKey: `nfl-live:${pathAndQuery}`,
+    ttlMs: CACHE_MS,
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'GridIron24-BetaScoring/1.0'
+    },
+    lane: 'site'
+  });
+  return hit.data;
+}
+
+async function fetchEspnCdnScoreboard(query) {
+  return sportsFallbacks.fetchEspnCdnNflScoreboard({
+    week: query.week,
+    seasontype: query.seasontype,
+    season: query.season,
+    dates: query.dates,
+    year: query.year
+  });
+}
+
+/**
+ * Silent waterfall — first source that returns a usable scoreboard wins.
+ * Empty event lists from a healthy upstream still count (bye / offseason).
+ */
+async function getLiveScoring(query = {}) {
+  const errors = [];
+
+  try {
+    const raw = await fetchEspnSiteScoreboard(query);
+    if (raw && (Array.isArray(raw.events) || raw.season || raw.week)) {
+      return payloadFromEspnRaw(raw);
+    }
+  } catch (err) {
+    errors.push(`site:${err.message || err}`);
+  }
+
+  try {
+    const raw = await fetchEspnCdnScoreboard(query);
+    if (raw && (Array.isArray(raw.events) || raw.season || raw.week)) {
+      return payloadFromEspnRaw(raw);
+    }
+  } catch (err) {
+    errors.push(`cdn:${err.message || err}`);
+  }
+
+  try {
+    const fb = await sportsFallbacks.fetchNflFallbackGames(query);
+    if (fb?.games) {
+      return payloadFromFallback(fb);
+    }
+  } catch (err) {
+    errors.push(`alt:${err.message || err}`);
+  }
+
+  const err = new Error(errors.slice(-1)[0] || 'NFL scores unavailable');
+  err.status = 502;
+  err.detail = errors.join(' | ').slice(0, 500);
+  throw err;
 }
 
 function isFirstQuarterGame(game) {
@@ -176,7 +249,7 @@ async function getFirstQuarterPatrolState({ season, week, seasontype } = {}) {
   let live;
   try {
     live = await getLiveScoring(query);
-  } catch (err) {
+  } catch {
     // Fall back to "current" scoreboard if week/season query fails.
     live = await getLiveScoring({});
   }

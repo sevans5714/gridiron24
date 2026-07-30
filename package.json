@@ -5,7 +5,9 @@
   "description": "GridIron 24 proof-of-concept dashboard using two ESPN Fantasy Football leagues",
   "scripts": {
     "start": "node server.js",
-    "generate:icons": "node scripts/generate-team-icons.js"
+    "generate:icons": "node scripts/generate-team-icons.js",
+    "bump:pwa": "node scripts/bump-pwa-cache.js",
+    "prepare": "node -e \"try{require('child_process').execSync('git rev-parse --is-inside-work-tree',{stdio:'ignore'});require('child_process').execSync('git config core.hooksPath .githooks',{stdio:'ignore'})}catch{}\""
   },
   "engines": {
     "node": ">=18"

@@ -8,26 +8,45 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=87" />
+  <link rel="stylesheet" href="/css/site.css?v=99" />
   <style>
     body[data-page="inbox"] .page-hero {
-      padding-top: 1.35rem;
-      padding-bottom: 1rem;
-      text-align: center;
+      padding-top: 1rem;
+      padding-bottom: 0.65rem;
+      text-align: left;
     }
     body[data-page="inbox"] .page-hero::before,
     body[data-page="inbox"] .page-hero::after { display: none; }
     body[data-page="inbox"] .page-main {
-      padding-top: 0.85rem;
+      padding-top: 0.55rem;
       padding-bottom: 3rem;
-      max-width: 40rem;
+      max-width: 68rem;
     }
-    .inbox-hero-crest {
-      width: min(7.5rem, 28vw);
-      height: auto;
-      display: block;
-      margin: 0 auto 0.65rem;
-      filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55));
+    .inbox-comm-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin: 0 0 0.4rem;
+    }
+    .inbox-comm-brand img {
+      width: 1.7rem;
+      height: 1.7rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+    }
+    .inbox-comm-brand span {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 650;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    body[data-page="inbox"] .page-hero h1 {
+      margin: 0;
+      font-size: clamp(1.85rem, 4vw, 2.35rem);
     }
     .inbox-toolbar {
       display: flex;
@@ -35,9 +54,10 @@
       gap: 0.55rem;
       align-items: center;
       justify-content: space-between;
-      margin: 0 0 1.1rem;
+      margin: 0 0 0.75rem;
     }
     .inbox-toolbar .hint {
+      margin: 0;
       color: var(--muted);
       font-size: 0.92rem;
     }
@@ -54,8 +74,10 @@
   </header>
 
   <section class="page-hero shell">
-    <img class="inbox-hero-crest" src="/assets/gridiron24-crest.png?v=7" alt="" width="160" height="160" decoding="async" />
-    <p class="eyebrow">Communications</p>
+    <div class="inbox-comm-brand">
+      <img src="/assets/gridiron24-brand.png?v=1" alt="" width="48" height="48" decoding="async" />
+      <span>Communications</span>
+    </div>
     <h1>Inbox</h1>
   </section>
 
@@ -64,18 +86,18 @@
       <p class="hint" id="inbox-hint">Loading…</p>
       <div class="btn-row">
         <button type="button" class="btn btn-ghost" id="inbox-mark-all">Mark all read</button>
-        <a class="btn btn-ghost" href="/profile.html#inbox">Profile view</a>
+        <a class="btn btn-ghost" href="/profile.html#inbox">Profile</a>
       </div>
     </div>
     <div id="inbox-list"><div class="msg">Loading inbox…</div></div>
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest.png?v=6" alt="GridIron 24" width="224" height="224" decoding="async" /><span class="site-footer-by">Created by <span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=68"></script>
-  <script src="/js/inbox-ui.js?v=4"></script>
+  <script src="/js/nav.js?v=70"></script>
+  <script src="/js/inbox-ui.js?v=6"></script>
   <script>
     const mount = document.getElementById('inbox-list');
     const hint = document.getElementById('inbox-hint');
@@ -87,9 +109,10 @@
         return;
       }
       const n = Number(data.unread || 0);
+      const total = data.messages.length;
       hint.textContent = n
-        ? `${n} unread message${n === 1 ? '' : 's'}`
-        : `${data.messages.length} message${data.messages.length === 1 ? '' : 's'}`;
+        ? `${n} unread · ${total} total`
+        : `${total} message${total === 1 ? '' : 's'}`;
       window.GridIronNav?.refreshInboxBadge?.();
     }
 
@@ -103,7 +126,17 @@
         window.location.replace('/enter?next=' + encodeURIComponent('/inbox.html'));
         return;
       }
-      window.GridIronInbox.wireInbox(mount, { onChange: () => window.GridIronNav?.refreshInboxBadge?.() });
+      window.GridIronInbox.wireInbox(mount, {
+        onChange: () => {
+          window.GridIronNav?.refreshInboxBadge?.();
+          const rows = mount.querySelectorAll('.inbox-row');
+          const unread = mount.querySelectorAll('.inbox-row.is-unread').length;
+          const total = rows.length;
+          hint.textContent = unread
+            ? `${unread} unread · ${total} total`
+            : `${total} message${total === 1 ? '' : 's'}`;
+        }
+      });
       await refresh();
     });
   </script>

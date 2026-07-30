@@ -1,3 +1,11 @@
+/**
+ * Inbox store — delivery only.
+ *
+ * Human compose / broadcast is restricted to conference admins, commissioners,
+ * and the site owner (see users.canSendInbox). Call sites that accept a user
+ * "from" for outreach must check that helper first. System automations may
+ * write with a nameless/system from (no user id).
+ */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -80,13 +88,15 @@ function sendMessage({
     createdAt: new Date().toISOString()
   };
   store.messages.unshift(item);
-  store.messages = store.messages.slice(0, MAX_MESSAGES);
+  if (store.messages.length > MAX_MESSAGES) {
+    store.messages = store.messages.slice(0, MAX_MESSAGES);
+  }
   writeStore(store);
   return publicMessage(item);
 }
 
 function sendToUsers({
-  toUserIds = [],
+  toUserIds,
   from = null,
   subject,
   body,
@@ -110,85 +120,52 @@ function sendToUsers({
   return sent;
 }
 
-function listForUser(userId, { limit = 80 } = {}) {
+function listForUser(userId, { limit = 100 } = {}) {
   if (!userId) return [];
-  return readStore().messages
+  const store = readStore();
+  return store.messages
     .filter((m) => m.toUserId === userId)
-    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
-    .slice(0, limit)
+    .slice(0, Math.max(1, Number(limit) || 100))
     .map(publicMessage);
 }
 
 function unreadCount(userId) {
   if (!userId) return 0;
-  return readStore().messages.filter((m) => m.toUserId === userId && !m.readAt).length;
-}
-
-function getMessage(id, userId) {
-  const msg = readStore().messages.find((m) => m.id === id && m.toUserId === userId);
-  return publicMessage(msg);
-}
-
-function isDisposableMessage(msg) {
-  if (!msg) return false;
-  if (msg.type === 'welcome') return true;
-  const kind = msg.meta?.kind;
-  return kind === 'first_login_welcome' || kind === 'welcome_preview';
-}
-
-function markRead(id, userId) {
   const store = readStore();
-  const idx = store.messages.findIndex((m) => m.id === id && m.toUserId === userId);
-  if (idx === -1) throw Object.assign(new Error('Message not found'), { status: 404 });
-  const msg = store.messages[idx];
-  // Welcome (and similar one-shots) disappear once read.
-  if (isDisposableMessage(msg)) {
-    store.messages.splice(idx, 1);
-    writeStore(store);
-    return null;
-  }
+  return store.messages.filter((m) => m.toUserId === userId && !m.readAt).length;
+}
+
+function markRead(messageId, userId) {
+  const store = readStore();
+  const msg = store.messages.find((m) => m.id === messageId && m.toUserId === userId);
+  if (!msg) throw Object.assign(new Error('Message not found'), { status: 404 });
   if (!msg.readAt) {
     msg.readAt = new Date().toISOString();
     writeStore(store);
   }
-  return publicMessage(store.messages[idx]);
+  return publicMessage(msg);
 }
 
 function markAllRead(userId) {
   if (!userId) return 0;
   const store = readStore();
-  let n = 0;
+  let marked = 0;
   const now = new Date().toISOString();
-  const kept = [];
   for (const msg of store.messages) {
-    if (msg.toUserId !== userId) {
-      kept.push(msg);
-      continue;
-    }
-    if (isDisposableMessage(msg)) {
-      n += 1;
-      continue; // drop welcome once "read"
-    }
-    if (!msg.readAt) {
+    if (msg.toUserId === userId && !msg.readAt) {
       msg.readAt = now;
-      n += 1;
+      marked += 1;
     }
-    kept.push(msg);
   }
-  if (n) {
-    store.messages = kept;
-    writeStore(store);
-  }
-  return n;
+  if (marked) writeStore(store);
+  return marked;
 }
 
-function deleteMessage(id, userId) {
+function deleteMessage(messageId, userId) {
   const store = readStore();
-  const before = store.messages.length;
-  store.messages = store.messages.filter((m) => !(m.id === id && m.toUserId === userId));
-  if (store.messages.length === before) {
-    throw Object.assign(new Error('Message not found'), { status: 404 });
-  }
+  const idx = store.messages.findIndex((m) => m.id === messageId && m.toUserId === userId);
+  if (idx < 0) throw Object.assign(new Error('Message not found'), { status: 404 });
+  store.messages.splice(idx, 1);
   writeStore(store);
   return true;
 }
@@ -198,7 +175,6 @@ module.exports = {
   sendToUsers,
   listForUser,
   unreadCount,
-  getMessage,
   markRead,
   markAllRead,
   deleteMessage,

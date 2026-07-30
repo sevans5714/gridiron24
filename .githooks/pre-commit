@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Auto-bump PWA icon/manifest/shell cache tokens when app assets are committed.
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+if ! node scripts/bump-pwa-cache.js --check; then
+  exit 0
+fi
+
+node scripts/bump-pwa-cache.js --if-staged

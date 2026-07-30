@@ -123,6 +123,7 @@ function publicUser(user) {
   const approved = user.approved !== false;
   const siteOwner = Boolean(user.siteOwner);
   const membershipLeague = normalizeMembershipLeague(user.membershipLeague);
+  const loungeMember = Boolean(user.loungeMember);
   return {
     id: user.id,
     name: user.name,
@@ -135,6 +136,7 @@ function publicUser(user) {
     siteOwner,
     canSwitchLeagues: siteOwner,
     approved,
+    loungeMember,
     theme: normalizeTheme(user.theme),
     membershipLeague,
     duesPaid: Boolean(user.duesPaid),
@@ -233,26 +235,32 @@ function setLeagueMembership(userId, patch = {}) {
 
 function listLeagueMembers() {
   const store = readStore();
-  const approved = store.users
-    .filter((u) => u.approved !== false)
-    .map(publicUser);
-
-  const byLeague = (key) => approved
-    .filter((u) => u.membershipLeague === key)
+  // Lounge roll = accounts admitted by commissioner invite token (loungeMember).
+  // League assignment (GridIron / AAA) is optional and unrelated to lounge entry.
+  const lounge = store.users
+    .map(publicUser)
+    .filter((u) => u.loungeMember)
     .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
 
-  const unassigned = approved
-    .filter((u) => !u.membershipLeague)
-    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  const byLeague = (key) => lounge
+    .filter((u) => u.membershipLeague === key);
+
+  const unassigned = lounge
+    .filter((u) => !u.membershipLeague);
 
   return {
-    members: [...byLeague('gridiron'), ...byLeague('aaa')]
-      .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))),
+    members: lounge,
     gridiron: byLeague('gridiron'),
     aaa: byLeague('aaa'),
     unassigned,
     caps: { ...LEAGUE_MEMBERSHIP_CAPS }
   };
+}
+
+function hasLoungeAccess(user) {
+  if (!user) return false;
+  const pub = typeof user.loungeMember === 'boolean' ? user : publicUser(user);
+  return Boolean(pub?.loungeMember);
 }
 
 function findByLoginName(loginName) {
@@ -291,12 +299,17 @@ function isStaff(user) {
   return role === ROLES.COMMISSIONER || role === ROLES.CONFERENCE_ADMIN || isSiteOwner(user);
 }
 
+/** Who may compose / broadcast inbox messages (not system automations). */
+function canSendInbox(user) {
+  return isStaff(user);
+}
+
 /** Platform-wide ops: commissioners and the site owner. */
 function isCommissioner(user) {
   return normalizeRole(user?.role) === ROLES.COMMISSIONER || isSiteOwner(user);
 }
 
-function createUser({ name, email, loginName, password, role, conference, approved, leagueId, leagueOwner }) {
+function createUser({ name, email, loginName, password, role, conference, approved, loungeMember, leagueId, leagueOwner }) {
   const store = readStore();
   const emailKey = normalizeEmail(email);
   const loginKey = normalizeLoginName(loginName);
@@ -339,8 +352,9 @@ function createUser({ name, email, loginName, password, role, conference, approv
   }
 
   const isCommissionerAccount = nextRole === ROLES.COMMISSIONER;
-  // Commissioners/bootstrap always approved. Invite signups wait for commissioner approval unless explicitly approved.
-  const finalApproved = isCommissionerAccount || approved === true;
+  // Invite token admits to the lounge. Commissioners/bootstrap always admitted.
+  const finalLoungeMember = isCommissionerAccount || loungeMember === true;
+  const finalApproved = isCommissionerAccount || approved === true || finalLoungeMember;
 
   const { salt, hash } = hashPassword(password);
   const user = {
@@ -354,6 +368,7 @@ function createUser({ name, email, loginName, password, role, conference, approv
     leagueOwner: Boolean(leagueOwner) || (isCommissionerAccount && Boolean(leagueId)),
     approved: finalApproved,
     approvedAt: finalApproved ? new Date().toISOString() : null,
+    loungeMember: finalLoungeMember,
     passwordSalt: salt,
     passwordHash: hash,
     createdAt: new Date().toISOString(),
@@ -421,6 +436,7 @@ function setUserRole(userId, role, conference) {
   if (nextRole === ROLES.COMMISSIONER) {
     store.users[idx].approved = true;
     store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
+    store.users[idx].loungeMember = true;
   }
   writeStore(store);
   return {
@@ -442,6 +458,8 @@ function setUserApproved(userId, approved, actorId = null) {
   }
   store.users[idx].approved = Boolean(approved);
   store.users[idx].approvedAt = approved ? new Date().toISOString() : null;
+  // Accounts are created via invite token; approving a pending invitee unlocks lounge access.
+  if (approved) store.users[idx].loungeMember = true;
   writeStore(store);
   return publicUser(store.users[idx]);
 }
@@ -481,6 +499,14 @@ function migrateApprovalFlags() {
     if (normalizeRole(user.role) === ROLES.COMMISSIONER && user.approved !== true) {
       user.approved = true;
       user.approvedAt = user.approvedAt || new Date().toISOString();
+      changed = true;
+    }
+    // Lounge access is invite-token admission. Preserve existing members; staff always in.
+    if (user.loungeMember === undefined || user.loungeMember === null) {
+      const isStaffUser = normalizeRole(user.role) === ROLES.COMMISSIONER
+        || Boolean(user.siteOwner)
+        || normalizeRole(user.role) === ROLES.CONFERENCE_ADMIN;
+      user.loungeMember = isStaffUser || user.approved !== false;
       changed = true;
     }
   }
@@ -588,7 +614,8 @@ function ensureBootstrapCommissioner() {
       loginName: login,
       password,
       role: ROLES.USER,
-      approved: true
+      approved: true,
+      loungeMember: true
     });
     const store = readStore();
     const idx = store.users.findIndex((u) => u.id === user.id);
@@ -674,7 +701,8 @@ function ensureBootstrapAaaAdmin() {
       password,
       role: ROLES.CONFERENCE_ADMIN,
       conference,
-      approved: true
+      approved: true,
+      loungeMember: true
     });
     console.log(`Bootstrap AAA league admin created: ${login}`);
     return user;
@@ -810,6 +838,7 @@ module.exports = {
   findByEmail,
   listUsers,
   isStaff,
+  canSendInbox,
   isCommissioner,
   isSiteOwner,
   setUserRole,
@@ -817,13 +846,12 @@ module.exports = {
   deleteUser,
   setLeagueMembership,
   listLeagueMembers,
+  hasLoungeAccess,
   normalizeMembershipLeague,
   migrateApprovalFlags,
   ensureCommissionerFromEnv,
   ensureBootstrapCommissioner,
   ensureBootstrapAaaAdmin,
   ensureBootstrapOwnerAccounts,
-  isStaff,
-  isCommissioner,
   publicUser
 };

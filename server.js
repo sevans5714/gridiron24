@@ -38,6 +38,7 @@ const weeklyWrap = require('./weekly-wrap');
 const calendar = require('./calendar-store');
 const powerRankings = require('./power-rankings-store');
 const rulesSyncStore = require('./rules-sync-store');
+const espnResilient = require('./espn-resilient');
 const rosterViolations = require('./roster-violations-store');
 const keepers = require('./keepers-store');
 const career = require('./career-store');
@@ -67,9 +68,8 @@ const {
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const CACHE_MS = 30_000;
-const cache = new Map();
 const ESPN_NEWS_CACHE_MS = 5 * 60_000;
-let espnNewsCache = { at: 0, items: [] };
+let espnNewsCache = { at: 0, items: [], source: null };
 
 function espnAuthHeaders() {
   const headers = {
@@ -89,13 +89,14 @@ async function fetchEspnNflNews(limit = 10) {
     return espnNewsCache.items;
   }
   try {
-    const url = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=${limit}`;
-    const res = await fetch(url, {
-      headers: { Accept: 'application/json', 'User-Agent': 'GridIron24/1.0' }
+    const hit = await espnResilient.fetchJsonResilient({
+      urls: espnResilient.siteApiUrls(`apis/site/v2/sports/football/nfl/news?limit=${limit}`),
+      cacheKey: `news:nfl:${limit}`,
+      ttlMs: ESPN_NEWS_CACHE_MS,
+      headers: { Accept: 'application/json', 'User-Agent': 'GridIron24/1.0' },
+      lane: 'news'
     });
-    if (!res.ok) throw new Error(`ESPN news ${res.status}`);
-    const data = await res.json();
-    const items = (data.articles || [])
+    const items = (hit.data.articles || [])
       .map((a) => ({
         id: `espn-${a.id || a.published || Math.random()}`,
         source: 'espn',
@@ -104,11 +105,15 @@ async function fetchEspnNflNews(limit = 10) {
         href: a.links?.web?.href || a.link || null
       }))
       .filter((a) => a.text);
-    espnNewsCache = { at: Date.now(), items };
+    espnNewsCache = {
+      at: hit.fetchedAt || Date.now(),
+      items,
+      source: hit.source
+    };
     return items;
   } catch (err) {
     console.error('ESPN news fetch failed:', err.message || err);
-    return espnNewsCache.items || [];
+    return [];
   }
 }
 
@@ -296,6 +301,23 @@ function requireAuth(req, res, pathname) {
   res.writeHead(302, { Location: `/enter?next=${next}` });
   res.end();
   return false;
+}
+
+function requireLoungeMember(req, res) {
+  const user = getSessionUser(req);
+  if (!user) {
+    sendJson(res, 401, { ok: false, error: 'Authentication required' });
+    return null;
+  }
+  if (!users.hasLoungeAccess(user)) {
+    sendJson(res, 403, {
+      ok: false,
+      error: 'Members Lounge access requires a commissioner invite token.',
+      code: 'lounge_invite_required'
+    });
+    return null;
+  }
+  return user;
 }
 
 function requireSiteOwner(req, res) {
@@ -618,45 +640,37 @@ async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}, sea
     .map((k) => `${k}=${query[k]}`)
     .join('&');
   const cacheKey = `${season}:${conference.espnLeagueId}:${cacheSuffix || views.join(',')}${queryKey ? `:${queryKey}` : ''}`;
-  const existing = cache.get(cacheKey);
-  if (existing && Date.now() - existing.at < CACHE_MS) return existing.data;
 
-  const endpoint = new URL(
-    `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leagues/${conference.espnLeagueId}`
-  );
-  for (const view of views) endpoint.searchParams.append('view', view);
+  const pathBase = `apis/v3/games/ffl/seasons/${season}/segments/0/leagues/${conference.espnLeagueId}`;
+  const params = new URLSearchParams();
+  for (const view of views) params.append('view', view);
   for (const [key, value] of Object.entries(query || {})) {
-    if (value != null && value !== '') endpoint.searchParams.set(key, String(value));
+    if (value != null && value !== '') params.set(key, String(value));
   }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
+  const qs = params.toString();
+  const pathAndQuery = qs ? `${pathBase}?${qs}` : pathBase;
 
   try {
-    const response = await fetch(endpoint, {
+    const hit = await espnResilient.fetchJsonResilient({
+      urls: espnResilient.fantasyLeagueUrls(pathAndQuery),
+      cacheKey: `fantasy:${cacheKey}`,
+      ttlMs: CACHE_MS,
       headers: espnAuthHeaders(),
-      signal: controller.signal
+      timeoutMs: 10_000,
+      lane: 'fantasy'
     });
-
-    if (!response.ok) {
-      const text = await response.text();
-      const err = new Error(
-        response.status === 401
-          ? 'ESPN league is private for that season — make it publicly viewable in ESPN settings'
-          : response.status === 404
-            ? 'No ESPN league found for that season / league ID'
-            : `ESPN returned ${response.status}`
-      );
-      err.status = response.status;
-      err.detail = text.slice(0, 300);
-      throw err;
+    return hit.data;
+  } catch (err) {
+    if (err.status === 401) {
+      err.message = 'ESPN league is private for that season — make it publicly viewable in ESPN settings';
+    } else if (err.status === 404) {
+      err.message = 'No ESPN league found for that season / league ID';
+    } else if (!err.message || /Upstream|All ESPN/.test(err.message)) {
+      err.message = err.detail
+        ? `ESPN unavailable — ${String(err.detail).slice(0, 120)}`
+        : 'ESPN unavailable and no cached snapshot';
     }
-
-    const raw = await response.json();
-    cache.set(cacheKey, { at: Date.now(), data: raw });
-    return raw;
-  } finally {
-    clearTimeout(timeout);
+    throw err;
   }
 }
 
@@ -717,23 +731,19 @@ async function fetchEspnPlayersByIds(playerIds, season) {
   const chunkSize = 40;
   for (let i = 0; i < unique.length; i += chunkSize) {
     const chunk = unique.slice(i, i + chunkSize);
-    const endpoint = new URL(
-      `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${seasonNum}/players`
-    );
-    endpoint.searchParams.set('scoringPeriodId', '0');
-    endpoint.searchParams.set('view', 'players_wl');
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10_000);
+    const pathAndQuery = `apis/v3/games/ffl/seasons/${seasonNum}/players?scoringPeriodId=0&view=players_wl`;
     try {
-      const response = await fetch(endpoint, {
+      const hit = await espnResilient.fetchJsonResilient({
+        urls: espnResilient.fantasyLeagueUrls(pathAndQuery),
+        cacheKey: `players:${seasonNum}:${chunk.join(',')}`,
+        ttlMs: CACHE_MS,
         headers: {
           ...espnAuthHeaders(),
           'X-Fantasy-Filter': JSON.stringify({ filterIds: { value: chunk } })
         },
-        signal: controller.signal
+        lane: 'fantasy'
       });
-      if (!response.ok) continue;
-      const raw = await response.json();
+      const raw = hit.data;
       const list = Array.isArray(raw) ? raw : (raw.players || []);
       for (const player of list) {
         if (!player?.id) continue;
@@ -749,8 +759,6 @@ async function fetchEspnPlayersByIds(playerIds, season) {
       }
     } catch {
       /* ignore chunk failures */
-    } finally {
-      clearTimeout(timeout);
     }
   }
   return map;
@@ -1123,6 +1131,74 @@ function applyWeekStatsToRoster(roster, statsMap) {
   });
 }
 
+function slotSortKey(slot) {
+  const order = { QB: 1, RB: 2, WR: 3, TE: 4, FLEX: 5, 'D/ST': 6, K: 7, Bench: 8, IR: 9 };
+  return order[slot] || 50;
+}
+
+function normalizeMatchupLineupEntry(entry, week) {
+  const pool = entry?.playerPoolEntry || {};
+  const player = pool.player || {};
+  const slotId = Number(entry.lineupSlotId);
+  const proTeamId = player.proTeamId || null;
+  const slot = SLOT_LABELS[slotId] || `Slot ${slotId}`;
+  return {
+    id: player.id || entry.playerId || null,
+    name: playerName(player),
+    position: POSITION_LABELS[player.defaultPositionId] || slot || '—',
+    slotId,
+    slot,
+    proTeamId,
+    proTeam: PRO_TEAM_ABBREV[proTeamId] || 'FA',
+    injuryStatus: player.injuryStatus || null,
+    points: playerWeekPoints(entry, week),
+    projected: playerWeekProjected(entry, week),
+    isStarter: !BENCH_OR_IR_SLOTS.has(slotId)
+  };
+}
+
+function normalizeMatchupBoxSide(side, teams, week) {
+  if (!side) return null;
+  const team = teams.get(side.teamId) || {
+    id: side.teamId,
+    name: `Team ${side.teamId}`,
+    logo: logos.PLACEHOLDER_LOGO
+  };
+  const entries = matchupSideEntries(side)
+    .map((entry) => normalizeMatchupLineupEntry(entry, week))
+    .sort((a, b) => slotSortKey(a.slot) - slotSortKey(b.slot) || a.name.localeCompare(b.name));
+  return {
+    id: team.id,
+    name: team.name,
+    logo: team.logo || logos.PLACEHOLDER_LOGO,
+    score: Number(side.totalPoints ?? 0),
+    projected: Number(side.totalProjectedPointsLive ?? side.totalProjectedPoints ?? 0),
+    lineup: entries.filter((e) => e.isStarter),
+    bench: entries.filter((e) => !e.isStarter)
+  };
+}
+
+function buildMatchupBox(raw, conference, week, focusTeamId) {
+  const teams = teamMapFromRaw(raw, conference.key);
+  const tid = Number(focusTeamId);
+  const match = (raw.schedule || []).find((m) =>
+    Number(m.matchupPeriodId) === Number(week)
+    && (Number(m.home?.teamId) === tid || Number(m.away?.teamId) === tid)
+  );
+  if (!match) return null;
+  const home = normalizeMatchupBoxSide(match.home, teams, week);
+  const away = normalizeMatchupBoxSide(match.away, teams, week);
+  if (!home || !away) return null;
+  return {
+    week: Number(week),
+    winner: String(match.winner || 'UNDECIDED').toUpperCase(),
+    home,
+    away,
+    isHome: Number(match.home?.teamId) === tid,
+    generatedAt: new Date().toISOString()
+  };
+}
+
 async function loadTeamDetail(conferenceKey, teamId) {
   const conference = resolveEspnLeague(conferenceKey);
   if (!conference) throw Object.assign(new Error('Unknown conference'), { status: 404 });
@@ -1131,15 +1207,23 @@ async function loadTeamDetail(conferenceKey, teamId) {
   const team = (raw.teams || []).find((t) => Number(t.id) === Number(teamId));
   if (!team) throw Object.assign(new Error('Team not found'), { status: 404 });
   const detail = normalizeRosterTeam(team, conference, membersById);
+
+  const baseSchedule = await fetchEspnRaw(
+    conference,
+    ['mTeam', 'mMatchup', 'mStatus'],
+    'matchup-base'
+  );
+  const currentWeek = Number(baseSchedule.status?.currentMatchupPeriod || 1);
   const scheduleRaw = await fetchEspnRaw(
     conference,
     ['mTeam', 'mMatchup', 'mScoreboard', 'mStatus'],
-    'matchup-scoreboard'
+    `matchup-scoreboard:${currentWeek}`,
+    { scoringPeriodId: currentWeek }
   );
-  const currentWeek = Number(scheduleRaw.status?.currentMatchupPeriod || 1);
   const schedule = normalizeSchedule(scheduleRaw, conference, currentWeek);
   const weekStats = collectPlayerWeekStats(scheduleRaw, teamId, currentWeek);
   detail.roster = applyWeekStatsToRoster(detail.roster, weekStats);
+  const matchupBox = buildMatchupBox(scheduleRaw, conference, currentWeek, teamId);
 
   let currentMatchup = null;
   for (const m of schedule.matchups || []) {
@@ -1151,6 +1235,22 @@ async function loadTeamDetail(conferenceKey, teamId) {
       };
       break;
     }
+  }
+  if (matchupBox && currentMatchup) {
+    currentMatchup = {
+      ...currentMatchup,
+      home: {
+        ...currentMatchup.home,
+        score: matchupBox.home.score,
+        projected: matchupBox.home.projected
+      },
+      away: {
+        ...currentMatchup.away,
+        score: matchupBox.away.score,
+        projected: matchupBox.away.projected
+      },
+      winner: matchupBox.winner || currentMatchup.winner
+    };
   }
 
   const recent = [];
@@ -1173,6 +1273,7 @@ async function loadTeamDetail(conferenceKey, teamId) {
     },
     team: detail,
     currentMatchup,
+    matchupBox,
     recentMatchups: recent,
     currentMatchupPeriod: currentWeek,
     keeper: keepers.getKeeper(conference.key, teamId, Number(config.season) + 1),
@@ -2290,6 +2391,7 @@ async function apiSchedule(res, weekParam, leagueScope = null) {
     week,
     leagueScope: leagueScope || { scope: 'gridiron' },
     generatedAt: new Date().toISOString(),
+    upstream: upstreamMeta(),
     conferences: results
   });
 }
@@ -2320,8 +2422,22 @@ async function apiLeagues(res) {
     brand: config.brand,
     season: config.season,
     generatedAt: new Date().toISOString(),
+    upstream: upstreamMeta(),
     conferences: results
   });
+}
+
+function upstreamMeta() {
+  const u = espnResilient.getUpstreamStatus();
+  const fantasyMode = u.fantasy?.mode || 'unknown';
+  const siteMode = u.site?.mode || 'unknown';
+  const degraded = fantasyMode === 'down' || siteMode === 'down';
+  return {
+    degraded,
+    fantasy: u.fantasy,
+    site: u.site,
+    news: u.news
+  };
 }
 
 async function loadStandingsPayload() {
@@ -2348,6 +2464,7 @@ async function loadStandingsPayload() {
     brand: config.brand,
     season: config.season,
     generatedAt: new Date().toISOString(),
+    upstream: upstreamMeta(),
     conferences: results
   };
 }
@@ -2374,6 +2491,7 @@ async function loadSchedulePayload(weekParam) {
     season: config.season,
     week,
     generatedAt: new Date().toISOString(),
+    upstream: upstreamMeta(),
     conferences: results
   };
 }
@@ -3340,6 +3458,7 @@ const server = http.createServer(async (req, res) => {
     const pathname = requestUrl.pathname;
 
     if (pathname === '/api/health') {
+      const upstream = upstreamMeta();
       return sendJson(res, 200, {
         ok: true,
         app: config.brand.name,
@@ -3347,7 +3466,8 @@ const server = http.createServer(async (req, res) => {
         conferenceLeagueIds: config.conferences.map((c) => c.espnLeagueId),
         authConfigured: true,
         version: buildInfo.version,
-        build: buildInfo.build
+        build: buildInfo.build,
+        upstream
       });
     }
 
@@ -3502,23 +3622,25 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const bootstrap = existingUsers.length === 0 && !inviteToken;
+        const admittedByToken = Boolean(inviteToken);
         const user = users.createUser({
           name: body.name,
           email: body.email,
           loginName: body.loginName,
           password: body.password,
-          approved: bootstrap
+          approved: bootstrap || admittedByToken,
+          loungeMember: bootstrap || admittedByToken
         });
         if (inviteToken) {
           try { invites.acceptInvite(inviteToken, user.email); } catch { /* non-fatal */ }
         }
-        // Pending members do not get a session until the commissioner approves them.
-        if (!user.approved) {
+        // Invite token admits to the Members Lounge — no separate commissioner approval step.
+        if (!user.loungeMember) {
           return sendJson(res, 201, {
             ok: true,
             pendingApproval: true,
             user,
-            message: 'Account created. A commissioner must approve you before you can sign in.'
+            message: 'Account created, but lounge access requires a commissioner invite token.'
           });
         }
         deliverWelcomeInboxIfNeeded(user);
@@ -3892,6 +4014,7 @@ const server = http.createServer(async (req, res) => {
           password: owner.password,
           role: 'commissioner',
           approved: true,
+          loungeMember: true,
           leagueOwner: true
         });
 
@@ -4135,10 +4258,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/members-chat' && req.method === 'GET') {
-      const viewer = getSessionUser(req);
-      if (!viewer) {
-        return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      }
+      const viewer = requireLoungeMember(req, res);
+      if (!viewer) return;
       presence.touch(users.publicUser(viewer));
       const since = requestUrl.searchParams.get('since');
       const after = requestUrl.searchParams.get('after');
@@ -4153,8 +4274,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/members-chat' && req.method === 'POST') {
-      const user = getSessionUser(req);
-      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const user = requireLoungeMember(req, res);
+      if (!user) return;
       let body;
       try {
         body = await readJsonBody(req);
@@ -4168,7 +4289,7 @@ const server = http.createServer(async (req, res) => {
           body: body.body,
           author: publicAuthor
         });
-        const directory = users.listUsers().filter((u) => u.approved !== false);
+        const directory = users.listLeagueMembers().members;
         const mentioned = membersChat.resolveMentionedUsers(item.body, {
           users: directory,
           mentionIds: Array.isArray(body.mentions) ? body.mentions : [],
@@ -4212,8 +4333,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname.startsWith('/api/members-chat/') && req.method === 'DELETE') {
-      const user = getSessionUser(req);
-      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const user = requireLoungeMember(req, res);
+      if (!user) return;
       const id = pathname.slice('/api/members-chat/'.length).replace(/\/+$/, '');
       try {
         membersChat.deleteMessage(id, users.publicUser(user));
@@ -4227,10 +4348,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/members' && req.method === 'GET') {
-      const viewer = getSessionUser(req);
-      if (!viewer) {
-        return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      }
+      const viewer = requireLoungeMember(req, res);
+      if (!viewer) return;
       try {
         const roster = users.listLeagueMembers();
         const giBuyIn = Number(config.payouts?.buyInPerTeam || 100);
@@ -4238,7 +4357,7 @@ const server = http.createServer(async (req, res) => {
         const treasurer = {
           name: config.treasurer?.name || 'Jamie Aceto',
           email: config.treasurer?.email || 'jaceto53@gmail.com',
-          venmoUsername: config.treasurer?.venmoUsername || 'jaceto53',
+          venmoUsername: config.treasurer?.venmoUsername || 'James-Aceto',
           note: config.treasurer?.note || 'League dues — GridIron 24 HQ'
         };
         const canManage = users.isCommissioner(viewer) || users.isSiteOwner(viewer);
@@ -5669,6 +5788,7 @@ const server = http.createServer(async (req, res) => {
       let currentMatchup = null;
       let currentMatchupPeriod = null;
       let recentMatchups = [];
+      let matchupBox = null;
       let conferenceMeta = null;
       if (claim) {
         const nameEntry = logos.getDisplayName(claim.conferenceKey, claim.teamId);
@@ -5724,6 +5844,7 @@ const server = http.createServer(async (req, res) => {
               currentMatchup = detail?.currentMatchup || null;
               currentMatchupPeriod = detail?.currentMatchupPeriod || null;
               recentMatchups = detail?.recentMatchups || [];
+              matchupBox = detail?.matchupBox || null;
               conferenceMeta = detail?.conference || {
                 key: conference.key,
                 name: conference.name,
@@ -5751,6 +5872,7 @@ const server = http.createServer(async (req, res) => {
         team,
         roster,
         currentMatchup,
+        matchupBox,
         currentMatchupPeriod,
         recentMatchups,
         conference: conferenceMeta,
@@ -6191,6 +6313,18 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 404, { ok: false, error: `Unknown API route: ${pathname}` });
     }
 
+    if (pathname === '/members.html' || pathname === '/members') {
+      const loungeUser = getSessionUser(req);
+      if (!loungeUser) {
+        res.writeHead(302, { Location: '/enter?next=' + encodeURIComponent('/members.html') });
+        return res.end();
+      }
+      if (!users.hasLoungeAccess(loungeUser)) {
+        res.writeHead(302, { Location: '/hq?lounge=invite-required' });
+        return res.end();
+      }
+    }
+
     const requested = pathname === '/' ? '/index.html' : pathname;
     const safePath = path.normalize(requested).replace(/^(\.\.[/\\])+/, '');
     const filePath = path.join(PUBLIC_DIR, safePath);
@@ -6228,7 +6362,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
   console.log(`Active league: ${active?.slug || 'none'} (${active?.brand?.name || '—'})`);
   console.log(`Register a league: http://localhost:${PORT}/register-league`);
-  console.log(`Auth: invite + owner / commissioner approval`);
+  console.log(`Auth: commissioner invite token admits Members Lounge`);
   console.log(`Users: ${users.DATA_DIR}`);
   const ownerLogin = process.env.SITE_OWNER_LOGIN || process.env.COMMISSIONER_LOGIN;
   if (ownerLogin) {
