@@ -1021,7 +1021,7 @@
             <section class="admin-block" id="history-admin" hidden>
               <div class="section-head"><h3>Season Archive</h3></div>
               <p class="help">
-                Past seasons power <a href="/history.html">Teams → History</a> and draft boards.
+                Past seasons power <a href="/history.html">League → History</a> and draft boards.
                 Use the ESPN settings URL for each year (<code>leagueId</code> + <code>seasonId</code>).
                 Pre-split years can use one league ID for both columns.
                 Seasons must be publicly viewable on ESPN, or set <code>ESPN_SWID</code> / <code>ESPN_S2</code> on the server for private history.
@@ -2471,7 +2471,7 @@
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save archive');
           document.getElementById('history-lines').value = historyLinesFromConfigured(data.configured || []);
-          showHistoryMsg(`Saved ${((data.configured || []).length)} prior season(s). Managers can open Teams → History.`, true);
+          showHistoryMsg(`Saved ${((data.configured || []).length)} prior season(s). Managers can open League → History.`, true);
         } catch (err) {
           showHistoryMsg(err.message, false);
         }
