@@ -54,7 +54,11 @@ html[data-theme="night"] {
   --display: "Bebas Neue", Impact, sans-serif;
   --page-title: "Oswald", "Bebas Neue", Impact, sans-serif;
   --body: "Source Sans 3", system-ui, sans-serif;
-  --topbar-bg: rgba(5, 5, 5, 0.94);
+  --topbar-bg: #0c0c0c;
+  --topbar-bg-top: #141414;
+  --topbar-bg-bottom: #0a0a0a;
+  --topbar-border: rgba(255, 255, 255, 0.12);
+  --topbar-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   --body-wash: rgba(47, 109, 255, 0.06);
   --body-mid: #080808;
   --field-bg: #0c0c0c;
@@ -119,7 +123,11 @@ html[data-theme="day"] {
   --gold: #9a7b1a;
   --good: #15803d;
   --bad: #dc2626;
-  --topbar-bg: rgba(255, 255, 255, 0.92);
+  --topbar-bg: rgba(255, 255, 255, 0.94);
+  --topbar-bg-top: #ffffff;
+  --topbar-bg-bottom: #f3f5f8;
+  --topbar-border: rgba(20, 24, 31, 0.12);
+  --topbar-shadow: 0 6px 18px rgba(20, 24, 31, 0.08);
   --body-wash: rgba(31, 94, 240, 0.07);
   --body-mid: #f0f3f7;
   --field-bg: #ffffff;
@@ -190,8 +198,10 @@ body {
   position: sticky;
   top: 0;
   z-index: 30;
-  border-bottom: 1px solid var(--line);
-  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--topbar-border);
+  background:
+    linear-gradient(180deg, var(--topbar-bg-top) 0%, var(--topbar-bg-bottom) 100%);
+  box-shadow: var(--topbar-shadow);
   backdrop-filter: blur(12px);
   padding-top: env(safe-area-inset-top, 0);
 }
