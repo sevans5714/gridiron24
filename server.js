@@ -2169,7 +2169,7 @@ async function buildAaaPayload() {
     scoring: officialPack.scoring,
     scoringPolicy: {
       matchesGridiron24: true,
-      note: 'AAA is a separate league with its own draft, commissioner, and player pool. Scoring and lineup settings mirror GridIron 24 (Detail Conference source of truth) so promotees enter familiar rules.'
+      note: 'AAA is a separate league with its own draft, league admin, and player pool. Scoring and lineup settings mirror GridIron 24 (Detail Conference source of truth) so promotees enter familiar rules.'
     },
     hot: null,
     cold: null,
