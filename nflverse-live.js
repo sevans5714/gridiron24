@@ -86,13 +86,14 @@ function normalizeEvent(event) {
   };
 }
 
-function buildQuery({ week, seasontype, dates } = {}) {
+function buildQuery({ week, seasontype, dates, season } = {}) {
   const params = new URLSearchParams();
   if (week != null && String(week).trim() !== '') params.set('week', String(week));
   if (seasontype != null && String(seasontype).trim() !== '') {
     params.set('seasontype', String(seasontype));
   }
   if (dates) params.set('dates', String(dates));
+  else if (season != null && String(season).trim() !== '') params.set('dates', String(season));
   const qs = params.toString();
   return qs ? `${SCOREBOARD_URL}?${qs}` : SCOREBOARD_URL;
 }

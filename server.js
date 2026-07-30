@@ -3501,7 +3501,8 @@ const server = http.createServer(async (req, res) => {
         const week = requestUrl.searchParams.get('week');
         const seasontype = requestUrl.searchParams.get('seasontype');
         const dates = requestUrl.searchParams.get('dates');
-        const payload = await nflverseLive.getLiveScoring({ week, seasontype, dates });
+        const season = requestUrl.searchParams.get('season');
+        const payload = await nflverseLive.getLiveScoring({ week, seasontype, dates, season });
         return sendJson(res, 200, payload);
       } catch (err) {
         return sendJson(res, err.status || 502, {

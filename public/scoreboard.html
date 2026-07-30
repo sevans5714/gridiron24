@@ -824,10 +824,17 @@
     let nflFlipTimer = null;
     let currentWeek = null;
     let currentMatchupPeriod = null;
+    let fantasySeason = null;
     let liveMode = false;
     let loading = false;
     const NFL_PAGE_SIZE = 3;
     const NFL_FLIP_MS = 4500;
+
+    function selectedMatchupWeek() {
+      const raw = document.getElementById('week')?.value;
+      const n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    }
 
     function fmtScore(n) {
       const v = Number(n || 0);
@@ -930,14 +937,15 @@
 
       const counts = data?.counts || {};
       const remaining = Number(counts.live || 0) + Number(counts.upcoming || 0);
-      const weekText = data?.week?.text || `Week ${fantasyWeek || '—'}`;
+      const matchupWeek = Number(fantasyWeek) || selectedMatchupWeek() || '—';
+      const weekText = `Matchup week ${matchupWeek}`;
       if (label) {
         if (remaining > 0) {
-          label.textContent = `NFL ${weekText} · ${remaining} remaining`;
+          label.textContent = `${weekText} · NFL · ${remaining} remaining`;
         } else if (games.length) {
-          label.textContent = `NFL ${weekText} · final`;
+          label.textContent = `${weekText} · NFL · final`;
         } else {
-          label.textContent = `NFL ${weekText}`;
+          label.textContent = `${weekText} · NFL`;
         }
       }
 
@@ -973,18 +981,37 @@
       if (flip) startNflFlip(pages.length);
     }
 
-    async function loadNflSlate(week) {
+    async function loadNflSlate(matchupWeek) {
+      const week = Number(matchupWeek) || selectedMatchupWeek();
+      const root = document.getElementById('nfl-rolodex');
+      const label = document.getElementById('nfl-slate-label');
+      if (!week) {
+        if (label) label.textContent = 'Matchup week · NFL';
+        if (root) {
+          root.className = 'nfl-rolodex is-static';
+          root.innerHTML = `<div class="nfl-empty">Select a matchup period</div>`;
+        }
+        return;
+      }
+      if (label) label.textContent = `Matchup week ${week} · NFL`;
+      if (root && !root.querySelector('.nfl-game')) {
+        root.className = 'nfl-rolodex is-static';
+        root.innerHTML = `<div class="nfl-empty">Loading NFL week ${week}…</div>`;
+      }
       try {
-        const qs = new URLSearchParams({ seasontype: '2' });
-        if (week) qs.set('week', String(week));
+        const qs = new URLSearchParams({
+          seasontype: '2',
+          week: String(week)
+        });
+        if (fantasySeason) qs.set('season', String(fantasySeason));
         const res = await fetch(`/api/beta/live-scoring?${qs}`, { cache: 'no-store' });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || 'NFL slate unavailable');
+        // Always render against the requested matchup week, not ESPN's default week.
         renderNflSlate(data, week);
       } catch (err) {
-        const root = document.getElementById('nfl-rolodex');
-        const label = document.getElementById('nfl-slate-label');
-        if (label) label.textContent = 'NFL slate';
+        stopNflFlip();
+        if (label) label.textContent = `Matchup week ${week} · NFL`;
         if (root) {
           root.className = 'nfl-rolodex is-static';
           root.innerHTML = `<div class="nfl-empty">${esc(err.message || 'NFL slate unavailable')}</div>`;
@@ -1185,9 +1212,13 @@
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
         currentWeek = Number(data.week);
-        currentMatchupPeriod = Number(
-          data.conferences?.find((c) => c.ok)?.currentMatchupPeriod || data.week
-        );
+        fantasySeason = Number(data.season) || fantasySeason;
+        const livePeriod = data.conferences?.find((c) => c.ok)?.currentMatchupPeriod;
+        if (livePeriod != null && Number.isFinite(Number(livePeriod))) {
+          currentMatchupPeriod = Number(livePeriod);
+        } else if (currentMatchupPeriod == null) {
+          currentMatchupPeriod = currentWeek;
+        }
         fillWeeks(currentWeek);
         document.getElementById('week').value = String(currentWeek);
         document.getElementById('boards').innerHTML = (data.conferences || []).map(board).join('');
@@ -1213,7 +1244,9 @@
     }
 
     document.getElementById('week').addEventListener('change', (e) => {
-      load(e.target.value);
+      const week = e.target.value;
+      loadNflSlate(week);
+      load(week);
       startPolling();
     });
 
