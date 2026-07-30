@@ -267,18 +267,13 @@
         </div>
       </div>`;
 
-    const hero = document.querySelector('.hq-hero');
+    const topbar = document.querySelector('.topbar');
     if (active === 'scoreboard') {
       // Scoreboard uses its own Fantasy Leaders ticker only.
       return null;
     }
-    if (active === 'home' && hero) {
-      hero.insertAdjacentElement('afterend', el);
-    } else {
-      const topbar = document.querySelector('.topbar');
-      if (!topbar) return null;
-      topbar.insertAdjacentElement('afterend', el);
-    }
+    if (!topbar) return null;
+    topbar.insertAdjacentElement('afterend', el);
     return el;
   }
 
