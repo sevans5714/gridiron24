@@ -281,9 +281,10 @@ function requireCommissioner(req, res) {
 }
 
 function resolveStaffConferenceKey(user, requestedKey) {
+  const allowed = new Set(listAdminLeagues().map((l) => l.key));
   if (user.role === 'conference_admin') {
     const key = String(user.conference || '').trim().toLowerCase();
-    if (!key || !config.conferences.some((c) => c.key === key)) {
+    if (!key || !allowed.has(key)) {
       const err = new Error('Your account is missing a conference assignment');
       err.status = 400;
       throw err;
@@ -291,7 +292,7 @@ function resolveStaffConferenceKey(user, requestedKey) {
     return key;
   }
   const key = String(requestedKey || '').trim().toLowerCase();
-  if (!key || !config.conferences.some((c) => c.key === key)) {
+  if (!key || !allowed.has(key)) {
     const err = new Error('Pick a conference');
     err.status = 400;
     throw err;
@@ -300,8 +301,9 @@ function resolveStaffConferenceKey(user, requestedKey) {
 }
 
 async function loadConferenceOwnerRoster(conferenceKey) {
-  const conference = config.conferences.find((c) => c.key === conferenceKey);
-  if (!conference) {
+  const conference = resolveEspnLeague(conferenceKey)
+    || listAdminLeagues().find((l) => l.key === conferenceKey);
+  if (!conference || !(Number(conference.espnLeagueId) > 0)) {
     const err = new Error('Unknown conference');
     err.status = 404;
     throw err;
@@ -578,7 +580,7 @@ function normalizeRosterTeam(team, conference, membersById) {
 }
 
 async function loadTeamDetail(conferenceKey, teamId) {
-  const conference = config.conferences.find((c) => c.key === conferenceKey);
+  const conference = resolveEspnLeague(conferenceKey);
   if (!conference) throw Object.assign(new Error('Unknown conference'), { status: 404 });
   const raw = await fetchEspnRaw(conference, ['mTeam', 'mRoster', 'mStatus'], `roster:${teamId}`);
   const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
@@ -603,7 +605,8 @@ async function loadTeamDetail(conferenceKey, teamId) {
       key: conference.key,
       name: conference.name,
       shortName: conference.shortName,
-      logo: conference.logo
+      logo: conference.logo,
+      kind: conference.kind || 'conference'
     },
     team: detail,
     recentMatchups: recent,
@@ -1164,7 +1167,7 @@ async function scanRosterViolationsAcrossConferences() {
   const findings = [];
   const conferenceErrors = [];
 
-  for (const conference of config.conferences || []) {
+  for (const conference of listEspnLeagues()) {
     try {
       const raw = await fetchEspnRaw(conference, ['mTeam', 'mRoster', 'mStatus'], 'roster-violations');
       const week = Number(raw.status?.currentMatchupPeriod || 0) || null;
@@ -1997,6 +2000,44 @@ async function buildSurvivalPayload() {
 function getAffiliatedLeague(key = 'aaa') {
   const list = Array.isArray(config.affiliatedLeagues) ? config.affiliatedLeagues : [];
   return list.find((l) => l.key === key) || list[0] || null;
+}
+
+/** GridIron conferences plus affiliated leagues (for admin assignment keys). */
+function listAdminLeagues() {
+  const main = (config.conferences || []).map((c) => ({
+    key: c.key,
+    name: c.name,
+    shortName: c.shortName,
+    espnLeagueId: c.espnLeagueId,
+    logo: c.logo || null,
+    kind: 'conference'
+  }));
+  const affiliates = (config.affiliatedLeagues || []).map((l) => ({
+    key: l.key,
+    name: l.name,
+    shortName: l.shortName || l.name,
+    espnLeagueId: l.espnLeagueId,
+    logo: l.logo || null,
+    kind: 'affiliate'
+  }));
+  return [...main, ...affiliates];
+}
+
+/** Leagues with a usable ESPN ID (rosters, violations, schedules). */
+function listEspnLeagues() {
+  return listAdminLeagues().filter((l) => {
+    const id = Number(l.espnLeagueId);
+    return Number.isFinite(id) && id > 0;
+  }).map((l) => ({
+    ...l,
+    espnLeagueId: Number(l.espnLeagueId)
+  }));
+}
+
+function resolveEspnLeague(key) {
+  const k = String(key || '').trim().toLowerCase();
+  if (!k) return null;
+  return listEspnLeagues().find((l) => l.key === k) || null;
 }
 
 function aaaPayoutsFromAffiliate(affiliate) {
@@ -3119,15 +3160,24 @@ const server = http.createServer(async (req, res) => {
       if (!requireCommissioner(req, res)) return;
       const claims = logos.listClaims();
       const claimByUser = new Map(claims.map((c) => [c.userId, c]));
+      const adminLeagues = listAdminLeagues();
       let teamsByConference = {};
       try {
         const leagues = await Promise.all(
-          config.conferences.map(async (conference) => {
+          adminLeagues.map(async (conference) => {
+            const espnId = Number(conference.espnLeagueId);
+            if (!(Number.isFinite(espnId) && espnId > 0)) {
+              return { key: conference.key, name: conference.name, kind: conference.kind, teams: [] };
+            }
             try {
-              const league = await fetchEspnLeague(conference);
+              const league = await fetchEspnLeague({
+                ...conference,
+                espnLeagueId: espnId
+              });
               return {
                 key: conference.key,
                 name: conference.name,
+                kind: conference.kind,
                 teams: (league.teams || []).map((t) => ({
                   id: t.id,
                   name: t.name,
@@ -3135,7 +3185,7 @@ const server = http.createServer(async (req, res) => {
                 }))
               };
             } catch {
-              return { key: conference.key, name: conference.name, teams: [] };
+              return { key: conference.key, name: conference.name, kind: conference.kind, teams: [] };
             }
           })
         );
@@ -3149,9 +3199,11 @@ const server = http.createServer(async (req, res) => {
           claim: claimByUser.get(u.id) || null
         })),
         claims,
-        conferences: config.conferences.map((c) => ({
+        conferences: adminLeagues.map((c) => ({
           key: c.key,
           name: c.name,
+          shortName: c.shortName,
+          kind: c.kind,
           teams: (teamsByConference[c.key]?.teams) || []
         }))
       });
@@ -3181,7 +3233,7 @@ const server = http.createServer(async (req, res) => {
         let teamName = String(body.teamName || '').trim();
         if (!teamName) {
           try {
-            const conference = config.conferences.find((c) => c.key === conferenceKey);
+            const conference = resolveEspnLeague(conferenceKey);
             if (conference) {
               const league = await fetchEspnLeague(conference);
               const found = (league.teams || []).find((t) => Number(t.id) === teamId);
@@ -3855,7 +3907,7 @@ const server = http.createServer(async (req, res) => {
       if (claim) {
         const nameEntry = logos.getDisplayName(claim.conferenceKey, claim.teamId);
         try {
-          const conference = config.conferences.find((c) => c.key === claim.conferenceKey);
+          const conference = resolveEspnLeague(claim.conferenceKey);
           if (conference) {
             const league = await fetchEspnLeague(conference);
             const found = (league.teams || []).find((t) => Number(t.id) === Number(claim.teamId));

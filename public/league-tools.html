@@ -881,6 +881,7 @@
                 <select class="field" id="owners-conference" style="max-width:16rem;">
                   <option value="detail">Detail Conference</option>
                   <option value="overtime">Overtime Conference</option>
+                  <option value="aaa">AAA League</option>
                 </select>
               </div>
               <div class="owners-actions">
@@ -1004,7 +1005,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=38"></script>
+  <script src="/js/nav.js?v=39"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1197,6 +1198,22 @@
       renderPlayoffSync(cmp, detail, overtime);
     }
 
+    function adminAccessLabel(c) {
+      if (!c) return 'Admin';
+      if (c.kind === 'affiliate' || c.key === 'aaa') return `${c.name} League Admin`;
+      return `${c.name} Admin`;
+    }
+
+    function roleDisplayLabel(user) {
+      if (user?.role === 'commissioner') return 'Overall Commissioner';
+      if (user?.role === 'conference_admin') {
+        if (user.conference === 'aaa') return 'AAA League Admin';
+        const conf = (window.__giAdminLeagues || []).find((c) => c.key === user.conference);
+        return conf ? adminAccessLabel(conf) : 'Conference Admin';
+      }
+      return ROLE_LABELS[user?.role] || 'User';
+    }
+
     function roleValue(user) {
       if (user.role === 'conference_admin') return `conference_admin:${user.conference || ''}`;
       return user.role || 'user';
@@ -1238,6 +1255,7 @@
       const list = payload.users || [];
       const conferences = payload.conferences || [];
       window.__giClaims = payload.claims || list.map((u) => u.claim).filter(Boolean);
+      window.__giAdminLeagues = conferences;
       if (!list.length) {
         document.getElementById('members-list').innerHTML = `<div class="msg">No member accounts yet.</div>`;
         return;
@@ -1283,7 +1301,7 @@
                     <option value="user" ${roleValue(u) === 'user' ? 'selected' : ''}>User</option>
                     ${conferences.map((c) => `
                       <option value="conference_admin:${esc(c.key)}" ${roleValue(u) === `conference_admin:${c.key}` ? 'selected' : ''}>
-                        ${esc(c.name)} Admin
+                        ${esc(adminAccessLabel(c))}
                       </option>`).join('')}
                     <option value="commissioner" ${roleValue(u) === 'commissioner' ? 'selected' : ''}>Overall Commissioner</option>
                   </select>
@@ -1311,7 +1329,7 @@
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
-            showMembersMsg(`Updated ${data.user.loginName} to ${ROLE_LABELS[data.user.role]}${data.user.conference ? ` (${data.user.conference})` : ''}.`, true);
+            showMembersMsg(`Updated ${data.user.loginName} to ${roleDisplayLabel(data.user)}.`, true);
             await loadMembers();
           } catch (err) {
             showMembersMsg(err.message, false);

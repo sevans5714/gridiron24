@@ -772,7 +772,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=38"></script>
+  <script src="/js/nav.js?v=39"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -846,10 +846,10 @@
           <tr class="${zoneClass}">
             <td class="rank">${rank}</td>
             <td class="team" title="${esc(t.name)}">
-              <span class="team-cell">
+              <a class="team-cell" href="/team.html?conference=${esc(conf.key)}&teamId=${esc(t.id)}" style="color:inherit;text-decoration:none;">
                 <img class="team-logo-sm" src="${esc(t.logo || '/assets/team-logo-placeholder.svg')}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
                 <span class="team-name">${esc(t.name)}</span>
-              </span>
+              </a>
             </td>
             <td class="num">${esc(record(t))}</td>
             <td class="num">${Number(t.pointsFor || 0).toFixed(0)}</td>

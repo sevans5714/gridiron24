@@ -55,7 +55,7 @@
     <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=38"></script>
+  <script src="/js/nav.js?v=39"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     const params = new URLSearchParams(location.search);
@@ -75,8 +75,12 @@
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load team');
         const t = data.team;
-        document.title = `${t.name} · GridIron 24`;
-        const roster = (t.roster||[]);
+        const roster = t.roster || [];
+        document.title = conference === 'aaa'
+          ? `${t.name} · AAA League`
+          : `${t.name} · GridIron 24`;
+        const backHref = conference === 'aaa' ? '/aaa.html' : '/teams.html';
+        const backLabel = conference === 'aaa' ? 'AAA League' : 'All teams';
         const injClass = (status, slot) => {
           const s = String(status || '').toUpperCase();
           const starter = !['Bench', 'IR'].includes(slot);
@@ -85,7 +89,7 @@
           return 'ok';
         };
         main.innerHTML = `
-          <p style="margin:0 0 0.75rem;"><a href="/teams.html" style="color:#8eb6ff;text-decoration:none;">← All teams</a></p>
+          <p style="margin:0 0 0.75rem;"><a href="${esc(backHref)}" style="color:#8eb6ff;text-decoration:none;">← ${esc(backLabel)}</a></p>
           <div class="team-hero">
             <img src="${esc(t.logo||'/assets/team-logo-placeholder.svg')}" alt="" />
             <div>

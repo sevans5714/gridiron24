@@ -6,7 +6,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const STORE_FILE = path.join(DATA_DIR, 'team-logos.json');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'team-logos');
 
-const CONFERENCE_KEYS = new Set(['detail', 'overtime']);
+const CONFERENCE_KEYS = new Set(['detail', 'overtime', 'aaa']);
 const LOGO_TYPES = new Set(['icon', 'upload', 'espn']);
 const PLACEHOLDER_LOGO = '/assets/team-logo-placeholder.svg';
 

@@ -4,7 +4,15 @@ const users = require('./users-store');
 const logos = require('./logos-store');
 
 function syncConferenceKeys(league) {
-  const keys = (league?.conferences || []).map((c) => c.key);
+  const confKeys = (league?.conferences || []).map((c) => c.key);
+  const affiliateKeys = (
+    Array.isArray(league?.affiliatedLeagues) && league.affiliatedLeagues.length
+      ? league.affiliatedLeagues
+      : (staticConfig.affiliatedLeagues || [])
+  ).map((l) => l.key);
+  const keys = [...confKeys, ...affiliateKeys]
+    .map((k) => String(k || '').trim().toLowerCase())
+    .filter(Boolean);
   if (typeof users.setAllowedConferenceKeys === 'function') {
     users.setAllowedConferenceKeys(keys);
   }

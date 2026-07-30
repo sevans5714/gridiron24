@@ -305,7 +305,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=37"></script>
+  <script src="/js/nav.js?v=39"></script>
   <script>
     const escapeHtml = (value = '') => String(value)
       .replaceAll('&', '&amp;')
@@ -381,10 +381,10 @@
         rows.push(`
           <div class="row body ${zoneClass}">
             <div class="rank">${rank}</div>
-            <div class="team">
+            <a class="team" href="/team.html?conference=${escapeHtml(conf.key)}&teamId=${escapeHtml(team.id)}" style="color:inherit;text-decoration:none;">
               <img class="team-logo-sm" src="${escapeHtml(team.logo || '/assets/team-logo-placeholder.svg')}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
               <div class="name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
-            </div>
+            </a>
             <div class="owner col-owner" title="${escapeHtml(team.owner)}">${escapeHtml(team.owner)}</div>
             <div class="num wl">${team.wins || 0}</div>
             <div class="num wl">${team.losses || 0}</div>

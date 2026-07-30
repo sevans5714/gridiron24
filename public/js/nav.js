@@ -154,9 +154,12 @@
     return `<span class="user-avatar-fallback" aria-hidden="true">${esc(initials(label))}</span>`;
   }
 
-  function roleLabel(role) {
+  function roleLabel(role, conference) {
     if (role === 'commissioner') return 'Commissioner';
-    if (role === 'conference_admin') return 'Conference Admin';
+    if (role === 'conference_admin') {
+      if (conference === 'aaa') return 'AAA League Admin';
+      return 'Conference Admin';
+    }
     return 'Member';
   }
 
@@ -177,7 +180,7 @@
     mount.onmouseleave = null;
     const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || 'Unassigned';
     const ownerName = user.name || 'Owner';
-    const access = roleLabel(user.role);
+    const access = roleLabel(user.role, user.conference);
     const onProfile = active === 'profile';
     const needsLogo = !hasChosenLogo(myTeam?.logo);
     const href = needsLogo ? '/profile.html#logo' : '/profile.html';

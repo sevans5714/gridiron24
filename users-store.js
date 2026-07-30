@@ -11,7 +11,7 @@ const ROLES = {
   COMMISSIONER: 'commissioner'
 };
 
-const CONFERENCE_KEYS = new Set(['detail', 'overtime']);
+const CONFERENCE_KEYS = new Set(['detail', 'overtime', 'aaa']);
 
 function setAllowedConferenceKeys(keys) {
   const next = (Array.isArray(keys) ? keys : [])
