@@ -418,16 +418,32 @@ function ensureBootstrapCommissioner() {
 
   const existing = findByLoginName(login);
   if (existing) {
-    if (process.env.COMMISSIONER_PASSWORD) {
-      const store = readStore();
-      const idx = store.users.findIndex((u) => normalizeLoginName(u.loginName) === login);
-      if (idx !== -1) {
+    const store = readStore();
+    const idx = store.users.findIndex((u) => normalizeLoginName(u.loginName) === login);
+    if (idx !== -1) {
+      if (process.env.COMMISSIONER_PASSWORD) {
         syncBootstrapPassword(store, idx, password);
-        store.users[idx].role = ROLES.COMMISSIONER;
-        store.users[idx].conference = null;
-        writeStore(store);
-        return publicUser(store.users[idx]);
       }
+      // Always keep the designated overall commissioner login as commissioner.
+      store.users[idx].role = ROLES.COMMISSIONER;
+      store.users[idx].conference = null;
+      store.users[idx].approved = true;
+      store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
+      writeStore(store);
+      // AAA franchise claims would force AAA HQ routing — clear those for the overall commissioner.
+      try {
+        const logos = require('./logos-store');
+        const claim = logos.getClaimForUser(store.users[idx].id);
+        if (claim && String(claim.conferenceKey || '').toLowerCase() === 'aaa') {
+          logos.unassignTeam(store.users[idx].id);
+          console.warn(`Bootstrap commissioner: cleared AAA team claim from ${login}`);
+        }
+      } catch (err) {
+        if (err.status !== 404) {
+          console.warn(`Bootstrap commissioner claim cleanup: ${err.message}`);
+        }
+      }
+      return publicUser(store.users[idx]);
     }
     return ensureCommissionerFromEnv() || publicUser(existing);
   }
@@ -470,15 +486,23 @@ function ensureBootstrapAaaAdmin() {
   const conference = 'aaa';
 
   // Claim AAA admin slot for this bootstrap login.
+  // Never demote the overall commissioner login to a plain user — restore commissioner instead.
   const store0 = readStore();
   const otherAdmin = findConferenceAdmin(store0, conference);
+  const commissionerLogin = normalizeLoginName(process.env.COMMISSIONER_LOGIN || 'sevans');
   if (otherAdmin && normalizeLoginName(otherAdmin.loginName) !== login) {
     const idx = store0.users.findIndex((u) => u.id === otherAdmin.id);
     if (idx !== -1) {
-      store0.users[idx].role = ROLES.USER;
-      store0.users[idx].conference = null;
+      const otherLogin = normalizeLoginName(store0.users[idx].loginName);
+      if (otherLogin === commissionerLogin) {
+        store0.users[idx].role = ROLES.COMMISSIONER;
+        store0.users[idx].conference = null;
+      } else {
+        store0.users[idx].role = ROLES.USER;
+        store0.users[idx].conference = null;
+      }
       writeStore(store0);
-      console.warn(`Bootstrap AAA admin: demoted ${otherAdmin.loginName} so ${login} can own AAA`);
+      console.warn(`Bootstrap AAA admin: cleared AAA admin from ${otherAdmin.loginName} so ${login} can own AAA`);
     }
   }
 
