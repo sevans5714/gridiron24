@@ -65,7 +65,7 @@ module.exports = {
         teamCountMax: 14,
         teamCount: null,
         currency: 'USD',
-        notes: 'Roster size is set by interest (10–14 franchises). Buy-in is $50 per franchise; the prize pool equals $50 × final roster ($500–$700). Award amounts below assume a 12-team field and may be adjusted when the roster locks. Champion promotes to GridIron 24 next season (display / commissioner-administered).',
+        notes: 'AAA is a separate league with its own commissioner, draft, and player pool. Roster size is set by interest (10–14 franchises). Buy-in is $50 per franchise; the prize pool equals $50 × final roster ($500–$700). Award amounts below assume a 12-team field and may be adjusted when the roster locks. Scoring/lineup settings mirror GridIron 24. Champion promotes to GridIron 24 next season (display / commissioner-administered).',
         prizes: [
           { place: 1, label: 'AAA Champion', amount: 300 },
           { place: 2, label: 'AAA Runner-Up', amount: 150 },
