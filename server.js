@@ -38,6 +38,7 @@ const calendar = require('./calendar-store');
 const powerRankings = require('./power-rankings-store');
 const rulesSyncStore = require('./rules-sync-store');
 const rosterViolations = require('./roster-violations-store');
+const keepers = require('./keepers-store');
 const leagues = require('./leagues-store');
 const { compareSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
@@ -611,6 +612,8 @@ async function loadTeamDetail(conferenceKey, teamId) {
     team: detail,
     recentMatchups: recent,
     currentMatchupPeriod: currentWeek,
+    keeper: keepers.getKeeper(conference.key, teamId, Number(config.season) + 1),
+    keeperWindow: keepers.getKeeperWindow(calendar.listEvents(), config.season),
     generatedAt: new Date().toISOString()
   };
 }
@@ -3974,7 +3977,10 @@ const server = http.createServer(async (req, res) => {
       const user = getSessionUser(req);
       const claim = logos.getClaimForUser(user.id);
       const logo = logos.resolveLogoForUser(user.id);
+      const keeperWindow = keepers.getKeeperWindow(calendar.listEvents(), config.season);
       let team = null;
+      let roster = [];
+      let keeper = null;
       if (claim) {
         const nameEntry = logos.getDisplayName(claim.conferenceKey, claim.teamId);
         try {
@@ -4006,6 +4012,25 @@ const server = http.createServer(async (req, res) => {
                 teamCount: (league.teams || []).length
               };
             }
+            try {
+              const detail = await loadTeamDetail(claim.conferenceKey, claim.teamId);
+              roster = detail?.team?.roster || [];
+              if (detail?.team) {
+                team = {
+                  ...(team || {}),
+                  id: detail.team.id,
+                  name: detail.team.name || team?.name,
+                  logo: detail.team.logo || team?.logo,
+                  conferenceKey: claim.conferenceKey,
+                  conferenceName: conference.name,
+                  wins: detail.team.wins ?? team?.wins,
+                  losses: detail.team.losses ?? team?.losses,
+                  ties: detail.team.ties ?? team?.ties,
+                  pointsFor: detail.team.pointsFor ?? team?.pointsFor,
+                  owner: detail.team.owner
+                };
+              }
+            } catch { /* roster optional if ESPN roster view fails */ }
           }
         } catch { /* ignore ESPN lookup failures for avatar */ }
         if (nameEntry?.displayName) {
@@ -4016,16 +4041,77 @@ const server = http.createServer(async (req, res) => {
         } else if (claim.teamName && team) {
           team.name = claim.teamName;
         }
+        keeper = keepers.getKeeper(claim.conferenceKey, claim.teamId, keeperWindow.forSeason);
       }
       return sendJson(res, 200, {
         ok: true,
         claim,
         logo,
         team,
+        roster,
+        keeper,
+        keeperWindow,
         homePath: homePathForUser(user),
         user: users.publicUser(user),
         specs: logos.LOGO_SPECS
       });
+    }
+
+    if (pathname === '/api/my-team/keeper' && req.method === 'POST') {
+      try {
+        const user = getSessionUser(req);
+        const claim = logos.getClaimForUser(user.id);
+        if (!claim) {
+          return sendJson(res, 400, { ok: false, error: 'Claim a team first' });
+        }
+        const body = await readJsonBody(req);
+        const windowInfo = keepers.getKeeperWindow(calendar.listEvents(), config.season);
+        if (!windowInfo.open) {
+          return sendJson(res, 403, {
+            ok: false,
+            error: windowInfo.message || 'Keeper declarations are locked',
+            keeperWindow: windowInfo
+          });
+        }
+
+        if (body.clear) {
+          keepers.clearKeeper(claim.conferenceKey, claim.teamId, windowInfo.forSeason);
+          return sendJson(res, 200, {
+            ok: true,
+            keeper: null,
+            keeperWindow: windowInfo
+          });
+        }
+
+        const playerId = Number(body.playerId);
+        let playerName = String(body.playerName || '').trim();
+        let position = String(body.position || '').trim() || null;
+        if (!playerName || !position) {
+          try {
+            const detail = await loadTeamDetail(claim.conferenceKey, claim.teamId);
+            const hit = (detail.team?.roster || []).find((p) => Number(p.id) === playerId);
+            if (hit) {
+              playerName = playerName || hit.name;
+              position = position || hit.position || null;
+            }
+          } catch { /* ignore */ }
+        }
+
+        const keeper = keepers.setKeeper({
+          conferenceKey: claim.conferenceKey,
+          teamId: claim.teamId,
+          forSeason: windowInfo.forSeason,
+          playerId,
+          playerName,
+          position,
+          originalDraftRound: body.originalDraftRound,
+          keepNumber: body.keepNumber,
+          declaredBy: user.id
+        });
+        return sendJson(res, 200, { ok: true, keeper, keeperWindow: windowInfo });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save keeper' });
+      }
     }
 
     if (pathname === '/api/my-team/claim' && req.method === 'POST') {

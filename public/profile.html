@@ -214,6 +214,56 @@
     }
     .profile-note.ok { color: #86efac; }
     .profile-note.err { color: #fca5a5; }
+    .keeper-form {
+      display: grid;
+      gap: 0.85rem;
+      max-width: 28rem;
+    }
+    .keeper-form .field-row {
+      display: grid;
+      gap: 0.35rem;
+    }
+    .keeper-form select.field,
+    .keeper-form input.field {
+      width: 100%;
+      max-width: 28rem;
+    }
+    .keeper-current {
+      margin: 0 0 1rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid rgba(239, 215, 130, 0.55);
+      background: rgba(239, 215, 130, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(239, 215, 130, 0.2);
+    }
+    .keeper-current .label {
+      margin: 0 0 0.25rem;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .keeper-current .nm {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .keeper-current .sub {
+      margin: 0.25rem 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .keeper-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: center;
+    }
     .portal-links {
       margin-top: 1.35rem;
       padding-top: 1.15rem;
@@ -480,6 +530,7 @@
       <a href="#account">Account</a>
       <a href="#appearance">Appearance</a>
       <a href="#franchise">Franchise</a>
+      <a href="#keeper">Keeper</a>
       <a href="#logo">Avatar / Logo</a>
       <a href="#password">Password</a>
       <a href="#tools" id="jump-tools" hidden>League Tools</a>
@@ -537,6 +588,16 @@
         </div>
       </div>
       <div id="franchise-body"><div class="msg">Loading…</div></div>
+    </section>
+
+    <section class="profile-card" id="keeper">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Keeper</h2>
+          <p>Choose one player to keep for next season. You forfeit the matching draft round (§3.03–§3.04).</p>
+        </div>
+      </div>
+      <div id="keeper-body"><div class="msg">Loading…</div></div>
     </section>
 
     <section class="profile-card" id="logo">
@@ -785,6 +846,148 @@
       });
     }
 
+    function costPreview(originalRound, keepNumber) {
+      const o = Math.max(1, Number(originalRound) || 1);
+      const n = Math.max(1, Math.min(2, Number(keepNumber) || 1));
+      return o + (n - 1);
+    }
+
+    function renderKeeper(data) {
+      const mount = document.getElementById('keeper-body');
+      if (!mount) return;
+      const claim = data.claim;
+      const roster = data.roster || [];
+      const keeper = data.keeper;
+      const windowInfo = data.keeperWindow || {};
+
+      if (!claim) {
+        mount.innerHTML = `<p class="profile-note">Assign a franchise before declaring a keeper.</p>`;
+        return;
+      }
+
+      const currentHtml = keeper
+        ? `<div class="keeper-current">
+            <p class="label">${escP(String(windowInfo.forSeason || ''))} Keeper</p>
+            <p class="nm">${escP(keeper.playerName)}${keeper.position ? ` · ${escP(keeper.position)}` : ''}</p>
+            <p class="sub">Keep #${escP(String(keeper.keepNumber))} · costs Round ${escP(String(keeper.costRound))} (original Round ${escP(String(keeper.originalDraftRound))})</p>
+          </div>`
+        : `<p class="profile-note">No keeper declared for ${escP(String(windowInfo.forSeason || 'next season'))} yet.</p>`;
+
+      if (!roster.length) {
+        mount.innerHTML = `${currentHtml}<p class="profile-note">Roster unlocks after the draft. You can declare a keeper once players are on your team.</p>
+          <p class="profile-note">${escP(windowInfo.message || '')}</p>`;
+        return;
+      }
+
+      const options = roster.map((p) => {
+        const selected = keeper && Number(keeper.playerId) === Number(p.id) ? ' selected' : '';
+        return `<option value="${escP(String(p.id))}" data-name="${escP(p.name)}" data-position="${escP(p.position || '')}"${selected}>${escP(p.slot || '')} — ${escP(p.name)}${p.position ? ` (${escP(p.position)})` : ''}</option>`;
+      }).join('');
+
+      const locked = windowInfo.open === false;
+      mount.innerHTML = `
+        ${currentHtml}
+        <p class="profile-note">${escP(windowInfo.message || '')}</p>
+        <form class="keeper-form" id="keeper-form">
+          <div class="field-row">
+            <label class="field-label" for="keeper-player">Player</label>
+            <select class="field" id="keeper-player" ${locked ? 'disabled' : ''} required>
+              <option value="">Select a player…</option>
+              ${options}
+            </select>
+          </div>
+          <div class="field-row">
+            <label class="field-label" for="keeper-round">Original draft round</label>
+            <input class="field" id="keeper-round" type="number" min="1" max="30" step="1" value="${escP(String(keeper?.originalDraftRound || ''))}" ${locked ? 'disabled' : ''} required />
+          </div>
+          <div class="field-row">
+            <label class="field-label" for="keeper-number">Keeper season</label>
+            <select class="field" id="keeper-number" ${locked ? 'disabled' : ''}>
+              <option value="1" ${Number(keeper?.keepNumber || 1) === 1 ? 'selected' : ''}>1st keep (costs original round)</option>
+              <option value="2" ${Number(keeper?.keepNumber) === 2 ? 'selected' : ''}>2nd keep (costs original round + 1)</option>
+            </select>
+          </div>
+          <p class="profile-note" id="keeper-cost-preview"></p>
+          <div class="keeper-actions">
+            <button type="submit" class="btn" ${locked ? 'disabled' : ''}>Save Keeper</button>
+            <button type="button" class="btn btn-secondary" id="keeper-clear" ${locked || !keeper ? 'disabled' : ''}>Clear</button>
+          </div>
+          <p class="profile-note" id="keeper-status" role="status"></p>
+        </form>`;
+
+      const updatePreview = () => {
+        const round = document.getElementById('keeper-round')?.value;
+        const num = document.getElementById('keeper-number')?.value;
+        const el = document.getElementById('keeper-cost-preview');
+        if (!el) return;
+        if (!round) {
+          el.textContent = 'Enter the round this player was originally drafted.';
+          return;
+        }
+        el.textContent = `This declaration will cost your Round ${costPreview(round, num)} pick.`;
+      };
+      updatePreview();
+      document.getElementById('keeper-round')?.addEventListener('input', updatePreview);
+      document.getElementById('keeper-number')?.addEventListener('change', updatePreview);
+
+      document.getElementById('keeper-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('keeper-status');
+        const select = document.getElementById('keeper-player');
+        const opt = select?.selectedOptions?.[0];
+        const playerId = select?.value;
+        if (!playerId) {
+          status.textContent = 'Select a player.';
+          status.className = 'profile-note err';
+          return;
+        }
+        try {
+          status.textContent = 'Saving…';
+          status.className = 'profile-note';
+          const res = await fetch('/api/my-team/keeper', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              playerId: Number(playerId),
+              playerName: opt?.dataset?.name || opt?.textContent || '',
+              position: opt?.dataset?.position || '',
+              originalDraftRound: Number(document.getElementById('keeper-round')?.value),
+              keepNumber: Number(document.getElementById('keeper-number')?.value || 1)
+            })
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok || !body.ok) throw new Error(body.error || 'Could not save keeper');
+          status.textContent = 'Keeper saved.';
+          status.className = 'profile-note ok';
+          await loadProfile();
+        } catch (err) {
+          status.textContent = err.message || 'Save failed';
+          status.className = 'profile-note err';
+        }
+      });
+
+      document.getElementById('keeper-clear')?.addEventListener('click', async () => {
+        const status = document.getElementById('keeper-status');
+        try {
+          status.textContent = 'Clearing…';
+          status.className = 'profile-note';
+          const res = await fetch('/api/my-team/keeper', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clear: true })
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok || !body.ok) throw new Error(body.error || 'Could not clear keeper');
+          status.textContent = 'Keeper cleared.';
+          status.className = 'profile-note ok';
+          await loadProfile();
+        } catch (err) {
+          status.textContent = err.message || 'Clear failed';
+          status.className = 'profile-note err';
+        }
+      });
+    }
+
     function renderLogoSection(data) {
       const body = document.getElementById('logo-body');
       if (!body) return;
@@ -1028,6 +1231,7 @@
       renderAccount(myTeamData);
       renderAppearance(myTeamData.user?.theme || window.GridIronNav?.getTheme?.() || 'night');
       renderFranchise(myTeamData);
+      renderKeeper(myTeamData);
       renderLogoSection(myTeamData);
       if (withSync) {
         const name = myTeamData.team?.name || myTeamData.user?.name || 'Profile';
@@ -1084,7 +1288,7 @@
         wirePasswordForm();
         if (location.hash === '#logo') {
           document.getElementById('logo')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (location.hash === '#franchise' || location.hash === '#account' || location.hash === '#appearance') {
+        } else if (location.hash === '#franchise' || location.hash === '#keeper' || location.hash === '#account' || location.hash === '#appearance') {
           document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' });
         } else if (location.hash === '#password') {
           document.getElementById('password')?.scrollIntoView({ behavior: 'smooth' });

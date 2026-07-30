@@ -38,6 +38,28 @@
     .inj.bad { color: #e8a078; }
     .inj.ok { color: var(--muted); }
     .row-bad td { background: rgba(196, 90, 48, 0.08); }
+    tr.row-keeper td {
+      background: rgba(239, 215, 130, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(239, 215, 130, 0.55);
+    }
+    tr.row-keeper td:first-child {
+      box-shadow:
+        inset 3px 0 0 #efd782,
+        inset 0 0 0 1px rgba(239, 215, 130, 0.55);
+    }
+    .keeper-tag {
+      display: inline-block;
+      margin-left: 0.4rem;
+      padding: 0.12rem 0.4rem;
+      border: 1px solid rgba(239, 215, 130, 0.55);
+      color: #efd782;
+      font-family: var(--display);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
     .empty { color: var(--muted); padding: 0.5rem 0; }
     .game { padding: 0.55rem 0; border-bottom: 1px solid var(--line); color: var(--text); }
     @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } .team-hero img { width: 4.5rem; height: 4.5rem; } }
@@ -76,6 +98,7 @@
         if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load team');
         const t = data.team;
         const roster = t.roster || [];
+        const keeperId = data.keeper ? Number(data.keeper.playerId) : null;
         document.title = conference === 'aaa'
           ? `${t.name} · AAA League`
           : `${t.name} · GridIron 24`;
@@ -88,6 +111,9 @@
           if (['OUT', 'DOUBTFUL', 'IR', 'INJURY_RESERVE', 'INJURED_RESERVE'].includes(s)) return 'bad';
           return 'ok';
         };
+        const keeperNote = data.keeper
+          ? `<p class="empty" style="margin:0 0 0.75rem;color:#efd782;">${esc(String(data.keeperWindow?.forSeason || ''))} keeper: ${esc(data.keeper.playerName)} · costs Round ${esc(String(data.keeper.costRound))}</p>`
+          : '';
         main.innerHTML = `
           <p style="margin:0 0 0.75rem;"><a href="${esc(backHref)}" style="color:#8eb6ff;text-decoration:none;">← ${esc(backLabel)}</a></p>
           <div class="team-hero">
@@ -101,11 +127,14 @@
           <div class="layout">
             <section>
               <div class="section-head"><h2>Roster</h2></div>
+              ${keeperNote}
               ${roster.length ? `<table><thead><tr><th>Slot</th><th>Player</th><th>Pos</th><th>Status</th></tr></thead><tbody>
                 ${roster.map(p => {
                   const status = p.injuryStatus || '—';
+                  const isKeeper = keeperId != null && Number(p.id) === keeperId;
                   const bad = injClass(p.injuryStatus, p.slot) === 'bad' && !['Bench', 'IR'].includes(p.slot);
-                  return `<tr class="${bad ? 'row-bad' : ''}"><td class="slot">${esc(p.slot)}</td><td>${esc(p.name)}</td><td>${esc(p.position)}</td><td class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</td></tr>`;
+                  const rowClass = [bad ? 'row-bad' : '', isKeeper ? 'row-keeper' : ''].filter(Boolean).join(' ');
+                  return `<tr class="${rowClass}"><td class="slot">${esc(p.slot)}</td><td>${esc(p.name)}${isKeeper ? '<span class="keeper-tag">Keeper</span>' : ''}</td><td>${esc(p.position)}</td><td class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</td></tr>`;
                 }).join('')}
               </tbody></table>` : `<div class="empty">No roster yet — opens after the draft.</div>`}
             </section>
