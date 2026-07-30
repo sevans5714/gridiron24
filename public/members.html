@@ -6,28 +6,34 @@
   <title>Members Lounge · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=73" />
+  <link rel="stylesheet" href="/css/site.css?v=79" />
   <style>
     body[data-page="members"] {
-      --mo-cyan: #00a3ff;
-      --mo-cyan-dim: rgba(0, 163, 255, 0.18);
-      --mo-cyan-line: rgba(0, 163, 255, 0.35);
-      --mo-slate: #2b3d51;
-      --mo-slate-2: #1a2734;
-      --mo-ink: #05070a;
-      --mo-panel: #0b1016;
-      --mo-panel-2: #111822;
-      --mo-muted: #7f93a8;
-      --mo-text: #e8eef5;
+      --mo-cyan: #3b82f6;
+      --mo-cyan-bright: #60a5fa;
+      --mo-cyan-dim: rgba(59, 130, 246, 0.18);
+      --mo-cyan-line: rgba(96, 165, 250, 0.38);
+      --mo-gold: #c9a227;
+      --mo-gold-dim: rgba(201, 162, 39, 0.35);
+      --mo-silver: #cbd5e1;
+      --mo-slate: #1e3a5f;
+      --mo-slate-2: #0f1c2e;
+      --mo-ink: #020617;
+      --mo-panel: rgba(8, 14, 28, 0.82);
+      --mo-panel-2: rgba(12, 22, 42, 0.9);
+      --mo-muted: #94a3b8;
+      --mo-text: #e8eef8;
       --mo-good: #3dd68c;
       --mo-due: #ff9b6a;
       color: var(--mo-text);
       background:
-        radial-gradient(ellipse 70% 45% at 50% -8%, rgba(0, 163, 255, 0.16), transparent 55%),
-        radial-gradient(ellipse 50% 35% at 100% 20%, rgba(43, 61, 81, 0.45), transparent 50%),
-        linear-gradient(180deg, #000 0%, var(--mo-ink) 28%, #070b10 100%);
+        radial-gradient(ellipse 42% 28% at 12% 0%, rgba(147, 197, 253, 0.22), transparent 55%),
+        radial-gradient(ellipse 42% 28% at 88% 0%, rgba(96, 165, 250, 0.2), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 50% 8%, rgba(59, 130, 246, 0.18), transparent 58%),
+        radial-gradient(ellipse 55% 40% at 50% 100%, rgba(201, 162, 39, 0.08), transparent 50%),
+        linear-gradient(180deg, #01040c 0%, var(--mo-ink) 35%, #040a16 100%);
     }
 
     body[data-page="members"] .page-hero {
@@ -35,45 +41,57 @@
     }
 
     .mo-hero {
+      position: relative;
       text-align: center;
-      padding: 1.35rem 0 0.35rem;
-      margin-bottom: 0.35rem;
-      border-bottom: 1px solid rgba(0, 163, 255, 0.18);
-      background:
-        radial-gradient(ellipse 55% 90% at 50% 30%, rgba(0, 163, 255, 0.14), transparent 60%),
-        linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent);
+      padding: 0.35rem 0 0.15rem;
+      margin-bottom: 0.85rem;
+      overflow: hidden;
+    }
+    .mo-hero::before {
+      content: "";
+      position: absolute;
+      inset: 8% 10% auto;
+      height: 55%;
+      background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.28), transparent 70%);
+      pointer-events: none;
+      filter: blur(8px);
     }
     .mo-hero img {
+      position: relative;
       display: block;
-      width: min(28rem, 88vw);
+      width: min(52rem, 96vw);
       height: auto;
       margin: 0 auto;
-      filter: drop-shadow(0 0 28px rgba(0, 163, 255, 0.22));
-      animation: mo-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      filter:
+        drop-shadow(0 0 24px rgba(59, 130, 246, 0.45))
+        drop-shadow(0 12px 40px rgba(0, 0, 0, 0.55));
+      animation: mo-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
     .mo-hero .tag {
-      margin: 0.55rem 0 1rem;
+      position: relative;
+      margin: 0.35rem 0 1.1rem;
       font-family: var(--display);
       font-size: 0.82rem;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: var(--mo-muted);
-      animation: mo-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+      color: var(--mo-silver);
+      text-shadow: 0 0 18px rgba(96, 165, 250, 0.35);
+      animation: mo-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
     }
     @keyframes mo-in {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0; transform: translateY(12px) scale(0.985); }
       to { opacity: 1; transform: none; }
     }
 
     body[data-page="members"] .page-main {
-      padding-top: 0.85rem;
+      padding-top: 0.35rem;
     }
 
     .lounge-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.55fr) minmax(16rem, 0.85fr);
+      grid-template-columns: minmax(0, 1fr) minmax(15rem, 17.5rem);
       gap: 1.15rem;
-      align-items: stretch;
+      align-items: start;
       margin-bottom: 1.5rem;
     }
     .lounge-side {
@@ -82,10 +100,17 @@
       align-content: start;
     }
     .lounge-card {
-      border: 1px solid rgba(43, 61, 81, 0.95);
-      background: linear-gradient(180deg, var(--mo-panel-2), var(--mo-panel));
+      border: 1px solid var(--mo-cyan-line);
+      border-top: 1px solid var(--mo-gold-dim);
+      background:
+        linear-gradient(180deg, rgba(59, 130, 246, 0.1), transparent 40%),
+        linear-gradient(180deg, var(--mo-panel-2), var(--mo-panel));
+      backdrop-filter: blur(10px);
       padding: 0.95rem 1rem;
-      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+      box-shadow:
+        0 0 0 1px rgba(201, 162, 39, 0.12),
+        0 0 28px rgba(59, 130, 246, 0.12),
+        0 18px 40px rgba(0, 0, 0, 0.4);
     }
     .lounge-card h2 {
       margin: 0 0 0.45rem;
@@ -93,7 +118,8 @@
       font-size: 0.95rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--mo-cyan);
+      color: var(--mo-cyan-bright);
+      text-shadow: 0 0 14px rgba(59, 130, 246, 0.35);
     }
     .lounge-card p {
       margin: 0 0 0.5rem;
@@ -101,31 +127,382 @@
       line-height: 1.45;
       font-size: 0.95rem;
     }
-    .presence-list {
+
+    /* —— Instant Message window (AOL / Yahoo, modern) —— */
+    .im-window {
+      --im-chrome: #1a3a6b;
+      --im-chrome-2: #0d2244;
+      --im-inset: #f4f0e6;
+      --im-ink: #1a1f2e;
+      --im-muted: #6b7280;
       display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-height: 32rem;
+      height: min(70vh, 40rem);
+      border: 1px solid rgba(15, 40, 80, 0.9);
+      border-radius: 10px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #243f73 0%, var(--im-chrome) 40%, var(--im-chrome-2) 100%);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+        0 0 0 1px rgba(201, 162, 39, 0.2),
+        0 22px 50px rgba(0, 0, 0, 0.55),
+        0 0 40px rgba(59, 130, 246, 0.2);
+      animation: mo-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
+    }
+    .im-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.55rem 0.75rem 0.55rem 0.65rem;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.14), transparent 55%),
+        linear-gradient(180deg, #3a5f9a, #1e3f72);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+      user-select: none;
+    }
+    .im-titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-width: 0;
+    }
+    .im-traffic {
+      display: flex;
+      gap: 0.28rem;
+      flex: 0 0 auto;
+    }
+    .im-traffic span {
+      width: 0.7rem;
+      height: 0.7rem;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.35) inset;
+    }
+    .im-traffic .r { background: #ff5f57; }
+    .im-traffic .y { background: #febc2e; }
+    .im-traffic .g { background: #28c840; }
+    .im-title {
+      min-width: 0;
+    }
+    .im-title h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 0.92rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #f8fafc;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .im-title .sub {
+      display: block;
+      margin-top: 0.05rem;
+      font-size: 0.72rem;
+      color: rgba(226, 232, 240, 0.78);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chat-live {
+      display: inline-flex;
+      align-items: center;
       gap: 0.35rem;
+      flex: 0 0 auto;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.22);
+      font-family: var(--display);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #b7f7c8;
+    }
+    .chat-live .dot {
+      width: 0.42rem;
+      height: 0.42rem;
+      border-radius: 50%;
+      background: #3dd68c;
+      box-shadow: 0 0 8px #3dd68c;
+      animation: chat-pulse 1.4s ease-in-out infinite;
+    }
+    .chat-live.is-idle { color: rgba(226, 232, 240, 0.65); }
+    .chat-live.is-idle .dot {
+      background: #94a3b8;
+      box-shadow: none;
+      animation: none;
+    }
+    @keyframes chat-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .im-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(10.5rem, 13.5rem);
+      min-height: 0;
+      margin: 0.45rem;
       margin-top: 0.35rem;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.45);
+      background: var(--im-inset);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.12);
+    }
+    .im-main {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      min-width: 0;
+      min-height: 0;
+      border-right: 1px solid rgba(0, 0, 0, 0.12);
+    }
+    .chat-log {
+      overflow-y: auto;
+      padding: 0.7rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      scroll-behavior: smooth;
+      background:
+        linear-gradient(180deg, #faf7f0, #f1ebe0);
+      font-family: "Segoe UI", "Trebuchet MS", "Source Sans 3", sans-serif;
+      font-size: 0.95rem;
+      color: var(--im-ink);
+    }
+    .chat-empty {
+      margin: auto;
+      color: var(--im-muted);
+      text-align: center;
+      padding: 1.5rem 1rem;
+      font-family: var(--display);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+    }
+    .im-line {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.35rem 0.65rem;
+      align-items: baseline;
+      padding: 0.18rem 0.2rem;
+      border-radius: 3px;
+      line-height: 1.35;
+    }
+    .im-line:hover { background: rgba(26, 58, 107, 0.06); }
+    .im-line.mine { background: rgba(59, 130, 246, 0.08); }
+    .im-line-main {
+      min-width: 0;
+      word-break: break-word;
+    }
+    .im-who {
+      font-weight: 800;
+      cursor: default;
+    }
+    .im-sep { font-weight: 700; color: var(--im-ink); margin-right: 0.15rem; }
+    .im-text {
+      white-space: pre-wrap;
+      color: var(--im-ink);
+    }
+    .im-text .chat-mention {
+      color: #1d4ed8;
+      font-weight: 700;
+      text-shadow: none;
+      background: rgba(59, 130, 246, 0.12);
+      padding: 0 0.15rem;
+      border-radius: 2px;
+    }
+    .im-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.7rem;
+      color: var(--im-muted);
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .im-line:hover .im-meta,
+    .im-line:focus-within .im-meta { opacity: 1; }
+    .chat-msg-del {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: #b91c1c;
+      font: inherit;
+      font-size: 0.7rem;
+      cursor: pointer;
+      padding: 0;
+    }
+    .chat-msg-del:hover { text-decoration: underline; }
+
+    .chat-compose {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.45rem;
+      padding: 0.55rem 0.6rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.12);
+      background: linear-gradient(180deg, #e8e2d4, #ddd5c4);
+    }
+    .chat-compose textarea {
+      width: 100%;
+      min-height: 2.75rem;
+      max-height: 6.5rem;
+      resize: vertical;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid #9aa3b2;
+      border-radius: 3px;
+      background: #fffef9;
+      color: var(--im-ink);
+      font: inherit;
+      font-size: 0.92rem;
+      line-height: 1.35;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .chat-compose textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    }
+    .chat-compose button {
+      appearance: none;
+      align-self: end;
+      min-height: 2.75rem;
+      min-width: 4.5rem;
+      padding: 0.45rem 0.9rem;
+      border: 1px solid #1e3a5f;
+      border-radius: 4px;
+      background: linear-gradient(180deg, #5b8fdb, #2f5fad 55%, #244f96);
+      color: #fff;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.25) inset,
+        0 2px 4px rgba(0,0,0,0.25);
+      text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+    }
+    .chat-compose button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .chat-compose button:hover:not(:disabled) {
+      filter: brightness(1.06);
+    }
+
+    .im-buddies {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-height: 0;
+      background: linear-gradient(180deg, #1e3a5f, #132849);
+      color: #e8eef8;
+    }
+    .im-buddies-head {
+      padding: 0.45rem 0.6rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent);
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #fbbf24;
+    }
+    .im-buddies-head small {
+      display: block;
+      margin-top: 0.1rem;
+      font-family: var(--body);
+      font-size: 0.68rem;
+      letter-spacing: 0;
+      text-transform: none;
+      color: rgba(226, 232, 240, 0.65);
+      font-weight: 500;
+    }
+    .presence-list {
+      overflow-y: auto;
+      padding: 0.35rem 0.25rem 0.55rem;
+      display: grid;
+      gap: 0.1rem;
+      align-content: start;
+    }
+    .buddy-group {
+      margin: 0.35rem 0.35rem 0.15rem;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fcd34d;
+    }
+    .buddy-group::before {
+      content: "▾ ";
+      color: #fbbf24;
     }
     .presence-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
-      padding: 0.35rem 0;
-      border-bottom: 1px solid rgba(43, 61, 81, 0.45);
-      font-size: 0.92rem;
+      gap: 0.35rem;
+      width: 100%;
+      padding: 0.28rem 0.45rem;
+      border: 0;
+      border-radius: 3px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
     }
-    .presence-row:last-child { border-bottom: 0; }
-    .presence-row .nm { font-weight: 700; color: var(--mo-text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .presence-row .lg {
-      font-family: var(--display);
-      font-size: 0.65rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--mo-muted);
+    .presence-row:hover {
+      background: rgba(59, 130, 246, 0.28);
+    }
+    .presence-row .nm {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: 700;
+      font-size: 0.86rem;
+      color: #e0f2fe;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .presence-row .nm::before {
+      content: "";
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 50%;
+      background: #3dd68c;
+      box-shadow: 0 0 6px rgba(61, 214, 140, 0.9);
       flex: 0 0 auto;
     }
-    .presence-empty { color: var(--mo-muted); font-size: 0.9rem; }
+    .presence-row .lg {
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(226, 232, 240, 0.55);
+      flex: 0 0 auto;
+    }
+    .presence-row.is-me .nm { color: #fde68a; }
+    .presence-row.is-me .nm::before {
+      background: #fbbf24;
+      box-shadow: 0 0 6px rgba(251, 191, 36, 0.7);
+    }
+    .presence-empty {
+      color: rgba(226, 232, 240, 0.55);
+      font-size: 0.82rem;
+      padding: 0.75rem 0.55rem;
+      line-height: 1.4;
+    }
+    .chat-mention {
+      color: var(--mo-cyan-bright);
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(59, 130, 246, 0.45);
+    }
 
     .roll-section {
       margin-bottom: 1.75rem;
@@ -166,7 +543,7 @@
       font-size: 0.95rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--mo-cyan);
+      color: var(--mo-cyan-bright);
     }
     .pay-panel p {
       margin: 0 0 0.45rem;
@@ -178,7 +555,7 @@
       color: var(--mo-text);
       font-weight: 600;
     }
-    .pay-panel a { color: var(--mo-cyan); }
+    .pay-panel a { color: var(--mo-cyan-bright); }
     .pay-actions {
       display: flex;
       flex-wrap: wrap;
@@ -195,8 +572,8 @@
       min-height: 2.4rem;
       padding: 0.5rem 0.95rem;
       border: 0;
-      background: var(--mo-cyan);
-      color: #001018;
+      background: linear-gradient(180deg, var(--mo-cyan-bright), var(--mo-cyan));
+      color: #020617;
       font-family: var(--display);
       font-size: 0.8rem;
       font-weight: 700;
@@ -204,24 +581,24 @@
       text-transform: uppercase;
       text-decoration: none;
       cursor: pointer;
-      box-shadow: 0 0 18px rgba(0, 163, 255, 0.35);
+      box-shadow: 0 0 22px rgba(59, 130, 246, 0.45);
     }
     .btn-venmo:hover { filter: brightness(1.08); }
     .btn-ghost {
       appearance: none;
       min-height: 2.4rem;
       padding: 0.45rem 0.75rem;
-      border: 1px solid rgba(43, 61, 81, 0.95);
+      border: 1px solid rgba(203, 213, 225, 0.28);
       background: transparent;
-      color: var(--mo-text);
+      color: var(--mo-silver);
       font: inherit;
       font-size: 0.88rem;
       font-weight: 600;
       cursor: pointer;
     }
     .btn-ghost:hover {
-      border-color: var(--mo-cyan);
-      color: var(--mo-cyan);
+      border-color: var(--mo-cyan-bright);
+      color: var(--mo-cyan-bright);
     }
     .dues-chip {
       display: inline-flex;
@@ -239,24 +616,30 @@
 
     .boards {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 1.15rem;
       margin-bottom: 0;
     }
     .board {
-      border: 1px solid rgba(43, 61, 81, 0.9);
-      background: linear-gradient(180deg, var(--mo-panel-2), var(--mo-panel));
+      border: 1px solid var(--mo-cyan-line);
+      border-top-color: var(--mo-gold-dim);
+      background:
+        linear-gradient(180deg, rgba(59, 130, 246, 0.08), transparent 35%),
+        linear-gradient(180deg, var(--mo-panel-2), var(--mo-panel));
+      backdrop-filter: blur(8px);
       min-width: 0;
-      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+      box-shadow: 0 0 24px rgba(59, 130, 246, 0.1), 0 14px 32px rgba(0, 0, 0, 0.35);
     }
     .board-head {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
       gap: 0.75rem;
+      flex-wrap: wrap;
       padding: 0.8rem 0.95rem;
-      border-bottom: 1px solid rgba(0, 163, 255, 0.16);
-      background: rgba(0, 0, 0, 0.35);
+      border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+      background: rgba(2, 6, 23, 0.55);
+      border-left: 4px solid var(--mo-cyan-bright);
     }
     .board-head h2 {
       margin: 0;
@@ -264,19 +647,32 @@
       font-size: 1.15rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--mo-text);
+      color: var(--mo-silver);
     }
-    .board.gridiron .board-head {
-      border-left: 4px solid var(--mo-cyan);
-    }
-    .board.aaa .board-head {
-      border-left: 4px solid var(--mo-slate);
-    }
-    .board.aaa .board-head h2 { color: #9eb2c6; }
     .board-head .count {
       color: var(--mo-muted);
       font-variant-numeric: tabular-nums;
       font-size: 0.9rem;
+    }
+    .board-head .count strong {
+      color: var(--mo-cyan-bright);
+      font-weight: 600;
+    }
+    .league-pill {
+      display: inline-block;
+      margin-left: 0.4rem;
+      padding: 0.08rem 0.4rem;
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      font-family: var(--display);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      vertical-align: 0.1rem;
+      color: var(--mo-cyan-bright);
+    }
+    .league-pill.is-aaa {
+      border-color: rgba(201, 162, 39, 0.45);
+      color: #e8d48b;
     }
     .board-body { padding: 0.35rem 0.55rem 0.65rem; }
     .member-row {
@@ -309,15 +705,15 @@
       width: 100%;
       min-width: 0;
       padding: 0.35rem 0.45rem;
-      border: 1px solid rgba(43, 61, 81, 0.9);
-      background: #06090d;
+      border: 1px solid rgba(30, 58, 95, 0.9);
+      background: rgba(2, 6, 23, 0.85);
       color: var(--mo-text);
       font: inherit;
       font-weight: 600;
     }
     .member-row .name-input:focus {
       outline: none;
-      border-color: var(--mo-cyan);
+      border-color: var(--mo-cyan-bright);
     }
     .member-row .meta {
       color: var(--mo-muted);
@@ -347,7 +743,7 @@
       appearance: none;
       border: 0;
       background: transparent;
-      color: var(--mo-cyan);
+      color: var(--mo-cyan-bright);
       font: inherit;
       font-size: 0.78rem;
       font-weight: 600;
@@ -356,46 +752,6 @@
       text-decoration: none;
     }
     .linkish:hover { text-decoration: underline; text-underline-offset: 2px; }
-
-    .assign-bar {
-      margin-bottom: 1.35rem;
-      padding: 0.9rem 1rem;
-      border: 1px solid rgba(43, 61, 81, 0.95);
-      background: var(--mo-panel);
-    }
-    .assign-bar h2 {
-      margin: 0 0 0.55rem;
-      font-family: var(--display);
-      font-size: 1rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--mo-cyan);
-    }
-    .assign-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.55rem;
-      align-items: center;
-    }
-    .assign-row select,
-    .assign-row button { min-height: 2.4rem; }
-    .assign-row select {
-      min-width: min(16rem, 100%);
-      padding: 0.4rem 0.55rem;
-      border: 1px solid rgba(43, 61, 81, 0.95);
-      background: #06090d;
-      color: var(--mo-text);
-      font: inherit;
-    }
-    .assign-row .btn {
-      background: var(--mo-cyan);
-      border-color: var(--mo-cyan);
-      color: #001018;
-    }
-    .assign-row .btn:hover {
-      background: transparent;
-      color: var(--mo-cyan);
-    }
 
     .flash {
       margin: 0 0 1rem;
@@ -408,202 +764,12 @@
     .flash.err { border-color: rgba(239, 68, 68, 0.45); color: #fca5a5; }
     .flash[hidden] { display: none !important; }
 
-    .chat-panel {
-      display: grid;
-      grid-template-rows: auto minmax(22rem, 1fr) auto;
-      margin: 0;
-      min-height: 28rem;
-      height: 100%;
-      border: 1px solid var(--mo-cyan-line);
-      background:
-        linear-gradient(180deg, rgba(0, 163, 255, 0.08), transparent 22%),
-        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 163, 255, 0.08), transparent 55%),
-        var(--mo-panel);
-      box-shadow:
-        0 0 40px rgba(0, 163, 255, 0.1),
-        0 18px 40px rgba(0, 0, 0, 0.35);
-    }
-    .chat-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 0.8rem 1rem;
-      border-bottom: 1px solid rgba(0, 163, 255, 0.18);
-      background: rgba(0, 0, 0, 0.45);
-    }
-    .chat-head h2 {
-      margin: 0;
-      font-family: var(--display);
-      font-size: 1.1rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--mo-cyan);
-    }
-    .chat-head .sub {
-      display: block;
-      margin-top: 0.15rem;
-      font-family: var(--body);
-      font-size: 0.78rem;
-      letter-spacing: 0;
-      text-transform: none;
-      color: var(--mo-muted);
-      font-weight: 500;
-    }
-    .chat-live {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-family: var(--display);
-      font-size: 0.72rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--mo-cyan);
-    }
-    .chat-live .dot {
-      width: 0.5rem;
-      height: 0.5rem;
-      border-radius: 50%;
-      background: var(--mo-cyan);
-      box-shadow: 0 0 10px rgba(0, 163, 255, 0.7);
-      animation: chat-pulse 1.4s ease-in-out infinite;
-    }
-    .chat-live.is-idle { color: var(--mo-muted); }
-    .chat-live.is-idle .dot {
-      background: var(--mo-muted);
-      box-shadow: none;
-      animation: none;
-    }
-    @keyframes chat-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-    .chat-log {
-      overflow-y: auto;
-      padding: 0.85rem 0.95rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-      scroll-behavior: smooth;
-      background:
-        repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 11px,
-          rgba(43, 61, 81, 0.12) 11px,
-          rgba(43, 61, 81, 0.12) 12px
-        );
-    }
-    .chat-empty {
-      margin: auto;
-      color: var(--mo-muted);
-      text-align: center;
-      padding: 1.5rem 1rem;
-      font-family: var(--display);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-    }
-    .chat-msg {
-      display: grid;
-      gap: 0.15rem;
-      max-width: min(36rem, 92%);
-      padding: 0.5rem 0.7rem;
-      border: 1px solid rgba(43, 61, 81, 0.85);
-      background: rgba(26, 39, 52, 0.75);
-    }
-    .chat-msg.mine {
-      align-self: end;
-      border-color: rgba(0, 163, 255, 0.45);
-      background: rgba(0, 163, 255, 0.14);
-      box-shadow: 0 0 18px rgba(0, 163, 255, 0.08);
-    }
-    .chat-msg-meta {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 0.65rem;
-      font-size: 0.78rem;
-      color: var(--mo-muted);
-    }
-    .chat-msg-meta .who {
-      font-weight: 700;
-      color: #7ec8ef;
-    }
-    .chat-msg.mine .chat-msg-meta .who { color: var(--mo-cyan); }
-    .chat-msg-body {
-      white-space: pre-wrap;
-      word-break: break-word;
-      line-height: 1.4;
-      color: var(--mo-text);
-    }
-    .chat-msg-del {
-      appearance: none;
-      border: 0;
-      background: transparent;
-      color: var(--mo-muted);
-      font: inherit;
-      font-size: 0.72rem;
-      cursor: pointer;
-      padding: 0;
-    }
-    .chat-msg-del:hover { color: #fca5a5; }
-    .chat-compose {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.55rem;
-      padding: 0.75rem 0.85rem;
-      border-top: 1px solid rgba(0, 163, 255, 0.18);
-      background: rgba(0, 0, 0, 0.45);
-    }
-    .chat-compose textarea {
-      width: 100%;
-      min-height: 2.6rem;
-      max-height: 7rem;
-      resize: vertical;
-      padding: 0.55rem 0.65rem;
-      border: 1px solid rgba(43, 61, 81, 0.95);
-      background: #06090d;
-      color: var(--mo-text);
-      font: inherit;
-      line-height: 1.35;
-    }
-    .chat-compose textarea:focus {
-      outline: none;
-      border-color: var(--mo-cyan);
-      box-shadow: 0 0 0 1px rgba(0, 163, 255, 0.25);
-    }
-    .chat-compose button {
-      appearance: none;
-      align-self: end;
-      min-height: 2.6rem;
-      padding: 0.55rem 1.05rem;
-      border: 0;
-      background: var(--mo-cyan);
-      color: #001018;
-      font-family: var(--display);
-      font-size: 0.82rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
-      box-shadow: 0 0 16px rgba(0, 163, 255, 0.3);
-    }
-    .chat-compose button:disabled {
-      opacity: 0.5;
-      cursor: default;
-      box-shadow: none;
-    }
-    .chat-compose button:hover:not(:disabled) {
-      filter: brightness(1.08);
-    }
-
     body[data-page="members"] .site-footer {
-      border-top-color: rgba(0, 163, 255, 0.16);
+      border-top-color: rgba(96, 165, 250, 0.18);
       color: var(--mo-muted);
     }
-    body[data-page="members"] .site-footer-brand {
-      color: var(--mo-cyan);
+    body[data-page="members"] .site-footer-author {
+      color: var(--mo-cyan-bright);
     }
 
     .mo-lock {
@@ -612,12 +778,280 @@
       width: 0.95rem;
       height: 0.95rem;
       border-radius: 50%;
-      background: var(--mo-cyan);
-      color: #000;
+      background: linear-gradient(180deg, var(--mo-cyan-bright), var(--mo-cyan));
+      color: #020617;
       margin-right: 0.35rem;
       vertical-align: -0.1rem;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.55);
     }
     .mo-lock svg { width: 0.55rem; height: 0.55rem; display: block; }
+
+    /* —— The Board (multi-sport scores) —— */
+    .sports-board {
+      position: relative;
+      margin: 0 0 1.35rem;
+      border: 1px solid var(--mo-cyan-line);
+      border-top: 1px solid var(--mo-gold-dim);
+      background:
+        linear-gradient(105deg, rgba(59, 130, 246, 0.12), transparent 42%),
+        linear-gradient(180deg, rgba(12, 22, 42, 0.95), rgba(8, 14, 28, 0.88));
+      backdrop-filter: blur(12px);
+      box-shadow:
+        0 0 0 1px rgba(201, 162, 39, 0.1),
+        0 0 40px rgba(59, 130, 246, 0.14),
+        0 22px 48px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      animation: mo-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+    }
+    .sports-board::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: linear-gradient(180deg, var(--mo-gold), var(--mo-cyan-bright), transparent);
+      opacity: 0.85;
+    }
+    .sports-board-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      padding: 0.95rem 1.1rem 0.7rem;
+      border-bottom: 1px solid rgba(96, 165, 250, 0.18);
+    }
+    .sports-board-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mo-cyan-bright);
+      text-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+    }
+    .sports-board-head .sub {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: 0.82rem;
+      color: var(--mo-muted);
+      letter-spacing: 0.02em;
+    }
+    .sports-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-silver);
+    }
+    .sports-live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border: 1px solid rgba(61, 214, 140, 0.45);
+      background: rgba(61, 214, 140, 0.12);
+      color: #7dffb5;
+      font-weight: 600;
+    }
+    .sports-live-pill[hidden] { display: none; }
+    .sports-live-pill .pulse {
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 50%;
+      background: #3dd68c;
+      box-shadow: 0 0 8px #3dd68c;
+      animation: mo-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes mo-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    .sports-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      padding: 0.65rem 1.1rem;
+      border-bottom: 1px solid rgba(96, 165, 250, 0.12);
+      background: rgba(2, 6, 23, 0.35);
+    }
+    .sports-tab {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--mo-muted);
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.7rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+    .sports-tab:hover {
+      color: var(--mo-text);
+      border-color: rgba(96, 165, 250, 0.25);
+    }
+    .sports-tab.is-on {
+      color: #020617;
+      background: linear-gradient(180deg, var(--mo-cyan-bright), var(--mo-cyan));
+      border-color: transparent;
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.45);
+    }
+    .sports-tab .count {
+      margin-left: 0.3rem;
+      opacity: 0.75;
+      font-weight: 600;
+    }
+    .sports-tab.is-on .count { opacity: 0.9; }
+
+    .sports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+      gap: 0.55rem;
+      padding: 0.85rem 1.1rem 1.05rem;
+      max-height: 22rem;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(96, 165, 250, 0.35) transparent;
+    }
+    .sports-empty {
+      grid-column: 1 / -1;
+      padding: 1.75rem 1rem;
+      text-align: center;
+      color: var(--mo-muted);
+      font-size: 0.95rem;
+    }
+
+    .sgame {
+      position: relative;
+      padding: 0.55rem 0.65rem 0.6rem;
+      border: 1px solid rgba(96, 165, 250, 0.2);
+      background: linear-gradient(160deg, rgba(30, 58, 95, 0.35), rgba(2, 6, 23, 0.55));
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      animation: mo-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .sgame:hover {
+      border-color: rgba(96, 165, 250, 0.45);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.18);
+      transform: translateY(-1px);
+    }
+    .sgame.is-live {
+      border-color: rgba(61, 214, 140, 0.4);
+      box-shadow: inset 0 0 0 1px rgba(61, 214, 140, 0.12);
+    }
+    .sgame.is-final { opacity: 0.88; }
+    @keyframes mo-card-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    .sgame-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .sgame-league {
+      color: var(--mo-gold);
+      font-weight: 600;
+    }
+    .sgame-status.is-live {
+      color: #7dffb5;
+      font-weight: 700;
+    }
+    .sgame-row {
+      display: grid;
+      grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.4rem;
+      min-height: 1.35rem;
+    }
+    .sgame-row + .sgame-row { margin-top: 0.22rem; }
+    .sgame-row img {
+      width: 1.35rem;
+      height: 1.35rem;
+      object-fit: contain;
+    }
+    .sgame-abbr {
+      font-family: var(--display);
+      font-size: 0.92rem;
+      letter-spacing: 0.04em;
+      color: var(--mo-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sgame-row.is-winner .sgame-abbr { color: #fff; }
+    .sgame-row.is-winner .sgame-score { color: #fff; font-weight: 700; }
+    .sgame-score {
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      color: var(--mo-silver);
+      min-width: 1.5rem;
+      text-align: right;
+    }
+    .sgame-score.is-blank { color: var(--mo-muted); font-size: 0.85rem; }
+
+    .sgame.is-golf {
+      grid-column: span 2;
+      min-width: 0;
+    }
+    @media (max-width: 640px) {
+      .sgame.is-golf { grid-column: span 1; }
+    }
+    .sgolf-title {
+      margin: 0 0 0.45rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      color: var(--mo-text);
+    }
+    .sgolf-leaders {
+      display: grid;
+      gap: 0.2rem;
+    }
+    .sgolf-row {
+      display: grid;
+      grid-template-columns: 2rem minmax(0, 1fr) 2.4rem 2.2rem;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.82rem;
+      color: var(--mo-silver);
+    }
+    .sgolf-row.is-live { color: #7dffb5; }
+    .sgolf-pos {
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      color: var(--mo-gold);
+    }
+    .sgolf-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sgolf-score {
+      font-family: var(--display);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      color: var(--mo-text);
+    }
+    .sgolf-thru {
+      text-align: right;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
 
     @media (max-width: 900px) {
       .lounge-grid { grid-template-columns: 1fr; }
@@ -627,11 +1061,17 @@
         grid-column: 2;
         justify-content: flex-start;
       }
-      .chat-panel {
-        min-height: 20rem;
-        grid-template-rows: auto minmax(16rem, 45vh) auto;
+      .im-window {
+        height: auto;
+        min-height: 26rem;
       }
-      .mo-hero img { width: min(22rem, 92vw); }
+      .im-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(16rem, 42vh) minmax(8rem, 12rem);
+      }
+      .im-main { border-right: 0; border-bottom: 1px solid rgba(0,0,0,0.12); }
+      .mo-hero img { width: min(100%, 96vw); }
+      .sports-grid { max-height: 18rem; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
     }
   </style>
 </head>
@@ -643,8 +1083,8 @@
     </div>
   </header>
   <section class="mo-hero shell">
-    <img src="/assets/members-only.jpg?v=1" alt="Members Only" width="1024" height="682" />
-    <p class="tag">Welcome to the lounge</p>
+    <img src="/assets/members-lounge.jpg?v=1" alt="GridIron 24 Members Only" width="1024" height="576" />
+    <p class="tag">One lounge · every league · all members</p>
   </section>
   <section class="page-hero shell" hidden>
     <p class="eyebrow">Members lounge</p>
@@ -652,44 +1092,67 @@
   </section>
   <main class="page-main shell">
     <div class="flash" id="flash" hidden></div>
+
+    <section class="sports-board" id="sports-board" aria-label="Live sports scores">
+      <div class="sports-board-head">
+        <div>
+          <h2>The Board</h2>
+          <span class="sub">College FB · MLB · LLWS · College BB · NHL · WNBA · MLS · Golf</span>
+        </div>
+        <div class="sports-meta">
+          <span class="sports-live-pill" id="sports-live-pill" hidden><span class="pulse" aria-hidden="true"></span><span id="sports-live-count">0 live</span></span>
+          <span id="sports-updated">Updating…</span>
+        </div>
+      </div>
+      <div class="sports-tabs" id="sports-tabs" role="tablist" aria-label="Sport filter"></div>
+      <div class="sports-grid" id="sports-grid" aria-live="polite">
+        <div class="sports-empty">Loading the board…</div>
+      </div>
+    </section>
+
     <div class="lounge-grid">
-      <section class="chat-panel" aria-label="Lounge chat">
-        <div class="chat-head">
-          <div>
-            <h2><span class="mo-lock" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 1.2a2.4 2.4 0 0 0-2.4 2.4v1.2H2.4v6h7.2v-6H8.4V3.6A2.4 2.4 0 0 0 6 1.2Zm0 1.2c.66 0 1.2.54 1.2 1.2v1.2H4.8V3.6c0-.66.54-1.2 1.2-1.2Z"/></svg></span>The Room</h2>
-            <span class="sub">Talk smack, trade tips, settle bets — members only.</span>
+      <section class="im-window" id="room" aria-label="Lounge chat">
+        <div class="im-titlebar">
+          <div class="im-titlebar-left">
+            <div class="im-traffic" aria-hidden="true"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+            <div class="im-title">
+              <h2>Instant Message — The Room</h2>
+              <span class="sub">GridIron 24 · AAA · one chat for the whole HQ</span>
+            </div>
           </div>
           <div class="chat-live is-idle" id="chat-live"><span class="dot" aria-hidden="true"></span><span id="chat-live-label">Connecting</span></div>
         </div>
-        <div class="chat-log" id="chat-log" aria-live="polite"><div class="chat-empty">Loading the lounge…</div></div>
-        <form class="chat-compose" id="chat-form">
-          <textarea id="chat-input" maxlength="1000" rows="2" placeholder="Pull up a seat…" autocomplete="off"></textarea>
-          <button type="submit" id="chat-send">Send</button>
-        </form>
+        <div class="im-body">
+          <div class="im-main">
+            <div class="chat-log" id="chat-log" aria-live="polite"><div class="chat-empty">Signing on to the lounge…</div></div>
+            <form class="chat-compose" id="chat-form">
+              <textarea id="chat-input" maxlength="1000" rows="2" placeholder="Type a message…" autocomplete="off"></textarea>
+              <button type="submit" id="chat-send">Send</button>
+            </form>
+          </div>
+          <aside class="im-buddies" id="presence-card" aria-label="Buddy list">
+            <div class="im-buddies-head">Buddy List<small>Click a name to @mention</small></div>
+            <div class="presence-list" id="presence-list"><div class="presence-empty">Looking for who’s around…</div></div>
+          </aside>
+        </div>
       </section>
       <aside class="lounge-side">
-        <div class="lounge-card" id="presence-card">
-          <h2>In the lounge</h2>
-          <p>Assigned members on the roll.</p>
-          <div class="presence-list" id="presence-list"><div class="presence-empty">Loading…</div></div>
-        </div>
         <div class="lounge-card" id="pay-panel"></div>
       </aside>
     </div>
-    <div id="assign-bar" hidden></div>
     <section class="roll-section">
       <div class="section-label">
         <h2>The membership roll</h2>
-        <p>GridIron 24 · AAA</p>
+        <p>Everyone in · GridIron 24 and AAA share this lounge</p>
       </div>
       <div class="boards" id="boards"><div class="msg">Loading the roll…</div></div>
     </section>
   </main>
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=55"></script>
+  <script src="/js/nav.js?v=61"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -700,11 +1163,196 @@
     let chatViewerId = null;
     let chatPollTimer = null;
     let chatSending = false;
+    let onlineUsers = [];
+    const pendingMentions = new Map(); // id -> name
     const CHAT_POLL_MS = 2500;
+
+    let sportsData = null;
+    let sportsFilter = 'live';
+    let sportsPollTimer = null;
+    const SPORTS_POLL_MS = 25000;
+    const SPORTS_POLL_LIVE_MS = 15000;
 
     function money(n) {
       const v = Number(n || 0);
       return `$${v.toFixed(v % 1 ? 2 : 0)}`;
+    }
+
+    function kickShort(iso) {
+      if (!iso) return 'TBD';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString([], {
+          weekday: 'short',
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+      } catch {
+        return 'TBD';
+      }
+    }
+
+    function sportsStatusLine(g) {
+      const bucket = g.status?.bucket || 'upcoming';
+      if (bucket === 'live') return g.status?.shortDetail || g.status?.detail || 'LIVE';
+      if (bucket === 'final') return 'Final';
+      const net = (g.broadcasts || [])[0];
+      const kick = kickShort(g.date);
+      return net ? `${kick} · ${net}` : kick;
+    }
+
+    function flatSportsGames(data, filter) {
+      const boards = Array.isArray(data?.leagues) ? data.leagues : [];
+      const rows = [];
+      for (const board of boards) {
+        for (const g of board.games || []) {
+          rows.push({ ...g, leagueLabel: board.label || g.league });
+        }
+      }
+      if (filter === 'all') return rows;
+      if (filter === 'live') {
+        const live = rows.filter((g) => g.status?.bucket === 'live');
+        if (live.length) return live;
+        // Quiet day: show next-up + recent finals so the board never looks empty.
+        return rows.filter((g) => g.status?.bucket !== 'final').slice(0, 24)
+          .concat(rows.filter((g) => g.status?.bucket === 'final').slice(0, 8));
+      }
+      return rows.filter((g) => (g.league || '') === filter);
+    }
+
+    function sportsGameHtml(g, i) {
+      const bucket = g.status?.bucket || 'upcoming';
+      const delay = Math.min(i * 0.03, 0.35);
+
+      if (g.kind === 'golf') {
+        const leaders = Array.isArray(g.leaders) ? g.leaders : [];
+        const rows = leaders.map((p) => {
+          const live = p.state === 'in';
+          const thru = p.thru ? (String(p.thru).toUpperCase() === 'F' || p.thru === '18' ? 'F' : p.thru) : '';
+          return `<div class="sgolf-row${live ? ' is-live' : ''}">
+            <span class="sgolf-pos">${esc(p.position || '—')}</span>
+            <span class="sgolf-name" title="${esc(p.name || '')}">${esc(p.shortName || p.name || '—')}</span>
+            <span class="sgolf-score">${esc(p.score || '—')}</span>
+            <span class="sgolf-thru">${esc(thru)}</span>
+          </div>`;
+        }).join('');
+        return `<article class="sgame is-golf is-${esc(bucket)}" style="animation-delay:${delay}s" title="${esc(g.name || '')}">
+          <div class="sgame-top">
+            <span class="sgame-league">Golf</span>
+            <span class="sgame-status${bucket === 'live' ? ' is-live' : ''}">${esc(sportsStatusLine(g))}</span>
+          </div>
+          <h3 class="sgolf-title">${esc(g.shortName || g.name || 'Tournament')}</h3>
+          <div class="sgolf-leaders">${rows || '<div class="sports-empty" style="padding:0.5rem 0">No leaderboard yet</div>'}</div>
+        </article>`;
+      }
+
+      const showScore = bucket === 'final' || bucket === 'live';
+      const awayWin = bucket === 'final' && Boolean(g.away?.winner);
+      const homeWin = bucket === 'final' && Boolean(g.home?.winner);
+      const side = (t, win) => {
+        if (!t) return '';
+        const score = showScore && t.score != null
+          ? `<span class="sgame-score">${esc(String(t.score))}</span>`
+          : `<span class="sgame-score is-blank">—</span>`;
+        const logo = t.logo
+          ? `<img src="${esc(t.logo)}" alt="" loading="lazy" width="22" height="22" />`
+          : `<span></span>`;
+        return `<div class="sgame-row${win ? ' is-winner' : ''}">
+          ${logo}
+          <span class="sgame-abbr" title="${esc(t.name || t.abbreviation || '')}">${esc(t.abbreviation || t.shortName || '?')}</span>
+          ${score}
+        </div>`;
+      };
+      const leagueLabel = g.league === 'llws' ? 'LLWS' : (g.leagueLabel || g.league || '');
+      return `<article class="sgame is-${esc(bucket)}" style="animation-delay:${delay}s" title="${esc(g.name || '')}">
+        <div class="sgame-top">
+          <span class="sgame-league">${esc(leagueLabel)}</span>
+          <span class="sgame-status${bucket === 'live' ? ' is-live' : ''}">${esc(sportsStatusLine(g))}</span>
+        </div>
+        ${side(g.away, awayWin)}
+        ${side(g.home, homeWin)}
+      </article>`;
+    }
+
+    function renderSportsTabs() {
+      const root = document.getElementById('sports-tabs');
+      if (!root) return;
+      const boards = Array.isArray(sportsData?.leagues) ? sportsData.leagues : [];
+      const liveN = Number(sportsData?.totals?.live || 0);
+      const tabs = [
+        { id: 'live', label: 'Live', count: liveN },
+        { id: 'all', label: 'All', count: Number(sportsData?.totals?.games || 0) },
+        ...boards.map((b) => ({
+          id: b.id,
+          label: b.label,
+          count: (b.games || []).length
+        }))
+      ];
+      root.innerHTML = tabs.map((t) => `
+        <button type="button" class="sports-tab${sportsFilter === t.id ? ' is-on' : ''}"
+          role="tab" aria-selected="${sportsFilter === t.id}" data-filter="${esc(t.id)}">
+          ${esc(t.label)}<span class="count">${t.count}</span>
+        </button>
+      `).join('');
+      root.querySelectorAll('.sports-tab').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          sportsFilter = btn.dataset.filter || 'live';
+          renderSportsBoard();
+        });
+      });
+    }
+
+    function renderSportsBoard() {
+      const grid = document.getElementById('sports-grid');
+      const pill = document.getElementById('sports-live-pill');
+      const liveCount = document.getElementById('sports-live-count');
+      const updated = document.getElementById('sports-updated');
+      if (!grid) return;
+
+      renderSportsTabs();
+
+      const liveN = Number(sportsData?.totals?.live || 0);
+      if (pill) {
+        pill.hidden = liveN < 1;
+        if (liveCount) liveCount.textContent = `${liveN} live`;
+      }
+      if (updated && sportsData?.fetchedAt) {
+        const t = new Date(sportsData.fetchedAt);
+        updated.textContent = `Updated ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`;
+      }
+
+      const games = flatSportsGames(sportsData, sportsFilter);
+      if (!games.length) {
+        const quiet = sportsFilter === 'live'
+          ? 'No games live right now — flip to All or a league.'
+          : 'No games on this slate yet.';
+        grid.innerHTML = `<div class="sports-empty">${quiet}</div>`;
+        return;
+      }
+      grid.innerHTML = games.map((g, i) => sportsGameHtml(g, i)).join('');
+    }
+
+    function scheduleSportsPoll() {
+      clearTimeout(sportsPollTimer);
+      const live = Number(sportsData?.totals?.live || 0) > 0;
+      sportsPollTimer = setTimeout(() => { loadSportsScores(); }, live ? SPORTS_POLL_LIVE_MS : SPORTS_POLL_MS);
+    }
+
+    async function loadSportsScores() {
+      try {
+        const res = await fetch('/api/sports-scores', { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Scores unavailable');
+        sportsData = data;
+        renderSportsBoard();
+      } catch (err) {
+        const grid = document.getElementById('sports-grid');
+        if (grid && !sportsData) {
+          grid.innerHTML = `<div class="sports-empty">${esc(err.message || 'Could not load scores')}</div>`;
+        }
+      } finally {
+        scheduleSportsPoll();
+      }
     }
 
     function flash(text, ok = true) {
@@ -747,18 +1395,60 @@
       return Promise.resolve();
     }
 
+    function formatChatBody(text) {
+      const names = [...pendingMentions.values(), ...onlineUsers.map((u) => u.name), ...(state?.gridiron || []).map((u) => u.name), ...(state?.aaa || []).map((u) => u.name)]
+        .filter(Boolean)
+        .sort((a, b) => String(b).length - String(a).length);
+      let html = esc(text);
+      const seen = new Set();
+      for (const name of names) {
+        const key = String(name).toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const escaped = esc(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        html = html.replace(new RegExp(`(^|\\s)(@${escaped})(?=$|[\\s.,!?;:)'"\\]])`, 'gi'), '$1<span class="chat-mention">$2</span>');
+      }
+      return html;
+    }
+
+    function insertMention(user) {
+      if (!user?.id || !user?.name) return;
+      if (user.id === chatViewerId) return;
+      pendingMentions.set(user.id, user.name);
+      const input = document.getElementById('chat-input');
+      if (!input) return;
+      const token = `@${user.name} `;
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      const before = input.value.slice(0, start);
+      const after = input.value.slice(end);
+      const needsSpace = before && !/\s$/.test(before);
+      input.value = `${before}${needsSpace ? ' ' : ''}${token}${after}`;
+      input.focus();
+      const caret = (before + (needsSpace ? ' ' : '') + token).length;
+      input.setSelectionRange(caret, caret);
+    }
+
     function fmtChatTime(iso) {
       try {
         const d = new Date(iso);
-        return d.toLocaleString([], {
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit'
-        });
+        return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
       } catch {
         return '';
       }
+    }
+
+    const AIM_COLORS = [
+      '#c41e3a', '#d9480f', '#e67700', '#2b8a3e', '#0b7285',
+      '#1864ab', '#5f3dc4', '#9c36b5', '#a61e4d', '#087f5b',
+      '#364fc7', '#e8590c'
+    ];
+
+    function screenColor(id) {
+      const s = String(id || 'x');
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+      return AIM_COLORS[h % AIM_COLORS.length];
     }
 
     function setChatLive(on) {
@@ -766,7 +1456,7 @@
       const label = document.getElementById('chat-live-label');
       if (!el || !label) return;
       el.classList.toggle('is-idle', !on);
-      label.textContent = on ? 'Live' : 'Reconnecting';
+      label.textContent = on ? 'Online' : 'Away';
     }
 
     function nearBottom(el, px = 80) {
@@ -778,23 +1468,24 @@
       if (!log) return;
       const stick = nearBottom(log) || chatMessages.length <= 1;
       if (!chatMessages.length) {
-        log.innerHTML = `<div class="chat-empty">Quiet in here — break the ice.</div>`;
+        log.innerHTML = `<div class="chat-empty">No one’s talking… say something.</div>`;
         return;
       }
       const canModerate = Boolean(state?.canManage);
       log.innerHTML = chatMessages.map((m) => {
         const mine = m.authorId && m.authorId === chatViewerId;
         const canDelete = mine || canModerate;
-        const league = m.authorLeague === 'aaa' ? 'AAA' : (m.authorLeague === 'gridiron' ? 'GI24' : '');
-        return `<article class="chat-msg${mine ? ' mine' : ''}" data-id="${esc(m.id)}">
-          <div class="chat-msg-meta">
-            <span><span class="who">${esc(m.authorName || 'Member')}</span>${league ? ` · ${esc(league)}` : ''}</span>
-            <span>
-              ${esc(fmtChatTime(m.createdAt))}
-              ${canDelete ? ` · <button type="button" class="chat-msg-del" data-del-chat="${esc(m.id)}">Delete</button>` : ''}
-            </span>
+        const who = m.authorName || 'Member';
+        const color = screenColor(m.authorId || who);
+        return `<article class="im-line${mine ? ' mine' : ''}" data-id="${esc(m.id)}">
+          <div class="im-line-main">
+            <span class="im-who" style="color:${esc(color)}">${esc(who)}</span><span class="im-sep">:</span>
+            <span class="im-text">${formatChatBody(m.body)}</span>
           </div>
-          <div class="chat-msg-body">${esc(m.body)}</div>
+          <div class="im-meta">
+            <span>${esc(fmtChatTime(m.createdAt))}</span>
+            ${canDelete ? `<button type="button" class="chat-msg-del" data-del-chat="${esc(m.id)}">×</button>` : ''}
+          </div>
         </article>`;
       }).join('');
       log.querySelectorAll('[data-del-chat]').forEach((btn) => {
@@ -843,6 +1534,10 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Chat unavailable');
       chatViewerId = data.viewerId || chatViewerId;
+      if (Array.isArray(data.online)) {
+        onlineUsers = data.online;
+        renderPresence();
+      }
       if (!incremental) {
         chatMessages = Array.isArray(data.messages) ? data.messages.slice() : [];
         renderChat();
@@ -857,6 +1552,7 @@
       chatPollTimer = setInterval(async () => {
         try {
           await loadChat({ incremental: true });
+          window.GridIronNav?.refreshInboxBadge?.();
         } catch {
           setChatLive(false);
         }
@@ -871,15 +1567,23 @@
       const btn = document.getElementById('chat-send');
       const input = document.getElementById('chat-input');
       if (btn) btn.disabled = true;
+      const mentions = [...pendingMentions.entries()]
+        .filter(([, name]) => body.toLowerCase().includes(`@${String(name).toLowerCase()}`))
+        .map(([id]) => id);
       try {
         const res = await fetch('/api/members-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ body })
+          body: JSON.stringify({ body, mentions })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || 'Could not send');
         if (data.item) mergeChat([data.item]);
+        if (Array.isArray(data.online)) {
+          onlineUsers = data.online;
+          renderPresence();
+        }
+        pendingMentions.clear();
         renderChat();
         if (input) {
           input.value = '';
@@ -912,14 +1616,6 @@
       });
     }
 
-    function padSlots(members, cap) {
-      const rows = members.slice();
-      while (rows.length < cap) {
-        rows.push({ open: true, slot: rows.length + 1 });
-      }
-      return rows.map((m, i) => ({ ...m, slot: i + 1 }));
-    }
-
     async function patchMember(userId, body) {
       const res = await fetch(`/api/members/${encodeURIComponent(userId)}`, {
         method: 'POST',
@@ -934,18 +1630,28 @@
     function renderPresence() {
       const el = document.getElementById('presence-list');
       if (!el) return;
-      const people = [...(state.gridiron || []), ...(state.aaa || [])]
+      const people = (onlineUsers || [])
+        .slice()
         .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
       if (!people.length) {
-        el.innerHTML = `<div class="presence-empty">Nobody on the roll yet — assign members below.</div>`;
+        el.innerHTML = `<div class="presence-empty">Offline — nobody signed in.</div>`;
         return;
       }
-      el.innerHTML = people.slice(0, 18).map((m) => `
-        <div class="presence-row">
-          <span class="nm">${esc(m.name)}</span>
-          <span class="lg">${m.membershipLeague === 'aaa' ? 'AAA' : 'GI24'}${m.duesPaid ? ' · paid' : ''}</span>
-        </div>`).join('')
-        + (people.length > 18 ? `<div class="presence-empty">+${people.length - 18} more on the full roll</div>` : '');
+      el.innerHTML = `
+        <div class="buddy-group">Online (${people.length})</div>
+        ${people.map((m) => {
+          const mine = m.id === chatViewerId;
+          return `
+          <button type="button" class="presence-row${mine ? ' is-me' : ''}" data-mention-id="${esc(m.id)}" data-mention-name="${esc(m.name)}" ${mine ? 'disabled' : ''} title="${mine ? 'You' : `IM ${esc(m.name)}`}">
+            <span class="nm">${esc(m.name)}${mine ? ' (you)' : ''}</span>
+            <span class="lg">${mine ? 'You' : 'IM'}</span>
+          </button>`;
+        }).join('')}`;
+      el.querySelectorAll('[data-mention-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          insertMention({ id: btn.dataset.mentionId, name: btn.dataset.mentionName });
+        });
+      });
     }
 
     function renderPayPanel() {
@@ -961,23 +1667,23 @@
 
       el.innerHTML = `
         <div class="pay-panel">
-          <h2><span class="mo-lock" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 1.2a2.4 2.4 0 0 0-2.4 2.4v1.2H2.4v6h7.2v-6H8.4V3.6A2.4 2.4 0 0 0 6 1.2Zm0 1.2c.66 0 1.2.54 1.2 1.2v1.2H4.8V3.6c0-.66.54-1.2 1.2-1.2Z"/></svg></span>Cover charge</h2>
+          <h2>League dues</h2>
           <p>
-            Buy-in goes to treasurer
+            Season buy-in paid to treasurer
             <span class="treasurer">${esc(t.name)}</span>
-            via Venmo
+            on Venmo
             (<a href="mailto:${esc(t.email)}">${esc(t.email)}</a>).
           </p>
           <p>
-            GridIron <strong>${esc(money(state.dues.gridiron))}</strong>
+            GridIron 24 <strong>${esc(money(state.dues.gridiron))}</strong>
             · AAA <strong>${esc(money(state.dues.aaa))}</strong>
             · <strong>@${esc(t.venmoUsername)}</strong>
           </p>
           ${myLeague
             ? `<div class="dues-chip ${paid ? 'paid' : 'due'}">
-                 ${paid ? "You're marked paid — enjoy the lounge" : `Your tab: ${esc(money(amount))} for ${esc(leagueLabel)}`}
+                 ${paid ? `Dues marked paid for ${esc(leagueLabel)}` : `You owe ${esc(money(amount))} for ${esc(leagueLabel)}`}
                </div>`
-            : `<p>Get assigned to a league and your tab shows here.</p>`}
+            : `<p>Once you’re assigned to GridIron or AAA, your dues amount shows here.</p>`}
           <div class="pay-actions">
             <a class="btn-venmo" href="${esc(href)}" target="_blank" rel="noopener noreferrer">Pay with Venmo</a>
             <button type="button" class="btn-ghost" id="copy-note">Copy note</button>
@@ -994,53 +1700,23 @@
       });
     }
 
-    function renderAssignBar() {
-      const el = document.getElementById('assign-bar');
-      if (!state.canManage) {
-        el.hidden = true;
-        el.innerHTML = '';
-        return;
-      }
-      el.hidden = false;
-      const openGi = Math.max(0, state.caps.gridiron - state.gridiron.length);
-      const openAaa = Math.max(0, state.caps.aaa - state.aaa.length);
-      const opts = (state.unassigned || []).map((u) =>
-        `<option value="${esc(u.id)}">${esc(u.name)} (${esc(u.loginName)})</option>`
-      ).join('');
-      el.innerHTML = `
-        <div class="assign-bar">
-          <h2><span class="mo-lock" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 1.2a2.4 2.4 0 0 0-2.4 2.4v1.2H2.4v6h7.2v-6H8.4V3.6A2.4 2.4 0 0 0 6 1.2Zm0 1.2c.66 0 1.2.54 1.2 1.2v1.2H4.8V3.6c0-.66.54-1.2 1.2-1.2Z"/></svg></span>Door list</h2>
-          <div class="assign-row">
-            <select id="assign-user" ${opts ? '' : 'disabled'}>
-              <option value="">${opts ? 'Choose member…' : 'No unassigned registered users'}</option>
-              ${opts}
-            </select>
-            <select id="assign-league" ${opts ? '' : 'disabled'}>
-              <option value="gridiron">GridIron 24 (${openGi} open)</option>
-              <option value="aaa">AAA (${openAaa} open)</option>
-            </select>
-            <button type="button" class="btn" id="assign-btn" ${opts ? '' : 'disabled'}>Assign</button>
-          </div>
-        </div>`;
-      document.getElementById('assign-btn')?.addEventListener('click', async () => {
-        const userId = document.getElementById('assign-user')?.value;
-        const league = document.getElementById('assign-league')?.value;
-        if (!userId || !league) return;
-        try {
-          await patchMember(userId, { league });
-          flash('Member assigned.', true);
-          await load();
-        } catch (err) {
-          flash(err.message, false);
-        }
-      });
+    function leagueLabel(key) {
+      if (key === 'aaa') return 'AAA';
+      if (key === 'gridiron') return 'GridIron 24';
+      return '';
     }
 
-    function memberRow(m, league) {
+    function leaguePill(key) {
+      if (key === 'aaa') return '<span class="league-pill is-aaa">AAA</span>';
+      if (key === 'gridiron') return '<span class="league-pill">GI24</span>';
+      return '';
+    }
+
+    function memberRow(m, slot) {
       if (m.open) {
         return `
           <div class="member-row is-open">
-            <div class="slot">${esc(String(m.slot))}</div>
+            <div class="slot">${esc(String(slot))}</div>
             <div class="name-wrap">
               <div class="name">Open</div>
               <div class="meta">Waiting for assignment</div>
@@ -1049,15 +1725,16 @@
           </div>`;
       }
 
+      const league = m.membershipLeague || m.league || null;
       const amount = duesFor(league);
-      const note = `${state.treasurer.note || 'League dues'} — ${m.name} (${league === 'aaa' ? 'AAA' : 'GridIron 24'})`;
+      const note = `${state.treasurer.note || 'League dues'} — ${m.name} (${leagueLabel(league) || 'HQ'})`;
       const payHref = venmoUrl({ amount, note });
       const canManage = state.canManage;
       const isMe = state.viewer?.id === m.id;
 
       const nameCell = canManage
         ? `<input class="name-input" data-name-id="${esc(m.id)}" value="${esc(m.name)}" aria-label="Member name" />`
-        : `<div class="name">${esc(m.name)}</div>`;
+        : `<div class="name">${esc(m.name)}${leaguePill(league)}</div>`;
 
       const actions = `
         <span class="status-pill ${m.duesPaid ? 'paid' : 'due'}">${m.duesPaid ? 'Paid' : `Due ${esc(money(amount))}`}</span>
@@ -1072,26 +1749,46 @@
 
       return `
         <div class="member-row" data-user-id="${esc(m.id)}">
-          <div class="slot">${esc(String(m.slot))}</div>
+          <div class="slot">${esc(String(slot))}</div>
           <div class="name-wrap">
-            ${nameCell}
-            <div class="meta">${esc(m.loginName)}${isMe ? ' · you' : ''}</div>
+            ${nameCell}${canManage ? leaguePill(league) : ''}
+            <div class="meta">${esc(m.loginName)}${isMe ? ' · you' : ''}${league ? ` · ${esc(leagueLabel(league))}` : ''}</div>
           </div>
           <div class="actions">${actions}</div>
         </div>`;
     }
 
-    function board(leagueKey, title, members, cap) {
-      const rows = padSlots(members, cap);
+    function allMembers() {
+      if (Array.isArray(state.members) && state.members.length) return state.members.slice();
+      return [...(state.gridiron || []), ...(state.aaa || [])]
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    }
+
+    function renderUnifiedRoll() {
+      const members = allMembers();
+      const gi = state.gridiron || [];
+      const aaa = state.aaa || [];
+      const capGi = state.caps?.gridiron || 24;
+      const capAaa = state.caps?.aaa || 12;
       const paid = members.filter((m) => m.duesPaid).length;
+      const openGi = Math.max(0, capGi - gi.length);
+      const openAaa = Math.max(0, capAaa - aaa.length);
       return `
-        <section class="board ${esc(leagueKey)}">
+        <section class="board united">
           <div class="board-head">
-            <h2>${esc(title)}</h2>
-            <div class="count">${members.length}/${cap} · ${paid} paid</div>
+            <h2>All members</h2>
+            <div class="count">
+              <strong>${members.length}</strong> in the lounge
+              · GI24 ${gi.length}/${capGi}
+              · AAA ${aaa.length}/${capAaa}
+              · ${paid} paid
+              ${openGi || openAaa ? ` · ${openGi + openAaa} open` : ''}
+            </div>
           </div>
           <div class="board-body">
-            ${rows.map((m) => memberRow(m, leagueKey)).join('')}
+            ${members.length
+              ? members.map((m, i) => memberRow(m, i + 1)).join('')
+              : `<div class="member-row is-open"><div class="name-wrap"><div class="name">No members on the roll yet</div><div class="meta">Assigned members show up here</div></div></div>`}
           </div>
         </section>`;
     }
@@ -1156,10 +1853,7 @@
     function render() {
       renderPayPanel();
       renderPresence();
-      renderAssignBar();
-      document.getElementById('boards').innerHTML =
-        board('gridiron', 'GridIron 24', state.gridiron || [], state.caps.gridiron || 24)
-        + board('aaa', 'AAA League', state.aaa || [], state.caps.aaa || 12);
+      document.getElementById('boards').innerHTML = renderUnifiedRoll();
       bindBoardActions();
     }
 
@@ -1172,6 +1866,7 @@
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load members');
       state = data;
+      if (data.viewer?.id) chatViewerId = data.viewer.id;
       render();
       if (!quiet) {
         window.GridIronNav?.setSync(`Lounge · ${new Date(data.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
@@ -1180,10 +1875,23 @@
 
     (async () => {
       wireChatForm();
+      document.addEventListener('gi:presence', (e) => {
+        if (Array.isArray(e.detail?.online)) {
+          onlineUsers = e.detail.online;
+          renderPresence();
+        }
+      });
+      loadSportsScores();
       try {
         await load();
         await loadChat();
         startChatPoll();
+        if (location.hash === '#room') {
+          document.getElementById('room')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (location.hash === '#board') {
+          document.getElementById('sports-board')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       } catch (err) {
         document.getElementById('boards').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
         setChatLive(false);

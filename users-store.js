@@ -246,6 +246,8 @@ function listLeagueMembers() {
     .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
 
   return {
+    members: [...byLeague('gridiron'), ...byLeague('aaa')]
+      .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))),
     gridiron: byLeague('gridiron'),
     aaa: byLeague('aaa'),
     unassigned,
@@ -771,6 +773,24 @@ function updatePreferences(userId, prefs = {}) {
   return publicUser(store.users[idx]);
 }
 
+/** Returns true once — marks welcome as sent so it only fires on first login. */
+function claimWelcomeInbox(userId) {
+  if (!userId) return false;
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) return false;
+  if (store.users[idx].welcomeInboxSentAt) return false;
+  store.users[idx].welcomeInboxSentAt = new Date().toISOString();
+  writeStore(store);
+  return true;
+}
+
+function hasReceivedWelcomeInbox(userId) {
+  if (!userId) return false;
+  const user = findById(userId);
+  return Boolean(user?.welcomeInboxSentAt);
+}
+
 module.exports = {
   DATA_DIR,
   ROLES,
@@ -784,6 +804,8 @@ module.exports = {
   resetPasswordWithToken,
   changePassword,
   updatePreferences,
+  claimWelcomeInbox,
+  hasReceivedWelcomeInbox,
   findById,
   findByEmail,
   listUsers,

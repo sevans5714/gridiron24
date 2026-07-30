@@ -111,9 +111,42 @@ function deleteMessage(id, requester) {
   return true;
 }
 
+/**
+ * Resolve @mentions from explicit ids and/or @Name text matches.
+ * Names match approved users (longest name first to avoid partial collisions).
+ */
+function resolveMentionedUsers(body, { users = [], mentionIds = [], excludeUserId = null } = {}) {
+  const byId = new Map(users.map((u) => [u.id, u]));
+  const found = new Map();
+
+  for (const raw of mentionIds || []) {
+    const id = String(raw || '').trim();
+    const u = byId.get(id);
+    if (!u || u.id === excludeUserId) continue;
+    found.set(u.id, u);
+  }
+
+  const text = String(body || '');
+  const named = users
+    .filter((u) => u?.id && u.id !== excludeUserId && String(u.name || '').trim())
+    .slice()
+    .sort((a, b) => String(b.name).length - String(a.name).length);
+
+  for (const u of named) {
+    const name = String(u.name).trim();
+    // @Name with word boundary-ish end (space, punctuation, or EOS)
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`(^|\\s)@${escaped}(?=$|[\\s.,!?;:)'"\\]])`, 'i');
+    if (re.test(text)) found.set(u.id, u);
+  }
+
+  return [...found.values()];
+}
+
 module.exports = {
   listMessages,
   addMessage,
   deleteMessage,
+  resolveMentionedUsers,
   MAX_BODY
 };

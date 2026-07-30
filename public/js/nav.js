@@ -4,28 +4,23 @@
   let leagueScope = { scope: 'gridiron', conferenceKey: null, homePath: HOME_DEFAULT, label: 'GridIron 24' };
 
   const GRIDIRON_LINKS = [
-    {
-      href: HOME_DEFAULT,
-      label: 'Home',
-      key: 'home',
-      menu: [
-        { href: '/members.html', label: 'Members Lounge' }
-      ]
-    },
+    { href: HOME_DEFAULT, label: 'Home', key: 'home' },
+    { href: '/members.html', label: 'Members Lounge', key: 'members' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
     {
       href: '/standings.html',
       label: 'League',
       key: 'league',
+      menuTitle: 'League desk',
       menu: [
-        { href: '/standings.html', label: 'Standings' },
-        { href: '/my-roster.html', label: 'My Roster' },
-        { href: '/team-rosters.html', label: 'Team Rosters' },
-        { href: '/draft.html', label: 'Draft Results' },
-        { href: '/history.html', label: 'History' },
-        { href: '/transactions.html', label: 'Transactions' },
-        { href: '/rankings.html', label: 'Rankings' },
-        { href: '/schedules.html', label: 'Schedules' }
+        { href: '/standings.html', label: 'Standings', hint: 'The race by conference', group: 'Board' },
+        { href: '/schedules.html', label: 'Schedules', hint: 'Who plays whom', group: 'Board' },
+        { href: '/rankings.html', label: 'Rankings', hint: 'Power board', group: 'Board' },
+        { href: '/my-roster.html', label: 'My Roster', hint: 'Your franchise', group: 'Rosters' },
+        { href: '/team-rosters.html', label: 'Team Rosters', hint: 'Browse the field', group: 'Rosters' },
+        { href: '/draft.html', label: 'Draft Results', hint: 'How the board fell', group: 'Archive' },
+        { href: '/transactions.html', label: 'Transactions', hint: 'Moves & claims', group: 'Archive' },
+        { href: '/history.html', label: 'History', hint: 'Seasons past', group: 'Archive' }
       ]
     },
     { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
@@ -38,22 +33,14 @@
       href: '/aaa.html',
       label: 'Home',
       key: 'home',
+      menuTitle: 'AAA Home',
       menu: [
-        { href: '/members.html', label: 'Members Lounge' },
-        { href: '/aaa-rulebook.html', label: 'AAA Rules' }
+        { href: '/aaa-rulebook.html', label: 'AAA Rules', hint: 'Feeder league law' }
       ]
     },
+    { href: '/members.html', label: 'Members Lounge', key: 'members' },
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
-    {
-      href: '/aaa.html',
-      label: 'League',
-      key: 'league',
-      menu: [
-        { href: '/aaa.html', label: 'Standings' },
-        { href: '/my-roster.html', label: 'My Roster' },
-        { href: '/team-rosters.html', label: 'Team Rosters' }
-      ]
-    },
+    { href: '/aaa.html', label: 'League', key: 'league' },
     { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
     { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' }
   ];
@@ -74,8 +61,11 @@
     if (active === 'standings' || active === 'teams' || active === 'my-roster' || active === 'team-rosters' || active === 'draft' || active === 'history' || active === 'transactions' || active === 'rankings' || active === 'schedules') {
       return 'league';
     }
-    if (active === 'aaa' || active === 'members') {
+    if (active === 'aaa') {
       return 'home';
+    }
+    if (active === 'members') {
+      return 'members';
     }
     return active;
   }
@@ -173,6 +163,36 @@
 
   let ruleProposalVisible = false;
 
+  function renderSubmenu(link) {
+    const items = Array.isArray(link.menu) ? link.menu : [];
+    if (!items.length) return '';
+    const title = link.menuTitle || link.label || 'Menu';
+    const byGroup = new Map();
+    for (const item of items) {
+      const g = item.group || '_';
+      if (!byGroup.has(g)) byGroup.set(g, []);
+      byGroup.get(g).push(item);
+    }
+    const body = [...byGroup.entries()].map(([group, rows]) => {
+      const label = group !== '_'
+        ? `<div class="nav-submenu-label">${esc(group)}</div>`
+        : '';
+      const links = rows.map((item) => `
+        <a class="nav-submenu-link" href="${esc(item.href)}" role="menuitem">
+          <span class="nav-submenu-copy">
+            <span class="nav-submenu-title">${esc(item.label)}</span>
+            ${item.hint ? `<span class="nav-submenu-hint">${esc(item.hint)}</span>` : ''}
+          </span>
+          <span class="nav-submenu-chev" aria-hidden="true">›</span>
+        </a>`).join('');
+      return `<div class="nav-submenu-group">${label}${links}</div>`;
+    }).join('');
+    return `<div class="nav-submenu" role="menu">
+      <div class="nav-submenu-head">${esc(title)}</div>
+      ${body}
+    </div>`;
+  }
+
   function renderNav() {
     if (!nav) return;
     const links = linksForScope(leagueScope).map((link) => ({
@@ -184,12 +204,9 @@
     nav.innerHTML = links.map((link) => {
       const cls = link.key === navActive ? 'active' : '';
       if (link.menu?.length) {
-        const items = link.menu.map((item) => (
-          `<a class="nav-submenu-link" href="${esc(item.href)}">${esc(item.label)}</a>`
-        )).join('');
-        return `<div class="nav-item has-menu">
-          <a class="nav-link ${cls}" href="${esc(link.href)}" aria-haspopup="true">${esc(link.label)}</a>
-          <div class="nav-submenu" role="menu">${items}</div>
+        return `<div class="nav-item has-menu${link.key === 'league' ? ' is-league' : ''}">
+          <a class="nav-link ${cls}" href="${esc(link.href)}" aria-haspopup="true">${esc(link.label)}<span class="nav-caret" aria-hidden="true"></span></a>
+          ${renderSubmenu(link)}
         </div>`;
       }
       return `<a class="nav-link ${cls}" href="${esc(link.href)}">${esc(link.label)}</a>`;
@@ -302,6 +319,27 @@
     } catch {
       renderInboxBadge(0);
     }
+  }
+
+  let lastUnread = 0;
+  async function heartbeatPresence() {
+    if (!authState?.user) return;
+    try {
+      const res = await fetch('/api/presence', { method: 'POST', cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) return;
+      if (typeof data.unread === 'number') {
+        const prev = lastUnread;
+        lastUnread = data.unread;
+        renderInboxBadge(data.unread);
+        const btn = document.getElementById('inbox-btn');
+        if (btn && data.unread > prev) {
+          btn.classList.add('has-new');
+          setTimeout(() => btn.classList.remove('has-new'), 2500);
+        }
+      }
+      document.dispatchEvent(new CustomEvent('gi:presence', { detail: { online: data.online || [] } }));
+    } catch { /* ignore */ }
   }
 
   function ensureRuleProposalMount() {
@@ -522,7 +560,7 @@
     if (onAaa) {
       el.title = 'Switch to GridIron 24';
       el.setAttribute('aria-label', 'Switch to GridIron 24');
-      el.innerHTML = `<img src="/assets/gridiron24-logo.png?v=3" alt="" width="50" height="50" decoding="async" />`;
+      el.innerHTML = `<img src="/assets/gridiron24-crest-sm.png?v=1" alt="" width="50" height="50" decoding="async" />`;
       el.onclick = (e) => {
         e.preventDefault();
         switchLeague('gridiron');
@@ -655,6 +693,7 @@
       if (user) {
         ensureInboxMount();
         refreshInboxBadge();
+        heartbeatPresence();
         refreshRuleProposalGate(user);
       } else {
         renderRuleProposalButton(false);
@@ -677,7 +716,7 @@
 
   function footerHtml(buildLabel) {
     const build = esc(buildLabel || 'Build …');
-    return `<span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span><span class="site-footer-build" id="site-build">${build}</span>`;
+    return `<span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
   }
 
   function ensureFooter(buildLabel) {
@@ -717,8 +756,11 @@
   loadTicker();
   document.addEventListener('click', closeUserMenuOnOutside);
   setInterval(() => {
-    if (authState?.user) refreshInboxBadge();
-  }, 60_000);
+    if (authState?.user) {
+      refreshInboxBadge();
+      heartbeatPresence();
+    }
+  }, 30_000);
 
   const authReady = refreshAuth();
 

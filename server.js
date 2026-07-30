@@ -43,10 +43,13 @@ const keepers = require('./keepers-store');
 const career = require('./career-store');
 const polls = require('./polls-store');
 const inbox = require('./inbox-store');
+const welcomeMessage = require('./welcome-message');
+const presence = require('./presence-store');
 const ruleProposals = require('./rule-proposals-store');
 const leagues = require('./leagues-store');
 const { compareSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
+const sportsScoreboard = require('./sports-scoreboard');
 const nflverseDraft = require('./nflverse-draft');
 const {
   sendPasswordResetEmail,
@@ -2712,6 +2715,29 @@ function homePathForUser(user, req = null) {
 }
 
 /**
+ * One-time welcome inbox on first successful login / session.
+ * Copy lives in welcome-message.js — edit there anytime.
+ */
+function deliverWelcomeInboxIfNeeded(user) {
+  if (!user?.id || user.approved === false) return null;
+  if (!users.claimWelcomeInbox(user.id)) return null;
+  try {
+    const msg = welcomeMessage.buildWelcome({ name: user.name || user.loginName });
+    return inbox.sendMessage({
+      toUserId: user.id,
+      from: { name: msg.fromName },
+      subject: msg.subject,
+      body: msg.body,
+      type: msg.type || 'welcome',
+      meta: { kind: 'first_login_welcome' }
+    });
+  } catch (err) {
+    console.warn('[welcome-inbox] failed', err.message || err);
+    return null;
+  }
+}
+
+/**
  * Which league HQ/nav/scoreboard a user should see.
  * Site owner: preferred-league cookie (exclusive switcher).
  * Members: claim / conference_admin assignment.
@@ -3383,6 +3409,7 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/auth') {
       const user = getSessionUser(req);
+      if (user) deliverWelcomeInboxIfNeeded(user);
       return sendJson(res, 200, {
         authenticated: Boolean(user),
         authConfigured: true,
@@ -3521,6 +3548,7 @@ const server = http.createServer(async (req, res) => {
       if (!user) {
         return sendJson(res, 401, { ok: false, error: 'Incorrect login name or password' });
       }
+      deliverWelcomeInboxIfNeeded(user);
       const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
       const token = signSession(user.id, expiresAt);
       return sendJson(res, 200, {
@@ -3996,6 +4024,19 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/sports-scores' && req.method === 'GET') {
+      try {
+        const leagues = requestUrl.searchParams.get('leagues');
+        const payload = await sportsScoreboard.getSportsScores({ leagues });
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 502, {
+          ok: false,
+          error: err.message || 'Sports scores unavailable'
+        });
+      }
+    }
+
     if (pathname === '/api/beta/draft-pool' && req.method === 'GET') {
       try {
         const season = requestUrl.searchParams.get('season');
@@ -4060,17 +4101,43 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/presence' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      presence.touch(users.publicUser(user));
+      return sendJson(res, 200, {
+        ok: true,
+        online: presence.listOnline(),
+        unread: inbox.unreadCount(user.id),
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/presence' && req.method === 'GET') {
+      const viewer = getSessionUser(req);
+      if (!viewer) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      presence.touch(users.publicUser(viewer));
+      return sendJson(res, 200, {
+        ok: true,
+        online: presence.listOnline(),
+        viewerId: viewer.id,
+        generatedAt: new Date().toISOString()
+      });
+    }
+
     if (pathname === '/api/members-chat' && req.method === 'GET') {
       const viewer = getSessionUser(req);
       if (!viewer) {
         return sendJson(res, 401, { ok: false, error: 'Authentication required' });
       }
+      presence.touch(users.publicUser(viewer));
       const since = requestUrl.searchParams.get('since');
       const after = requestUrl.searchParams.get('after');
       const limit = Number(requestUrl.searchParams.get('limit') || 120);
       return sendJson(res, 200, {
         ok: true,
         messages: membersChat.listMessages({ limit, since, after }),
+        online: presence.listOnline(),
         viewerId: viewer.id,
         generatedAt: new Date().toISOString()
       });
@@ -4087,11 +4154,47 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const publicAuthor = users.publicUser(user);
+        presence.touch(publicAuthor);
         const item = membersChat.addMessage({
           body: body.body,
           author: publicAuthor
         });
-        return sendJson(res, 201, { ok: true, item });
+        const directory = users.listUsers().filter((u) => u.approved !== false);
+        const mentioned = membersChat.resolveMentionedUsers(item.body, {
+          users: directory,
+          mentionIds: Array.isArray(body.mentions) ? body.mentions : [],
+          excludeUserId: publicAuthor.id
+        });
+        for (const target of mentioned) {
+          try {
+            inbox.sendMessage({
+              toUserId: target.id,
+              from: publicAuthor,
+              subject: 'Mentioned in lounge chat',
+              body: [
+                'A user has mentioned your name in chat.',
+                '',
+                `From: ${publicAuthor.name}`,
+                `Message: ${item.body}`,
+                '',
+                'Open the Members Lounge to jump back into the conversation:'
+              ].join('\n'),
+              type: 'chat_mention',
+              relatedId: item.id,
+              meta: {
+                link: '/members.html#room',
+                linkLabel: 'Go to lounge chat',
+                chatMessageId: item.id
+              }
+            });
+          } catch { /* don't fail the chat post if inbox write fails */ }
+        }
+        return sendJson(res, 201, {
+          ok: true,
+          item,
+          mentioned: mentioned.map((u) => ({ id: u.id, name: u.name })),
+          online: presence.listOnline()
+        });
       } catch (err) {
         return sendJson(res, err.status || 400, {
           ok: false,
@@ -4143,6 +4246,7 @@ const server = http.createServer(async (req, res) => {
         caps: roster.caps,
         gridiron: roster.gridiron,
         aaa: roster.aaa,
+        members: roster.members || [],
         unassigned: canManage ? roster.unassigned : [],
         generatedAt: new Date().toISOString()
       });
@@ -4506,6 +4610,18 @@ const server = http.createServer(async (req, res) => {
         leagueName: config.brand.name,
         baseUrl: origin
       });
+      const format = String(requestUrl.searchParams.get('format') || 'html').toLowerCase();
+      if (format === 'json') {
+        return sendJson(res, 200, {
+          ok: true,
+          subject: content.subject,
+          text: content.text,
+          html: content.html,
+          copy: content.copy || null,
+          sourceFile: 'invite-email-message.js',
+          editHint: 'Edit invite-email-message.js then refresh this preview.'
+        });
+      }
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-store'
@@ -5085,6 +5201,43 @@ const server = http.createServer(async (req, res) => {
         unread: inbox.unreadCount(user.id),
         generatedAt: new Date().toISOString()
       });
+    }
+
+    if (pathname === '/api/welcome-message' && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const preview = welcomeMessage.buildWelcome({ name: user.name || user.loginName || 'Member' });
+      return sendJson(res, 200, {
+        ok: true,
+        ...preview,
+        sourceFile: 'welcome-message.js',
+        alreadySent: users.hasReceivedWelcomeInbox(user.id)
+      });
+    }
+
+    if (pathname === '/api/welcome-message/send-me' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      if (!users.isSiteOwner(user) && !users.isCommissioner(user)) {
+        return sendJson(res, 403, { ok: false, error: 'Owner or commissioner only' });
+      }
+      try {
+        const msg = welcomeMessage.buildWelcome({ name: user.name || user.loginName });
+        const item = inbox.sendMessage({
+          toUserId: user.id,
+          from: { name: msg.fromName },
+          subject: msg.subject,
+          body: msg.body,
+          type: msg.type || 'welcome',
+          meta: { kind: 'welcome_preview' }
+        });
+        return sendJson(res, 200, { ok: true, message: item });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not send welcome preview'
+        });
+      }
     }
 
     if (pathname === '/api/inbox/unread' && req.method === 'GET') {

@@ -77,7 +77,13 @@
             <button type="button" class="btn btn-ghost" data-del-msg="${esc(msg.id)}">Delete</button>
           </div>
         </div>
-        <p class="inbox-body">${esc(msg.body)}</p>
+        <p class="inbox-body">${esc(msg.body).replaceAll('\n', '<br>')}</p>
+        ${msg.type === 'welcome'
+          ? `<p class="inbox-note"><a class="inbox-jump" href="/home.html">Go to Home</a> · <a class="inbox-jump" href="/members.html">Members Lounge</a> · <a class="inbox-jump" href="/scoreboard">Scoreboard</a></p>`
+          : ''}
+        ${msg.type === 'chat_mention' && msg.meta?.link
+          ? `<p class="inbox-note"><a class="inbox-jump" href="${esc(msg.meta.link)}">${esc(msg.meta.linkLabel || 'Go to lounge chat')}</a></p>`
+          : ''}
         ${related}
       </article>`;
   }

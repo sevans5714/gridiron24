@@ -7,9 +7,9 @@
   <meta name="description" content="24 Teams. Two Conferences. One Champion. GridIron 24 fantasy football league headquarters." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=71" />
+  <link rel="stylesheet" href="/css/site.css?v=79" />
   <style>
     .section {
       padding: 1.75rem 0 0;
@@ -29,9 +29,10 @@
 
     .board-head {
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.55rem;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
       padding: 0.75rem 1rem 0.7rem;
       border-bottom: 1px solid var(--line);
       background: var(--panel-2);
@@ -45,6 +46,7 @@
       align-items: center;
       gap: 0.75rem;
       min-width: 0;
+      flex: 1 1 auto;
     }
 
     .conf-logo {
@@ -72,22 +74,16 @@
     .board-head.overtime .board-admin-name { color: var(--overtime); }
 
     .board-admin {
-      display: inline-flex;
-      align-items: baseline;
-      justify-content: center;
-      gap: 0.55rem;
-      align-self: center;
-      max-width: 100%;
-      margin: 0 auto;
-      padding: 0.15rem 0.15rem 0.15rem 0.75rem;
-      border-left: 2px solid transparent;
-      text-align: left;
-    }
-    .board-head.detail .board-admin {
-      border-left-color: rgba(255, 122, 24, 0.7);
-    }
-    .board-head.overtime .board-admin {
-      border-left-color: rgba(226, 35, 42, 0.7);
+      display: grid;
+      gap: 0.15rem;
+      justify-items: end;
+      text-align: right;
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 42%;
+      padding: 0;
+      border: 0;
+      margin: 0;
     }
     .board-admin-name {
       margin: 0;
@@ -96,10 +92,11 @@
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      line-height: 1.2;
+      line-height: 1.15;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 100%;
     }
     .board-admin-role {
       margin: 0;
@@ -110,7 +107,6 @@
       text-transform: uppercase;
       color: var(--muted);
       white-space: nowrap;
-      flex: 0 0 auto;
     }
 
     .board-head .meta {
@@ -119,6 +115,20 @@
       font-size: var(--fs-xs);
       font-weight: 500;
       letter-spacing: 0;
+    }
+
+    @media (max-width: 520px) {
+      .board-head {
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .board-admin {
+        width: 100%;
+        max-width: none;
+        justify-items: start;
+        text-align: left;
+        padding-left: calc(clamp(3.5rem, 8vw, 5rem) + 0.75rem);
+      }
     }
 
     .standings { width: 100%; }
@@ -301,11 +311,11 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=55"></script>
+  <script src="/js/nav.js?v=61"></script>
   <script>
     const escapeHtml = (value = '') => String(value)
       .replaceAll('&', '&amp;')

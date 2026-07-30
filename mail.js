@@ -47,7 +47,7 @@ function brandedAssets(baseUrl) {
   const origin = siteBaseUrl(baseUrl);
   return {
     origin,
-    logoUrl: `${origin}/assets/gridiron24-logo.png`,
+    logoUrl: `${origin}/assets/gridiron24-crest.png`,
     detailLogo: `${origin}/assets/detail-conference.png`,
     overtimeLogo: `${origin}/assets/overtime-conference.png`,
     enterUrl: `${origin}/enter`
@@ -184,41 +184,49 @@ function buildInviteEmail({
   leagueName,
   baseUrl
 }) {
-  const who = invitedByName || 'Your commissioner';
-  const league = leagueName || 'GridIron 24';
+  const inviteCopy = require('./invite-email-message');
   const { enterUrl: homeUrl } = brandedAssets(baseUrl);
+  const c = inviteCopy.buildInviteCopy({
+    inviteUrl,
+    invitedByName,
+    leagueName,
+    homeUrl
+  });
 
   const text =
-    `You're invited to ${league}\n\n` +
-    `${who} invited you to join GridIron 24 — 24 teams, two conferences, one champion.\n\n` +
+    `${c.subject}\n\n` +
+    `${c.bodyLead}\n\n` +
     `Create your account here:\n${inviteUrl}\n\n` +
-    `This link stays active until you join. A commissioner must approve your account before you can sign in.\n\n` +
-    `Already have an account? Sign in: ${homeUrl}\n\n` +
+    `${c.textExtra}\n\n` +
+    `${c.alreadyHaveAccount}\n\n` +
     `GridIron 24 HQ · Fantasy Football\n` +
-    `If you weren't expecting this email, ignore it.\n`;
+    `${c.footerIgnore}\n`;
 
   const html = brandedEmailHtml({
-    title: `You're invited to ${league}`,
-    preheader: `${who} invited you to join ${league}. Create your account to get in.`,
-    headline: "You're invited",
+    title: c.subject,
+    preheader: c.preheader,
+    eyebrow: c.eyebrow,
+    headline: c.headline,
     bodyHtml:
-      `<strong style="color:#ffffff;">${escapeHtml(who)}</strong> invited you to create your account for ` +
-      `<strong style="color:#efd782;">${escapeHtml(league)}</strong>.`,
-    ctaLabel: 'Create your account',
+      `<strong style="color:#ffffff;">${escapeHtml(c.who)}</strong> invited you to create your account for ` +
+      `<strong style="color:#efd782;">${escapeHtml(c.league)}</strong>.`,
+    ctaLabel: c.ctaLabel,
     ctaUrl: inviteUrl,
     noteHtml:
-      `This invite link stays active until you create your account. ` +
-      `A commissioner must approve you before you can sign in. ` +
-      `After approval, sign in anytime at ` +
-      `<a href="${escapeHtml(homeUrl)}" style="color:#8eb6ff;text-decoration:underline;">${escapeHtml(homeUrl.replace(/^https?:\/\//, ''))}</a>.`,
+      escapeHtml(c.note).replace(
+        escapeHtml(c.homeHost),
+        `<a href="${escapeHtml(homeUrl)}" style="color:#8eb6ff;text-decoration:underline;">${escapeHtml(c.homeHost)}</a>`
+      ),
     linkFallbackUrl: inviteUrl,
+    footerExtra: `${escapeHtml(c.footerIgnore)}<br />GridIron 24 created by S.Evans`,
     baseUrl
   });
 
   return {
-    subject: `You're invited to ${league}`,
+    subject: c.subject,
     text,
-    html
+    html,
+    copy: c
   };
 }
 
@@ -588,7 +596,7 @@ function buildWeeklyWrapEmail({
 }) {
   const league = stats?.leagueName || 'GridIron 24';
   const origin = siteBaseUrl(baseUrl);
-  const logoUrl = `${origin}/assets/gridiron24-logo.png`;
+  const logoUrl = `${origin}/assets/gridiron24-crest.png`;
   const detailLogo = `${origin}/assets/detail-conference.png`;
   const overtimeLogo = `${origin}/assets/overtime-conference.png`;
   const homeUrl = `${origin}/hq`;

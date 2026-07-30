@@ -6,9 +6,9 @@
   <title>League Tools · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=71" />
+  <link rel="stylesheet" href="/css/site.css?v=79" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -862,7 +862,7 @@
               <div class="section-head">
                 <h3>Email Invites</h3>
               </div>
-              <p class="help">Send invite links by email. Commissioners and conference admins can invite managers. If mail is offline, copy the link after sending. Preview: <a href="/api/invites/preview-email" target="_blank" rel="noopener">Invite</a></p>
+              <p class="help">Send invite links by email. Commissioners and conference admins can invite managers. If mail is offline, copy the link after sending. Preview invite email: <a href="/api/invites/preview-email" target="_blank" rel="noopener">HTML</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">Subject + text (JSON)</a>. Edit copy in <code>invite-email-message.js</code>.</p>
               <div class="status-note" id="invites-mail-status" role="status"></div>
               <div class="status-note" id="invites-msg" role="status"></div>
               <div class="invite-compose">
@@ -1091,10 +1091,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-crest-sm.png?v=1" alt="GridIron 24" width="32" height="32" decoding="async" /><span class="site-footer-by">created by <span class="site-footer-author">S. Evans</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=55"></script>
+  <script src="/js/nav.js?v=61"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
