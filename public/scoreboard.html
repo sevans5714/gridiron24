@@ -123,17 +123,24 @@
     }
 
     .sb-controls {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
+      gap: 0.85rem 1rem;
       margin: 1.15rem 0 0.65rem;
       padding: 0.85rem 1rem;
       border: 1px solid var(--sb-control-border);
       background:
         linear-gradient(180deg, rgba(255,255,255,0.03), transparent),
         var(--sb-control-bg);
+    }
+    @media (max-width: 900px) {
+      .sb-controls {
+        grid-template-columns: 1fr auto;
+      }
+      .sb-live { grid-column: 1; }
+      .sb-week { grid-column: 2; justify-self: end; }
+      .nfl-slate { grid-column: 1 / -1; }
     }
     .sb-live {
       display: inline-flex;
@@ -398,6 +405,115 @@
     .sb-week select:focus {
       outline: none;
       border-color: var(--led);
+    }
+
+    .nfl-slate {
+      min-width: 0;
+      display: grid;
+      gap: 0.35rem;
+    }
+    .nfl-slate-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--sb-muted);
+    }
+    .nfl-rolodex {
+      position: relative;
+      min-height: 3.35rem;
+      overflow: hidden;
+      perspective: 900px;
+    }
+    .nfl-rolodex.is-static {
+      overflow: visible;
+    }
+    .nfl-page {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.45rem;
+      width: 100%;
+    }
+    .nfl-rolodex:not(.is-static) .nfl-page {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: rotateX(75deg);
+      transform-origin: center top;
+      transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+    }
+    .nfl-rolodex:not(.is-static) .nfl-page.is-active {
+      opacity: 1;
+      transform: rotateX(0deg);
+      pointer-events: auto;
+      z-index: 1;
+    }
+    .nfl-rolodex:not(.is-static) .nfl-page.is-exit {
+      opacity: 0;
+      transform: rotateX(-75deg);
+      transform-origin: center bottom;
+    }
+    .nfl-game {
+      display: grid;
+      gap: 0.12rem;
+      padding: 0.4rem 0.5rem;
+      border: 1px solid var(--sb-game-border);
+      background: var(--sb-game-bg);
+      min-width: 0;
+    }
+    .nfl-game .match {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.35rem;
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--sb-team);
+      line-height: 1.15;
+    }
+    .nfl-game .match .vs {
+      color: var(--sb-muted);
+      font-weight: 600;
+      font-size: 0.7rem;
+    }
+    .nfl-game .scoreline {
+      font-family: "Share Tech Mono", ui-monospace, monospace;
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      color: var(--sb-score);
+      font-variant-numeric: tabular-nums;
+    }
+    .nfl-game .meta {
+      font-size: 0.72rem;
+      color: var(--sb-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nfl-game.is-live .meta { color: var(--led-green); }
+    .nfl-game.is-final .scoreline { color: var(--sb-team); }
+    .nfl-empty {
+      color: var(--sb-muted);
+      font-size: 0.88rem;
+      padding: 0.55rem 0;
+    }
+    @media (max-width: 720px) {
+      .nfl-page { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 480px) {
+      .nfl-page { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .nfl-rolodex:not(.is-static) .nfl-page {
+        transition: opacity 0.2s ease;
+        transform: none;
+      }
     }
 
     .sb-boards {
@@ -673,6 +789,12 @@
         <span class="dot" aria-hidden="true"></span>
         <span id="live-label">Stand by</span>
       </div>
+      <div class="nfl-slate" aria-live="polite">
+        <div class="nfl-slate-label" id="nfl-slate-label">NFL slate</div>
+        <div class="nfl-rolodex is-static" id="nfl-rolodex">
+          <div class="nfl-empty">Loading NFL games…</div>
+        </div>
+      </div>
       <div class="sb-week">
         <label for="week">Matchup period</label>
         <select id="week"></select>
@@ -699,14 +821,175 @@
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
     let pollTimer = null;
+    let nflFlipTimer = null;
     let currentWeek = null;
     let currentMatchupPeriod = null;
     let liveMode = false;
     let loading = false;
+    const NFL_PAGE_SIZE = 3;
+    const NFL_FLIP_MS = 4500;
 
     function fmtScore(n) {
       const v = Number(n || 0);
       return v.toFixed(1);
+    }
+
+    function fmtKickoff(iso) {
+      if (!iso) return 'TBD';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString([], {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+      } catch {
+        return 'TBD';
+      }
+    }
+
+    function nflGameHtml(g) {
+      const away = g.away?.abbreviation || g.away?.shortName || 'TBD';
+      const home = g.home?.abbreviation || g.home?.shortName || 'TBD';
+      const bucket = g.status?.bucket || 'upcoming';
+      let scoreline = '';
+      let meta = g.status?.shortDetail || g.status?.description || '';
+      if (bucket === 'final' || bucket === 'live') {
+        const as = g.away?.score;
+        const hs = g.home?.score;
+        scoreline = `${as == null ? '—' : as} – ${hs == null ? '—' : hs}`;
+        if (bucket === 'live') {
+          meta = g.status?.shortDetail || g.status?.detail || 'LIVE';
+        } else {
+          meta = g.status?.shortDetail || 'FINAL';
+        }
+      } else {
+        scoreline = fmtKickoff(g.date);
+        meta = (g.broadcasts || []).slice(0, 2).join(' · ') || 'Upcoming';
+      }
+      return `<article class="nfl-game is-${esc(bucket)}" title="${esc(g.name || '')}">
+        <div class="match">
+          <span>${esc(away)}</span>
+          <span class="vs">@</span>
+          <span>${esc(home)}</span>
+        </div>
+        <div class="scoreline">${esc(scoreline)}</div>
+        <div class="meta">${esc(meta)}</div>
+      </article>`;
+    }
+
+    function chunkGames(games, size) {
+      const pages = [];
+      for (let i = 0; i < games.length; i += size) {
+        pages.push(games.slice(i, i + size));
+      }
+      return pages;
+    }
+
+    function stopNflFlip() {
+      clearInterval(nflFlipTimer);
+      nflFlipTimer = null;
+    }
+
+    function startNflFlip(pageCount) {
+      stopNflFlip();
+      if (pageCount <= 1) return;
+      let idx = 0;
+      const root = document.getElementById('nfl-rolodex');
+      nflFlipTimer = setInterval(() => {
+        const pages = [...root.querySelectorAll('.nfl-page')];
+        if (pages.length < 2) return;
+        const prev = pages[idx];
+        idx = (idx + 1) % pages.length;
+        const next = pages[idx];
+        prev.classList.remove('is-active');
+        prev.classList.add('is-exit');
+        next.classList.add('is-active');
+        next.classList.remove('is-exit');
+        setTimeout(() => prev.classList.remove('is-exit'), 450);
+      }, NFL_FLIP_MS);
+    }
+
+    function renderNflSlate(data, fantasyWeek) {
+      const root = document.getElementById('nfl-rolodex');
+      const label = document.getElementById('nfl-slate-label');
+      if (!root) return;
+      stopNflFlip();
+
+      const games = Array.isArray(data?.games) ? data.games.slice() : [];
+      // Prefer live, then upcoming, then final — keeps "games remaining" up front.
+      games.sort((a, b) => {
+        const order = { live: 0, upcoming: 1, final: 2 };
+        const ao = order[a.status?.bucket] ?? 3;
+        const bo = order[b.status?.bucket] ?? 3;
+        if (ao !== bo) return ao - bo;
+        return String(a.date || '').localeCompare(String(b.date || ''));
+      });
+
+      const counts = data?.counts || {};
+      const remaining = Number(counts.live || 0) + Number(counts.upcoming || 0);
+      const weekText = data?.week?.text || `Week ${fantasyWeek || '—'}`;
+      if (label) {
+        if (remaining > 0) {
+          label.textContent = `NFL ${weekText} · ${remaining} remaining`;
+        } else if (games.length) {
+          label.textContent = `NFL ${weekText} · final`;
+        } else {
+          label.textContent = `NFL ${weekText}`;
+        }
+      }
+
+      if (!games.length) {
+        root.className = 'nfl-rolodex is-static';
+        root.innerHTML = `<div class="nfl-empty">No NFL games posted for this week yet</div>`;
+        return;
+      }
+
+      const pageSize = window.matchMedia('(max-width: 480px)').matches
+        ? 2
+        : (window.matchMedia('(max-width: 720px)').matches ? 2 : NFL_PAGE_SIZE);
+
+      // Current week: emphasize live + upcoming. Past weeks: show final results.
+      const isCurrentWeek = Number(fantasyWeek) === Number(currentMatchupPeriod);
+      let displayGames = games;
+      if (isCurrentWeek && remaining > 0) {
+        displayGames = games.filter((g) => g.status?.bucket !== 'final');
+      }
+
+      // Small fixed remainder (e.g. only MNF left): keep those cards up, no flip.
+      const fitsOnePage = displayGames.length <= pageSize;
+      const pages = chunkGames(displayGames, pageSize);
+      const flip = !fitsOnePage && pages.length > 1;
+
+      root.className = flip ? 'nfl-rolodex' : 'nfl-rolodex is-static';
+      root.innerHTML = pages.map((page, i) => `
+        <div class="nfl-page${i === 0 ? ' is-active' : ''}" data-page="${i}">
+          ${page.map(nflGameHtml).join('')}
+        </div>
+      `).join('');
+
+      if (flip) startNflFlip(pages.length);
+    }
+
+    async function loadNflSlate(week) {
+      try {
+        const qs = new URLSearchParams({ seasontype: '2' });
+        if (week) qs.set('week', String(week));
+        const res = await fetch(`/api/beta/live-scoring?${qs}`, { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'NFL slate unavailable');
+        renderNflSlate(data, week);
+      } catch (err) {
+        const root = document.getElementById('nfl-rolodex');
+        const label = document.getElementById('nfl-slate-label');
+        if (label) label.textContent = 'NFL slate';
+        if (root) {
+          root.className = 'nfl-rolodex is-static';
+          root.innerHTML = `<div class="nfl-empty">${esc(err.message || 'NFL slate unavailable')}</div>`;
+        }
+      }
     }
 
     function leadersItemsHtml(data) {
@@ -913,6 +1196,7 @@
         const t = new Date(data.generatedAt);
         window.GridIronNav?.setSync(`ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`);
         loadLeaders(currentWeek);
+        loadNflSlate(currentWeek);
       } catch (err) {
         setRefreshing(false);
         document.getElementById('boards').innerHTML = `<div class="board-empty">${esc(err.message)}</div>`;
