@@ -61,9 +61,11 @@ module.exports = {
       payouts: {
         seasonLabel: '2026 AAA Season',
         buyInPerTeam: 50,
-        teamCount: 12,
+        teamCountMin: 10,
+        teamCountMax: 14,
+        teamCount: null,
         currency: 'USD',
-        notes: 'Prize pool is $600 from twelve AAA franchises at $50 buy-in. Champion promotes to GridIron 24 next season (display / commissioner-administered).',
+        notes: 'Roster size is set by interest (10–14 franchises). Buy-in is $50 per franchise; the prize pool equals $50 × final roster ($500–$700). Award amounts below assume a 12-team field and may be adjusted when the roster locks. Champion promotes to GridIron 24 next season (display / commissioner-administered).',
         prizes: [
           { place: 1, label: 'AAA Champion', amount: 300 },
           { place: 2, label: 'AAA Runner-Up', amount: 150 },

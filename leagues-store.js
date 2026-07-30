@@ -89,12 +89,18 @@ function defaultSurvival(seed = {}) {
 }
 
 function defaultAaaPayouts(seed = {}) {
+  const min = Number(seed.teamCountMin) || 10;
+  const max = Number(seed.teamCountMax) || 14;
+  const fixed = Number(seed.teamCount);
   return {
     seasonLabel: String(seed.seasonLabel || 'AAA Season').trim() || 'AAA Season',
     buyInPerTeam: Number(seed.buyInPerTeam) === 0 ? 0 : (Number(seed.buyInPerTeam) || 50),
-    teamCount: Number(seed.teamCount) || 12,
+    teamCountMin: min,
+    teamCountMax: max,
+    teamCount: Number.isFinite(fixed) && fixed > 0 ? fixed : null,
     currency: String(seed.currency || 'USD').trim() || 'USD',
-    notes: String(seed.notes || '').trim(),
+    notes: String(seed.notes || '').trim()
+      || `Roster size is set by interest (${min}–${max} franchises). Buy-in is $50 per franchise; prize pool equals $50 × final roster.`,
     prizes: Array.isArray(seed.prizes) && seed.prizes.length
       ? seed.prizes.map((row, index) => ({
           place: Number(row.place) || index + 1,
@@ -378,7 +384,11 @@ function ensureSystemLeague(seed) {
       system.affiliatedLeagues = system.affiliatedLeagues.map((row) => {
         const match = seeded.find((s) => s.key === row.key) || seeded[0] || {};
         let next = row;
-        if (!(row.payouts?.buyInPerTeam != null && Array.isArray(row.payouts?.prizes) && row.payouts.prizes.length)) {
+        const needsPayouts = !(row.payouts?.buyInPerTeam != null
+          && Array.isArray(row.payouts?.prizes)
+          && row.payouts.prizes.length);
+        const needsRange = row.payouts && (row.payouts.teamCountMin == null || row.payouts.teamCountMax == null);
+        if (needsPayouts || needsRange) {
           dirty = true;
           next = {
             ...next,

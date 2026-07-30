@@ -305,6 +305,7 @@
       width: clamp(5.5rem, 14vw, 7.5rem);
       height: auto;
       display: block;
+      background: transparent;
       filter: none;
       box-shadow: var(--logo-lift);
     }
@@ -372,6 +373,9 @@
       border-left: 4px solid #efd782;
     }
     .board.aaa .board-head h2 { color: #efd782; }
+    .board.aaa .conf-logo {
+      background: transparent;
+    }
     .aaa-payouts {
       margin-top: 1rem;
       max-width: 48rem;
@@ -436,7 +440,7 @@
           <div>
             <p class="eyebrow">Feeder League</p>
             <h2 id="aaa-heading">AAA League</h2>
-            <p>Affiliated standings and next-season promotee. Not a third GridIron 24 conference.</p>
+            <p>Affiliated standings and next-season promotee. Roster size is set by interest (10–14 teams). Not a third GridIron 24 conference.</p>
           </div>
         </div>
         <div id="aaa-promotee"></div>
@@ -596,9 +600,13 @@
       if (p) {
         const prizes = (p.prizes || []).map((prize) => `
           <li><span>${escapeHtml(prize.label)}</span><span class="amt">${money(prize.amount, p.currency)}</span></li>`).join('');
+        const rosterLabel = escapeHtml(p.teamCountLabel || (p.teamCount != null ? String(p.teamCount) : '10–14 (interest)'));
+        const poolLabel = p.pool != null
+          ? money(p.pool, p.currency)
+          : `${money(p.poolMin, p.currency)}–${money(p.poolMax, p.currency)}`;
         payoutsMount.innerHTML = `
-          <p><strong>${money(p.buyInPerTeam, p.currency)}</strong> buy-in · <strong>${escapeHtml(String(p.teamCount || 12))}</strong> teams ·
-          <strong>${money(p.pool != null ? p.pool : Number(p.buyInPerTeam || 0) * Number(p.teamCount || 0), p.currency)}</strong> prize pool</p>
+          <p><strong>${money(p.buyInPerTeam, p.currency)}</strong> buy-in · <strong>${rosterLabel}</strong> teams ·
+          <strong>${poolLabel}</strong> prize pool</p>
           ${prizes ? `<ul class="aaa-prize-list">${prizes}</ul>` : ''}
           ${p.notes ? `<p style="margin-top:0.65rem;">${escapeHtml(p.notes)}</p>` : ''}`;
       } else {

@@ -2002,12 +2002,21 @@ function getAffiliatedLeague(key = 'aaa') {
 function aaaPayoutsFromAffiliate(affiliate) {
   const p = affiliate?.payouts || {};
   const buyIn = Number(p.buyInPerTeam);
-  const teamCount = Number(p.teamCount) || 12;
+  const min = Number(p.teamCountMin) || 10;
+  const max = Number(p.teamCountMax) || 14;
+  const fixed = Number(p.teamCount);
+  const teamCount = Number.isFinite(fixed) && fixed > 0 ? fixed : null;
   const prizes = Array.isArray(p.prizes) ? p.prizes : [];
+  const resolvedBuyIn = Number.isFinite(buyIn) ? buyIn : 50;
   return {
     seasonLabel: p.seasonLabel || 'AAA Season',
-    buyInPerTeam: Number.isFinite(buyIn) ? buyIn : 50,
+    buyInPerTeam: resolvedBuyIn,
+    teamCountMin: min,
+    teamCountMax: max,
     teamCount,
+    teamCountLabel: teamCount
+      ? String(teamCount)
+      : `${min}–${max} (interest)`,
     currency: p.currency || 'USD',
     notes: p.notes || '',
     prizes: prizes.map((row, index) => ({
@@ -2015,7 +2024,9 @@ function aaaPayoutsFromAffiliate(affiliate) {
       label: String(row.label || `Place ${index + 1}`).trim(),
       amount: Number(row.amount) || 0
     })),
-    pool: (Number.isFinite(buyIn) ? buyIn : 50) * teamCount
+    poolMin: resolvedBuyIn * min,
+    poolMax: resolvedBuyIn * max,
+    pool: teamCount != null ? resolvedBuyIn * teamCount : null
   };
 }
 
@@ -2026,12 +2037,14 @@ async function buildAaaPayload() {
     shortName: 'AAA',
     espnLeagueId: null,
     role: 'feeder',
-    payouts: {
-      buyInPerTeam: 50,
-      teamCount: 12,
-      currency: 'USD',
-      prizes: []
-    }
+      payouts: {
+        buyInPerTeam: 50,
+        teamCountMin: 10,
+        teamCountMax: 14,
+        teamCount: null,
+        currency: 'USD',
+        prizes: []
+      }
   };
   const espnId = Number(affiliate.espnLeagueId);
   const configured = Number.isFinite(espnId) && espnId > 0;
