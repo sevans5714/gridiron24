@@ -845,13 +845,13 @@ function buildRosterViolationEmail({
     bodyHtml: `${greeting}${table}${outro}`,
     showConferences: false,
     ctaLabel: 'Open League HQ',
-    ctaUrl: `${origin}/home.html`,
-    linkFallbackUrl: `${origin}/home.html`,
+    ctaUrl: `${origin}/hq`,
+    linkFallbackUrl: `${origin}/hq`,
     footerExtra: 'Automated warning from GridIron 24 Patrol · created by S.Evans',
     baseUrl: origin
   });
 
-  return { subject, text: `${subject}\n\nHi ${who},\n\n${bodyText}\n\nOpen League HQ: ${origin}/home.html\n`, html };
+  return { subject, text: `${subject}\n\nHi ${who},\n\n${bodyText}\n\nOpen League HQ: ${origin}/hq\n`, html };
 }
 
 async function sendRosterViolationEmail(opts) {
