@@ -3673,6 +3673,11 @@ const server = http.createServer(async (req, res) => {
       return res.end();
     }
 
+    if (pathname === '/aaa.html' || pathname === '/aaa') {
+      res.writeHead(302, { Location: '/standings.html#aaa' });
+      return res.end();
+    }
+
     if (pathname === '/team-logo.html') {
       res.writeHead(302, { Location: '/profile.html#logo' });
       return res.end();
