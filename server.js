@@ -2030,6 +2030,110 @@ function aaaPayoutsFromAffiliate(affiliate) {
   };
 }
 
+function teamHeatIndex(t) {
+  const winStreak = t.streakType === 'WIN' ? Number(t.streakLength || 0) : 0;
+  const lossStreak = t.streakType === 'LOSS' ? Number(t.streakLength || 0) : 0;
+  const ppg = Number(t.pointsPerGame || 0);
+  const pf = Number(t.pointsFor || 0);
+  return winStreak * 55 + ppg * 2.2 + pf * 0.08 - lossStreak * 40;
+}
+
+function teamColdIndex(t) {
+  const winStreak = t.streakType === 'WIN' ? Number(t.streakLength || 0) : 0;
+  const lossStreak = t.streakType === 'LOSS' ? Number(t.streakLength || 0) : 0;
+  const ppg = Number(t.pointsPerGame || 0);
+  const pf = Number(t.pointsFor || 0);
+  return lossStreak * 55 - ppg * 2.2 - pf * 0.08 - winStreak * 40;
+}
+
+function pickHotCold(teams) {
+  const list = Array.isArray(teams) ? teams.slice() : [];
+  const slim = (t) => (t
+    ? {
+        id: t.id,
+        name: t.name,
+        logo: t.logo || null,
+        wins: t.wins,
+        losses: t.losses,
+        ties: t.ties,
+        streakType: t.streakType,
+        streakLength: t.streakLength,
+        pointsFor: t.pointsFor,
+        pointsPerGame: t.pointsPerGame,
+        gamesPlayed: t.gamesPlayed
+      }
+    : null);
+  if (list.length < 2) {
+    return { hot: slim(list[0]), cold: null };
+  }
+  const byHeat = list.slice().sort((a, b) => teamHeatIndex(b) - teamHeatIndex(a));
+  const hot = byHeat[0];
+  const byCold = list
+    .filter((t) => t.id !== hot.id)
+    .sort((a, b) => teamColdIndex(b) - teamColdIndex(a));
+  const cold = byCold[0] || byHeat[byHeat.length - 1];
+  return { hot: slim(hot), cold: slim(cold) };
+}
+
+async function loadGridironOfficialScoringSummary() {
+  try {
+    const sync = rulesSyncStore.getStatus();
+    const live = await loadConferenceSettings();
+    const primaryKey = (config.conferences || []).find((c) => c.isRulesPrimary)?.key
+      || (config.conferences || [])[0]?.key
+      || 'detail';
+    const secondaryKey = (config.conferences || []).find((c) => c.key !== primaryKey)?.key
+      || (config.conferences || [])[1]?.key
+      || 'overtime';
+    const detail = live.find((c) => c.key === primaryKey) || live[0] || null;
+    const overtime = live.find((c) => c.key === secondaryKey) || live[1] || null;
+    const cmp = compareSettings(detail, overtime);
+    const official = sync.officialScoring;
+    const useOfficial = Boolean(official && (cmp.matched || sync.lastCheck?.matched));
+    const scoring = useOfficial
+      ? {
+          ok: true,
+          source: 'official',
+          key: official.conferenceKey,
+          name: official.conferenceName,
+          shortName: official.shortName,
+          playerRankType: official.playerRankType,
+          scoringType: official.scoringType,
+          scoringItems: refreshScoringDisplays(official.scoringItems),
+          lineup: official.lineup
+        }
+      : detail
+        ? {
+            ...detail,
+            source: 'live-detail',
+            scoringItems: refreshScoringDisplays(detail.scoringItems)
+          }
+        : null;
+    return {
+      scoring,
+      gridironSynced: Boolean(cmp.matched),
+      source: scoring?.source || null
+    };
+  } catch {
+    return { scoring: null, gridironSynced: false, source: null };
+  }
+}
+
+function compareAaaScoringToGridiron(gridironScoring, aaaSettings) {
+  if (!gridironScoring || !aaaSettings) return null;
+  const cmp = compareSettings(
+    { ...gridironScoring, ok: true },
+    { ...aaaSettings, ok: true }
+  );
+  const diffs = (cmp.diffs || []).filter((d) => d.kind === 'Scoring' || d.kind === 'Lineup' || d.kind === 'Setting');
+  return {
+    matched: diffs.length === 0,
+    bothOk: true,
+    diffCount: diffs.length,
+    diffs: diffs.slice(0, 25)
+  };
+}
+
 async function buildAaaPayload() {
   const affiliate = getAffiliatedLeague('aaa') || {
     key: 'aaa',
@@ -2037,36 +2141,50 @@ async function buildAaaPayload() {
     shortName: 'AAA',
     espnLeagueId: null,
     role: 'feeder',
-      payouts: {
-        buyInPerTeam: 50,
-        teamCountMin: 10,
-        teamCountMax: 14,
-        teamCount: null,
-        currency: 'USD',
-        prizes: []
-      }
+    logo: '/assets/aaa-league.png',
+    payouts: {
+      buyInPerTeam: 50,
+      teamCountMin: 10,
+      teamCountMax: 14,
+      teamCount: null,
+      currency: 'USD',
+      prizes: []
+    }
   };
   const espnId = Number(affiliate.espnLeagueId);
   const configured = Number.isFinite(espnId) && espnId > 0;
   const payouts = aaaPayoutsFromAffiliate(affiliate);
+  const officialPack = await loadGridironOfficialScoringSummary();
+
+  const base = {
+    ok: true,
+    configured,
+    key: affiliate.key,
+    name: affiliate.name,
+    shortName: affiliate.shortName,
+    role: affiliate.role || 'feeder',
+    logo: affiliate.logo || '/assets/aaa-league.png',
+    season: config.season,
+    payouts,
+    scoring: officialPack.scoring,
+    scoringPolicy: {
+      matchesGridiron24: true,
+      note: 'AAA League uses the same official scoring and lineup settings as GridIron 24 (Detail Conference source of truth). AAA is a separate feeder league, not a third conference.'
+    },
+    hot: null,
+    cold: null,
+    generatedAt: new Date().toISOString()
+  };
 
   if (!configured) {
     return {
-      ok: true,
-      configured: false,
-      key: affiliate.key,
-      name: affiliate.name,
-      shortName: affiliate.shortName,
-      role: affiliate.role || 'feeder',
-      logo: affiliate.logo || '/assets/aaa-league.png',
-      season: config.season,
+      ...base,
       espnLeagueId: null,
-      payouts,
       teams: [],
       champion: null,
       promotee: null,
-      message: 'AAA League ESPN ID is not configured yet. Buy-in and payouts are published below; standings unlock when the ESPN league ID is set.',
-      generatedAt: new Date().toISOString()
+      scoringSync: null,
+      message: 'AAA League ESPN ID is not configured yet. Scoring follows GridIron 24; standings and hot/cold unlock when the ESPN league ID is set.'
     };
   }
 
@@ -2079,8 +2197,12 @@ async function buildAaaPayload() {
   };
 
   try {
-    const data = await fetchEspnLeague(conference);
+    const [data, settingsRaw] = await Promise.all([
+      fetchEspnLeague(conference),
+      fetchEspnRaw(conference, ['mSettings', 'mStatus'], 'aaa-settings').catch(() => null)
+    ]);
     const teams = data.teams || [];
+    const { hot, cold } = pickHotCold(teams);
     const champion = teams[0]
       ? {
           id: teams[0].id,
@@ -2093,19 +2215,18 @@ async function buildAaaPayload() {
         }
       : null;
 
+    let scoringSync = null;
+    if (settingsRaw && officialPack.scoring) {
+      const aaaSettings = normalizeSettings(settingsRaw, conference);
+      scoringSync = compareAaaScoringToGridiron(officialPack.scoring, aaaSettings);
+    }
+
     return {
+      ...base,
       ok: true,
-      configured: true,
-      key: affiliate.key,
-      name: affiliate.name,
-      shortName: affiliate.shortName,
-      role: affiliate.role || 'feeder',
-      logo: affiliate.logo || '/assets/aaa-league.png',
-      season: config.season,
       espnLeagueId: espnId,
       espnLeagueName: data.espnLeagueName || null,
       teamCount: teams.length,
-      payouts,
       teams,
       champion,
       promotee: champion
@@ -2114,28 +2235,23 @@ async function buildAaaPayload() {
             label: 'Promotes to GridIron 24 next season'
           }
         : null,
+      hot,
+      cold,
+      scoringSync,
       message: champion
-        ? `${champion.name} is the current AAA standings leader and next-season GridIron 24 promotee (display only).`
-        : 'AAA standings loaded; champion TBD.',
-      generatedAt: new Date().toISOString()
+        ? `${champion.name} leads AAA standings and is the next-season GridIron 24 promotee (display only).`
+        : 'AAA standings loaded; champion TBD.'
     };
   } catch (error) {
     return {
+      ...base,
       ok: false,
-      configured: true,
-      key: affiliate.key,
-      name: affiliate.name,
-      shortName: affiliate.shortName,
-      role: affiliate.role || 'feeder',
-      logo: affiliate.logo || '/assets/aaa-league.png',
-      season: config.season,
       espnLeagueId: espnId,
-      payouts,
       teams: [],
       champion: null,
       promotee: null,
-      error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message,
-      generatedAt: new Date().toISOString()
+      scoringSync: null,
+      error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
     };
   }
 }
@@ -3686,8 +3802,8 @@ const server = http.createServer(async (req, res) => {
       return res.end();
     }
 
-    if (pathname === '/aaa.html' || pathname === '/aaa') {
-      res.writeHead(302, { Location: '/standings.html#aaa' });
+    if (pathname === '/aaa' || pathname === '/aaa/') {
+      res.writeHead(302, { Location: '/aaa.html' });
       return res.end();
     }
 

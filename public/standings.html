@@ -276,142 +276,6 @@
       .board-head h2 { font-size: 1.1rem; }
       .conf-logo { width: 3.25rem; }
     }
-
-    .aaa-divider {
-      margin: 2.75rem 0 0;
-      padding: 2.25rem 0 0;
-      border-top: 1px solid var(--line);
-      position: relative;
-    }
-    .aaa-divider::before {
-      content: '';
-      position: absolute;
-      top: -1px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(12rem, 40%);
-      height: 3px;
-      background: linear-gradient(90deg, transparent, #efd782, transparent);
-    }
-    .aaa-intro {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: 1.25rem 1.5rem;
-      align-items: center;
-      margin: 0 0 1.35rem;
-      max-width: 48rem;
-    }
-    .aaa-crest {
-      width: clamp(5.5rem, 14vw, 7.5rem);
-      height: auto;
-      display: block;
-      background: transparent;
-      filter: none;
-      box-shadow: var(--logo-lift);
-    }
-    .aaa-intro .eyebrow {
-      margin: 0 0 0.25rem;
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .aaa-intro h2 {
-      margin: 0 0 0.35rem;
-      font-family: var(--display);
-      font-size: clamp(1.35rem, 3vw, 1.75rem);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #efd782;
-    }
-    .aaa-intro p {
-      margin: 0;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-      line-height: 1.45;
-      max-width: 36rem;
-    }
-    .aaa-promotee {
-      margin: 0 0 1rem;
-      padding: 0.95rem 1.1rem;
-      border: 1px solid rgba(239, 215, 130, 0.35);
-      background:
-        radial-gradient(ellipse at 15% 30%, rgba(239,215,130,0.12), transparent 65%),
-        var(--panel);
-      max-width: 48rem;
-    }
-    .aaa-promotee .label {
-      margin: 0 0 0.35rem;
-      font-family: var(--display);
-      font-size: 0.68rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #efd782;
-    }
-    .aaa-promotee .who {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .aaa-promotee img {
-      width: 2.75rem;
-      height: 2.75rem;
-      object-fit: contain;
-      box-shadow: var(--logo-lift);
-    }
-    .aaa-promotee .nm {
-      font-family: var(--display);
-      font-size: 1.05rem;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-    .board.aaa .board-head {
-      border-left: 4px solid #efd782;
-    }
-    .board.aaa .board-head h2 { color: #efd782; }
-    .board.aaa .conf-logo {
-      background: transparent;
-    }
-    .aaa-payouts {
-      margin-top: 1rem;
-      max-width: 48rem;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-      line-height: 1.5;
-    }
-    .aaa-payouts strong { color: var(--text); }
-    .aaa-prize-list {
-      margin: 0.55rem 0 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 0.25rem;
-    }
-    .aaa-prize-list li {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.35rem 0;
-      border-bottom: 1px solid var(--line);
-    }
-    .aaa-prize-list li:last-child { border-bottom: 0; }
-    .aaa-prize-list .amt {
-      font-family: var(--display);
-      font-weight: 700;
-      color: #efd782;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 700px) {
-      .aaa-intro {
-        grid-template-columns: 1fr;
-        justify-items: start;
-      }
-    }
   </style>
 </head>
 <body data-page="standings">
@@ -433,22 +297,6 @@
         <div class="board" id="detail"></div>
         <div class="board" id="overtime"></div>
       </div>
-
-      <section class="aaa-divider" id="aaa" aria-labelledby="aaa-heading">
-        <div class="aaa-intro">
-          <img class="aaa-crest" src="/assets/aaa-league.png" alt="AAA Fantasy Football League" width="120" height="120" decoding="async" />
-          <div>
-            <p class="eyebrow">Feeder League</p>
-            <h2 id="aaa-heading">AAA League</h2>
-            <p>Affiliated standings and next-season promotee. Roster size is set by interest (10–14 teams). Not a third GridIron 24 conference.</p>
-          </div>
-        </div>
-        <div id="aaa-promotee"></div>
-        <div class="boards" style="grid-template-columns: minmax(0, 48rem);">
-          <div class="board aaa" id="aaa-board"><div class="msg">Loading AAA League…</div></div>
-        </div>
-        <div id="aaa-payouts" class="aaa-payouts"></div>
-      </section>
     </section>
   </main>
 
@@ -457,7 +305,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=38"></script>
+  <script src="/js/nav.js?v=37"></script>
   <script>
     const escapeHtml = (value = '') => String(value)
       .replaceAll('&', '&amp;')
@@ -468,20 +316,6 @@
 
     function fmtPts(value) {
       return Number(value || 0).toFixed(1);
-    }
-
-    function money(amount, currency = 'USD') {
-      if (amount == null || amount === '') return 'TBD';
-      try {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency,
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }).format(Number(amount));
-      } catch {
-        return `$${Number(amount).toFixed(2)}`;
-      }
     }
 
     function confLogo(key, name) {
@@ -578,123 +412,6 @@
         </div>`;
     }
 
-    function renderAaa(data) {
-      const board = document.getElementById('aaa-board');
-      const promoteeMount = document.getElementById('aaa-promotee');
-      const payoutsMount = document.getElementById('aaa-payouts');
-      const crest = document.querySelector('.aaa-crest');
-      if (crest && data.logo) crest.src = data.logo;
-
-      const champ = data.champion || data.promotee;
-      promoteeMount.innerHTML = champ
-        ? `<div class="aaa-promotee">
-            <p class="label">Promotes to GridIron 24 next season</p>
-            <div class="who">
-              <img src="${escapeHtml(champ.logo || '/assets/team-logo-placeholder.svg')}" alt="" />
-              <div class="nm">${escapeHtml(champ.name)}</div>
-            </div>
-          </div>`
-        : '';
-
-      const p = data.payouts;
-      if (p) {
-        const prizes = (p.prizes || []).map((prize) => `
-          <li><span>${escapeHtml(prize.label)}</span><span class="amt">${money(prize.amount, p.currency)}</span></li>`).join('');
-        const rosterLabel = escapeHtml(p.teamCountLabel || (p.teamCount != null ? String(p.teamCount) : '10–14 (interest)'));
-        const poolLabel = p.pool != null
-          ? money(p.pool, p.currency)
-          : `${money(p.poolMin, p.currency)}–${money(p.poolMax, p.currency)}`;
-        payoutsMount.innerHTML = `
-          <p><strong>${money(p.buyInPerTeam, p.currency)}</strong> buy-in · <strong>${rosterLabel}</strong> teams ·
-          <strong>${poolLabel}</strong> prize pool</p>
-          ${prizes ? `<ul class="aaa-prize-list">${prizes}</ul>` : ''}
-          ${p.notes ? `<p style="margin-top:0.65rem;">${escapeHtml(p.notes)}</p>` : ''}`;
-      } else {
-        payoutsMount.innerHTML = '';
-      }
-
-      if (!data.configured) {
-        board.innerHTML = `
-          <div class="board-head aaa">
-            <div class="board-brand">
-              <img class="conf-logo" src="${escapeHtml(data.logo || '/assets/aaa-league.png')}" alt="AAA League" width="80" height="80" decoding="async" />
-              <div>
-                <h2>${escapeHtml(data.name || 'AAA League')}</h2>
-                <div class="meta">Feeder league · ESPN ID pending</div>
-              </div>
-            </div>
-          </div>
-          <div class="msg">${escapeHtml(data.message || 'AAA standings unlock when the ESPN league ID is configured.')}</div>`;
-        return;
-      }
-
-      if (!data.ok) {
-        board.innerHTML = `
-          <div class="board-head aaa">
-            <div class="board-brand">
-              <img class="conf-logo" src="${escapeHtml(data.logo || '/assets/aaa-league.png')}" alt="AAA League" width="80" height="80" decoding="async" />
-              <div>
-                <h2>${escapeHtml(data.name || 'AAA League')}</h2>
-                <div class="meta">ESPN ${escapeHtml(String(data.espnLeagueId || '—'))}</div>
-              </div>
-            </div>
-          </div>
-          <div class="msg"><strong>ESPN connection failed</strong>${escapeHtml(data.error || 'Unknown error')}</div>`;
-        return;
-      }
-
-      const teams = data.teams || [];
-      const rows = teams.map((team, index) => `
-        <div class="row body">
-          <div class="rank">${index + 1}</div>
-          <div class="team">
-            <img class="team-logo-sm" src="${escapeHtml(team.logo || '/assets/team-logo-placeholder.svg')}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
-            <div class="name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
-          </div>
-          <div class="owner col-owner" title="${escapeHtml(team.owner || '')}">${escapeHtml(team.owner || '—')}</div>
-          <div class="num wl">${team.wins || 0}</div>
-          <div class="num wl">${team.losses || 0}</div>
-          <div class="num wl col-ties">${team.ties || 0}</div>
-          <div class="num pts">${fmtPts(team.pointsFor)}</div>
-          <div class="num pts col-pa">${fmtPts(team.pointsAgainst)}</div>
-        </div>`).join('');
-
-      board.innerHTML = `
-        <div class="board-head aaa">
-          <div class="board-brand">
-            <img class="conf-logo" src="${escapeHtml(data.logo || '/assets/aaa-league.png')}" alt="AAA League" width="80" height="80" decoding="async" />
-            <div>
-              <h2>${escapeHtml(data.name || 'AAA League')}</h2>
-              <div class="meta">${escapeHtml(data.espnLeagueName || `ESPN ${data.espnLeagueId || ''}`)}${data.teamCount ? ` · ${data.teamCount} teams` : ''}</div>
-            </div>
-          </div>
-        </div>
-        <div class="standings">
-          <div class="row head">
-            <div class="center">#</div>
-            <div>Team</div>
-            <div class="col-owner">Owner</div>
-            <div class="num">W</div>
-            <div class="num">L</div>
-            <div class="num col-ties">T</div>
-            <div class="num">PF</div>
-            <div class="num col-pa">PA</div>
-          </div>
-          ${rows || '<div class="msg">No teams yet.</div>'}
-        </div>`;
-    }
-
-    async function loadAaa() {
-      try {
-        const res = await fetch('/api/aaa', { cache: 'no-store' });
-        const data = await res.json();
-        renderAaa(data);
-      } catch (error) {
-        document.getElementById('aaa-board').innerHTML =
-          `<div class="msg"><strong>AAA error</strong>${escapeHtml(error.message)}</div>`;
-      }
-    }
-
     async function load() {
       document.getElementById('detail').innerHTML = '<div class="msg">Loading Detail Conference…</div>';
       document.getElementById('overtime').innerHTML = '<div class="msg">Loading Overtime Conference…</div>';
@@ -723,8 +440,6 @@
         document.getElementById('detail').innerHTML = msg;
         document.getElementById('overtime').innerHTML = msg;
       }
-
-      await loadAaa();
     }
 
     load();

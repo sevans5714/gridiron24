@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AAA League · Feeder Portal</title>
+  <meta name="description" content="AAA League feeder standings, hot/cold, GridIron-matched scoring, and $50 buy-in payouts." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=62" />
+  <style>
+    .promotee {
+      margin: 0 0 1.25rem;
+      padding: 1.15rem 1.25rem;
+      border: 1px solid rgba(239, 215, 130, 0.4);
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(239,215,130,0.14), transparent 60%),
+        linear-gradient(180deg, var(--panel-2), var(--panel));
+    }
+    .promotee .eyebrow {
+      margin: 0 0 0.35rem;
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .promotee h2 {
+      margin: 0 0 0.35rem;
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 3vw, 1.85rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .promotee p {
+      margin: 0;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+      line-height: 1.5;
+    }
+    .promotee-team {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin: 0.75rem 0 0.55rem;
+    }
+    .promotee-team img {
+      width: 3.5rem;
+      height: 3.5rem;
+      object-fit: contain;
+      box-shadow: var(--logo-lift);
+    }
+    .promotee-team .nm {
+      font-family: var(--display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .board {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      max-width: 48rem;
+      margin-bottom: 1.25rem;
+    }
+    .board-head {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+      border-left: 4px solid #efd782;
+    }
+    .board-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .board-head .sub {
+      margin: 0.25rem 0 0;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+    }
+    .aaa-crest {
+      display: block;
+      width: min(16rem, 72vw);
+      height: auto;
+      margin: 0 auto 1rem;
+      filter: none;
+      box-shadow: var(--logo-lift);
+    }
+    body[data-page="aaa"] .page-hero {
+      text-align: center;
+    }
+    body[data-page="aaa"] .page-hero h1 {
+      margin-top: 0.35rem;
+    }
+    body[data-page="aaa"] .page-hero .lede {
+      margin: 0.5rem auto 0;
+      max-width: 36rem;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+      line-height: 1.5;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 2rem minmax(0, 1fr) 2.2rem 2.2rem 2.2rem minmax(3rem, 0.4fr);
+      gap: 0.35rem 0.55rem;
+      align-items: center;
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .row.head {
+      color: var(--muted);
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.02);
+    }
+    .rk {
+      font-family: var(--display);
+      font-weight: 600;
+      color: #cfcfcf;
+      text-align: center;
+    }
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+    .team img {
+      width: 2.25rem;
+      height: 2.25rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      box-shadow: var(--logo-lift);
+    }
+    .name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+    .wl, .pts {
+      font-family: var(--display);
+      font-weight: 600;
+      text-align: center;
+    }
+    .pts { color: #d0d0d0; }
+    .msg-panel {
+      padding: 1.25rem;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      max-width: 48rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .hotnot {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      max-width: 48rem;
+      margin-bottom: 1.25rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .hotnot-col {
+      padding: 1rem 1.1rem;
+    }
+    .hotnot-col.hot {
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(239, 120, 60, 0.12), transparent 70%);
+    }
+    .hotnot-col.cold {
+      background: linear-gradient(180deg, rgba(90, 140, 220, 0.12), transparent 70%);
+    }
+    .hotnot-col .label {
+      margin: 0 0 0.65rem;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hotnot-team {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+    .hotnot-team img {
+      width: 3.25rem;
+      height: 3.25rem;
+      object-fit: contain;
+      box-shadow: var(--logo-lift);
+    }
+    .hotnot-team .nm {
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hotnot-team .sub {
+      margin-top: 0.2rem;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+    }
+
+    .payout-board,
+    .scoring-board {
+      max-width: 48rem;
+      margin-bottom: 1.25rem;
+    }
+    .pool-line {
+      margin: 0 0 0.85rem;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+    }
+    .pool-line strong { color: var(--text); }
+    .payout-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+    .payout-table th,
+    .payout-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+    .payout-table th {
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--panel-2);
+    }
+    .payout-table td.amount {
+      font-family: var(--display);
+      font-weight: 700;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .payout-table tr.total-row td {
+      border-bottom: 0;
+      font-weight: 700;
+      color: #efd782;
+    }
+    .payout-notes,
+    .scoring-note {
+      margin: 0.75rem 0 0;
+      color: var(--muted);
+      font-size: var(--fs-sm);
+      line-height: 1.45;
+    }
+    .sync-pill {
+      display: inline-block;
+      margin-top: 0.45rem;
+      padding: 0.2rem 0.55rem;
+      border: 1px solid var(--line);
+      font-family: var(--display);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .sync-pill.ok {
+      color: #9fd89f;
+      border-color: rgba(159, 216, 159, 0.45);
+    }
+    .sync-pill.warn {
+      color: #efd782;
+      border-color: rgba(239, 215, 130, 0.45);
+    }
+    .lineup-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--line);
+      border-top: 0;
+      background: var(--panel);
+    }
+    .lineup-row .slot {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.3rem;
+      padding: 0.35rem 0.55rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      font-size: var(--fs-sm);
+    }
+    .lineup-row .slot.bench { opacity: 0.75; }
+    .lineup-row .pos {
+      font-family: var(--display);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+      gap: 0.65rem;
+      padding: 0.85rem 1rem 1rem;
+      border: 1px solid var(--line);
+      border-top: 0;
+      background: var(--panel);
+    }
+    .group-panel {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      padding: 0.65rem 0.75rem;
+    }
+    .group-panel h3 {
+      margin: 0 0 0.45rem;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #efd782;
+    }
+    .rule {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.22rem 0;
+      font-size: var(--fs-sm);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .rule .label { color: var(--text); min-width: 0; }
+    .rule .pts {
+      font-family: var(--display);
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 700px) {
+      .row {
+        grid-template-columns: 1.6rem minmax(0, 1fr) 1.8rem 1.8rem minmax(2.6rem, 0.4fr);
+      }
+      .col-ties { display: none; }
+      .hotnot { grid-template-columns: 1fr; }
+      .hotnot-col.hot { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body data-page="aaa">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">AAA League</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell reveal">
+    <img class="aaa-crest" id="aaa-crest" src="/assets/aaa-league.png" alt="AAA Fantasy Football League" width="320" height="320" decoding="async" />
+    <p class="eyebrow">Affiliated Feeder · Not GridIron 24</p>
+    <h1>AAA League</h1>
+    <p class="lede">Separate portal for standings, form, and GridIron-matched scoring. Enter from the crest on the home header.</p>
+  </section>
+
+  <main class="page-main shell" id="main">
+    <div class="msg">Loading AAA League…</div>
+  </main>
+
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-brand">GridIron 24</span> created by S.Evans</span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=38"></script>
+  <script src="/js/conference-diff.js?v=4"></script>
+  <script>
+    const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
+    const GROUP_ORDER = [
+      'Passing', 'Rushing', 'Receiving', 'Misc. Offense',
+      'Kicking', 'Defense / Special Teams', 'Other'
+    ];
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    function money(amount, currency = 'USD') {
+      if (amount == null || amount === '') return 'TBD';
+      try {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(Number(amount));
+      } catch {
+        return `$${Number(amount).toFixed(2)}`;
+      }
+    }
+
+    function fmtPts(n) {
+      return Number(n || 0).toFixed(1);
+    }
+
+    function streakText(t) {
+      const n = Number(t?.streakLength || 0);
+      if (n <= 0 || !t?.streakType || t.streakType === 'NONE') return null;
+      if (t.streakType === 'WIN') return `${n}W streak`;
+      if (t.streakType === 'LOSS') return `${n}L streak`;
+      return null;
+    }
+
+    function formSub(t) {
+      if (!t) return '';
+      const parts = [];
+      const streak = streakText(t);
+      if (streak) parts.push(streak);
+      const games = Number(t.gamesPlayed || (t.wins || 0) + (t.losses || 0) + (t.ties || 0));
+      const pf = Number(t.pointsFor || 0);
+      if (games > 0) {
+        const ppg = Number(t.pointsPerGame != null ? t.pointsPerGame : pf / games);
+        parts.push(`${ppg.toFixed(1)} PPG`);
+        parts.push(`${pf.toFixed(1)} PF`);
+      } else {
+        parts.push(`${t.wins || 0}-${t.losses || 0}${t.ties ? `-${t.ties}` : ''}`);
+      }
+      return parts.join(' · ');
+    }
+
+    function hotColdBlock(hot, cold) {
+      if (!hot && !cold) return '';
+      const card = (kind, label, team) => {
+        if (!team) {
+          return `<div class="hotnot-col ${kind}"><div class="label">${label}</div><div class="sub" style="color:var(--muted)">TBD</div></div>`;
+        }
+        return `
+          <div class="hotnot-col ${kind}">
+            <div class="label">${label}</div>
+            <div class="hotnot-team">
+              <img src="${esc(team.logo || PLACEHOLDER)}" alt="" />
+              <div style="min-width:0">
+                <div class="nm" title="${esc(team.name)}">${esc(team.name)}</div>
+                <div class="sub">${esc(formSub(team))}</div>
+              </div>
+            </div>
+          </div>`;
+      };
+      return `<div class="hotnot">${card('hot', 'Who’s Hot', hot)}${card('cold', 'Who’s Not', cold)}</div>`;
+    }
+
+    function payoutsBlock(p) {
+      if (!p) return '';
+      const currency = p.currency || 'USD';
+      const prizes = p.prizes || [];
+      const buyIn = money(p.buyInPerTeam, currency);
+      const teamLabel = p.teamCountLabel || String(p.teamCount || '10–14');
+      const pool = p.pool != null
+        ? money(p.pool, currency)
+        : (p.poolMin != null && p.poolMax != null
+          ? `${money(p.poolMin, currency)}–${money(p.poolMax, currency)}`
+          : 'TBD');
+      const prizesTotal = prizes.reduce((sum, prize) => sum + Number(prize.amount || 0), 0);
+      const rows = prizes.map((prize) => `
+        <tr>
+          <td>${esc(prize.label)}</td>
+          <td class="amount">${money(prize.amount, currency)}</td>
+        </tr>`).join('');
+      return `
+        <div class="payout-board">
+          <div class="board-head" style="border:1px solid var(--line);border-bottom:0;margin:0">
+            <h2>Payouts</h2>
+            <p class="sub">${esc(p.seasonLabel || 'AAA Season')}</p>
+          </div>
+          <p class="pool-line"><strong>${buyIn}</strong> buy-in · <strong>${esc(String(teamLabel))}</strong> teams · <strong>${pool}</strong> prize pool</p>
+          <table class="payout-table">
+            <thead><tr><th>Award</th><th>Payout</th></tr></thead>
+            <tbody>
+              ${rows || '<tr><td colspan="2">No payouts configured.</td></tr>'}
+              <tr class="total-row"><td>Total (12-team table)</td><td class="amount">${money(prizesTotal, currency)}</td></tr>
+            </tbody>
+          </table>
+          ${p.notes ? `<p class="payout-notes">${esc(p.notes)}</p>` : ''}
+        </div>`;
+    }
+
+    function lineupRow(lineup) {
+      const starterOrder = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K', 'Bench', 'IR'];
+      const sorted = [...(lineup || [])].sort((a, b) => {
+        const ai = starterOrder.indexOf(a.label);
+        const bi = starterOrder.indexOf(b.label);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+      if (!sorted.length) return '';
+      return `<div class="lineup-row">${sorted.map((s) => `
+        <div class="slot${['Bench', 'IR'].includes(s.label) ? ' bench' : ''}">
+          <span class="pos">${esc(s.label)}</span>
+          <span class="cnt">×${esc(String(s.count))}</span>
+        </div>`).join('')}</div>`;
+    }
+
+    function groupPanels(items) {
+      const buckets = new Map();
+      for (const item of items || []) {
+        const g = item.group || 'Other';
+        if (!buckets.has(g)) buckets.set(g, []);
+        buckets.get(g).push(item);
+      }
+      const order = GROUP_ORDER.filter((g) => buckets.has(g));
+      for (const g of buckets.keys()) {
+        if (!order.includes(g)) order.push(g);
+      }
+      if (!order.length) return '<p class="scoring-note" style="padding:0 1rem 1rem">Scoring settings unavailable.</p>';
+      const fmt = window.GridIronDiff?.fmtItem || ((item) => item.display || item.points);
+      return `<div class="rules-grid">${order.map((group) => {
+        const rules = buckets.get(group).map((item) => `
+          <div class="rule">
+            <span class="label">${esc(item.label)}</span>
+            <span class="pts">${esc(fmt(item))}</span>
+          </div>`).join('');
+        return `<section class="group-panel"><h3>${esc(group)}</h3>${rules}</section>`;
+      }).join('')}</div>`;
+    }
+
+    function scoringBlock(data) {
+      const scoring = data.scoring;
+      const policy = data.scoringPolicy || {};
+      const sync = data.scoringSync;
+      let pill = '';
+      if (sync) {
+        pill = sync.matched
+          ? `<span class="sync-pill ok">ESPN synced with GridIron 24</span>`
+          : `<span class="sync-pill warn">${esc(String(sync.diffCount || 0))} scoring/lineup diffs vs GridIron</span>`;
+      } else if (scoring) {
+        pill = `<span class="sync-pill ok">Matches GridIron 24 official scoring</span>`;
+      }
+      if (!scoring && !policy.note) return '';
+      return `
+        <div class="scoring-board">
+          <div class="board-head" style="border:1px solid var(--line);margin:0">
+            <h2>Scoring</h2>
+            <p class="sub">${esc(policy.note || 'Same scoring as GridIron 24')}</p>
+            ${pill}
+          </div>
+          ${scoring ? lineupRow(scoring.lineup) : ''}
+          ${scoring ? groupPanels(scoring.scoringItems) : ''}
+        </div>`;
+    }
+
+    async function loadAaa() {
+      const main = document.getElementById('main');
+      try {
+        const res = await fetch('/api/aaa', { cache: 'no-store' });
+        const data = await res.json();
+        if (!data.ok && data.configured) {
+          throw new Error(data.error || 'Could not load AAA League');
+        }
+
+        const crest = document.getElementById('aaa-crest');
+        if (crest && data.logo) crest.src = data.logo;
+
+        const payoutHtml = payoutsBlock(data.payouts);
+        const scoringHtml = scoringBlock(data);
+
+        if (!data.configured) {
+          main.innerHTML = `
+            ${payoutHtml}
+            ${scoringHtml}
+            <div class="msg-panel">
+              <p><strong>AAA League</strong> is a separate feeder — not part of GridIron 24 boards. Standings and hot/cold unlock when the ESPN league ID is configured.</p>
+              <p style="margin-top:0.65rem;">${esc(data.message || '')}</p>
+            </div>`;
+          window.GridIronNav?.setSync('AAA · payouts & scoring');
+          return;
+        }
+
+        const champ = data.champion || data.promotee;
+        const promoteeHtml = champ
+          ? `<div class="promotee">
+              <p class="eyebrow">Next season</p>
+              <h2>Promotes to GridIron 24</h2>
+              <div class="promotee-team">
+                <img src="${esc(champ.logo || PLACEHOLDER)}" alt="" />
+                <div class="nm">${esc(champ.name)}</div>
+              </div>
+              <p>${esc(data.promotee?.label || 'Promotes to GridIron 24 next season')} (display only — franchise moves are handled by the commissioner).</p>
+            </div>`
+          : '';
+
+        const rows = (data.teams || []).map((t, i) => `
+          <div class="row">
+            <div class="rk">${i + 1}</div>
+            <div class="team">
+              <img src="${esc(t.logo || PLACEHOLDER)}" alt="" />
+              <div class="name">${esc(t.name)}</div>
+            </div>
+            <div class="wl">${t.wins}</div>
+            <div class="wl">${t.losses}</div>
+            <div class="wl col-ties">${t.ties || 0}</div>
+            <div class="pts">${fmtPts(t.pointsFor)}</div>
+          </div>`).join('');
+
+        main.innerHTML = `
+          ${promoteeHtml}
+          ${hotColdBlock(data.hot, data.cold)}
+          ${payoutHtml}
+          <div class="board">
+            <div class="board-head">
+              <h2>${esc(data.name || 'AAA League')}</h2>
+              <p class="sub">${esc(data.espnLeagueName || '')}${data.teamCount ? ` · ${data.teamCount} teams` : ''}</p>
+            </div>
+            <div class="row head">
+              <div>#</div>
+              <div>Team</div>
+              <div>W</div>
+              <div>L</div>
+              <div class="col-ties">T</div>
+              <div>PF</div>
+            </div>
+            ${rows || '<div class="row"><div style="grid-column:1/-1;color:var(--muted)">No teams yet.</div></div>'}
+          </div>
+          ${scoringHtml}`;
+
+        const t = new Date(data.generatedAt);
+        window.GridIronNav?.setSync(`AAA sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        main.innerHTML = `<div class="msg-panel">${esc(err.message)}</div>`;
+        window.GridIronNav?.setSync('AAA sync error', false);
+      }
+    }
+
+    loadAaa();
+    setInterval(loadAaa, 60_000);
+  </script>
+</body>
+</html>
