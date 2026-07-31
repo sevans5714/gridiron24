@@ -9,6 +9,9 @@ const sportsFallbacks = require('./sports-fallbacks');
 
 const CACHE_MS = 20_000;
 
+/** Shared NCAA mark for every college league tab / header. */
+const NCAA_LOGO = '/assets/ncaa-logo.png';
+
 const LEAGUES = {
   nfl: {
     id: 'nfl',
@@ -24,7 +27,7 @@ const LEAGUES = {
     sport: 'football',
     league: 'college-football',
     kind: 'team',
-    logo: '/assets/ncaa-logo.png',
+    logo: NCAA_LOGO,
     lockLogo: true
   },
   mlb: {
@@ -49,7 +52,8 @@ const LEAGUES = {
     sport: 'baseball',
     league: 'college-baseball',
     kind: 'team',
-    logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-baseball.png'
+    logo: NCAA_LOGO,
+    lockLogo: true
   },
   nhl: {
     id: 'nhl',
