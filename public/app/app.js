@@ -579,7 +579,7 @@
       const meta = m.meta || {};
       const betHtml = isBet
         ? `<div class="im-bet-card${meta.private ? ' is-private' : ''}">
-            <div class="im-bet-kicker">${meta.private ? "Casala's Palace · Private" : "Casala's Palace"}</div>
+            <div class="im-bet-kicker"><span class="im-bet-money" aria-hidden="true">💰</span>${meta.private ? "Casala's Palace · Private" : "Casala's Palace"}</div>
             <div class="im-bet-type">${esc(meta.type === 'parlay' ? `Parlay · ${(meta.legs || []).length} legs` : (meta.type === 'future' ? 'Future' : 'Straight'))}${Array.isArray(meta.leagues) && meta.leagues.length ? ` · ${esc(meta.leagues.join(' / '))}` : ''} · ${esc(Number(meta.odds) > 0 ? `+${meta.odds}` : String(meta.odds ?? '—'))}</div>
             <div class="im-bet-legs">${(meta.legs || []).map((leg) => `<div class="im-bet-leg"><strong>${esc(leg.label || 'Pick')}</strong></div>`).join('') || esc(m.body || '')}</div>
             <div class="im-bet-stake">${meta.type === 'future' ? 'Record only' : `${esc(meta.stake)}u to win ${esc(meta.toWin)}`}</div>
@@ -1170,7 +1170,7 @@
       parts.push(`
         <div class="pulse-card">
           <div class="eyebrow">Week ${esc(String(finaleEventWeek(bowl)))} · GridIron Bowl</div>
-          <img class="mark" src="/assets/gridiron-bowl.png?v=5" alt="GridIron Bowl" width="1024" height="682" loading="eager" decoding="async" />
+          <img class="mark" src="/assets/gridiron-bowl.png?v=6" alt="GridIron Bowl" width="1024" height="682" loading="eager" decoding="async" />
           <div class="pulse-score">
             ${pulseSide(bowl.detail, 'detail')}
             <div class="mid">${(d != null && o != null) ? `${fmtPts(d)} – ${fmtPts(o)}` : 'VS'}</div>
@@ -1185,7 +1185,7 @@
       parts.push(`
         <div class="pulse-card">
           <div class="eyebrow">Week ${esc(String(finaleEventWeek(survival)))} · ${esc(survival.name || "Mayor's Cup")}</div>
-          <img class="mark" src="/assets/mayors-cup.png?v=5" alt="Mayor's Cup" width="1024" height="768" loading="eager" decoding="async" />
+          <img class="mark" src="/assets/mayors-cup.png?v=6" alt="Mayor's Cup" width="1024" height="768" loading="eager" decoding="async" />
           <div class="pulse-score">
             ${pulseSide(survival.detail, 'detail')}
             <div class="mid">${(d != null && o != null) ? `${fmtPts(d)} – ${fmtPts(o)}` : 'VS'}</div>
@@ -1952,12 +1952,12 @@
         <div class="po-finales">
           ${bowl ? `
             <div class="po-finale">
-              <img src="/assets/gridiron-bowl.png?v=5" alt="GridIron Bowl" width="320" height="213" loading="lazy" decoding="async" />
+              <img src="/assets/gridiron-bowl.png?v=6" alt="GridIron Bowl" width="320" height="213" loading="lazy" decoding="async" />
               <strong>GridIron Bowl</strong>
             </div>` : ''}
           ${cup ? `
             <div class="po-finale">
-              <img src="/assets/mayors-cup.png?v=5" alt="${esc(cup.name || "Mayor's Cup")}" width="320" height="240" loading="lazy" decoding="async" />
+              <img src="/assets/mayors-cup.png?v=6" alt="${esc(cup.name || "Mayor's Cup")}" width="320" height="240" loading="lazy" decoding="async" />
               <strong>${esc(cup.name || "Mayor's Cup")}</strong>
             </div>` : ''}
         </div>` : ''}

@@ -1609,6 +1609,8 @@
           <button type="button" data-select-pool="${esc(p.id)}">${pool && p.id === pool.id ? 'Selected' : 'Open'}</button>
           ${!p.joined && p.status === 'open' && !(p.mode === 'draft' && p.draft?.status === 'active')
             ? `<button type="button" data-join-pool="${esc(p.id)}">Join</button>` : ''}
+          ${p.isCreator
+            ? `<button type="button" class="is-danger" data-delete-pool="${esc(p.id)}">Delete</button>` : ''}
         </div>
       </article>`).join('');
 
@@ -1884,6 +1886,19 @@
         deathAction('join', { poolId, _buyIn: buyIn, _poolName: name });
       });
     });
+    root.querySelectorAll('[data-delete-pool]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const poolId = btn.getAttribute('data-delete-pool');
+        const target = (death.data?.pools || []).find((p) => p.id === poolId);
+        const name = target?.name || 'this pool';
+        const members = Number(target?.memberCount) || 0;
+        const ok = confirm(
+          `Delete “${name}” permanently?\n\n${members > 1 ? `${members} members will lose access. ` : ''}This cannot be undone.`
+        );
+        if (!ok) return;
+        deathAction('delete', { poolId });
+      });
+    });
     root.querySelectorAll('[data-bid]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const nomId = btn.getAttribute('data-bid');
@@ -2117,7 +2132,10 @@
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Action failed');
-      if (data.pool) {
+      if (action === 'delete') {
+        death.poolId = null;
+        death.joinFlash = null;
+      } else if (data.pool) {
         death.poolId = data.pool.id;
       }
       if (action === 'join' || action === 'create') {
@@ -2142,7 +2160,8 @@
         set_draft_order: 'Draft order updated',
         start_draft: 'Draft started',
         end_draft: 'Draft ended',
-        update_settings: 'Settings saved'
+        update_settings: 'Settings saved',
+        delete: 'Pool deleted'
       };
       setDeathStatus(msgs[action] || 'Done', true);
     } catch (err) {
@@ -2212,7 +2231,7 @@
             <input name="buyIn" type="number" min="0" max="10000" step="1" value="0" style="width:6.5rem;" />
           </label>
           ${cpool.type === 'auction' ? `
-          <label>Start cash
+          <label>Bid budget ($)
             <input name="startingCash" type="number" min="50" max="100000" step="1" value="500" style="width:6.5rem;" />
           </label>` : ''}
         </div>
@@ -2260,14 +2279,26 @@
     const pool = activeCustomPool();
 
     const list = pools.length
-      ? `<div class="cpool-list">${pools.map((p) => `
-          <button type="button" class="cpool-card${p.id === cpool.poolId ? ' is-active' : ''}" data-cpool-open="${esc(p.id)}">
-            <div class="title"><span class="tag">${esc(p.typeLabel || p.type)}</span>${esc(p.name)}</div>
-            <div class="meta">${esc(p.memberCount)} in · pot $${esc(Number(p.pot) || 0)} · ${esc(p.status)} · ${esc(p.ownerName || '—')}</div>
-          </button>`).join('')}</div>`
+      ? `<div class="cpool-list">${pools.map((p) => {
+          const buyIn = Number(p.buyIn) || 0;
+          const canEnter = !p.joined && p.status === 'open';
+          const enterLabel = buyIn > 0 ? `Enter · $${buyIn}` : 'Enter · Free';
+          return `
+          <article class="cpool-card${p.id === cpool.poolId ? ' is-active' : ''}${p.joined ? ' is-joined' : ''}">
+            <button type="button" class="cpool-card-main" data-cpool-open="${esc(p.id)}">
+              <div class="title"><span class="tag">${esc(p.typeLabel || p.type)}</span>${esc(p.name)}</div>
+              <div class="meta">${esc(p.memberCount)} member${p.memberCount === 1 ? '' : 's'}${p.ownerName ? ` · ${esc(p.ownerName)}` : ''}${p.joined ? ' · you’re in' : ''}</div>
+            </button>
+            ${canEnter
+              ? `<button type="button" class="cpool-enter" data-cpool-join="${esc(p.id)}">${esc(enterLabel)}</button>`
+              : (p.joined
+                ? `<button type="button" class="cpool-enter is-in" data-cpool-open="${esc(p.id)}">Open</button>`
+                : `<button type="button" class="cpool-enter is-closed" disabled>${esc(p.status || 'Closed')}</button>`)}
+          </article>`;
+        }).join('')}</div>`
       : `<div class="cpool-empty">
           <strong>No pools yet</strong>
-          <p>Nothing here until someone creates one. Open the pool creator to start a pick’em, squares board, auction, or more.</p>
+          <p>Nothing here until someone creates one. Open the pool creator to start a pick’em, squares, or more.</p>
           <button type="button" data-cpool-open-create>Create a pool</button>
         </div>`;
 
@@ -2358,32 +2389,32 @@
             <div class="meta" style="color:var(--mo-muted);font-size:0.78rem;">${statusLine}</div>
             ${bidUi}
           </div>`;
-        }).join('') || `<p class="records-empty">Owner hasn’t added auction lots yet.</p>`;
+        }).join('') || `<p class="records-empty">Owner hasn’t added items to bid on yet.</p>`;
         if (pool.isOwner && pool.status === 'open') {
           play += `
             <form class="cpool-create" id="cpool-add-option" style="margin-top:0.65rem;">
               <div class="row">
-                <label style="flex:1 1 10rem;">Lot name
-                  <input name="label" maxlength="120" required placeholder="Item or player name" />
+                <label style="flex:1 1 10rem;">Item
+                  <input name="label" maxlength="120" required placeholder="Player, prize, or item name" />
                 </label>
-                <label>Reserve $
+                <label>Min bid $
                   <input name="reserve" type="number" min="0" max="100000" step="1" value="0" style="width:5.5rem;" />
                 </label>
                 <label>Hours
                   <input name="auctionHours" type="number" min="1" max="168" step="1" value="24" style="width:4.5rem;" />
                 </label>
-                <button type="submit">Add lot</button>
+                <button type="submit">Add item</button>
               </div>
             </form>
             <form class="cpool-create" id="cpool-import-lots" style="margin-top:0.55rem;">
-              <label>Upload / paste lots (Name | reserve | hours)
+              <label>Paste items (Name | min bid | hours)
                 <textarea name="text" rows="3" maxlength="6000" placeholder="Mahomes jersey | 25 | 24&#10;Signed helmet | 50 | 48"></textarea>
               </label>
               <div class="row">
                 <label>File
                   <input type="file" name="file" accept=".txt,.csv,.tsv,text/plain" />
                 </label>
-                <button type="submit">Import lots</button>
+                <button type="submit">Import items</button>
               </div>
             </form>`;
         }
@@ -2409,6 +2440,7 @@
             ${pool.type === 'sweep' && pool.status !== 'settled' ? `<button type="button" data-cpool-action="draw">Draw winner</button>` : ''}
             ${pool.status !== 'settled' && pool.status !== 'closed' ? `<button type="button" data-cpool-action="settle">Settle / crown</button>` : ''}
             ${pool.status !== 'closed' ? `<button type="button" data-cpool-action="close">Close pool</button>` : ''}
+            <button type="button" class="is-danger" data-cpool-action="delete">Delete pool</button>
           </div>`
         : '';
 
@@ -2418,21 +2450,15 @@
             <div class="title" style="font-family:Oswald,sans-serif;letter-spacing:0.04em;font-size:1.05rem;">${esc(pool.name)}</div>
             <div class="meta" style="color:var(--mo-muted);font-size:0.82rem;margin-top:0.25rem;">
               <span class="tag">${esc(pool.typeLabel)}</span>
-              ${esc(pool.status)} · pot $${esc(Number(pool.pot) || 0)} · owner ${esc(pool.ownerName || '—')}
-              ${pool.startingCash != null ? ` · bank $${esc(pool.startingCash)}` : ''}
+              ${esc(pool.memberCount)} member${pool.memberCount === 1 ? '' : 's'}
+              ${pool.ownerName ? ` · ${esc(pool.ownerName)}` : ''}
+              ${pool.joined ? ' · you’re in' : ''}
             </div>
             ${pool.description ? `<p style="margin:0.45rem 0 0;color:var(--mo-muted);font-size:0.88rem;">${esc(pool.description)}</p>` : ''}
           </div>
-          <div class="cpool-actions">
-            ${!pool.joined && pool.status === 'open'
-              ? `<button type="button" data-cpool-action="join">${Number(pool.buyIn) > 0 ? `Join · $${esc(pool.buyIn)} buy-in` : 'Join pool'}</button>`
-              : ''}
-          </div>
-          ${!pool.joined
-            ? `<div class="death-join-gate" style="margin-top:0.75rem;">
-                <h3>${esc(pool.name)}</h3>
-                <p class="buy-in-hero"><span>Buy-in to join</span>${Number(pool.buyIn) > 0 ? `$${esc(String(pool.buyIn))}` : 'FREE'}</p>
-                <p class="meta">Join to unlock picks, lots, squares, and standings for this pool.</p>
+          ${!pool.joined && pool.status === 'open'
+            ? `<div class="cpool-actions">
+                <button type="button" class="cpool-enter" data-cpool-action="join">${Number(pool.buyIn) > 0 ? `Enter · $${esc(pool.buyIn)}` : 'Enter · Free'}</button>
               </div>`
             : ''}
           ${cpool.joinFlash && cpool.joinFlash.poolId === pool.id ? `
@@ -2441,7 +2467,9 @@
               <p class="buy-in-hero"><span>Your buy-in</span>${cpool.joinFlash.buyIn > 0 ? `$${esc(String(cpool.joinFlash.buyIn))}` : 'FREE'}</p>
               <button type="button" id="cpool-join-flash-dismiss">Got it</button>
             </div>` : ''}
-          ${pool.joined || pool.isOwner ? play : ''}
+          ${pool.joined || pool.isOwner ? play : (!pool.joined && pool.status === 'open'
+            ? `<p class="records-empty" style="margin:0;">Hit Enter to get in — then picks unlock.</p>`
+            : '')}
           ${pool.isOwner && pool.status === 'open' ? `
             <form class="cpool-create" id="cpool-assign-form" style="margin-top:0.65rem;">
               <div class="row">
@@ -2489,6 +2517,25 @@
       btn.addEventListener('click', () => {
         cpool.poolId = btn.getAttribute('data-cpool-open');
         renderCustomPools();
+      });
+    });
+    root.querySelectorAll('[data-cpool-join]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const poolId = btn.getAttribute('data-cpool-join');
+        const target = (cpool.data?.pools || []).find((p) => String(p.id) === String(poolId));
+        if (!target) return;
+        cpool.poolId = poolId;
+        const buyIn = Number(target.buyIn) || 0;
+        const name = target.name || 'this pool';
+        const ok = buyIn > 0
+          ? confirm(`Enter “${name}”?\n\nBUY-IN: $${buyIn}\n\nContinue?`)
+          : confirm(`Enter “${name}”?\n\nNo buy-in. Continue?`);
+        if (!ok) return;
+        await cpoolAction('join', {
+          poolId,
+          _buyIn: buyIn,
+          _poolName: name
+        });
       });
     });
     root.querySelector('#cpool-add-option')?.addEventListener('submit', async (e) => {
@@ -2565,8 +2612,8 @@
           const buyIn = Number(target?.buyIn) || 0;
           const name = target?.name || 'this pool';
           const ok = buyIn > 0
-            ? confirm(`Join “${name}”?\n\nBUY-IN: $${buyIn}\n\nThis adds you to the pot. Continue?`)
-            : confirm(`Join “${name}”?\n\nNo buy-in required. Continue?`);
+            ? confirm(`Enter “${name}”?\n\nBUY-IN: $${buyIn}\n\nContinue?`)
+            : confirm(`Enter “${name}”?\n\nNo buy-in. Continue?`);
           if (!ok) return;
           await cpoolAction('join', {
             poolId: cpool.poolId,
@@ -2574,6 +2621,15 @@
             _poolName: name
           });
           return;
+        }
+        if (action === 'delete') {
+          const target = activeCustomPool();
+          const name = target?.name || 'this pool';
+          const members = Number(target?.memberCount) || 0;
+          const ok = confirm(
+            `Delete “${name}” permanently?\n\n${members > 1 ? `${members} members will lose access. ` : ''}This cannot be undone.`
+          );
+          if (!ok) return;
         }
         await cpoolAction(action, { poolId: cpool.poolId });
       });
@@ -2660,7 +2716,12 @@
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Action failed');
-      if (data.pool) cpool.poolId = data.pool.id;
+      if (action === 'delete') {
+        cpool.poolId = null;
+        cpool.joinFlash = null;
+      } else if (data.pool) {
+        cpool.poolId = data.pool.id;
+      }
       if (action === 'join' || action === 'create') {
         cpool.joinFlash = {
           poolId: data.pool?.id || cpool.poolId,
@@ -2674,10 +2735,10 @@
       const msgs = {
         create: 'Pool created',
         join: cpool.joinFlash?.buyIn > 0
-          ? `Joined · buy-in $${cpool.joinFlash.buyIn}`
-          : 'Joined',
+          ? `Entered · buy-in $${cpool.joinFlash.buyIn}`
+          : 'Entered',
         assign: 'Member assigned',
-        import: data.imported != null ? `Imported ${data.imported} lot${data.imported === 1 ? '' : 's'}` : 'Lots imported',
+        import: data.imported != null ? `Imported ${data.imported} item${data.imported === 1 ? '' : 's'}` : 'Items imported',
         add_option: 'Added to board',
         bid: 'Bid placed',
         submit: 'Entry saved',
@@ -2687,7 +2748,8 @@
         set_result: 'Result posted',
         draw: 'Winner drawn',
         settle: 'Pool settled',
-        close: 'Pool closed'
+        close: 'Pool closed',
+        delete: 'Pool deleted'
       };
       setCpoolStatus(msgs[action] || 'Done', true);
     } catch (err) {

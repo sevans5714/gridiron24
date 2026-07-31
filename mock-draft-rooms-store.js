@@ -1,6 +1,6 @@
 /**
  * Lounge multiplayer mock draft rooms.
- * Host starts → chat announce → others claim open seats → humans get pick clock, empty seats CPU.
+ * Host opens lobby → players drag seats → host locks positions → join window ends → host starts → CPU fills empty seats.
  */
 const fs = require('fs');
 const path = require('path');
@@ -12,6 +12,8 @@ const FILE = path.join(DATA_DIR, 'mock-draft-rooms.json');
 const TEAM_COUNTS = new Set([10, 12, 14]);
 const ROUND_OPTIONS = new Set([8, 10, 12, 15, 16, 18]);
 const PICK_SECONDS_OPTIONS = new Set([60, 120, 180]);
+const JOIN_LOBBY_SECONDS = 60;
+const CPU_PICK_GAP_MS = 1000;
 const MAX_ROOMS = 12;
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -137,6 +139,8 @@ function publicRoom(room, viewerId = null) {
       : null,
     mySeatIndex: mySeat ? mySeat.index : null,
     isHost: Boolean(viewerId && room.hostId === viewerId),
+    lobbyEndsAt: room.lobbyEndsAt || null,
+    positionsLocked: Boolean(room.positionsLocked),
     openSeatCount: room.seats.filter((s) => !s.userId).length,
     createdAt: room.createdAt,
     updatedAt: room.updatedAt
@@ -163,9 +167,12 @@ function bestAvailable(pool, room) {
   });
   if (!avail.length) return null;
   avail.sort((a, b) => {
-    const aa = Number(a.adp ?? a.overallRank ?? 9999);
-    const bb = Number(b.adp ?? b.overallRank ?? 9999);
-    if (aa !== bb) return aa - bb;
+    const ra = a.overallRank != null ? Number(a.overallRank) : 9999;
+    const rb = b.overallRank != null ? Number(b.overallRank) : 9999;
+    if (ra !== rb) return ra - rb;
+    const aa = a.adp != null ? Number(a.adp) : 9999;
+    const ab = b.adp != null ? Number(b.adp) : 9999;
+    if (aa !== ab) return aa - ab;
     const pa = Number(b.projectedPoints2026 || b.fantasyPoints2025 || 0);
     const pb = Number(a.projectedPoints2026 || a.fantasyPoints2025 || 0);
     return pa - pb;
@@ -206,6 +213,7 @@ function applyPick(room, player, { cpu = false } = {}) {
 
 /**
  * Advance past CPU seats and expired human clocks.
+ * CPU picks are paced one-at-a-time so clients can scroll/show each name on the board.
  * @param {object} room
  * @param {Array} pool
  */
@@ -215,38 +223,59 @@ function advanceRoom(room, pool) {
   let changed = false;
   let guard = 0;
   const max = room.teamCount * room.rounds + 4;
+
+  function armNextClock() {
+    const next = currentSlot(room);
+    if (!next) {
+      room.cpuReadyAt = null;
+      room.pickDeadline = null;
+      return;
+    }
+    const nextHuman = Boolean(room.seats[next.teamIndex]?.userId);
+    if (nextHuman) {
+      room.cpuReadyAt = null;
+      room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
+    } else {
+      room.pickDeadline = null;
+      room.cpuReadyAt = new Date(Date.now() + CPU_PICK_GAP_MS).toISOString();
+    }
+  }
+
   while (guard < max) {
     guard += 1;
     const slot = currentSlot(room);
     if (!slot) {
       room.status = 'done';
       room.pickDeadline = null;
+      room.cpuReadyAt = null;
       changed = true;
       break;
     }
     const seat = room.seats[slot.teamIndex];
     const isHuman = Boolean(seat?.userId);
     if (!isHuman) {
+      const readyAt = room.cpuReadyAt ? Date.parse(room.cpuReadyAt) : 0;
+      if (Number.isFinite(readyAt) && Date.now() < readyAt) break;
       const player = bestAvailable(pool, room);
       if (!player) break;
       applyPick(room, player, { cpu: true });
+      armNextClock();
       changed = true;
-      continue;
+      break;
     }
     const deadline = room.pickDeadline ? Date.parse(room.pickDeadline) : NaN;
     if (Number.isFinite(deadline) && Date.now() > deadline) {
       const player = bestAvailable(pool, room);
       if (!player) break;
       applyPick(room, player, { cpu: true });
-      room.pickDeadline = currentSlot(room) && room.seats[currentSlot(room).teamIndex]?.userId
-        ? new Date(Date.now() + room.pickSeconds * 1000).toISOString()
-        : null;
+      armNextClock();
       changed = true;
-      continue;
+      break;
     }
     // Human on clock — ensure deadline set
     if (!room.pickDeadline) {
       room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
+      room.cpuReadyAt = null;
       changed = true;
     }
     break;
@@ -282,7 +311,7 @@ function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames
     id: crypto.randomUUID(),
     hostId: user.id,
     hostName: user.name || user.loginName || 'Host',
-    status: 'live',
+    status: 'lobby',
     teamCount: count,
     rounds: clampRounds(rounds),
     pickSeconds: clampPickSeconds(pickSeconds),
@@ -290,6 +319,8 @@ function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames
     seats,
     picks: [],
     pickDeadline: null,
+    lobbyEndsAt: new Date(Date.now() + JOIN_LOBBY_SECONDS * 1000).toISOString(),
+    positionsLocked: false,
     createdAt: now,
     updatedAt: now
   };
@@ -297,6 +328,77 @@ function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames
   pruneRooms(store);
   writeStore(store);
   return room;
+}
+
+function startDraft({ roomId, user, pool }) {
+  if (!user?.id) throw err(401, 'Sign in required');
+  let room = getRoom(roomId);
+  if (!room) throw err(404, 'Mock draft not found');
+  if (room.status !== 'lobby') throw err(409, 'Draft already started');
+  if (String(room.hostId) !== String(user.id)) {
+    throw err(403, 'Only the host can start the draft');
+  }
+  if (!room.positionsLocked) {
+    throw err(409, 'Lock positions before starting the draft');
+  }
+  const endsAt = room.lobbyEndsAt ? Date.parse(room.lobbyEndsAt) : 0;
+  if (Number.isFinite(endsAt) && Date.now() < endsAt) {
+    const wait = Math.ceil((endsAt - Date.now()) / 1000);
+    throw err(409, `Wait ${wait}s for others to join before starting`);
+  }
+  room.status = 'live';
+  room.lobbyEndsAt = null;
+  room.updatedAt = new Date().toISOString();
+  advanceRoom(room, pool);
+  return saveRoom(room);
+}
+
+function lockPositions({ roomId, user }) {
+  if (!user?.id) throw err(401, 'Sign in required');
+  const room = getRoom(roomId);
+  if (!room) throw err(404, 'Mock draft not found');
+  if (room.status !== 'lobby') throw err(409, 'Draft already started');
+  if (String(room.hostId) !== String(user.id)) {
+    throw err(403, 'Only the host can lock positions');
+  }
+  room.positionsLocked = true;
+  room.updatedAt = new Date().toISOString();
+  return saveRoom(room);
+}
+
+function moveSeat({ roomId, user, toIndex }) {
+  if (!user?.id) throw err(401, 'Sign in required');
+  const room = getRoom(roomId);
+  if (!room) throw err(404, 'Mock draft not found');
+  if (room.status !== 'lobby') throw err(400, 'Seats are locked — draft already started');
+  if (room.positionsLocked) throw err(403, 'Positions are locked');
+  const fromSeat = room.seats.find((s) => s.userId === user.id);
+  if (!fromSeat) throw err(400, 'Claim a seat first');
+  const to = Number(toIndex);
+  if (!Number.isFinite(to) || to < 0 || to >= room.teamCount) {
+    throw err(400, 'Choose a valid draft position');
+  }
+  if (to === fromSeat.index) return room;
+  const target = room.seats[to];
+  const from = fromSeat.index;
+  const swapUser = {
+    userId: target.userId,
+    userName: target.userName,
+    isCpu: Boolean(target.isCpu || !target.userId)
+  };
+  target.userId = fromSeat.userId;
+  target.userName = fromSeat.userName;
+  target.isCpu = false;
+  fromSeat.userId = swapUser.userId;
+  fromSeat.userName = swapUser.userName;
+  fromSeat.isCpu = Boolean(swapUser.isCpu || !swapUser.userId);
+  if (Array.isArray(room.teamNames) && room.teamNames.length > Math.max(from, to)) {
+    const tmpName = room.teamNames[from];
+    room.teamNames[from] = room.teamNames[to];
+    room.teamNames[to] = tmpName;
+  }
+  room.updatedAt = new Date().toISOString();
+  return saveRoom(room);
 }
 
 function getRoom(roomId) {
@@ -320,7 +422,14 @@ function joinSeat({ roomId, user, seatIndex }) {
   if (!room) throw err(404, 'Mock draft not found');
   if (room.status === 'done') throw err(400, 'This mock draft is finished');
   const existing = room.seats.find((s) => s.userId === user.id);
-  if (existing) return room;
+  if (existing) {
+    if (room.positionsLocked || room.status !== 'lobby') return room;
+    // Already seated — treat as a move to the clicked open/target seat
+    return moveSeat({ roomId, user, toIndex: seatIndex });
+  }
+  if (room.status === 'lobby' && room.positionsLocked) {
+    // Still allow claiming an open CPU seat after lock; no rearranging
+  }
   const idx = Number(seatIndex);
   if (!Number.isFinite(idx) || idx < 0 || idx >= room.teamCount) {
     throw err(400, 'Choose an open seat');
@@ -331,10 +440,12 @@ function joinSeat({ roomId, user, seatIndex }) {
   seat.userName = user.name || user.loginName || 'Member';
   seat.isCpu = false;
   room.updatedAt = new Date().toISOString();
-  // If this seat is currently on the clock, reset deadline for the new human
-  const slot = currentSlot(room);
-  if (slot && slot.teamIndex === idx) {
-    room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
+  // If this seat is currently on the clock during a live draft, reset deadline for the new human
+  if (room.status === 'live') {
+    const slot = currentSlot(room);
+    if (slot && slot.teamIndex === idx) {
+      room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
+    }
   }
   return saveRoom(room);
 }
@@ -365,9 +476,14 @@ function humanPick({ roomId, user, playerId, pool }) {
   applyPick(room, player, { cpu: false });
   const next = currentSlot(room);
   if (next && room.seats[next.teamIndex]?.userId) {
+    room.cpuReadyAt = null;
     room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
+  } else if (next) {
+    room.pickDeadline = null;
+    room.cpuReadyAt = new Date(Date.now() + CPU_PICK_GAP_MS).toISOString();
   } else {
     room.pickDeadline = null;
+    room.cpuReadyAt = null;
   }
   advanceRoom(room, pool);
   return saveRoom(room);
@@ -377,11 +493,14 @@ function listActiveRooms() {
   const store = readStore();
   pruneRooms(store);
   writeStore(store);
-  return store.rooms.filter((r) => r.status === 'live');
+  return store.rooms.filter((r) => r.status === 'live' || r.status === 'lobby');
 }
 
 module.exports = {
   createRoom,
+  startDraft,
+  lockPositions,
+  moveSeat,
   getRoom,
   saveRoom,
   joinSeat,
@@ -392,5 +511,7 @@ module.exports = {
   listActiveRooms,
   currentSlot,
   clampPickSeconds,
-  PICK_SECONDS_OPTIONS
+  PICK_SECONDS_OPTIONS,
+  JOIN_LOBBY_SECONDS,
+  CPU_PICK_GAP_MS
 };

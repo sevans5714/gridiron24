@@ -5661,6 +5661,9 @@ const server = http.createServer(async (req, res) => {
         if (action === 'update_settings' || action === 'settings') {
           return sendJson(res, 200, deathPool.updatePoolSettings(publicAuthor, body));
         }
+        if (action === 'delete') {
+          return sendJson(res, 200, deathPool.deletePool(publicAuthor, body.poolId));
+        }
         return sendJson(res, 400, { ok: false, error: 'Unknown death pool action' });
       } catch (err) {
         return sendJson(res, err.status || 400, {
@@ -5859,14 +5862,11 @@ const server = http.createServer(async (req, res) => {
             seatIndex: body.seatIndex,
             teamNames: body.teamNames
           });
-          mockDraftRooms.advanceRoom(room, pool);
-          mockDraftRooms.saveRoom(room);
           const pub = mockDraftRooms.publicRoom(room, user.id);
-          const clockLabel = `${Math.round(room.pickSeconds / 60)}:00`;
           let chatItem = null;
           try {
             chatItem = membersChat.addMessage({
-              body: `started a mock draft · ${clockLabel} pick clock · open seats can join`,
+              body: 'opened a mock draft lobby · join before the host starts',
               author: publicAuthor,
               kind: 'mock',
               meta: {
@@ -5876,6 +5876,7 @@ const server = http.createServer(async (req, res) => {
                 rounds: room.rounds,
                 pickSeconds: room.pickSeconds,
                 pickDeadline: room.pickDeadline,
+                lobbyEndsAt: room.lobbyEndsAt,
                 order: 'snake',
                 seat: room.teamNames[room.seats.find((s) => s.userId === user.id)?.index] || null,
                 openSeats: room.seats.filter((s) => !s.userId).length,
@@ -5887,6 +5888,53 @@ const server = http.createServer(async (req, res) => {
             });
           } catch { /* best-effort */ }
           return sendJson(res, 201, { ok: true, room: pub, chatItem });
+        }
+
+        if (action === 'start') {
+          const room = mockDraftRooms.startDraft({
+            roomId: body.roomId,
+            user: publicAuthor,
+            pool
+          });
+          const pub = mockDraftRooms.publicRoom(room, user.id);
+          let chatItem = null;
+          try {
+            chatItem = membersChat.addMessage({
+              body: 'started the mock draft',
+              author: publicAuthor,
+              kind: 'mock',
+              meta: {
+                type: 'mock_live',
+                roomId: room.id,
+                teams: room.teamCount,
+                rounds: room.rounds,
+                pickSeconds: room.pickSeconds,
+                pickDeadline: room.pickDeadline,
+                status: room.status,
+                link: `/members.html#mock-draft?room=${encodeURIComponent(room.id)}`,
+                linkLabel: 'Open Mock Draft'
+              },
+              skipRateLimit: true
+            });
+          } catch { /* best-effort */ }
+          return sendJson(res, 200, { ok: true, room: pub, chatItem });
+        }
+
+        if (action === 'lock-positions') {
+          const room = mockDraftRooms.lockPositions({
+            roomId: body.roomId,
+            user: publicAuthor
+          });
+          return sendJson(res, 200, { ok: true, room: mockDraftRooms.publicRoom(room, user.id) });
+        }
+
+        if (action === 'move-seat') {
+          const room = mockDraftRooms.moveSeat({
+            roomId: body.roomId,
+            user: publicAuthor,
+            toIndex: body.seatIndex
+          });
+          return sendJson(res, 200, { ok: true, room: mockDraftRooms.publicRoom(room, user.id) });
         }
 
         if (action === 'join') {

@@ -545,7 +545,7 @@ function ensureSystemLeague(seed) {
     conferences: confs,
     championship: {
       name: 'GridIron Bowl',
-      logo: '/assets/gridiron-bowl.png?v=3',
+      logo: '/assets/gridiron-bowl.png?v=6',
       titleWeek: 16,
       bowlWeek: 17,
       confChampLogos: {

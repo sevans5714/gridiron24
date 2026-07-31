@@ -6,6 +6,7 @@
   const STORAGE_KEY = 'gi24.mockDraft.v5';
   const TARGETS_KEY = 'gi24.mockTargets.v1';
   const COMPLETE_NUM_KEY = 'gi24.mockDraftCompleteNum.v1';
+  const SHOW_TOOLS_KEY = 'gi24.mockDraft.showTools.v1';
   const TEAM_COUNTS = new Set([10, 12, 14]);
   const ROUND_OPTIONS = new Set([8, 10, 12, 15, 16, 18]);
   const DEFAULT_TEAM_COUNT = 12;
@@ -25,6 +26,13 @@
   let pickSeconds = DEFAULT_PICK_SECONDS;
   let roomId = null;
   let roomSeats = null;
+  let roomStatus = null;
+  let roomIsHost = false;
+  let lobbyEndsAt = null;
+  let positionsLocked = false;
+  let lobbyPaintId = null;
+  let dragSeatIndex = null;
+  let suppressSeatClick = false;
   let roomPollId = null;
   let roomSyncing = false;
   let pendingJoinRoomId = null;
@@ -38,6 +46,11 @@
   let profileClickTimer = null;
   let turnCueKey = null;
   let audioCtx = null;
+  let lastCountdownBeep = null;
+  let cpuAnimRunning = false;
+  let justPickedSeat = null;
+  let justPickedTimer = null;
+  let lastFocusSeat = null;
   let mockCompleteShown = false;
 
   function isMultiplayer() {
@@ -67,6 +80,7 @@
 
   function stopRoomPoll() {
     if (roomPollId) {
+      clearTimeout(roomPollId);
       clearInterval(roomPollId);
       roomPollId = null;
     }
@@ -74,10 +88,52 @@
 
   function leaveRoomLocal() {
     stopRoomPoll();
+    stopLobbyPaint();
     roomId = null;
     roomSeats = null;
+    roomStatus = null;
+    roomIsHost = false;
+    lobbyEndsAt = null;
+    positionsLocked = false;
     pendingJoinRoomId = null;
     awaitingSeatClaim = false;
+  }
+
+  function stopLobbyPaint() {
+    if (lobbyPaintId) {
+      clearInterval(lobbyPaintId);
+      lobbyPaintId = null;
+    }
+  }
+
+  function startLobbyPaint() {
+    stopLobbyPaint();
+    if (roomStatus !== 'lobby') return;
+    lobbyPaintId = setInterval(() => {
+      if (roomStatus !== 'lobby') {
+        stopLobbyPaint();
+        return;
+      }
+      paintMockStartBar();
+    }, 400);
+  }
+
+  function lobbySecondsLeft() {
+    if (!lobbyEndsAt) return 0;
+    return Math.max(0, Math.ceil((lobbyEndsAt - Date.now()) / 1000));
+  }
+
+  function isLobbyReady() {
+    return roomStatus === 'lobby' && lobbySecondsLeft() <= 0;
+  }
+
+  function canDragSeat() {
+    if (!mock || draftLive || isDraftComplete()) return false;
+    if (awaitingSeatClaim) return false;
+    if (isMultiplayer()) {
+      return roomStatus === 'lobby' && !positionsLocked;
+    }
+    return true;
   }
 
   function normalizeRounds(n) {
@@ -98,8 +154,7 @@
       pickTimerId = null;
     }
     pickDeadline = null;
-    document.getElementById('mock-pick-timer')?.classList.remove('is-low', 'is-urgent');
-    document.getElementById('mock-clock-timer')?.classList.remove('is-low', 'is-urgent');
+    document.getElementById('mock-pick-timer')?.classList.remove('is-ok', 'is-warn', 'is-low', 'is-urgent');
   }
 
   function syncMockActionButtons() {
@@ -121,8 +176,49 @@
     if (roundsEl) roundsEl.disabled = live || done || mp;
   }
 
+  function showAdvancedTools() {
+    try {
+      return localStorage.getItem(SHOW_TOOLS_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  function setShowAdvancedTools(on) {
+    try {
+      localStorage.setItem(SHOW_TOOLS_KEY, on ? '1' : '0');
+    } catch { /* ignore */ }
+    paintAdvancedTools();
+  }
+
+  function paintAdvancedTools() {
+    const on = showAdvancedTools();
+    const bar = document.getElementById('mock-toolbar');
+    if (bar) bar.hidden = !on;
+    const cb = document.getElementById('mock-show-tools');
+    if (cb) cb.checked = on;
+  }
+
+  function resetMockDraft({ confirm: ask = true } = {}) {
+    if (ask && (mock?.picks?.length || draftLive || isMultiplayer()) && !confirm('Reset the mock draft?')) {
+      return false;
+    }
+    endDraftSession();
+    leaveRoomLocal();
+    if (mock) mock.picks = [];
+    mockCompleteShown = false;
+    history.replaceState(null, '', '#mock-draft');
+    renderMock();
+    setMockStatus('Board reset — set your pick #, then Start Draft', true);
+    return true;
+  }
+
   function setDraftLive(on) {
     draftLive = Boolean(on);
+    paintMockStartBar();
+  }
+
+  function paintMockStartBar() {
     const bar = document.getElementById('mock-start-bar');
     const btn = document.getElementById('mock-start');
     const label = document.getElementById('mock-start-label');
@@ -135,9 +231,12 @@
     const clockTxt = clockLabelText(pickSeconds || getPickSeconds());
     const waitingSeat = awaitingSeatClaim;
     const mine = canUserDraftNow();
+    const inLobby = roomStatus === 'lobby';
+    const lobbyLeft = lobbySecondsLeft();
     bar?.classList.toggle('is-live', draftLive && !done);
     bar?.classList.toggle('is-done', done);
     bar?.classList.toggle('is-my-clock', mine);
+    bar?.classList.toggle('is-lobby', inLobby);
     if (clockSel) clockSel.disabled = draftLive || isMultiplayer();
     if (btn) {
       if (waitingSeat) {
@@ -150,18 +249,45 @@
         if (sub) sub.textContent = 'Reset to run another mock';
         btn.disabled = true;
         btn.setAttribute('aria-label', 'Draft complete');
+      } else if (inLobby) {
+        if (!positionsLocked && roomIsHost) {
+          if (label) label.textContent = 'Position set';
+          if (sub) sub.textContent = 'Lock the draft order';
+          btn.disabled = false;
+          btn.setAttribute('aria-label', 'Position set');
+        } else if (!positionsLocked) {
+          if (label) label.textContent = 'Set your position';
+          if (sub) sub.textContent = 'Drag your team on the board';
+          btn.disabled = true;
+          btn.setAttribute('aria-label', 'Waiting for host to lock positions');
+        } else if (lobbyLeft > 0) {
+          if (label) label.textContent = 'Join window';
+          if (sub) sub.textContent = 'Positions locked · others can still join open seats';
+          btn.disabled = true;
+          btn.setAttribute('aria-label', 'Waiting for join window');
+        } else if (roomIsHost) {
+          if (label) label.textContent = 'Start drafting';
+          if (sub) sub.textContent = 'Click when you’re ready';
+          btn.disabled = false;
+          btn.setAttribute('aria-label', 'Start drafting');
+        } else {
+          if (label) label.textContent = 'Ready';
+          if (sub) sub.textContent = 'Waiting for host to start';
+          btn.disabled = true;
+          btn.setAttribute('aria-label', 'Waiting for host');
+        }
       } else if (draftLive) {
         if (label) label.textContent = 'Draft Live';
         if (sub) {
           sub.textContent = isMultiplayer()
-            ? 'Open seats can join · CPU auto-picks'
+            ? 'CPU auto-picks empty seats'
             : `${clockTxt} on the clock`;
         }
         btn.disabled = true;
         btn.setAttribute('aria-label', 'Draft live');
       } else {
         if (label) label.textContent = 'Start Draft';
-        if (sub) sub.textContent = 'Opens room · others can join';
+        if (sub) sub.textContent = 'Drag your team · then Position set';
         btn.disabled = false;
         btn.setAttribute('aria-label', 'Start Draft');
       }
@@ -171,20 +297,43 @@
         copy.innerHTML = `<strong>Join in progress</strong><span>Select an open seat on the board.</span>`;
       } else if (done) {
         copy.innerHTML = `<strong>Board is final</strong><span>Review rosters below, or reset for a fresh mock.</span>`;
+      } else if (inLobby && !positionsLocked) {
+        copy.innerHTML = roomIsHost
+          ? `<strong>Drag teams into order</strong><span>When the board looks right, click Position set to lock it.</span>`
+          : `<strong>Drag your team</strong><span>Drop it on a pick slot to set your draft position. Host locks when ready.</span>`;
+      } else if (inLobby && lobbyLeft > 0) {
+        copy.innerHTML = `<strong>Positions locked</strong><span>Others can still claim open seats until the join window ends.</span>`;
+      } else if (inLobby && roomIsHost) {
+        copy.innerHTML = `<strong>Ready when you are</strong><span>Click Start drafting to put the first pick on the clock.</span>`;
+      } else if (inLobby) {
+        copy.innerHTML = `<strong>Lobby ready</strong><span>Host will start the draft when they’re ready.</span>`;
       } else if (draftLive && mine) {
-        copy.innerHTML = `<strong>ON THE CLOCK</strong><span>Lock your pick before 0:00 — best available auto-selects if time expires.</span>`;
+        copy.innerHTML = `<strong>ON THE CLOCK</strong><span>Double-click a player to draft — best available auto-selects if time expires.</span>`;
       } else if (draftLive) {
         copy.innerHTML = isMultiplayer()
-          ? `<strong>Live mock</strong><span>CPU clubs auto-pick until a human is up · open seats can still join from chat.</span>`
-          : `<strong>Waiting your turn</strong><span>CPU clubs draft instantly — you’ll hear a cue when you’re up.</span>`;
+          ? `<strong>Live mock</strong><span>CPU clubs pick one seat at a time — names land on the board as they go.</span>`
+          : `<strong>Waiting your turn</strong><span>CPU clubs pick one at a time on the board — you’ll hear a cue when you’re up.</span>`;
       } else {
-        copy.innerHTML = `<strong>Claim your seat, then Start Draft</strong><span>Opens a joinable room. CPU auto-picks until the first human, then the clock starts.</span>`;
+        copy.innerHTML = `<strong>Claim your seat, then Start Draft</strong><span>Drag your team to set pick order. Opens a 1:00 join lobby.</span>`;
       }
     }
-    if (liveLabel) liveLabel.textContent = mine ? 'ON THE CLOCK' : 'Pick clock';
-    if (liveTimer) liveTimer.hidden = !(draftLive && !done);
+    if (liveTimer) {
+      const showTimer = (inLobby && lobbyLeft > 0) || (draftLive && !done);
+      liveTimer.hidden = !showTimer;
+      if (inLobby && lobbyLeft > 0) {
+        if (liveLabel) liveLabel.textContent = positionsLocked ? 'Join window' : 'Join window';
+        const timerEl = document.getElementById('mock-pick-timer');
+        if (timerEl) {
+          timerEl.textContent = formatPickClock(lobbyLeft);
+          applyClockColor(timerEl, lobbyLeft, 60);
+          timerEl.classList.remove('is-mine');
+        }
+      } else if (draftLive && !done) {
+        if (liveLabel) liveLabel.textContent = mine ? 'ON THE CLOCK' : 'Pick clock';
+        paintPickTimer();
+      }
+    }
     syncMockActionButtons();
-    updateDraftDropState();
   }
 
   function secondsLeftOnClock() {
@@ -192,22 +341,36 @@
     return Math.max(0, Math.ceil((pickDeadline - Date.now()) / 1000));
   }
 
+  function applyClockColor(el, left, totalSeconds) {
+    if (!el) return;
+    const total = Math.max(1, Number(totalSeconds) || getPickSeconds() || 60);
+    const secs = left == null ? total : Math.max(0, Number(left));
+    const warnAt = Math.max(11, Math.ceil(total / 2));
+    const ok = secs > warnAt;
+    const warn = secs > 10 && secs <= warnAt;
+    const urgent = secs <= 10;
+    el.classList.toggle('is-ok', ok);
+    el.classList.toggle('is-warn', warn);
+    el.classList.toggle('is-low', warn); // legacy alias
+    el.classList.toggle('is-urgent', urgent);
+  }
+
   function paintPickTimer() {
     const left = secondsLeftOnClock();
     const mine = canUserDraftNow();
+    const total = getPickSeconds();
     const text = left == null
-      ? (mine ? clockLabelText(getPickSeconds()) : '—')
+      ? (mine ? clockLabelText(total) : '—')
       : formatPickClock(left);
-    const low = left != null && left <= 10;
-    const urgent = left != null && left <= 5;
-    ['mock-pick-timer', 'mock-clock-timer'].forEach((id) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.textContent = text;
-      el.classList.toggle('is-low', low);
-      el.classList.toggle('is-urgent', urgent);
-      el.classList.toggle('is-mine', mine);
-    });
+    const el = document.getElementById('mock-pick-timer');
+    if (!el) return;
+    el.textContent = text;
+    if (left == null && !mine) {
+      el.classList.remove('is-ok', 'is-warn', 'is-low', 'is-urgent');
+    } else {
+      applyClockColor(el, left == null ? total : left, total);
+    }
+    el.classList.toggle('is-mine', mine);
     const liveLabel = document.querySelector('#mock-live-timer .mock-live-timer-label');
     if (liveLabel) liveLabel.textContent = mine ? 'ON THE CLOCK' : 'Pick clock';
   }
@@ -229,20 +392,20 @@
     })[0] || null;
   }
 
-  function afterUserTurn() {
-    if (!draftLive) return;
+  async function afterUserTurn() {
+    if (!draftLive) return 0;
     if (isMultiplayer()) {
       renderMock();
       return 0;
     }
-    const filled = runCpuUntilUserPick();
+    const filled = await runCpuUntilUserPick();
     const slot = currentSlot();
     if (!slot) {
       stopPickTimer();
       setDraftLive(true);
       renderMock();
       setMockStatus('Draft complete', true);
-      return;
+      return filled;
     }
     startPickTimer();
     renderMock();
@@ -271,7 +434,7 @@
       }
       if (!makePick(player.id, { silent: true, cpu: false, auto: true })) return;
       setMockStatus(`Time’s up — auto-drafted ${player.name}`, true);
-      afterUserTurn();
+      afterUserTurn().catch(() => {});
     } finally {
       pickTimerHandling = false;
     }
@@ -280,6 +443,7 @@
   function tickPickTimer() {
     if (!draftLive || !pickDeadline) return;
     paintPickTimer();
+    maybePlayCountdownBeeps();
     const left = secondsLeftOnClock();
     if (left != null && left <= 0) {
       if (isMultiplayer()) {
@@ -297,8 +461,8 @@
       clearInterval(pickTimerId);
       pickTimerId = null;
     }
-    document.getElementById('mock-pick-timer')?.classList.remove('is-low', 'is-urgent');
-    document.getElementById('mock-clock-timer')?.classList.remove('is-low', 'is-urgent');
+    lastCountdownBeep = null;
+    document.getElementById('mock-pick-timer')?.classList.remove('is-ok', 'is-warn', 'is-low', 'is-urgent');
     if (!draftLive || !mock) {
       pickDeadline = null;
       paintPickTimer();
@@ -425,6 +589,89 @@
     showMockCompleteScreen();
   }
 
+  async function beginLiveDraft(room, chatItem) {
+    applyRoom(room);
+    if (chatItem) {
+      window.dispatchEvent(new CustomEvent('gi:mock-started', { detail: { item: chatItem } }));
+    }
+    startRoomPoll();
+    const clockTxt = clockLabelText(pickSeconds || getPickSeconds());
+    const slot = currentSlot();
+    const onMe = slot && slot.teamIndex === mock.seatIndex;
+    const cpuFilled = (room.picks || []).filter((p) => p.cpu).length;
+    if (onMe) {
+      setMockStatus(
+        cpuFilled
+          ? `CPU auto-picked ${cpuFilled} · you’re on the clock (${clockTxt})`
+          : `Draft live — you’re on the clock (${clockTxt})`,
+        true
+      );
+      startPickTimer(room.pickDeadline || null);
+    } else {
+      setMockStatus('Draft live · waiting for the next human pick', true);
+    }
+    history.replaceState(null, '', `#mock-draft?room=${encodeURIComponent(roomId)}`);
+  }
+
+  async function lockHostPositions() {
+    if (!roomId || !roomIsHost) return;
+    if (positionsLocked) return;
+    const res = await fetch('/api/mock-draft', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'lock-positions', roomId })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok || !data.room) {
+      throw new Error(data.error || 'Could not lock positions');
+    }
+    applyRoom(data.room);
+    setMockStatus('Positions locked', true);
+  }
+
+  async function moveMySeat(toIndex) {
+    if (!roomId) return false;
+    const res = await fetch('/api/mock-draft', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'move-seat', roomId, seatIndex: toIndex })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok || !data.room) {
+      throw new Error(data.error || 'Could not move seat');
+    }
+    applyRoom(data.room);
+    setMockStatus(`You’re pick #${toIndex + 1} · ${mock.teamNames[toIndex]}`, true);
+    return true;
+  }
+
+  async function startHostDraft() {
+    if (!roomId || !roomIsHost) return;
+    if (!positionsLocked) {
+      setMockStatus('Click Position set to lock the draft order first', false);
+      paintMockStartBar();
+      return;
+    }
+    if (!isLobbyReady()) {
+      setMockStatus(`Wait ${lobbySecondsLeft()}s for others to join`, false);
+      paintMockStartBar();
+      return;
+    }
+    const res = await fetch('/api/mock-draft', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'start', roomId })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok || !data.room) {
+      throw new Error(data.error || 'Could not start draft');
+    }
+    await beginLiveDraft(data.room, data.chatItem);
+  }
+
   async function startDraftSession() {
     if (!mock) return;
     unlockDraftAudio();
@@ -436,6 +683,18 @@
       setMockStatus('Player pool still loading…', false);
       return;
     }
+    if (roomStatus === 'lobby') {
+      try {
+        if (!positionsLocked && roomIsHost) {
+          await lockHostPositions();
+          return;
+        }
+        await startHostDraft();
+      } catch (err) {
+        setMockStatus(err.message || 'Could not start draft', false);
+      }
+      return;
+    }
     if (!currentSlot()) {
       setMockStatus('Draft is already complete — reset to start again', false);
       return;
@@ -443,7 +702,7 @@
     pickSeconds = getPickSeconds();
     const clockTxt = clockLabelText(pickSeconds);
 
-    // Multiplayer room (chat announce + joinable seats)
+    // Multiplayer lobby (join window, then host starts)
     try {
       const res = await fetch('/api/mock-draft', {
         method: 'POST',
@@ -467,26 +726,14 @@
         window.dispatchEvent(new CustomEvent('gi:mock-started', { detail: { item: data.chatItem } }));
       }
       startRoomPoll();
-      const slot = currentSlot();
-      const onMe = slot && slot.teamIndex === mock.seatIndex;
-      const cpuFilled = (data.room.picks || []).filter((p) => p.cpu).length;
+      startLobbyPaint();
       const openSeats = Array.isArray(data.room.seats)
         ? data.room.seats.filter((s) => !s.userId).length
         : (Number(data.room.openSeatCount) || 0);
-      if (onMe) {
-        setMockStatus(
-          cpuFilled
-            ? `CPU auto-picked ${cpuFilled} · you’re on the clock (${clockTxt}) · ${openSeats} open seat${openSeats === 1 ? '' : 's'} to join`
-            : `Draft live — you’re on the clock (${clockTxt}) · ${openSeats} open seat${openSeats === 1 ? '' : 's'} for others`,
-          true
-        );
-        startPickTimer(data.room.pickDeadline || null);
-      } else {
-        setMockStatus(
-          `Draft live · CPU / humans picking · ${openSeats} open seat${openSeats === 1 ? '' : 's'}`,
-          true
-        );
-      }
+      setMockStatus(
+        `Lobby open — drag your team to set position · ${openSeats} open seat${openSeats === 1 ? '' : 's'}`,
+        true
+      );
       history.replaceState(null, '', `#mock-draft?room=${encodeURIComponent(roomId)}`);
       return;
     } catch (err) {
@@ -496,8 +743,7 @@
 
     draftLive = true;
     setDraftLive(true);
-    const before = mock.picks.length;
-    const filled = runCpuUntilUserPick();
+    const filled = await runCpuUntilUserPick();
     const slot = currentSlot();
     if (!slot) {
       setDraftLive(true);
@@ -521,8 +767,18 @@
 
   function applyRoom(room) {
     if (!room || !mock) return;
+    const prevPickCount = mock.picks?.length || 0;
     roomId = room.id;
     pendingJoinRoomId = null;
+    roomStatus = room.status || null;
+    roomIsHost = Boolean(room.isHost);
+    positionsLocked = Boolean(room.positionsLocked);
+    if (room.lobbyEndsAt) {
+      const ts = Date.parse(room.lobbyEndsAt);
+      lobbyEndsAt = Number.isFinite(ts) ? ts : null;
+    } else {
+      lobbyEndsAt = null;
+    }
     pickSeconds = Number(room.pickSeconds) || DEFAULT_PICK_SECONDS;
     const clockEl = document.getElementById('mock-pick-seconds');
     if (clockEl && PICK_SECONDS_OPTIONS.has(pickSeconds)) clockEl.value = String(pickSeconds);
@@ -548,17 +804,52 @@
       pickDeadline = null;
     }
     setDraftLive(draftLive);
+    if (room.status === 'lobby') startLobbyPaint();
+    else stopLobbyPaint();
     if (draftLive && room.status === 'live') {
       startPickTimer(room.pickDeadline || null);
     } else {
       stopPickTimer();
     }
     renderMock();
+    if (mock.picks.length > prevPickCount) {
+      const last = mock.picks[mock.picks.length - 1];
+      if (last && Number.isFinite(Number(last.teamIndex))) {
+        scrollToSeat(last.teamIndex);
+        flashSeatPick(last.teamIndex);
+        lastFocusSeat = last.teamIndex;
+        if (last.cpu) {
+          const team = mock.teamNames[last.teamIndex] || `Team ${last.teamIndex + 1}`;
+          setMockStatus(`CPU · ${team} selected ${last.playerName}`, true);
+        }
+      }
+    }
+    const onClock = currentSlot();
+    if (onClock && draftLive && room.status === 'live' && onClock.teamIndex !== lastFocusSeat) {
+      scrollToSeat(onClock.teamIndex);
+      lastFocusSeat = onClock.teamIndex;
+    }
     if (room.status === 'done') {
       setMockStatus('Draft complete', true);
       maybeShowMockComplete();
     } else if (awaitingSeatClaim) {
       setMockStatus('Select an open seat to join', true);
+    } else if (room.status === 'lobby') {
+      const left = lobbySecondsLeft();
+      if (!positionsLocked) {
+        setMockStatus(
+          roomIsHost
+            ? 'Drag teams to set order · then Position set'
+            : 'Drag your team to set your draft position',
+          true
+        );
+      } else if (left > 0) {
+        setMockStatus(`Positions locked — ${formatPickClock(left)} left to join`, true);
+      } else if (roomIsHost) {
+        setMockStatus('Positions locked — click Start drafting when ready', true);
+      } else {
+        setMockStatus('Waiting for host to start drafting', true);
+      }
     }
   }
 
@@ -597,9 +888,21 @@
   function startRoomPoll() {
     stopRoomPoll();
     if (!roomId) return;
-    roomPollId = setInterval(() => {
-      syncRoom({ tick: true }).catch(() => {});
-    }, 2500);
+    const schedule = () => {
+      if (!roomId) return;
+      const slot = currentSlot();
+      const seat = slot && roomSeats?.[slot.teamIndex];
+      const cpuOnClock = Boolean(
+        draftLive && roomStatus === 'live' && slot && seat && !seat.userId
+      );
+      const waitMs = cpuOnClock ? 450 : (draftLive && roomStatus === 'live' ? 1200 : 2500);
+      roomPollId = setTimeout(async () => {
+        roomPollId = null;
+        await syncRoom({ tick: true }).catch(() => {});
+        schedule();
+      }, waitMs);
+    };
+    schedule();
   }
 
   async function claimSeat(seatIndex) {
@@ -1076,6 +1379,16 @@
     return poolAll.filter((p) => !taken.has(String(p.id)));
   }
 
+  function pickForPlayer(playerId) {
+    return (mock?.picks || []).find((p) => String(p.playerId) === String(playerId)) || null;
+  }
+
+  function poolMatchesQuery(player, q) {
+    if (!q) return true;
+    const hay = `${player.name || ''} ${player.team || ''} ${player.position || ''}`.toLowerCase();
+    return hay.includes(q);
+  }
+
   function setMockStatus(msg, ok) {
     const el = document.getElementById('mock-status');
     if (!el) return;
@@ -1241,7 +1554,12 @@
       return Promise.resolve(false);
     }
     if (!draftLive) {
-      setMockStatus('Press Start Draft first', false);
+      setMockStatus(
+        roomStatus === 'lobby'
+          ? (roomIsHost && isLobbyReady() ? 'Click Start drafting when you’re ready' : 'Wait for the draft to start')
+          : 'Press Start Draft first',
+        false
+      );
       return Promise.resolve(false);
     }
     if (awaitingSeatClaim) {
@@ -1300,7 +1618,7 @@
     }
     removeTarget(playerId);
     setMockSideTab('roster');
-    const filled = afterUserTurn();
+    const filled = await afterUserTurn();
     const clockTxt = clockLabelText(getPickSeconds());
     if (filled > 0) {
       setMockStatus(`You picked · CPU made ${filled} pick${filled === 1 ? '' : 's'} · clock reset`, true);
@@ -1490,7 +1808,12 @@
         <div class="mock-profile-stat"><span>Proj</span><strong>${esc(fmtPts(player.projectedPoints2026))}</strong></div>
         <div class="mock-profile-stat"><span>PPG</span><strong>${esc(fmtPts(player.avgPpg))}</strong></div>
         <div class="mock-profile-stat"><span>Δ</span><strong>${esc(fmtDelta(player.delta))}</strong></div>
+        <div class="mock-profile-stat"><span>G</span><strong>${esc(fmtInt(player.games))}</strong></div>
+        <div class="mock-profile-stat"><span>Yds</span><strong>${esc(fmtInt(primaryYards(player)))}</strong></div>
+        <div class="mock-profile-stat"><span>TD</span><strong>${esc(fmtInt(primaryTd(player)))}</strong></div>
+        <div class="mock-profile-stat"><span>Rec</span><strong>${esc(fmtInt(receptionsOf(player)))}</strong></div>
       </div>
+      ${scoutingLine(player) ? `<p class="mock-profile-note">${esc(scoutingLine(player))}</p>` : ''}
       <div id="mock-profile-news"><p class="mock-profile-note">Loading player news…</p></div>
       ${taken ? '<p class="mock-profile-note">Already drafted.</p>' : ''}
       ${player.college ? `<p class="mock-profile-note">${esc(player.college)}</p>` : ''}
@@ -1588,28 +1911,14 @@
   }
 
   function paintSettingsSummary() {
-    const el = document.getElementById('mock-settings-summary');
-    if (!el || !mock) return;
-    const teams = mock.teamNames?.length || Number(document.getElementById('mock-teams')?.value) || DEFAULT_TEAM_COUNT;
-    const rounds = mock.rounds || Number(document.getElementById('mock-rounds')?.value) || DEFAULT_ROUNDS;
-    const seat = (Number.isFinite(mock.seatIndex) ? mock.seatIndex : 0) + 1;
-    const clock = clockLabelText(pickSeconds || getPickSeconds());
-    const phase = draftPhase();
-    if (phase === 'done') {
-      el.innerHTML = `<strong>${teams} teams</strong> · ${rounds} rounds · <em>Complete</em>`;
-      return;
-    }
-    if (phase === 'live') {
-      el.innerHTML = `<strong>${teams} teams</strong> · ${rounds} rounds · Your #${seat} · ${clock}`;
-      return;
-    }
-    el.innerHTML = `<strong>${teams} teams</strong> · ${rounds} rounds · Pick #${seat} · ${clock}`;
+    /* Settings live in the Draft settings dialog only. */
   }
 
   function openMockSettings() {
     const dialog = document.getElementById('mock-settings-dialog');
     if (!dialog) return;
     fillSeatSelect();
+    paintAdvancedTools();
     paintSettingsSummary();
     try {
       dialog.showModal();
@@ -1693,6 +2002,66 @@
     playTone({ freq: 1174.7, duration: 0.18, type: 'square', gain: 0.06, when: 0.28 });
   }
 
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function scrollToSeat(teamIndex) {
+    const el = document.getElementById('mock-order');
+    const chip = el?.querySelector(`[data-seat="${teamIndex}"]`);
+    if (!chip) return;
+    chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+
+  function flashSeatPick(teamIndex) {
+    justPickedSeat = teamIndex;
+    if (justPickedTimer) clearTimeout(justPickedTimer);
+    const chip = document.querySelector(`#mock-order [data-seat="${teamIndex}"]`);
+    chip?.classList.add('is-just-picked');
+    justPickedTimer = setTimeout(() => {
+      justPickedSeat = null;
+      document.querySelectorAll('#mock-order .is-just-picked').forEach((el) => {
+        el.classList.remove('is-just-picked');
+      });
+    }, 1100);
+  }
+
+  function playCountdownBeep(secondsLeft) {
+    if (secondsLeft <= 0) {
+      // Final horn at zero
+      playTone({ freq: 220, duration: 0.22, type: 'sawtooth', gain: 0.1, when: 0 });
+      playTone({ freq: 165, duration: 0.35, type: 'sawtooth', gain: 0.11, when: 0.12 });
+      return;
+    }
+    // Rising tick each second from 10 → 1
+    const step = 11 - secondsLeft;
+    const freq = 660 + step * 48;
+    const gain = secondsLeft <= 3 ? 0.12 : 0.085;
+    const duration = secondsLeft <= 3 ? 0.13 : 0.09;
+    playTone({
+      freq,
+      duration,
+      type: secondsLeft <= 3 ? 'square' : 'triangle',
+      gain
+    });
+  }
+
+  function maybePlayCountdownBeeps() {
+    // Audible countdown only while you're on the clock, once per second from 10 → 0.
+    if (!draftLive || !canUserDraftNow()) {
+      lastCountdownBeep = null;
+      return;
+    }
+    const left = secondsLeftOnClock();
+    if (left == null || left > 10) {
+      lastCountdownBeep = null;
+      return;
+    }
+    if (lastCountdownBeep === left) return;
+    lastCountdownBeep = left;
+    playCountdownBeep(left);
+  }
+
   function maybePlayTurnCues() {
     if (!draftLive || !mock || awaitingSeatClaim) {
       turnCueKey = null;
@@ -1722,27 +2091,7 @@
   }
 
   function updateDraftDropState() {
-    const drop = document.getElementById('mock-draft-drop');
-    if (!drop) return;
-    const done = isDraftComplete();
-    const live = canUserDraftNow();
-    drop.classList.toggle('is-armed', live);
-    drop.classList.toggle('is-locked', done || (draftLive && !live));
-    drop.classList.toggle('is-done', done);
-    drop.setAttribute('aria-disabled', live ? 'false' : 'true');
-    const strong = drop.querySelector('strong');
-    const span = drop.querySelector('span');
-    if (done) {
-      if (strong) strong.textContent = 'Board locked';
-      if (span) span.textContent = 'Reset to run another mock';
-      return;
-    }
-    if (strong) strong.textContent = live ? 'Draft player' : (draftLive ? 'Wait your turn' : 'Draft player');
-    if (span) {
-      span.textContent = live
-        ? 'Drop here · or double-click a name'
-        : (draftLive ? 'Picks lock until you’re on the clock' : 'Start draft to enable picks');
-    }
+    /* Draft drop zone removed — double-click only */
   }
 
   function lastPickForTeam(teamIndex) {
@@ -1761,8 +2110,18 @@
     const following = next
       ? pickSlot(mock.teamNames.length, mock.rounds, 'snake', mock.picks.length + 1)
       : null;
+    const canDrag = canDragSeat();
     el.style.setProperty('--mock-seats', String(mock.teamNames.length));
     el.dataset.phase = phase;
+    el.dataset.locked = positionsLocked || draftLive ? '1' : '0';
+    el.setAttribute(
+      'aria-label',
+      canDrag
+        ? 'Draft order — drag your team to set pick position'
+        : (positionsLocked
+          ? 'Draft order — positions locked'
+          : 'Draft order — click an open seat to join')
+    );
     el.innerHTML = mock.teamNames.map((name, i) => {
       const onClock = next && next.teamIndex === i;
       const upNext = !onClock && following && following.teamIndex === i;
@@ -1771,6 +2130,8 @@
       const open = awaitingSeatClaim && seat && !seat.userId;
       const human = seat && seat.userId && !seat.isCpu;
       const last = phase === 'setup' ? null : lastPickForTeam(i);
+      const draggable = canDrag && you;
+      const dropTarget = canDrag && !you;
       const cls = [
         'mock-seat-chip',
         you ? 'is-you' : '',
@@ -1778,15 +2139,29 @@
         upNext ? 'is-next' : '',
         open ? 'is-open' : '',
         human && !you ? 'is-human' : '',
-        phase === 'setup' ? 'is-setup' : ''
+        phase === 'setup' || roomStatus === 'lobby' ? 'is-setup' : '',
+        draggable ? 'is-draggable' : '',
+        dropTarget ? 'is-drop' : '',
+        positionsLocked && !draftLive ? 'is-locked' : '',
+        justPickedSeat === i ? 'is-just-picked' : ''
       ].filter(Boolean).join(' ');
       const sub = human ? (seat.userName || 'Member') : (seat && seat.isCpu !== false && isMultiplayer() ? 'CPU' : name);
       const canClick = open || (phase === 'setup' && !isMultiplayer() && !awaitingSeatClaim);
       const title = open
         ? `Claim seat ${i + 1}`
-        : `Draft position ${i + 1}: ${name}${human ? ` · ${seat.userName}` : ''}`;
-      const status = onClock ? 'ON THE CLOCK' : (upNext ? 'UP NEXT' : (you && phase === 'setup' ? 'YOUR SEAT' : ''));
-      return `<button type="button" class="${cls}" data-seat="${i}" ${canClick ? '' : 'disabled'} title="${esc(title)}">
+        : draggable
+          ? `Drag to set your draft position (pick #${i + 1})`
+          : dropTarget
+            ? `Drop here for pick #${i + 1}`
+            : `Draft position ${i + 1}: ${name}${human ? ` · ${seat.userName}` : ''}`;
+      const status = onClock
+        ? 'ON THE CLOCK'
+        : (upNext
+          ? 'UP NEXT'
+          : (you && (phase === 'setup' || roomStatus === 'lobby')
+            ? (canDrag ? 'DRAG TO MOVE' : 'YOUR SEAT')
+            : ''));
+      return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} title="${esc(title)}">
         <span class="n">${i + 1}</span>
         <span class="nm">${esc(open ? name : (you ? name : sub))}</span>
         ${status ? `<span class="st">${status}</span>` : ''}
@@ -1798,76 +2173,21 @@
   }
 
   function renderClock() {
-    const clock = document.getElementById('mock-clock');
-    const pickEl = document.getElementById('mock-clock-pick');
-    const metaEl = document.getElementById('mock-clock-meta');
-    const overallEl = document.getElementById('mock-clock-overall');
-    const labelEl = document.getElementById('mock-clock-label');
-    const timerEl = document.getElementById('mock-clock-timer');
-    const timerWrap = document.querySelector('#mock-clock .mock-clock-timer-wrap');
-    if (!pickEl || !metaEl || !mock) return;
+    if (!mock) return;
     const next = currentSlot();
-    const total = mock.teamNames.length * mock.rounds;
-    clock?.classList.remove('is-yours', 'is-done', 'is-waiting', 'is-setup');
     if (!draftLive) {
-      const seatName = mock.teamNames[mock.seatIndex] || 'Your team';
-      const seatLabel = awaitingSeatClaim
-        ? 'Pick an open seat to join'
-        : `${seatName} · Pick #${mock.seatIndex + 1}`;
-      pickEl.textContent = seatLabel;
-      metaEl.textContent = awaitingSeatClaim
-        ? 'Open seats are highlighted on the board'
-        : 'Tap a seat to move · then Start Draft';
-      if (overallEl) overallEl.textContent = awaitingSeatClaim ? 'Join' : 'Ready';
-      if (labelEl) labelEl.textContent = awaitingSeatClaim ? 'Join mock' : 'Pre-draft';
-      if (timerEl) {
-        timerEl.textContent = '—';
-        timerEl.classList.remove('is-low', 'is-urgent');
-      }
-      const timerLabel = document.getElementById('mock-clock-timer-label');
-      if (timerLabel) timerLabel.textContent = 'Clock';
-      timerWrap?.classList.add('is-idle');
-      clock?.classList.add('is-setup');
       setDraftLive(false);
-      updateDraftDropState();
       return;
     }
-    timerWrap?.classList.remove('is-idle');
     if (!next) {
-      pickEl.textContent = 'Draft complete';
-      metaEl.textContent = `${mock.picks.length} picks locked · Reset to run another`;
-      if (overallEl) overallEl.textContent = 'Done';
-      if (labelEl) labelEl.textContent = 'Final board';
-      if (timerEl) {
-        timerEl.textContent = '0:00';
-        timerEl.classList.remove('is-low', 'is-urgent');
-      }
-      const timerLabel = document.getElementById('mock-clock-timer-label');
-      if (timerLabel) timerLabel.textContent = 'Final';
-      clock?.classList.add('is-done');
       stopPickTimer();
       setDraftLive(true);
-      updateDraftDropState();
       maybeShowMockComplete();
       return;
     }
-    const yours = next.teamIndex === mock.seatIndex;
-    if (labelEl) labelEl.textContent = yours ? 'ON THE CLOCK' : 'On the clock';
-    pickEl.textContent = yours
-      ? `${mock.teamNames[next.teamIndex]} · Round ${next.round}`
-      : `${mock.teamNames[next.teamIndex]} · Round ${next.round} · Pick ${next.pick}`;
-    metaEl.textContent = yours
-      ? `Pick #${next.overall} of ${total} · auto-best at 0:00`
-      : `Pick #${next.overall} of ${total} · ${total - mock.picks.length} left`;
-    if (overallEl) overallEl.textContent = `#${next.overall}`;
-    if (yours) clock?.classList.add('is-yours');
-    else clock?.classList.add('is-waiting');
-    const timerLabel = document.getElementById('mock-clock-timer-label');
-    if (timerLabel) timerLabel.textContent = yours ? 'ON THE CLOCK' : 'Pick clock';
     paintPickTimer();
     setDraftLive(true);
     maybePlayTurnCues();
-    updateDraftDropState();
   }
 
   function fmtPts(n) {
@@ -1893,6 +2213,40 @@
     if (v > 0) return `+${abs}`;
     if (v < 0) return `−${abs}`;
     return '0.0';
+  }
+
+  function playerStatBag(p) {
+    return p?.stats || {};
+  }
+
+  function primaryYards(p) {
+    const s = playerStatBag(p);
+    const pos = String(p.position || '').toUpperCase();
+    if (pos === 'QB') return s.passYds;
+    if (pos === 'RB') return s.rushYds != null ? s.rushYds : s.recYds;
+    if (pos === 'WR' || pos === 'TE') return s.recYds;
+    return null;
+  }
+
+  function primaryTd(p) {
+    const s = playerStatBag(p);
+    const pos = String(p.position || '').toUpperCase();
+    if (pos === 'QB') return s.passTd;
+    if (pos === 'RB') {
+      const rush = Number(s.rushTd) || 0;
+      const rec = Number(s.recTd) || 0;
+      if (s.rushTd == null && s.recTd == null) return null;
+      return rush + rec;
+    }
+    if (pos === 'WR' || pos === 'TE') return s.recTd;
+    return null;
+  }
+
+  function receptionsOf(p) {
+    const s = playerStatBag(p);
+    const pos = String(p.position || '').toUpperCase();
+    if (pos === 'RB' || pos === 'WR' || pos === 'TE') return s.receptions;
+    return null;
   }
 
   function scoutingLine(p) {
@@ -2004,6 +2358,14 @@
         cmp = num(a.fantasyPoints2025, -1) - num(b.fantasyPoints2025, -1);
       } else if (key === 'ppg') {
         cmp = num(a.avgPpg, -1) - num(b.avgPpg, -1);
+      } else if (key === 'games') {
+        cmp = num(a.games, -1) - num(b.games, -1);
+      } else if (key === 'yds') {
+        cmp = num(primaryYards(a), -1) - num(primaryYards(b), -1);
+      } else if (key === 'td') {
+        cmp = num(primaryTd(a), -1) - num(primaryTd(b), -1);
+      } else if (key === 'rec') {
+        cmp = num(receptionsOf(a), -1) - num(receptionsOf(b), -1);
       } else if (key === 'delta') {
         cmp = num(a.delta, 0) - num(b.delta, 0);
       } else if (key === 'proj') {
@@ -2027,27 +2389,45 @@
     });
   }
 
+  function applyPoolPositionFilter(rows, filter, need) {
+    if (filter === 'NEED') {
+      if (need.positions.length) {
+        return rows.filter((p) => need.positions.includes(String(p.position || '').toUpperCase()));
+      }
+      return rows;
+    }
+    if (filter !== 'BEST' && filter !== 'ALL') {
+      return rows.filter((p) => String(p.position || '').toUpperCase() === filter);
+    }
+    return rows;
+  }
+
   function filteredPool() {
     const filter = mockPoolFilter || 'BEST';
     const q = String(document.getElementById('mock-search')?.value || '').trim().toLowerCase();
     const need = needEligiblePositions(mock?.seatIndex ?? 0);
-    let rows = availablePlayers().filter((p) => {
-      if (!q) return true;
-      const hay = `${p.name || ''} ${p.team || ''} ${p.position || ''}`.toLowerCase();
-      return hay.includes(q);
-    });
+    let rows = applyPoolPositionFilter(
+      availablePlayers().filter((p) => poolMatchesQuery(p, q)),
+      filter,
+      need
+    );
+    rows = filter === 'NEED' && need.positions.length
+      ? sortPoolRows(rows, { needPositions: need.positions })
+      : sortPoolRows(rows);
 
-    if (filter === 'NEED') {
-      if (need.positions.length) {
-        rows = rows.filter((p) => need.positions.includes(String(p.position || '').toUpperCase()));
-        return sortPoolRows(rows, { needPositions: need.positions });
-      }
-      return sortPoolRows(rows);
+    // Search also surfaces drafted players (team + round).
+    if (q) {
+      const taken = takenIds();
+      let drafted = poolAll.filter((p) => taken.has(String(p.id)) && poolMatchesQuery(p, q));
+      drafted = applyPoolPositionFilter(drafted, filter, need);
+      drafted.sort((a, b) => {
+        const pa = pickForPlayer(a.id);
+        const pb = pickForPlayer(b.id);
+        return (Number(pa?.overall) || 9999) - (Number(pb?.overall) || 9999);
+      });
+      rows = rows.concat(drafted);
     }
-    if (filter !== 'BEST' && filter !== 'ALL') {
-      rows = rows.filter((p) => String(p.position || '').toUpperCase() === filter);
-    }
-    return sortPoolRows(rows);
+    return rows;
   }
 
   function markPoolFilterTabs() {
@@ -2100,19 +2480,28 @@
     const count = document.getElementById('mock-pool-count');
     if (!list) return;
     markPoolFilterTabs();
+    const q = String(document.getElementById('mock-search')?.value || '').trim();
     const rows = filteredPool().slice(0, 200);
     if (count) {
       const left = availablePlayers().length;
-      const shown = mockPoolFilter === 'BEST' ? left : rows.length;
-      count.textContent = mockPoolFilter === 'BEST' || mockPoolFilter === 'ALL'
-        ? `${left} left`
-        : `${shown} shown · ${left} left`;
+      if (q) {
+        const draftedN = rows.filter((p) => pickForPlayer(p.id)).length;
+        const availN = rows.length - draftedN;
+        count.textContent = draftedN
+          ? `${rows.length} match · ${availN} left · ${draftedN} drafted`
+          : `${rows.length} match · ${left} left`;
+      } else {
+        const shown = mockPoolFilter === 'BEST' ? left : rows.length;
+        count.textContent = mockPoolFilter === 'BEST' || mockPoolFilter === 'ALL'
+          ? `${left} left`
+          : `${shown} shown · ${left} left`;
+      }
     }
     markPoolSortHeaders();
     if (!rows.length) {
       const empty = !poolAll.length
         ? 'Loading player pool…'
-        : mockPoolFilter === 'NEED'
+        : mockPoolFilter === 'NEED' && !q
           ? 'No players left for your open starter spots.'
           : 'No players match.';
       list.innerHTML = `<div class="records-empty">${empty}</div>`;
@@ -2120,6 +2509,8 @@
     }
     const canPick = canUserDraftNow();
     list.innerHTML = rows.map((p) => {
+      const draftPick = pickForPlayer(p.id);
+      const drafted = Boolean(draftPick);
       const head = p.headshot
         ? `<img class="mock-head" src="${esc(p.headshot)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />`
         : `<span class="mock-head is-blank" aria-hidden="true"></span>`;
@@ -2132,10 +2523,19 @@
         : '';
       const rk = p.overallRank != null ? p.overallRank : '—';
       const posRk = p.posRank != null ? `${esc(p.position)}${p.posRank}` : '—';
-      const targeted = isTargeted(p.id);
+      const targeted = !drafted && isTargeted(p.id);
       const injury = injuryBadgeHtml(p);
       const teamAbbr = p.team || 'FA';
-      return `<div class="mock-player${targeted ? ' is-targeted' : ''}${injury ? ' has-injury' : ''}" role="button" tabindex="0" data-id="${esc(p.id)}" draggable="true" title="Click profile · double-click draft${canPick ? '' : ' (when on the clock)'} · drag to Targets or Draft">
+      const club = draftPick
+        ? (draftPick.teamIndex === mock?.seatIndex ? 'You' : (draftPick.teamName || 'Club'))
+        : '';
+      const draftMeta = draftPick
+        ? `<span class="mock-draft-meta" title="Overall pick #${esc(String(draftPick.overall))}">Drafted by ${esc(club)} · Rd ${esc(String(draftPick.round))}</span>`
+        : '';
+      const title = drafted
+        ? `${p.name} — drafted by ${club} in round ${draftPick.round} (overall #${draftPick.overall}) · click for profile`
+        : `Click profile · double-click to draft${canPick ? '' : ' (when on the clock)'} · drag to Targets`;
+      return `<div class="mock-player${targeted ? ' is-targeted' : ''}${injury ? ' has-injury' : ''}${drafted ? ' is-drafted' : ''}" role="button" tabindex="0" data-id="${esc(p.id)}"${drafted ? ' data-drafted="1"' : ' draggable="true"'} title="${esc(title)}">
         <span class="mock-rank" title="Overall rank">${esc(String(rk))}</span>
         ${head}
         <span class="mock-player-main">
@@ -2144,11 +2544,16 @@
             ${injury}
           </span>
           <span class="mock-player-team" title="${esc(teamAbbr)}">${logo}<em>${esc(teamAbbr)}</em></span>
+          ${draftMeta}
         </span>
         ${posBadge(p.position)}
         <span class="mock-cell num" title="Bye week">${p.byeWeek != null ? esc(String(p.byeWeek)) : '—'}</span>
         <span class="mock-cell num" title="Average draft position">${esc(fmtAdp(p.adp))}</span>
         <span class="mock-cell num mock-posrk" title="Position rank">${posRk}</span>
+        <span class="mock-cell num" title="Games played">${esc(fmtInt(p.games))}</span>
+        <span class="mock-cell num" title="Primary yards (pass / rush / receiving)">${esc(fmtInt(primaryYards(p)))}</span>
+        <span class="mock-cell num" title="Primary touchdowns">${esc(fmtInt(primaryTd(p)))}</span>
+        <span class="mock-cell num" title="Receptions">${esc(fmtInt(receptionsOf(p)))}</span>
         <span class="mock-cell num" title="Prior season fantasy points">${esc(fmtPts(p.fantasyPoints2025))}</span>
         <span class="mock-cell num" title="Points per game">${esc(fmtPts(p.avgPpg))}</span>
         <span class="mock-cell num is-proj" title="Projected season points">${esc(fmtPts(p.projectedPoints2026))}</span>
@@ -2576,17 +2981,58 @@
   }
 
   function runCpuUntilUserPick(opts = {}) {
-    if (!mock || isMultiplayer()) return 0;
-    let n = 0;
-    const max = mock.teamNames.length * mock.rounds + 2;
-    while (n < max) {
-      const slot = currentSlot();
-      if (!slot) break;
-      if (opts.includeUser !== true && slot.teamIndex === mock.seatIndex) break;
-      if (!autoPickOne({ silent: true })) break;
-      n += 1;
+    if (!mock || isMultiplayer()) return Promise.resolve(0);
+    if (opts.instant) {
+      let n = 0;
+      const max = mock.teamNames.length * mock.rounds + 2;
+      while (n < max) {
+        const slot = currentSlot();
+        if (!slot) break;
+        if (opts.includeUser !== true && slot.teamIndex === mock.seatIndex) break;
+        if (!autoPickOne({ silent: true })) break;
+        n += 1;
+      }
+      if (n > 0 || opts.forceRender) renderMock();
+      return Promise.resolve(n);
     }
-    if (n > 0 || opts.forceRender) renderMock();
+    return runCpuUntilUserPickAnimated(opts);
+  }
+
+  async function runCpuUntilUserPickAnimated(opts = {}) {
+    if (!mock || isMultiplayer()) return 0;
+    if (cpuAnimRunning) return 0;
+    cpuAnimRunning = true;
+    let n = 0;
+    try {
+      const max = mock.teamNames.length * mock.rounds + 2;
+      while (n < max) {
+        if (!draftLive && !opts.allowPrestart) break;
+        const slot = currentSlot();
+        if (!slot) break;
+        if (opts.includeUser !== true && slot.teamIndex === mock.seatIndex) break;
+        const teamName = mock.teamNames[slot.teamIndex] || `Team ${slot.teamIndex + 1}`;
+        scrollToSeat(slot.teamIndex);
+        renderMock();
+        setMockStatus(`On the clock · ${teamName}`, true);
+        await sleep(380);
+        const before = mock.picks.length;
+        if (!autoPickOne({ silent: true })) break;
+        n += 1;
+        const pick = mock.picks[mock.picks.length - 1];
+        renderMock();
+        scrollToSeat(slot.teamIndex);
+        flashSeatPick(slot.teamIndex);
+        if (pick && mock.picks.length > before) {
+          setMockStatus(`CPU · ${teamName} selected ${pick.playerName}`, true);
+        }
+        await sleep(1000);
+      }
+      if (n > 0 || opts.forceRender) renderMock();
+      const next = currentSlot();
+      if (next) scrollToSeat(next.teamIndex);
+    } finally {
+      cpuAnimRunning = false;
+    }
     return n;
   }
 
@@ -2635,6 +3081,7 @@
   }
 
   function wireMock() {
+    paintAdvancedTools();
     document.getElementById('mock-start')?.addEventListener('click', () => {
       startDraftSession();
     });
@@ -2645,7 +3092,7 @@
       }
       pickSeconds = getPickSeconds();
       const sub = document.getElementById('mock-start-sub');
-      if (sub && !draftLive) sub.textContent = 'Snake · CPU fills between your picks';
+      if (sub && !draftLive) sub.textContent = 'Drag your team · then Position set';
       paintSettingsSummary();
     });
     document.getElementById('mock-pool-list')?.addEventListener('click', (e) => {
@@ -2684,6 +3131,7 @@
     document.getElementById('mock-pool-list')?.addEventListener('dblclick', (e) => {
       if (e.target.closest('[data-injury-id]')) return;
       const btn = e.target.closest('[data-id]');
+      if (btn?.hasAttribute('data-drafted')) return;
       if (!btn) return;
       e.preventDefault();
       clearTimeout(profileClickTimer);
@@ -2692,6 +3140,10 @@
       confirmDraftPlayer(btn.getAttribute('data-id'));
     });
     document.getElementById('mock-pool-list')?.addEventListener('dragstart', (e) => {
+      if (e.target.closest('[data-drafted]')) {
+        e.preventDefault();
+        return;
+      }
       if (e.target.closest('[data-injury-id]')) {
         e.preventDefault();
         return;
@@ -2712,14 +3164,9 @@
     const wireDropZone = (el, kind) => {
       if (!el) return;
       el.addEventListener('dragover', (e) => {
-        if (kind === 'draft' && !canUserDraftNow()) {
-          if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
-          el.classList.add('is-locked');
-          return;
-        }
         e.preventDefault();
         el.classList.add('is-hot');
-        if (e.dataTransfer) e.dataTransfer.dropEffect = kind === 'draft' ? 'copy' : 'move';
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
       });
       el.addEventListener('dragleave', () => el.classList.remove('is-hot'));
       el.addEventListener('drop', (e) => {
@@ -2730,16 +3177,9 @@
         if (kind === 'targets') {
           setMockSideTab('targets');
           addTarget(id);
-          return;
         }
-        if (!canUserDraftNow()) {
-          setMockStatus('Not your pick — wait for the clock', false);
-          return;
-        }
-        confirmDraftPlayer(id);
       });
     };
-    wireDropZone(document.getElementById('mock-draft-drop'), 'draft');
     wireDropZone(document.getElementById('mock-targets-list'), 'targets');
 
     document.querySelector('.mock-side-tabs')?.addEventListener('click', (e) => {
@@ -2856,6 +3296,10 @@
     });
 
     document.getElementById('mock-order')?.addEventListener('click', async (e) => {
+      if (suppressSeatClick) {
+        suppressSeatClick = false;
+        return;
+      }
       const chip = e.target.closest('[data-seat]');
       if (!chip || !mock || chip.disabled) return;
       const idx = Number(chip.getAttribute('data-seat'));
@@ -2873,6 +3317,19 @@
         }
         return;
       }
+      if (isMultiplayer() && roomStatus === 'lobby') {
+        if (positionsLocked) {
+          setMockStatus('Positions are locked', false);
+          return;
+        }
+        if (idx === mock.seatIndex) return;
+        try {
+          await moveMySeat(idx);
+        } catch (err) {
+          setMockStatus(err.message || 'Could not move seat', false);
+        }
+        return;
+      }
       if (draftLive || isMultiplayer()) {
         setMockStatus('Seat locked while the draft is live — reset to change', false);
         return;
@@ -2881,6 +3338,78 @@
       renderMock();
       setMockStatus(`You’re pick #${idx + 1} · ${mock.teamNames[idx]}`, true);
     });
+
+    const orderEl = document.getElementById('mock-order');
+    orderEl?.addEventListener('dragstart', (e) => {
+      const chip = e.target.closest('[data-seat]');
+      if (!chip || !canDragSeat() || !chip.classList.contains('is-you')) {
+        e.preventDefault();
+        return;
+      }
+      const idx = Number(chip.getAttribute('data-seat'));
+      if (!Number.isFinite(idx)) {
+        e.preventDefault();
+        return;
+      }
+      dragSeatIndex = idx;
+      chip.classList.add('is-dragging');
+      if (e.dataTransfer) {
+        e.dataTransfer.setData('text/plain', String(idx));
+        e.dataTransfer.effectAllowed = 'move';
+      }
+    });
+    orderEl?.addEventListener('dragend', (e) => {
+      dragSeatIndex = null;
+      e.target.closest('[data-seat]')?.classList.remove('is-dragging');
+      orderEl.querySelectorAll('.is-hot').forEach((el) => el.classList.remove('is-hot'));
+    });
+    orderEl?.addEventListener('dragover', (e) => {
+      if (dragSeatIndex == null || !canDragSeat()) return;
+      const chip = e.target.closest('[data-seat]');
+      if (!chip) return;
+      const idx = Number(chip.getAttribute('data-seat'));
+      if (!Number.isFinite(idx) || idx === dragSeatIndex) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      orderEl.querySelectorAll('.is-hot').forEach((el) => {
+        if (el !== chip) el.classList.remove('is-hot');
+      });
+      chip.classList.add('is-hot');
+    });
+    orderEl?.addEventListener('dragleave', (e) => {
+      const chip = e.target.closest('[data-seat]');
+      if (chip && !chip.contains(e.relatedTarget)) chip.classList.remove('is-hot');
+    });
+    orderEl?.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      suppressSeatClick = true;
+      const chip = e.target.closest('[data-seat]');
+      orderEl.querySelectorAll('.is-hot').forEach((el) => el.classList.remove('is-hot'));
+      if (!chip || !mock || !canDragSeat()) return;
+      const toIdx = Number(chip.getAttribute('data-seat'));
+      const fromIdx = dragSeatIndex != null
+        ? dragSeatIndex
+        : Number(e.dataTransfer?.getData('text/plain'));
+      dragSeatIndex = null;
+      if (!Number.isFinite(toIdx) || !Number.isFinite(fromIdx) || toIdx === fromIdx) return;
+      if (isMultiplayer()) {
+        try {
+          await moveMySeat(toIdx);
+        } catch (err) {
+          setMockStatus(err.message || 'Could not move seat', false);
+        }
+        return;
+      }
+      const names = mock.teamNames.slice();
+      const tmp = names[fromIdx];
+      names[fromIdx] = names[toIdx];
+      names[toIdx] = tmp;
+      mock.teamNames = names;
+      mock.seatIndex = toIdx;
+      renderMock();
+      setMockStatus(`You’re pick #${toIdx + 1} · ${mock.teamNames[toIdx]}`, true);
+    });
+
     document.getElementById('mock-seat')?.addEventListener('change', async (e) => {
       const idx = Number(e.target.value);
       if (awaitingSeatClaim) {
@@ -2967,7 +3496,7 @@
       renderMock();
       setMockStatus('Draft order shuffled — set your pick #, then Start Draft', true);
     });
-    document.getElementById('mock-undo')?.addEventListener('click', () => {
+    document.getElementById('mock-undo')?.addEventListener('click', async () => {
       if (isMultiplayer()) {
         setMockStatus('Undo unavailable in a live room', false);
         return;
@@ -2981,22 +3510,21 @@
       const removed = mock.picks.pop();
       setMockStatus(`Undid ${removed.playerName}`, true);
       if (draftLive) {
-        runCpuUntilUserPick();
+        await runCpuUntilUserPick({ instant: true });
         if (currentSlot()?.teamIndex === mock.seatIndex) startPickTimer();
       }
       renderMock();
     });
     document.getElementById('mock-reset')?.addEventListener('click', () => {
-      if ((mock.picks.length || draftLive || isMultiplayer()) && !confirm('Reset the mock draft?')) return;
-      endDraftSession();
-      leaveRoomLocal();
-      mock.picks = [];
-      mockCompleteShown = false;
-      history.replaceState(null, '', '#mock-draft');
-      renderMock();
-      setMockStatus('Board reset — set your pick #, then Start Draft', true);
+      resetMockDraft();
     });
-    document.getElementById('mock-run-to-me')?.addEventListener('click', () => {
+    document.getElementById('mock-settings-reset')?.addEventListener('click', () => {
+      if (resetMockDraft()) closeMockSettings();
+    });
+    document.getElementById('mock-show-tools')?.addEventListener('change', (e) => {
+      setShowAdvancedTools(Boolean(e.target.checked));
+    });
+    document.getElementById('mock-run-to-me')?.addEventListener('click', async () => {
       if (isMultiplayer()) {
         setMockStatus('Run-to-me unavailable in a live room', false);
         return;
@@ -3018,7 +3546,7 @@
         setMockStatus('You’re already on the clock', true);
         return;
       }
-      const n = runCpuUntilUserPick();
+      const n = await runCpuUntilUserPick();
       startPickTimer();
       renderMock();
       const clockTxt = clockLabelText(getPickSeconds());
@@ -3066,11 +3594,11 @@
         return;
       }
       if (wasUser) {
-        afterUserTurn();
+        await afterUserTurn();
         setMockStatus('CPU picked for you · clock reset', true);
         return;
       }
-      const filled = runCpuUntilUserPick();
+      const filled = await runCpuUntilUserPick();
       startPickTimer();
       renderMock();
       setMockStatus(`CPU pick made${filled ? ` · ${filled} more to your turn` : ''}`, true);
@@ -3133,10 +3661,12 @@
       pickSeconds = getPickSeconds();
       restoreTargets();
       renderMock();
-      await loadPool().then((data) => {
+      await loadPool().then(async (data) => {
         if (draftLive && !isDraftComplete() && !isMultiplayer()) {
           const slot = currentSlot();
-          if (slot && slot.teamIndex !== mock.seatIndex) runCpuUntilUserPick();
+          if (slot && slot.teamIndex !== mock.seatIndex) {
+            await runCpuUntilUserPick({ instant: true });
+          }
           if (currentSlot()?.teamIndex === mock.seatIndex) startPickTimer();
         }
         renderMock();

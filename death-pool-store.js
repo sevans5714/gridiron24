@@ -406,7 +406,7 @@ function createPool(user, body = {}) {
   if (closesAt > endsAt) throw err(400, 'Closing date must be on or before the pool end date');
 
   const store = readStore();
-  if (store.pools.length >= MAX_POOLS) throw err(400, 'Too many pools — archive one first (max ' + MAX_POOLS + ')');
+  if (store.pools.length >= MAX_POOLS) throw err(400, 'Too many pools — delete one first (max ' + MAX_POOLS + ')');
 
   const createdAt = new Date().toISOString();
   const creator = {
@@ -912,6 +912,25 @@ function markDeceased(user, body = {}) {
   return { ok: true, pool: publicPool(pool, user.id), scored: publicNom(nom, at) };
 }
 
+function deletePool(user, poolId) {
+  if (!user?.id) throw err(401, 'Sign in required');
+  const id = String(poolId || '').trim();
+  if (!id) throw err(400, 'poolId required');
+  const store = readStore();
+  const idx = store.pools.findIndex((p) => p.id === id);
+  if (idx === -1) throw err(404, 'Pool not found');
+  const pool = store.pools[idx];
+  requireCreator(pool, user);
+  const removed = {
+    id: pool.id,
+    name: pool.name,
+    mode: pool.mode
+  };
+  store.pools.splice(idx, 1);
+  writeStore(store);
+  return { ok: true, deleted: true, pool: removed };
+}
+
 module.exports = {
   getOverview,
   getPool,
@@ -926,5 +945,6 @@ module.exports = {
   startDraft,
   endDraft,
   updatePoolSettings,
+  deletePool,
   listFigures
 };

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=132" />
+  <link rel="stylesheet" href="/css/site.css?v=133" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -152,9 +152,14 @@
     }
     body[data-page="members"] .site-footer-author { color: var(--mo-blue-hot); }
     body[data-page="members"] .site-footer-brand { color: var(--mo-text); }
-    body[data-page="members"] .site-footer-label,
-    body[data-page="members"] .site-footer-build {
+    body[data-page="members"] .site-footer-label {
       color: var(--mo-muted);
+    }
+    body[data-page="members"] .site-footer-build {
+      color: #fff;
+    }
+    html[data-theme="day"] body[data-page="members"] .site-footer-build {
+      color: #14181f;
     }
     body[data-page="members"] .site-footer-mark {
       filter:
@@ -906,6 +911,8 @@
       flex-direction: column;
       flex: 1 1 auto;
       min-height: 0;
+      width: min(100%, 28rem);
+      max-width: 100%;
       overflow: hidden;
     }
     .sgolf-list {
@@ -925,16 +932,20 @@
     }
     .sgolf-row {
       display: grid;
-      grid-template-columns: 2.4rem minmax(0, 1fr) 2.75rem 3.5rem;
-      column-gap: 0.65rem;
+      grid-template-columns: 2.25rem minmax(0, 1fr) 3rem 3.4rem;
+      column-gap: 0.55rem;
       align-items: center;
       flex: 0 0 auto;
       min-height: 1.55rem;
-      padding: 0.22rem 0.15rem;
+      padding: 0.22rem 0.1rem;
       border-bottom: 1px solid rgba(126, 200, 255, 0.07);
       font-size: 0.8rem;
       color: var(--mo-silver);
     }
+    .sgolf-board.is-racing .sgolf-row {
+      grid-template-columns: 2.25rem minmax(0, 1fr) 3.5rem;
+    }
+    .sgolf-board.is-racing .sgolf-thru { display: none; }
     .sgolf-row:nth-child(even):not(.is-head) {
       background: rgba(255, 255, 255, 0.025);
     }
@@ -1033,13 +1044,14 @@
     .im-window {
       --aim-chrome: #2f5aa8;
       --aim-chrome-2: #1a3f86;
-      --aim-paper: #f7f3e6;
-      --aim-ink: #1c2433;
-      --aim-muted: #5c6575;
-      --aim-buddy: #fff3c2;
-      --aim-buddy-edge: #e6c86a;
-      --aim-line: #d7cdaf;
-      --aim-mine: #eef5ff;
+      --aim-paper: #f3f6fb;
+      --aim-ink: #142033;
+      --aim-muted: #5a6578;
+      --aim-buddy: #e6eef8;
+      --aim-buddy-edge: #b7c6dc;
+      --aim-line: #c4d0e2;
+      --aim-mine: #e8f0ff;
+      --aim-edge: #9aacc4;
       display: grid;
       grid-template-rows: auto auto minmax(0, 1fr);
       gap: 0;
@@ -1093,7 +1105,7 @@
     .im-title h2 {
       margin: 0;
       font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.95rem;
+      font-size: 1.05rem;
       font-weight: 700;
       letter-spacing: 0;
       text-transform: none;
@@ -1108,11 +1120,11 @@
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      padding: 0.28rem 0.65rem;
-      background: linear-gradient(180deg, #ece6d4, #ddd4bb);
-      border-bottom: 1px solid #b8ad8e;
+      padding: 0.32rem 0.65rem;
+      background: linear-gradient(180deg, #eef3fa, #d9e3f2);
+      border-bottom: 1px solid var(--aim-edge);
       font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.74rem;
+      font-size: 0.82rem;
       color: #3d4554;
     }
     .im-toolbar strong {
@@ -1168,50 +1180,50 @@
       min-height: 24rem;
       padding: 0;
       border: 0;
-      border-right: 1px solid #b8ad8e;
+      border-right: 1px solid var(--aim-edge);
       background: var(--aim-paper);
     }
     .chat-log {
       display: flex;
       flex-direction: column;
-      gap: 0.05rem;
+      gap: 0.08rem;
       min-height: 15rem;
       max-height: min(58vh, 34rem);
-      padding: 0.55rem 0.65rem 0.4rem;
+      padding: 0.6rem 0.7rem 0.45rem;
       overflow-x: hidden;
       overflow-y: auto;
       background:
-        linear-gradient(180deg, #fffdf6 0%, var(--aim-paper) 100%);
+        linear-gradient(180deg, #ffffff 0%, var(--aim-paper) 100%);
       color: var(--aim-ink);
       font-family: Tahoma, Verdana, "Segoe UI", sans-serif;
-      font-size: 0.9rem;
-      line-height: 1.35;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+      font-size: 1.08rem;
+      line-height: 1.45;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
       -webkit-overflow-scrolling: touch;
-      scrollbar-color: #b8ad8e transparent;
+      scrollbar-color: var(--aim-edge) transparent;
     }
     .chat-log::-webkit-scrollbar { width: 0.55rem; }
     .chat-log::-webkit-scrollbar-thumb {
-      background: #c4b896;
+      background: #a8bbd6;
       border-radius: 0;
-      border: 1px solid #a89870;
+      border: 1px solid #8aa0c0;
     }
     .chat-empty {
       margin: 0.75rem 0.35rem;
-      padding: 0.75rem 0.85rem;
+      padding: 0.85rem 0.95rem;
       color: var(--aim-muted);
       font-family: Tahoma, Verdana, sans-serif;
       letter-spacing: 0;
       text-transform: none;
-      font-size: 0.9rem;
+      font-size: 1.05rem;
       text-align: left;
-      border: 1px dashed #c4b896;
-      background: rgba(255, 255, 255, 0.45);
+      border: 1px dashed var(--aim-edge);
+      background: rgba(255, 255, 255, 0.55);
     }
     .chat-empty strong {
       display: block;
       margin-bottom: 0.25rem;
-      font-size: 1rem;
+      font-size: 1.15rem;
       font-weight: 700;
       color: var(--aim-chrome-2);
     }
@@ -1256,8 +1268,8 @@
       padding: 0;
       font: inherit;
       font-weight: 700;
-      font-size: 0.9rem;
-      line-height: 1.35;
+      font-size: 1.05rem;
+      line-height: 1.4;
     }
     .im-who:hover { text-decoration: underline; filter: none; }
     .im-who:disabled { cursor: default; text-decoration: none; }
@@ -1272,6 +1284,8 @@
       white-space: pre-wrap;
       color: var(--aim-ink);
       font-weight: 400;
+      font-size: 1.08rem;
+      line-height: 1.45;
     }
     .im-line.is-compact .im-text {
       padding-left: 0.85rem;
@@ -1281,7 +1295,7 @@
     .chat-mention {
       color: #0d2a5c;
       font-weight: 700;
-      background: #ffe08a;
+      background: #d7e6ff;
       padding: 0 0.15rem;
       border-radius: 0;
       text-shadow: none;
@@ -1289,7 +1303,7 @@
     .im-meta {
       display: inline;
       margin-left: 0.35rem;
-      font-size: 0.68rem;
+      font-size: 0.78rem;
       color: var(--aim-muted);
       opacity: 1;
       font-weight: 500;
@@ -1301,7 +1315,7 @@
       top: 0.15rem;
       width: auto;
       text-align: right;
-      font-size: 0.62rem;
+      font-size: 0.7rem;
       color: var(--aim-muted);
       opacity: 0;
       pointer-events: none;
@@ -1311,11 +1325,11 @@
     .im-line:not(.is-compact) .im-meta .im-meta-stamp { display: inline; }
     .chat-msg-del {
       appearance: none;
-      border: 1px solid #b8ad8e;
-      background: #fffdf6;
+      border: 1px solid var(--aim-edge);
+      background: #fff;
       color: #8a4050;
       font: inherit;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       line-height: 1;
       cursor: pointer;
       padding: 0.05rem 0.35rem;
@@ -1337,9 +1351,9 @@
     }
     .im-line.is-bet {
       margin-top: 0.45rem;
-      padding: 0.35rem;
-      border: 1px solid #e0a070;
-      background: #fff8f0;
+      padding: 0.4rem;
+      border: 1px solid #8ebf9a;
+      background: #f3faf5;
     }
     .im-line.is-bet .im-line-main {
       display: block;
@@ -1350,19 +1364,25 @@
     .im-avatar.is-bet { display: none !important; }
     .im-bet-card {
       margin-top: 0.25rem;
-      padding: 0.45rem 0.55rem;
+      padding: 0.5rem 0.6rem;
       border-radius: 0;
-      border: 1px solid #e0a070;
+      border: 1px solid #7db88c;
       background: #fff;
       max-width: 28rem;
     }
     .im-bet-kicker {
-      margin: 0 0 0.25rem;
-      font-size: 0.66rem;
+      margin: 0 0 0.3rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: #b85a28;
+      color: #15803d;
+    }
+    .im-bet-money {
+      margin-right: 0.28rem;
+      font-style: normal;
+      letter-spacing: 0;
+      text-transform: none;
     }
     .im-who-house {
       font-weight: 800;
@@ -1374,32 +1394,36 @@
       opacity: 0.9;
     }
     .im-bet-type {
-      margin: 0 0 0.35rem;
-      font-size: 0.88rem;
+      margin: 0 0 0.4rem;
+      font-size: 1.02rem;
       font-weight: 700;
       color: var(--aim-ink);
+      display: flex;
+      align-items: baseline;
+      gap: 0.3rem;
+      flex-wrap: wrap;
     }
     .im-bet-legs {
       display: grid;
-      gap: 0.2rem;
-      margin: 0 0 0.4rem;
+      gap: 0.25rem;
+      margin: 0 0 0.45rem;
     }
     .im-bet-leg {
-      font-size: 0.82rem;
+      font-size: 0.98rem;
       color: var(--aim-ink);
-      line-height: 1.3;
+      line-height: 1.35;
     }
     .im-bet-leg small {
       display: block;
       color: var(--aim-muted);
-      font-size: 0.7rem;
+      font-size: 0.82rem;
     }
     .im-bet-stake {
       margin: 0;
-      padding-top: 0.3rem;
-      border-top: 1px solid #eed5b8;
-      font-size: 0.8rem;
-      color: #8a5a10;
+      padding-top: 0.35rem;
+      border-top: 1px solid #c5e0cc;
+      font-size: 0.95rem;
+      color: #15803d;
       font-weight: 700;
     }
     .im-bet-card.is-private {
@@ -1411,7 +1435,7 @@
       margin: 0.35rem 0 0;
       padding-top: 0.3rem;
       border-top: 1px dashed #d4a0d4;
-      font-size: 0.78rem;
+      font-size: 0.9rem;
       font-style: italic;
       color: #7a3d7a;
       line-height: 1.35;
@@ -1490,9 +1514,9 @@
     .im-compose-wrap {
       display: grid;
       gap: 0.3rem;
-      padding: 0.45rem 0.55rem 0.55rem;
-      background: linear-gradient(180deg, #ebe4d0, #ddd4bb);
-      border-top: 1px solid #b8ad8e;
+      padding: 0.5rem 0.6rem 0.6rem;
+      background: linear-gradient(180deg, #eef3fa, #d9e3f2);
+      border-top: 1px solid var(--aim-edge);
       box-shadow: none;
     }
     .mention-bar {
@@ -1505,7 +1529,7 @@
     .mention-bar[hidden] { display: none !important; }
     .mention-bar-label {
       font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.7rem;
+      font-size: 0.78rem;
       font-weight: 700;
       letter-spacing: 0;
       text-transform: none;
@@ -1516,19 +1540,19 @@
       display: inline-flex;
       align-items: center;
       gap: 0.2rem;
-      padding: 0.1rem 0.35rem;
-      border: 1px solid #c9a94a;
+      padding: 0.12rem 0.4rem;
+      border: 1px solid #6a90c8;
       border-radius: 0.15rem;
-      background: #ffe08a;
+      background: #d7e6ff;
       color: #0d2a5c;
       font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.76rem;
+      font-size: 0.84rem;
       font-weight: 700;
       letter-spacing: 0;
       cursor: pointer;
       box-shadow: none;
     }
-    .mention-chip:hover { background: #ffd45c; text-decoration: none; }
+    .mention-chip:hover { background: #c4dbff; text-decoration: none; }
     .mention-chip .x { opacity: 0.7; }
 
     .chat-compose {
@@ -1562,37 +1586,37 @@
     .chat-compose-row:focus-within { border-color: transparent; }
     .chat-compose textarea {
       width: 100%;
-      min-height: 3.25rem;
+      min-height: 3.5rem;
       max-height: 8.5rem;
       resize: none;
-      padding: 0.4rem 0.5rem;
-      border: 1px solid #8a8270;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid var(--aim-edge);
       border-radius: 0;
       background: #fff;
       color: var(--aim-ink);
       font-family: Tahoma, Verdana, sans-serif;
-      font-size: 0.9rem;
-      line-height: 1.35;
-      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #cfc7b0;
+      font-size: 1.05rem;
+      line-height: 1.4;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #c5d0e0;
     }
     .chat-compose textarea:focus {
       outline: none;
       border-color: var(--aim-chrome);
       box-shadow: inset 1px 1px 0 #fff;
     }
-    .chat-compose textarea::placeholder { color: #8a8270; }
+    .chat-compose textarea::placeholder { color: #7a879c; }
     .chat-compose button {
       appearance: none;
       align-self: stretch;
-      min-height: 2.6rem;
-      min-width: 4.2rem;
+      min-height: 2.75rem;
+      min-width: 4.4rem;
       padding: 0.35rem 0.85rem;
       border: 1px solid #0d2a5c;
       border-radius: 0.15rem;
       background: linear-gradient(180deg, #6b93d8, #2f5aa8);
       color: #fff;
       font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.82rem;
+      font-size: 0.92rem;
       font-weight: 700;
       letter-spacing: 0;
       text-transform: none;
@@ -1617,24 +1641,24 @@
     }
     .im-buddies-head {
       font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.72rem;
+      font-size: 0.82rem;
       font-weight: 700;
       letter-spacing: 0.02em;
       text-transform: none;
-      color: #3d2f08;
+      color: #1a3f86;
       line-height: 1.25;
-      padding: 0.45rem 0.55rem;
+      padding: 0.5rem 0.55rem;
       border-bottom: 1px solid var(--aim-buddy-edge);
-      background: linear-gradient(180deg, #ffe9a0, #f0d06a);
+      background: linear-gradient(180deg, #f0f5fc, #d5e2f4);
     }
     .im-buddies-head small {
       display: block;
       margin-top: 0.15rem;
       font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.66rem;
+      font-size: 0.72rem;
       letter-spacing: 0;
       text-transform: none;
-      color: #6a5720;
+      color: #5a6578;
       font-weight: 500;
     }
     .presence-list {
@@ -1684,7 +1708,7 @@
       display: block;
       font-family: Tahoma, "Segoe UI", sans-serif;
       font-weight: 700;
-      font-size: 0.82rem;
+      font-size: 0.95rem;
       color: #1c2433;
       min-width: 0;
       overflow: hidden;
@@ -1696,9 +1720,9 @@
     .presence-row .lg { display: none; }
     .presence-empty {
       padding: 0.55rem 0.5rem;
-      color: #6a5720;
+      color: #5a6578;
       font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.78rem;
+      font-size: 0.88rem;
     }
     .presence-row.is-me { cursor: default; }
 
@@ -2330,17 +2354,32 @@
     }
     .cpool-card {
       display: grid;
-      gap: 0.35rem;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.55rem 0.75rem;
+      align-items: center;
       padding: 0.7rem 0.75rem;
       border: 1px solid rgba(126, 200, 255, 0.14);
       background: rgba(0, 0, 0, 0.22);
-      cursor: pointer;
-      text-align: left;
       color: inherit;
       font: inherit;
       width: 100%;
     }
-    .cpool-card.is-active { border-color: rgba(243, 217, 138, 0.55); }
+    .cpool-card.is-active { border-color: rgba(77, 255, 154, 0.45); }
+    .cpool-card.is-joined { border-color: rgba(126, 200, 255, 0.28); }
+    .cpool-card-main {
+      appearance: none;
+      display: grid;
+      gap: 0.3rem;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      min-width: 0;
+    }
     .cpool-card .title {
       font-family: "Oswald", sans-serif;
       letter-spacing: 0.04em;
@@ -2355,6 +2394,57 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       font-family: "Oswald", sans-serif;
+    }
+    .cpool-enter,
+    .cpool-actions button.cpool-enter {
+      appearance: none;
+      justify-self: end;
+      min-height: 2.35rem;
+      padding: 0.4rem 0.9rem;
+      border: 1px solid rgba(77, 255, 154, 0.55);
+      border-radius: 0.2rem;
+      background: linear-gradient(180deg, rgba(62, 207, 138, 0.42), rgba(21, 128, 61, 0.55));
+      color: #b8ffd6;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.84rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .cpool-enter:hover:not(:disabled):not(.is-in):not(.is-closed),
+    .cpool-actions button.cpool-enter:hover {
+      background: linear-gradient(180deg, rgba(77, 255, 154, 0.55), rgba(21, 128, 61, 0.7));
+      color: #fff;
+    }
+    .cpool-enter.is-in {
+      border-color: rgba(126, 200, 255, 0.35);
+      background: rgba(47, 123, 255, 0.16);
+      color: var(--mo-blue-hot);
+    }
+    .cpool-enter.is-closed {
+      border-color: rgba(176, 198, 230, 0.18);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--mo-muted);
+      cursor: default;
+      opacity: 0.75;
+    }
+    html[data-theme="day"] .cpool-enter,
+    html[data-theme="day"] .cpool-actions button.cpool-enter {
+      border-color: rgba(21, 128, 61, 0.45);
+      background: linear-gradient(180deg, #22c55e, #15803d);
+      color: #fff;
+    }
+    html[data-theme="day"] .cpool-enter.is-in {
+      border-color: rgba(31, 94, 240, 0.35);
+      background: rgba(31, 94, 240, 0.1);
+      color: #1f5ef0;
+    }
+    html[data-theme="day"] .cpool-enter.is-closed {
+      border-color: rgba(20, 24, 31, 0.12);
+      background: #eef1f5;
+      color: var(--mo-muted);
     }
     .cpool-detail {
       display: grid;
@@ -2378,6 +2468,15 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       cursor: pointer;
+    }
+    .cpool-actions button.is-danger {
+      border-color: rgba(255, 143, 143, 0.45);
+      background: rgba(160, 40, 50, 0.28);
+      color: #ffb4b4;
+    }
+    .cpool-actions button.is-danger:hover {
+      background: rgba(180, 50, 60, 0.42);
+      color: #fff;
     }
     .cpool-squares {
       display: grid;
@@ -2964,6 +3063,45 @@
       overflow: hidden;
     }
     .lounge-section.is-mock .lounge-section-label h2 { color: var(--mo-blue-hot); }
+    .lounge-section.is-mock .mock-section-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin: -0.15rem 0 0.85rem;
+      padding: 0.1rem 0 0.55rem;
+      position: relative;
+    }
+    .lounge-section.is-mock .mock-section-label h2 {
+      margin: 0;
+      min-width: 0;
+    }
+    .lounge-section.is-mock .mock-settings-btn {
+      appearance: none;
+      flex: 0 0 auto;
+      width: 2.15rem;
+      height: 2.15rem;
+      margin: -0.35rem -0.15rem 0 0;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 1px solid color-mix(in srgb, var(--mo-blue) 45%, var(--mo-line)) !important;
+      border-radius: 0.5rem;
+      background: color-mix(in srgb, var(--mo-blue) 16%, var(--mo-surface)) !important;
+      color: var(--mo-blue-hot) !important;
+      cursor: pointer;
+      box-shadow: none;
+      align-self: flex-start;
+    }
+    .lounge-section.is-mock .mock-settings-btn:hover {
+      border-color: var(--mo-blue) !important;
+      color: #fff !important;
+      background: color-mix(in srgb, var(--mo-blue) 34%, var(--mo-surface)) !important;
+      filter: none !important;
+    }
+    .lounge-section.is-mock .mock-settings-gear {
+      display: block;
+    }
     .mock-start-bar {
       display: grid;
       grid-template-columns: minmax(16rem, 1.2fr) minmax(0, 1fr) auto;
@@ -3155,10 +3293,13 @@
       font-size: clamp(2rem, 4vw, 2.6rem);
       line-height: 1;
       letter-spacing: 0.04em;
-      color: var(--mo-text);
+      color: #3dd68c;
       font-variant-numeric: tabular-nums;
+      transition: color 0.2s ease;
     }
-    .mock-live-timer-value.is-low { color: var(--mo-upcoming); }
+    .mock-live-timer-value.is-ok { color: #3dd68c; }
+    .mock-live-timer-value.is-warn,
+    .mock-live-timer-value.is-low { color: #f0c14a; }
     .mock-live-timer-value.is-urgent {
       color: #ef4444;
       animation: mock-timer-blink 0.7s ease-in-out infinite;
@@ -3182,6 +3323,7 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      justify-content: flex-end;
       gap: 0.45rem 0.6rem;
       margin: 0 0 0.85rem;
       padding: 0.55rem 0.65rem;
@@ -3189,52 +3331,60 @@
       background: var(--mo-surface-2);
       border: 1px solid var(--mo-line);
     }
-    .mock-toolbar-settings {
+    .mock-toolbar[hidden] { display: none !important; }
+    .mock-settings-check {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.55rem;
+      border: 1px solid var(--mo-line);
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+    }
+    .mock-settings-check > span:first-of-type {
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
-      min-width: 0;
-      flex: 1 1 14rem;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--mo-text);
+      font-weight: 600;
     }
-    .mock-settings-btn {
+    .mock-settings-check input {
+      width: 1rem;
+      height: 1rem;
+      accent-color: var(--mo-blue);
+    }
+    .mock-settings-check .hint {
+      margin: 0;
+      padding-left: 1.5rem;
+      font-size: 0.78rem;
+      line-height: 1.35;
+      color: var(--mo-muted);
+      font-weight: 400;
+    }
+    .mock-settings-danger {
       appearance: none;
-      border: 1px solid color-mix(in srgb, var(--mo-blue) 45%, var(--mo-line)) !important;
+      border: 1px solid rgba(220, 90, 90, 0.45);
       border-radius: 0.45rem;
-      background: color-mix(in srgb, var(--mo-blue) 16%, var(--mo-surface)) !important;
-      color: var(--mo-text) !important;
-      padding: 0.42rem 0.8rem;
-      font-family: "Oswald", sans-serif;
-      font-size: 0.82rem;
-      font-weight: 700;
+      background: transparent;
+      color: #e88888;
+      padding: 0.42rem 0.75rem;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 0.88rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       cursor: pointer;
-      box-shadow: none;
-      white-space: nowrap;
     }
-    .mock-settings-btn:hover {
-      border-color: var(--mo-blue) !important;
-      color: #fff !important;
-      filter: none !important;
-    }
-    .mock-settings-summary {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 0.78rem;
-      color: var(--mo-muted);
-      font-variant-numeric: tabular-nums;
-    }
-    .mock-settings-summary strong {
-      color: var(--mo-text);
-      font-weight: 600;
+    .mock-settings-danger:hover {
+      background: rgba(220, 90, 90, 0.12);
     }
     .mock-toolbar-actions {
       display: inline-flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 0.4rem;
+      margin-left: 0;
     }
     .mock-toolbar label {
       display: inline-flex;
@@ -3319,7 +3469,8 @@
     .mock-settings-actions {
       display: flex;
       flex-wrap: wrap;
-      justify-content: space-between;
+      justify-content: flex-start;
+      align-items: center;
       gap: 0.55rem;
       margin-top: 0.35rem;
       padding-top: 0.85rem;
@@ -3356,10 +3507,10 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       cursor: pointer;
+      margin-left: auto;
     }
     @media (max-width: 560px) {
       .mock-settings-form .row { grid-template-columns: 1fr; }
-      .mock-toolbar-settings { flex: 1 1 100%; }
     }
 
     .mock-clock {
@@ -3646,6 +3797,35 @@
     .mock-order .mock-seat-chip.is-human:not(.is-you) {
       border-color: rgba(47, 123, 255, 0.4);
     }
+    .mock-order .mock-seat-chip.is-draggable {
+      cursor: grab;
+    }
+    .mock-order .mock-seat-chip.is-draggable:active,
+    .mock-order .mock-seat-chip.is-dragging {
+      cursor: grabbing;
+      opacity: 0.72;
+      transform: scale(1.03);
+    }
+    .mock-order .mock-seat-chip.is-drop.is-hot {
+      border-color: var(--mo-gold);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--mo-gold) 45%, transparent);
+      color: var(--mo-text);
+    }
+    .mock-order .mock-seat-chip.is-just-picked {
+      border-color: color-mix(in srgb, var(--mo-good) 65%, var(--mo-line));
+      background: color-mix(in srgb, var(--mo-good) 16%, var(--mo-surface));
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--mo-good) 35%, transparent);
+      animation: mock-seat-picked 1.1s ease;
+    }
+    .mock-order .mock-seat-chip.is-just-picked .last {
+      color: var(--mo-text);
+      font-weight: 700;
+    }
+    @keyframes mock-seat-picked {
+      0% { transform: scale(1); }
+      35% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
     @media (max-width: 900px) {
       .mock-order {
         display: flex;
@@ -3683,7 +3863,7 @@
       flex: 1 1 auto;
       min-height: 0;
       overflow: auto;
-      --mock-cols: 2.1rem 2.35rem minmax(12rem, 1.85fr) 2.5rem 2.2rem 2.6rem 3rem 3rem 2.6rem 3.1rem 2.8rem;
+      --mock-cols: 2rem 2.2rem minmax(11rem, 1.55fr) 2.4rem 2rem 2.4rem 2.6rem 1.9rem 3.1rem 2.1rem 2.2rem 2.9rem 2.5rem 3rem 2.5rem;
     }
     .mock-myteam,
     .mock-side {
@@ -3836,6 +4016,13 @@
       letter-spacing: 0.06em;
       color: var(--mo-muted);
     }
+    .mock-pool-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 0.75rem;
+      min-width: 0;
+    }
     .mock-pool-filters {
       display: flex;
       flex-wrap: wrap;
@@ -3844,6 +4031,47 @@
       font-family: "Oswald", sans-serif;
       letter-spacing: 0.06em;
       text-transform: uppercase;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .mock-pool-tools .mock-search-wrap {
+      display: block;
+      flex: 1 1 11rem;
+      min-width: 9rem;
+      max-width: 18rem;
+      margin-left: auto;
+    }
+    .mock-pool-tools .mock-search-wrap input {
+      width: 100%;
+      appearance: none;
+      border: 1px solid var(--mo-line);
+      border-radius: 0.45rem;
+      background: var(--mo-input);
+      color: var(--mo-text);
+      padding: 0.4rem 0.65rem;
+      font: inherit;
+      font-size: 0.88rem;
+      min-width: 0;
+    }
+    .mock-pool-tools .mock-search-wrap input::placeholder {
+      color: var(--mo-muted);
+      opacity: 0.85;
+    }
+    .mock-pool-tools .mock-search-wrap input:focus {
+      outline: none;
+      border-color: color-mix(in srgb, var(--mo-blue) 55%, var(--mo-line));
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--mo-blue) 22%, transparent);
+    }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
     .mock-pool-filters button {
       appearance: none;
@@ -3943,11 +4171,11 @@
 
     .mock-player {
       display: grid;
-      grid-template-columns: var(--mock-cols, 2.1rem 2.35rem minmax(12rem, 1.85fr) 2.5rem 2.2rem 2.6rem 3rem 3rem 2.6rem 3.1rem 2.8rem);
+      grid-template-columns: var(--mock-cols, 2rem 2.2rem minmax(11rem, 1.55fr) 2.4rem 2rem 2.4rem 2.6rem 1.9rem 3.1rem 2.1rem 2.2rem 2.9rem 2.5rem 3rem 2.5rem);
       gap: 0.25rem 0.35rem;
       align-items: center;
       width: 100%;
-      min-width: 52rem;
+      min-width: 64rem;
       padding: 0.48rem 0.75rem;
       border: 0;
       border-bottom: 1px solid rgba(126, 200, 255, 0.06);
@@ -4069,6 +4297,7 @@
       position: relative;
       z-index: 2;
       box-shadow: inset 0 0 0 1px color-mix(in srgb, #ef4444 45%, transparent);
+      vertical-align: middle;
     }
     .mock-injury:hover {
       background: color-mix(in srgb, #ef4444 38%, transparent);
@@ -4105,8 +4334,44 @@
       color: #ffd28a;
       box-shadow: inset 0 0 0 1px color-mix(in srgb, #f59e0b 50%, transparent);
     }
-    .mock-injury-card {
+    #mock-injury-dialog,
+    #mock-profile-dialog,
+    .mock-injury-dialog,
+    .mock-profile-dialog,
+    .mock-pick-dialog {
+      width: min(28rem, calc(100vw - 1.25rem));
+      max-width: calc(100vw - 1.25rem);
+      border: 0;
+      padding: 0;
+      background: transparent;
+      overflow: visible;
+    }
+    .mock-dialog-card.mock-injury-card,
+    .mock-dialog-card.mock-profile-card {
       width: min(28rem, 100%);
+      position: relative;
+      display: block;
+      flex: none;
+      grid-template-columns: none;
+      gap: 0;
+      align-items: stretch;
+      max-height: min(88vh, 42rem);
+      overflow: auto;
+      padding: 1.25rem 1.2rem 1.2rem;
+      box-sizing: border-box;
+    }
+    .mock-dialog-card.mock-injury-card h3,
+    .mock-dialog-card.mock-profile-card h3 {
+      padding-right: 1.75rem;
+      overflow: visible;
+      text-overflow: unset;
+      white-space: normal;
+    }
+    .mock-dialog-card.mock-injury-card strong,
+    .mock-dialog-card.mock-profile-card strong {
+      overflow: visible;
+      text-overflow: unset;
+      white-space: normal;
     }
     .mock-injury-meta {
       margin: 0 0 0.65rem;
@@ -4115,11 +4380,13 @@
     }
     .mock-injury-news {
       margin-top: 0.15rem;
+      display: block;
     }
     .mock-injury-news .mock-news-label {
       margin: 0 0 0.45rem;
     }
     .mock-injury-news .mock-news-item {
+      display: block;
       margin: 0 0 0.55rem;
       padding-bottom: 0.5rem;
       border-bottom: 1px solid rgba(126, 200, 255, 0.08);
@@ -4131,23 +4398,33 @@
     }
     .mock-injury-news .mock-news-item a,
     .mock-injury-news .mock-news-item strong {
+      display: block;
       color: var(--mo-text);
       font-size: 0.9rem;
       line-height: 1.35;
       text-decoration: none;
+      overflow: visible;
+      text-overflow: unset;
+      white-space: normal;
     }
     .mock-injury-news .mock-news-item a:hover {
       color: var(--mo-blue-hot);
       text-decoration: underline;
     }
     .mock-injury-news .mock-news-item p {
+      display: block;
       margin: 0.3rem 0 0;
       color: var(--mo-muted);
       font-size: 0.8rem;
       line-height: 1.4;
     }
+    #mock-injury-body {
+      display: block;
+      min-width: 0;
+    }
     #mock-injury-body .mock-news-injury {
       margin-bottom: 0.75rem;
+      display: block;
     }
     .mock-profile-hero h3 {
       display: flex;
@@ -4157,16 +4434,19 @@
     }
     .mock-news-box,
     .mock-news-injury {
+      display: block;
       margin: 0 0 0.85rem;
       padding: 0.7rem 0.75rem;
       border: 1px solid var(--mo-line);
       border-radius: 0.65rem;
       background: var(--mo-surface-2);
+      min-width: 0;
     }
     .mock-news-injury {
       border-left: 3px solid #ef4444;
     }
     .mock-news-label {
+      display: block;
       margin: 0 0 0.45rem;
       font-family: "Oswald", sans-serif;
       font-size: 0.68rem;
@@ -4176,22 +4456,28 @@
       color: var(--mo-muted);
     }
     .mock-news-item {
+      display: block;
       padding: 0.4rem 0;
       border-top: 1px solid var(--mo-line);
     }
     .mock-news-item:first-of-type { border-top: 0; padding-top: 0; }
     .mock-news-item a,
     .mock-news-item strong {
+      display: block;
       color: var(--mo-text);
       font-size: 0.88rem;
       font-weight: 700;
       text-decoration: none;
       line-height: 1.3;
+      overflow: visible;
+      text-overflow: unset;
+      white-space: normal;
     }
     .mock-news-item a:hover { text-decoration: underline; }
     .mock-news-item p,
     .mock-news-injury p,
     .mock-news-box p {
+      display: block;
       margin: 0.25rem 0 0;
       color: var(--mo-muted);
       font-size: 0.8rem;
@@ -4199,8 +4485,18 @@
     }
     .mock-news-box p.sub,
     .mock-news-injury p.sub { font-size: 0.76rem; }
-    #mock-injury-body p { margin: 0 0 0.45rem; color: var(--mo-text); line-height: 1.4; }
-    #mock-injury-body p.sub { color: var(--mo-muted); }
+    #mock-injury-body > p {
+      display: block;
+      margin: 0 0 0.45rem;
+      color: var(--mo-text);
+      line-height: 1.4;
+    }
+    #mock-injury-body > p.sub,
+    #mock-injury-body .mock-news-injury p.sub { color: var(--mo-muted); }
+    #mock-injury-body .mock-news-item p,
+    #mock-injury-body .mock-profile-note {
+      color: var(--mo-muted);
+    }
     .mock-scout {
       display: none;
     }
@@ -4591,6 +4887,7 @@
       padding: 0;
       background: transparent;
       max-width: calc(100vw - 2rem);
+      color: inherit;
     }
     .mock-dialog::backdrop {
       background: rgba(4, 10, 18, 0.72);
@@ -4606,6 +4903,9 @@
         var(--mo-surface);
       color: var(--mo-text);
       box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      position: relative;
+      display: block;
+      box-sizing: border-box;
     }
     .mock-profile-card {
       width: min(28rem, 100%);
@@ -4618,11 +4918,13 @@
       margin: 0 0 1rem;
     }
     .mock-profile-stat {
+      display: block;
       padding: 0.55rem 0.45rem;
       border: 1px solid var(--mo-line);
       border-radius: 0.55rem;
       background: var(--mo-surface-2);
       text-align: center;
+      min-width: 0;
     }
     .mock-profile-stat span {
       display: block;
@@ -4675,10 +4977,15 @@
       border-radius: 0.75rem;
       background: var(--mo-surface-2);
     }
-    .mock-pick-card {
+    .mock-dialog-card.mock-pick-card {
       width: min(28rem, 100%);
       position: relative;
       padding-top: 1.25rem;
+      display: block;
+      flex: none;
+      grid-template-columns: none;
+      gap: 0;
+      align-items: stretch;
     }
     .mock-pick-hero {
       display: grid;
@@ -4789,6 +5096,11 @@
     .mock-pick-card .mock-dialog-actions {
       grid-template-columns: 1fr 1.35fr;
     }
+    .mock-dialog-card.mock-pick-card strong {
+      overflow: visible;
+      text-overflow: unset;
+      white-space: normal;
+    }
     @media (max-width: 420px) {
       .mock-pick-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4896,6 +5208,26 @@
     .mock-player.is-targeted {
       box-shadow: inset 3px 0 0 var(--mo-gold);
     }
+    .mock-player.is-drafted {
+      opacity: 0.78;
+      cursor: default;
+    }
+    .mock-player.is-drafted:hover {
+      background: rgba(255, 196, 72, 0.08);
+    }
+    .mock-player.is-drafted .mock-rank,
+    .mock-player.is-drafted .mock-cell {
+      opacity: 0.55;
+    }
+    .mock-draft-meta {
+      display: block;
+      margin-top: 0.12rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #e8b84a;
+      line-height: 1.2;
+    }
     .mock-player[draggable="true"] { cursor: grab; }
     .mock-player[draggable="true"]:active { cursor: grabbing; }
 
@@ -4915,7 +5247,8 @@
       padding: 0.15rem 0.1rem 0.45rem;
       scrollbar-width: thin;
     }
-    .mock-pick-card {
+    .mock-recent-rail .mock-pick-card,
+    .mock-recent-card {
       flex: 0 0 auto;
       width: 11.5rem;
       padding: 0.55rem 0.6rem;
@@ -4927,22 +5260,26 @@
       gap: 0.5rem;
       align-items: center;
     }
-    .mock-pick-card.is-mine {
+    .mock-recent-rail .mock-pick-card.is-mine,
+    .mock-recent-card.is-mine {
       border-color: rgba(232, 196, 90, 0.45);
       background: linear-gradient(160deg, rgba(232, 196, 90, 0.14), rgba(0, 0, 0, 0.35));
     }
-    .mock-pick-card .mock-head {
+    .mock-recent-rail .mock-pick-card .mock-head,
+    .mock-recent-card .mock-head {
       width: 2.4rem;
       height: 2.4rem;
       border-radius: 0.55rem;
     }
-    .mock-pick-card .num {
+    .mock-recent-rail .mock-pick-card .num,
+    .mock-recent-card .num {
       font-family: "Bebas Neue", "Oswald", sans-serif;
       font-size: 0.72rem;
       letter-spacing: 0.06em;
       color: var(--mo-gold);
     }
-    .mock-pick-card strong {
+    .mock-recent-rail .mock-pick-card strong,
+    .mock-recent-card strong {
       display: block;
       font-size: 0.82rem;
       color: var(--mo-text);
@@ -4950,7 +5287,8 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .mock-pick-card .who {
+    .mock-recent-rail .mock-pick-card .who,
+    .mock-recent-card .who {
       font-size: 0.68rem;
       color: var(--mo-muted);
       overflow: hidden;
@@ -6425,6 +6763,17 @@
     .death-bid-row button:hover, .death-pool-card button:hover, .death-nom button:hover {
       background: rgba(180, 70, 95, 0.45);
     }
+    .death-actions button.is-danger,
+    .death-pool-card button.is-danger {
+      border-color: rgba(255, 143, 143, 0.55);
+      background: rgba(120, 20, 35, 0.55);
+      color: #ffd0d0;
+    }
+    .death-actions button.is-danger:hover,
+    .death-pool-card button.is-danger:hover {
+      background: rgba(160, 30, 45, 0.72);
+      color: #fff;
+    }
     .death-actions button:disabled, .death-create button:disabled, .death-nom-bar button:disabled,
     .death-bid-row button:disabled, .death-nom button:disabled {
       opacity: 0.5;
@@ -6743,13 +7092,13 @@
       }
       .im-main {
         border-right: 0;
-        border-bottom: 1px solid #b8ad8e;
+        border-bottom: 1px solid var(--aim-edge);
         min-height: 20rem;
       }
       .im-buddies {
         padding: 0;
         border-left: 0;
-        border-top: 1px solid #b8ad8e;
+        border-top: 1px solid var(--aim-edge);
       }
       .presence-list { max-height: 9rem; }
       .chat-log { max-height: min(50vh, 28rem); }
@@ -6767,9 +7116,13 @@
         grid-template-rows: minmax(0, 1fr);
       }
       .sgolf-row {
-        grid-template-columns: 2.1rem minmax(0, 1fr) 2.4rem 3.1rem;
-        column-gap: 0.45rem;
+        grid-template-columns: 2.1rem minmax(0, 1fr) 2.6rem 3rem;
+        column-gap: 0.4rem;
       }
+      .sgolf-board.is-racing .sgolf-row {
+        grid-template-columns: 2.1rem minmax(0, 1fr) 3rem;
+      }
+      .sgolf-table { width: min(100%, 24rem); }
       .sgame.is-golf { grid-column: auto; }
       .board-body {
         grid-template-columns: minmax(0, 1fr);
@@ -6864,6 +7217,8 @@
     html[data-theme="day"] .mock-pool-cols button:hover { color: var(--mo-blue); }
     html[data-theme="day"] .mock-player:nth-child(even) { background: rgba(31, 94, 240, 0.03); }
     html[data-theme="day"] .mock-player:hover { background: rgba(31, 94, 240, 0.08); }
+    html[data-theme="day"] .mock-player.is-drafted:hover { background: rgba(196, 140, 20, 0.1); }
+    html[data-theme="day"] .mock-draft-meta { color: #a87310; }
     html[data-theme="day"] .mock-scout { color: var(--mo-muted); }
     html[data-theme="day"] .mock-cell { color: var(--mo-text); }
     html[data-theme="day"] .mock-cell.is-proj { color: var(--mo-blue); }
@@ -7045,8 +7400,21 @@
       </section>
 
       <section class="lounge-section is-mock lounge-desk-panel" id="mock-draft" data-desk-panel="mock" aria-label="Mock draft generator" role="tabpanel" hidden>
-        <div class="lounge-section-label">
+        <div class="lounge-section-label mock-section-label">
           <h2>Mock Draft</h2>
+          <button
+            type="button"
+            class="mock-settings-btn"
+            id="mock-settings-open"
+            aria-label="Draft settings"
+            aria-haspopup="dialog"
+            aria-controls="mock-settings-dialog"
+            title="Draft settings"
+          >
+            <svg class="mock-settings-gear" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54A.5.5 0 0 0 14.4 2h-4.8a.5.5 0 0 0-.49.42l-.36 2.54c-.59.24-1.13.55-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.22 8.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.34 14.1a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.43.34.68.22l2.39-.96c.49.39 1.03.7 1.62.94l.36 2.54c.05.24.25.42.49.42h4.8c.24 0 .44-.18.49-.42l.36-2.54c.59-.24 1.13-.55 1.62-.94l2.39.96c.25.12.54.02.68-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/>
+            </svg>
+          </button>
         </div>
         <div class="mock-start-bar" id="mock-start-bar">
           <button type="button" class="mock-start-btn" id="mock-start" aria-label="Start Draft">
@@ -7054,33 +7422,24 @@
             <span class="mock-start-btn-sheen" aria-hidden="true"></span>
             <span class="mock-start-btn-kicker">Mock Draft</span>
             <span class="mock-start-btn-label" id="mock-start-label">Start Draft</span>
-            <span class="mock-start-btn-sub" id="mock-start-sub">Opens room · others can join</span>
+            <span class="mock-start-btn-sub" id="mock-start-sub">Drag your team · then Position set</span>
           </button>
           <div class="mock-start-copy" id="mock-start-copy">
             <strong>Claim your seat, then Start Draft</strong>
-            <span>Opens a joinable room. CPU auto-picks until the first human, then the clock starts.</span>
+            <span>Drag your team to set pick order. Opens a 1:00 join lobby.</span>
           </div>
           <div class="mock-live-timer" id="mock-live-timer" hidden>
             <span class="mock-live-timer-label">Your clock</span>
             <span class="mock-live-timer-value" id="mock-pick-timer">1:00</span>
           </div>
         </div>
-        <div class="mock-toolbar">
-          <div class="mock-toolbar-settings">
-            <button type="button" class="mock-settings-btn" id="mock-settings-open" aria-haspopup="dialog" aria-controls="mock-settings-dialog">
-              Draft settings
-            </button>
-            <span class="mock-settings-summary" id="mock-settings-summary">12 teams · 15 rounds · Pick #1 · 1:00</span>
-          </div>
-          <label class="mock-search-wrap">Search
-            <input type="search" id="mock-search" placeholder="Player name" autocomplete="off" />
-          </label>
+        <div class="mock-toolbar" id="mock-toolbar" hidden>
           <div class="mock-toolbar-actions">
-            <button type="button" id="mock-run-to-me">Run to my pick</button>
-            <button type="button" id="mock-auto">CPU pick</button>
-            <button type="button" id="mock-autofill">Fill rest</button>
-            <button type="button" id="mock-undo">Undo</button>
-            <button type="button" id="mock-reset">Reset</button>
+            <button type="button" id="mock-run-to-me" title="Solo: auto-draft CPU teams until it’s your turn">Run to my pick</button>
+            <button type="button" id="mock-auto" title="Draft the best available player for whoever is on the clock">CPU pick</button>
+            <button type="button" id="mock-autofill" title="Solo: auto-draft every remaining pick to finish the board">Fill rest</button>
+            <button type="button" id="mock-undo" title="Undo the last pick (solo only)">Undo</button>
+            <button type="button" id="mock-reset" title="Clear the board and start over">Reset</button>
           </div>
         </div>
 
@@ -7122,37 +7481,22 @@
                   </select>
                 </label>
               </div>
+              <label class="mock-settings-check" for="mock-show-tools">
+                <span>
+                  <input type="checkbox" id="mock-show-tools" />
+                  Show advanced draft tools
+                </span>
+                <span class="hint">CPU pick, run to my pick, fill rest, undo, and reset — for solo practice.</span>
+              </label>
               <div class="mock-settings-actions">
                 <button type="button" class="ghost" id="mock-shuffle">Shuffle order</button>
+                <button type="button" class="mock-settings-danger" id="mock-settings-reset">Reset draft</button>
                 <button type="button" class="primary" id="mock-settings-done">Done</button>
               </div>
             </form>
           </div>
         </dialog>
-        <div class="mock-clock" id="mock-clock">
-          <div class="mock-clock-main">
-            <div class="label" id="mock-clock-label">Ready</div>
-            <div class="pick" id="mock-clock-pick">Set your pick #, then Start Draft</div>
-            <div class="meta" id="mock-clock-meta"></div>
-          </div>
-          <div class="mock-clock-side">
-            <div class="mock-clock-timer-wrap">
-              <span class="mock-clock-timer-label" id="mock-clock-timer-label">Pick clock</span>
-              <div class="mock-clock-timer" id="mock-clock-timer" aria-live="polite">—</div>
-            </div>
-            <div class="mock-clock-overall" id="mock-clock-overall">#—</div>
-            <div
-              class="mock-draft-drop"
-              id="mock-draft-drop"
-              data-drop="draft"
-              aria-label="Drop a player here to draft"
-            >
-              <strong>Draft player</strong>
-              <span>Drop here · or double-click a name</span>
-            </div>
-          </div>
-        </div>
-        <div class="mock-order" id="mock-order" aria-label="Draft order — click a seat to set your pick #"></div>
+        <div class="mock-order" id="mock-order" aria-label="Draft order — drag your team to set pick position"></div>
         <div class="mock-layout">
           <div class="mock-panel mock-pool">
             <div class="mock-panel-head mock-pool-head">
@@ -7160,22 +7504,28 @@
                 <span>Available players</span>
                 <span id="mock-pool-count">0 left</span>
               </div>
-              <div class="mock-pool-filters" id="mock-pool-filters" role="tablist" aria-label="Board filters">
-                <button type="button" role="tab" data-pool-filter="BEST" class="is-on" aria-selected="true">Best</button>
-                <span class="mock-filter-div" aria-hidden="true"></span>
-                <button type="button" role="tab" data-pool-filter="NEED" aria-selected="false" title="Open starter spots on your roster">Need</button>
-                <span class="mock-filter-div" aria-hidden="true"></span>
-                <button type="button" role="tab" data-pool-filter="QB" aria-selected="false">QB</button>
-                <span class="mock-filter-div" aria-hidden="true"></span>
-                <button type="button" role="tab" data-pool-filter="RB" aria-selected="false">RB</button>
-                <span class="mock-filter-div" aria-hidden="true"></span>
-                <button type="button" role="tab" data-pool-filter="WR" aria-selected="false">WR</button>
-                <span class="mock-filter-div" aria-hidden="true"></span>
-                <button type="button" role="tab" data-pool-filter="TE" aria-selected="false">TE</button>
-                <span class="mock-filter-div" aria-hidden="true"></span>
-                <button type="button" role="tab" data-pool-filter="K" aria-selected="false">K</button>
-                <span class="mock-filter-div" aria-hidden="true"></span>
-                <button type="button" role="tab" data-pool-filter="D/ST" aria-selected="false">D/ST</button>
+              <div class="mock-pool-tools">
+                <div class="mock-pool-filters" id="mock-pool-filters" role="tablist" aria-label="Board filters">
+                  <button type="button" role="tab" data-pool-filter="BEST" class="is-on" aria-selected="true">Best</button>
+                  <span class="mock-filter-div" aria-hidden="true"></span>
+                  <button type="button" role="tab" data-pool-filter="NEED" aria-selected="false" title="Open starter spots on your roster">Need</button>
+                  <span class="mock-filter-div" aria-hidden="true"></span>
+                  <button type="button" role="tab" data-pool-filter="QB" aria-selected="false">QB</button>
+                  <span class="mock-filter-div" aria-hidden="true"></span>
+                  <button type="button" role="tab" data-pool-filter="RB" aria-selected="false">RB</button>
+                  <span class="mock-filter-div" aria-hidden="true"></span>
+                  <button type="button" role="tab" data-pool-filter="WR" aria-selected="false">WR</button>
+                  <span class="mock-filter-div" aria-hidden="true"></span>
+                  <button type="button" role="tab" data-pool-filter="TE" aria-selected="false">TE</button>
+                  <span class="mock-filter-div" aria-hidden="true"></span>
+                  <button type="button" role="tab" data-pool-filter="K" aria-selected="false">K</button>
+                  <span class="mock-filter-div" aria-hidden="true"></span>
+                  <button type="button" role="tab" data-pool-filter="D/ST" aria-selected="false">D/ST</button>
+                </div>
+                <label class="mock-search-wrap">
+                  <span class="visually-hidden">Search players</span>
+                  <input type="search" id="mock-search" placeholder="Search available & drafted…" autocomplete="off" />
+                </label>
               </div>
               <p class="mock-pool-need-hint" id="mock-pool-need-hint" hidden></p>
             </div>
@@ -7188,6 +7538,10 @@
                 <button type="button" data-sort="bye" data-label="Bye" title="Sort by bye week">Bye</button>
                 <button type="button" data-sort="adp" data-label="ADP" title="Sort by average draft position">ADP</button>
                 <button type="button" data-sort="posrk" data-label="PosRk" title="Sort by position rank">PosRk</button>
+                <button type="button" data-sort="games" data-label="G" title="Sort by games played (prior season)">G</button>
+                <button type="button" data-sort="yds" data-label="Yds" title="Sort by primary yards (pass / rush / receiving)">Yds</button>
+                <button type="button" data-sort="td" data-label="TD" title="Sort by primary touchdowns">TD</button>
+                <button type="button" data-sort="rec" data-label="Rec" title="Sort by receptions">Rec</button>
                 <button type="button" data-sort="fp" data-label="’25" title="Sort by prior season fantasy points">’25</button>
                 <button type="button" data-sort="ppg" data-label="PPG" title="Sort by points per game">PPG</button>
                 <button type="button" data-sort="proj" data-label="Proj" title="Sort by projected points">Proj</button>
@@ -7248,7 +7602,7 @@
           </div>
         </dialog>
 
-        <dialog class="mock-dialog" id="mock-injury-dialog" aria-labelledby="mock-injury-title">
+        <dialog class="mock-dialog mock-injury-dialog" id="mock-injury-dialog" aria-labelledby="mock-injury-title">
           <div class="mock-dialog-card mock-injury-card">
             <button type="button" class="mock-dialog-close" id="mock-injury-close" aria-label="Close">×</button>
             <p class="mock-dialog-kicker">Injury report</p>
@@ -7270,7 +7624,7 @@
           </div>
         </dialog>
 
-        <dialog class="mock-dialog" id="mock-profile-dialog" aria-labelledby="mock-profile-title">
+        <dialog class="mock-dialog mock-profile-dialog" id="mock-profile-dialog" aria-labelledby="mock-profile-title">
           <div class="mock-dialog-card mock-profile-card">
             <button type="button" class="mock-dialog-close" id="mock-profile-close" aria-label="Close">×</button>
             <div id="mock-profile-body"></div>
@@ -7366,8 +7720,8 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=94"></script>
-  <script src="/js/lounge-desk.js?v=29"></script>
-  <script src="/js/lounge-games.js?v=27"></script>
+  <script src="/js/lounge-desk.js?v=37"></script>
+  <script src="/js/lounge-games.js?v=29"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -7519,16 +7873,17 @@
       const meta = sportsMetaLine(g);
       const racing = g.kind === 'racing';
       const leaders = (Array.isArray(g.leaders) ? g.leaders : []).slice(0, 30);
-      const thruHead = racing
-        ? (leaders.some((p) => p.thru && p.thru !== 'RK' && p.thru !== '—') ? 'Status' : '—')
-        : (leaders.some((p) => p.state === 'in') ? 'Thru' : 'Tee');
+      const showThru = !racing && leaders.some((p) => p.thru && p.thru !== '—');
+      const thruHead = showThru
+        ? (leaders.some((p) => p.state === 'in') ? 'Thru' : 'Tee')
+        : '';
       const scoreHead = racing ? 'Pts' : 'Score';
       const nameHead = racing ? 'Driver' : 'Player';
       const head = `<div class="sgolf-row is-head" aria-hidden="true">
         <span class="sgolf-pos">Pos</span>
         <span class="sgolf-name">${esc(nameHead)}</span>
         <span class="sgolf-score">${esc(scoreHead)}</span>
-        <span class="sgolf-thru">${esc(thruHead)}</span>
+        ${showThru ? `<span class="sgolf-thru">${esc(thruHead)}</span>` : '<span class="sgolf-thru" aria-hidden="true"></span>'}
       </div>`;
       const rows = leaders.map((p) => {
         const live = p.state === 'in';
@@ -7540,7 +7895,9 @@
           <span class="sgolf-pos">${esc(p.position || '—')}</span>
           <span class="sgolf-name" title="${esc(p.name || p.shortName || '')}">${esc(p.shortName || p.name || '—')}</span>
           <span class="sgolf-score">${esc(p.score || '—')}</span>
-          <span class="sgolf-thru" title="${esc(thruRaw)}">${esc(thru)}</span>
+          ${showThru
+            ? `<span class="sgolf-thru" title="${esc(thruRaw)}">${esc(thru)}</span>`
+            : '<span class="sgolf-thru" aria-hidden="true"></span>'}
         </div>`;
       }).join('');
       const round = g.status?.shortDetail || '';
@@ -7548,7 +7905,7 @@
       const status = meta.live
         ? (round && !/^in progress$/i.test(round) ? round : 'Live')
         : (meta.when || round || fallback);
-      return `<article class="sgolf-board is-${esc(g.status?.bucket || 'upcoming')}" title="${esc(g.name || '')}">
+      return `<article class="sgolf-board${racing ? ' is-racing' : ''} is-${esc(g.status?.bucket || 'upcoming')}" title="${esc(g.name || '')}">
         <header class="sgolf-board-head">
           <h3 class="sgolf-title">${esc(g.shortName || g.name || (racing ? 'Race' : 'Tournament'))}</h3>
           <span class="sgolf-meta${meta.live ? ' is-live' : ''}">${esc(status)}${meta.watch ? ` · ${esc(meta.watch)}` : ''}</span>
@@ -8245,7 +8602,7 @@
         : '';
       return `
         <div class="im-bet-card${isPrivate ? ' is-private' : ''}">
-          ${isPrivate ? `<p class="im-bet-kicker">Private ticket</p>` : ''}
+          <p class="im-bet-kicker"><span class="im-bet-money" aria-hidden="true">💰</span>${isPrivate ? 'Private ticket' : "Casala's bet"}</p>
           <p class="im-bet-type">${esc(typeLabel)} · ${esc(fmtBetOdds(meta.odds))}</p>
           <div class="im-bet-legs">${legs}</div>
           <p class="im-bet-stake">${stakeLine}</p>
@@ -8329,7 +8686,7 @@
         const who = m.authorName || 'Member';
         const isBet = m.kind === 'bet';
         const isMock = m.kind === 'mock';
-        const color = isBet ? '#c9a227' : isMock ? '#2f5aa8' : screenColor(m.authorId || who);
+        const color = isBet ? '#15803d' : isMock ? '#2f5aa8' : screenColor(m.authorId || who);
         const prev = chatMessages[i - 1];
         const compact = !isBet && !isMock && sameAuthorBurst(prev, m) && prev?.kind !== 'bet' && prev?.kind !== 'mock';
         const stamp = fmtChatTime(m.createdAt);

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=132" />
+  <link rel="stylesheet" href="/css/site.css?v=133" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -1654,6 +1654,12 @@
       }
     }
 
+    function membershipAccessHint(u) {
+      if (u.loungeOnly) return 'Lounge only · no franchise HQ';
+      const hq = u.membershipLeague === 'aaa' ? 'AAA HQ' : 'GI24 HQ';
+      return u.loungeToken ? `${hq} + Lounge pass` : `${hq} · no lounge pass`;
+    }
+
     function renderMembers(payload) {
       const list = payload.users || [];
       const conferences = payload.conferences || [];
@@ -1731,7 +1737,7 @@
                         <option value="aaa" ${!u.loungeOnly && u.membershipLeague === 'aaa' ? 'selected' : ''}>AAA League</option>
                         <option value="social" ${u.loungeOnly ? 'selected' : ''}>Social Membership</option>
                       </select>
-                      <p class="muted-sm" style="margin:0.35rem 0 0;">${u.loungeOnly ? 'Lounge only' : (u.membershipLeague === 'aaa' ? 'AAA HQ + Lounge' : 'GI24 HQ + Lounge')}</p>`}
+                      <p class="muted-sm" style="margin:0.35rem 0 0;">${esc(membershipAccessHint(u))}</p>`}
                 </td>
                 <td>
                   ${u.approved === false

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=132" />
+  <link rel="stylesheet" href="/css/site.css?v=133" />
   <style>
     .tree {
       display: flex;
@@ -378,11 +378,12 @@
 
     .bowl {
       position: relative;
-      border: 1px solid rgba(47, 109, 255, 0.5);
-      border-radius: 0.35rem;
+      border: 1px solid color-mix(in srgb, var(--line) 70%, rgba(47, 109, 255, 0.35));
+      border-radius: 0.45rem;
       background:
-        radial-gradient(ellipse 90% 70% at 50% 0%, rgba(47,109,255,0.28), transparent 58%),
-        linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 92%, #1a2a4a) 0%, var(--panel) 100%);
+        radial-gradient(ellipse 85% 55% at 50% 8%, rgba(47, 109, 255, 0.16), transparent 62%),
+        radial-gradient(ellipse 70% 45% at 50% 100%, rgba(10, 18, 36, 0.35), transparent 70%),
+        linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 88%, transparent) 0%, color-mix(in srgb, var(--panel) 94%, transparent) 100%);
       text-align: center;
       padding: 1.35rem 1.25rem 1.5rem;
       min-height: 0;
@@ -392,15 +393,9 @@
       justify-content: flex-start;
       overflow: hidden;
       box-shadow:
-        0 0 0 1px rgba(47, 109, 255, 0.18),
-        0 22px 56px rgba(0, 0, 0, 0.35),
-        inset 0 0 80px rgba(47, 109, 255, 0.1);
-      animation: bowl-glow 3.5s ease-in-out infinite;
-    }
-
-    @keyframes bowl-glow {
-      0%, 100% { box-shadow: 0 0 0 1px rgba(47,109,255,0.18), 0 18px 48px rgba(0,0,0,0.32), inset 0 0 70px rgba(47,109,255,0.08); }
-      50% { box-shadow: 0 0 0 1px rgba(100,150,255,0.35), 0 26px 64px rgba(20,60,160,0.28), inset 0 0 90px rgba(47,109,255,0.16); }
+        0 18px 40px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      animation: none;
     }
 
     .bowl .eyebrow {
@@ -411,10 +406,9 @@
       position: relative;
       width: min(100%, 40rem);
       margin: 0 auto;
-      padding: 0.25rem 0.35rem 0.45rem;
+      padding: 0.15rem 0.25rem 0.35rem;
       background:
-        radial-gradient(ellipse 55% 50% at 50% 48%, rgba(70, 130, 255, 0.32), transparent 68%),
-        radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 36, 64, 0.28), transparent 55%);
+        radial-gradient(ellipse 58% 52% at 50% 48%, rgba(70, 130, 255, 0.18), transparent 72%);
     }
     .bowl-mark img {
       width: 100%;
@@ -423,7 +417,8 @@
       object-fit: contain;
       display: block;
       margin: 0 auto;
-      filter: drop-shadow(0 18px 40px rgba(20, 80, 200, 0.45));
+      background: transparent;
+      filter: drop-shadow(0 14px 32px rgba(20, 80, 200, 0.28));
     }
 
     .bowl-scoreboard {
@@ -537,15 +532,12 @@
       display: none;
     }
     .bowl.survival {
-      border-color: rgba(120, 180, 255, 0.45);
+      border-color: color-mix(in srgb, var(--line) 65%, rgba(120, 180, 255, 0.35));
       background:
-        radial-gradient(ellipse 90% 70% at 50% 0%, rgba(60, 140, 255, 0.26), transparent 58%),
-        linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 90%, #163056) 0%, var(--panel) 100%);
-      animation: survival-glow 3.5s ease-in-out infinite;
-    }
-    @keyframes survival-glow {
-      0%, 100% { box-shadow: 0 0 0 1px rgba(80,160,255,0.16), 0 18px 48px rgba(0,0,0,0.32), inset 0 0 70px rgba(30,90,200,0.08); }
-      50% { box-shadow: 0 0 0 1px rgba(120,180,255,0.35), 0 26px 64px rgba(30,90,200,0.26), inset 0 0 90px rgba(40,120,255,0.14); }
+        radial-gradient(ellipse 85% 55% at 50% 8%, rgba(80, 150, 255, 0.14), transparent 62%),
+        radial-gradient(ellipse 70% 45% at 50% 100%, rgba(10, 18, 36, 0.3), transparent 70%),
+        linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 88%, transparent) 0%, color-mix(in srgb, var(--panel) 94%, transparent) 100%);
+      animation: none;
     }
     .bowl.survival .bowl-mid .vs { color: #9ec4ff; }
     .bowl.survival .bowl-side.is-lead {
@@ -576,8 +568,9 @@
     html[data-theme="day"] .bowl,
     html[data-theme="day"] .bowl.survival {
       background:
-        radial-gradient(ellipse 80% 55% at 50% 18%, rgba(47,109,255,0.14), transparent 58%),
-        linear-gradient(180deg, #eef3fb 0%, var(--panel) 70%);
+        radial-gradient(ellipse 80% 50% at 50% 12%, rgba(47, 109, 255, 0.1), transparent 60%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, color-mix(in srgb, var(--panel) 92%, #e8eef8) 100%);
+      box-shadow: 0 12px 28px rgba(20, 28, 40, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
     }
     html[data-theme="day"] .finale-stage-label { color: #5a6a80; }
     html[data-theme="day"] .bowl-mid .vs { color: #2f6dff; }
@@ -809,7 +802,7 @@
           <p class="finale-stage-label">Week 17 · Championship Stage</p>
           <div class="bowl" id="bowl-card">
             <div class="bowl-mark">
-              <img src="/assets/gridiron-bowl.png?v=5" alt="GridIron Bowl I" width="1024" height="682" />
+              <img src="/assets/gridiron-bowl.png?v=6" alt="GridIron Bowl I" width="1024" height="682" />
             </div>
             <div class="bowl-scoreboard" id="bowl-scoreboard">
               <div class="bowl-side detail">
@@ -832,7 +825,7 @@
           </div>
           <div class="bowl survival" id="survival-card">
             <div class="bowl-mark">
-              <img src="/assets/mayors-cup.png?v=5" alt="Mayor's Cup" width="1024" height="768" />
+              <img src="/assets/mayors-cup.png?v=6" alt="Mayor's Cup" width="1024" height="768" />
             </div>
             <div class="bowl-scoreboard" id="survival-scoreboard" data-week-label="Week 17 · Mayor's Cup">
               <div class="bowl-side detail">

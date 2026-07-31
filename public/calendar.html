@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=132" />
+  <link rel="stylesheet" href="/css/site.css?v=133" />
   <style>
     .event { display:grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 0.95rem 0; border-bottom: 1px solid var(--line); }
     .when { font-family: var(--display); letter-spacing: 0.04em; text-transform: uppercase; color: #8eb6ff; }
@@ -55,10 +55,10 @@
       const type = String(e.type || '').toLowerCase();
       const title = String(e.title || '').toLowerCase();
       if (type === 'survival' || title.includes('mayor')) {
-        return `<img src="/assets/mayors-cup.png?v=4" alt="" width="1024" height="768" />`;
+        return `<img src="/assets/mayors-cup.png?v=6" alt="" width="1024" height="768" />`;
       }
       if (type === 'bowl' || (title.includes('bowl') && !title.includes('aaa'))) {
-        return `<img src="/assets/gridiron-bowl.png?v=3" alt="" />`;
+        return `<img src="/assets/gridiron-bowl.png?v=6" alt="" />`;
       }
       if (type === 'aaa' || title.includes('aaa')) {
         return `<img src="/assets/aaa-league.png?v=7" alt="" width="256" height="256" />`;

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=132" />
+  <link rel="stylesheet" href="/css/site.css?v=133" />
   <style>
     body[data-page="payouts"] .page-hero {
       text-align: center;
@@ -213,13 +213,13 @@
     function prizeLogo(label = '') {
       const l = label.toLowerCase();
       if (l.includes('mayor') || l.includes("mayor's cup") || l.includes('mayors cup') || l.includes('relegation')) {
-        return '/assets/mayors-cup.png?v=4';
+        return '/assets/mayors-cup.png?v=6';
       }
       if ((l.includes('third') || l.includes('3rd')) && l.includes('detail')) return '/assets/detail-3rd-place.png';
       if ((l.includes('third') || l.includes('3rd')) && l.includes('overtime')) return '/assets/overtime-3rd-place.png';
       if (l.includes('third') || l.includes('3rd')) return '/assets/detail-3rd-place.png';
       if (l.includes('winner') || l.includes('bowl') || (l.includes('gridiron') && !l.includes('conference'))) {
-        return '/assets/gridiron-bowl.png?v=3';
+        return '/assets/gridiron-bowl.png?v=6';
       }
       if (l.includes('detail') && (l.includes('championship') || l.includes('2nd') || l.includes('most'))) {
         return '/assets/detail-conference.png';
@@ -229,7 +229,7 @@
       }
       if (l.includes('detail')) return '/assets/detail-conference.png';
       if (l.includes('overtime')) return '/assets/overtime-conference.png';
-      return '/assets/gridiron-bowl.png?v=3';
+      return '/assets/gridiron-bowl.png?v=6';
     }
 
     function render(data) {

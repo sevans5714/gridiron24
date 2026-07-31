@@ -55,7 +55,7 @@ const POOL_TYPES = {
   auction: {
     id: 'auction',
     label: 'Auction',
-    blurb: 'Nominate items and bid a paper budget. Highest bid wins each lot.'
+    blurb: 'Nominate items and bid a paper budget. Highest bid wins each item.'
   },
   draft: {
     id: 'draft',
@@ -292,7 +292,7 @@ function createPool(viewer, body = {}) {
   const description = normalizeDesc(body.description);
   const buyIn = clampNum(body.buyIn, MIN_BUY_IN, MAX_BUY_IN, 0);
   const store = readStore();
-  if (store.pools.length >= MAX_POOLS) throw err(400, 'Pool limit reached — close an old one first');
+  if (store.pools.length >= MAX_POOLS) throw err(400, 'Pool limit reached — delete an old one first');
 
   const startingCash = type === 'auction'
     ? clampNum(body.startingCash, 50, 100000, 500)
@@ -471,7 +471,7 @@ function placeLotBid(viewer, poolId, body = {}) {
 
   const option = (pool.options || []).find((o) => o.id === optionId);
   if (!option) throw err(404, 'Lot not found');
-  if (option.status !== 'auction') throw err(400, 'Auction is not open for this lot');
+  if (option.status !== 'auction') throw err(400, 'Auction is not open for this item');
   const ends = Date.parse(option.auctionEndsAt || '');
   if (!Number.isFinite(ends) || ends <= Date.now()) {
     settleAuctionLots(pool);
@@ -827,6 +827,21 @@ function closePool(viewer, poolId) {
   return { ok: true, pool: publicPool(pool, viewer.id) };
 }
 
+function deletePool(viewer, poolId) {
+  const store = readStore();
+  const { idx, pool } = findPoolOrThrow(store, poolId);
+  requireOwner(pool, viewer);
+  const removed = {
+    id: pool.id,
+    name: pool.name,
+    type: pool.type,
+    typeLabel: (POOL_TYPES[pool.type] || {}).label || pool.type
+  };
+  store.pools.splice(idx, 1);
+  writeStore(store);
+  return { ok: true, deleted: true, pool: removed };
+}
+
 function handleAction(viewer, body = {}) {
   const action = String(body.action || '').toLowerCase();
   const poolId = body.poolId ? String(body.poolId) : null;
@@ -845,6 +860,7 @@ function handleAction(viewer, body = {}) {
   if (action === 'draw') return drawSweep(viewer, poolId, body);
   if (action === 'settle') return settlePool(viewer, poolId);
   if (action === 'close') return closePool(viewer, poolId);
+  if (action === 'delete') return deletePool(viewer, poolId);
   throw err(400, 'Unknown pool action');
 }
 
