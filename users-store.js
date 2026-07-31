@@ -149,7 +149,8 @@ function publicUser(user) {
     duesPaid: Boolean(user.duesPaid),
     duesPaidAt: user.duesPaidAt || null,
     createdAt: user.createdAt || null,
-    approvedAt: user.approvedAt || null
+    approvedAt: user.approvedAt || null,
+    welcomeMailSentAt: user.welcomeMailSentAt || null
   };
 }
 
@@ -607,18 +608,31 @@ function setUserApproved(userId, approved, actorId = null, options = {}) {
   }
   store.users[idx].approved = Boolean(approved);
   store.users[idx].approvedAt = approved ? new Date().toISOString() : null;
-  // Approving always unlocks Members Lounge (social and league members alike).
+  // Approving unlocks the account; league / social / lounge pass are assigned after.
   if (approved) {
     store.users[idx].loungeMember = true;
-    const kind = normalizeMembershipKind(options.membership || options.kind, store.users[idx]);
-    if (kind === 'social') {
-      store.users[idx].loungeOnly = true;
-      store.users[idx].membershipLeague = null;
-    } else {
-      store.users[idx].loungeOnly = false;
-      store.users[idx].membershipLeague = kind === 'aaa' ? 'aaa' : 'gridiron';
+    const hasMembership = Object.prototype.hasOwnProperty.call(options, 'membership')
+      || Object.prototype.hasOwnProperty.call(options, 'kind');
+    if (hasMembership) {
+      const kind = normalizeMembershipKind(options.membership || options.kind, store.users[idx]);
+      if (kind === 'social') {
+        store.users[idx].loungeOnly = true;
+        store.users[idx].membershipLeague = null;
+      } else {
+        store.users[idx].loungeOnly = false;
+        store.users[idx].membershipLeague = kind === 'aaa' ? 'aaa' : 'gridiron';
+      }
     }
   }
+  writeStore(store);
+  return publicUser(store.users[idx]);
+}
+
+function markWelcomeMailSent(userId) {
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) throw Object.assign(new Error('User not found'), { status: 404 });
+  store.users[idx].welcomeMailSentAt = new Date().toISOString();
   writeStore(store);
   return publicUser(store.users[idx]);
 }
@@ -1002,6 +1016,7 @@ module.exports = {
   isSiteOwner,
   setUserRole,
   setUserApproved,
+  markWelcomeMailSent,
   deleteUser,
   setLeagueMembership,
   listLeagueMembers,

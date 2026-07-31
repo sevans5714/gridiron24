@@ -8,9 +8,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=133" />
+  <link rel="stylesheet" href="/css/site.css?v=135" />
   <style>
-    .tree { display: flex; flex-direction: column; gap: 1.35rem; }
+    .tree {
+      display: flex;
+      flex-direction: column;
+      gap: 1.35rem;
+    }
 
     .conf-tree {
       border: 1px solid var(--line);
@@ -39,8 +43,9 @@
       color: #9eb8ff;
     }
     .conf-head img {
-      width: clamp(3.5rem, 10vw, 5rem);
+      width: clamp(4.5rem, 12vw, 6rem);
       height: auto;
+      filter: none;
       box-shadow: var(--logo-lift);
     }
     .conf-head .wk {
@@ -48,15 +53,10 @@
       color: var(--muted);
       font-family: var(--body);
       font-size: var(--fs-xs);
+      letter-spacing: 0.02em;
       font-weight: 500;
       text-transform: none;
       white-space: nowrap;
-    }
-    .format-note {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.4;
     }
 
     .rounds {
@@ -64,7 +64,7 @@
       grid-template-columns: 1.15fr 1fr 0.95fr;
       gap: 0;
       padding: 1.35rem 0.55rem 1.2rem;
-      min-height: 28rem;
+      min-height: 30rem;
     }
     .rounds.is-eight {
       grid-template-columns: 1.2fr 1fr 0.95fr;
@@ -103,15 +103,25 @@
         linear-gradient(180deg, var(--panel-2), var(--panel));
       padding: 0.45rem 0.5rem;
       position: relative;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .slot:hover {
+      border-color: var(--chip-border-active);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
     }
     .slot.is-live {
       border-color: rgba(61, 220, 132, 0.4);
       box-shadow: 0 0 0 1px rgba(61, 220, 132, 0.12), 0 0 22px rgba(61, 220, 132, 0.1);
     }
+    .slot.is-final {
+      border-color: rgba(255, 255, 255, 0.16);
+    }
     .slot.bye {
       border-style: dashed;
       opacity: 0.88;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 60%), transparent;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.02), transparent 60%),
+        transparent;
     }
     .slot.title-slot,
     .slot.third-slot {
@@ -119,29 +129,41 @@
       background: transparent;
       padding: 0.25rem 0.15rem;
       text-align: center;
+      box-shadow: none;
+    }
+    .slot.title-slot:hover,
+    .slot.third-slot:hover {
+      box-shadow: none;
+      border-color: transparent;
     }
 
     .trophy-mark {
+      position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 0 auto 0.55rem;
-      padding: 0.55rem 0.35rem 0.35rem;
+      margin: 0 auto 0.45rem;
+      padding: 0;
       width: 100%;
-      max-width: 11rem;
-      border-radius: 0.35rem;
-      background:
-        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(91,140,255,0.2), transparent 70%),
-        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(0,0,0,0.4), transparent 55%);
+      max-width: 10.5rem;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
     }
-    .slot.third-slot .trophy-mark { max-width: 9.5rem; }
+    .slot.third-slot .trophy-mark {
+      max-width: 9rem;
+      background: transparent;
+    }
     .trophy-mark img {
       width: 100%;
       height: auto;
       display: block;
-      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+      background: transparent;
+      filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.5));
     }
-    .sr-only {
+    .slot.title-slot .sr-only,
+    .slot.third-slot .sr-only {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -150,6 +172,16 @@
       overflow: hidden;
       clip: rect(0,0,0,0);
       border: 0;
+    }
+
+    .slot.winner-line::after {
+      content: "";
+      position: absolute;
+      right: -0.55rem;
+      top: 50%;
+      width: 0.55rem;
+      height: 1px;
+      background: rgba(255,255,255,0.28);
     }
 
     .mu { display: grid; gap: 0.2rem; }
@@ -168,6 +200,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
+      line-height: 1.2;
     }
     .mu-status {
       font-family: var(--body);
@@ -176,8 +209,12 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--muted);
+      line-height: 1;
     }
-    .mu-status.is-live { color: #3ddc84; }
+    .mu-status.is-live {
+      color: #3ddc84;
+      text-shadow: 0 0 10px rgba(61, 220, 132, 0.35);
+    }
     .mu-status.is-final { color: var(--text); opacity: 0.72; }
 
     .mu-row {
@@ -196,13 +233,18 @@
     }
     .mu-row.is-loser { opacity: 0.48; }
     .mu-row.is-bye { background: color-mix(in srgb, var(--panel) 70%, transparent); }
+
     .mu-seed {
       font-family: var(--display);
       font-size: 0.85rem;
       font-weight: 700;
+      letter-spacing: 0.02em;
       color: var(--muted);
       text-align: center;
+      line-height: 1;
     }
+    .mu-row.is-winner .mu-seed { color: var(--text); }
+
     .mu-logo {
       width: 1.7rem;
       height: 1.7rem;
@@ -210,24 +252,28 @@
       object-position: center;
       background: transparent;
       border-radius: 50%;
-      mix-blend-mode: lighten;
       filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28));
+      mix-blend-mode: lighten;
     }
     .mu-name {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      font-family: var(--body);
       font-size: 0.78rem;
       font-weight: 650;
+      line-height: 1.2;
       color: var(--text);
     }
     .mu-score {
       font-family: var(--display);
       font-size: 0.95rem;
       font-weight: 700;
+      letter-spacing: 0.02em;
       font-variant-numeric: tabular-nums;
       color: var(--text);
+      line-height: 1;
       min-width: 2.4rem;
       text-align: right;
     }
@@ -237,12 +283,15 @@
       text-align: center;
       color: var(--muted);
       font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1.35;
     }
     .mu-await strong {
       display: block;
       margin-bottom: 0.15rem;
       font-family: var(--display);
       font-size: 0.88rem;
+      font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       color: var(--text);
@@ -250,10 +299,11 @@
 
     .mid {
       display: grid;
+      grid-template-columns: 1fr;
       width: 100%;
-      max-width: min(52rem, 100%);
+      max-width: min(68rem, 100%);
       margin: 1.25rem auto 0;
-      gap: 1rem;
+      gap: 0.85rem;
     }
     .finale-stage-label {
       margin: 0;
@@ -266,41 +316,82 @@
     }
     .bowl {
       position: relative;
-      border: 1px solid color-mix(in srgb, var(--line) 70%, rgba(91, 140, 255, 0.35));
-      border-radius: 0.45rem;
-      background:
-        radial-gradient(ellipse 85% 55% at 50% 8%, rgba(91, 140, 255, 0.14), transparent 62%),
-        linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 88%, transparent) 0%, color-mix(in srgb, var(--panel) 94%, transparent) 100%);
-      text-align: center;
-      padding: 1.25rem 1.15rem 1.4rem;
-      overflow: hidden;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      text-align: left;
+      padding: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+      box-shadow: none;
+    }
+    .bowl-head {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.85rem 1rem;
+      align-items: center;
+      padding: 0.35rem 0.15rem 0.55rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: transparent;
     }
     .bowl-mark {
-      width: min(100%, 18rem);
-      margin: 0 auto 0.85rem;
-      padding: 0.25rem;
-      background: radial-gradient(ellipse 55% 50% at 50% 48%, rgba(91,140,255,0.16), transparent 72%);
+      width: clamp(5.5rem, 14vw, 7.5rem);
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      flex: 0 0 auto;
     }
     .bowl-mark img {
       width: 100%;
       height: auto;
+      max-height: 6.5rem;
+      object-fit: contain;
+      object-position: center;
       display: block;
       background: transparent;
-      filter: drop-shadow(0 12px 24px rgba(40, 90, 200, 0.28));
+      filter: drop-shadow(0 10px 24px rgba(20, 80, 200, 0.4));
+    }
+    .bowl-head-copy { min-width: 0; }
+    .bowl-kicker {
+      margin: 0 0 0.15rem;
+      font-family: var(--body);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+    }
+    .bowl-head-copy h3 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.05;
+      color: var(--text);
+    }
+    .bowl-head-copy p.bowl-sub {
+      margin: 0.28rem 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.35;
     }
     .bowl-scoreboard {
       width: 100%;
-      max-width: 40rem;
-      margin: 0 auto;
-      padding: 0.9rem 0.75rem;
+      max-width: none;
+      margin: 0;
+      padding: 1rem 0.9rem 1.05rem;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      gap: 0.75rem 1rem;
+      gap: 0.65rem 0.85rem;
       align-items: center;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 0.35rem;
-      background: linear-gradient(180deg, rgba(255,255,255,0.07), color-mix(in srgb, var(--panel) 82%, transparent));
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      flex: 1 1 auto;
     }
     .bowl-side {
       display: flex;
@@ -308,59 +399,117 @@
       align-items: center;
       gap: 0.35rem;
       min-width: 0;
+      padding: 0.55rem 0.4rem;
+      border-radius: 0.2rem;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
     }
-    .bowl-side img {
-      width: 2.75rem;
-      height: 2.75rem;
+    .bowl-side.is-lead {
+      background: rgba(91, 140, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(91, 140, 255, 0.32);
+    }
+    .bowl-side img,
+    .bowl-side img.bowl-logo {
+      width: 3.1rem;
+      height: 3.1rem;
       object-fit: cover;
       object-position: center;
-      border-radius: 50%;
+      flex: 0 0 auto;
       background: transparent;
-      mix-blend-mode: lighten;
+      border-radius: 50%;
       filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
+      mix-blend-mode: lighten;
     }
     .bowl-side .nm {
       font-family: var(--display);
-      font-size: clamp(0.95rem, 1.7vw, 1.15rem);
+      font-size: clamp(1rem, 1.8vw, 1.25rem);
       font-weight: 700;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
+      line-height: 1.15;
       color: var(--text);
-      text-align: center;
+      max-width: 100%;
       word-break: break-word;
+      overflow-wrap: anywhere;
+      display: block;
+      text-align: center;
+    }
+    .bowl-side.is-lead .nm {
+      text-shadow: 0 0 14px rgba(91, 140, 255, 0.4);
     }
     .bowl-side .pts {
       font-family: var(--display);
-      font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+      font-size: clamp(1.55rem, 2.8vw, 2rem);
       font-weight: 700;
+      letter-spacing: 0.03em;
       font-variant-numeric: tabular-nums;
+      color: var(--text);
+      line-height: 1;
       min-height: 1.1em;
     }
-    .bowl-side .pts:empty::before { content: "—"; color: var(--muted); font-size: 0.85em; }
-    .bowl-mid .vs {
+    .bowl-side .pts:empty::before {
+      content: "—";
+      color: var(--muted);
+      font-size: 0.85em;
+    }
+    .bowl-mid {
+      text-align: center;
       font-family: var(--display);
-      font-size: 1.25rem;
+      min-width: 3.5rem;
+      padding: 0 0.1rem;
+    }
+    .bowl-mid .vs {
+      font-size: clamp(1.05rem, 1.8vw, 1.3rem);
       font-weight: 700;
       letter-spacing: 0.16em;
-      color: #9eb8ff;
+      text-transform: uppercase;
+      color: #8eb6ff;
+      line-height: 1;
     }
 
     html[data-theme="day"] .conf-tree {
       box-shadow: inset 0 0 40px rgba(47, 109, 255, 0.06);
     }
-    html[data-theme="day"] .mu-row { background: rgba(20, 28, 40, 0.04); }
+    html[data-theme="day"] .slot {
+      background:
+        linear-gradient(165deg, rgba(255,255,255,0.65), transparent 42%),
+        linear-gradient(180deg, var(--panel-2), var(--panel));
+    }
+    html[data-theme="day"] .mu-row {
+      background: rgba(20, 28, 40, 0.04);
+    }
+    html[data-theme="day"] .mu-row.is-winner {
+      background: linear-gradient(90deg, rgba(22, 163, 74, 0.14), rgba(22, 163, 74, 0.03));
+      box-shadow: inset 2px 0 0 #16a34a;
+    }
     html[data-theme="day"] .mu-logo,
-    html[data-theme="day"] .bowl-side img {
+    html[data-theme="day"] .bowl-side img,
+    html[data-theme="day"] .bowl-side img.bowl-logo {
       mix-blend-mode: normal;
+      background: transparent;
       filter: drop-shadow(0 2px 6px rgba(20, 28, 40, 0.14));
     }
+    html[data-theme="day"] .mu-status.is-live { color: #15803d; text-shadow: none; }
     html[data-theme="day"] .bowl {
-      background:
-        radial-gradient(ellipse 80% 55% at 50% 18%, rgba(47,109,255,0.14), transparent 58%),
-        linear-gradient(180deg, #eef3fb 0%, var(--panel) 70%);
+      background: transparent;
+      box-shadow: none;
     }
+    html[data-theme="day"] .bowl-head {
+      background: transparent;
+      border-bottom-color: rgba(20, 28, 40, 0.1);
+    }
+    html[data-theme="day"] .finale-stage-label { color: #5a6a80; }
+    html[data-theme="day"] .bowl-kicker { color: #2f6dff; }
     html[data-theme="day"] .bowl-mid .vs { color: #2f6dff; }
+    html[data-theme="day"] .bowl-scoreboard {
+      border-color: transparent;
+      background: transparent;
+    }
+    html[data-theme="day"] .trophy-mark,
+    html[data-theme="day"] .bowl-mark {
+      background: transparent;
+    }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
       .rounds { grid-template-columns: 1fr; min-height: 0; }
       .round-col {
         border-left: 0 !important;
@@ -368,7 +517,26 @@
         padding-top: 1.5rem;
       }
       .round-col:first-child { border-top: 0; }
-      .bowl-scoreboard { grid-template-columns: 1fr; }
+      .slot.winner-line::after { display: none; }
+      .bowl-scoreboard {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+      }
+      .bowl-mid { order: 0; padding: 0.15rem 0; }
+      .bowl-side {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: "logo name pts";
+        align-items: center;
+        justify-items: start;
+        text-align: left;
+        gap: 0.25rem 0.75rem;
+        width: 100%;
+      }
+      .bowl-side img.bowl-logo,
+      .bowl-side img { grid-area: logo; width: 2.5rem; height: 2.5rem; }
+      .bowl-side .nm { grid-area: name; text-align: left; }
+      .bowl-side .pts { grid-area: pts; justify-self: end; }
     }
   </style>
 </head>
@@ -376,14 +544,12 @@
   <header class="topbar">
     <div class="shell topbar-inner">
       <nav class="nav" id="site-nav" aria-label="Primary"></nav>
-      <div class="sync" id="lastUpdated"><span class="live">●</span>AAA playoffs</div>
+      <div class="sync" id="lastUpdated"><span class="live">●</span>2026 format</div>
     </div>
   </header>
 
   <section class="page-hero shell reveal">
-    <img class="page-hero-crest" src="/assets/aaa-league.png?v=7" alt="" width="160" height="160" decoding="async" />
     <h1>Playoff Bracket</h1>
-    <p class="format-note" id="format-note">12 teams · top 6 make the playoffs</p>
   </section>
 
   <main class="page-main shell">
@@ -447,7 +613,7 @@
     function gameSlot(game, fallback) {
       if (!game?.home && !game?.away) {
         return `
-          <div class="slot">
+          <div class="slot winner-line">
             <div class="mu">
               <div class="mu-await"><strong>${esc(fallback)}</strong>Awaiting matchup</div>
             </div>
@@ -455,7 +621,7 @@
       }
       const status = game.status || 'upcoming';
       return `
-        <div class="slot${status === 'live' ? ' is-live' : ''}">
+        <div class="slot winner-line${status === 'live' ? ' is-live' : ''}${status === 'final' ? ' is-final' : ''}">
           <div class="mu">
             <div class="mu-head">
               <span class="mu-label">${esc(game.label || fallback)}</span>
@@ -562,24 +728,36 @@
       const status = game?.status || 'upcoming';
       const away = game?.away;
       const home = game?.home;
+      const aScore = away?.score;
+      const hScore = home?.score;
+      const scored = aScore != null && hScore != null && status !== 'upcoming';
+      const awayLead = scored && Number(aScore) >= Number(hScore);
+      const homeLead = scored && Number(hScore) >= Number(aScore);
       return `
         <div class="mid" aria-label="AAA Super Bowl">
-          <p class="finale-stage-label">AAA Super Bowl</p>
+          <p class="finale-stage-label">Week 16 · Championship Stage</p>
           <div class="bowl">
-            <div class="bowl-mark">
-              <img src="${AAA_MARK}" alt="AAA League" width="256" height="256" />
-            </div>
+            <header class="bowl-head">
+              <div class="bowl-mark">
+                <img src="${AAA_MARK}" alt="" width="256" height="256" />
+              </div>
+              <div class="bowl-head-copy">
+                <p class="bowl-kicker">Title game</p>
+                <h3>AAA Super Bowl</h3>
+                <p class="bowl-sub">League champion · Week 16</p>
+              </div>
+            </header>
             <div class="bowl-scoreboard">
-              <div class="bowl-side">
-                <img src="${esc(away?.logo || PLACEHOLDER)}" alt="" />
+              <div class="bowl-side${awayLead ? ' is-lead' : ''}">
+                <img class="bowl-logo" src="${esc(away?.logo || PLACEHOLDER)}" alt="" />
                 <div class="nm">${esc(away?.name || 'Finalist')}</div>
-                <div class="pts">${away?.score != null && status !== 'upcoming' ? fmt(away.score) : ''}</div>
+                <div class="pts">${scored ? fmt(aScore) : ''}</div>
               </div>
               <div class="bowl-mid"><div class="vs">${esc(statusLabel(status) === 'Upcoming' ? 'VS' : statusLabel(status))}</div></div>
-              <div class="bowl-side">
-                <img src="${esc(home?.logo || PLACEHOLDER)}" alt="" />
+              <div class="bowl-side${homeLead ? ' is-lead' : ''}">
+                <img class="bowl-logo" src="${esc(home?.logo || PLACEHOLDER)}" alt="" />
                 <div class="nm">${esc(home?.name || 'Finalist')}</div>
-                <div class="pts">${home?.score != null && status !== 'upcoming' ? fmt(home.score) : ''}</div>
+                <div class="pts">${scored ? fmt(hScore) : ''}</div>
               </div>
             </div>
           </div>
@@ -591,14 +769,6 @@
         const res = await fetch('/api/aaa/playoffs', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
-        const slots = data.playoffSlots || 6;
-        const count = data.teamCount || 12;
-        const note = document.getElementById('format-note');
-        if (note) {
-          note.textContent = data.ok
-            ? `${count} teams · top ${slots} make the playoffs`
-            : (data.formatNote || 'AAA playoff bracket');
-        }
         if (!data.ok && !data.rounds) {
           document.getElementById('live-tree').innerHTML = `<div class="msg">${esc(data.error || 'AAA bracket unavailable')}</div>`;
           window.GridIronNav?.setSync('AAA bracket error', false);

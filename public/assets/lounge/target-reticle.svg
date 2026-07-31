@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+  <circle cx="32" cy="32" r="22" stroke="#e02020" stroke-width="4"/>
+  <circle cx="32" cy="32" r="12" stroke="#e02020" stroke-width="4"/>
+  <circle cx="32" cy="32" r="3.5" fill="#e02020"/>
+  <path stroke="#e02020" stroke-width="4" stroke-linecap="butt" d="M32 2v10M32 52v10M2 32h10M52 32h10"/>
+</svg>

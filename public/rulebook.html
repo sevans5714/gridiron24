@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=133" />
+  <link rel="stylesheet" href="/css/site.css?v=135" />
   <style>
     .book {
       max-width: 52rem;
@@ -489,7 +489,7 @@
         </section>
         <section class="section">
           <h3 class="section-title">§5.02 GridIron Bowl</h3>
-          <p class="rule-mark"><img src="/assets/gridiron-bowl.png?v=6" alt="GridIron Bowl" width="1024" height="682" /></p>
+          <p class="rule-mark"><img src="/assets/gridiron-bowl.png?v=7" alt="GridIron Bowl" width="1024" height="682" /></p>
           <p>In Week 17, the Detail Conference champion and the Overtime Conference champion shall meet in the GridIron Bowl. The champion is determined by each entrant’s Week 17 ESPN fantasy score.</p>
         </section>
         <section class="section">
@@ -504,7 +504,7 @@
         </section>
         <section class="section">
           <h3 class="section-title">§5.04 Mayor's Cup</h3>
-          <p class="rule-mark"><img src="/assets/mayors-cup.png?v=6" alt="Mayor's Cup" width="1024" height="768" /></p>
+          <p class="rule-mark"><img src="/assets/mayors-cup.png?v=7" alt="Mayor's Cup" width="1024" height="768" /></p>
           <p>In Week 17, the relegated Detail franchise and the relegated Overtime franchise shall meet in the Mayor's Cup.</p>
           <ol>
             <li>The Mayor's Cup is decided by each entrant’s Week 17 ESPN fantasy score.</li>
@@ -682,21 +682,21 @@
     function prizeLogo(label = '') {
       const l = String(label).toLowerCase();
       if (l.includes('mayor') || l.includes('relegation') || l.includes('toilet')) {
-        return '/assets/mayors-cup.png?v=6';
+        return '/assets/mayors-cup.png?v=7';
       }
       if ((l.includes('third') || l.includes('3rd')) && l.includes('overtime')) {
-        return '/assets/overtime-3rd-place.png';
+        return '/assets/overtime-3rd-place.png?v=2';
       }
       if ((l.includes('third') || l.includes('3rd')) && l.includes('detail')) {
-        return '/assets/detail-3rd-place.png';
+        return '/assets/detail-3rd-place.png?v=2';
       }
-      if (l.includes('third') || l.includes('3rd')) return '/assets/detail-3rd-place.png';
+      if (l.includes('third') || l.includes('3rd')) return '/assets/detail-3rd-place.png?v=2';
       if (l.includes('winner') || l.includes('bowl') || (l.includes('gridiron') && !l.includes('conference'))) {
-        return '/assets/gridiron-bowl.png?v=6';
+        return '/assets/gridiron-bowl.png?v=7';
       }
       if (l.includes('overtime')) return '/assets/overtime-conference.png';
       if (l.includes('detail')) return '/assets/detail-conference.png';
-      return '/assets/gridiron-bowl.png?v=6';
+      return '/assets/gridiron-bowl.png?v=7';
     }
 
     async function loadPayouts() {

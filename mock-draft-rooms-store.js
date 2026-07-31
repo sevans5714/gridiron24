@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const MockDraftCpu = require('./public/js/mock-draft-cpu');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'mock-draft-rooms.json');
@@ -166,18 +167,23 @@ function bestAvailable(pool, room) {
     return id && !taken.has(id);
   });
   if (!avail.length) return null;
-  avail.sort((a, b) => {
-    const ra = a.overallRank != null ? Number(a.overallRank) : 9999;
-    const rb = b.overallRank != null ? Number(b.overallRank) : 9999;
-    if (ra !== rb) return ra - rb;
-    const aa = a.adp != null ? Number(a.adp) : 9999;
-    const ab = b.adp != null ? Number(b.adp) : 9999;
-    if (aa !== ab) return aa - ab;
-    const pa = Number(b.projectedPoints2026 || b.fantasyPoints2025 || 0);
-    const pb = Number(a.projectedPoints2026 || a.fantasyPoints2025 || 0);
-    return pa - pb;
-  });
-  return avail[0];
+  const slot = currentSlot(room);
+  if (!slot) {
+    return avail.slice().sort((a, b) => {
+      const ra = a.overallRank != null ? Number(a.overallRank) : 9999;
+      const rb = b.overallRank != null ? Number(b.overallRank) : 9999;
+      return ra - rb;
+    })[0];
+  }
+  return MockDraftCpu.chooseCpuPick({
+    available: avail,
+    picks: room.picks || [],
+    slot,
+    teamCount: room.teamCount,
+    rounds: room.rounds,
+    starters: MockDraftCpu.DEFAULT_STARTERS,
+    style: MockDraftCpu.cpuStyleForTeam(slot.teamIndex)
+  }) || avail[0];
 }
 
 function applyPick(room, player, { cpu = false } = {}) {

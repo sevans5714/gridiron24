@@ -341,6 +341,7 @@ function rankDraftPool(players) {
     const pos = p.position || '?';
     posCounts[pos] = (posCounts[pos] || 0) + 1;
     p.posRank = posCounts[pos];
+    p.vorp = p._vorp != null && p._vorp > -900 ? p._vorp : null;
     delete p._vorp;
   });
   return players;

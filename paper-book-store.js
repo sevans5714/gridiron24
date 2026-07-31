@@ -1,7 +1,8 @@
 /**
  * Lounge paper sportsbook — Casala's Palace desk.
- * Game slips use fun-money units; futures are record-only (no stake).
- * Standings are win–loss by last name.
+ * All bets (games slips + futures) stake fun-money cash from a shared bankroll.
+ * New lounge members start with $1,000.00.
+ * Standings are win–loss by last name, with funds shown.
  */
 const fs = require('fs');
 const path = require('path');
@@ -75,7 +76,8 @@ function ensureAccount(store, user) {
       losses: 0,
       pushes: 0,
       unitsWon: 0,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      loungeFundedAt: null
     };
   } else {
     store.accounts[id].name = fullName;
@@ -85,6 +87,23 @@ function ensureAccount(store, user) {
     }
   }
   return store.accounts[id];
+}
+
+/**
+ * Seed $1,000 when a member is first waved into the lounge.
+ * Idempotent — only funds once per account.
+ */
+function grantLoungeBankroll(user) {
+  if (!user?.id) return null;
+  const store = readStore();
+  const account = ensureAccount(store, user);
+  if (account.loungeFundedAt) {
+    return { account, funded: false, bankroll: account.bankroll };
+  }
+  account.bankroll = STARTING_BANKROLL;
+  account.loungeFundedAt = new Date().toISOString();
+  writeStore(store);
+  return { account, funded: true, bankroll: account.bankroll };
 }
 
 function americanToDecimal(odds) {
@@ -392,21 +411,16 @@ function settleSlip(slip, gameIndex) {
 
 function applySettlementToAccount(account, slip) {
   if (slip._applied) return;
-  const isFuture = slip.type === 'future';
   if (slip.status === 'won') {
     account.wins += 1;
-    if (!isFuture) {
-      account.bankroll = Math.round((account.bankroll + Number(slip.payout || 0)) * 100) / 100;
-      account.unitsWon = Math.round((account.unitsWon + Number(slip.profit || 0)) * 100) / 100;
-    }
+    account.bankroll = Math.round((account.bankroll + Number(slip.payout || 0)) * 100) / 100;
+    account.unitsWon = Math.round((account.unitsWon + Number(slip.profit || 0)) * 100) / 100;
   } else if (slip.status === 'lost') {
     account.losses += 1;
-    if (!isFuture) {
-      account.unitsWon = Math.round((account.unitsWon + Number(slip.profit || 0)) * 100) / 100;
-    }
+    account.unitsWon = Math.round((account.unitsWon + Number(slip.profit || 0)) * 100) / 100;
   } else if (slip.status === 'push') {
     account.pushes += 1;
-    if (!isFuture && Number(slip.stake) > 0) {
+    if (Number(slip.stake) > 0) {
       account.bankroll = Math.round((account.bankroll + Number(slip.stake)) * 100) / 100;
     }
   }
@@ -479,16 +493,25 @@ function settleFutures(store) {
     const champ = champions[pick.boardId] || champions[pick.marketId];
     if (!champ) continue;
     const hit = teamMatchesChampion(pick.selection, champ);
-    pick.status = hit ? 'won' : 'lost';
-    pick.result = pick.status;
+    const stake = Math.max(0, Number(pick.stake) || 0);
     pick.champion = champ;
     pick.settledAt = new Date().toISOString();
-    const account = store.accounts[pick.userId];
-    if (account) {
-      if (pick.status === 'won') account.wins += 1;
-      else account.losses += 1;
+    if (hit) {
+      const profit = Number.isFinite(Number(pick.toWin))
+        ? Number(pick.toWin)
+        : profitFromAmerican(stake, pick.odds);
+      pick.status = 'won';
+      pick.result = 'won';
+      pick.profit = profit;
+      pick.payout = Math.round((stake + profit) * 100) / 100;
+    } else {
+      pick.status = 'lost';
+      pick.result = 'lost';
+      pick.profit = stake ? -stake : 0;
+      pick.payout = 0;
     }
-    pick._applied = true;
+    const account = store.accounts[pick.userId];
+    if (account) applySettlementToAccount(account, pick);
     settled += 1;
   }
   return settled;
@@ -592,6 +615,11 @@ function placeFuture(user, body = {}, futuresBoard = null) {
     throw Object.assign(new Error('Pick a futures market and team'), { status: 400 });
   }
 
+  const stake = Number(body.stake);
+  if (!Number.isFinite(stake) || stake < MIN_STAKE || stake > MAX_STAKE) {
+    throw Object.assign(new Error(`Stake must be ${MIN_STAKE}–${MAX_STAKE}`), { status: 400 });
+  }
+
   const board = futuresBoard || null;
   const hit = board ? futuresMarkets.findOutcome(board, marketId, outcomeId) : null;
   if (!hit) {
@@ -608,10 +636,23 @@ function placeFuture(user, body = {}, futuresBoard = null) {
     throw Object.assign(new Error('Too many open futures — wait for some to grade'), { status: 400 });
   }
 
-  // One open pick per market — replace prior open selection.
+  // Refund stake from a prior open pick on this market before replacing it.
+  const prior = store.futures.find(
+    (f) => f.userId === user.id && f.marketId === hit.market.id && f.status === 'open'
+  );
+  if (prior && Number(prior.stake) > 0 && !prior._applied) {
+    account.bankroll = Math.round((account.bankroll + Number(prior.stake)) * 100) / 100;
+  }
   store.futures = store.futures.filter(
     (f) => !(f.userId === user.id && f.marketId === hit.market.id && f.status === 'open')
   );
+
+  if (account.bankroll < stake) {
+    throw Object.assign(new Error('Not enough funds'), { status: 400 });
+  }
+
+  const toWin = profitFromAmerican(stake, hit.outcome.odds);
+  account.bankroll = Math.round((account.bankroll - stake) * 100) / 100;
 
   const pick = {
     id: crypto.randomUUID(),
@@ -627,7 +668,10 @@ function placeFuture(user, body = {}, futuresBoard = null) {
     selection: hit.outcome.name,
     outcomeId: hit.outcome.id,
     odds: hit.outcome.odds,
-    stake: 0,
+    stake,
+    toWin,
+    payout: null,
+    profit: null,
     private: Boolean(body.private),
     status: 'open',
     result: null,
@@ -650,6 +694,8 @@ function placeFuture(user, body = {}, futuresBoard = null) {
       title: pick.title,
       selection: pick.selection,
       odds: pick.odds,
+      stake: pick.stake,
+      toWin: pick.toWin,
       private: Boolean(pick.private),
       createdAt: pick.createdAt
     }
@@ -664,7 +710,7 @@ function placeBet(user, body = {}, boards = []) {
 
   const stake = Number(body.stake);
   if (!Number.isFinite(stake) || stake < MIN_STAKE || stake > MAX_STAKE) {
-    throw Object.assign(new Error(`Stake must be ${MIN_STAKE}–${MAX_STAKE} units`), { status: 400 });
+    throw Object.assign(new Error(`Stake must be ${MIN_STAKE}–${MAX_STAKE}`), { status: 400 });
   }
 
   const rawLegs = Array.isArray(body.legs) ? body.legs : [];
@@ -708,7 +754,7 @@ function placeBet(user, body = {}, boards = []) {
     throw Object.assign(new Error('Too many open slips — let some grade first'), { status: 400 });
   }
   if (account.bankroll < stake) {
-    throw Object.assign(new Error('Not enough bankroll'), { status: 400 });
+    throw Object.assign(new Error('Not enough funds'), { status: 400 });
   }
 
   account.bankroll = Math.round((account.bankroll - stake) * 100) / 100;
@@ -801,15 +847,15 @@ function formatSlipChat(slip) {
   if (slip.type === 'future') {
     if (isPrivate) {
       return {
-        body: [`Private future · record only`, insult].filter(Boolean).join('\n'),
+        body: [`Private future · ${fmtU(slip.stake)}`, insult].filter(Boolean).join('\n'),
         meta: {
           slipId: slip.id,
           type: 'future',
           private: true,
           insult,
-          stake: 0,
+          stake: Number(slip.stake) || 0,
           odds: slip.odds,
-          toWin: null,
+          toWin: Number(slip.toWin) || null,
           legs: [{
             label: 'Private pick',
             matchup: null,
@@ -820,7 +866,7 @@ function formatSlipChat(slip) {
     }
     const body = [
       `Casala's Palace future · ${slip.marketLabel || slip.title || 'Futures'}`,
-      `${slip.selection} (${fmtOdds(slip.odds)}) · record only`
+      `${slip.selection} (${fmtOdds(slip.odds)}) · ${fmtU(slip.stake)} to win ${fmtU(slip.toWin)}`
     ].join('\n');
     return {
       body,
@@ -828,9 +874,9 @@ function formatSlipChat(slip) {
         slipId: slip.id,
         type: 'future',
         private: false,
-        stake: 0,
+        stake: Number(slip.stake) || 0,
         odds: slip.odds,
-        toWin: null,
+        toWin: Number(slip.toWin) || null,
         legs: [{
           label: `${slip.selection} ${fmtOdds(slip.odds)}`,
           matchup: slip.title || slip.marketLabel,
@@ -900,6 +946,7 @@ module.exports = {
   setChampion,
   formatSlipChat,
   lastNameOf,
+  grantLoungeBankroll,
   STARTING_BANKROLL,
   MIN_STAKE,
   MAX_STAKE,

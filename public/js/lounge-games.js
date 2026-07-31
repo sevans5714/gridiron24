@@ -812,6 +812,18 @@
     </article>`;
   }
 
+  function paintPalaceHeader({ wins = 0, loses = 0, cash = 0 } = {}) {
+    const wrap = document.getElementById('palace-header-stats');
+    const wEl = document.getElementById('palace-record-w');
+    const lEl = document.getElementById('palace-record-l');
+    const fundsEl = document.getElementById('palace-funds');
+    if (!wrap || !wEl || !lEl || !fundsEl) return;
+    wEl.textContent = String(wins);
+    lEl.textContent = String(loses);
+    fundsEl.textContent = fmtCash(cash);
+    wrap.hidden = false;
+  }
+
   function renderBook() {
     const root = document.getElementById('degenerate-book-root');
     if (!root) return;
@@ -890,7 +902,7 @@
       futuresBody = `
         <div class="degen-future-banner">
           <strong>${esc(market.label)}</strong>
-          <span>${esc(market.title || '')} · tap to add to slip · record only (no stake)${mine ? ` · locked: ${esc(mine.selection)}` : ''}</span>
+          <span>${esc(market.title || '')} · tap to add to slip${mine ? ` · locked: ${esc(mine.selection)}` : ''}</span>
         </div>
         <div class="degen-future-grid">
           ${outs.map((o) => {
@@ -919,7 +931,9 @@
     });
     const gameLegs = enriched.filter((l) => !isFutureLeg(l));
     const futureLegs = enriched.filter(isFutureLeg);
-    const odds = combineOdds(gameLegs);
+    const odds = gameLegs.length
+      ? combineOdds(gameLegs)
+      : (futureLegs.length === 1 ? Number(futureLegs[0].odds) : combineOdds(futureLegs));
     const eventCounts = new Map();
     for (const l of gameLegs) {
       eventCounts.set(String(l.eventId), (eventCounts.get(String(l.eventId)) || 0) + 1);
@@ -933,7 +947,7 @@
           <div class="degen-leg">
             <div class="degen-leg-body">
               <div class="degen-leg-pick">${esc(leg.label || `${leg.market} ${leg.side}`)}${isFutureLeg(leg) ? ' <em class="degen-leg-tag">future</em>' : ''}${leg.alt ? ' <em class="degen-leg-tag">alt</em>' : ''}${!isFutureLeg(leg) && (eventCounts.get(String(leg.eventId)) || 0) > 1 ? ' <em class="degen-leg-tag">sgp</em>' : ''}</div>
-              <div class="degen-leg-meta">${esc(leg.leagueLabel || '')}${leg.matchup ? ` · ${esc(leg.matchup)}` : ''}${isFutureLeg(leg) ? ' · record only' : ''}</div>
+              <div class="degen-leg-meta">${esc(leg.leagueLabel || '')}${leg.matchup ? ` · ${esc(leg.matchup)}` : ''}${isFutureLeg(leg) ? ' · future' : ''}</div>
             </div>
             <div class="degen-leg-odds">${esc(fmtOdds(leg.odds))}</div>
             <button type="button" data-remove="${esc(slipKey(leg))}" aria-label="Remove leg">✕</button>
@@ -962,7 +976,7 @@
     const openFuturesHtml = (d.openFutures || []).length
       ? d.openFutures.map((f) => `
           <div class="degen-slip-row">
-            <div class="top"><strong>${esc(f.sport)} · ${esc(fmtOdds(f.odds))}${f.private ? ' · private' : ''}</strong><span>record only</span></div>
+            <div class="top"><strong>${esc(f.sport)} · ${esc(fmtOdds(f.odds))}${f.private ? ' · private' : ''}</strong><span>${esc(fmtCash(f.stake))} → ${esc(fmtCash(f.toWin))}</span></div>
             <div class="legs">${esc(f.marketLabel)} · ${esc(f.selection)}</div>
           </div>`).join('')
       : `<div class="degen-empty">No open futures.</div>`;
@@ -970,20 +984,20 @@
     const standings = d.standings || d.leaderboard || [];
     const myId = String(acct.userId || '');
     const lbHtml = standings.length
-      ? `<div class="degen-standings-board" role="table" aria-label="Paper book standings">
+      ? `<div class="degen-standings-board" role="table" aria-label="Casala's Palace standings">
           <div class="degen-standings-row is-head" role="row">
-            <span class="rank">#</span>
-            <span class="name">Player</span>
-            <span class="num">W</span>
-            <span class="num">L</span>
+            <span class="rank" aria-hidden="true"></span>
+            <span class="name">Last name</span>
+            <span class="num is-w">Wins</span>
+            <span class="num is-l">Loses</span>
             <span class="funds">Funds</span>
           </div>
           ${standings.map((r, i) => `
             <div class="degen-standings-row${myId && String(r.userId) === myId ? ' is-me' : ''}" role="row">
               <span class="rank">${i + 1}</span>
               <span class="name">${esc(r.lastName || r.name)}</span>
-              <span class="num">${esc(String(r.wins ?? 0))}</span>
-              <span class="num">${esc(String(r.losses ?? 0))}</span>
+              <span class="num is-w">${esc(String(r.wins ?? 0))}</span>
+              <span class="num is-l">${esc(String(r.losses ?? 0))}</span>
               <span class="funds">${esc(fmtCash(r.bankroll))}</span>
             </div>`).join('')}
         </div>`
@@ -1010,39 +1024,31 @@
         </header>
         <div class="degen-ticket-legs">${ticketLegs}</div>
         <div class="degen-ticket-summary">
-          ${gameLegs.length
-            ? `<div class="degen-payout-grid">
-                <div><span class="label">Odds</span><strong>${esc(fmtOdds(odds))}</strong></div>
-                <div><span class="label">Payout</span><strong id="degen-payout">${esc(fmtCash(payoutDefault))}</strong></div>
-              </div>
-              <div class="degen-stake-tools">
-                <div class="degen-stake-chips" role="group" aria-label="Quick stakes">
-                  ${stakeChips.map((n) => `
-                    <button type="button" class="degen-stake-chip${Number(stakeDefault) === n ? ' is-on' : ''}" data-stake-chip="${n}">$${n}</button>
-                  `).join('')}
-                  <button type="button" class="degen-stake-chip" data-stake-chip="max">Max</button>
-                </div>
-                <div class="degen-slip-bar degen-wager-bar">
-                  <label>Wager
-                    <input type="number" id="degen-stake" min="5" max="500" step="1" value="${stakeDefault}" />
-                  </label>
-                  <label>To win
-                    <input type="number" id="degen-towin-input" min="0" step="1" value="${toWinDefault}" />
-                  </label>
-                </div>
-                <div class="degen-slip-actions">
-                  <button type="button" id="degen-clear" class="degen-btn-ghost" ${enriched.length ? '' : 'disabled'}>Clear</button>
-                </div>
-              </div>`
-            : `<div class="degen-payout-grid">
-                <div><span class="label">Stake</span><strong>Record only</strong></div>
-                <div><span class="label">Futures</span><strong>${futureLegs.length || 0}</strong></div>
-              </div>
-              <div class="degen-slip-bar">
-                <button type="button" id="degen-clear" class="degen-btn-ghost" ${enriched.length ? '' : 'disabled'}>Clear</button>
-              </div>`}
+          <div class="degen-payout-grid">
+            <div><span class="label">Odds</span><strong>${esc(fmtOdds(odds))}</strong></div>
+            <div><span class="label">Payout</span><strong id="degen-payout">${esc(fmtCash(payoutDefault))}</strong></div>
+          </div>
+          <div class="degen-stake-tools">
+            <div class="degen-stake-chips" role="group" aria-label="Quick stakes">
+              ${stakeChips.map((n) => `
+                <button type="button" class="degen-stake-chip${Number(stakeDefault) === n ? ' is-on' : ''}" data-stake-chip="${n}">$${n}</button>
+              `).join('')}
+              <button type="button" class="degen-stake-chip" data-stake-chip="max">Max</button>
+            </div>
+            <div class="degen-slip-bar degen-wager-bar">
+              <label>Wager
+                <input type="number" id="degen-stake" min="5" max="500" step="1" value="${stakeDefault}" />
+              </label>
+              <label>To win
+                <input type="number" id="degen-towin-input" min="0" step="1" value="${toWinDefault}" />
+              </label>
+            </div>
+            <div class="degen-slip-actions">
+              <button type="button" id="degen-clear" class="degen-btn-ghost" ${enriched.length ? '' : 'disabled'}>Clear</button>
+            </div>
+          </div>
           ${futureLegs.length && gameLegs.length
-            ? `<p class="degen-note" style="margin:0.35rem 0 0;font-size:0.78rem;">Futures on this slip are record-only (no stake).</p>`
+            ? `<p class="degen-note" style="margin:0.35rem 0 0;font-size:0.78rem;">Each future stakes the same wager as your game ticket.</p>`
             : ''}
           ${isSgp && gameLegs.length > 1
             ? `<p class="degen-note degen-sgp-note">Same-game legs are combined into one parlay.</p>`
@@ -1125,31 +1131,13 @@
         <div class="degen-slips"><h3>Recent results</h3>${recentHtml}</div>`;
     } else {
       screen = `
-        <div class="degen-lb degen-standings">
-          <p class="degen-note">Last name · wins · loses · funds. Futures count with no stake.</p>
-          ${lbHtml}
-        </div>`;
+        <div class="degen-lb degen-standings">${lbHtml}</div>`;
     }
 
     const wins = Number(acct.wins || 0);
     const loses = Number(acct.losses || 0);
+    paintPalaceHeader({ wins, loses, cash });
     root.innerHTML = `
-      <div class="degen-scoreboard" aria-label="Your Casala's Palace standings">
-        <div class="degen-scoreboard-brand">
-          <span class="kicker">Casala's Palace</span>
-          <span class="who">${esc(acct.lastName || acct.name || 'You')}</span>
-        </div>
-        <div class="degen-scoreboard-stats">
-          <span class="stat is-record" title="Wins–Losses">
-            <em>Record</em>
-            <strong><b class="w">${esc(String(wins))}</b><i>–</i><b class="l">${esc(String(loses))}</b></strong>
-          </span>
-          <span class="stat is-funds">
-            <em>Funds</em>
-            <strong>${esc(fmtCash(cash))}</strong>
-          </span>
-        </div>
-      </div>
       <div class="degen-tabs" role="tablist">
         <button type="button" role="tab" class="${tab === 'lines' ? 'is-on' : ''}" data-tab="lines">Games</button>
         <button type="button" role="tab" class="${tab === 'futures' ? 'is-on' : ''}" data-tab="futures">Futures</button>
@@ -1332,7 +1320,7 @@
     }
   }
 
-  async function postFuture(payload, isPrivate) {
+  async function postFuture(payload, isPrivate, stake) {
     const res = await fetch('/api/paper-book', {
       method: 'POST',
       credentials: 'same-origin',
@@ -1341,6 +1329,7 @@
         action: 'future',
         marketId: payload.marketId,
         outcomeId: payload.outcomeId,
+        stake,
         private: isPrivate
       })
     });
@@ -1362,10 +1351,11 @@
       let lastSlip = null;
       let lastFuture = null;
 
+      if (!Number.isFinite(stake) || stake < 5) {
+        throw new Error('Enter a stake of at least $5');
+      }
+
       if (gameLegs.length) {
-        if (!Number.isFinite(stake) || stake < 5) {
-          throw new Error('Enter a stake of at least 5');
-        }
         const res = await fetch('/api/paper-book', {
           method: 'POST',
           credentials: 'same-origin',
@@ -1392,7 +1382,8 @@
       for (const fl of futureLegs) {
         const data = await postFuture(
           { marketId: fl.marketId, outcomeId: fl.outcomeId },
-          isPrivate
+          isPrivate,
+          stake
         );
         book.data = data;
         lastFuture = data.placedFuture || null;

@@ -6579,8 +6579,16 @@ const server = http.createServer(async (req, res) => {
       try {
         const result = users.setLoungeToken(userId, body.granted !== false && body.loungeToken !== false, admin.id);
         let inboxMessage = null;
+        let bankroll = null;
         if (result.changed && result.granted) {
           try {
+            bankroll = paperBook.grantLoungeBankroll(result.user);
+          } catch (err) {
+            console.error('[lounge-token] bankroll seed failed', err);
+          }
+          try {
+            const cash = Number(bankroll?.bankroll ?? paperBook.STARTING_BANKROLL);
+            const cashLabel = cash.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
             inboxMessage = inbox.sendMessage({
               toUserId: result.user.id,
               from: users.publicUser(admin),
@@ -6589,6 +6597,7 @@ const server = http.createServer(async (req, res) => {
                 `Hey ${result.user.name || result.user.loginName || 'there'},`,
                 '',
                 'You’ve been given a Members Lounge pass.',
+                `Casala’s Palace is ready — you start with ${cashLabel} in fun money. Every ticket stakes cash and counts on the board.`,
                 'Head in for the sports board, Roll Call, paper games, and the dues desk.',
                 '',
                 'Open the lounge anytime from the site nav (or your home path if you’re a social account).'
@@ -6597,7 +6606,8 @@ const server = http.createServer(async (req, res) => {
               meta: {
                 link: '/members.html',
                 linkLabel: 'Open Members Lounge',
-                loungeToken: true
+                loungeToken: true,
+                startingBankroll: cash
               }
             });
           } catch (err) {
@@ -6610,7 +6620,11 @@ const server = http.createServer(async (req, res) => {
           granted: result.granted,
           changed: result.changed,
           notified: Boolean(inboxMessage),
-          inboxMessage
+          inboxMessage,
+          bankroll: bankroll ? {
+            funded: Boolean(bankroll.funded),
+            amount: bankroll.bankroll
+          } : null
         });
       } catch (err) {
         return sendJson(res, err.status || 400, {
@@ -6631,6 +6645,7 @@ const server = http.createServer(async (req, res) => {
         body = {};
       }
       try {
+        const before = users.findById(userId);
         const kind = users.normalizeMembershipKind(body.membership || body.kind);
         let updated;
         if (kind === 'social') {
@@ -6642,11 +6657,42 @@ const server = http.createServer(async (req, res) => {
             league: kind === 'aaa' ? 'aaa' : 'gridiron'
           });
         }
+        let mail = { sent: false, method: 'none' };
+        const shouldWelcome = Boolean(before)
+          && before.approved !== false
+          && updated?.email
+          && !before.welcomeMailSentAt;
+        if (shouldWelcome) {
+          try {
+            mail = await sendAccountApprovedEmail({
+              to: updated.email,
+              name: updated.name || updated.loginName,
+              leagueName: kind === 'aaa'
+                ? (getAffiliatedLeague('aaa')?.brand?.name || 'AAA League')
+                : config.brand.name,
+              baseUrl: requestOrigin(req),
+              membershipKind: kind
+            });
+            if (mail.sent) {
+              try { users.markWelcomeMailSent(userId); } catch { /* ignore */ }
+            }
+            deliverWelcomeInboxIfNeeded(updated);
+          } catch (mailErr) {
+            mail = {
+              sent: false,
+              method: 'error',
+              error: mailErr.message || 'Email send failed'
+            };
+          }
+        }
         return sendJson(res, 200, {
           ok: true,
           user: updated,
           membershipKind: users.membershipKindOf(updated),
-          membershipLabel: users.membershipKindLabel(users.membershipKindOf(updated))
+          membershipLabel: users.membershipKindLabel(users.membershipKindOf(updated)),
+          mailSent: Boolean(mail.sent),
+          mailMethod: mail.method || null,
+          mailError: mail.error || null
         });
       } catch (err) {
         return sendJson(res, err.status || 400, {
@@ -6669,17 +6715,21 @@ const server = http.createServer(async (req, res) => {
       try {
         const before = users.findById(userId);
         const newlyApproved = Boolean(before) && before.approved === false && body.approved !== false;
-        const membership = users.normalizeMembershipKind(
-          body.membership || body.kind || (before?.loungeOnly ? 'social' : before?.membershipLeague)
-        );
-        const updated = users.setUserApproved(userId, body.approved !== false, admin.id, {
-          membership
-        });
+        const hasMembership = Object.prototype.hasOwnProperty.call(body, 'membership')
+          || Object.prototype.hasOwnProperty.call(body, 'kind');
+        const approveOpts = {};
+        if (hasMembership) {
+          approveOpts.membership = users.normalizeMembershipKind(
+            body.membership || body.kind || (before?.loungeOnly ? 'social' : before?.membershipLeague)
+          );
+        }
+        const updated = users.setUserApproved(userId, body.approved !== false, admin.id, approveOpts);
         if (updated.loungeOnly) {
           try { logos.unassignTeam(userId); } catch { /* ignore */ }
         }
         let mail = { sent: false, method: 'none' };
-        if (newlyApproved && updated.email) {
+        // Welcome email goes out when membership is assigned (Member Access → Membership).
+        if (newlyApproved && hasMembership && updated.email) {
           try {
             const kind = users.membershipKindOf(updated);
             mail = await sendAccountApprovedEmail({
@@ -6691,6 +6741,9 @@ const server = http.createServer(async (req, res) => {
               baseUrl: requestOrigin(req),
               membershipKind: kind
             });
+            if (mail.sent) {
+              try { users.markWelcomeMailSent(userId); } catch { /* ignore */ }
+            }
             deliverWelcomeInboxIfNeeded(updated);
           } catch (mailErr) {
             mail = {

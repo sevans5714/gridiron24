@@ -228,13 +228,13 @@
     if (subtitle) {
       const week = state.week || state.myTeam?.currentMatchupPeriod;
       const labels = {
-        home: week ? `Week ${week}` : 'Home',
+        home: week ? `Week ${week}` : 'HQ',
         scoreboard: week ? `Week ${week}` : 'Scores',
         team: 'My Team',
-        lounge: 'Lounge',
+        lounge: 'Members Lounge',
         more: 'More'
       };
-      subtitle.textContent = labels[name] || 'Home';
+      subtitle.textContent = labels[name] || 'HQ';
     }
     if (name === 'scoreboard' || name === 'home') startPolling();
     else stopPolling();
@@ -294,25 +294,34 @@
       return true;
     }
 
-    const path = url.pathname;
-    if (path === '/members.html' || path.startsWith('/members')) {
-      event?.preventDefault();
-      navigate('lounge', { push: true });
-      return true;
+    const path = url.pathname.replace(/\/$/, '') || '/';
+
+    // Full-site desks & league pages — leave the app shell so hashes/tools work.
+    const fullSite = new Set([
+      '/members.html',
+      '/aaa.html',
+      '/aaa-playoffs.html',
+      '/aaa-rulebook.html',
+      '/aaa-scoreboard',
+      '/rulebook.html',
+      '/payouts.html',
+      '/profile.html',
+      '/playoffs.html',
+      '/standings.html',
+      '/teams.html',
+      '/team.html',
+      '/calendar.html',
+      '/league-tools.html',
+      '/home.html',
+      '/inbox.html'
+    ]);
+    if (fullSite.has(path) || path.startsWith('/members')) {
+      return false;
     }
-    if (path === '/inbox.html') {
-      event?.preventDefault();
-      navigate('more', { push: true, jump: 'inbox' });
-      return true;
-    }
+
     if (path === '/my-roster.html') {
       event?.preventDefault();
       navigate('team', { push: true });
-      return true;
-    }
-    if (path === '/playoffs.html') {
-      event?.preventDefault();
-      navigate('more', { push: true, jump: 'playoffs' });
       return true;
     }
     if (path === '/draft.html') {
@@ -330,15 +339,14 @@
       openMoreFeed('schedule');
       return true;
     }
-    if (path === '/scoreboard.html') {
+    if (path === '/scoreboard.html' || path === '/scoreboard') {
       event?.preventDefault();
       navigate('scoreboard', { push: true });
       return true;
     }
 
-    // All other same-origin pages stay out of the app — block navigation.
-    event?.preventDefault();
-    return true;
+    // Unknown same-origin page — allow navigation (league tools, etc.).
+    return false;
   }
 
   function setChatLive(on) {
@@ -582,7 +590,7 @@
             <div class="im-bet-kicker"><span class="im-bet-money" aria-hidden="true">💰</span>${meta.private ? "Casala's Palace · Private" : "Casala's Palace"}</div>
             <div class="im-bet-type">${esc(meta.type === 'parlay' ? `Parlay · ${(meta.legs || []).length} legs` : (meta.type === 'future' ? 'Future' : 'Straight'))}${Array.isArray(meta.leagues) && meta.leagues.length ? ` · ${esc(meta.leagues.join(' / '))}` : ''} · ${esc(Number(meta.odds) > 0 ? `+${meta.odds}` : String(meta.odds ?? '—'))}</div>
             <div class="im-bet-legs">${(meta.legs || []).map((leg) => `<div class="im-bet-leg"><strong>${esc(leg.label || 'Pick')}</strong></div>`).join('') || esc(m.body || '')}</div>
-            <div class="im-bet-stake">${meta.type === 'future' ? 'Record only' : `${esc(meta.stake)}u to win ${esc(meta.toWin)}`}</div>
+            <div class="im-bet-stake">${esc(meta.stake)} to win ${esc(meta.toWin)}</div>
             ${meta.private && meta.insult ? `<div class="im-bet-insult">${esc(meta.insult)}</div>` : ''}
           </div>`
         : '';
@@ -1169,8 +1177,13 @@
       const o = bowl.overtime?.score;
       parts.push(`
         <div class="pulse-card">
-          <div class="eyebrow">Week ${esc(String(finaleEventWeek(bowl)))} · GridIron Bowl</div>
-          <img class="mark" src="/assets/gridiron-bowl.png?v=6" alt="GridIron Bowl" width="1024" height="682" loading="eager" decoding="async" />
+          <div class="pulse-card-head">
+            <img class="mark" src="/assets/gridiron-bowl.png?v=7" alt="" width="1024" height="682" loading="eager" decoding="async" />
+            <div>
+              <div class="eyebrow">Week ${esc(String(finaleEventWeek(bowl)))} · Title game</div>
+              <p class="pulse-title">GridIron Bowl</p>
+            </div>
+          </div>
           <div class="pulse-score">
             ${pulseSide(bowl.detail, 'detail')}
             <div class="mid">${(d != null && o != null) ? `${fmtPts(d)} – ${fmtPts(o)}` : 'VS'}</div>
@@ -1184,8 +1197,13 @@
       const o = survival.overtime?.score;
       parts.push(`
         <div class="pulse-card">
-          <div class="eyebrow">Week ${esc(String(finaleEventWeek(survival)))} · ${esc(survival.name || "Mayor's Cup")}</div>
-          <img class="mark" src="/assets/mayors-cup.png?v=6" alt="Mayor's Cup" width="1024" height="768" loading="eager" decoding="async" />
+          <div class="pulse-card-head">
+            <img class="mark" src="/assets/mayors-cup.png?v=7" alt="" width="1024" height="768" loading="eager" decoding="async" />
+            <div>
+              <div class="eyebrow">Week ${esc(String(finaleEventWeek(survival)))} · Relegation</div>
+              <p class="pulse-title">${esc(survival.name || "Mayor's Cup")}</p>
+            </div>
+          </div>
           <div class="pulse-score">
             ${pulseSide(survival.detail, 'detail')}
             <div class="mid">${(d != null && o != null) ? `${fmtPts(d)} – ${fmtPts(o)}` : 'VS'}</div>
@@ -1602,8 +1620,10 @@
       <div class="quick-row">
         <button type="button" class="quick-chip" data-go="team">My team</button>
         <button type="button" class="quick-chip" data-go="scoreboard">Scores</button>
-        <button type="button" class="quick-chip" data-go="lounge">Lounge</button>
+        <button type="button" class="quick-chip" data-go="more" data-more-jump="playoffs">Playoffs</button>
+        ${state.loungeAccess ? '<button type="button" class="quick-chip" data-go="lounge">Lounge</button>' : ''}
         <button type="button" class="quick-chip" data-go="more" data-more-jump="inbox">Inbox${state.unread ? ` · ${state.unread}` : ''}</button>
+        ${state.loungeAccess ? '<a class="quick-chip" href="/members.html#gambler">Sportsbook</a>' : ''}
       </div>
       ${duesCardHtml()}
     `;
@@ -1634,7 +1654,7 @@
   function setHomeSync() {
     if (state.view !== 'home') return;
     const week = state.week || state.myTeam?.currentMatchupPeriod;
-    if (subtitle) subtitle.textContent = week ? `Week ${week}` : 'Pulse';
+    if (subtitle) subtitle.textContent = week ? `Week ${week}` : 'HQ';
   }
 
   async function refreshHomeLive() {
@@ -1952,15 +1972,16 @@
         <div class="po-finales">
           ${bowl ? `
             <div class="po-finale">
-              <img src="/assets/gridiron-bowl.png?v=6" alt="GridIron Bowl" width="320" height="213" loading="lazy" decoding="async" />
+              <img src="/assets/gridiron-bowl.png?v=7" alt="GridIron Bowl" width="320" height="213" loading="lazy" decoding="async" />
               <strong>GridIron Bowl</strong>
             </div>` : ''}
           ${cup ? `
             <div class="po-finale">
-              <img src="/assets/mayors-cup.png?v=6" alt="${esc(cup.name || "Mayor's Cup")}" width="320" height="240" loading="lazy" decoding="async" />
+              <img src="/assets/mayors-cup.png?v=7" alt="${esc(cup.name || "Mayor's Cup")}" width="320" height="240" loading="lazy" decoding="async" />
               <strong>${esc(cup.name || "Mayor's Cup")}</strong>
             </div>` : ''}
-        </div>` : ''}
+        </div>
+        <a class="text-link" href="/aaa-playoffs.html">AAA Super Bowl bracket</a>` : ''}
     `;
   }
 

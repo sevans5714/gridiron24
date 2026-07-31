@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=133" />
+  <link rel="stylesheet" href="/css/site.css?v=135" />
   <style>
     .tree {
       display: flex;
@@ -171,36 +171,29 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 0 auto 0.55rem;
-      padding: 0.55rem 0.35rem 0.35rem;
+      margin: 0 auto 0.45rem;
+      padding: 0;
       width: 100%;
-      max-width: 11rem;
-      border-radius: 0.35rem;
-      background:
-        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(255,255,255,0.08), transparent 70%),
-        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(20, 32, 56, 0.35), transparent 55%);
+      max-width: 10.5rem;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
     }
     .slot.third-slot .trophy-mark {
-      max-width: 9.5rem;
-      background:
-        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(239,215,130,0.14), transparent 70%),
-        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(40, 32, 18, 0.28), transparent 55%);
+      max-width: 9rem;
+      background: transparent;
     }
-    .conf-tree.detail .slot.title-slot .trophy-mark {
-      background:
-        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(255,122,24,0.18), transparent 70%),
-        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(40, 24, 12, 0.28), transparent 55%);
-    }
+    .conf-tree.detail .slot.title-slot .trophy-mark,
     .conf-tree.overtime .slot.title-slot .trophy-mark {
-      background:
-        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(226,35,42,0.18), transparent 70%),
-        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(40, 12, 14, 0.28), transparent 55%);
+      background: transparent;
     }
     .trophy-mark img {
       width: 100%;
       height: auto;
       display: block;
-      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+      background: transparent;
+      filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.5));
     }
 
     .slot.title-slot .sr-only,
@@ -364,10 +357,10 @@
       width: 100%;
       max-width: min(68rem, 100%);
       margin: 1.25rem auto 0;
-      gap: 1.35rem;
+      gap: 0.85rem;
     }
     .finale-stage-label {
-      margin: 0.15rem 0 0;
+      margin: 0;
       text-align: center;
       font-family: var(--display);
       font-size: 0.78rem;
@@ -375,79 +368,108 @@
       text-transform: uppercase;
       color: var(--muted);
     }
+    .finale-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.85rem;
+      align-items: stretch;
+    }
 
     .bowl {
       position: relative;
-      border: 1px solid color-mix(in srgb, var(--line) 70%, rgba(47, 109, 255, 0.35));
-      border-radius: 0.45rem;
-      background:
-        radial-gradient(ellipse 85% 55% at 50% 8%, rgba(47, 109, 255, 0.16), transparent 62%),
-        radial-gradient(ellipse 70% 45% at 50% 100%, rgba(10, 18, 36, 0.35), transparent 70%),
-        linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 88%, transparent) 0%, color-mix(in srgb, var(--panel) 94%, transparent) 100%);
-      text-align: center;
-      padding: 1.35rem 1.25rem 1.5rem;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      text-align: left;
+      padding: 0;
       min-height: 0;
       display: flex;
       flex-direction: column;
+      overflow: visible;
+      box-shadow: none;
+    }
+    .bowl .eyebrow { display: none; }
+
+    .bowl-head {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.85rem 1rem;
       align-items: center;
-      justify-content: flex-start;
-      overflow: hidden;
-      box-shadow:
-        0 18px 40px rgba(0, 0, 0, 0.28),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-      animation: none;
+      padding: 0.35rem 0.15rem 0.55rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: transparent;
     }
-
-    .bowl .eyebrow {
-      display: none;
-    }
-
     .bowl-mark {
-      position: relative;
-      width: min(100%, 40rem);
-      margin: 0 auto;
-      padding: 0.15rem 0.25rem 0.35rem;
-      background:
-        radial-gradient(ellipse 58% 52% at 50% 48%, rgba(70, 130, 255, 0.18), transparent 72%);
+      width: clamp(5.5rem, 14vw, 7.5rem);
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      flex: 0 0 auto;
     }
     .bowl-mark img {
       width: 100%;
       height: auto;
-      max-height: none;
+      max-height: 6.5rem;
       object-fit: contain;
+      object-position: center;
       display: block;
-      margin: 0 auto;
       background: transparent;
-      filter: drop-shadow(0 14px 32px rgba(20, 80, 200, 0.28));
+      filter: drop-shadow(0 10px 24px rgba(20, 80, 200, 0.4));
+    }
+    .bowl-head-copy { min-width: 0; }
+    .bowl-kicker {
+      margin: 0 0 0.15rem;
+      font-family: var(--body);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #8eb6ff;
+    }
+    .bowl-head-copy h3 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.05;
+      color: var(--text);
+    }
+    .bowl-head-copy p.bowl-sub {
+      margin: 0.28rem 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.35;
     }
 
     .bowl-scoreboard {
       width: 100%;
-      max-width: 44rem;
-      margin-top: 1rem;
-      padding: 1rem 0.85rem 0.9rem;
+      max-width: none;
+      margin: 0;
+      padding: 1rem 0.9rem 1.05rem;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      gap: 0.85rem 1.25rem;
+      gap: 0.65rem 0.85rem;
       align-items: center;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 0.35rem;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.07), color-mix(in srgb, var(--panel) 82%, transparent));
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      flex: 1 1 auto;
     }
     .bowl-side {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.35rem;
       min-width: 0;
-      padding: 0.45rem 0.35rem;
-      border-radius: 0.25rem;
+      padding: 0.55rem 0.4rem;
+      border-radius: 0.2rem;
       transition: background 0.2s ease, box-shadow 0.2s ease;
     }
     .bowl-side.is-lead {
-      background: rgba(47, 109, 255, 0.1);
-      box-shadow: inset 0 0 0 1px rgba(47, 109, 255, 0.28);
+      background: rgba(47, 109, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(47, 109, 255, 0.32);
     }
     .bowl-side .conf-chip {
       font-family: var(--body);
@@ -471,8 +493,8 @@
     }
     .bowl-side img,
     .bowl-side img.bowl-logo {
-      width: 2.75rem;
-      height: 2.75rem;
+      width: 3.1rem;
+      height: 3.1rem;
       object-fit: cover;
       object-position: center;
       flex: 0 0 auto;
@@ -483,16 +505,17 @@
     }
     .bowl-side .nm {
       font-family: var(--display);
-      font-size: clamp(0.95rem, 1.7vw, 1.2rem);
+      font-size: clamp(1rem, 1.8vw, 1.25rem);
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      line-height: 1.2;
+      line-height: 1.15;
       color: var(--text);
       max-width: 100%;
       word-break: break-word;
       overflow-wrap: anywhere;
       display: block;
+      text-align: center;
     }
     .bowl-side.detail .nm { color: var(--detail); }
     .bowl-side.overtime .nm { color: var(--overtime); }
@@ -501,7 +524,7 @@
     }
     .bowl-side .pts {
       font-family: var(--display);
-      font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+      font-size: clamp(1.55rem, 2.8vw, 2rem);
       font-weight: 700;
       letter-spacing: 0.03em;
       font-variant-numeric: tabular-nums;
@@ -517,28 +540,23 @@
     .bowl-mid {
       text-align: center;
       font-family: var(--display);
-      min-width: 4.25rem;
-      padding: 0 0.15rem;
+      min-width: 3.5rem;
+      padding: 0 0.1rem;
     }
     .bowl-mid .vs {
-      font-size: clamp(1.15rem, 2vw, 1.45rem);
+      font-size: clamp(1.05rem, 1.8vw, 1.3rem);
       font-weight: 700;
       letter-spacing: 0.16em;
       text-transform: uppercase;
       color: #8eb6ff;
       line-height: 1;
     }
-    .bowl-mid .bowl-score {
-      display: none;
-    }
+    .bowl-mid .bowl-score { display: none; }
     .bowl.survival {
-      border-color: color-mix(in srgb, var(--line) 65%, rgba(120, 180, 255, 0.35));
-      background:
-        radial-gradient(ellipse 85% 55% at 50% 8%, rgba(80, 150, 255, 0.14), transparent 62%),
-        radial-gradient(ellipse 70% 45% at 50% 100%, rgba(10, 18, 36, 0.3), transparent 70%),
-        linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 88%, transparent) 0%, color-mix(in srgb, var(--panel) 94%, transparent) 100%);
-      animation: none;
+      border: 0;
+      background: transparent;
     }
+    .bowl.survival .bowl-kicker { color: #9ec4ff; }
     .bowl.survival .bowl-mid .vs { color: #9ec4ff; }
     .bowl.survival .bowl-side.is-lead {
       background: rgba(80, 160, 255, 0.1);
@@ -567,22 +585,25 @@
     html[data-theme="day"] .mu-status.is-live { color: #15803d; text-shadow: none; }
     html[data-theme="day"] .bowl,
     html[data-theme="day"] .bowl.survival {
-      background:
-        radial-gradient(ellipse 80% 50% at 50% 12%, rgba(47, 109, 255, 0.1), transparent 60%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, color-mix(in srgb, var(--panel) 92%, #e8eef8) 100%);
-      box-shadow: 0 12px 28px rgba(20, 28, 40, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      background: transparent;
+      box-shadow: none;
+    }
+    html[data-theme="day"] .bowl-head {
+      background: transparent;
+      border-bottom-color: rgba(20, 28, 40, 0.1);
     }
     html[data-theme="day"] .finale-stage-label { color: #5a6a80; }
+    html[data-theme="day"] .bowl-kicker { color: #2f6dff; }
     html[data-theme="day"] .bowl-mid .vs { color: #2f6dff; }
     html[data-theme="day"] .bowl-scoreboard {
-      border-color: rgba(20, 28, 40, 0.12);
-      background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
+      border-color: transparent;
+      background: transparent;
     }
-    html[data-theme="day"] .trophy-mark,
+    html[data-theme="day"] .trophy-mark {
+      background: transparent;
+    }
     html[data-theme="day"] .bowl-mark {
-      background:
-        radial-gradient(ellipse 55% 45% at 50% 48%, rgba(47, 109, 255, 0.12), transparent 68%),
-        radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 28, 40, 0.06), transparent 55%);
+      background: transparent;
     }
 
     @media (max-width: 1100px) {
@@ -602,9 +623,10 @@
       .round-col:first-child { border-top: 0; }
       .slot.winner-line::after { display: none; }
       .trees-row { grid-template-columns: 1fr; }
+      .finale-grid { grid-template-columns: 1fr; }
       .bowl-scoreboard {
         grid-template-columns: 1fr;
-        gap: 0.65rem;
+        gap: 0.55rem;
       }
       .bowl-mid { order: 0; padding: 0.15rem 0; }
       .bowl-side.detail { order: -1; }
@@ -762,8 +784,8 @@
 
     function confTree(conf) {
       const tone = conf.key === 'overtime' ? 'overtime' : 'detail';
-      const titleImg = tone === 'detail' ? '/assets/detail-conf-champ.png' : '/assets/overtime-conf-champ.png';
-      const thirdImg = tone === 'detail' ? '/assets/detail-3rd-place.png' : '/assets/overtime-3rd-place.png';
+      const titleImg = tone === 'detail' ? '/assets/detail-conf-champ.png?v=2' : '/assets/overtime-conf-champ.png?v=2';
+      const thirdImg = tone === 'detail' ? '/assets/detail-3rd-place.png?v=2' : '/assets/overtime-3rd-place.png?v=2';
       const wc = conf.rounds?.wildCard || {};
       const semis = conf.rounds?.semifinals?.games || [];
       const finals = conf.rounds?.finals || {};
@@ -800,49 +822,65 @@
       return `
         <div class="mid" aria-label="Week 17 championship stage">
           <p class="finale-stage-label">Week 17 · Championship Stage</p>
-          <div class="bowl" id="bowl-card">
-            <div class="bowl-mark">
-              <img src="/assets/gridiron-bowl.png?v=6" alt="GridIron Bowl I" width="1024" height="682" />
+          <div class="finale-grid">
+            <div class="bowl" id="bowl-card">
+              <header class="bowl-head">
+                <div class="bowl-mark">
+                  <img src="/assets/gridiron-bowl.png?v=7" alt="" width="1024" height="682" />
+                </div>
+                <div class="bowl-head-copy">
+                  <p class="bowl-kicker">Title game</p>
+                  <h3>GridIron Bowl</h3>
+                  <p class="bowl-sub">Conference champions · Week 17</p>
+                </div>
+              </header>
+              <div class="bowl-scoreboard" id="bowl-scoreboard">
+                <div class="bowl-side detail">
+                  <span class="conf-chip">Detail</span>
+                  <img class="bowl-logo" id="bowl-detail-logo" src="/assets/team-logo-placeholder.svg" alt="" />
+                  <div class="nm" id="bowl-detail-name">Detail Champion</div>
+                  <div class="pts" id="bowl-detail-pts"></div>
+                </div>
+                <div class="bowl-mid">
+                  <div class="vs" id="bowl-vs">VS</div>
+                  <div class="bowl-score" id="bowl-scoreline"></div>
+                </div>
+                <div class="bowl-side overtime">
+                  <span class="conf-chip">Overtime</span>
+                  <img class="bowl-logo" id="bowl-overtime-logo" src="/assets/team-logo-placeholder.svg" alt="" />
+                  <div class="nm" id="bowl-overtime-name">Overtime Champion</div>
+                  <div class="pts" id="bowl-overtime-pts"></div>
+                </div>
+              </div>
             </div>
-            <div class="bowl-scoreboard" id="bowl-scoreboard">
-              <div class="bowl-side detail">
-                <span class="conf-chip">Detail</span>
-                <img class="bowl-logo" id="bowl-detail-logo" src="/assets/team-logo-placeholder.svg" alt="" />
-                <div class="nm" id="bowl-detail-name">Detail Champion</div>
-                <div class="pts" id="bowl-detail-pts"></div>
-              </div>
-              <div class="bowl-mid">
-                <div class="vs" id="bowl-vs">VS</div>
-                <div class="bowl-score" id="bowl-scoreline"></div>
-              </div>
-              <div class="bowl-side overtime">
-                <span class="conf-chip">Overtime</span>
-                <img class="bowl-logo" id="bowl-overtime-logo" src="/assets/team-logo-placeholder.svg" alt="" />
-                <div class="nm" id="bowl-overtime-name">Overtime Champion</div>
-                <div class="pts" id="bowl-overtime-pts"></div>
-              </div>
-            </div>
-          </div>
-          <div class="bowl survival" id="survival-card">
-            <div class="bowl-mark">
-              <img src="/assets/mayors-cup.png?v=6" alt="Mayor's Cup" width="1024" height="768" />
-            </div>
-            <div class="bowl-scoreboard" id="survival-scoreboard" data-week-label="Week 17 · Mayor's Cup">
-              <div class="bowl-side detail">
-                <span class="conf-chip">Detail</span>
-                <img class="bowl-logo" id="survival-detail-logo" src="/assets/team-logo-placeholder.svg" alt="" />
-                <div class="nm" id="survival-detail-name">Detail Last Place</div>
-                <div class="pts" id="survival-detail-pts"></div>
-              </div>
-              <div class="bowl-mid">
-                <div class="vs" id="survival-vs">VS</div>
-                <div class="bowl-score" id="survival-scoreline"></div>
-              </div>
-              <div class="bowl-side overtime">
-                <span class="conf-chip">Overtime</span>
-                <img class="bowl-logo" id="survival-overtime-logo" src="/assets/team-logo-placeholder.svg" alt="" />
-                <div class="nm" id="survival-overtime-name">Overtime Last Place</div>
-                <div class="pts" id="survival-overtime-pts"></div>
+            <div class="bowl survival" id="survival-card">
+              <header class="bowl-head">
+                <div class="bowl-mark">
+                  <img src="/assets/mayors-cup.png?v=7" alt="" width="1024" height="768" />
+                </div>
+                <div class="bowl-head-copy">
+                  <p class="bowl-kicker">Relegation</p>
+                  <h3>Mayor's Cup</h3>
+                  <p class="bowl-sub">Last place · winner stays</p>
+                </div>
+              </header>
+              <div class="bowl-scoreboard" id="survival-scoreboard" data-week-label="Week 17 · Mayor's Cup">
+                <div class="bowl-side detail">
+                  <span class="conf-chip">Detail</span>
+                  <img class="bowl-logo" id="survival-detail-logo" src="/assets/team-logo-placeholder.svg" alt="" />
+                  <div class="nm" id="survival-detail-name">Detail Last Place</div>
+                  <div class="pts" id="survival-detail-pts"></div>
+                </div>
+                <div class="bowl-mid">
+                  <div class="vs" id="survival-vs">VS</div>
+                  <div class="bowl-score" id="survival-scoreline"></div>
+                </div>
+                <div class="bowl-side overtime">
+                  <span class="conf-chip">Overtime</span>
+                  <img class="bowl-logo" id="survival-overtime-logo" src="/assets/team-logo-placeholder.svg" alt="" />
+                  <div class="nm" id="survival-overtime-name">Overtime Last Place</div>
+                  <div class="pts" id="survival-overtime-pts"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -890,6 +928,8 @@
       if (card) card.hidden = false;
       const logo = card.querySelector('.bowl-mark img');
       if (logo && data.name) logo.alt = data.name;
+      const title = card.querySelector('.bowl-head-copy h3');
+      if (title && data.name) title.textContent = data.name;
       fillSurvivalSide('detail', data.detail, data.leader === 'detail' || data.leader === 'tie');
       fillSurvivalSide('overtime', data.overtime, data.leader === 'overtime' || data.leader === 'tie');
     }

@@ -1,35 +1,67 @@
 {
   "id": "/app/",
-  "name": "GridIron24",
-  "short_name": "GridIron24",
-  "description": "League pulse — standings, scores, roster, lounge, and playoffs.",
+  "name": "GridIron 24",
+  "short_name": "GI24",
+  "description": "GridIron 24 league HQ — Detail & Overtime scores, AAA feeder, Members Lounge, and Casala's Palace.",
   "start_url": "/app/?source=pwa",
   "scope": "/app/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#02060f",
   "theme_color": "#02060f",
   "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["sports", "entertainment", "social"],
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/assets/pwa/icon-192.png?v=56",
+      "src": "/assets/pwa/icon-192.png?v=60",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/pwa/icon-512.png?v=56",
+      "src": "/assets/pwa/icon-512.png?v=60",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/pwa/icon-maskable-512.png?v=56",
+      "src": "/assets/pwa/icon-maskable-512.png?v=60",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scores",
+      "short_name": "Scores",
+      "description": "Detail & Overtime matchups",
+      "url": "/app/?source=pwa#scoreboard",
+      "icons": [{ "src": "/assets/pwa/icon-192.png?v=60", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "My Team",
+      "short_name": "Team",
+      "description": "Roster and lineup",
+      "url": "/app/?source=pwa#team",
+      "icons": [{ "src": "/assets/pwa/icon-192.png?v=60", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Members Lounge",
+      "short_name": "Lounge",
+      "description": "Roll Call chat and sports wire",
+      "url": "/app/?source=pwa#lounge",
+      "icons": [{ "src": "/assets/pwa/icon-192.png?v=60", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Playoffs",
+      "short_name": "Playoffs",
+      "description": "Bracket, Bowl, and Mayor's Cup",
+      "url": "/app/?source=pwa#playoffs",
+      "icons": [{ "src": "/assets/pwa/icon-192.png?v=60", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

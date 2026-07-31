@@ -7,6 +7,13 @@
   const TARGETS_KEY = 'gi24.mockTargets.v1';
   const COMPLETE_NUM_KEY = 'gi24.mockDraftCompleteNum.v1';
   const SHOW_TOOLS_KEY = 'gi24.mockDraft.showTools.v1';
+  const LEGACY_STORAGE_KEYS = [
+    STORAGE_KEY,
+    TARGETS_KEY,
+    'gi24.mockDraft.v4',
+    'gi24.mockDraft.v3',
+    'gi24.mockDraft.v2'
+  ];
   const TEAM_COUNTS = new Set([10, 12, 14]);
   const ROUND_OPTIONS = new Set([8, 10, 12, 15, 16, 18]);
   const DEFAULT_TEAM_COUNT = 12;
@@ -15,9 +22,9 @@
   const STARTER_LABEL_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
   const FLEX_ELIGIBLE = new Set(['RB', 'WR', 'TE']);
   const DEFAULT_BENCH = 6;
-  const CPU_STYLES = ['balanced', 'zeroRb', 'rbHeavy', 'qbEarly', 'tePremium'];
   const PICK_SECONDS_OPTIONS = new Set([60, 120, 180]);
   const DEFAULT_PICK_SECONDS = 60;
+  const CpuAI = (typeof window !== 'undefined' && window.MockDraftCpu) ? window.MockDraftCpu : null;
 
   let draftLive = false;
   let pickDeadline = null;
@@ -199,18 +206,39 @@
     if (cb) cb.checked = on;
   }
 
-  function resetMockDraft({ confirm: ask = true } = {}) {
+  function resetMockDraft({ confirm: ask = true, silent = false } = {}) {
     if (ask && (mock?.picks?.length || draftLive || isMultiplayer()) && !confirm('Reset the mock draft?')) {
       return false;
     }
     endDraftSession();
     leaveRoomLocal();
-    if (mock) mock.picks = [];
+    targetIds = [];
+    mockSideTab = 'roster';
+    mockPoolFilter = 'BEST';
+    mockSort = { key: 'rank', dir: 'asc' };
+    const search = document.getElementById('mock-search');
+    if (search) search.value = '';
+    if (mock) {
+      mock.picks = [];
+      mock.seatIndex = 0;
+    }
     mockCompleteShown = false;
-    history.replaceState(null, '', '#mock-draft');
+    clearPersistedMock();
+    if (!silent) {
+      history.replaceState(null, '', '#mock-draft');
+    }
+    setMockSideTab('roster');
     renderMock();
-    setMockStatus('Board reset — set your pick #, then Start Draft', true);
+    if (!silent) {
+      setMockStatus('Fresh mock — set your pick #, then Start Draft', true);
+    }
     return true;
+  }
+
+  /** Leaving the mock desk always returns to a brand-new draft. */
+  function abandonMockDraft() {
+    resetMockDraft({ confirm: false, silent: true });
+    clearPersistedMock();
   }
 
   function setDraftLive(on) {
@@ -376,6 +404,18 @@
   }
 
   function bestAvailablePlayer() {
+    const slot = currentSlot();
+    if (slot && CpuAI) {
+      return CpuAI.chooseCpuPick({
+        available: availablePlayers(),
+        picks: mock?.picks || [],
+        slot,
+        teamCount: mock.teamNames.length,
+        rounds: mock.rounds,
+        starters: rosterPlan.starters,
+        style: CpuAI.cpuStyleForTeam(slot.teamIndex)
+      });
+    }
     const avail = availablePlayers();
     if (!avail.length) return null;
     return avail.slice().sort((a, b) => {
@@ -511,6 +551,12 @@
     if (dialog?.open) dialog.close();
   }
 
+  function finishCompletedMock() {
+    closeMockCompleteScreen();
+    resetMockDraft({ confirm: false });
+    setMockStatus('Mock complete — board reset. Set your pick #, then Start Draft', true);
+  }
+
   function nextMockDraftNumber() {
     let n = 1;
     try {
@@ -524,7 +570,8 @@
 
   function completeSlotRowHtml(row, isBench) {
     const empty = !row.player;
-    const label = isBench ? 'BN' : row.slot;
+    const playerPos = !empty ? String(row.player.position || '').toUpperCase() : '';
+    const label = empty ? (isBench ? 'BN' : row.slot) : (isBench ? (playerPos || 'BN') : row.slot);
     const bye = !empty && row.player.byeWeek != null ? String(row.player.byeWeek) : '';
     const team = !empty ? (row.player.nflTeam || '') : '';
     return `<div class="mock-complete-row${isBench ? ' is-bench' : ''}${empty ? ' is-empty' : ''}">
@@ -1397,43 +1444,27 @@
     el.classList.toggle('is-err', ok === false);
   }
 
-  function persistMock() {
+  function clearPersistedMock() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        teamNames: mock.teamNames,
-        teamCount: mock.teamNames.length,
-        rounds: mock.rounds,
-        picks: mock.picks,
-        seatIndex: mock.seatIndex,
-        season: mock.season,
-        pickSeconds: pickSeconds || getPickSeconds(),
-        status: draftPhase()
-      }));
-      localStorage.setItem(TARGETS_KEY, JSON.stringify(targetIds));
+      for (const key of LEGACY_STORAGE_KEYS) localStorage.removeItem(key);
     } catch { /* ignore */ }
   }
 
+  function persistMock() {
+    // Drafts are session-only — never write board/targets between visits.
+    clearPersistedMock();
+  }
+
   function restoreMock() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-        || localStorage.getItem('gi24.mockDraft.v4')
-        || localStorage.getItem('gi24.mockDraft.v3')
-        || localStorage.getItem('gi24.mockDraft.v2');
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
+    clearPersistedMock();
+    return null;
   }
 
   function restoreTargets() {
+    targetIds = [];
     try {
-      const raw = localStorage.getItem(TARGETS_KEY);
-      const list = raw ? JSON.parse(raw) : [];
-      targetIds = Array.isArray(list) ? list.map(String).filter(Boolean) : [];
-    } catch {
-      targetIds = [];
-    }
+      localStorage.removeItem(TARGETS_KEY);
+    } catch { /* ignore */ }
   }
 
   function shortPlayerName(name) {
@@ -1462,18 +1493,26 @@
     persistMock();
     renderTargets();
     renderPool();
+    setMockSideTab('targets');
     setMockStatus(`Targeted ${player.name}`, true);
     return true;
+  }
+
+  function toggleTarget(playerId) {
+    if (isTargeted(playerId)) return removeTarget(playerId);
+    return addTarget(playerId);
   }
 
   function removeTarget(playerId) {
     const id = String(playerId);
     const before = targetIds.length;
+    const player = findPlayer(id);
     targetIds = targetIds.filter((t) => String(t) !== id);
     if (targetIds.length === before) return false;
     persistMock();
     renderTargets();
     renderPool();
+    if (player) setMockStatus(`Removed target ${player.name}`, true);
     return true;
   }
 
@@ -1808,10 +1847,7 @@
         <div class="mock-profile-stat"><span>Proj</span><strong>${esc(fmtPts(player.projectedPoints2026))}</strong></div>
         <div class="mock-profile-stat"><span>PPG</span><strong>${esc(fmtPts(player.avgPpg))}</strong></div>
         <div class="mock-profile-stat"><span>Δ</span><strong>${esc(fmtDelta(player.delta))}</strong></div>
-        <div class="mock-profile-stat"><span>G</span><strong>${esc(fmtInt(player.games))}</strong></div>
-        <div class="mock-profile-stat"><span>Yds</span><strong>${esc(fmtInt(primaryYards(player)))}</strong></div>
-        <div class="mock-profile-stat"><span>TD</span><strong>${esc(fmtInt(primaryTd(player)))}</strong></div>
-        <div class="mock-profile-stat"><span>Rec</span><strong>${esc(fmtInt(receptionsOf(player)))}</strong></div>
+        ${profilePosStatsHtml(player)}
       </div>
       ${scoutingLine(player) ? `<p class="mock-profile-note">${esc(scoutingLine(player))}</p>` : ''}
       <div id="mock-profile-news"><p class="mock-profile-note">Loading player news…</p></div>
@@ -1852,54 +1888,21 @@
   }
 
   function ensureMock(names, rounds, teamCount) {
-    const saved = restoreMock();
-    const count = normalizeTeamCount(
-      teamCount
-      || saved?.teamCount
-      || saved?.teamNames?.length
-      || DEFAULT_TEAM_COUNT
-    );
-    const sourceNames = (names && names.length ? names : null)
-      || (saved?.teamNames?.length ? saved.teamNames : null)
-      || [];
+    clearPersistedMock();
+    const count = normalizeTeamCount(teamCount || DEFAULT_TEAM_COUNT);
+    const sourceNames = (names && names.length ? names : null) || [];
     const list = padTeamNames(sourceNames, count);
-    const r = normalizeRounds(rounds || saved?.rounds || DEFAULT_ROUNDS);
-    const sameBoard = Array.isArray(saved?.picks)
-      && saved.teamNames?.join('\0') === list.join('\0')
-      && Number(saved.rounds) === r;
-    let picks = sameBoard ? (saved.picks || []).slice() : [];
-    let status = String(saved?.status || '').toLowerCase();
-    const boardFull = picks.length > 0
-      && !pickSlot(list.length, r, 'snake', picks.length);
-    if (boardFull) {
-      status = 'done';
-    } else if (status === 'done') {
-      // Incomplete board can't stay "done"
-      status = picks.length ? 'live' : 'setup';
-    } else if (status === 'setup') {
-      // Never show ghost picks in pre-draft
-      picks = [];
-    } else if (status === 'live') {
-      if (!picks.length) status = 'setup';
-    } else {
-      // Legacy saves without status: resume mid-board, clear empty/setup ghosts
-      status = picks.length ? 'live' : 'setup';
-    }
+    const r = normalizeRounds(rounds || DEFAULT_ROUNDS);
     mock = {
       teamNames: list,
       rounds: r,
-      picks,
-      seatIndex: Number.isFinite(Number(saved?.seatIndex)) ? Number(saved.seatIndex) : 0,
-      season: saved?.season || null
+      picks: [],
+      seatIndex: 0,
+      season: null
     };
-    if (mock.seatIndex >= mock.teamNames.length) mock.seatIndex = 0;
-    if (PICK_SECONDS_OPTIONS.has(Number(saved?.pickSeconds))) {
-      pickSeconds = Number(saved.pickSeconds);
-      const clockEl = document.getElementById('mock-pick-seconds');
-      if (clockEl) clockEl.value = String(pickSeconds);
-    }
-    draftLive = status === 'live' || status === 'done';
-    mockCompleteShown = status === 'done';
+    draftLive = false;
+    mockCompleteShown = false;
+    targetIds = [];
   }
 
   function applyTeamCount(count) {
@@ -2219,34 +2222,112 @@
     return p?.stats || {};
   }
 
-  function primaryYards(p) {
+  /** Position-appropriate prior-season board stats (no junk columns). */
+  function posBoardStats(p) {
     const s = playerStatBag(p);
-    const pos = String(p.position || '').toUpperCase();
-    if (pos === 'QB') return s.passYds;
-    if (pos === 'RB') return s.rushYds != null ? s.rushYds : s.recYds;
-    if (pos === 'WR' || pos === 'TE') return s.recYds;
-    return null;
+    const pos = String(p?.position || '').toUpperCase();
+    if (pos === 'QB') {
+      return {
+        yds: s.passYds,
+        ydsLabel: 'Pass Yds',
+        td: s.passTd,
+        tdLabel: 'Pass TD',
+        third: s.passInt,
+        thirdLabel: 'INT'
+      };
+    }
+    if (pos === 'RB') {
+      const rushTd = s.rushTd;
+      const recTd = s.recTd;
+      const td = (rushTd == null && recTd == null)
+        ? null
+        : (Number(rushTd) || 0) + (Number(recTd) || 0);
+      return {
+        yds: s.rushYds,
+        ydsLabel: 'Rush Yds',
+        td,
+        tdLabel: 'TD',
+        third: s.receptions,
+        thirdLabel: 'Rec'
+      };
+    }
+    if (pos === 'WR' || pos === 'TE') {
+      return {
+        yds: s.recYds,
+        ydsLabel: 'Rec Yds',
+        td: s.recTd,
+        tdLabel: 'Rec TD',
+        third: s.receptions,
+        thirdLabel: 'Rec'
+      };
+    }
+    if (pos === 'K') {
+      const fgText = (s.fgMade != null && s.fgAtt != null)
+        ? `${fmtInt(s.fgMade)}/${fmtInt(s.fgAtt)}`
+        : null;
+      return {
+        yds: s.fgMade,
+        ydsLabel: 'FG',
+        ydsText: fgText,
+        td: s.xpMade,
+        tdLabel: 'XP',
+        third: null,
+        thirdLabel: '—'
+      };
+    }
+    return {
+      yds: null,
+      ydsLabel: 'Yds',
+      td: null,
+      tdLabel: 'TD',
+      third: null,
+      thirdLabel: '—'
+    };
+  }
+
+  function primaryYards(p) {
+    return posBoardStats(p).yds;
   }
 
   function primaryTd(p) {
-    const s = playerStatBag(p);
-    const pos = String(p.position || '').toUpperCase();
-    if (pos === 'QB') return s.passTd;
-    if (pos === 'RB') {
-      const rush = Number(s.rushTd) || 0;
-      const rec = Number(s.recTd) || 0;
-      if (s.rushTd == null && s.recTd == null) return null;
-      return rush + rec;
-    }
-    if (pos === 'WR' || pos === 'TE') return s.recTd;
-    return null;
+    return posBoardStats(p).td;
   }
 
   function receptionsOf(p) {
-    const s = playerStatBag(p);
-    const pos = String(p.position || '').toUpperCase();
-    if (pos === 'RB' || pos === 'WR' || pos === 'TE') return s.receptions;
-    return null;
+    return posBoardStats(p).third;
+  }
+
+  function poolStatColumnLabels() {
+    const f = String(mockPoolFilter || 'BEST').toUpperCase();
+    if (f === 'QB') return { yds: 'Pass', td: 'TD', rec: 'INT' };
+    if (f === 'RB') return { yds: 'Rush', td: 'TD', rec: 'Rec' };
+    if (f === 'WR' || f === 'TE') return { yds: 'RecYds', td: 'TD', rec: 'Rec' };
+    if (f === 'K') return { yds: 'FG', td: 'XP', rec: '—' };
+    if (f === 'D/ST') return { yds: '—', td: '—', rec: '—' };
+    return { yds: 'Yds', td: 'TD', rec: 'Rec/INT' };
+  }
+
+  function profilePosStatsHtml(player) {
+    const st = posBoardStats(player);
+    const pos = String(player.position || '').toUpperCase();
+    const cells = [];
+    const push = (label, value) => {
+      cells.push(`<div class="mock-profile-stat"><span>${esc(label)}</span><strong>${value}</strong></div>`);
+    };
+    push('G', esc(fmtInt(player.games)));
+    if (pos === 'K') {
+      push(st.ydsLabel, esc(st.ydsText || fmtInt(st.yds)));
+      push(st.tdLabel, esc(fmtInt(st.td)));
+    } else if (pos === 'D/ST') {
+      /* defensive season lines aren't in the pool yet */
+    } else {
+      push(st.ydsLabel, esc(fmtInt(st.yds)));
+      push(st.tdLabel, esc(fmtInt(st.td)));
+      if (st.thirdLabel && st.thirdLabel !== '—') {
+        push(st.thirdLabel, esc(fmtInt(st.third)));
+      }
+    }
+    return cells.join('');
   }
 
   function scoutingLine(p) {
@@ -2258,22 +2339,23 @@
       if (opts.skipZero && Number(value) === 0) return;
       bits.push(`${fmtInt(value)} ${label}`);
     };
-    if (p.position === 'QB') {
+    const pos = String(p.position || '').toUpperCase();
+    if (pos === 'QB') {
       add('Pass Yds', s.passYds ?? pr.passYds);
       add('TD', s.passTd ?? pr.passTd);
       add('INT', s.passInt ?? pr.passInt);
-      add('Rush', s.rushYds ?? pr.rushYds, { skipZero: true });
-    } else if (p.position === 'RB') {
-      add('Rush', s.rushYds ?? pr.rushYds);
-      add('TD', s.rushTd ?? pr.rushTd);
+    } else if (pos === 'RB') {
+      add('Rush Yds', s.rushYds ?? pr.rushYds);
+      add('Rush TD', s.rushTd ?? pr.rushTd);
       add('Rec', s.receptions ?? pr.receptions, { skipZero: true });
       add('Rec Yds', s.recYds ?? pr.recYds, { skipZero: true });
-    } else if (p.position === 'WR' || p.position === 'TE') {
+      add('Rec TD', s.recTd ?? pr.recTd, { skipZero: true });
+    } else if (pos === 'WR' || pos === 'TE') {
       add('Rec', s.receptions ?? pr.receptions);
       add('Tgt', s.targets, { skipZero: true });
-      add('Yds', s.recYds ?? pr.recYds);
+      add('Rec Yds', s.recYds ?? pr.recYds);
       add('TD', s.recTd ?? pr.recTd);
-    } else if (p.position === 'K') {
+    } else if (pos === 'K') {
       if (s.fgMade != null || s.fgAtt != null) {
         bits.push(`FG ${fmtInt(s.fgMade)}/${fmtInt(s.fgAtt)}`);
       }
@@ -2464,8 +2546,13 @@
   }
 
   function markPoolSortHeaders() {
+    const labels = poolStatColumnLabels();
     document.querySelectorAll('.mock-pool-cols [data-sort]').forEach((btn) => {
-      const on = btn.getAttribute('data-sort') === mockSort.key;
+      const key = btn.getAttribute('data-sort');
+      if (key === 'yds') btn.setAttribute('data-label', labels.yds);
+      if (key === 'td') btn.setAttribute('data-label', labels.td);
+      if (key === 'rec') btn.setAttribute('data-label', labels.rec);
+      const on = key === mockSort.key;
       btn.classList.toggle('is-on', on);
       btn.setAttribute('aria-sort', on ? (mockSort.dir === 'asc' ? 'ascending' : 'descending') : 'none');
       const arrow = on ? (mockSort.dir === 'asc' ? ' ↑' : ' ↓') : '';
@@ -2523,7 +2610,7 @@
         : '';
       const rk = p.overallRank != null ? p.overallRank : '—';
       const posRk = p.posRank != null ? `${esc(p.position)}${p.posRank}` : '—';
-      const targeted = !drafted && isTargeted(p.id);
+      const targeted = isTargeted(p.id);
       const injury = injuryBadgeHtml(p);
       const teamAbbr = p.team || 'FA';
       const club = draftPick
@@ -2534,12 +2621,24 @@
         : '';
       const title = drafted
         ? `${p.name} — drafted by ${club} in round ${draftPick.round} (overall #${draftPick.overall}) · click for profile`
-        : `Click profile · double-click to draft${canPick ? '' : ' (when on the clock)'} · drag to Targets`;
+        : `Click profile · double-click to draft${canPick ? '' : ' (when on the clock)'} · target icon to pin · drag to Targets`;
+      const targetBtn = drafted
+        ? `<span class="mock-target-btn" aria-hidden="true"></span>`
+        : `<button type="button" class="mock-target-btn${targeted ? ' is-on' : ''}" data-target-id="${esc(p.id)}" title="${targeted ? 'Remove from targets' : 'Add to targets'}" aria-label="${targeted ? `Remove ${p.name} from targets` : `Target ${p.name}`}" aria-pressed="${targeted ? 'true' : 'false'}">
+            <img src="/assets/lounge/target-reticle.svg?v=1" alt="" width="18" height="18" decoding="async" />
+          </button>`;
+      const star = targeted && !drafted
+        ? '<span class="mock-target-star" title="On your board" aria-label="Targeted">★</span>'
+        : '';
+      const st = posBoardStats(p);
+      const ydsText = st.ydsText != null ? st.ydsText : fmtInt(st.yds);
       return `<div class="mock-player${targeted ? ' is-targeted' : ''}${injury ? ' has-injury' : ''}${drafted ? ' is-drafted' : ''}" role="button" tabindex="0" data-id="${esc(p.id)}"${drafted ? ' data-drafted="1"' : ' draggable="true"'} title="${esc(title)}">
         <span class="mock-rank" title="Overall rank">${esc(String(rk))}</span>
         ${head}
+        ${targetBtn}
         <span class="mock-player-main">
           <span class="mock-player-line">
+            ${star}
             <strong class="mock-player-name">${esc(p.name)}</strong>
             ${injury}
           </span>
@@ -2551,9 +2650,9 @@
         <span class="mock-cell num" title="Average draft position">${esc(fmtAdp(p.adp))}</span>
         <span class="mock-cell num mock-posrk" title="Position rank">${posRk}</span>
         <span class="mock-cell num" title="Games played">${esc(fmtInt(p.games))}</span>
-        <span class="mock-cell num" title="Primary yards (pass / rush / receiving)">${esc(fmtInt(primaryYards(p)))}</span>
-        <span class="mock-cell num" title="Primary touchdowns">${esc(fmtInt(primaryTd(p)))}</span>
-        <span class="mock-cell num" title="Receptions">${esc(fmtInt(receptionsOf(p)))}</span>
+        <span class="mock-cell num" title="${esc(st.ydsLabel)}">${esc(ydsText)}</span>
+        <span class="mock-cell num" title="${esc(st.tdLabel)}">${esc(fmtInt(st.td))}</span>
+        <span class="mock-cell num" title="${esc(st.thirdLabel)}">${esc(fmtInt(st.third))}</span>
         <span class="mock-cell num" title="Prior season fantasy points">${esc(fmtPts(p.fantasyPoints2025))}</span>
         <span class="mock-cell num" title="Points per game">${esc(fmtPts(p.avgPpg))}</span>
         <span class="mock-cell num is-proj" title="Projected season points">${esc(fmtPts(p.projectedPoints2026))}</span>
@@ -2575,10 +2674,11 @@
     if (count) count.textContent = `${mine.length} / ${totalSlots}`;
     const rowHtml = (row, isBench) => {
       const empty = !row.player;
-      const label = isBench ? 'BN' : row.slot;
+      const playerPos = !empty ? String(row.player.position || '').toUpperCase() : '';
+      const label = empty ? (isBench ? 'BN' : row.slot) : (isBench ? (playerPos || 'BN') : row.slot);
       const bye = !empty && row.player.byeWeek != null ? String(row.player.byeWeek) : '';
       return `<div class="mock-slot-row${isBench ? ' is-bench' : ''}${empty ? ' is-empty' : ' is-filled'}">
-        <span class="slot" data-pos="${esc(label)}">${esc(label)}</span>
+        <span class="slot" data-pos="${esc(label)}" title="${isBench && !empty ? `Bench · ${esc(label)}` : esc(label)}">${esc(label)}</span>
         <span class="nm">${empty
           ? `<span class="open">Open</span>`
           : `${esc(row.player.playerName)}<em>${esc(row.player.nflTeam || '')}</em>`
@@ -2601,20 +2701,37 @@
     const rows = targetIds
       .map((id) => findPlayer(id))
       .filter(Boolean);
-    const stillOpen = rows.filter((p) => !taken.has(p.id) && !taken.has(Number(p.id)));
-    if (stillOpen.length !== targetIds.length) {
-      targetIds = stillOpen.map((p) => String(p.id));
+    // Drop ids that no longer exist in the pool, but keep drafted targets.
+    if (rows.length !== targetIds.length) {
+      targetIds = rows.map((p) => String(p.id));
       persistMock();
     }
-    if (count) count.textContent = String(stillOpen.length);
-    if (!stillOpen.length) {
-      list.innerHTML = `<div class="records-empty">Drag players here to build your board.</div>`;
+    const openN = rows.filter((p) => !taken.has(p.id) && !taken.has(Number(p.id))).length;
+    const takenN = rows.length - openN;
+    if (count) {
+      count.textContent = takenN > 0
+        ? `${openN} left · ${takenN} drafted`
+        : String(rows.length);
+    }
+    if (!rows.length) {
+      list.innerHTML = `<div class="records-empty">Hit the target icon on a player, or drag them here.</div>`;
       return;
     }
-    list.innerHTML = stillOpen.map((p) => {
+    list.innerHTML = rows.map((p) => {
+      const draftPick = pickForPlayer(p.id);
+      const drafted = Boolean(draftPick);
       const head = p.headshot
         ? `<img class="mock-head" src="${esc(p.headshot)}" alt="" width="34" height="34" loading="lazy" referrerpolicy="no-referrer" />`
         : `<span class="mock-head is-blank" aria-hidden="true"></span>`;
+      if (drafted) {
+        const club = draftPick.teamIndex === mock?.seatIndex ? 'You' : (draftPick.teamName || 'Club');
+        return `<div class="mock-target-row is-taken" data-id="${esc(p.id)}" data-drafted="1" title="Drafted by ${esc(club)} in round ${esc(String(draftPick.round))}">
+          ${head}
+          <span class="nm">${esc(p.name)}<em>Drafted · ${esc(club)} · Rd ${esc(String(draftPick.round))}</em></span>
+          <span class="drafted-tag">Drafted</span>
+          <button type="button" class="x" data-remove-target="${esc(p.id)}" aria-label="Remove target">×</button>
+        </div>`;
+      }
       return `<div class="mock-target-row" data-id="${esc(p.id)}" draggable="true" title="Double-click to draft · drag to Draft player">
         ${head}
         <span class="nm">${esc(p.name)}<em>${esc(p.position || '')} · ${esc(p.team || 'FA')}</em></span>
@@ -2814,160 +2931,30 @@
   }
 
   function cpuStyleForTeam(teamIndex) {
-    return CPU_STYLES[Math.abs(Number(teamIndex) || 0) % CPU_STYLES.length];
-  }
-
-  function teamDraftState(teamIndex) {
-    const picks = picksForTeam(teamIndex);
-    const roster = assignPicksToRoster(picks);
-    const openBySlot = {};
-    for (const row of roster.starters) {
-      if (row.player) continue;
-      openBySlot[row.slot] = (openBySlot[row.slot] || 0) + 1;
-    }
-    const byPos = {};
-    for (const p of picks) {
-      const pos = String(p.position || '').toUpperCase();
-      byPos[pos] = (byPos[pos] || 0) + 1;
-    }
-    const openStarterPos = (pos) => {
-      if (pos === 'RB' || pos === 'WR' || pos === 'TE') {
-        return (openBySlot[pos] || 0) + (openBySlot.FLEX || 0);
-      }
-      return openBySlot[pos] || 0;
-    };
-    return {
-      picks,
-      roster,
-      openBySlot,
-      byPos,
-      openStarterPos,
-      startersFilled: roster.starters.filter((r) => r.player).length,
-      startersTotal: roster.starters.length
-    };
-  }
-
-  function recentPosRun(pos, lookback = 6) {
-    const recent = (mock?.picks || []).slice(-lookback);
-    if (!recent.length) return 0;
-    return recent.filter((p) => String(p.position || '').toUpperCase() === pos).length / recent.length;
-  }
-
-  function scoreCpuPlayer(player, slot, state, style) {
-    const pos = String(player.position || '').toUpperCase();
-    const overall = slot.overall;
-    const round = slot.round;
-    const rounds = mock.rounds;
-    const teams = mock.teamNames.length;
-    const late = round >= Math.max(rounds - 1, 7);
-    const midLate = round >= Math.max(5, Math.floor(rounds * 0.55));
-
-    if (pos === 'K' && !late && round < Math.max(6, rounds - 2)) return -1e9;
-    if (pos === 'D/ST' && round < Math.max(5, rounds - 3)) return -1e9;
-
-    const proj = Number(player.projectedPoints2026);
-    const prior = Number(player.fantasyPoints2025);
-    const adp = Number(player.adp);
-    const rank = Number(player.overallRank) || 999;
-    const posRank = Number(player.posRank) || 99;
-
-    let score = 0;
-    if (Number.isFinite(proj)) score += proj * 1.15;
-    else if (Number.isFinite(prior)) score += prior * 0.85;
-    else score += Math.max(0, 220 - rank);
-
-    if (Number.isFinite(adp)) {
-      const gap = adp - overall;
-      // Value: ADP is soon / already passed → take them. Far later → leave them.
-      if (gap <= 0) score += 38 + Math.min(28, Math.abs(gap) * 1.4);
-      else if (gap <= teams * 0.65) score += 22 - gap * 0.55;
-      else if (gap <= teams * 1.4) score += 6 - gap * 0.15;
-      else score -= Math.min(55, (gap - teams) * 1.1);
-    } else {
-      score += Math.max(0, 40 - rank * 0.35);
-    }
-
-    const owned = state.byPos[pos] || 0;
-    const openPos = state.openStarterPos(pos);
-    const openFlex = state.openBySlot.FLEX || 0;
-
-    if (openPos > 0) score += 34 + openPos * 10;
-    else if ((pos === 'RB' || pos === 'WR' || pos === 'TE') && openFlex > 0) score += 18;
-    else if (owned === 0 && round <= 4 && (pos === 'RB' || pos === 'WR')) score += 12;
-    else if (owned >= 1 && pos === 'QB') score -= round < 8 ? 70 : 18;
-    else if (owned >= 2 && pos === 'TE') score -= 28;
-    else if (owned >= 3 && (pos === 'RB' || pos === 'WR')) score -= midLate ? 4 : 22;
-    else if (owned === 0 && pos === 'TE' && posRank <= 3 && round <= 5) score += 26;
-    else if (owned === 0 && pos === 'QB' && posRank <= 5 && round >= 3 && round <= 7) score += 16;
-
-    // Prefer filling empty starters before pure bench depth.
-    const startersLeft = state.startersTotal - state.startersFilled;
-    if (startersLeft > 0 && openPos <= 0 && !(FLEX_ELIGIBLE.has(pos) && openFlex > 0) && pos !== 'K') {
-      score -= 20;
-    }
-
-    if (round <= 3) {
-      if (pos === 'RB' || pos === 'WR') score += 14;
-      if (pos === 'QB' && posRank > 3) score -= 35;
-      if (pos === 'TE' && posRank > 4) score -= 18;
-      if (pos === 'K') score -= 120;
-    }
-
-    // Positional run chase / avoid — slight herd behavior.
-    const runShare = recentPosRun(pos);
-    if (runShare >= 0.5 && (pos === 'RB' || pos === 'WR') && openPos > 0) score += 10;
-    if (runShare >= 0.66 && pos === 'QB' && owned === 0) score += 8;
-
-    if (style === 'zeroRb') {
-      if (pos === 'WR' && round <= 4) score += 18;
-      if (pos === 'RB' && round <= 2) score -= 22;
-      if (pos === 'RB' && round >= 3 && round <= 6) score += 10;
-    } else if (style === 'rbHeavy') {
-      if (pos === 'RB' && round <= 5) score += 16;
-      if (pos === 'WR' && round <= 2) score -= 8;
-    } else if (style === 'qbEarly') {
-      if (pos === 'QB' && owned === 0 && round >= 2 && round <= 6 && posRank <= 8) score += 28;
-    } else if (style === 'tePremium') {
-      if (pos === 'TE' && owned === 0 && posRank <= 5 && round <= 6) score += 24;
-    }
-
-    if (late && pos === 'K') score += 55 + (Number.isFinite(proj) ? proj * 0.2 : 0);
-    if (round >= rounds - 1 && owned === 0 && pos === 'K') score += 40;
-
-    // Tiny noise so boards don't clone.
-    score += (Math.random() - 0.5) * 7;
-    return score;
+    if (CpuAI) return CpuAI.cpuStyleForTeam(teamIndex);
+    const styles = ['balanced', 'zeroRb', 'rbHeavy', 'qbEarly', 'tePremium', 'heroRb', 'robust'];
+    return styles[Math.abs(Number(teamIndex) || 0) % styles.length];
   }
 
   function chooseCpuPlayer(slot) {
     const avail = availablePlayers();
-    if (!avail.length || !slot) return null;
-    const state = teamDraftState(slot.teamIndex);
-    const style = cpuStyleForTeam(slot.teamIndex);
-    let best = null;
-    let bestScore = -Infinity;
-    const shortlist = [];
-    for (const p of avail) {
-      const s = scoreCpuPlayer(p, slot, state, style);
-      if (s < -1e8) continue;
-      shortlist.push({ p, s });
-      if (s > bestScore) {
-        bestScore = s;
-        best = p;
-      }
+    if (!avail.length || !slot || !mock) return null;
+    if (CpuAI) {
+      return CpuAI.chooseCpuPick({
+        available: avail,
+        picks: mock.picks || [],
+        slot,
+        teamCount: mock.teamNames.length,
+        rounds: mock.rounds,
+        starters: rosterPlan.starters,
+        style: cpuStyleForTeam(slot.teamIndex)
+      });
     }
-    if (!shortlist.length) return avail[0] || null;
-    shortlist.sort((a, b) => b.s - a.s);
-    const top = shortlist.slice(0, Math.min(5, shortlist.length));
-    // Weighted pick among top candidates (favorite still most likely).
-    const weights = top.map((_, i) => Math.max(1, 6 - i));
-    const total = weights.reduce((a, b) => a + b, 0);
-    let roll = Math.random() * total;
-    for (let i = 0; i < top.length; i += 1) {
-      roll -= weights[i];
-      if (roll <= 0) return top[i].p;
-    }
-    return best || top[0].p;
+    return avail.slice().sort((a, b) => {
+      const ra = a.overallRank != null ? Number(a.overallRank) : 9999;
+      const rb = b.overallRank != null ? Number(b.overallRank) : 9999;
+      return ra - rb;
+    })[0] || null;
   }
 
   function autoPickOne(opts = {}) {
@@ -3096,6 +3083,14 @@
       paintSettingsSummary();
     });
     document.getElementById('mock-pool-list')?.addEventListener('click', (e) => {
+      const targetBtn = e.target.closest('[data-target-id]');
+      if (targetBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearTimeout(profileClickTimer);
+        toggleTarget(targetBtn.getAttribute('data-target-id'));
+        return;
+      }
       const injuryBtn = e.target.closest('[data-injury-id]');
       if (injuryBtn) {
         e.preventDefault();
@@ -3116,6 +3111,13 @@
     });
     document.getElementById('mock-pool-list')?.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
+      const targetBtn = e.target.closest('[data-target-id]');
+      if (targetBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleTarget(targetBtn.getAttribute('data-target-id'));
+        return;
+      }
       const injuryBtn = e.target.closest('[data-injury-id]');
       if (injuryBtn) {
         e.preventDefault();
@@ -3129,7 +3131,7 @@
       openPlayerProfile(row.getAttribute('data-id'));
     });
     document.getElementById('mock-pool-list')?.addEventListener('dblclick', (e) => {
-      if (e.target.closest('[data-injury-id]')) return;
+      if (e.target.closest('[data-injury-id], [data-target-id]')) return;
       const btn = e.target.closest('[data-id]');
       if (btn?.hasAttribute('data-drafted')) return;
       if (!btn) return;
@@ -3144,7 +3146,7 @@
         e.preventDefault();
         return;
       }
-      if (e.target.closest('[data-injury-id]')) {
+      if (e.target.closest('[data-injury-id], [data-target-id]')) {
         e.preventDefault();
         return;
       }
@@ -3208,7 +3210,7 @@
     });
     document.getElementById('mock-targets-list')?.addEventListener('dblclick', (e) => {
       const row = e.target.closest('[data-id]');
-      if (!row || e.target.closest('[data-remove-target]')) return;
+      if (!row || e.target.closest('[data-remove-target]') || row.hasAttribute('data-drafted')) return;
       e.preventDefault();
       clearTimeout(profileClickTimer);
       suppressNextClick = true;
@@ -3217,7 +3219,10 @@
     });
     document.getElementById('mock-targets-list')?.addEventListener('dragstart', (e) => {
       const row = e.target.closest('[data-id]');
-      if (!row || !e.dataTransfer || e.target.closest('[data-remove-target]')) return;
+      if (!row || row.hasAttribute('data-drafted') || !e.dataTransfer || e.target.closest('[data-remove-target]')) {
+        e.preventDefault();
+        return;
+      }
       dragPlayerId = row.getAttribute('data-id');
       e.dataTransfer.setData('text/plain', dragPlayerId || '');
       e.dataTransfer.effectAllowed = 'copyMove';
@@ -3242,11 +3247,15 @@
     document.getElementById('mock-injury-dialog')?.addEventListener('click', (e) => {
       if (e.target === e.currentTarget) e.currentTarget.close();
     });
-    const closeComplete = () => closeMockCompleteScreen();
+    const closeComplete = () => finishCompletedMock();
     document.getElementById('mock-complete-close')?.addEventListener('click', closeComplete);
     document.getElementById('mock-complete-done')?.addEventListener('click', closeComplete);
     document.getElementById('mock-complete-dialog')?.addEventListener('click', (e) => {
       if (e.target === e.currentTarget) closeComplete();
+    });
+    document.getElementById('mock-complete-dialog')?.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      finishCompletedMock();
     });
     document.getElementById('mock-settings-open')?.addEventListener('click', openMockSettings);
     document.getElementById('mock-settings-close')?.addEventListener('click', closeMockSettings);
@@ -3646,14 +3655,14 @@
       }
       const teamsEl = document.getElementById('mock-teams');
       const roundsEl = document.getElementById('mock-rounds');
-      const saved = restoreMock();
+      clearPersistedMock();
       const teamCount = normalizeTeamCount(
-        teamsEl?.value || saved?.teamCount || saved?.teamNames?.length || DEFAULT_TEAM_COUNT
+        teamsEl?.value || DEFAULT_TEAM_COUNT
       );
       if (teamsEl) teamsEl.value = String(teamCount);
       ensureMock(
         teamNames,
-        normalizeRounds(roundsEl?.value || saved?.rounds || DEFAULT_ROUNDS),
+        normalizeRounds(roundsEl?.value || DEFAULT_ROUNDS),
         teamCount
       );
       if (roundsEl) roundsEl.value = String(mock.rounds);
@@ -3662,25 +3671,11 @@
       restoreTargets();
       renderMock();
       await loadPool().then(async (data) => {
-        if (draftLive && !isDraftComplete() && !isMultiplayer()) {
-          const slot = currentSlot();
-          if (slot && slot.teamIndex !== mock.seatIndex) {
-            await runCpuUntilUserPick({ instant: true });
-          }
-          if (currentSlot()?.teamIndex === mock.seatIndex) startPickTimer();
-        }
         renderMock();
-        const phase = draftPhase();
-        if (phase === 'done') {
-          setMockStatus('Mock complete — Reset to run another', true);
-        } else if (phase === 'live') {
-          setMockStatus(`Resumed live mock · ${poolAll.length} in pool`, true);
-        } else {
-          setMockStatus(
-            `Pool ready · claim your seat · Start Draft · ${poolAll.length} players · ${mock.teamNames.length}×${mock.rounds}${mock.season ? ` · roster ${mock.season}` : ''}${data.statsSeason ? ` · ’${String(data.statsSeason).slice(-2)} FP` : ''}${data.projectionSeason ? ` · ’${String(data.projectionSeason).slice(-2)} proj` : ''}`,
-            true
-          );
-        }
+        setMockStatus(
+          `Pool ready · claim your seat · Start Draft · ${poolAll.length} players · ${mock.teamNames.length}×${mock.rounds}${mock.season ? ` · roster ${mock.season}` : ''}${data.statsSeason ? ` · ’${String(data.statsSeason).slice(-2)} FP` : ''}${data.projectionSeason ? ` · ’${String(data.projectionSeason).slice(-2)} proj` : ''}`,
+          true
+        );
       });
       const joinId = parseMockRoomFromHash();
       if (joinId) {
@@ -3723,6 +3718,11 @@
         setMockStatus(err.message || 'Could not join mock draft', false);
       });
     });
+
+    window.addEventListener('gi:mock-leave', () => {
+      abandonMockDraft();
+    });
+    window.giAbandonMockDraft = abandonMockDraft;
   }
 
   if (document.readyState === 'loading') {

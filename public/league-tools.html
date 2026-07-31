@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=133" />
+  <link rel="stylesheet" href="/css/site.css?v=135" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -1032,7 +1032,7 @@
               <div class="section-head">
                 <h3>Member Access <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
-              <p class="help">Invite tokens admit members to the lounge. When you Approve, pick GridIron 24, AAA, or Social — that membership drives the welcome email and HQ access. Social stays lounge-only (toggle under Access / Membership). Use the <strong>Lounge</strong> checkbox to grant a soft-launch Members Lounge pass (inbox notice sent on grant). Preview emails: <a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
+              <p class="help">Approve or deny join requests first. After approval, assign league membership (GridIron 24 / AAA / Social), franchise, access role, lounge pass, and dues. Welcome email sends when you set membership. Preview emails: <a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
               <div class="status-note" id="members-msg" role="status"></div>
               <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
@@ -1655,9 +1655,10 @@
     }
 
     function membershipAccessHint(u) {
-      if (u.loungeOnly) return 'Lounge only · no franchise HQ';
-      const hq = u.membershipLeague === 'aaa' ? 'AAA HQ' : 'GI24 HQ';
-      return u.loungeToken ? `${hq} + Lounge pass` : `${hq} · no lounge pass`;
+      if (u.loungeOnly) return 'Social · lounge only';
+      if (!u.membershipLeague) return 'Assign a league or Social membership';
+      if (u.membershipLeague === 'aaa') return u.loungeToken ? 'AAA · lounge pass on' : 'AAA';
+      return u.loungeToken ? 'GridIron 24 · lounge pass on' : 'GridIron 24';
     }
 
     function renderMembers(payload) {
@@ -1672,7 +1673,7 @@
       }
       const pending = list.filter((u) => u.approved === false);
       const pendingBanner = pending.length
-        ? `<div class="msg" style="margin-bottom:0.85rem;"><strong>${pending.length} awaiting approval</strong>Approve accounts before they can sign in.</div>`
+        ? `<div class="msg" style="margin-bottom:0.85rem;"><strong>${pending.length} awaiting approval</strong> Approve or deny, then assign league, franchise, and lounge pass.</div>`
         : '';
       document.getElementById('members-list').innerHTML = pendingBanner + `
         <table class="data-table">
@@ -1697,16 +1698,9 @@
                 <td>
                   ${u.approved === false
                     ? `<span class="role-pill commissioner">Pending</span>
-                       <div class="invite-row-actions" style="margin-top:0.45rem;display:grid;gap:0.4rem;">
-                         <select class="field" data-approve-kind="${esc(u.id)}" aria-label="Approve as" style="max-width:12rem;">
-                           <option value="gridiron">GridIron 24</option>
-                           <option value="aaa">AAA League</option>
-                           <option value="social">Social Membership</option>
-                         </select>
-                         <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
-                           <button type="button" class="btn" data-approve="${esc(u.id)}">Approve</button>
-                           <button type="button" class="link-action" data-reject="${esc(u.id)}">Reject</button>
-                         </div>
+                       <div class="invite-row-actions" style="margin-top:0.45rem;display:flex;gap:0.45rem;flex-wrap:wrap;">
+                         <button type="button" class="btn" data-approve="${esc(u.id)}">Approve</button>
+                         <button type="button" class="link-action" data-reject="${esc(u.id)}">Deny</button>
                        </div>`
                     : `<span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span>
                        ${u.loungeOnly ? '<span class="role-pill" style="margin-left:0.35rem;color:#f0a0b0;">Social</span>' : ''}`}
@@ -1731,9 +1725,10 @@
                 </td>
                 <td>
                   ${u.approved === false || u.siteOwner
-                    ? `<span class="muted-sm">${u.siteOwner ? 'Owner' : '—'}</span>`
+                    ? `<span class="muted-sm">${u.siteOwner ? 'Owner' : 'Approve first'}</span>`
                     : `<select class="field membership-select" data-membership="${esc(u.id)}" aria-label="Membership type" style="max-width:12rem;">
-                        <option value="gridiron" ${!u.loungeOnly && u.membershipLeague !== 'aaa' ? 'selected' : ''}>GridIron 24</option>
+                        <option value="" ${!u.loungeOnly && !u.membershipLeague ? 'selected' : ''} disabled hidden>Assign…</option>
+                        <option value="gridiron" ${!u.loungeOnly && u.membershipLeague === 'gridiron' ? 'selected' : ''}>GridIron 24</option>
                         <option value="aaa" ${!u.loungeOnly && u.membershipLeague === 'aaa' ? 'selected' : ''}>AAA League</option>
                         <option value="social" ${u.loungeOnly ? 'selected' : ''}>Social Membership</option>
                       </select>
@@ -1744,7 +1739,7 @@
                     ? `<span class="muted-sm">—</span>`
                     : u.siteOwner
                       ? `<span class="muted-sm">Owner</span>`
-                      : `<label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;" title="Soft-launch Members Lounge pass">
+                      : `<label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;" title="Members Lounge pass">
                           <input type="checkbox" data-lounge-token="${esc(u.id)}" ${u.loungeToken ? 'checked' : ''} />
                           Pass
                         </label>`}
@@ -1821,6 +1816,7 @@
         select.addEventListener('change', async () => {
           const userId = select.getAttribute('data-membership');
           const membership = select.value;
+          if (!membership) return;
           select.disabled = true;
           try {
             const res = await fetch(`/api/users/${encodeURIComponent(userId)}/membership`, {
@@ -1830,8 +1826,11 @@
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update membership');
+            const mailNote = data.mailSent
+              ? ' Welcome email sent.'
+              : (data.mailError ? ` Email failed: ${data.mailError}` : '');
             showMembersMsg(
-              `${data.user?.name || data.user?.loginName || 'Member'} → ${data.membershipLabel || membership}.`,
+              `${data.user?.name || data.user?.loginName || 'Member'} → ${data.membershipLabel || membership}.${mailNote}`,
               true
             );
             await loadMembers();
@@ -1891,8 +1890,8 @@
             if (box.checked) {
               showMembersMsg(
                 data.notified
-                  ? `${name} lounge pass granted · inbox notified.`
-                  : `${name} lounge pass granted.`,
+                  ? `${name} lounge pass granted · $1,000 Casala funds · inbox notified.`
+                  : `${name} lounge pass granted · $1,000 Casala funds.`,
                 true
               );
             } else {
@@ -2023,22 +2022,19 @@
       document.getElementById('members-list').querySelectorAll('[data-approve]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const userId = btn.dataset.approve;
-          const kindSelect = document.querySelector(`select[data-approve-kind="${userId}"]`);
-          const membership = kindSelect?.value || 'gridiron';
           btn.disabled = true;
           try {
             const res = await fetch(`/api/users/${encodeURIComponent(userId)}/approve`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ approved: true, membership })
+              body: JSON.stringify({ approved: true })
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok || !data.ok) throw new Error(data.error || 'Could not approve');
-            const label = data.membershipLabel || membership;
-            const mailNote = data.mailSent
-              ? ` Welcome email sent (${label}).`
-              : (data.mailError ? ` Email failed: ${data.mailError}` : ` (${label})`);
-            showMembersMsg(`Approved ${data.user.loginName} as ${label}.${mailNote}`, true);
+            showMembersMsg(
+              `Approved ${data.user.loginName}. Assign membership, franchise, and lounge pass next.`,
+              true
+            );
             await loadMembers();
           } catch (err) {
             showMembersMsg(err.message, false);
@@ -2050,13 +2046,13 @@
       document.getElementById('members-list').querySelectorAll('[data-reject]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const userId = btn.dataset.reject;
-          if (!confirm('Reject and delete this pending account?')) return;
+          if (!confirm('Deny and delete this join request?')) return;
           btn.disabled = true;
           try {
             const res = await fetch(`/api/users/${encodeURIComponent(userId)}/reject`, { method: 'POST' });
             const data = await res.json().catch(() => ({}));
             if (!res.ok || !data.ok) throw new Error(data.error || 'Could not reject');
-            showMembersMsg(`Rejected ${data.user?.loginName || 'account'}.`, true);
+            showMembersMsg(`Denied ${data.user?.loginName || 'account'}.`, true);
             await loadMembers();
           } catch (err) {
             showMembersMsg(err.message, false);
