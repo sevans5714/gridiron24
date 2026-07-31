@@ -1528,9 +1528,10 @@
     .board-body {
       padding: 0.85rem 0 0.15rem;
       display: grid;
-      grid-template-columns: repeat(10, minmax(0, 1fr));
-      gap: 0.65rem 0.85rem;
+      grid-template-columns: minmax(0, 22rem);
+      gap: 0.35rem;
       align-items: start;
+      justify-content: start;
     }
     .roll-empty {
       grid-column: 1 / -1;
@@ -2247,8 +2248,8 @@
         grid-template-columns: 1fr;
       }
       .board-body {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 0.55rem 0.65rem;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.3rem;
       }
       .im-body {
         grid-template-columns: 1fr;
@@ -2288,7 +2289,7 @@
       }
       .sgame.is-golf { grid-column: auto; }
       .board-body {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr);
       }
     }
 
@@ -3446,7 +3447,10 @@
         if (!prev || rank(m) < rank(prev)) byName.set(key, m);
       }
       return [...byName.values()].sort((a, b) =>
-        String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' })
+        String(a.name || '').localeCompare(String(b.name || ''), undefined, {
+          sensitivity: 'base',
+          numeric: true
+        })
       );
     }
 
