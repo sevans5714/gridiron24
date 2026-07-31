@@ -10,7 +10,7 @@ const sportsFallbacks = require('./sports-fallbacks');
 const CACHE_MS = 20_000;
 
 /** Shared NCAA mark for every college league tab / header. */
-const NCAA_LOGO = '/assets/ncaa-logo.png?v=2';
+const NCAA_LOGO = '/assets/ncaa-logo.png?v=3';
 
 const LEAGUES = {
   nfl: {
