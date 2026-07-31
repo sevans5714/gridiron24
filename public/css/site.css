@@ -2198,7 +2198,9 @@ html[data-theme="day"] .site-footer-mark {
 }
 .site-footer-build {
   display: block;
-  margin-top: 0.7rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(142, 182, 255, 0.28);
   color: var(--muted-2);
   font-family: var(--display);
   font-size: 0.78rem;
@@ -2206,6 +2208,12 @@ html[data-theme="day"] .site-footer-mark {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   opacity: 0.85;
+  max-width: 14rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+html[data-theme="day"] .site-footer-build {
+  border-top-color: rgba(31, 94, 240, 0.2);
 }
 
 /* Shared form + action chrome */
