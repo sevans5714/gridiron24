@@ -2124,7 +2124,7 @@ footer.site-footer::before {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   color: var(--muted);
   font-size: var(--fs-sm);
   font-weight: 500;
@@ -2159,7 +2159,7 @@ footer.site-footer::before {
   justify-content: center;
   gap: 0.4rem;
   line-height: 1.2;
-  margin: 0;
+  margin: 0.35rem 0 0;
   padding: 0;
   border: 0;
   min-width: 0;
