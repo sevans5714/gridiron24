@@ -2126,13 +2126,17 @@ footer.site-footer::before {
   gap: 0;
 }
 .site-footer-mark {
-  width: clamp(3.3rem, 8.4vw, 4.2rem);
+  width: clamp(3.96rem, 10.08vw, 5.04rem);
   height: auto;
   aspect-ratio: 1;
   object-fit: contain;
   display: block;
   flex: 0 0 auto;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
+  filter:
+    drop-shadow(0 0 6px rgba(126, 200, 255, 0.85))
+    drop-shadow(0 0 16px rgba(47, 109, 255, 0.55))
+    drop-shadow(0 0 32px rgba(47, 109, 255, 0.35))
+    drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45));
 }
 .site-footer-brand {
   display: none;
@@ -2177,7 +2181,10 @@ html[data-theme="day"] .site-footer-author {
   color: #1e4ebd;
 }
 html[data-theme="day"] .site-footer-mark {
-  filter: drop-shadow(0 2px 8px rgba(20, 24, 31, 0.18));
+  filter:
+    drop-shadow(0 0 6px rgba(47, 109, 255, 0.45))
+    drop-shadow(0 0 14px rgba(31, 94, 240, 0.28))
+    drop-shadow(0 3px 10px rgba(20, 24, 31, 0.18));
 }
 .site-footer-build {
   display: block;
