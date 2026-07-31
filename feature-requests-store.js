@@ -69,8 +69,18 @@ function createRequest({ text, author } = {}) {
   return item;
 }
 
+function listRequests({ status = null, limit = 50 } = {}) {
+  let rows = readStore().requests.slice();
+  if (status) {
+    const key = String(status).toLowerCase();
+    rows = rows.filter((r) => String(r.status || 'submitted').toLowerCase() === key);
+  }
+  return rows.slice(0, Math.max(1, Number(limit) || 50)).map(publicRequest);
+}
+
 module.exports = {
   createRequest,
+  listRequests,
   publicRequest,
   MAX_BODY
 };

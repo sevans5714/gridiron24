@@ -30,13 +30,29 @@
     { href: '/team-rosters.html', label: 'Team Rosters' },
     { href: '/rankings.html', label: 'Rankings' },
     { href: '/draft.html', label: 'Draft Results' },
-    { href: '/transactions.html', label: 'Transactions' },
-    { href: '/history.html', label: 'History' }
+    { href: '/transactions.html', label: 'Transactions' }
   ];
+
+  /** Same league options as GridIron, pointed at AAA destinations where pages differ. */
+  const AAA_LEAGUE_MENU = [
+    { href: '/my-roster.html', label: 'My Team' },
+    { href: '/aaa.html', label: 'Standings' },
+    { href: '/schedules.html', label: 'Schedules' },
+    { href: '/team-rosters.html', label: 'Team Rosters' },
+    { href: '/rankings.html', label: 'Rankings' },
+    { href: '/draft.html?conference=aaa', label: 'Draft Results' },
+    { href: '/transactions.html', label: 'Transactions' }
+  ];
+
+  /** Shared across both leagues: Members Lounge + Calendar. */
+  const SHARED_TOP = {
+    members: { href: '/members.html', label: 'Members Lounge', key: 'members' },
+    calendar: { href: '/calendar.html', label: 'Calendar', key: 'calendar' }
+  };
 
   const GRIDIRON_LINKS = [
     { href: HOME_DEFAULT, label: 'Home', key: 'home' },
-    { href: '/members.html', label: 'Members Lounge', key: 'members' },
+    SHARED_TOP.members,
     { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
     {
       href: '/standings.html',
@@ -44,22 +60,23 @@
       key: 'league',
       menu: LEAGUE_MENU
     },
-    { href: '/playoffs.html', label: 'Playoffs', key: 'playoffs' },
-    { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
+    { href: '/playoffs.html', label: 'Playoff Bracket', key: 'playoffs' },
+    SHARED_TOP.calendar,
     { href: '/rulebook.html', label: 'Rule Book', key: 'rulebook' }
   ];
 
   const AAA_LINKS = [
     { href: '/aaa.html', label: 'Home', key: 'home' },
-    { href: '/members.html', label: 'Members Lounge', key: 'members' },
-    { href: '/scoreboard', label: 'Scoreboard', key: 'scoreboard' },
+    SHARED_TOP.members,
+    { href: '/aaa-scoreboard', label: 'Scoreboard', key: 'scoreboard' },
     {
-      href: '/standings.html',
+      href: '/aaa.html',
       label: 'League',
       key: 'league',
-      menu: LEAGUE_MENU
+      menu: AAA_LEAGUE_MENU
     },
-    { href: '/calendar.html', label: 'Calendar', key: 'calendar' },
+    { href: '/aaa-playoffs.html', label: 'Playoff Bracket', key: 'playoffs' },
+    SHARED_TOP.calendar,
     { href: '/aaa-rulebook.html', label: 'Rule Book', key: 'rulebook' }
   ];
 
@@ -85,8 +102,14 @@
     if (active === 'aaa') {
       return 'home';
     }
+    if (active === 'aaa-playoffs') {
+      return 'playoffs';
+    }
     if (active === 'members') {
       return 'members';
+    }
+    if (active === 'aaa-scoreboard') {
+      return 'scoreboard';
     }
     return active;
   }
@@ -382,6 +405,9 @@
     if (ruleProposalVisible) {
       bits.push('<button type="button" class="rule-proposal-btn" id="rule-proposal-btn">Rule Change Proposal</button>');
     }
+    if (ruleProposalVisible && featureRequestVisible) {
+      bits.push('<span class="feature-request-divider" aria-hidden="true"></span>');
+    }
     if (featureRequestVisible) {
       bits.push('<button type="button" class="feature-request-btn" id="feature-request-btn">Feature Request</button>');
     }
@@ -414,7 +440,7 @@
     backdrop.innerHTML = `
       <div class="gi-modal" role="dialog" aria-modal="true" aria-labelledby="feature-request-title">
         <h2 id="feature-request-title">Feature Request</h2>
-        <p class="gi-modal-help">Tell us what you want on the platform. Requests go to league staff and the site owner.</p>
+        <p class="gi-modal-help">Tell us what you want on the platform. Requests go to the site owner’s inbox only.</p>
         <div class="gi-modal-err" id="feature-request-err"></div>
         <label class="field-label" for="feature-request-text">Your idea</label>
         <textarea id="feature-request-text" maxlength="4000" placeholder="Describe the feature you want…"></textarea>
@@ -446,7 +472,7 @@
         if (!res.ok || !data.ok) throw new Error(data.error || 'Could not submit request');
         closeFeatureRequestModal();
         await refreshInboxBadge();
-        window.alert('Feature request submitted. Staff will see it in their inbox.');
+        window.alert('Feature request submitted. The site owner will see it in their inbox.');
       } catch (e) {
         err.textContent = e.message || 'Could not submit';
         err.classList.add('show');
@@ -710,7 +736,7 @@
     } else {
       el.title = 'Switch to AAA League';
       el.setAttribute('aria-label', 'Switch to AAA League');
-      el.innerHTML = `<img src="/assets/aaa-league.png?v=3" alt="" width="44" height="44" decoding="async" />`;
+      el.innerHTML = `<img src="/assets/aaa-league-sm.png?v=6" alt="" width="44" height="44" decoding="async" />`;
       el.onclick = (e) => {
         e.preventDefault();
         switchLeague('aaa');
@@ -747,7 +773,7 @@
       </div>`;
 
     const topbar = document.querySelector('.topbar');
-    if (active === 'scoreboard') {
+    if (active === 'scoreboard' || active === 'aaa-scoreboard') {
       // Scoreboard uses its own Fantasy Leaders ticker only.
       return null;
     }

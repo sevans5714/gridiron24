@@ -188,6 +188,105 @@ function deleteMessage(messageId, userId) {
   return true;
 }
 
+/** Keep one digest row per relatedId (fingerprint). Clears the row when subject/body are empty. */
+function upsertDigest({
+  toUserId,
+  digestKey,
+  subject = null,
+  body = null,
+  type = 'general',
+  fingerprint = '',
+  meta = {}
+} = {}) {
+  if (!toUserId || !digestKey) return null;
+  const store = readStore();
+  const idx = store.messages.findIndex(
+    (m) => m.toUserId === toUserId && m.relatedId === digestKey && m.meta?.digest
+  );
+  const cleanSubject = String(subject || '').trim();
+  const cleanBody = String(body || '').trim();
+  if (!cleanSubject || !cleanBody) {
+    if (idx >= 0) {
+      store.messages.splice(idx, 1);
+      writeStore(store);
+    }
+    return null;
+  }
+  const nextMeta = {
+    ...(meta && typeof meta === 'object' ? meta : {}),
+    digest: true,
+    fingerprint: String(fingerprint || ''),
+    updatedAt: new Date().toISOString()
+  };
+  if (idx >= 0) {
+    const existing = store.messages[idx];
+    const same = String(existing.meta?.fingerprint || '') === nextMeta.fingerprint
+      && existing.subject === cleanSubject
+      && existing.body === cleanBody;
+    existing.subject = cleanSubject;
+    existing.body = cleanBody;
+    existing.type = String(type || existing.type || 'general');
+    existing.meta = { ...existing.meta, ...nextMeta };
+    if (!same) {
+      existing.readAt = null;
+      // Bump to top when content changes.
+      store.messages.splice(idx, 1);
+      store.messages.unshift(existing);
+    }
+    writeStore(store);
+    return publicMessage(existing);
+  }
+  const id = crypto.randomUUID();
+  const item = {
+    id,
+    toUserId,
+    fromUserId: null,
+    fromName: 'System',
+    subject: cleanSubject,
+    body: cleanBody,
+    type: String(type || 'general'),
+    relatedId: digestKey,
+    threadId: id,
+    inReplyTo: null,
+    meta: nextMeta,
+    readAt: null,
+    createdAt: new Date().toISOString()
+  };
+  store.messages.unshift(item);
+  if (store.messages.length > MAX_MESSAGES) {
+    store.messages = store.messages.slice(0, MAX_MESSAGES);
+  }
+  writeStore(store);
+  return publicMessage(item);
+}
+
+/** Create a message only if this user does not already have one for relatedId (+ optional type). */
+function ensureRelatedMessage({
+  toUserId,
+  relatedId,
+  subject,
+  body,
+  type = 'general',
+  meta = {}
+} = {}) {
+  if (!toUserId || !relatedId) return null;
+  const store = readStore();
+  const existing = store.messages.find(
+    (m) => m.toUserId === toUserId
+      && m.relatedId === relatedId
+      && (!type || m.type === type)
+  );
+  if (existing) return publicMessage(existing);
+  return sendMessage({
+    toUserId,
+    subject,
+    body,
+    type,
+    relatedId,
+    meta
+  });
+}
+
 module.exports = {
   sendMessage,
   sendToUsers,
@@ -197,5 +296,7 @@ module.exports = {
   markRead,
   markAllRead,
   deleteMessage,
+  upsertDigest,
+  ensureRelatedMessage,
   publicMessage
 };

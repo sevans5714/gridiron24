@@ -8,12 +8,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     .tx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .tx-grid:has(> :only-child) { grid-template-columns: 1fr; max-width: 40rem; }
     .conf-title { display:flex; align-items:center; gap:0.65rem; margin-bottom:0.85rem; padding-bottom:0.5rem; border-bottom:2px solid rgba(255,255,255,0.12); }
     .conf-title.detail { border-bottom-color: rgba(255,122,24,0.55); color: var(--detail); }
     .conf-title.overtime { border-bottom-color: rgba(226,35,42,0.55); color: var(--overtime); }
+    .conf-title.aaa { border-bottom-color: rgba(126,200,255,0.55); color: #7ec8ff; }
     .conf-title img { width: 3rem; }
     .conf-title h2 { margin:0; font-family:var(--display); letter-spacing:0.05em; text-transform:uppercase; font-size:1.1rem; }
     .tx { padding: 0.75rem 0; border-bottom: 1px solid var(--line); }
@@ -42,7 +44,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const esc = (v='') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     function fmtWhen(iso) {

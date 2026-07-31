@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Playoff Bracket · AAA League</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=131" />
+  <style>
+    .tree { display: flex; flex-direction: column; gap: 1.35rem; }
+
+    .conf-tree {
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 35%),
+        var(--panel);
+      overflow: hidden;
+      min-width: 0;
+      border-top: 3px solid #5b8cff;
+      box-shadow: inset 0 0 60px rgba(91, 140, 255, 0.06);
+    }
+
+    .conf-head {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+      font-family: var(--display);
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-weight: 600;
+      line-height: 1.2;
+      color: #9eb8ff;
+    }
+    .conf-head img {
+      width: clamp(3.5rem, 10vw, 5rem);
+      height: auto;
+      box-shadow: var(--logo-lift);
+    }
+    .conf-head .wk {
+      margin-left: auto;
+      color: var(--muted);
+      font-family: var(--body);
+      font-size: var(--fs-xs);
+      font-weight: 500;
+      text-transform: none;
+      white-space: nowrap;
+    }
+    .format-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .rounds {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr 0.95fr;
+      gap: 0;
+      padding: 1.35rem 0.55rem 1.2rem;
+      min-height: 28rem;
+    }
+    .rounds.is-eight {
+      grid-template-columns: 1.2fr 1fr 0.95fr;
+    }
+
+    .round-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      gap: 0.65rem;
+      padding: 0 0.4rem;
+      position: relative;
+    }
+    .round-col + .round-col { border-left: 1px dashed rgba(255,255,255,0.08); }
+    .round-col.finale-col { justify-content: center; gap: 1.1rem; }
+
+    .round-label {
+      position: absolute;
+      top: -0.2rem;
+      left: 0.35rem;
+      right: 0.35rem;
+      text-align: center;
+      font-family: var(--body);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.25;
+    }
+
+    .slot {
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(165deg, rgba(255,255,255,0.05), transparent 42%),
+        linear-gradient(180deg, var(--panel-2), var(--panel));
+      padding: 0.45rem 0.5rem;
+      position: relative;
+    }
+    .slot.is-live {
+      border-color: rgba(61, 220, 132, 0.4);
+      box-shadow: 0 0 0 1px rgba(61, 220, 132, 0.12), 0 0 22px rgba(61, 220, 132, 0.1);
+    }
+    .slot.bye {
+      border-style: dashed;
+      opacity: 0.88;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 60%), transparent;
+    }
+    .slot.title-slot,
+    .slot.third-slot {
+      border: 0;
+      background: transparent;
+      padding: 0.25rem 0.15rem;
+      text-align: center;
+    }
+
+    .trophy-mark {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 0.55rem;
+      padding: 0.55rem 0.35rem 0.35rem;
+      width: 100%;
+      max-width: 11rem;
+      border-radius: 0.35rem;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(91,140,255,0.2), transparent 70%),
+        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(0,0,0,0.4), transparent 55%);
+    }
+    .slot.third-slot .trophy-mark { max-width: 9.5rem; }
+    .trophy-mark img {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
+    }
+
+    .mu { display: grid; gap: 0.2rem; }
+    .mu-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+      margin-bottom: 0.15rem;
+      padding: 0 0.1rem;
+    }
+    .mu-label {
+      font-family: var(--body);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .mu-status {
+      font-family: var(--body);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .mu-status.is-live { color: #3ddc84; }
+    .mu-status.is-final { color: var(--text); opacity: 0.72; }
+
+    .mu-row {
+      display: grid;
+      grid-template-columns: 1.35rem 1.7rem minmax(0, 1fr) auto;
+      gap: 0.4rem;
+      align-items: center;
+      min-height: 2.05rem;
+      padding: 0.28rem 0.35rem;
+      border-radius: 0.2rem;
+      background: rgba(0, 0, 0, 0.18);
+    }
+    .mu-row.is-winner {
+      background: linear-gradient(90deg, rgba(61, 220, 132, 0.16), rgba(61, 220, 132, 0.04));
+      box-shadow: inset 2px 0 0 #3ddc84;
+    }
+    .mu-row.is-loser { opacity: 0.48; }
+    .mu-row.is-bye { background: rgba(255, 255, 255, 0.03); }
+    .mu-seed {
+      font-family: var(--display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+    }
+    .mu-logo {
+      width: 1.7rem;
+      height: 1.7rem;
+      object-fit: contain;
+    }
+    .mu-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.78rem;
+      font-weight: 650;
+      color: var(--text);
+    }
+    .mu-score {
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      min-width: 2.4rem;
+      text-align: right;
+    }
+    .mu-score.is-empty { color: var(--muted); font-size: 0.8rem; }
+    .mu-await {
+      padding: 0.55rem 0.4rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+    .mu-await strong {
+      display: block;
+      margin-bottom: 0.15rem;
+      font-family: var(--display);
+      font-size: 0.88rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .mid {
+      display: grid;
+      width: 100%;
+      max-width: min(52rem, 100%);
+      margin: 1.25rem auto 0;
+      gap: 1rem;
+    }
+    .finale-stage-label {
+      margin: 0;
+      text-align: center;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .bowl {
+      position: relative;
+      border: 1px solid rgba(91, 140, 255, 0.5);
+      border-radius: 0.35rem;
+      background:
+        radial-gradient(ellipse 90% 70% at 50% 0%, rgba(91,140,255,0.35), transparent 58%),
+        linear-gradient(180deg, #070d18 0%, #0c1424 42%, var(--panel) 100%);
+      text-align: center;
+      padding: 1.25rem 1.15rem 1.4rem;
+      overflow: hidden;
+      box-shadow: 0 22px 56px rgba(0, 0, 0, 0.35), inset 0 0 80px rgba(91, 140, 255, 0.1);
+    }
+    .bowl-mark {
+      width: min(100%, 18rem);
+      margin: 0 auto 0.85rem;
+      padding: 0.35rem;
+      background: radial-gradient(ellipse 55% 50% at 50% 48%, rgba(91,140,255,0.35), transparent 68%);
+    }
+    .bowl-mark img {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 14px 28px rgba(40, 90, 200, 0.4));
+    }
+    .bowl-scoreboard {
+      width: 100%;
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: 0.9rem 0.75rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      gap: 0.75rem 1rem;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.35rem;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.18));
+    }
+    .bowl-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      min-width: 0;
+    }
+    .bowl-side img {
+      width: 4.5rem;
+      height: 4.5rem;
+      object-fit: contain;
+    }
+    .bowl-side .nm {
+      font-family: var(--display);
+      font-size: clamp(0.95rem, 1.7vw, 1.15rem);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text);
+      text-align: center;
+      word-break: break-word;
+    }
+    .bowl-side .pts {
+      font-family: var(--display);
+      font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-height: 1.1em;
+    }
+    .bowl-side .pts:empty::before { content: "—"; color: var(--muted); font-size: 0.85em; }
+    .bowl-mid .vs {
+      font-family: var(--display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: #9eb8ff;
+    }
+
+    html[data-theme="day"] .conf-tree {
+      box-shadow: inset 0 0 40px rgba(47, 109, 255, 0.06);
+    }
+    html[data-theme="day"] .mu-row { background: rgba(20, 28, 40, 0.05); }
+    html[data-theme="day"] .bowl {
+      background:
+        radial-gradient(ellipse 80% 55% at 50% 18%, rgba(47,109,255,0.14), transparent 58%),
+        linear-gradient(180deg, #eef3fb 0%, var(--panel) 70%);
+    }
+    html[data-theme="day"] .bowl-mid .vs { color: #2f6dff; }
+
+    @media (max-width: 900px) {
+      .rounds { grid-template-columns: 1fr; min-height: 0; }
+      .round-col {
+        border-left: 0 !important;
+        border-top: 1px dashed rgba(255,255,255,0.08);
+        padding-top: 1.5rem;
+      }
+      .round-col:first-child { border-top: 0; }
+      .bowl-scoreboard { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-page="aaa-playoffs">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated"><span class="live">●</span>AAA playoffs</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell reveal">
+    <p class="eyebrow">AAA League</p>
+    <h1>Playoff Bracket</h1>
+    <p class="format-note" id="format-note">12 teams · top 6 make the playoffs</p>
+  </section>
+
+  <main class="page-main shell">
+    <div class="tree" id="live-tree">
+      <div class="msg">Loading AAA bracket…</div>
+    </div>
+  </main>
+
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=94"></script>
+  <script>
+    const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
+    const AAA_MARK = '/assets/aaa-league.png?v=6';
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    function fmt(n) {
+      if (n == null || Number.isNaN(Number(n))) return '—';
+      return Number(n).toFixed(1);
+    }
+
+    function seedName(s) {
+      if (!s) return 'TBD';
+      return s.name;
+    }
+
+    function statusLabel(status) {
+      if (status === 'final') return 'Final';
+      if (status === 'live') return 'Live';
+      return 'Upcoming';
+    }
+
+    function teamRow(side, opts = {}) {
+      const winner = opts.winner;
+      const decided = winner === 'HOME' || winner === 'AWAY';
+      const isAway = opts.role === 'away';
+      const isWinner = decided && ((isAway && winner === 'AWAY') || (!isAway && winner === 'HOME'));
+      const isLoser = decided && !isWinner;
+      const seed = side?.seed || opts.seed || null;
+      const score = side?.score;
+      const hasScore = score != null && !(Number(score) === 0 && opts.status === 'upcoming');
+      const cls = [
+        'mu-row',
+        opts.bye ? 'is-bye' : '',
+        isWinner ? 'is-winner' : '',
+        isLoser ? 'is-loser' : ''
+      ].filter(Boolean).join(' ');
+      return `
+        <div class="${cls}">
+          <span class="mu-seed">${seed ? `#${esc(seed)}` : '·'}</span>
+          <img class="mu-logo" src="${esc(side?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
+          <span class="mu-name">${esc(side?.name || opts.fallbackName || 'TBD')}</span>
+          <span class="mu-score${hasScore ? '' : ' is-empty'}">${hasScore ? fmt(score) : '—'}</span>
+        </div>`;
+    }
+
+    function gameSlot(game, fallback) {
+      if (!game?.home && !game?.away) {
+        return `
+          <div class="slot">
+            <div class="mu">
+              <div class="mu-await"><strong>${esc(fallback)}</strong>Awaiting matchup</div>
+            </div>
+          </div>`;
+      }
+      const status = game.status || 'upcoming';
+      return `
+        <div class="slot${status === 'live' ? ' is-live' : ''}">
+          <div class="mu">
+            <div class="mu-head">
+              <span class="mu-label">${esc(game.label || fallback)}</span>
+              <span class="mu-status ${status === 'live' ? 'is-live' : status === 'final' ? 'is-final' : ''}">${esc(statusLabel(status))}</span>
+            </div>
+            ${teamRow(game.away, { role: 'away', winner: game.winner, status })}
+            ${teamRow(game.home, { role: 'home', winner: game.winner, status })}
+          </div>
+        </div>`;
+    }
+
+    function byeSlot(seed) {
+      return `
+        <div class="slot bye">
+          <div class="mu">
+            <div class="mu-head">
+              <span class="mu-label">Bye</span>
+              <span class="mu-status">Week 14</span>
+            </div>
+            ${teamRow(seed, { bye: true, seed: seed?.seed, fallbackName: seedName(seed), status: 'upcoming' })}
+          </div>
+        </div>`;
+    }
+
+    function trophyGame(game, alt, slotClass) {
+      const hasTeams = Boolean(game?.home || game?.away);
+      const status = game?.status || 'upcoming';
+      return `
+        <div class="slot ${slotClass}">
+          <div class="trophy-mark">
+            <img src="${AAA_MARK}" alt="${esc(alt)}" />
+          </div>
+          <span class="sr-only">${esc(alt)}</span>
+          ${hasTeams ? `
+            <div class="mu">
+              <div class="mu-head">
+                <span class="mu-label">${esc(game.label || alt)}</span>
+                <span class="mu-status ${status === 'live' ? 'is-live' : status === 'final' ? 'is-final' : ''}">${esc(statusLabel(status))}</span>
+              </div>
+              ${teamRow(game.away, { role: 'away', winner: game.winner, status })}
+              ${teamRow(game.home, { role: 'home', winner: game.winner, status })}
+            </div>` : ''}
+        </div>`;
+    }
+
+    function wildCardCol(wc, format) {
+      if (format === 'eight') {
+        return `
+          <div class="round-col">
+            <div class="round-label">${esc(wc.label || 'Week 14 · Round of 8')}</div>
+            ${(wc.games || []).map((g, i) => gameSlot(g, g?.label || `Game ${i + 1}`)).join('')}
+          </div>`;
+      }
+      if (format === 'five') {
+        return `
+          <div class="round-col">
+            <div class="round-label">${esc(wc.label || 'Week 14 · Wild Card')}</div>
+            ${byeSlot(wc.bye1)}
+            ${gameSlot(wc.game45, '#4 vs #5')}
+            ${gameSlot(wc.game23, '#2 vs #3')}
+          </div>`;
+      }
+      return `
+        <div class="round-col">
+          <div class="round-label">${esc(wc.label || 'Week 14 · Wild Card')}</div>
+          ${byeSlot(wc.bye1)}
+          ${gameSlot(wc.game45, '#4 vs #5')}
+          ${gameSlot(wc.game36, '#3 vs #6')}
+          ${byeSlot(wc.bye2)}
+        </div>`;
+    }
+
+    function bracketTree(data) {
+      const rounds = data.rounds || {};
+      const format = rounds.format || 'six';
+      const wc = rounds.wildCard || {};
+      const semis = rounds.semifinals?.games || [];
+      const finals = rounds.finals || {};
+      const slots = data.playoffSlots || 6;
+      return `
+        <section class="conf-tree">
+          <div class="conf-head">
+            ${data.logo ? `<span class="conf-mark"><img src="${esc(data.logo)}" alt="" /></span>` : ''}
+            ${esc(data.name || 'AAA League')}
+            <span class="wk">${esc(String(data.teamCount || 12))} teams · top ${esc(String(slots))} in</span>
+          </div>
+          <div class="rounds${format === 'eight' ? ' is-eight' : ''}">
+            ${wildCardCol(wc, format)}
+            <div class="round-col">
+              <div class="round-label">${esc(rounds.semifinals?.label || 'Week 15 · Semifinals')}</div>
+              ${gameSlot(semis[0], 'Semifinal 1')}
+              ${gameSlot(semis[1], 'Semifinal 2')}
+            </div>
+            <div class="round-col finale-col">
+              <div class="round-label">${esc(finals.label || 'Week 16 · Title + 3rd')}</div>
+              ${trophyGame(finals.title, 'AAA Championship', 'title-slot')}
+              ${trophyGame(finals.third, 'Third Place', 'third-slot')}
+            </div>
+          </div>
+        </section>`;
+    }
+
+    function superBowlBlock(game) {
+      const status = game?.status || 'upcoming';
+      const away = game?.away;
+      const home = game?.home;
+      return `
+        <div class="mid" aria-label="AAA Super Bowl">
+          <p class="finale-stage-label">AAA Super Bowl</p>
+          <div class="bowl">
+            <div class="bowl-mark">
+              <img src="${AAA_MARK}" alt="AAA League" width="256" height="256" />
+            </div>
+            <div class="bowl-scoreboard">
+              <div class="bowl-side">
+                <img src="${esc(away?.logo || PLACEHOLDER)}" alt="" />
+                <div class="nm">${esc(away?.name || 'Finalist')}</div>
+                <div class="pts">${away?.score != null && status !== 'upcoming' ? fmt(away.score) : ''}</div>
+              </div>
+              <div class="bowl-mid"><div class="vs">${esc(statusLabel(status) === 'Upcoming' ? 'VS' : statusLabel(status))}</div></div>
+              <div class="bowl-side">
+                <img src="${esc(home?.logo || PLACEHOLDER)}" alt="" />
+                <div class="nm">${esc(home?.name || 'Finalist')}</div>
+                <div class="pts">${home?.score != null && status !== 'upcoming' ? fmt(home.score) : ''}</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    async function loadBracket() {
+      try {
+        const res = await fetch('/api/aaa/playoffs', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        const slots = data.playoffSlots || 6;
+        const count = data.teamCount || 12;
+        const note = document.getElementById('format-note');
+        if (note) {
+          note.textContent = data.ok
+            ? `${count} teams · top ${slots} make the playoffs`
+            : (data.formatNote || 'AAA playoff bracket');
+        }
+        if (!data.ok && !data.rounds) {
+          document.getElementById('live-tree').innerHTML = `<div class="msg">${esc(data.error || 'AAA bracket unavailable')}</div>`;
+          window.GridIronNav?.setSync('AAA bracket error', false);
+          return;
+        }
+        document.getElementById('live-tree').innerHTML = `
+          ${bracketTree(data)}
+          ${superBowlBlock(data.superBowl)}
+        `;
+        const t = new Date(data.generatedAt || Date.now());
+        window.GridIronNav?.setSync(`AAA bracket · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        document.getElementById('live-tree').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+        window.GridIronNav?.setSync('AAA bracket error', false);
+      }
+    }
+
+    loadBracket();
+    setInterval(loadBracket, 30_000);
+  </script>
+</body>
+</html>

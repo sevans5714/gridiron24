@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Playoff Tree · GridIron 24</title>
+  <title>Playoff Bracket · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     .tree {
       display: flex;
@@ -355,77 +355,87 @@
     }
 
     .mid {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: 1fr;
       width: 100%;
-      max-width: 52rem;
-      margin: 0.35rem auto 0;
-      gap: 1rem;
+      max-width: min(68rem, 100%);
+      margin: 1.25rem auto 0;
+      gap: 1.35rem;
+    }
+    .finale-stage-label {
+      margin: 0.15rem 0 0;
+      text-align: center;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
     }
 
     .bowl {
       position: relative;
-      border: 1px solid rgba(47, 109, 255, 0.42);
+      border: 1px solid rgba(47, 109, 255, 0.5);
+      border-radius: 0.35rem;
       background:
-        radial-gradient(ellipse 80% 55% at 50% 18%, rgba(47,109,255,0.28), transparent 58%),
-        radial-gradient(ellipse 60% 40% at 50% 100%, rgba(8, 20, 48, 0.55), transparent 60%),
-        linear-gradient(180deg, #0c1424 0%, var(--panel) 70%);
+        radial-gradient(ellipse 90% 70% at 50% 0%, rgba(47,109,255,0.38), transparent 58%),
+        radial-gradient(ellipse 70% 50% at 50% 100%, rgba(8, 20, 48, 0.65), transparent 60%),
+        linear-gradient(180deg, #070d18 0%, #0c1424 42%, var(--panel) 100%);
       text-align: center;
-      padding: 1.25rem 1.15rem 1.35rem;
+      padding: 1.35rem 1.25rem 1.5rem;
       min-height: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(47, 109, 255, 0.18),
+        0 22px 56px rgba(0, 0, 0, 0.35),
+        inset 0 0 80px rgba(47, 109, 255, 0.1);
       animation: bowl-glow 3.5s ease-in-out infinite;
     }
 
     @keyframes bowl-glow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(47,109,255,0.12), inset 0 0 40px rgba(47,109,255,0.08); }
-      50% { box-shadow: 0 0 32px 0 rgba(47,109,255,0.26), inset 0 0 55px rgba(47,109,255,0.14); }
+      0%, 100% { box-shadow: 0 0 0 1px rgba(47,109,255,0.18), 0 18px 48px rgba(0,0,0,0.32), inset 0 0 70px rgba(47,109,255,0.08); }
+      50% { box-shadow: 0 0 0 1px rgba(100,150,255,0.35), 0 26px 64px rgba(20,60,160,0.28), inset 0 0 90px rgba(47,109,255,0.16); }
     }
 
     .bowl .eyebrow {
-      font-family: var(--body);
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #8eb6ff;
-      margin-bottom: 0.35rem;
+      display: none;
     }
 
     .bowl-mark {
       position: relative;
-      width: min(100%, 22rem);
+      width: min(100%, 40rem);
       margin: 0 auto;
-      padding: 0.4rem 0.5rem 0.15rem;
+      padding: 0.25rem 0.35rem 0.45rem;
       background:
-        radial-gradient(ellipse 55% 45% at 50% 48%, rgba(70, 130, 255, 0.35), transparent 68%),
-        radial-gradient(ellipse 90% 70% at 50% 100%, rgba(0, 0, 0, 0.5), transparent 55%);
+        radial-gradient(ellipse 55% 50% at 50% 48%, rgba(70, 130, 255, 0.42), transparent 68%),
+        radial-gradient(ellipse 90% 70% at 50% 100%, rgba(0, 0, 0, 0.55), transparent 55%);
     }
     .bowl-mark img {
       width: 100%;
       height: auto;
-      max-height: 13.5rem;
+      max-height: none;
       object-fit: contain;
       display: block;
       margin: 0 auto;
-      filter: drop-shadow(0 14px 32px rgba(20, 80, 200, 0.4));
+      filter: drop-shadow(0 18px 40px rgba(20, 80, 200, 0.45));
     }
 
     .bowl-scoreboard {
       width: 100%;
-      margin-top: 0.85rem;
-      padding: 0.85rem 0.65rem 0.75rem;
+      max-width: 44rem;
+      margin-top: 1rem;
+      padding: 1rem 0.85rem 0.9rem;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      gap: 0.85rem 1.1rem;
+      gap: 0.85rem 1.25rem;
       align-items: center;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 70%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.35rem;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.18));
     }
     .bowl-side {
       display: flex;
@@ -463,8 +473,8 @@
     }
     .bowl-side img,
     .bowl-side img.bowl-logo {
-      width: 4.75rem;
-      height: 4.75rem;
+      width: 5.5rem;
+      height: 5.5rem;
       object-fit: contain;
       flex: 0 0 auto;
       filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4));
@@ -520,18 +530,17 @@
       display: none;
     }
     .bowl.survival {
-      border-color: rgba(120, 180, 255, 0.38);
+      border-color: rgba(120, 180, 255, 0.45);
       background:
-        radial-gradient(ellipse 70% 50% at 50% 18%, rgba(60, 140, 255, 0.3), transparent 58%),
-        radial-gradient(ellipse 90% 55% at 50% 100%, rgba(8, 24, 56, 0.6), transparent 55%),
-        linear-gradient(180deg, #081018 0%, var(--panel) 72%);
+        radial-gradient(ellipse 90% 70% at 50% 0%, rgba(60, 140, 255, 0.32), transparent 58%),
+        radial-gradient(ellipse 70% 50% at 50% 100%, rgba(8, 24, 56, 0.65), transparent 60%),
+        linear-gradient(180deg, #070d18 0%, #0a1528 42%, var(--panel) 100%);
       animation: survival-glow 3.5s ease-in-out infinite;
     }
     @keyframes survival-glow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(80, 160, 255, 0.1), inset 0 0 48px rgba(30, 90, 200, 0.08); }
-      50% { box-shadow: 0 0 28px 0 rgba(80, 160, 255, 0.22), inset 0 0 60px rgba(40, 120, 255, 0.14); }
+      0%, 100% { box-shadow: 0 0 0 1px rgba(80,160,255,0.16), 0 18px 48px rgba(0,0,0,0.32), inset 0 0 70px rgba(30,90,200,0.08); }
+      50% { box-shadow: 0 0 0 1px rgba(120,180,255,0.35), 0 26px 64px rgba(30,90,200,0.26), inset 0 0 90px rgba(40,120,255,0.14); }
     }
-    .bowl.survival .eyebrow { color: #9ec4ff; }
     .bowl.survival .bowl-mid .vs { color: #9ec4ff; }
     .bowl.survival .bowl-side.is-lead {
       background: rgba(80, 160, 255, 0.1);
@@ -557,11 +566,11 @@
         radial-gradient(ellipse 80% 55% at 50% 18%, rgba(47,109,255,0.14), transparent 58%),
         linear-gradient(180deg, #eef3fb 0%, var(--panel) 70%);
     }
-    html[data-theme="day"] .bowl .eyebrow,
-    html[data-theme="day"] .bowl.survival .eyebrow,
+    html[data-theme="day"] .finale-stage-label { color: #5a6a80; }
     html[data-theme="day"] .bowl-mid .vs { color: #2f6dff; }
     html[data-theme="day"] .bowl-scoreboard {
-      border-top-color: rgba(20, 28, 40, 0.1);
+      border-color: rgba(20, 28, 40, 0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
     }
     html[data-theme="day"] .trophy-mark,
     html[data-theme="day"] .bowl-mark {
@@ -622,7 +631,7 @@
   </header>
 
   <section class="page-hero shell reveal">
-    <h1>Playoff Tree</h1>
+    <h1>Playoff Bracket</h1>
   </section>
 
   <main class="page-main shell">
@@ -635,7 +644,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -783,11 +792,11 @@
 
     function bowlBlock() {
       return `
-        <div class="mid">
+        <div class="mid" aria-label="Week 17 championship stage">
+          <p class="finale-stage-label">Week 17 · Championship Stage</p>
           <div class="bowl" id="bowl-card">
-            <div class="eyebrow">Week 17 · Championship</div>
             <div class="bowl-mark">
-              <img src="/assets/gridiron-bowl.png?v=3" alt="GridIron Bowl I" width="1024" height="682" />
+              <img src="/assets/gridiron-bowl.png?v=5" alt="GridIron Bowl I" width="1024" height="682" />
             </div>
             <div class="bowl-scoreboard" id="bowl-scoreboard">
               <div class="bowl-side detail">
@@ -809,11 +818,10 @@
             </div>
           </div>
           <div class="bowl survival" id="survival-card">
-            <div class="eyebrow" id="survival-week">Week 17 · Mayor's Cup</div>
             <div class="bowl-mark">
-              <img src="/assets/mayors-cup.png?v=4" alt="Mayor's Cup" width="1024" height="768" />
+              <img src="/assets/mayors-cup.png?v=5" alt="Mayor's Cup" width="1024" height="768" />
             </div>
-            <div class="bowl-scoreboard" id="survival-scoreboard">
+            <div class="bowl-scoreboard" id="survival-scoreboard" data-week-label="Week 17 · Mayor's Cup">
               <div class="bowl-side detail">
                 <span class="conf-chip">Detail</span>
                 <img class="bowl-logo" id="survival-detail-logo" src="/assets/team-logo-placeholder.svg" alt="" />
@@ -876,8 +884,6 @@
       if (card) card.hidden = false;
       const logo = card.querySelector('.bowl-mark img');
       if (logo && data.name) logo.alt = data.name;
-      const week = document.getElementById('survival-week');
-      if (week) week.textContent = `Week ${data.week || 17} · ${data.name || "Mayor's Cup"}`;
       fillSurvivalSide('detail', data.detail, data.leader === 'detail' || data.leader === 'tie');
       fillSurvivalSide('overtime', data.overtime, data.leader === 'overtime' || data.leader === 'tie');
     }
@@ -898,10 +904,10 @@
         applyBowl(data.bowl);
         applySurvival(data.survival);
         const t = new Date(data.generatedAt);
-        window.GridIronNav?.setSync(`Playoffs sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+        window.GridIronNav?.setSync(`Bracket sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
         document.getElementById('live-tree').innerHTML = `<div class="msg" style="grid-column:1/-1;">${esc(err.message)}</div>`;
-        window.GridIronNav?.setSync('Playoffs sync error', false);
+        window.GridIronNav?.setSync('Bracket sync error', false);
       }
     }
 

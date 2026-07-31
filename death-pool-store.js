@@ -487,6 +487,144 @@ function joinPool(user, poolId) {
   return { ok: true, pool: publicPool(pool, user.id), joined: true };
 }
 
+function assignMember(user, body = {}) {
+  const poolId = String(body.poolId || '').trim();
+  const targetId = String(body.userId || '').trim();
+  const targetName = String(body.name || '').trim().slice(0, 80) || 'Member';
+  if (!targetId) throw err(400, 'Pick a member to assign');
+
+  const store = readStore();
+  const pool = store.pools.find((p) => p.id === poolId);
+  if (!pool) throw err(404, 'Pool not found');
+  requireCreator(pool, user);
+
+  const at = nowMs();
+  settleExpiredAuctions(pool, at);
+  refreshPoolStatus(pool, at);
+  if (pool.status === 'ended') throw err(400, 'This pool has ended');
+  if (pool.status !== 'open') throw err(400, 'Joining is closed for this pool');
+
+  const draft = ensureDraft(pool);
+  if (normalizeMode(pool.mode) === 'draft' && draft.status === 'active') {
+    throw err(400, 'Draft already started — cannot add members');
+  }
+
+  if ((pool.members || []).some((m) => m.userId === targetId)) {
+    return { ok: true, pool: publicPool(pool, user.id), alreadyJoined: true };
+  }
+
+  const member = {
+    userId: targetId,
+    name: targetName,
+    bankroll: Number(pool.startingCash) || 1000,
+    spent: 0,
+    joinedAt: new Date().toISOString(),
+    assignedBy: { userId: user.id, name: user.name || user.loginName || 'Member' }
+  };
+  pool.members.push(member);
+
+  if (normalizeMode(pool.mode) === 'draft' && draft.status === 'setup') {
+    if (!draft.order.some((o) => o.userId === targetId)) {
+      draft.order.push({ userId: member.userId, name: member.name });
+    }
+  }
+
+  writeStore(store);
+  return { ok: true, pool: publicPool(pool, user.id), assigned: true, member: publicMember(member, pool, user.id) };
+}
+
+function importNoms(user, body = {}) {
+  const poolId = String(body.poolId || '').trim();
+  const store = readStore();
+  const pool = store.pools.find((p) => p.id === poolId);
+  if (!pool) throw err(404, 'Pool not found');
+  requireCreator(pool, user);
+
+  const at = nowMs();
+  settleExpiredAuctions(pool, at);
+  refreshPoolStatus(pool, at);
+  if (pool.status === 'ended') throw err(400, 'This pool has ended');
+  if (pool.status !== 'open') throw err(400, 'Pool is locked');
+
+  const member = (pool.members || []).find((m) => m.userId === user.id);
+  if (!member) throw err(403, 'Join the pool before importing');
+
+  const mode = normalizeMode(pool.mode);
+  if (mode === 'draft') {
+    throw err(400, 'Import is for auction pools — use the draft once it starts');
+  }
+
+  let items = Array.isArray(body.items) ? body.items : null;
+  if (!items && body.text) {
+    items = String(body.text)
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const parts = line.split(/[|,;\t]/).map((p) => p.trim()).filter(Boolean);
+        return { name: parts[0], category: parts[1] || 'Custom' };
+      });
+  }
+  if (!items || !items.length) throw err(400, 'Paste names (one per line) or upload a list');
+
+  const hours = clampNum(
+    body.auctionHours != null ? body.auctionHours : pool.auctionHours,
+    MIN_AUCTION_HOURS,
+    MAX_AUCTION_HOURS,
+    DEFAULT_AUCTION_HOURS
+  );
+  const openNow = body.openAuctions !== false && body.openAuctions !== 'false';
+  let added = 0;
+  const skipped = [];
+  pool.noms = pool.noms || [];
+
+  for (const raw of items.slice(0, 100)) {
+    if (pool.noms.length >= MAX_NOMS_PER_POOL) break;
+    let name;
+    let category;
+    let figureId = null;
+    try {
+      ({ name, category, figureId } = resolveName(
+        typeof raw === 'string' ? { name: raw } : raw
+      ));
+    } catch {
+      skipped.push(String(raw?.name || raw || '').slice(0, 40));
+      continue;
+    }
+    const key = nameKey(name);
+    if (pool.noms.some((n) => nameKey(n.name) === key && n.status !== 'unsold')) {
+      skipped.push(name);
+      continue;
+    }
+    const nom = {
+      id: crypto.randomUUID(),
+      name,
+      category,
+      figureId,
+      nominatedBy: { userId: user.id, name: member.name },
+      nominatedAt: new Date(at).toISOString(),
+      auctionEndsAt: openNow ? new Date(at + hours * 3600000).toISOString() : null,
+      status: openNow ? 'auction' : 'listed',
+      bids: [],
+      ownerId: null,
+      ownerName: null,
+      winningBid: null,
+      draftPick: null,
+      soldAt: null
+    };
+    pool.noms.push(nom);
+    added += 1;
+  }
+
+  writeStore(store);
+  return {
+    ok: true,
+    pool: publicPool(pool, user.id),
+    imported: added,
+    skipped: skipped.slice(0, 20)
+  };
+}
+
 function requireCreator(pool, user) {
   if (pool.createdBy?.userId !== user.id) {
     throw err(403, 'Only the pool creator can do that');
@@ -779,6 +917,8 @@ module.exports = {
   getPool,
   createPool,
   joinPool,
+  assignMember,
+  importNoms,
   nominate,
   placeBid,
   markDeceased,

@@ -69,13 +69,13 @@ module.exports = {
       shortName: 'AAA',
       espnLeagueId: 529121946,
       role: 'feeder',
-      logo: '/assets/aaa-league.png?v=3',
+      logo: '/assets/aaa-league.png?v=6',
       payouts: {
         seasonLabel: '2026 AAA Season',
         buyInPerTeam: 50,
         teamCountMin: 10,
         teamCountMax: 14,
-        teamCount: null,
+        teamCount: 12,
         currency: 'USD',
         notes: 'AAA is a separate league with its own league admin, draft, and player pool. Roster size is set by interest (10–14 franchises). Buy-in is $50 per franchise; the prize pool equals $50 × final roster ($500–$700). Award amounts below assume a 12-team field and may be adjusted when the roster locks. Scoring/lineup settings mirror GridIron 24. Champion promotes to GridIron 24 next season (display / commissioner-administered).',
         prizes: [

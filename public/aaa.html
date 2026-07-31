@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     body[data-page="aaa"] {
       background:
@@ -78,7 +78,7 @@
         transparent;
     }
     .hq-hero img {
-      width: min(448px, 69vw);
+      width: min(14rem, 52vw);
       height: auto;
       display: block;
       margin: 0 auto;
@@ -381,6 +381,12 @@
       text-align: right;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      padding-left: 0.55rem;
+    }
+    html[data-theme="day"] .mini-table th.num,
+    html[data-theme="day"] .mini-table td.num {
+      border-left-color: rgba(20, 28, 40, 0.14);
     }
     .mini-table td {
       padding: 0.42rem 0.35rem;
@@ -878,6 +884,7 @@
       .motw-side img { width: 4.75rem; height: 4.75rem; }
       .hotnot-team img { width: 4rem; height: 4rem; }
       .hq-main { font-size: 1.12rem; }
+      .hq-hero img { width: min(11rem, 58vw); }
       .hq-hero .tag { font-size: clamp(1.2rem, 5.2vw, 1.55rem); }
     }
 
@@ -923,7 +930,7 @@
   </header>
 
   <section class="hq-hero shell">
-    <img id="aaa-hero-crest" src="/assets/aaa-league.png?v=3" alt="AAA League" width="520" height="520" decoding="async" />
+    <img id="aaa-hero-crest" src="/assets/aaa-league.png?v=6" alt="AAA League" width="520" height="520" decoding="async" />
     <p class="tag">
       <span class="t">12 Teams</span><span class="sep">·</span><span class="c">One Promotion</span>
     </p>
@@ -985,7 +992,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -1054,9 +1061,21 @@
             <div class="empty">No teams yet</div>
           </div>`;
       }
-      const rows = teams.map((t, i) => `
-        <tr class="${i === 0 ? 'promotee-row' : ''}">
-          <td class="rank">${i + 1}</td>
+      const playoffSlots = Number(data.playoffSlots) || 6;
+      const cutRank = Number(data.playoffCutRank) || (playoffSlots + 1);
+      const rows = [];
+      teams.forEach((t, i) => {
+        const rank = i + 1;
+        if (rank === cutRank) {
+          rows.push(`<tr class="cut-line"><td colspan="4">Playoff cut · top ${playoffSlots} in</td></tr>`);
+        }
+        const zoneClass = [
+          rank === 1 ? 'promotee-row' : '',
+          rank > playoffSlots ? 'out' : ''
+        ].filter(Boolean).join(' ');
+        rows.push(`
+        <tr class="${zoneClass}">
+          <td class="rank">${rank}</td>
           <td class="team" title="${esc(t.name)}">
             <a class="team-cell" href="/team.html?conference=aaa&teamId=${esc(t.id)}" style="color:inherit;text-decoration:none;">
               <img class="team-logo-sm" src="${esc(t.logo || PLACEHOLDER)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
@@ -1065,7 +1084,8 @@
           </td>
           <td class="num">${esc(record(t))}</td>
           <td class="num">${Number(t.pointsFor || 0).toFixed(0)}</td>
-        </tr>`).join('');
+        </tr>`);
+      });
       return `
         <div class="conf-block">
           ${confHead({ ...data, shortName: data.shortName || 'AAA' })}
@@ -1078,8 +1098,12 @@
                 <th class="num">PF</th>
               </tr>
             </thead>
-            <tbody>${rows}</tbody>
+            <tbody>${rows.join('')}</tbody>
           </table>
+          <p class="format-note" style="margin:0.65rem 0 0;font-size:0.82rem;color:var(--muted);">
+            Playoffs: top ${playoffSlots} of ${teams.length || 12}
+            · <a href="/aaa-playoffs.html" style="color:inherit;">Open bracket →</a>
+          </p>
         </div>`;
     }
 

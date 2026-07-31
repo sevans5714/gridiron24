@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     .toolbar {
       display: flex;
@@ -61,6 +61,10 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
+    }
+    .grid-2:has(> :only-child) {
+      grid-template-columns: 1fr;
+      max-width: 40rem;
     }
     .special-slot {
       margin-top: 1rem;
@@ -293,7 +297,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -336,7 +340,7 @@
         : `<div class="vs">VS</div>`;
       return `
         <div class="mayor-card">
-          <img class="mark" src="/assets/mayors-cup.png?v=4" alt="Mayor's Cup" width="1024" height="768" decoding="async" />
+          <img class="mark" src="/assets/mayors-cup.png?v=5" alt="Mayor's Cup" width="1024" height="768" decoding="async" />
           <div>
             <p class="eyebrow">Week ${esc(String(survival.week || 17))} · Season finale</p>
             <h2>${esc(survival.name || "Mayor's Cup")}</h2>
@@ -346,7 +350,7 @@
               <div class="mayor-mid">${scoreline}</div>
               ${mayorSide(o, 'home')}
             </div>
-            <a class="playoffs-link" href="/playoffs.html">Open playoff board →</a>
+            <a class="playoffs-link" href="/playoffs.html">Open playoff bracket →</a>
           </div>
         </div>`;
     }
@@ -355,7 +359,7 @@
       if (!conf.ok) {
         return `<div class="panel reveal reveal-delay-${idx + 1}"><div class="panel-title">${esc(conf.name || 'Conference')}</div><div class="msg"><strong>Unavailable</strong>${esc(conf.error || '')}</div></div>`;
       }
-      const tone = conf.key === 'detail' ? 'detail' : 'overtime';
+      const tone = conf.key === 'detail' ? 'detail' : (conf.key === 'overtime' ? 'overtime' : 'aaa');
       const logoImg = conf.logo ? `<span class="conf-mark"><img src="${esc(conf.logo)}" alt=""></span>` : '';
       const cards = (conf.matchups || []).map((m) => `
         <div class="matchup">
@@ -423,8 +427,16 @@
         const data = await res.json();
         if (!document.getElementById('week').options.length) fillWeeks(data.week);
         document.getElementById('week').value = String(data.week);
-        document.getElementById('boards').innerHTML = data.conferences.map(board).join('');
-        await loadSpecial(data.week);
+        const confs = data.conferences || [];
+        document.getElementById('boards').innerHTML = confs.map(board).join('');
+        const isAaa = data.leagueScope?.scope === 'aaa'
+          || (confs.length === 1 && confs[0]?.key === 'aaa');
+        if (isAaa) {
+          document.getElementById('special-slot').hidden = true;
+          document.getElementById('special-slot').innerHTML = '';
+        } else {
+          await loadSpecial(data.week);
+        }
         const t = new Date(data.generatedAt);
         window.GridIronNav?.setSync(`ESPN sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {

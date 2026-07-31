@@ -81,6 +81,8 @@
       rule_vote: 'RULE CHANGE',
       rule_result: 'RULE CHANGE',
       feature_request: 'FEATURE REQUEST',
+      pending_approvals: 'ACTION NEEDED',
+      roster_violations: 'ROSTER PATROL',
       general: 'GridIron 24 HQ'
     };
     return map[type] || 'GridIron 24 HQ';
@@ -95,6 +97,8 @@
       rule_vote: 'RULE CHANGE',
       rule_result: 'RULE CHANGE',
       feature_request: 'FEATURE REQUEST',
+      pending_approvals: 'Pending',
+      roster_violations: 'Roster',
       general: 'HQ'
     };
     return map[type] || 'Mail';
@@ -235,6 +239,19 @@
       return `
         <div class="inbox-cta-row">
           <a class="btn inbox-cta" href="${esc(href)}">${esc(label)}</a>
+        </div>`;
+    }
+    if (msg.meta?.digest && msg.meta?.href) {
+      const label = msg.type === 'roster_violations'
+        ? 'Open Roster Violations'
+        : msg.meta?.pendingApprovals
+          ? 'Open Owner Tools'
+          : msg.meta?.featureRequests || msg.meta?.ruleProposals
+            ? 'Open Inbox'
+            : 'Open';
+      return `
+        <div class="inbox-cta-row">
+          <a class="btn inbox-cta" href="${esc(msg.meta.href)}">${esc(label)}</a>
         </div>`;
     }
     return '';

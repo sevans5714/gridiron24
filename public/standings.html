@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     .section {
       padding: 1.75rem 0 0;
@@ -195,6 +195,32 @@
     .row .num { text-align: right; }
     .row .center { text-align: center; }
 
+    .row .col-w,
+    .row .col-l,
+    .row .col-ties,
+    .row .col-pf,
+    .row .col-pa {
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      padding-left: 0.55rem;
+      margin-left: 0.05rem;
+    }
+    .row .col-pf,
+    .row .col-pa {
+      border-left-color: rgba(255, 255, 255, 0.16);
+      padding-left: 0.65rem;
+    }
+    html[data-theme="day"] .row .col-w,
+    html[data-theme="day"] .row .col-l,
+    html[data-theme="day"] .row .col-ties,
+    html[data-theme="day"] .row .col-pf,
+    html[data-theme="day"] .row .col-pa {
+      border-left-color: rgba(20, 28, 40, 0.12);
+    }
+    html[data-theme="day"] .row .col-pf,
+    html[data-theme="day"] .row .col-pa {
+      border-left-color: rgba(20, 28, 40, 0.2);
+    }
+
     .rank {
       text-align: center;
       font-family: var(--display);
@@ -333,7 +359,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const escapeHtml = (value = '') => String(value)
       .replaceAll('&', '&amp;')
@@ -411,10 +437,10 @@
               <div class="name" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
             </a>
             <div class="owner col-owner" title="${escapeHtml(team.owner)}">${escapeHtml(team.owner)}</div>
-            <div class="num wl">${team.wins || 0}</div>
-            <div class="num wl">${team.losses || 0}</div>
+            <div class="num wl col-w">${team.wins || 0}</div>
+            <div class="num wl col-l">${team.losses || 0}</div>
             <div class="num wl col-ties">${team.ties || 0}</div>
-            <div class="num pts">${fmtPts(team.pointsFor)}</div>
+            <div class="num pts col-pf">${fmtPts(team.pointsFor)}</div>
             <div class="num pts col-pa">${fmtPts(team.pointsAgainst)}</div>
           </div>`);
       });
@@ -427,10 +453,10 @@
             <div class="center">#</div>
             <div>Team</div>
             <div class="col-owner">Owner</div>
-            <div class="num">W</div>
-            <div class="num">L</div>
+            <div class="num col-w">W</div>
+            <div class="num col-l">L</div>
             <div class="num col-ties">T</div>
-            <div class="num">PF</div>
+            <div class="num col-pf">PF</div>
             <div class="num col-pa">PA</div>
           </div>
           ${rowsHtml}

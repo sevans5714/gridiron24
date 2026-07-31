@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     .draft-toolbar {
       display: flex;
@@ -234,18 +234,18 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
-    const CONFS = [
+    const GI_CONFS = [
       { key: 'detail', label: 'Detail' },
       { key: 'overtime', label: 'Overtime' }
     ];
+    let CONFS = GI_CONFS.slice();
     let activeConf = new URLSearchParams(location.search).get('conference') || 'detail';
-    if (!CONFS.some((c) => c.key === activeConf)) activeConf = 'detail';
     let activeSeason = new URLSearchParams(location.search).get('season') || '';
 
     function posClass(pos) {
@@ -255,7 +255,15 @@
     }
 
     function renderTabs() {
-      document.getElementById('conf-tabs').innerHTML = CONFS.map((c) => (
+      const tabs = document.getElementById('conf-tabs');
+      if (!tabs) return;
+      if (CONFS.length <= 1) {
+        tabs.innerHTML = CONFS.map((c) => (
+          `<button type="button" class="active" data-conf="${esc(c.key)}" disabled>${esc(c.label)}</button>`
+        )).join('');
+        return;
+      }
+      tabs.innerHTML = CONFS.map((c) => (
         `<button type="button" class="${c.key === activeConf ? 'active' : ''}" data-conf="${esc(c.key)}">${esc(c.label)}</button>`
       )).join('');
       document.querySelectorAll('#conf-tabs button').forEach((btn) => {
@@ -345,8 +353,29 @@
       }
     }
 
-    renderTabs();
-    loadDraft();
+    async function bootDraft() {
+      try {
+        const authRes = await fetch('/api/auth', { cache: 'no-store', credentials: 'same-origin' });
+        const auth = await authRes.json().catch(() => ({}));
+        if (auth?.leagueScope?.scope === 'aaa' || activeConf === 'aaa') {
+          CONFS = [{ key: 'aaa', label: 'AAA' }];
+          activeConf = 'aaa';
+          const url = new URL(location.href);
+          url.searchParams.set('conference', 'aaa');
+          history.replaceState({}, '', url);
+        } else if (!GI_CONFS.some((c) => c.key === activeConf)) {
+          activeConf = 'detail';
+        }
+      } catch {
+        if (!GI_CONFS.some((c) => c.key === activeConf) && activeConf !== 'aaa') {
+          activeConf = 'detail';
+        }
+      }
+      renderTabs();
+      await loadDraft();
+    }
+
+    bootDraft();
   </script>
 </body>
 </html>

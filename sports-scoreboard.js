@@ -10,6 +10,20 @@ const oddsEnrich = require('./odds-enrich');
 
 const CACHE_MS = 20_000;
 
+/** Leagues whose ESPN scoreboard is day-based (not NFL week). */
+const DAILY_RANGE_LEAGUES = new Set([
+  'mlb',
+  'nba',
+  'nhl',
+  'mls',
+  'wnba',
+  'ncaam',
+  'ncaaw',
+  'cbase',
+  'csoft',
+  'llws'
+]);
+
 /** Shared NCAA mark for every college league tab / header. */
 const NCAA_LOGO = '/assets/ncaa-logo.png?v=3';
 
@@ -192,7 +206,14 @@ function filterInSeasonBoards(boards, now = new Date()) {
   }));
 }
 
-function sitePathForMeta(meta) {
+function yyyymmddLocal(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}${m}${day}`;
+}
+
+function sitePathForMeta(meta, { daysAhead = 0 } = {}) {
   if (meta.url) {
     try {
       const u = new URL(meta.url);
@@ -201,7 +222,15 @@ function sitePathForMeta(meta) {
       return null;
     }
   }
-  return `apis/site/v2/sports/${meta.sport}/${meta.league}/scoreboard`;
+  let path = `apis/site/v2/sports/${meta.sport}/${meta.league}/scoreboard`;
+  const ahead = Math.max(0, Math.min(10, Number(daysAhead) || 0));
+  if (ahead > 0 && DAILY_RANGE_LEAGUES.has(meta.id)) {
+    const start = new Date();
+    const end = new Date();
+    end.setDate(end.getDate() + ahead);
+    path += `?dates=${yyyymmddLocal(start)}-${yyyymmddLocal(end)}&limit=200`;
+  }
+  return path;
 }
 
 function statusBucket(state, completed) {
@@ -266,7 +295,7 @@ function normalizeTeamEvent(event, leagueId) {
     broadcasts,
     away: pickCompetitor(competition.competitors, 'away'),
     home: pickCompetitor(competition.competitors, 'home'),
-    odds: pickOdds(competition),
+    odds: leagueId === 'ncaaf' ? null : pickOdds(competition),
     leaders: null
   };
 }
@@ -368,8 +397,8 @@ function normalizeGolfEvent(event) {
   };
 }
 
-async function fetchLeagueRaw(meta) {
-  const pathAndQuery = sitePathForMeta(meta);
+async function fetchLeagueRaw(meta, { daysAhead = 0 } = {}) {
+  const pathAndQuery = sitePathForMeta(meta, { daysAhead });
   if (!pathAndQuery) {
     throw Object.assign(new Error(`${meta.label} scoreboard URL invalid`), { status: 502 });
   }
@@ -449,6 +478,23 @@ function fantasyTeamAbbr(name) {
   return s.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || '?';
 }
 
+function formatFantasyRecord(rec) {
+  if (rec == null || rec === '') return null;
+  if (typeof rec === 'string') {
+    const s = rec.trim();
+    return s || null;
+  }
+  if (typeof rec !== 'object') return null;
+  const w = Number(rec.wins);
+  const l = Number(rec.losses);
+  const t = Number(rec.ties);
+  if (!Number.isFinite(w) && !Number.isFinite(l)) return null;
+  const wins = Number.isFinite(w) ? w : 0;
+  const losses = Number.isFinite(l) ? l : 0;
+  const ties = Number.isFinite(t) ? t : 0;
+  return ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
+}
+
 function fantasySide(team, winnerCode, sideCode) {
   if (!team) return null;
   const score = Number(team.score);
@@ -461,7 +507,7 @@ function fantasySide(team, winnerCode, sideCode) {
     logo: team.logo || null,
     score: Number.isFinite(score) ? score : null,
     projected: Number.isFinite(projected) ? projected : null,
-    record: team.record || null,
+    record: formatFantasyRecord(team.record),
     winner: winnerCode === sideCode
   };
 }
@@ -592,7 +638,7 @@ function boardFromFantasyConferences(meta, conferences = []) {
   );
 }
 
-async function getSportsScores({ leagues, extraBoards = [] } = {}) {
+async function getSportsScores({ leagues, extraBoards = [], daysAhead = 0 } = {}) {
   const ids = parseLeagueList(leagues);
   const fetchedAt = new Date().toISOString();
   let usedFallback = false;
@@ -612,7 +658,7 @@ async function getSportsScores({ leagues, extraBoards = [] } = {}) {
         };
       }
       try {
-        const { raw, from } = await fetchLeagueRaw(meta);
+        const { raw, from } = await fetchLeagueRaw(meta, { daysAhead });
         const games = (raw.events || []).map((ev) =>
           meta.kind === 'golf' ? normalizeGolfEvent(ev) : normalizeTeamEvent(ev, id)
         );

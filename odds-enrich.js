@@ -502,13 +502,21 @@ async function mapPool(items, limit, worker) {
   return out;
 }
 
+function isOpenForLines(game) {
+  if (!game || game.kind === 'golf') return false;
+  if (game.status?.bucket === 'final' || game.status?.completed) return false;
+  return true;
+}
+
 async function enrichBoard(board) {
   if (!board?.ok || board.kind === 'golf') return board;
   const meta = LEAGUE_ODDS[board.id];
   if (!meta) return board;
   const games = Array.isArray(board.games) ? board.games : [];
-  const missing = games.filter(needsOdds);
-  if (!missing.length) return board;
+  // Refresh upcoming/live lines every pass — ESPN scoreboard odds often sit still
+  // while real books move before kickoff. Prefer Bovada / Odds API when available.
+  const openGames = games.filter(isOpenForLines);
+  if (!openGames.length) return board;
 
   let bovadaRows = [];
   let oddsApiRows = [];
@@ -526,7 +534,7 @@ async function enrichBoard(board) {
   const stillNeedEspn = [];
   const patched = new Map();
 
-  for (const g of missing) {
+  for (const g of openGames) {
     const fromBovada = matchBovadaOdds(g, bovadaRows);
     if (hasUsableOdds(fromBovada)) {
       patched.set(String(g.id), fromBovada);
@@ -537,7 +545,8 @@ async function enrichBoard(board) {
       patched.set(String(g.id), fromApi);
       continue;
     }
-    stillNeedEspn.push(g);
+    // Keep whatever ESPN scoreboard already posted; only hit core if empty.
+    if (needsOdds(g)) stillNeedEspn.push(g);
   }
 
   const espnTargets = stillNeedEspn.slice(0, MAX_ESPN_CORE_PER_BOARD);

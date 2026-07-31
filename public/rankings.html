@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     .rank-board {
       max-width: 44rem;
@@ -22,6 +22,27 @@
       margin: 0 0 1.5rem;
       color: var(--muted);
       line-height: 1.45;
+    }
+    .rank-pending {
+      max-width: 36rem;
+      margin: 1.5rem 0;
+      padding: 1.35rem 1.4rem;
+      border: 1px solid var(--line);
+      border-radius: 0.85rem;
+      background: color-mix(in srgb, var(--surface, #121820) 88%, transparent);
+    }
+    .rank-pending h2 {
+      margin: 0 0 0.55rem;
+      font-family: var(--display);
+      font-size: 1.35rem;
+      letter-spacing: 0.04em;
+      color: var(--text);
+    }
+    .rank-pending p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 1.02rem;
     }
     .rank-row {
       display: grid;
@@ -81,7 +102,7 @@
     </div>
   </header>
   <section class="page-hero shell">
-    <p class="eyebrow">Who’s rising</p>
+    <p class="eyebrow">System board</p>
     <h1>Power Rankings</h1>
   </section>
   <main class="page-main shell" id="main"><div class="msg">Loading rankings…</div></main>
@@ -89,7 +110,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const esc = (v='') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
@@ -113,20 +134,32 @@
           }
         }
 
-        const latest = data.latest;
         const main = document.getElementById('main');
-        if (!latest) {
-          main.innerHTML = `<div class="empty">No power rankings published yet. Commissioner posts them from League Tools.</div>`;
+        if (data.mode === 'pre_draft' || (!data.latest && data.message)) {
+          main.innerHTML = `
+            <div class="rank-pending">
+              <h2>Coming after the draft</h2>
+              <p>${esc(data.message || 'Power rankings will be displayed after the draft.')}
+              Before Week 1 they’ll rank by projected points; once games start, record, scoring, and point differential take over.</p>
+            </div>`;
+          window.GridIronNav?.setSync('After draft', true);
+          return;
+        }
+
+        const latest = data.latest;
+        if (!latest || !(latest.ranks || []).length) {
+          main.innerHTML = `<div class="empty">${esc(data.message || 'Power rankings are unavailable right now.')}</div>`;
           return;
         }
 
         const ranks = (latest.ranks || []).slice().sort((a, b) => a.rank - b.rank);
+        const modeLabel = latest.mode === 'preseason' ? 'Preseason · Week 1 projections' : `Week ${latest.week}`;
         main.innerHTML = `
           <div class="rank-board">
-            <p class="rank-meta-line">Week ${esc(latest.week)} · ${esc(ranks.length)} teams · ${esc(latest.authorName)} · ${esc(new Date(latest.createdAt).toLocaleDateString([], {month:'short', day:'numeric'}))}</p>
+            <p class="rank-meta-line">${esc(modeLabel)} · ${esc(ranks.length)} teams · System</p>
             ${latest.notes ? `<p class="rank-notes">${esc(latest.notes)}</p>` : ''}
             ${ranks.map((r) => {
-              const logo = logoMap.get(`${r.conferenceKey}:${r.teamId}`) || PLACEHOLDER;
+              const logo = r.logo || logoMap.get(`${r.conferenceKey}:${r.teamId}`) || PLACEHOLDER;
               const conf = r.conferenceKey === 'overtime' ? 'overtime' : 'detail';
               return `
                 <div class="rank-row">
@@ -140,7 +173,7 @@
                 </div>`;
             }).join('')}
           </div>`;
-        window.GridIronNav?.setSync(`Week ${latest.week} · 1–24`, true);
+        window.GridIronNav?.setSync(modeLabel, true);
       } catch (err) {
         document.getElementById('main').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
       }

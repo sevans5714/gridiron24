@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -47,6 +47,11 @@
       border: 1px solid var(--line);
       background:
         linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%),
+        var(--panel);
+    }
+    html[data-theme="day"] .profile-card {
+      background:
+        linear-gradient(180deg, rgba(31, 94, 240, 0.04), transparent 42%),
         var(--panel);
     }
     .profile-card > .section-head {
@@ -101,8 +106,14 @@
       font-family: var(--display);
       font-size: 1.35rem;
       font-weight: 700;
-      color: #f2f2f2;
+      color: var(--text);
     }
+    .profile-link {
+      color: var(--blue);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .profile-link:hover { text-decoration: underline; color: var(--link-hover); }
     .profile-meta h3 {
       margin: 0;
       font-family: var(--display);
@@ -128,12 +139,12 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #f0d78c;
+      color: var(--gold);
     }
     .tools-card {
-      border-color: rgba(240, 215, 140, 0.28);
+      border-color: color-mix(in srgb, var(--blue) 35%, var(--line));
       background:
-        linear-gradient(135deg, rgba(240, 215, 140, 0.08), transparent 55%),
+        linear-gradient(135deg, color-mix(in srgb, var(--blue) 10%, transparent), transparent 55%),
         var(--panel);
     }
     .tools-card .tools-actions {
@@ -152,12 +163,12 @@
       display: grid;
       gap: 0.15rem;
       padding: 0.55rem 0;
-      border-bottom: 1px solid rgba(240, 215, 140, 0.22);
+      border-bottom: 1px solid color-mix(in srgb, var(--blue) 22%, transparent);
       text-decoration: none;
       color: inherit;
       min-width: 0;
     }
-    .tools-card .tools-menu a:hover { border-bottom-color: rgba(240, 215, 140, 0.7); }
+    .tools-card .tools-menu a:hover { border-bottom-color: color-mix(in srgb, var(--blue) 70%, transparent); }
     .tools-card .tools-menu a[hidden] { display: none !important; }
     .tools-card .tools-menu strong {
       font-family: var(--display);
@@ -165,7 +176,7 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #f0d78c;
+      color: var(--blue);
     }
     .tools-card .tools-menu span {
       color: var(--muted);
@@ -179,12 +190,13 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 0.4rem;
       min-height: 2.75rem;
       padding: 0.7rem 1.15rem;
-      border: 1px solid rgba(240, 215, 140, 0.45);
-      border-radius: 0.35rem;
-      background: rgba(240, 215, 140, 0.12);
-      color: #f0d78c;
+      border: 1px solid var(--blue);
+      border-radius: 0;
+      background: var(--blue);
+      color: #fff;
       font-family: var(--display);
       font-size: 0.95rem;
       font-weight: 600;
@@ -192,10 +204,20 @@
       text-transform: uppercase;
       text-decoration: none;
     }
+    .tools-card .btn-tools::after {
+      content: "↗";
+      font-size: 0.95em;
+      line-height: 1;
+      opacity: 0.92;
+    }
     .tools-card .btn-tools:hover {
-      background: rgba(240, 215, 140, 0.22);
-      color: var(--text);
-      border-color: rgba(240, 215, 140, 0.7);
+      background: #4d82ff;
+      border-color: #4d82ff;
+      color: #fff;
+    }
+    html[data-theme="day"] .tools-card .btn-tools:hover {
+      background: #1749d4;
+      border-color: #1749d4;
     }
     .stat-grid {
       display: grid;
@@ -245,8 +267,8 @@
       line-height: 1.45;
       max-width: 40rem;
     }
-    .profile-note.ok { color: #86efac; }
-    .profile-note.err { color: #fca5a5; }
+    .profile-note.ok { color: var(--status-ok-text); }
+    .profile-note.err { color: var(--status-err-text); }
     .keeper-form {
       display: grid;
       gap: 0.85rem;
@@ -264,9 +286,9 @@
     .keeper-current {
       margin: 0 0 1rem;
       padding: 0.85rem 1rem;
-      border: 1px solid rgba(239, 215, 130, 0.55);
-      background: rgba(239, 215, 130, 0.08);
-      box-shadow: inset 0 0 0 1px rgba(239, 215, 130, 0.2);
+      border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+      background: color-mix(in srgb, var(--gold) 10%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 22%, transparent);
     }
     .keeper-current .label {
       margin: 0 0 0.25rem;
@@ -275,7 +297,7 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #efd782;
+      color: var(--gold);
     }
     .keeper-current .nm {
       margin: 0;
@@ -313,7 +335,15 @@
       border-bottom: 1px solid var(--line);
     }
     .career-table th.num,
-    .career-table td.num { text-align: right; }
+    .career-table td.num {
+      text-align: right;
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      padding-left: 0.55rem;
+    }
+    html[data-theme="day"] .career-table th.num,
+    html[data-theme="day"] .career-table td.num {
+      border-left-color: rgba(20, 28, 40, 0.14);
+    }
     .career-table td {
       padding: 0.55rem 0.4rem;
       border-bottom: 1px solid var(--line);
@@ -411,7 +441,7 @@
     .logo-side .preview {
       width: 100%;
       aspect-ratio: 1;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid var(--line);
       background: var(--panel-2);
       display: grid;
       place-items: center;
@@ -423,7 +453,7 @@
     .logo-side .preview .ph { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 1rem; }
     .logo-main {
       border: 1px solid var(--line);
-      background: rgba(255,255,255,0.02);
+      background: var(--row-hover);
     }
     .logo-bar {
       display: flex;
@@ -465,14 +495,14 @@
       overflow: auto;
     }
     .icon-card {
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid var(--line);
       background: var(--panel-2);
       color: var(--muted);
       padding: 0.3rem;
       cursor: pointer;
       text-align: center;
     }
-    .icon-card:hover { border-color: rgba(255,255,255,0.35); }
+    .icon-card:hover { border-color: var(--chip-border-active); }
     .icon-card.selected { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
     .icon-card img {
       width: 100%;
@@ -572,7 +602,7 @@
     .profile-actions {
       margin-top: 1.75rem;
       padding-top: 1.25rem;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      border-top: 1px solid var(--line);
     }
   </style>
 </head>
@@ -599,7 +629,7 @@
       <a href="#keeper">Keeper</a>
       <a href="#logo">Avatar / Logo</a>
       <a href="#password">Password</a>
-      <a href="#tools" id="jump-tools" hidden>League Tools</a>
+      <a href="#tools" id="jump-tools" hidden>Owner Tools</a>
     </nav>
 
     <section class="profile-card" id="account">
@@ -634,16 +664,17 @@
         </div>
       </div>
       <div class="theme-pref" id="appearance-body">
-        <div class="theme-pref-options" role="group" aria-label="Color theme">
-          <button type="button" class="theme-pref-btn" data-theme-value="night" id="theme-pref-night">
-            <strong>Night</strong>
-            <span>Dark stadium look — default.</span>
-          </button>
-          <button type="button" class="theme-pref-btn" data-theme-value="day" id="theme-pref-day">
-            <strong>Day</strong>
-            <span>Light surfaces for daytime reading.</span>
-          </button>
-        </div>
+        <label class="theme-switch" for="theme-switch">
+          <span class="theme-switch-side" data-side="night">Night</span>
+          <span class="theme-switch-control">
+            <input type="checkbox" id="theme-switch" role="switch" aria-checked="false" aria-label="Day mode" />
+            <span class="theme-switch-track" aria-hidden="true">
+              <span class="theme-switch-thumb"></span>
+            </span>
+          </span>
+          <span class="theme-switch-side" data-side="day">Day</span>
+        </label>
+        <p class="theme-switch-hint">Off = night · On = day. Saved to your account.</p>
         <p class="profile-note" id="appearance-status" role="status"></p>
       </div>
     </section>
@@ -651,11 +682,11 @@
     <section class="profile-card tools-card" id="tools" hidden>
       <div class="section-head">
         <div class="section-head-block">
-          <h2>League Tools</h2>
+          <h2 id="tools-card-title">Owner Tools</h2>
           <p id="tools-card-blurb">Staff controls for this HQ — jump to a section or open the full desk.</p>
         </div>
       </div>
-      <div class="tools-menu" aria-label="League Tools sections">
+      <div class="tools-menu" aria-label="Owner Tools sections" id="tools-card-menu">
         <a href="/league-tools.html#group-espn">
           <strong>Sync</strong>
           <span>Rules, playoffs, roster patrol</span>
@@ -674,7 +705,7 @@
         </a>
       </div>
       <div class="tools-actions">
-        <a class="btn-tools" href="/league-tools.html">Open League Tools</a>
+        <a class="btn-tools" id="tools-card-open" href="/league-tools.html">Open Owner Tools</a>
       </div>
     </section>
 
@@ -752,8 +783,8 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
-  <script src="/js/inbox-ui.js?v=9"></script>
+  <script src="/js/nav.js?v=94"></script>
+  <script src="/js/inbox-ui.js?v=11"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -884,14 +915,25 @@
       if (jumpTools) jumpTools.hidden = !staff;
       const seasonLink = document.getElementById('profile-tools-season');
       const blurb = document.getElementById('tools-card-blurb');
+      const toolsTitle = document.getElementById('tools-card-title');
+      const toolsOpen = document.getElementById('tools-card-open');
+      const toolsMenu = document.getElementById('tools-card-menu');
+      const isOwner = Boolean(user.siteOwner || user.canSwitchLeagues);
       const isOwnerOrComm = Boolean(
-        user.siteOwner || user.canSwitchLeagues || user.role === 'commissioner'
+        isOwner || user.role === 'commissioner'
       );
+      const deskLabel = isOwner ? 'Owner Tools' : 'League Tools';
+      if (jumpTools) jumpTools.textContent = deskLabel;
+      if (toolsTitle) toolsTitle.textContent = deskLabel;
+      if (toolsOpen) toolsOpen.textContent = `Open ${deskLabel}`;
+      if (toolsMenu) toolsMenu.setAttribute('aria-label', `${deskLabel} sections`);
       if (seasonLink) seasonLink.hidden = !isOwnerOrComm;
       if (blurb) {
-        blurb.textContent = isOwnerOrComm
-          ? 'Owner / commissioner desk — Sync, People, Broadcast, and Season.'
-          : 'Conference admin desk — Sync, invites, owner email, and Broadcast.';
+        blurb.textContent = isOwner
+          ? 'Owner desk — Sync, People, Broadcast, Season, and league switcher.'
+          : isOwnerOrComm
+            ? 'Commissioner desk — Sync, People, Broadcast, and Season.'
+            : 'Conference admin desk — Sync, invites, owner email, and Broadcast.';
       }
       const urls = portalUrls();
       const accountBody = document.getElementById('account-body');
@@ -951,7 +993,7 @@
           <button type="button" class="btn" id="profile-save-name">Save Name</button>
         </div>
         <p class="profile-note" id="franchise-status" role="status"></p>
-        ${team ? `<p class="profile-note"><a href="/my-roster.html" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Open My Roster →</a></p>` : ''}`;
+        ${team ? `<p class="profile-note"><a class="profile-link" href="/my-roster.html">Open My Roster →</a></p>` : ''}`;
 
       document.getElementById('profile-save-name')?.addEventListener('click', async () => {
         const status = document.getElementById('franchise-status');
@@ -1027,7 +1069,7 @@
           </tbody>
         </table>
         </div>
-        <p class="profile-note"><a href="/history.html" style="color:#8eb6ff;font-weight:600;text-decoration:none;">Browse full league history →</a></p>`;
+        <p class="profile-note"><a class="profile-link" href="/members.html#record-book">Browse full league history →</a></p>`;
     }
 
     function renderKeeper(data) {
@@ -1356,18 +1398,24 @@
 
     function renderAppearance(theme) {
       const current = theme === 'day' ? 'day' : 'night';
-      document.querySelectorAll('.theme-pref-btn').forEach((btn) => {
-        btn.classList.toggle('is-active', btn.dataset.themeValue === current);
-        btn.setAttribute('aria-pressed', btn.dataset.themeValue === current ? 'true' : 'false');
+      const isDay = current === 'day';
+      const input = document.getElementById('theme-switch');
+      if (input) {
+        input.checked = isDay;
+        input.setAttribute('aria-checked', isDay ? 'true' : 'false');
+        input.setAttribute('aria-label', isDay ? 'Day mode on' : 'Day mode off');
+      }
+      document.querySelectorAll('.theme-switch-side').forEach((el) => {
+        el.classList.toggle('is-on', el.getAttribute('data-side') === current);
       });
+      document.querySelector('.theme-switch')?.classList.toggle('is-day', isDay);
     }
 
     async function saveThemePreference(theme) {
       const next = theme === 'day' ? 'day' : 'night';
+      const input = document.getElementById('theme-switch');
       setAppearanceStatus('Saving…');
-      document.querySelectorAll('.theme-pref-btn').forEach((btn) => {
-        btn.disabled = true;
-      });
+      if (input) input.disabled = true;
       try {
         window.GridIronNav?.setTheme?.(next);
         renderAppearance(next);
@@ -1384,21 +1432,20 @@
         renderAppearance(saved);
         setAppearanceStatus('Theme preference saved.', 'ok');
       } catch (err) {
+        const fallback = window.GridIronNav?.getTheme?.() || 'night';
+        renderAppearance(fallback);
         setAppearanceStatus(err.message || 'Could not save preference', 'err');
       } finally {
-        document.querySelectorAll('.theme-pref-btn').forEach((btn) => {
-          btn.disabled = false;
-        });
+        if (input) input.disabled = false;
       }
     }
 
     function wireAppearance() {
-      document.querySelectorAll('.theme-pref-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const value = btn.dataset.themeValue;
-          if (!value || btn.classList.contains('is-active')) return;
-          saveThemePreference(value);
-        });
+      const input = document.getElementById('theme-switch');
+      if (!input || input.dataset.wired === '1') return;
+      input.dataset.wired = '1';
+      input.addEventListener('change', () => {
+        saveThemePreference(input.checked ? 'day' : 'night');
       });
     }
 

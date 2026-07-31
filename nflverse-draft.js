@@ -267,7 +267,12 @@ function buildSleeperMaps(sleeperPlayers, projections) {
       headshot: SLEEPER_HEADSHOT(sleeperId),
       team,
       position: pos,
-      name
+      name,
+      injuryStatus: String(row.injury_status || '').trim() || null,
+      injuryBodyPart: String(row.injury_body_part || '').trim() || null,
+      injuryNotes: String(row.injury_notes || '').trim() || null,
+      practiceStatus: String(row.practice_participation || '').trim() || null,
+      practiceDescription: String(row.practice_description || '').trim() || null
     };
     const gsis = String(row.gsis_id || '').trim();
     if (gsis) byGsis.set(gsis, payload);
@@ -291,7 +296,7 @@ async function loadRoster(season) {
 async function loadDraftPool({ season, activeOnly = true, force = false } = {}) {
   const year = Number(season) || new Date().getFullYear();
   const priorSeason = year - 1;
-  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v3`;
+  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v4`;
   if (!force && poolCache.players && poolCache.key === key && Date.now() - poolCache.at < POOL_CACHE_MS) {
     return {
       ok: true,
@@ -347,6 +352,11 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
       games: stats?.games ?? null,
       adp: sleeperHit?.adp ?? null,
       delta,
+      injuryStatus: sleeperHit?.injuryStatus || null,
+      injuryBodyPart: sleeperHit?.injuryBodyPart || null,
+      injuryNotes: sleeperHit?.injuryNotes || null,
+      practiceStatus: sleeperHit?.practiceStatus || null,
+      practiceDescription: sleeperHit?.practiceDescription || null,
       stats: stats ? {
         passYds: stats.passYds,
         passTd: stats.passTd,
@@ -603,8 +613,66 @@ function undoPick(actor = null) {
   return getDraftBoard();
 }
 
+const playerNewsCache = new Map(); // espnId -> { at, items }
+const PLAYER_NEWS_TTL_MS = 15 * 60 * 1000;
+
+async function getPlayerNews({ espnId, sleeperId, name, limit = 6 } = {}) {
+  const id = String(espnId || '').trim();
+  const max = Math.min(12, Math.max(1, Number(limit) || 6));
+  if (!id) {
+    return { ok: true, espnId: null, items: [], note: 'No ESPN id for this player' };
+  }
+  const cached = playerNewsCache.get(id);
+  if (cached && Date.now() - cached.at < PLAYER_NEWS_TTL_MS) {
+    return { ok: true, espnId: id, items: cached.items.slice(0, max), cached: true };
+  }
+
+  let espnResilient;
+  try {
+    espnResilient = require('./espn-resilient');
+  } catch {
+    espnResilient = null;
+  }
+
+  const pathPart = `apis/site/v2/sports/football/nfl/athletes/${encodeURIComponent(id)}/news?limit=${max}`;
+  let raw = null;
+  if (espnResilient?.fetchJsonResilient && espnResilient?.siteApiUrls) {
+    const hit = await espnResilient.fetchJsonResilient({
+      urls: espnResilient.siteApiUrls(pathPart),
+      cacheKey: `player-news:${id}`,
+      ttlMs: PLAYER_NEWS_TTL_MS,
+      lane: 'news'
+    });
+    raw = hit?.data || null;
+  } else {
+    const res = await fetch(`https://site.api.espn.com/${pathPart}`, {
+      headers: { Accept: 'application/json', 'User-Agent': UA }
+    });
+    if (res.ok) raw = await res.json();
+  }
+
+  const articles = Array.isArray(raw?.articles) ? raw.articles : [];
+  const items = articles.slice(0, max).map((a) => ({
+    id: a.id != null ? String(a.id) : null,
+    headline: String(a.headline || a.description || '').trim() || 'Update',
+    description: String(a.description || a.headline || '').trim() || null,
+    published: a.published || a.lastModified || null,
+    url: a.links?.web?.href || a.links?.mobile?.href || null
+  })).filter((a) => a.headline);
+
+  playerNewsCache.set(id, { at: Date.now(), items });
+  return {
+    ok: true,
+    espnId: id,
+    sleeperId: sleeperId || null,
+    name: name || null,
+    items
+  };
+}
+
 module.exports = {
   loadDraftPool,
+  getPlayerNews,
   getDraftBoard,
   resetDraft,
   makePick,

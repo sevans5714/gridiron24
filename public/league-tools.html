@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>League Tools · GridIron 24</title>
+  <title>Owner Tools · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -25,47 +25,63 @@
 
     .comm-layout {
       display: grid;
-      grid-template-columns: 11.5rem minmax(0, 1fr);
-      gap: 2rem 2.5rem;
+      grid-template-columns: 13.5rem minmax(0, 1fr);
+      gap: 1.5rem 1.75rem;
       align-items: start;
     }
     .comm-nav {
       position: sticky;
       top: 4.5rem;
       display: grid;
-      gap: 1.15rem;
-      padding: 0;
+      gap: 0.85rem;
+      padding: 0.9rem 0.85rem;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--blue) 8%, transparent), transparent 48%),
+        var(--panel);
     }
     .comm-nav-group {
       display: grid;
-      gap: 0.35rem;
+      gap: 0.15rem;
     }
     .comm-nav-label {
-      margin: 0 0 0.15rem;
+      margin: 0 0 0.25rem;
+      padding: 0 0.45rem;
       font-family: var(--display);
-      font-size: 0.68rem;
-      font-weight: 600;
+      font-size: 0.66rem;
+      font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #6e6e6e;
+      color: var(--muted);
     }
     .comm-nav a {
+      display: block;
+      padding: 0.4rem 0.5rem;
+      border-left: 2px solid transparent;
       font-family: var(--display);
-      font-size: 0.84rem;
+      font-size: 0.8rem;
       font-weight: 600;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
       color: var(--muted);
       text-decoration: none;
-      line-height: 1.35;
+      line-height: 1.3;
     }
-    .comm-nav a:hover { color: var(--nav-hover); }
+    .comm-nav a:hover {
+      color: var(--text);
+      background: var(--row-hover);
+    }
+    .comm-nav a.is-active {
+      color: var(--text);
+      border-left-color: var(--blue);
+      background: color-mix(in srgb, var(--blue) 12%, transparent);
+    }
     .comm-nav a[hidden],
     .comm-nav-group[hidden] { display: none !important; }
 
     .comm-groups {
       display: grid;
-      gap: 2.75rem;
+      gap: 2rem;
       min-width: 0;
     }
     .comm-group {
@@ -74,35 +90,46 @@
       scroll-margin-top: 5rem;
     }
     .comm-group > header {
-      margin: 0 0 1.35rem;
-      padding-bottom: 0.7rem;
-      border-bottom: 2px solid rgba(255,255,255,0.14);
+      margin: 0 0 0.95rem;
+      padding: 0 0 0.75rem;
+      border-bottom: 1px solid var(--line);
     }
     .comm-group > header h2 {
       margin: 0;
       font-family: var(--display);
-      font-size: clamp(1.25rem, 2.4vw, 1.55rem);
+      font-size: clamp(1.2rem, 2.2vw, 1.45rem);
       font-weight: 700;
       letter-spacing: 0.07em;
       text-transform: uppercase;
       color: var(--text);
     }
     .comm-group > header p {
-      margin: 0.4rem 0 0;
+      margin: 0.35rem 0 0;
       max-width: 40rem;
       color: var(--muted);
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       line-height: 1.45;
     }
     .comm-group-body {
       display: grid;
-      gap: 2.15rem;
+      gap: 1rem;
     }
 
-    .comm-section {
+    .comm-section,
+    body[data-page="league-tools"] .admin-block {
       margin: 0;
-      padding: 0;
+      padding: 1.05rem 1.1rem 1.2rem;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--blue) 6%, transparent), transparent 42%),
+        var(--panel);
       scroll-margin-top: 5rem;
+    }
+    html[data-theme="day"] .comm-section,
+    html[data-theme="day"] body[data-page="league-tools"] .admin-block {
+      background:
+        linear-gradient(180deg, rgba(31, 94, 240, 0.05), transparent 42%),
+        var(--panel);
     }
     .comm-section > .section-head,
     .admin-block > .section-head {
@@ -111,8 +138,8 @@
       justify-content: space-between;
       gap: 1rem;
       flex-wrap: wrap;
-      margin: 0 0 0.45rem;
-      padding-bottom: 0.4rem;
+      margin: 0 0 0.65rem;
+      padding-bottom: 0.55rem;
       border-bottom: 1px solid var(--line);
     }
     .comm-section > .section-head h2,
@@ -121,73 +148,41 @@
     .admin-block > .section-head h3 {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.05rem;
-      font-weight: 600;
+      font-size: 1rem;
+      font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text);
     }
-    .comm-section .help {
-      margin: 0 0 0.95rem;
-      max-width: 44rem;
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.5;
-    }
-    .comm-section .help a {
-      color: #8eb6ff;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .comm-section .help a:hover { text-decoration: underline; }
-
-    /* Override shared boxed admin styles on this page */
-    body[data-page="league-tools"] .admin-block {
-      margin: 0;
-      padding: 0;
-      border: 0;
-      background: none;
-      scroll-margin-top: 5rem;
-    }
-    body[data-page="league-tools"] .admin-block h2,
-    body[data-page="league-tools"] .admin-block h3 {
-      margin: 0;
-      font-size: 1.05rem;
-      letter-spacing: 0.06em;
-    }
+    .comm-section .help,
     body[data-page="league-tools"] .admin-block .help {
       margin: 0 0 0.95rem;
       max-width: 44rem;
-      font-size: 0.92rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
     }
+    .comm-section .help a,
+    .admin-block .help a {
+      color: var(--blue);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .comm-section .help a:hover,
+    .admin-block .help a:hover { text-decoration: underline; }
+
     body[data-page="league-tools"] .status-note {
       margin: 0 0 0.85rem;
-      padding: 0;
-      border: 0;
-      background: none;
     }
     body[data-page="league-tools"] .status-note.show {
       display: block;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 600;
-    }
-    body[data-page="league-tools"] .status-note.ok { color: #86efac; }
-    body[data-page="league-tools"] .status-note.err { color: #fca5a5; }
-    body[data-page="league-tools"] .field {
-      border: 0;
-      border-bottom: 1px solid var(--line);
-      background: transparent;
-      border-radius: 0;
-      padding-left: 0;
-      padding-right: 0;
-    }
-    body[data-page="league-tools"] .field:focus {
-      border-bottom-color: var(--text);
     }
     body[data-page="league-tools"] .field-hint {
       margin: 0.2rem 0 0.7rem;
       color: var(--muted);
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       line-height: 1.4;
       max-width: 36rem;
     }
@@ -197,60 +192,35 @@
     }
     body[data-page="league-tools"] .invite-compose .field-label {
       display: block;
-      margin: 0;
+      margin: 0 0 0.35rem;
     }
     body[data-page="league-tools"] .field-box {
       display: block;
       width: 100%;
       min-height: 5.75rem;
       margin: 0 0 0.85rem;
-      padding: 0.8rem 0.9rem;
+      padding: 0.7rem 0.8rem;
       border: 1px solid var(--line);
-      border-radius: 0;
-      background: var(--row-hover);
-      color: var(--text);
+      background: var(--field-bg);
+      color: var(--field-text);
       font-family: var(--body);
-      font-size: 1rem;
+      font-size: 0.95rem;
       line-height: 1.45;
       resize: vertical;
       box-sizing: border-box;
     }
     body[data-page="league-tools"] .field-box:focus {
       outline: 0;
-      border-color: rgba(255,255,255,0.55);
-      background: rgba(255,255,255,0.06);
+      border-color: var(--chip-border-active);
     }
     body[data-page="league-tools"] .field-box::placeholder {
-      color: #6a6a6a;
+      color: var(--muted-2);
     }
     body[data-page="league-tools"] .invite-compose .btn-row {
       display: flex;
       flex-wrap: wrap;
       gap: 0.65rem;
       align-items: center;
-    }
-    body[data-page="league-tools"] .data-table {
-      border: 0;
-      background: none;
-    }
-    body[data-page="league-tools"] .data-table th {
-      background: none;
-      padding-left: 0;
-      padding-right: 0.75rem;
-    }
-    body[data-page="league-tools"] .data-table td {
-      padding-left: 0;
-      padding-right: 0.75rem;
-      border-bottom-color: rgba(255,255,255,0.06);
-    }
-    body[data-page="league-tools"] .data-table select {
-      background: transparent;
-      color: var(--text);
-      border: 0;
-      border-bottom: 1px solid var(--line);
-      border-radius: 0;
-      padding: 0.35rem 0;
-      max-width: 16rem;
     }
 
     .sync-tools {
@@ -259,7 +229,10 @@
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem 1.25rem;
-      margin-bottom: 1.15rem;
+      margin-bottom: 1rem;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
     }
     .sync-tools .hint {
       color: var(--muted);
@@ -286,7 +259,7 @@
     }
     .v-team, .v-player { font-weight: 600; color: var(--text); }
     .v-meta { margin-top: 0.15rem; color: var(--muted); font-size: 0.78rem; line-height: 1.35; }
-    .v-meta.warn-status { color: #e8a078; font-weight: 700; letter-spacing: 0.04em; }
+    .v-meta.warn-status { color: var(--detail); font-weight: 700; letter-spacing: 0.04em; }
     .conf-tag {
       display: inline-block;
       font-family: var(--display);
@@ -308,9 +281,10 @@
       grid-template-columns: 1fr auto 1fr;
       gap: 1rem 1.5rem;
       align-items: center;
-      margin-bottom: 1.25rem;
-      padding: 0 0 1.15rem;
-      border-bottom: 1px solid var(--line);
+      margin-bottom: 1.15rem;
+      padding: 0.85rem 0.9rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
     }
     .conf {
       display: flex;
@@ -350,8 +324,8 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
     }
-    .sync-badge .label.ok { color: #22c55e; }
-    .sync-badge .label.warn { color: #ef4444; }
+    .sync-badge .label.ok { color: var(--good); }
+    .sync-badge .label.warn { color: var(--bad); }
     .sync-badge .sub {
       margin-top: 0.25rem;
       color: var(--muted);
@@ -362,12 +336,17 @@
     .summary {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1rem 1.5rem;
-      margin-bottom: 1.5rem;
+      gap: 0.75rem;
+      margin-bottom: 1.15rem;
+    }
+    .stat {
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
     }
     .stat span {
       display: block;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -377,7 +356,7 @@
       display: block;
       margin-top: 0.3rem;
       font-family: var(--display);
-      font-size: 1.35rem;
+      font-size: 1.25rem;
       font-weight: 600;
       letter-spacing: 0.02em;
       color: var(--text);
@@ -424,7 +403,7 @@
     .diff-table td.num.detail { color: var(--detail); }
     .diff-table td.num.overtime { color: var(--overtime); }
     .diff-table td.action {
-      color: #f0d78c;
+      color: var(--blue);
       font-weight: 600;
       white-space: nowrap;
       text-align: right;
@@ -433,23 +412,25 @@
     .diff-table .item { font-weight: 600; color: var(--text); }
 
     .sync-box {
-      margin-bottom: 1.35rem;
-      padding: 0 0 1.1rem;
-      border-bottom: 1px solid rgba(255,184,74,0.2);
+      margin-bottom: 1.15rem;
+      padding: 0.85rem 0.95rem;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--blue);
+      background: var(--panel-2);
     }
     .sync-box strong {
       display: block;
       margin-bottom: 0.35rem;
       font-family: var(--display);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #f0d78c;
+      color: var(--text);
     }
     .sync-box p {
       margin: 0 0 0.65rem;
       color: var(--muted);
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       line-height: 1.5;
       max-width: 44rem;
     }
@@ -457,15 +438,15 @@
       margin: 0;
       padding-left: 1.15rem;
       color: var(--text);
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       line-height: 1.55;
     }
     .sync-box li { margin: 0.3rem 0; }
-    .sync-box a { color: #8eb6ff; font-weight: 600; }
+    .sync-box a { color: var(--blue); font-weight: 600; }
 
     .ok-line {
       margin: 0 0 1.25rem;
-      color: #86efac;
+      color: var(--status-ok-text);
       font-size: 1rem;
       line-height: 1.45;
     }
@@ -489,8 +470,8 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
     }
-    .playoff-badge.ok { color: #22c55e; }
-    .playoff-badge.warn { color: #ef4444; }
+    .playoff-badge.ok { color: var(--good); }
+    .playoff-badge.warn { color: var(--bad); }
     .playoff-badge .dot {
       width: 0.55rem;
       height: 0.55rem;
@@ -503,13 +484,13 @@
       font-weight: 400;
     }
     .playoff-table tr.is-mismatch td.num {
-      color: #fca5a5 !important;
+      color: var(--status-err-text) !important;
     }
     .playoff-table tr.is-mismatch td.item {
-      color: #fca5a5;
+      color: var(--status-err-text);
     }
     .playoff-table tr.is-off-target td.target-cell {
-      color: #f0d78c;
+      color: var(--blue);
     }
     .playoff-checklist {
       margin: 0.85rem 0 0;
@@ -525,7 +506,7 @@
     }
     .playoff-checklist li::before {
       content: "→ ";
-      color: #8eb6ff;
+      color: var(--blue);
     }
 
     .links {
@@ -540,7 +521,7 @@
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #8eb6ff;
+      color: var(--blue);
       text-decoration: none;
     }
     .links a:hover { color: var(--nav-hover); }
@@ -552,8 +533,8 @@
       text-transform: uppercase;
       color: var(--muted);
     }
-    .role-pill.commissioner { color: #f0d78c; }
-    .role-pill.conference_admin { color: #8eb6ff; }
+    .role-pill.commissioner { color: var(--blue); }
+    .role-pill.conference_admin { color: var(--blue); }
     .muted-sm { color: var(--muted); font-size: 0.78rem; }
     .career-assign select {
       display: block;
@@ -607,8 +588,10 @@
     .invite-link-meta span { color: var(--muted); font-size: 0.88rem; }
     .invite-url {
       display: block;
-      padding: 0.35rem 0;
-      color: #b8c9ef;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
       font-size: 0.82rem;
       word-break: break-all;
       white-space: pre-wrap;
@@ -695,10 +678,11 @@
     .btn-secondary {
       background: transparent;
       color: var(--text);
-      border-color: rgba(255,255,255,0.35);
+      border-color: var(--chip-border);
     }
     .btn-secondary:hover {
       border-color: var(--text);
+      background: var(--ghost-hover-bg);
     }
 
     body[data-page="league-tools"] .msg {
@@ -723,17 +707,39 @@
     @media (max-width: 900px) {
       .comm-layout {
         grid-template-columns: 1fr;
-        gap: 1.25rem;
+        gap: 1.15rem;
       }
       .comm-nav {
         position: static;
         display: flex;
-        flex-wrap: wrap;
-        gap: 1rem 1.5rem;
-        padding-bottom: 0.85rem;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        flex-wrap: nowrap;
+        gap: 0.75rem 1rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0.75rem;
       }
-      .comm-nav-group { gap: 0.25rem; }
+      .comm-nav-group {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.2rem;
+        flex: 0 0 auto;
+      }
+      .comm-nav-label {
+        margin: 0 0.35rem 0 0;
+        padding: 0;
+        white-space: nowrap;
+      }
+      .comm-nav a {
+        white-space: nowrap;
+        border-left: 0;
+        border-bottom: 2px solid transparent;
+        padding: 0.35rem 0.45rem;
+      }
+      .comm-nav a.is-active {
+        border-left-color: transparent;
+        border-bottom-color: var(--blue);
+      }
       .status-bar { grid-template-columns: 1fr; text-align: center; }
       .conf, .conf.right { justify-content: center; text-align: center; }
       .summary { grid-template-columns: 1fr 1fr; }
@@ -778,13 +784,14 @@
       align-items: center;
       gap: 0.4rem;
       padding: 0.28rem 0.65rem;
-      border: 1px solid rgba(255,255,255,0.22);
+      border: 1px solid var(--chip-border);
       font-family: var(--display);
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--text);
+      background: var(--panel-2);
     }
     .tools-role-scope {
       margin: 0;
@@ -798,22 +805,30 @@
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 0.75rem;
-      margin: 0 0 1.75rem;
+      margin: 0 0 1.5rem;
     }
     .tools-overview a {
       display: grid;
-      gap: 0.25rem;
-      padding: 0.85rem 0.9rem;
-      border-bottom: 2px solid rgba(255,255,255,0.14);
+      gap: 0.3rem;
+      padding: 0.9rem 0.95rem;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--line);
+      background: var(--panel);
       text-decoration: none;
       color: inherit;
       min-width: 0;
+      transition: border-color 0.15s ease, background 0.15s ease;
     }
-    .tools-overview a:hover { border-bottom-color: var(--text); }
+    .tools-overview a:hover {
+      border-left-color: var(--blue);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--blue) 8%, transparent), transparent 55%),
+        var(--panel);
+    }
     .tools-overview a[hidden] { display: none !important; }
     .tools-overview strong {
       font-family: var(--display);
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -829,7 +844,7 @@
       display: inline-block;
       margin-left: 0.45rem;
       padding: 0.12rem 0.4rem;
-      border: 1px solid rgba(255,255,255,0.18);
+      border: 1px solid var(--chip-border);
       font-family: var(--display);
       font-size: 0.62rem;
       font-weight: 700;
@@ -837,6 +852,13 @@
       text-transform: uppercase;
       color: var(--muted);
       vertical-align: middle;
+    }
+
+    body[data-page="league-tools"] .btn-row .btn-send,
+    body[data-page="league-tools"] .toolbar .btn-send,
+    body[data-page="league-tools"] .sync-tools .btn-send,
+    body[data-page="league-tools"] .owners-compose .btn-send {
+      min-width: 9.5rem;
     }
 
     @media (max-width: 900px) {
@@ -856,10 +878,10 @@
   </header>
 
   <section class="page-hero shell">
-    <p class="eyebrow">Staff</p>
-    <h1>League Tools</h1>
+    <p class="eyebrow" id="tools-eyebrow">Owner</p>
+    <h1 id="tools-title">Owner Tools</h1>
     <div class="tools-hero-meta">
-      <span class="tools-role-pill" id="tools-role">Staff</span>
+      <span class="tools-role-pill" id="tools-role">Owner</span>
       <p class="tools-role-scope" id="tools-role-scope">Loading your access…</p>
     </div>
   </section>
@@ -887,7 +909,7 @@
       </div>
 
       <div class="comm-layout">
-      <nav class="comm-nav" aria-label="League Tools sections">
+      <nav class="comm-nav" aria-label="Owner Tools sections" id="tools-side-nav">
         <div class="comm-nav-group">
           <p class="comm-nav-label">Sync</p>
           <a href="#rules-sync">Rules</a>
@@ -999,7 +1021,7 @@
                   Social accounts — Members Lounge only (no franchise / HQ)
                 </label>
                 <div class="btn-row">
-                  <button type="button" class="btn" id="invite-send">Send Invites</button>
+                  <button type="button" class="btn btn-send" id="invite-send">Send Invites</button>
                 </div>
               </div>
               <div id="invite-links" class="invite-links" hidden></div>
@@ -1045,7 +1067,7 @@
                 <textarea class="field field-area field-box" id="owners-body" rows="6" maxlength="8000" placeholder="Write your message to selected team owners…"></textarea>
                 <div class="btn-row">
                   <button type="button" class="btn btn-secondary" id="owners-preview">Preview branded email</button>
-                  <button type="button" class="btn" id="owners-send">Send to selected</button>
+                  <button type="button" class="btn btn-send" id="owners-send">Send to selected</button>
                 </div>
               </div>
             </section>
@@ -1074,7 +1096,7 @@
                   <textarea class="field field-area" id="news-body" maxlength="8000" placeholder="News details…"></textarea>
                 </div>
                 <div class="btn-row">
-                  <button type="button" class="btn" id="news-add">Post News</button>
+                  <button type="button" class="btn btn-send" id="news-add">Post News</button>
                 </div>
               </div>
               <div id="news-admin-list"><div class="msg">Loading news…</div></div>
@@ -1112,7 +1134,7 @@
                   </div>
                 </div>
                 <div class="btn-row">
-                  <button type="button" class="btn" id="poll-create">Create Poll</button>
+                  <button type="button" class="btn btn-send" id="poll-create">Create Poll</button>
                 </div>
               </div>
               <div id="polls-admin-list"><div class="msg">Loading polls…</div></div>
@@ -1126,7 +1148,7 @@
               <div class="status-note" id="ticker-msg" role="status"></div>
               <div class="toolbar">
                 <input class="field" id="ticker-input" type="text" maxlength="240" placeholder="Add a custom ticker message" />
-                <button type="button" class="btn" id="ticker-add">Add</button>
+                <button type="button" class="btn btn-send" id="ticker-add">Add</button>
               </div>
               <div class="list-gap" id="ticker-list"><div class="msg">Loading ticker…</div></div>
             </section>
@@ -1141,7 +1163,7 @@
                 <input class="field" id="wrap-week" type="number" min="1" max="17" placeholder="Week (blank = auto)" style="max-width:11rem;" />
                 <button type="button" class="btn btn-secondary" id="wrap-preview">Preview</button>
                 <button type="button" class="btn btn-secondary" id="wrap-preview-email">Email HTML</button>
-                <button type="button" class="btn" id="wrap-send">Generate &amp; Send</button>
+                <button type="button" class="btn btn-send" id="wrap-send">Generate &amp; Send</button>
               </div>
               <p class="help" id="wrap-meta" style="margin-top:0.75rem;"></p>
               <div id="wrap-preview-body" class="list-gap"></div>
@@ -1152,7 +1174,7 @@
         <section class="comm-group" id="group-season" hidden>
           <header>
             <h2>Season <span class="access-tag">Owner / Commissioner</span></h2>
-            <p>Calendar, power rankings, and ESPN history archive.</p>
+            <p>Calendar, system power rankings preview, and ESPN history archive.</p>
           </header>
           <div class="comm-group-body">
             <section class="admin-block" id="calendar-admin" hidden>
@@ -1171,28 +1193,26 @@
                   <option value="survival">Mayor's Cup</option>
                   <option value="aaa">AAA Championship</option>
                 </select>
-                <button type="button" class="btn" id="cal-add">Add</button>
+                <button type="button" class="btn btn-send" id="cal-add">Add</button>
               </div>
               <div class="list-gap" id="calendar-list"></div>
             </section>
 
             <section class="admin-block" id="rankings-admin" hidden>
               <div class="section-head"><h3>Power Rankings</h3></div>
-              <p class="help">Rank all <strong>24 teams</strong> across Detail + Overtime (1–24). One team per line: <code>conference|teamId|teamName|note</code>. Line order = rank.</p>
+              <p class="help">
+                Power rankings are <strong>system-generated</strong> (not commissioner-published).
+                They appear on <a href="/rankings.html">Rankings</a> after the draft —
+                Week 1 projected points before the season, then record / scoring / differential once games start.
+              </p>
               <div class="status-note" id="rankings-msg" role="status"></div>
-              <div class="toolbar">
-                <input class="field" id="rank-week" type="number" min="1" max="17" placeholder="Week" style="max-width:7rem;" />
-                <button type="button" class="btn btn-secondary" id="rank-fill">Fill all 24 from standings</button>
-                <button type="button" class="btn" id="rank-save">Publish</button>
-              </div>
-              <textarea class="field field-area" id="rank-lines" placeholder="detail|1|Team Name|Looking sharp" style="margin-top:0.75rem;min-height:16rem;"></textarea>
               <div class="list-gap" id="rankings-list"></div>
             </section>
 
             <section class="admin-block" id="history-admin" hidden>
               <div class="section-head"><h3>Season Archive</h3></div>
               <p class="help">
-                Powers <a href="/history.html">League → History</a> and draft boards.
+                Powers <a href="/members.html#record-book">Members Lounge → Record Book</a> historical seasons and draft boards.
                 Use ESPN settings URLs (<code>leagueId</code> + <code>seasonId</code>).
                 Pre-split years can share one league ID.
                 Private seasons need <code>ESPN_SWID</code> / <code>ESPN_S2</code> on the server.
@@ -1202,7 +1222,7 @@
               <textarea class="field field-area" id="history-lines" style="min-height:9rem;" placeholder="yearNumber|season|espnLeagueId|optional label&#10;1|2023|1856396051|Year 1&#10;2|2024|1856396051|Year 2&#10;3|2025|1856396051|Year 3"></textarea>
               <div class="toolbar" style="margin-top:0.75rem;">
                 <button type="button" class="btn btn-secondary" id="history-fill-example">Fill Years 1–3 example</button>
-                <button type="button" class="btn" id="history-save">Save archive</button>
+                <button type="button" class="btn btn-send" id="history-save">Save archive</button>
               </div>
             </section>
           </div>
@@ -1216,7 +1236,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script src="/js/conference-diff.js?v=5"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1670,7 +1690,7 @@
                 </td>
                 <td>
                   ${u.approved === false
-                    ? `<span class="role-pill" style="color:#f0d78c;">Pending</span>
+                    ? `<span class="role-pill commissioner">Pending</span>
                        <div class="invite-row-actions" style="margin-top:0.45rem;display:grid;gap:0.4rem;">
                          <select class="field" data-approve-kind="${esc(u.id)}" aria-label="Approve as" style="max-width:12rem;">
                            <option value="gridiron">GridIron 24</option>
@@ -2754,7 +2774,7 @@
       meta.textContent = `Week ${data.week} · ${data.provider || '—'} · AI ${data.aiConfigured ? 'on' : 'off (template fallback)'} · Mail ${data.mail?.configured ? 'on' : 'off'} · ${data.recipientCount ?? '—'} managers`;
       body.innerHTML = `
         <div style="margin-bottom:0.65rem;font-family:var(--display);font-size:1.05rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;">${esc(data.title || '')}</div>
-        <div style="white-space:pre-wrap;color:#ddd;line-height:1.55;max-width:44rem;">${esc(data.body || '')}</div>`;
+        <div style="white-space:pre-wrap;color:var(--text);line-height:1.55;max-width:44rem;">${esc(data.body || '')}</div>`;
     }
 
     function wireWrapAdmin() {
@@ -2872,6 +2892,7 @@
 
     function showRankMsg(text, ok) {
       const el = document.getElementById('rankings-msg');
+      if (!el) return;
       el.textContent = text;
       el.className = `status-note show ${ok ? 'ok' : 'err'}`;
     }
@@ -2880,94 +2901,35 @@
       const res = await fetch('/api/power-rankings', { cache: 'no-store' });
       const data = await res.json();
       const list = document.getElementById('rankings-list');
-      const rows = data.rankings || [];
-      list.innerHTML = rows.length ? `<table class="data-table"><thead><tr><th>Week</th><th>By</th><th>Teams</th><th></th></tr></thead><tbody>
-        ${rows.map((r) => `<tr><td>${esc(r.week)}</td><td>${esc(r.authorName)}</td><td>${esc((r.ranks||[]).length)}</td>
-          <td><button type="button" class="link-action" data-del-rank="${esc(r.id)}">Delete</button></td></tr>`).join('')}
-      </tbody></table>` : `<div class="msg">No rankings published.</div>`;
+      if (!list) return;
+      if (data.mode === 'pre_draft') {
+        list.innerHTML = `<div class="msg">${esc(data.message || 'Power rankings will be displayed after the draft.')}</div>`;
+        showRankMsg('Waiting on draft completion.', true);
+        return;
+      }
+      const latest = data.latest;
+      if (!latest) {
+        list.innerHTML = `<div class="msg">${esc(data.message || 'Unavailable')}</div>`;
+        return;
+      }
+      const ranks = latest.ranks || [];
+      list.innerHTML = `
+        <p class="help" style="margin-top:0;">Live preview · ${esc(latest.mode === 'preseason' ? 'Preseason (Week 1 projections)' : `Week ${latest.week}`)} · ${esc(ranks.length)} teams</p>
+        <table class="data-table"><thead><tr><th>#</th><th>Team</th><th>Conf</th><th>Note</th></tr></thead><tbody>
+          ${ranks.slice(0, 24).map((r) => `<tr>
+            <td>${esc(r.rank)}</td>
+            <td>${esc(r.teamName)}</td>
+            <td>${esc(r.conferenceKey)}</td>
+            <td>${esc(r.note || '')}</td>
+          </tr>`).join('')}
+        </tbody></table>`;
+      showRankMsg('System rankings (read-only).', true);
     }
 
     function wireRankingsAdmin() {
       revealSeasonTools();
       document.getElementById('rankings-admin').hidden = false;
       document.getElementById('jump-rankings').hidden = false;
-      document.getElementById('rank-fill').addEventListener('click', async () => {
-        try {
-          const res = await fetch('/api/leagues', { cache: 'no-store' });
-          const data = await res.json();
-          const pool = [];
-          for (const key of ['detail', 'overtime']) {
-            const conf = (data.conferences || []).find((c) => c.key === key);
-            for (const t of (conf?.teams || [])) {
-              pool.push({
-                conferenceKey: key,
-                id: t.id,
-                name: t.name,
-                wins: Number(t.wins || 0),
-                losses: Number(t.losses || 0),
-                ties: Number(t.ties || 0),
-                pointsFor: Number(t.pointsFor || 0)
-              });
-            }
-          }
-          if (pool.length !== 24) {
-            throw new Error(`Expected 24 teams from ESPN (got ${pool.length}). Both conferences need 12 franchises.`);
-          }
-          pool.sort((a, b) => {
-            const aw = a.wins + a.ties * 0.5;
-            const bw = b.wins + b.ties * 0.5;
-            if (bw !== aw) return bw - aw;
-            return b.pointsFor - a.pointsFor || a.name.localeCompare(b.name);
-          });
-          document.getElementById('rank-lines').value = pool
-            .map((t) => `${t.conferenceKey}|${t.id}|${t.name}|`)
-            .join('\n');
-          showRankMsg('Filled all 24 teams (sorted by record, then points). Reorder lines to set 1–24.', true);
-        } catch (err) {
-          showRankMsg(err.message, false);
-        }
-      });
-      document.getElementById('rank-save').addEventListener('click', async () => {
-        const week = Number(document.getElementById('rank-week').value);
-        const lines = document.getElementById('rank-lines').value
-          .split(/\n+/)
-          .map((line) => line.trim())
-          .filter(Boolean);
-        if (lines.length !== 24) {
-          showRankMsg(`Need exactly 24 lines (1–24). Currently ${lines.length}.`, false);
-          return;
-        }
-        const ranks = lines.map((line, i) => {
-          const [conferenceKey, teamId, teamName, note] = line.split('|');
-          return {
-            rank: i + 1,
-            conferenceKey: (conferenceKey || '').trim(),
-            teamId: Number(teamId),
-            teamName: (teamName || '').trim(),
-            note: (note || '').trim()
-          };
-        });
-        try {
-          const res = await fetch('/api/power-rankings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ week, ranks })
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not publish');
-          showRankMsg(`Week ${week} rankings published (1–24).`, true);
-          await loadRankingsAdmin();
-        } catch (err) {
-          showRankMsg(err.message, false);
-        }
-      });
-      document.getElementById('rankings-list').addEventListener('click', async (e) => {
-        const id = e.target?.dataset?.delRank;
-        if (!id) return;
-        if (!confirm('Delete this ranking set?')) return;
-        await fetch(`/api/power-rankings/${encodeURIComponent(id)}`, { method: 'DELETE' });
-        await loadRankingsAdmin();
-      });
     }
 
     function showHistoryMsg(text, ok) {
@@ -3054,7 +3016,7 @@
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save archive');
           document.getElementById('history-lines').value = historyLinesFromConfigured(data.configured || []);
-          showHistoryMsg(`Saved ${((data.configured || []).length)} prior season(s). Managers can open League → History.`, true);
+          showHistoryMsg(`Saved ${((data.configured || []).length)} prior season(s). Managers can open Members Lounge → Record Book.`, true);
         } catch (err) {
           showHistoryMsg(err.message, false);
         }
@@ -3271,9 +3233,25 @@
       if (overview) overview.hidden = false;
     }
 
+    function toolsDeskLabel(user) {
+      if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner Tools';
+      if (user?.role === 'commissioner') return 'League Tools';
+      return 'League Tools';
+    }
+
     function applyToolsAccess(user) {
+      const desk = toolsDeskLabel(user);
+      const titleEl = document.getElementById('tools-title');
+      const eyebrowEl = document.getElementById('tools-eyebrow');
       const roleEl = document.getElementById('tools-role');
       const scopeEl = document.getElementById('tools-role-scope');
+      const sideNav = document.getElementById('tools-side-nav');
+      if (titleEl) titleEl.textContent = desk;
+      if (eyebrowEl) {
+        eyebrowEl.textContent = (user?.siteOwner || user?.canSwitchLeagues) ? 'Owner' : 'Staff';
+      }
+      if (document.title) document.title = `${desk} · GridIron 24`;
+      if (sideNav) sideNav.setAttribute('aria-label', `${desk} sections`);
       if (roleEl) roleEl.textContent = roleDisplayLabel(user);
       if (scopeEl) scopeEl.textContent = roleAccessScope(user);
       revealPeopleTools();
@@ -3347,7 +3325,8 @@
       }
       try {
         await bootCommissionerTools(user);
-        window.GridIronNav?.setSync('League Tools', true);
+        window.GridIronNav?.setSync(toolsDeskLabel(user), true);
+        wireToolsNavSpy();
         if (location.hash) {
           const el = document.querySelector(location.hash);
           if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -3356,6 +3335,33 @@
         document.getElementById('content').innerHTML = '<div class="msg"><strong>Error</strong>' + esc(err.message) + '</div>';
       }
     });
+
+    function wireToolsNavSpy() {
+      const nav = document.getElementById('tools-side-nav');
+      if (!nav) return;
+      const links = [...nav.querySelectorAll('a[href^="#"]')].filter((a) => !a.hidden && a.offsetParent !== null);
+      const sections = links
+        .map((a) => document.querySelector(a.getAttribute('href')))
+        .filter(Boolean);
+      if (!sections.length) return;
+
+      const setActive = (id) => {
+        links.forEach((a) => {
+          a.classList.toggle('is-active', a.getAttribute('href') === `#${id}`);
+        });
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]?.target?.id) setActive(visible[0].target.id);
+      }, { rootMargin: '-20% 0px -55% 0px', threshold: [0.1, 0.35, 0.6] });
+
+      sections.forEach((sec) => observer.observe(sec));
+      if (location.hash?.startsWith('#')) setActive(location.hash.slice(1));
+      else if (sections[0]?.id) setActive(sections[0].id);
+    }
   </script>
 </body>
 </html>

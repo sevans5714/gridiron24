@@ -1,5 +1,5 @@
 /**
- * Members Lounge: Survivor Pool + Casala's Palace Sports Book + Death Pool.
+ * Members Lounge: Casala's Palace Sports Book + Pool Creator.
  */
 (function () {
   function esc(v = '') {
@@ -191,6 +191,7 @@
   }
 
   /* ——— Casala's Palace Sports Book ——— */
+  const BOOK_POLL_MS = 30_000;
   const book = {
     data: null,
     slip: [],
@@ -198,17 +199,153 @@
     tab: 'lines', // lines | futures | tickets | standings
     sportId: null,
     futureId: null,
-    showAllFutures: false
+    showAllFutures: false,
+    stake: 25,
+    privateBet: false,
+    pollTimer: null,
+    lastStatus: null,
+    dayFilter: 'all',
+    teamQuery: ''
   };
 
-  const DEGEN_SPORT_ORDER = ['nfl', 'ncaaf', 'nba', 'mlb', 'nhl', 'ncaab'];
+  const DEGEN_SPORT_ORDER = [
+    'mlb',
+    'nfl',
+    'ncaaf',
+    'nba',
+    'nhl',
+    'wnba',
+    'mls',
+    'ncaam',
+    'ncaaw',
+    'cbase',
+    'csoft',
+    'llws'
+  ];
+
+  function pad2(n) {
+    return String(n).padStart(2, '0');
+  }
+
+  function gameDayKey(iso) {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '';
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    } catch {
+      return '';
+    }
+  }
+
+  function todayDayKey() {
+    return gameDayKey(new Date().toISOString());
+  }
+
+  function tomorrowDayKey() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return gameDayKey(d.toISOString());
+  }
+
+  function dayChipLabel(key) {
+    if (!key) return 'TBD';
+    if (key === todayDayKey()) return 'Today';
+    if (key === tomorrowDayKey()) return 'Tomorrow';
+    try {
+      const d = new Date(`${key}T12:00:00`);
+      return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    } catch {
+      return key;
+    }
+  }
+
+  function teamHaystack(g) {
+    const parts = [
+      g?.away?.abbreviation,
+      g?.away?.shortName,
+      g?.away?.name,
+      g?.home?.abbreviation,
+      g?.home?.shortName,
+      g?.home?.name
+    ];
+    return parts.filter(Boolean).join(' ').toLowerCase();
+  }
+
+  function boardDayKeys(games) {
+    const keys = [];
+    const seen = new Set();
+    for (const g of games || []) {
+      const k = gameDayKey(g.date);
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      keys.push(k);
+    }
+    keys.sort();
+    return keys;
+  }
+
+  function filterBoardGames(games) {
+    const q = String(book.teamQuery || '').trim().toLowerCase();
+    let list = (games || []).slice();
+    if (book.dayFilter && book.dayFilter !== 'all') {
+      list = list.filter((g) => gameDayKey(g.date) === book.dayFilter);
+    }
+    if (q) {
+      list = list.filter((g) => teamHaystack(g).includes(q));
+    }
+    return list;
+  }
 
   function setDegenStatus(msg, ok) {
-    const el = document.getElementById('degen-status');
+    book.lastStatus = msg ? { msg, ok } : null;
+    const slip = document.getElementById('degen-slip-status');
+    const panel = document.getElementById('degen-status');
+    const el = slip || panel;
+    if (panel && slip) {
+      panel.textContent = '';
+      panel.hidden = true;
+      panel.classList.remove('is-ok', 'is-err');
+    }
     if (!el) return;
     el.textContent = msg || '';
+    el.hidden = !msg;
     el.classList.toggle('is-ok', ok === true);
     el.classList.toggle('is-err', ok === false);
+  }
+
+  function captureSlipForm() {
+    const stakeEl = document.getElementById('degen-stake');
+    if (stakeEl) {
+      const n = Number(stakeEl.value);
+      if (Number.isFinite(n) && n > 0) book.stake = n;
+    }
+    const priv = document.getElementById('degen-private');
+    if (priv) book.privateBet = Boolean(priv.checked);
+  }
+
+  function sportsbookVisible() {
+    const desk = document.getElementById('gambler-desk');
+    const panel = document.getElementById('degenerate-book');
+    if (!desk || desk.hidden) return false;
+    if (panel && panel.hidden) return false;
+    if (typeof document.hidden === 'boolean' && document.hidden) return false;
+    return Boolean(document.getElementById('degenerate-book-root'));
+  }
+
+  function stopBookPoll() {
+    if (book.pollTimer) {
+      clearInterval(book.pollTimer);
+      book.pollTimer = null;
+    }
+  }
+
+  function startBookPoll() {
+    stopBookPoll();
+    book.pollTimer = setInterval(() => {
+      if (!sportsbookVisible() || book.busy) return;
+      loadBook({ quiet: true });
+    }, BOOK_POLL_MS);
   }
 
   function slipKey(leg) {
@@ -322,56 +459,97 @@
     return hit || markets[0];
   }
 
+  function teamLogoHtml(t) {
+    if (t?.logo) {
+      return `<img class="degen-team-logo" src="${esc(t.logo)}" alt="" width="28" height="28" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`;
+    }
+    return `<span class="degen-team-logo is-blank" aria-hidden="true"></span>`;
+  }
+
+  function teamLabel(t, fallback) {
+    return t?.abbreviation || t?.shortName || fallback;
+  }
+
   function renderGameCard(g, selected) {
-    const away = g.away?.abbreviation || 'AWAY';
-    const home = g.home?.abbreviation || 'HOME';
+    const away = g.away || {};
+    const home = g.home || {};
+    const awayAbbr = teamLabel(away, 'AWAY');
+    const homeAbbr = teamLabel(home, 'HOME');
     const odds = g.odds || {};
-    const cell = (label, payload, key) => {
+    const cell = (primary, secondary, payload, key) => {
       if (!payload) return `<span class="degen-cell is-empty">—</span>`;
-      return `<button type="button" class="degen-cell${selected.has(key) ? ' is-on' : ''}" data-leg="${attrJson(payload)}">${esc(label)}</button>`;
+      return `<button type="button" class="degen-cell${selected.has(key) ? ' is-on' : ''}" data-leg="${attrJson(payload)}">
+        <span class="degen-cell-main">${esc(primary)}</span>
+        ${secondary != null ? `<span class="degen-cell-sub">${esc(secondary)}</span>` : ''}
+      </button>`;
+    };
+    const fmtSpread = (n) => {
+      if (n == null || !Number.isFinite(Number(n))) return null;
+      const v = Number(n);
+      return `${v > 0 ? '+' : ''}${v}`;
     };
     const awaySpread = odds.away?.spread != null
       ? cell(
-        `${Number(odds.away.spread) > 0 ? '+' : ''}${odds.away.spread}`,
+        fmtSpread(odds.away.spread),
+        '−110',
         { eventId: String(g.id), market: 'spread', side: 'away' },
         `${g.id}|spread|away`
       )
       : cell(null);
     const homeSpread = odds.home?.spread != null
       ? cell(
-        `${Number(odds.home.spread) > 0 ? '+' : ''}${odds.home.spread}`,
+        fmtSpread(odds.home.spread),
+        '−110',
         { eventId: String(g.id), market: 'spread', side: 'home' },
         `${g.id}|spread|home`
       )
       : cell(null);
     const over = odds.overUnder != null
-      ? cell(`O ${odds.overUnder}`, { eventId: String(g.id), market: 'total', side: 'over' }, `${g.id}|total|over`)
+      ? cell(`O ${odds.overUnder}`, '−110', { eventId: String(g.id), market: 'total', side: 'over' }, `${g.id}|total|over`)
       : cell(null);
     const under = odds.overUnder != null
-      ? cell(`U ${odds.overUnder}`, { eventId: String(g.id), market: 'total', side: 'under' }, `${g.id}|total|under`)
+      ? cell(`U ${odds.overUnder}`, '−110', { eventId: String(g.id), market: 'total', side: 'under' }, `${g.id}|total|under`)
       : cell(null);
     const awayMl = odds.away?.moneyline != null
-      ? cell(String(odds.away.moneyline), { eventId: String(g.id), market: 'moneyline', side: 'away' }, `${g.id}|moneyline|away`)
+      ? cell(String(odds.away.moneyline), null, { eventId: String(g.id), market: 'moneyline', side: 'away' }, `${g.id}|moneyline|away`)
       : cell(null);
     const homeMl = odds.home?.moneyline != null
-      ? cell(String(odds.home.moneyline), { eventId: String(g.id), market: 'moneyline', side: 'home' }, `${g.id}|moneyline|home`)
+      ? cell(String(odds.home.moneyline), null, { eventId: String(g.id), market: 'moneyline', side: 'home' }, `${g.id}|moneyline|home`)
       : cell(null);
+
+    const row = (side, team, abbr, spreadBtn, totalBtn, mlBtn) => `
+      <div class="degen-game-row">
+        <div class="degen-team">
+          ${teamLogoHtml(team)}
+          <div class="degen-team-text">
+            <span class="abbr">${esc(abbr)}</span>
+            <span class="name">${esc(team.shortName || team.name || abbr)}</span>
+          </div>
+        </div>
+        ${spreadBtn}
+        ${totalBtn}
+        ${mlBtn}
+      </div>`;
+
     return `<article class="degen-game">
-      <div class="degen-game-top">
-        <div class="matchup"><span>${esc(away)}</span><em>@</em><span>${esc(home)}</span></div>
-        <div class="kick">${esc(fmtKick(g.date))}</div>
+      <div class="degen-game-meta">
+        <span class="kick">${esc(fmtKick(g.date))}</span>
+        ${g.status?.shortDetail && g.status?.bucket !== 'upcoming'
+          ? `<span class="live">${esc(g.status.shortDetail)}</span>`
+          : ''}
       </div>
-      <div class="degen-grid-head" aria-hidden="true"><span>${esc(away)}</span><span>Total</span><span>${esc(home)}</span></div>
-      <div class="degen-grid-lines">
-        ${awaySpread}${over}${homeSpread}
-        ${awayMl}${under}${homeMl}
+      <div class="degen-game-cols" aria-hidden="true">
+        <span></span><span>Spread</span><span>Total</span><span>ML</span>
       </div>
+      ${row('away', away, awayAbbr, awaySpread, over, awayMl)}
+      ${row('home', home, homeAbbr, homeSpread, under, homeMl)}
     </article>`;
   }
 
   function renderBook() {
     const root = document.getElementById('degenerate-book-root');
     if (!root) return;
+    captureSlipForm();
     const d = book.data;
     if (!d?.ok) {
       root.innerHTML = `<div class="records-empty">${esc(d?.error || 'Sportsbook unavailable')}</div>`;
@@ -393,10 +571,40 @@
           </button>`).join('')
       : '';
 
-    const gamesHtml = board
-      ? (board.games || []).slice(0, 10).map((g) => renderGameCard(g, selected)).join('')
-        || `<div class="degen-empty">No open ${esc(board.label)} lines right now.</div>`
-      : `<div class="degen-empty">No open lines right now.</div>`;
+    const allGames = board?.games || [];
+    const dayKeys = boardDayKeys(allGames);
+    if (book.dayFilter !== 'all' && book.dayFilter && !dayKeys.includes(book.dayFilter)) {
+      book.dayFilter = dayKeys.includes(todayDayKey()) ? todayDayKey() : (dayKeys[0] || 'all');
+    }
+    const filteredGames = filterBoardGames(allGames);
+
+    const dayTabs = dayKeys.length
+      ? [
+          `<button type="button" class="degen-day${book.dayFilter === 'all' ? ' is-on' : ''}" data-day="all">All days <em>${allGames.length}</em></button>`,
+          ...dayKeys.map((k) => {
+            const count = allGames.filter((g) => gameDayKey(g.date) === k).length;
+            return `<button type="button" class="degen-day${book.dayFilter === k ? ' is-on' : ''}" data-day="${esc(k)}">${esc(dayChipLabel(k))} <em>${count}</em></button>`;
+          })
+        ].join('')
+      : '';
+
+    let gamesHtml = '';
+    if (!filteredGames.length) {
+      gamesHtml = `<div class="degen-empty">${allGames.length
+        ? 'No games match that day / team filter.'
+        : `No open ${esc(board?.label || '')} games on the board.`}</div>`;
+    } else if (book.dayFilter === 'all' && dayKeys.length > 1) {
+      gamesHtml = dayKeys.map((k) => {
+        const slice = filteredGames.filter((g) => gameDayKey(g.date) === k);
+        if (!slice.length) return '';
+        return `<section class="degen-day-group">
+          <h3 class="degen-day-heading">${esc(dayChipLabel(k))}<span>${slice.length} game${slice.length === 1 ? '' : 's'}</span></h3>
+          ${slice.map((g) => renderGameCard(g, selected)).join('')}
+        </section>`;
+      }).join('');
+    } else {
+      gamesHtml = filteredGames.map((g) => renderGameCard(g, selected)).join('');
+    }
 
     const markets = d.futures?.markets || [];
     if (!book.futureId && markets[0]) book.futureId = markets[0].id;
@@ -432,12 +640,14 @@
       `;
     }
 
+    // Keep the quoted line frozen on the slip until lock; board lines keep moving.
     const enriched = book.slip.map((leg) => {
+      if (leg.odds != null || leg.line != null) return leg;
       const meta = findBoardLegOdds(leg.eventId, leg.market, leg.side) || {};
       return { ...leg, ...meta };
     });
     const odds = combineOdds(enriched);
-    const stakeDefault = 25;
+    const stakeDefault = Number.isFinite(Number(book.stake)) ? Number(book.stake) : 25;
     const ticketLegs = enriched.length
       ? enriched.map((leg) => `
           <div class="degen-leg">
@@ -511,22 +721,22 @@
         </header>
         <div class="degen-ticket-legs">${ticketLegs}</div>
         <div class="degen-ticket-summary">
+          <div class="degen-payout-grid">
+            <div><span class="label">Odds</span><strong>${esc(fmtOdds(odds))}</strong></div>
+            <div><span class="label">To win</span><strong id="degen-towin">${esc(fmtCash(americanToWin(stakeDefault, odds)))}</strong></div>
+          </div>
           <div class="degen-slip-bar">
             <label>Stake
               <input type="number" id="degen-stake" min="5" max="500" step="1" value="${stakeDefault}" />
             </label>
             <button type="button" id="degen-clear" class="degen-btn-ghost" ${enriched.length ? '' : 'disabled'}>Clear</button>
           </div>
-          <div class="degen-payout-grid">
-            <div><span class="label">Odds</span><strong>${esc(fmtOdds(odds))}</strong></div>
-            <div><span class="label">To win</span><strong id="degen-towin">${esc(fmtCash(americanToWin(stakeDefault, odds)))}</strong></div>
-          </div>
           <label class="degen-private">
-            <input type="checkbox" id="degen-private" />
-            Mark private
+            <input type="checkbox" id="degen-private"${book.privateBet ? ' checked' : ''} />
+            <span>Private</span>
           </label>
+          <p class="degen-slip-status" id="degen-slip-status" role="status" hidden></p>
           <button type="button" id="degen-place" class="degen-btn-lock" ${enriched.length ? '' : 'disabled'}>Lock it in</button>
-          <p class="degen-note">Final once submitted. Private still posts in Roll Call with an insult.</p>
         </div>
         <div class="degen-best-open">
           <h4>Your open bets <span>${(d.open || []).length}</span></h4>
@@ -542,20 +752,30 @@
         </div>
       </aside>`;
 
+    const linesUpdated = d.generatedAt
+      ? (() => {
+        try {
+          return `Lines as of ${new Date(d.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`;
+        } catch {
+          return '';
+        }
+      })()
+      : '';
     const tab = book.tab;
     let screen = '';
     if (tab === 'lines') {
       screen = `
-        <div class="degen-league-banner">
-          ${board?.logo ? `<img src="${esc(board.logo)}" alt="" width="36" height="36" />` : ''}
-          <div>
-            <p class="kicker">You are betting</p>
-            <p class="name">${esc(board?.label || 'No league selected')}</p>
-          </div>
-        </div>
         <div class="degen-chips">${sportTabs || '<span class="degen-empty">No sports posted</span>'}</div>
+        <div class="degen-slate-tools">
+          <div class="degen-days">${dayTabs}</div>
+          <label class="degen-team-search">
+            <span class="sr-only">Find team</span>
+            <input type="search" id="degen-team-q" placeholder="Find a team…" value="${esc(book.teamQuery || '')}" autocomplete="off" />
+          </label>
+        </div>
+        ${linesUpdated ? `<p class="degen-lines-asof">${esc(linesUpdated)} · next 6 days</p>` : ''}
         <div class="degen-layout">
-          <div class="degen-board">${gamesHtml}</div>
+          <div class="degen-board">${gamesHtml || `<div class="degen-empty">No open lines right now.</div>`}</div>
           ${ticketAside}
         </div>`;
     } else if (tab === 'futures') {
@@ -622,8 +842,32 @@
       btn.addEventListener('click', () => {
         book.sportId = btn.getAttribute('data-sport');
         book.tab = 'lines';
+        book.dayFilter = 'all';
+        book.teamQuery = '';
         renderBook();
       });
+    });
+    root.querySelectorAll('[data-day]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        book.dayFilter = btn.getAttribute('data-day') || 'all';
+        renderBook();
+      });
+    });
+    const teamQ = document.getElementById('degen-team-q');
+    teamQ?.addEventListener('input', () => {
+      book.teamQuery = teamQ.value || '';
+      // Re-render board without losing focus: update via soft filter
+      const active = document.activeElement === teamQ;
+      const start = teamQ.selectionStart;
+      const end = teamQ.selectionEnd;
+      renderBook();
+      if (active) {
+        const again = document.getElementById('degen-team-q');
+        if (again) {
+          again.focus();
+          try { again.setSelectionRange(start, end); } catch { /* ignore */ }
+        }
+      }
     });
     root.querySelectorAll('[data-future-market]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -672,19 +916,26 @@
       if (toWinEl) toWinEl.textContent = fmtCash(americanToWin(stakeInput.value, odds));
     });
     document.getElementById('degen-place')?.addEventListener('click', placeBet);
+    if (book.lastStatus?.msg) {
+      setDegenStatus(book.lastStatus.msg, book.lastStatus.ok);
+    }
   }
 
-  async function loadBook() {
+  async function loadBook({ quiet = false } = {}) {
     const root = document.getElementById('degenerate-book-root');
     if (!root) return;
     try {
-      const res = await fetch('/api/paper-book', { credentials: 'same-origin' });
+      captureSlipForm();
+      const res = await fetch('/api/paper-book', { credentials: 'same-origin', cache: 'no-store' });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load sportsbook');
       book.data = data;
       renderBook();
+      startBookPoll();
     } catch (err) {
-      root.innerHTML = `<div class="records-empty">${esc(err.message)}</div>`;
+      if (!quiet) {
+        root.innerHTML = `<div class="records-empty">${esc(err.message)}</div>`;
+      }
     }
   }
 
@@ -712,10 +963,7 @@
       try {
         window.dispatchEvent(new CustomEvent('gi:bet-placed', { detail: { future: data.placedFuture || null } }));
       } catch { /* ignore */ }
-      setDegenStatus(
-        isPrivate ? 'Private future locked — Roll Call got the roast' : 'Future locked — record only',
-        true
-      );
+      setDegenStatus(isPrivate ? 'Private future locked.' : 'Future locked.', true);
     } catch (err) {
       setDegenStatus(err.message, false);
     } finally {
@@ -725,6 +973,7 @@
 
   async function placeBet() {
     if (book.busy || !book.slip.length) return;
+    captureSlipForm();
     const stake = Number(document.getElementById('degen-stake')?.value);
     const isPrivate = Boolean(document.getElementById('degen-private')?.checked);
     book.busy = true;
@@ -741,7 +990,9 @@
           legs: book.slip.map((l) => ({
             eventId: l.eventId,
             market: l.market,
-            side: l.side
+            side: l.side,
+            line: l.line,
+            odds: l.odds
           }))
         })
       });
@@ -749,11 +1000,10 @@
       if (!res.ok || !data.ok) throw new Error(data.error || 'Bet failed');
       book.data = data;
       book.slip = [];
+      book.privateBet = false;
       await loadBook();
       setDegenStatus(
-        isPrivate
-          ? 'Ticket locked private — Roll Call got the roast. No take-backs.'
-          : 'Ticket locked — good luck. No take-backs.',
+        isPrivate ? 'Private ticket locked.' : 'Ticket locked.',
         true
       );
       try {
@@ -771,7 +1021,10 @@
     data: null,
     poolId: null,
     busy: false,
-    timer: null
+    timer: null,
+    roster: null,
+    rosterLoading: false,
+    joinFlash: null
   };
 
   function setDeathStatus(msg, ok) {
@@ -830,17 +1083,29 @@
     return mine;
   }
 
-  function renderDeathWatch() {
+  function renderDeathWatch(pool = null) {
     const watch = death.data?.newsWatch;
     const stories = watch?.stories || [];
     const scanned = watch?.lastScanAt ? fmtWhen(watch.lastScanAt) : 'never';
-    const rows = stories.slice(0, 12).map((s) => {
-      const hits = s.poolHits || [];
+    const poolId = pool?.id || null;
+    const poolNames = new Set(
+      (pool?.noms || []).map((n) => String(n.name || '').toLowerCase()).filter(Boolean)
+    );
+    const filtered = poolId
+      ? stories.filter((s) => {
+          const hits = s.poolHits || [];
+          if (hits.some((h) => h.poolId === poolId)) return true;
+          const matched = s.matchedNames || [];
+          return matched.some((n) => poolNames.has(String(n || '').toLowerCase()));
+        })
+      : stories;
+    const rows = filtered.slice(0, 12).map((s) => {
+      const hits = (s.poolHits || []).filter((h) => !poolId || h.poolId === poolId);
       const title = s.url
         ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`
         : esc(s.title);
       const hitLine = hits.length
-        ? `<p class="hit">Pool match: ${hits.map((h) => `${esc(h.nomName)}${h.ownerName ? ` (${esc(h.ownerName)})` : ''} · ${esc(h.poolName)}`).join(' · ')}</p>`
+        ? `<p class="hit">Pool match: ${hits.map((h) => `${esc(h.nomName)}${h.ownerName ? ` (${esc(h.ownerName)})` : ''}`).join(' · ')}</p>`
         : (s.matchedNames?.length
           ? `<p class="hit">On watch list: ${esc(s.matchedNames.slice(0, 4).join(', '))}</p>`
           : '');
@@ -851,16 +1116,20 @@
           ${s.snippet ? `<p class="meta">${esc(s.snippet)}</p>` : ''}
           ${hitLine}
         </article>`;
-    }).join('') || '<p class="records-note" style="margin:0">No death headlines yet — the daily scan will fill this desk.</p>';
+    }).join('') || `<p class="records-note" style="margin:0">${poolId
+      ? 'No headlines tied to this pool yet — names you auction or draft will show up here when news hits.'
+      : 'No death headlines yet — the daily scan will fill this desk.'}</p>`;
 
     return `
       <div class="death-watch">
         <div class="death-watch-head">
-          <h3 class="death-subhead" style="margin:0">Death watch · news desk</h3>
-          <p class="meta">Last scan ${esc(scanned)} · ${esc(String(stories.length))} stories</p>
+          <h3 class="death-subhead" style="margin:0">${poolId ? 'Death news · this pool' : 'Death watch · news desk'}</h3>
+          <p class="meta">Last scan ${esc(scanned)} · ${esc(String(filtered.length))} stor${filtered.length === 1 ? 'y' : 'ies'}</p>
           <button type="button" id="death-scan-news"${death.busy ? ' disabled' : ''}>Refresh scan</button>
         </div>
-        <p class="records-note" style="margin:0 0 0.55rem">Daily headlines from Google News + Wikipedia deaths for celebrity, sports, pop culture, and politics. Pool-owned names are flagged when they appear.</p>
+        <p class="records-note" style="margin:0 0 0.55rem">${poolId
+          ? 'Headlines that mention names in this pool. Join the pool to nominate, bid, and score.'
+          : 'Daily headlines from Google News + Wikipedia. Open a pool to see news for that roster.'}</p>
         ${rows}
       </div>`;
   }
@@ -877,7 +1146,7 @@
     const defs = d.defaults || {};
     const pools = d.pools || [];
     const pool = activePool();
-    const watchPanel = renderDeathWatch();
+    const roster = death.roster || [];
 
     const createForm = `
       <form class="death-create" id="death-create-form">
@@ -916,11 +1185,9 @@
 
     if (!pools.length) {
       root.innerHTML = `
-        ${watchPanel}
-        <p class="records-note" style="margin-top:0">No pools yet — create an auction or draft pool.</p>
+        <p class="records-note" style="margin-top:0">No pools yet — create an auction or draft pool. Death news appears inside each pool after you create one.</p>
         ${createForm}`;
       bindDeathCreate();
-      bindDeathScan();
       return;
     }
 
@@ -950,6 +1217,29 @@
       ).join('');
       const isDraft = pool.mode === 'draft';
       const draft = pool.draft || null;
+      const watchPanel = renderDeathWatch(pool);
+
+      if (!pool.joined) {
+        const canJoin = pool.status === 'open' && !(isDraft && draft?.status === 'active');
+        const buyIn = Number(pool.buyIn) || 0;
+        detail = `
+          <div class="death-join-gate">
+            <h3>${esc(pool.name)}</h3>
+            <p class="buy-in-hero"><span>Buy-in to join</span>${buyIn > 0 ? `$${esc(String(buyIn))}` : 'FREE'}</p>
+            <p class="meta">
+              ${esc(pool.mode === 'draft' ? 'Draft format' : `Auction · ${pool.auctionHours || 24}h windows`)}
+              · ${esc(String(pool.memberCount || 0))} member${pool.memberCount === 1 ? '' : 's'}
+              · Pot ${esc(moneyPlain(pool.pot))}
+              · Closes ${esc(fmtWhen(pool.closesAt))}
+            </p>
+            <p class="meta" style="margin-top:-0.35rem;">Join to unlock the board, bankroll, nominations, and this pool’s death news.</p>
+            <div class="death-actions" style="justify-content:center;margin:0;">
+              ${canJoin
+                ? `<button type="button" data-join-pool="${esc(pool.id)}">${buyIn > 0 ? `Join · pay $${esc(String(buyIn))} buy-in` : 'Join this pool'}</button>`
+                : '<p class="records-note" style="margin:0;">Joining is closed for this pool.</p>'}
+            </div>
+          </div>`;
+      } else {
 
       const bank = me ? `
         <div class="death-bank">
@@ -959,12 +1249,7 @@
           <div class="death-stat"><p class="label">Spent</p><p class="value">${esc(moneyPlain(me.spent))}</p></div>`}
           <div class="death-stat"><p class="label">Hits</p><p class="value">${esc(String(me.hits || 0))}</p></div>
           ${isDraft && me.draftSlot ? `<div class="death-stat"><p class="label">Draft slot</p><p class="value">#${esc(String(me.draftSlot))}</p></div>` : ''}
-        </div>` : `
-        <div class="death-actions">
-          ${pool.status === 'open' && !(isDraft && draft?.status === 'active')
-            ? `<button type="button" data-join-pool="${esc(pool.id)}">Join this pool</button>`
-            : '<p class="records-note">Joining is closed.</p>'}
-        </div>`;
+        </div>` : '';
 
       let draftPanel = '';
       if (isDraft && pool.joined) {
@@ -1008,6 +1293,10 @@
 
       let auctionSettings = '';
       if (!isDraft && pool.isCreator && pool.status === 'open') {
+        const assignOpts = (roster || [])
+          .filter((m) => m.id && !(pool.members || []).some((pm) => String(pm.userId) === String(m.id)))
+          .map((m) => `<option value="${esc(m.id)}" data-name="${esc(m.name || m.loginName || 'Member')}">${esc(m.name || m.loginName || m.id)}</option>`)
+          .join('');
         auctionSettings = `
           <form class="death-nom-bar" id="death-auction-settings">
             <label>Auction length (hrs)
@@ -1015,7 +1304,46 @@
             </label>
             <button type="submit"${death.busy ? ' disabled' : ''}>Save length</button>
           </form>
-          <p class="records-note">New nominations use this bidding window (1–168 hours).</p>`;
+          <p class="records-note">New nominations use this bidding window (1–168 hours).</p>
+          <h3 class="death-subhead">Assign members</h3>
+          <form class="death-nom-bar" id="death-assign-form">
+            <label>Lounge member
+              <select name="userId" required>
+                <option value="">Select…</option>
+                ${assignOpts || '<option value="" disabled>Everyone is already in</option>'}
+              </select>
+            </label>
+            <button type="submit"${death.busy || !assignOpts ? ' disabled' : ''}>Add to pool</button>
+          </form>
+          <h3 class="death-subhead">Upload auction list</h3>
+          <form class="death-nom-bar" id="death-import-form">
+            <label style="flex:1 1 100%;">Names (one per line · optional Name | Category)
+              <textarea name="text" rows="4" maxlength="8000" placeholder="Taylor Swift&#10;Tom Brady | Sports"></textarea>
+            </label>
+            <label>File
+              <input type="file" name="file" accept=".txt,.csv,.tsv,text/plain" />
+            </label>
+            <label>Hours
+              <input name="auctionHours" type="number" min="1" max="168" step="1" value="${esc(String(pool.auctionHours || 24))}" />
+            </label>
+            <button type="submit"${death.busy ? ' disabled' : ''}>Import &amp; open auctions</button>
+          </form>`;
+      } else if (isDraft && pool.isCreator && pool.status === 'open') {
+        const assignOpts = (roster || [])
+          .filter((m) => m.id && !(pool.members || []).some((pm) => String(pm.userId) === String(m.id)))
+          .map((m) => `<option value="${esc(m.id)}" data-name="${esc(m.name || m.loginName || 'Member')}">${esc(m.name || m.loginName || m.id)}</option>`)
+          .join('');
+        auctionSettings = `
+          <h3 class="death-subhead">Assign members</h3>
+          <form class="death-nom-bar" id="death-assign-form">
+            <label>Lounge member
+              <select name="userId" required>
+                <option value="">Select…</option>
+                ${assignOpts || '<option value="" disabled>Everyone is already in</option>'}
+              </select>
+            </label>
+            <button type="submit"${death.busy || !assignOpts ? ' disabled' : ''}>Add to pool</button>
+          </form>`;
       }
 
       const canNominateAuction = !isDraft && pool.joined && pool.status === 'open';
@@ -1064,7 +1392,7 @@
             ${bidUi}
             ${scoreBtn ? `<div class="death-actions" style="margin-top:0.45rem">${scoreBtn}</div>` : ''}
           </article>`;
-      }).join('') || `<p class="records-note">${isDraft ? 'No picks yet.' : 'No names yet — nominate to open an auction.'}</p>`;
+      }).join('') || `<p class="records-note">${isDraft ? 'No picks yet.' : 'No names yet — nominate or import a list to open auctions.'}</p>`;
 
       const standings = (pool.members || []).map((m) => `
         <div class="death-lb-row${m.isMe ? ' is-me' : ''}">
@@ -1082,6 +1410,10 @@
             ${nomBar}
             <h3 class="death-subhead">${isDraft ? 'Draft board' : 'Auctions & roster'}</h3>
             ${noms}
+            <details class="death-watch-fold">
+              <summary>Death news for this pool</summary>
+              ${watchPanel}
+            </details>
           </div>
           <aside class="death-standings">
             <h3 class="death-subhead">Standings</h3>
@@ -1089,20 +1421,46 @@
             ${standings || '<p class="records-note">No members yet.</p>'}
           </aside>
         </div>`;
+      }
     }
 
+    const flash = death.joinFlash;
+    const flashHtml = flash ? `
+      <div class="death-join-flash" id="death-join-flash">
+        <p><strong>You’re in · ${esc(flash.poolName)}</strong></p>
+        <p class="buy-in-hero"><span>Your buy-in</span>${flash.buyIn > 0 ? `$${esc(String(flash.buyIn))}` : 'FREE'}</p>
+        <p class="records-note" style="margin:0;">${flash.buyIn > 0
+          ? `Settle the $${esc(String(flash.buyIn))} buy-in with the pool owner / Treasurer Desk. Fun-money bankroll is live on the board below.`
+          : 'No buy-in for this pool — your board is unlocked below.'}</p>
+        <button type="button" id="death-join-flash-dismiss">Got it</button>
+      </div>` : '';
+
     root.innerHTML = `
-      ${watchPanel}
-      <h3 class="death-subhead">Pools</h3>
+      <div class="death-flow">
+        <strong>How it works:</strong>
+        1) Create a pool (or open one below) ·
+        2) Everyone else hits <strong>Join</strong> (buy-in shows up front) ·
+        3) Once joined, the auction/draft board unlocks ·
+        4) Owner can assign members or upload names ·
+        5) Death news for <em>this</em> pool lives under the board
+      </div>
+      ${flashHtml}
+      <h3 class="death-subhead">Open pools · pick one to join or play</h3>
       <div class="death-pool-list">${list}</div>
       <details>
-        <summary class="death-subhead" style="cursor:pointer">Create another pool</summary>
+        <summary class="death-subhead" style="cursor:pointer">Create a new death pool</summary>
         ${createForm}
       </details>
+      ${pool ? `<h3 class="death-subhead" style="margin-top:1.15rem;">${pool.joined ? 'Your pool' : 'Join to unlock'} · ${esc(pool.name)}</h3>` : ''}
       ${detail}`;
 
     bindDeathCreate();
     bindDeathScan();
+    ensureDeathRoster();
+    document.getElementById('death-join-flash-dismiss')?.addEventListener('click', () => {
+      death.joinFlash = null;
+      renderDeath();
+    });
     root.querySelectorAll('[data-select-pool]').forEach((btn) => {
       btn.addEventListener('click', () => {
         death.poolId = btn.getAttribute('data-select-pool');
@@ -1110,7 +1468,17 @@
       });
     });
     root.querySelectorAll('[data-join-pool]').forEach((btn) => {
-      btn.addEventListener('click', () => deathAction('join', { poolId: btn.getAttribute('data-join-pool') }));
+      btn.addEventListener('click', () => {
+        const poolId = btn.getAttribute('data-join-pool');
+        const target = (death.data?.pools || []).find((p) => p.id === poolId);
+        const buyIn = Number(target?.buyIn) || 0;
+        const name = target?.name || 'this pool';
+        const ok = buyIn > 0
+          ? confirm(`Join “${name}”?\n\nBUY-IN: $${buyIn}\n\nThis adds you to the pot. Continue?`)
+          : confirm(`Join “${name}”?\n\nNo buy-in required. Continue?`);
+        if (!ok) return;
+        deathAction('join', { poolId, _buyIn: buyIn, _poolName: name });
+      });
     });
     root.querySelectorAll('[data-bid]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1172,6 +1540,67 @@
         });
       });
     }
+    const assignForm = document.getElementById('death-assign-form');
+    if (assignForm) {
+      assignForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const sel = assignForm.querySelector('[name="userId"]');
+        const opt = sel?.selectedOptions?.[0];
+        deathAction('assign', {
+          poolId: pool.id,
+          userId: sel?.value,
+          name: opt?.getAttribute('data-name') || opt?.textContent
+        });
+      });
+    }
+    const importForm = document.getElementById('death-import-form');
+    if (importForm) {
+      importForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(importForm);
+        let text = String(fd.get('text') || '');
+        const file = fd.get('file');
+        if (file && file.size) {
+          text = `${text}\n${await file.text()}`.trim();
+        }
+        deathAction('import', {
+          poolId: pool.id,
+          text,
+          auctionHours: Number(fd.get('auctionHours'))
+        });
+      });
+    }
+  }
+
+  async function ensureDeathRoster() {
+    if (death.rosterLoading || (Array.isArray(death.roster) && death.roster.length)) return;
+    death.rosterLoading = true;
+    try {
+      const res = await fetch('/api/members', { credentials: 'same-origin', cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      const list = [
+        ...(data.members || []),
+        ...(data.gridiron || []),
+        ...(data.aaa || []),
+        ...(data.unassigned || [])
+      ];
+      const byId = new Map();
+      for (const m of list) {
+        const id = m.id || m.userId;
+        if (!id) continue;
+        byId.set(String(id), {
+          id: String(id),
+          name: m.name || m.displayName || m.loginName || 'Member',
+          loginName: m.loginName || ''
+        });
+      }
+      death.roster = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+      if (death.roster.length) renderDeath();
+    } catch {
+      death.roster = death.roster || [];
+    } finally {
+      death.rosterLoading = false;
+    }
   }
 
   function syncCreateModeFields(form) {
@@ -1203,7 +1632,9 @@
         buyIn: Number(fd.get('buyIn')),
         startingCash: Number(fd.get('startingCash')),
         runDays: Number(fd.get('runDays')),
-        closesAt: closes ? new Date(`${closes}T23:59:59`).toISOString() : undefined
+        closesAt: closes ? new Date(`${closes}T23:59:59`).toISOString() : undefined,
+        _buyIn: Number(fd.get('buyIn')) || 0,
+        _poolName: String(fd.get('name') || '').trim() || 'Death pool'
       });
     });
   }
@@ -1266,23 +1697,40 @@
     death.busy = true;
     setDeathStatus('Working…');
     renderDeath();
+    const flashMeta = {
+      buyIn: body?._buyIn,
+      poolName: body?._poolName
+    };
+    const restBody = { ...body };
+    delete restBody._buyIn;
+    delete restBody._poolName;
     try {
       const res = await fetch('/api/death-pool', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...body })
+        body: JSON.stringify({ action, ...restBody })
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Action failed');
       if (data.pool) {
         death.poolId = data.pool.id;
       }
+      if (action === 'join' || action === 'create') {
+        death.joinFlash = {
+          poolName: flashMeta.poolName || data.pool?.name || 'Death pool',
+          buyIn: Number(flashMeta.buyIn != null ? flashMeta.buyIn : data.pool?.buyIn) || 0
+        };
+      }
       death.busy = false;
       await loadDeath();
       const msgs = {
-        create: 'Pool created',
-        join: 'Joined the pool',
+        create: 'Pool created — you’re in as owner. Others can join from the pool list.',
+        join: death.joinFlash?.buyIn > 0
+          ? `Joined · buy-in $${death.joinFlash.buyIn}`
+          : 'Joined the pool',
+        assign: 'Member assigned',
+        import: data.imported != null ? `Imported ${data.imported} name${data.imported === 1 ? '' : 's'}` : 'List imported',
         nominate: poolModeMsg(data),
         bid: 'Bid placed',
         deceased: 'Hit scored',
@@ -1305,7 +1753,8 @@
     data: null,
     poolId: null,
     type: 'pickem',
-    busy: false
+    busy: false,
+    joinFlash: null
   };
 
   function setCpoolStatus(msg, ok) {
@@ -1318,36 +1767,38 @@
 
   function activeCustomPool() {
     const pools = cpool.data?.pools || [];
-    if (cpool.poolId) {
-      const hit = pools.find((p) => p.id === cpool.poolId);
-      if (hit) return hit;
-    }
-    return pools[0] || null;
+    if (!cpool.poolId) return null;
+    return pools.find((p) => p.id === cpool.poolId) || null;
   }
 
-  function renderCustomPools() {
-    const root = document.getElementById('custom-pools-root');
-    if (!root) return;
-    const d = cpool.data;
-    if (!d?.ok) {
-      root.innerHTML = `<div class="records-empty">${esc(d?.error || 'Pool creator unavailable')}</div>`;
-      return;
-    }
+  function closeCpoolCreateModal() {
+    const dialog = document.getElementById('cpool-create-dialog');
+    if (dialog?.open) dialog.close();
+  }
 
+  function openCpoolCreateModal() {
+    renderCpoolCreateModal();
+    const dialog = document.getElementById('cpool-create-dialog');
+    if (!dialog) return;
+    try {
+      dialog.showModal();
+    } catch { /* ignore */ }
+  }
+
+  function renderCpoolCreateModal() {
+    const mount = document.getElementById('cpool-create-mount');
+    const d = cpool.data;
+    if (!mount || !d?.ok) return;
     const types = d.types || [];
     if (!types.some((t) => t.id === cpool.type) && types[0]) cpool.type = types[0].id;
     const typeMeta = types.find((t) => t.id === cpool.type) || types[0];
-    const pools = d.pools || [];
-    const pool = activeCustomPool();
-    if (pool) cpool.poolId = pool.id;
-
     const typeCards = types.map((t) => `
       <button type="button" class="cpool-type${t.id === cpool.type ? ' is-on' : ''}" data-cpool-type="${esc(t.id)}">
         <strong>${esc(t.label)}</strong>
         <span>${esc(t.blurb)}</span>
       </button>`).join('');
-
-    const createForm = `
+    mount.innerHTML = `
+      <div class="cpool-types">${typeCards || '<p class="records-empty">No pool types available.</p>'}</div>
       <form class="cpool-create" id="cpool-create-form">
         <div class="row">
           <label style="flex:1 1 12rem;">Pool name
@@ -1360,12 +1811,49 @@
           <label>Start cash
             <input name="startingCash" type="number" min="50" max="100000" step="1" value="500" style="width:6.5rem;" />
           </label>` : ''}
-          <button type="submit">Create pool</button>
         </div>
         <label>Rules / notes
           <textarea name="description" maxlength="400" placeholder="${esc(typeMeta?.blurb || 'How this pool works…')}"></textarea>
         </label>
+        <div class="row" style="justify-content:flex-end;margin-top:0.35rem;">
+          <button type="button" id="cpool-create-cancel" class="cpool-btn-ghost">Cancel</button>
+          <button type="submit">Create pool</button>
+        </div>
       </form>`;
+    mount.querySelectorAll('[data-cpool-type]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        cpool.type = btn.getAttribute('data-cpool-type');
+        renderCpoolCreateModal();
+      });
+    });
+    mount.querySelector('#cpool-create-cancel')?.addEventListener('click', closeCpoolCreateModal);
+    mount.querySelector('#cpool-create-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      await cpoolAction('create', {
+        type: cpool.type,
+        name: fd.get('name'),
+        description: fd.get('description'),
+        buyIn: fd.get('buyIn'),
+        startingCash: fd.get('startingCash')
+      });
+    });
+  }
+
+  function renderCustomPools() {
+    const root = document.getElementById('custom-pools-root');
+    if (!root) return;
+    const d = cpool.data;
+    if (!d?.ok) {
+      root.innerHTML = `<div class="records-empty">${esc(d?.error || 'Pools unavailable')}</div>`;
+      return;
+    }
+
+    const types = d.types || [];
+    if (!types.some((t) => t.id === cpool.type) && types[0]) cpool.type = types[0].id;
+    const pools = d.pools || [];
+    if (cpool.poolId && !pools.some((p) => p.id === cpool.poolId)) cpool.poolId = null;
+    const pool = activeCustomPool();
 
     const list = pools.length
       ? `<div class="cpool-list">${pools.map((p) => `
@@ -1373,7 +1861,11 @@
             <div class="title"><span class="tag">${esc(p.typeLabel || p.type)}</span>${esc(p.name)}</div>
             <div class="meta">${esc(p.memberCount)} in · pot $${esc(Number(p.pot) || 0)} · ${esc(p.status)} · ${esc(p.ownerName || '—')}</div>
           </button>`).join('')}</div>`
-      : `<p class="records-empty">No custom pools yet — pick a type and create one.</p>`;
+      : `<div class="cpool-empty">
+          <strong>No pools yet</strong>
+          <p>Nothing here until someone creates one. Open the pool creator to start a pick’em, squares board, auction, or more.</p>
+          <button type="button" data-cpool-open-create>Create a pool</button>
+        </div>`;
 
     let detail = '';
     if (pool) {
@@ -1438,7 +1930,60 @@
               </div>
             </form>`;
         }
-      } else if (['bracket', 'open', 'custom', 'draft', 'auction'].includes(pool.type)) {
+      } else if (pool.type === 'auction') {
+        const lots = pool.options || [];
+        play = lots.map((o) => {
+          const top = o.highBid;
+          const minNext = Math.max(Number(o.reserve) || 0, top ? Number(top.amount) + 1 : 1) || 1;
+          const bidUi = pool.joined && pool.status === 'open' && o.status === 'auction' ? `
+            <div class="death-bid-row" style="margin-top:0.4rem;">
+              <label>Bid ($)
+                <input type="number" min="${minNext}" step="1" value="${minNext}" data-cpool-bid-amt="${esc(o.id)}" />
+              </label>
+              <button type="button" data-cpool-bid="${esc(o.id)}"${cpool.busy ? ' disabled' : ''}>Bid</button>
+            </div>` : '';
+          const statusLine = o.status === 'sold'
+            ? `Sold to ${esc(o.ownerName || '—')} for $${esc(o.winningBid ?? '—')}`
+            : o.status === 'auction'
+              ? `High ${top ? `$${esc(top.amount)} (${esc(top.name)})` : 'no bids'} · ends ${esc(fmtWhen(o.auctionEndsAt))} · ${esc(fmtCountdown(o.auctionMsLeft))}`
+              : o.status === 'unsold'
+                ? 'Went unsold'
+                : (o.meta || 'Listed');
+          return `<div class="cpool-opt">
+            <div class="label">${esc(o.label)}${o.reserve ? ` · reserve $${esc(o.reserve)}` : ''}</div>
+            <div class="meta" style="color:var(--mo-muted);font-size:0.78rem;">${statusLine}</div>
+            ${bidUi}
+          </div>`;
+        }).join('') || `<p class="records-empty">Owner hasn’t added auction lots yet.</p>`;
+        if (pool.isOwner && pool.status === 'open') {
+          play += `
+            <form class="cpool-create" id="cpool-add-option" style="margin-top:0.65rem;">
+              <div class="row">
+                <label style="flex:1 1 10rem;">Lot name
+                  <input name="label" maxlength="120" required placeholder="Item or player name" />
+                </label>
+                <label>Reserve $
+                  <input name="reserve" type="number" min="0" max="100000" step="1" value="0" style="width:5.5rem;" />
+                </label>
+                <label>Hours
+                  <input name="auctionHours" type="number" min="1" max="168" step="1" value="24" style="width:4.5rem;" />
+                </label>
+                <button type="submit">Add lot</button>
+              </div>
+            </form>
+            <form class="cpool-create" id="cpool-import-lots" style="margin-top:0.55rem;">
+              <label>Upload / paste lots (Name | reserve | hours)
+                <textarea name="text" rows="3" maxlength="6000" placeholder="Mahomes jersey | 25 | 24&#10;Signed helmet | 50 | 48"></textarea>
+              </label>
+              <div class="row">
+                <label>File
+                  <input type="file" name="file" accept=".txt,.csv,.tsv,text/plain" />
+                </label>
+                <button type="submit">Import lots</button>
+              </div>
+            </form>`;
+        }
+      } else if (['bracket', 'open', 'custom', 'draft'].includes(pool.type)) {
         play = `
           <form class="cpool-create" id="cpool-submit-text">
             <label>Your entry
@@ -1470,59 +2015,76 @@
             <div class="meta" style="color:var(--mo-muted);font-size:0.82rem;margin-top:0.25rem;">
               <span class="tag">${esc(pool.typeLabel)}</span>
               ${esc(pool.status)} · pot $${esc(Number(pool.pot) || 0)} · owner ${esc(pool.ownerName || '—')}
+              ${pool.startingCash != null ? ` · bank $${esc(pool.startingCash)}` : ''}
             </div>
             ${pool.description ? `<p style="margin:0.45rem 0 0;color:var(--mo-muted);font-size:0.88rem;">${esc(pool.description)}</p>` : ''}
           </div>
           <div class="cpool-actions">
             ${!pool.joined && pool.status === 'open'
-              ? `<button type="button" data-cpool-action="join">Join${pool.buyIn ? ` · $${esc(pool.buyIn)}` : ''}</button>`
+              ? `<button type="button" data-cpool-action="join">${Number(pool.buyIn) > 0 ? `Join · $${esc(pool.buyIn)} buy-in` : 'Join pool'}</button>`
               : ''}
           </div>
-          ${play}
+          ${!pool.joined
+            ? `<div class="death-join-gate" style="margin-top:0.75rem;">
+                <h3>${esc(pool.name)}</h3>
+                <p class="buy-in-hero"><span>Buy-in to join</span>${Number(pool.buyIn) > 0 ? `$${esc(String(pool.buyIn))}` : 'FREE'}</p>
+                <p class="meta">Join to unlock picks, lots, squares, and standings for this pool.</p>
+              </div>`
+            : ''}
+          ${cpool.joinFlash && cpool.joinFlash.poolId === pool.id ? `
+            <div class="death-join-flash">
+              <p><strong>You’re in · ${esc(cpool.joinFlash.poolName)}</strong></p>
+              <p class="buy-in-hero"><span>Your buy-in</span>${cpool.joinFlash.buyIn > 0 ? `$${esc(String(cpool.joinFlash.buyIn))}` : 'FREE'}</p>
+              <button type="button" id="cpool-join-flash-dismiss">Got it</button>
+            </div>` : ''}
+          ${pool.joined || pool.isOwner ? play : ''}
+          ${pool.isOwner && pool.status === 'open' ? `
+            <form class="cpool-create" id="cpool-assign-form" style="margin-top:0.65rem;">
+              <div class="row">
+                <label style="flex:1 1 12rem;">Assign lounge member
+                  <select name="userId" id="cpool-assign-user" required>
+                    <option value="">Loading members…</option>
+                  </select>
+                </label>
+                <button type="submit">Add to pool</button>
+              </div>
+            </form>` : ''}
           ${ownerBtns}
-          <div>
+          ${pool.joined ? `<div>
             <div class="mock-panel-head" style="margin-bottom:0.4rem;"><span>Standings</span><span>${esc(pool.memberCount)}</span></div>
             <div class="surv-board">${standings || '<p class="records-empty">No members yet.</p>'}</div>
-          </div>
+          </div>` : ''}
         </div>`;
     }
 
     root.innerHTML = `
-      <div class="cpool-types">${typeCards}</div>
-      ${createForm}
-      <div class="mock-panel-head" style="margin-bottom:0.45rem;"><span>Open pools</span><span>${pools.length}</span></div>
+      <div class="cpool-toolbar">
+        <div>
+          <h3>League pools</h3>
+          <p>Open pools created by members. Select one to join or play — create a new pool anytime.</p>
+        </div>
+        <div class="cpool-toolbar-actions">
+          <button type="button" data-cpool-open-create>Create pool</button>
+        </div>
+      </div>
+      <div class="mock-panel-head" style="margin-bottom:0.45rem;"><span>Created pools</span><span>${pools.length}</span></div>
       ${list}
       ${detail}`;
 
+    if (document.getElementById('cpool-create-dialog')?.open) renderCpoolCreateModal();
     wireCustomPools();
   }
 
   function wireCustomPools() {
     const root = document.getElementById('custom-pools-root');
-    if (!root || root.dataset.wired === '1') {
-      // re-bind each render; clear previous by cloning handlers via fresh listeners on new nodes
-    }
-    root.querySelectorAll('[data-cpool-type]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        cpool.type = btn.getAttribute('data-cpool-type');
-        renderCustomPools();
-      });
+    if (!root) return;
+    root.querySelectorAll('[data-cpool-open-create]').forEach((btn) => {
+      btn.addEventListener('click', () => openCpoolCreateModal());
     });
     root.querySelectorAll('[data-cpool-open]').forEach((btn) => {
       btn.addEventListener('click', () => {
         cpool.poolId = btn.getAttribute('data-cpool-open');
         renderCustomPools();
-      });
-    });
-    root.querySelector('#cpool-create-form')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      await cpoolAction('create', {
-        type: cpool.type,
-        name: fd.get('name'),
-        description: fd.get('description'),
-        buyIn: fd.get('buyIn'),
-        startingCash: fd.get('startingCash')
       });
     });
     root.querySelector('#cpool-add-option')?.addEventListener('submit', async (e) => {
@@ -1535,9 +2097,41 @@
       await cpoolAction('add_option', {
         poolId: cpool.poolId,
         label: fd.get('label'),
-        choices
+        choices,
+        reserve: fd.get('reserve'),
+        auctionHours: fd.get('auctionHours')
       });
     });
+    root.querySelector('#cpool-import-lots')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      let text = String(fd.get('text') || '');
+      const file = fd.get('file');
+      if (file && file.size) text = `${text}\n${await file.text()}`.trim();
+      await cpoolAction('import', { poolId: cpool.poolId, text });
+    });
+    root.querySelector('#cpool-assign-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const sel = e.target.querySelector('[name="userId"]');
+      const opt = sel?.selectedOptions?.[0];
+      await cpoolAction('assign', {
+        poolId: cpool.poolId,
+        userId: sel?.value,
+        name: opt?.getAttribute('data-name') || opt?.textContent
+      });
+    });
+    root.querySelectorAll('[data-cpool-bid]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const optionId = btn.getAttribute('data-cpool-bid');
+        const input = root.querySelector(`[data-cpool-bid-amt="${optionId}"]`);
+        await cpoolAction('bid', {
+          poolId: cpool.poolId,
+          optionId,
+          amount: Number(input?.value)
+        });
+      });
+    });
+    fillCpoolAssignSelect();
     root.querySelector('#cpool-submit-text')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
@@ -1562,8 +2156,27 @@
           });
           return;
         }
+        if (action === 'join') {
+          const target = activeCustomPool();
+          const buyIn = Number(target?.buyIn) || 0;
+          const name = target?.name || 'this pool';
+          const ok = buyIn > 0
+            ? confirm(`Join “${name}”?\n\nBUY-IN: $${buyIn}\n\nThis adds you to the pot. Continue?`)
+            : confirm(`Join “${name}”?\n\nNo buy-in required. Continue?`);
+          if (!ok) return;
+          await cpoolAction('join', {
+            poolId: cpool.poolId,
+            _buyIn: buyIn,
+            _poolName: name
+          });
+          return;
+        }
         await cpoolAction(action, { poolId: cpool.poolId });
       });
+    });
+    document.getElementById('cpool-join-flash-dismiss')?.addEventListener('click', () => {
+      cpool.joinFlash = null;
+      renderCustomPools();
     });
     root.querySelectorAll('[data-cpool-square]').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -1593,6 +2206,20 @@
     });
   }
 
+  async function fillCpoolAssignSelect() {
+    const sel = document.getElementById('cpool-assign-user');
+    if (!sel) return;
+    if (!death.roster) await ensureDeathRoster();
+    const pool = activeCustomPool();
+    const opts = (death.roster || [])
+      .filter((m) => m.id && !(pool?.members || []).some((pm) => String(pm.userId) === String(m.id)))
+      .map((m) => `<option value="${esc(m.id)}" data-name="${esc(m.name)}">${esc(m.name)}</option>`)
+      .join('');
+    sel.innerHTML = opts
+      ? `<option value="">Select…</option>${opts}`
+      : '<option value="" disabled>Everyone is already in</option>';
+  }
+
   async function loadCustomPools() {
     const root = document.getElementById('custom-pools-root');
     if (!root) return;
@@ -1616,22 +2243,39 @@
     if (cpool.busy) return;
     cpool.busy = true;
     setCpoolStatus('Working…');
+    const flashMeta = { buyIn: body?._buyIn, poolName: body?._poolName };
+    const restBody = { ...body };
+    delete restBody._buyIn;
+    delete restBody._poolName;
     try {
       const res = await fetch('/api/custom-pools', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...body })
+        body: JSON.stringify({ action, ...restBody })
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Action failed');
       if (data.pool) cpool.poolId = data.pool.id;
+      if (action === 'join' || action === 'create') {
+        cpool.joinFlash = {
+          poolId: data.pool?.id || cpool.poolId,
+          poolName: flashMeta.poolName || data.pool?.name || 'Pool',
+          buyIn: Number(flashMeta.buyIn != null ? flashMeta.buyIn : data.pool?.buyIn) || 0
+        };
+      }
       cpool.busy = false;
+      if (action === 'create') closeCpoolCreateModal();
       await loadCustomPools();
       const msgs = {
         create: 'Pool created',
-        join: 'Joined',
+        join: cpool.joinFlash?.buyIn > 0
+          ? `Joined · buy-in $${cpool.joinFlash.buyIn}`
+          : 'Joined',
+        assign: 'Member assigned',
+        import: data.imported != null ? `Imported ${data.imported} lot${data.imported === 1 ? '' : 's'}` : 'Lots imported',
         add_option: 'Added to board',
+        bid: 'Bid placed',
         submit: 'Entry saved',
         claim_square: 'Square updated',
         set_digits: 'Digits assigned',
@@ -1650,10 +2294,17 @@
   }
 
   function boot() {
-    if (document.getElementById('survivor-pool-root')) loadSurvivor();
-    if (document.getElementById('degenerate-book-root')) loadBook();
-    if (document.getElementById('death-pool-root')) loadDeath();
+    if (document.getElementById('degenerate-book-root')) {
+      loadBook();
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && sportsbookVisible()) loadBook({ quiet: true });
+      });
+    }
     if (document.getElementById('custom-pools-root')) loadCustomPools();
+    document.getElementById('cpool-create-close')?.addEventListener('click', closeCpoolCreateModal);
+    document.getElementById('cpool-create-dialog')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeCpoolCreateModal();
+    });
   }
 
   if (document.readyState === 'loading') {

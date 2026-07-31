@@ -414,7 +414,7 @@
       } else {
         pts = `<span class="pts is-blank">—</span>`;
       }
-      return `<div class="wire-side${win ? ' is-winner' : ''}">${logo}<span class="abbr">${esc(t.abbreviation || t.shortName || '?')}</span>${pts}</div>`;
+      return `<div class="wire-side${win ? ' is-winner' : ''}">${logo}<span class="namecell"><span class="abbr">${esc(t.abbreviation || t.shortName || '?')}</span>${fantasy && t.record ? `<span class="rec">${esc(String(t.record))}</span>` : ''}</span>${pts}</div>`;
     };
     return `<article class="wire-game">
       <div class="wire-top">
@@ -672,9 +672,9 @@
             <img src="${esc(team.logo || PLACEHOLDER)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
             <div class="nm">${esc(team.name)}${mine ? ' · you' : ''}</div>
           </div>
-          <div class="num">${team.wins || 0}</div>
-          <div class="num">${team.losses || 0}</div>
-          <div class="num">${fmtPts(team.pointsFor)}</div>
+          <div class="num col-w">${team.wins || 0}</div>
+          <div class="num col-l">${team.losses || 0}</div>
+          <div class="num col-pf">${fmtPts(team.pointsFor)}</div>
         </div>`);
     });
     return `
@@ -686,9 +686,9 @@
           <div class="s-row head">
             <div class="rank">#</div>
             <div>Team</div>
-            <div class="num">W</div>
-            <div class="num">L</div>
-            <div class="num">PF</div>
+            <div class="num col-w">W</div>
+            <div class="num col-l">L</div>
+            <div class="num col-pf">PF</div>
           </div>
           ${rows.join('')}
         </div>
@@ -901,6 +901,13 @@
     return !BENCH.has(String(slot || ''));
   }
 
+  function slotPosLabel(slot) {
+    const s = String(slot || '');
+    if (s === 'Bench') return 'BN';
+    if (s.startsWith('IR')) return 'IR';
+    return s || '—';
+  }
+
   function renderMyTeam() {
     const mount = document.getElementById('team-mount');
     if (!mount || !state.myTeam) return;
@@ -1091,10 +1098,15 @@
       `;
       return;
     }
-    const latest = state.rankings?.latest;
+    const data = state.rankings || {};
+    if (data.mode === 'pre_draft' || (!data.latest && data.message)) {
+      mount.innerHTML = `<div class="msg"><strong>Coming after the draft.</strong><br>${esc(data.message || 'Power rankings will be displayed after the draft.')}</div>`;
+      return;
+    }
+    const latest = data.latest;
     const ranks = latest?.ranks || [];
     if (!ranks.length) {
-      mount.innerHTML = `<div class="msg">No power rankings published yet.</div>`;
+      mount.innerHTML = `<div class="msg">${esc(data.message || 'Power rankings unavailable.')}</div>`;
       return;
     }
     const logoMap = new Map();
@@ -1103,12 +1115,15 @@
         logoMap.set(`${conf.key}:${team.id}`, team.logo || PLACEHOLDER);
       }
     }
+    const modeLabel = latest.mode === 'preseason'
+      ? 'Preseason · Week 1 projections'
+      : `Week ${esc(String(latest.week || '—'))}`;
     mount.innerHTML = `
-      <p class="msg" style="padding-top:0;">Week ${esc(String(latest.week || '—'))}${latest.notes ? ` · ${esc(latest.notes)}` : ''}</p>
+      <p class="msg" style="padding-top:0;">${modeLabel}${latest.notes ? ` · ${esc(latest.notes)}` : ''}</p>
       ${ranks.slice(0, 24).map((r, i) => `
         <div class="rank-row">
           <div class="num">${i + 1}</div>
-          <img src="${esc(logoMap.get(`${r.conferenceKey}:${r.teamId}`) || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
+          <img src="${esc(r.logo || logoMap.get(`${r.conferenceKey}:${r.teamId}`) || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
           <div>
             <div class="nm">${esc(r.teamName || r.name || 'Team')}</div>
             ${r.note ? `<div class="note">${esc(r.note)}</div>` : ''}
@@ -1155,7 +1170,7 @@
       parts.push(`
         <div class="pulse-card">
           <div class="eyebrow">Week ${esc(String(finaleEventWeek(bowl)))} · GridIron Bowl</div>
-          <img class="mark" src="/assets/gridiron-bowl.png?v=3" alt="GridIron Bowl" width="1024" height="682" loading="eager" decoding="async" />
+          <img class="mark" src="/assets/gridiron-bowl.png?v=5" alt="GridIron Bowl" width="1024" height="682" loading="eager" decoding="async" />
           <div class="pulse-score">
             ${pulseSide(bowl.detail, 'detail')}
             <div class="mid">${(d != null && o != null) ? `${fmtPts(d)} – ${fmtPts(o)}` : 'VS'}</div>
@@ -1170,7 +1185,7 @@
       parts.push(`
         <div class="pulse-card">
           <div class="eyebrow">Week ${esc(String(finaleEventWeek(survival)))} · ${esc(survival.name || "Mayor's Cup")}</div>
-          <img class="mark" src="/assets/mayors-cup.png?v=4" alt="Mayor's Cup" width="1024" height="768" loading="eager" decoding="async" />
+          <img class="mark" src="/assets/mayors-cup.png?v=5" alt="Mayor's Cup" width="1024" height="768" loading="eager" decoding="async" />
           <div class="pulse-score">
             ${pulseSide(survival.detail, 'detail')}
             <div class="mid">${(d != null && o != null) ? `${fmtPts(d)} – ${fmtPts(o)}` : 'VS'}</div>
@@ -1188,7 +1203,7 @@
             <strong>GridIron Bowl</strong> — conference champions for the title.<br />
             <strong>${esc(cupName)}</strong> — last place in each conference; winner stays, loser leaves.
           </p>
-          <button type="button" class="quick-chip" data-app-jump="playoffs">Open playoffs</button>
+          <button type="button" class="quick-chip" data-app-jump="playoffs">Open playoff bracket</button>
         </div>`;
       return;
     }
@@ -1386,8 +1401,9 @@
       ${list.map((p) => {
         const empty = p.empty || !p.name;
         const bad = !empty && injClass(p.injuryStatus) === 'bad';
+        const pos = slotPosLabel(p.slot);
         return `<li class="slot-roster-row${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''}">
-          <span class="slot">${esc(p.slot || '—')}</span>
+          <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
           <span class="nm">${empty ? `<span class="slot-open">${esc(p.slot || 'Open')}</span>` : esc(p.name)}${!empty && p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}</span>
           ${showPts ? `<span class="pts">${empty ? '—' : fmtPts(p.points != null ? p.points : p.weekPoints)}</span>` : ''}
         </li>`;
@@ -1735,7 +1751,12 @@
       } else if (state.feedTab === 'rankings') {
         if (!state.rankings) {
           const data = await apiGet('/api/power-rankings');
-          state.rankings = { latest: data.latest || null, rankings: data.rankings || [] };
+          state.rankings = {
+            latest: data.latest || null,
+            rankings: data.rankings || [],
+            mode: data.mode || null,
+            message: data.message || null
+          };
         }
         if (!state.leagues) {
           try { state.leagues = await apiGet('/api/leagues'); } catch { /* logos optional */ }
@@ -1929,8 +1950,16 @@
       ${(bowl || cup) ? `
         <div class="section-label">Week 17 finales</div>
         <div class="po-finales">
-          ${bowl ? `<div class="quick-chip is-static">GridIron Bowl</div>` : ''}
-          ${cup ? `<div class="quick-chip is-static">${esc(cup.name || "Mayor's Cup")}</div>` : ''}
+          ${bowl ? `
+            <div class="po-finale">
+              <img src="/assets/gridiron-bowl.png?v=5" alt="GridIron Bowl" width="320" height="213" loading="lazy" decoding="async" />
+              <strong>GridIron Bowl</strong>
+            </div>` : ''}
+          ${cup ? `
+            <div class="po-finale">
+              <img src="/assets/mayors-cup.png?v=5" alt="${esc(cup.name || "Mayor's Cup")}" width="320" height="240" loading="lazy" decoding="async" />
+              <strong>${esc(cup.name || "Mayor's Cup")}</strong>
+            </div>` : ''}
         </div>` : ''}
     `;
   }

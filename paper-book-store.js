@@ -215,6 +215,31 @@ function buildLegFromGame(game, leagueId, leagueLabel, market, side) {
   throw Object.assign(new Error('Unknown market'), { status: 400 });
 }
 
+function applyQuotedPrice(built, quote = {}) {
+  if (!built) return built;
+  const next = { ...built };
+  const qLine = Number(quote.line);
+  const qOdds = Number(quote.odds);
+  if ((next.market === 'spread' || next.market === 'total') && Number.isFinite(qLine)) {
+    next.line = qLine;
+  }
+  if (Number.isFinite(qOdds) && qOdds !== 0) next.odds = qOdds;
+
+  const parts = String(next.matchup || '').split('@').map((s) => s.trim());
+  const away = parts[0] || '';
+  const home = parts[1] || '';
+  if (next.market === 'spread' && next.line != null) {
+    const who = next.side === 'away' ? away : home;
+    next.label = `${who} ${Number(next.line) > 0 ? '+' : ''}${next.line}`;
+  } else if (next.market === 'total' && next.line != null) {
+    next.label = `${next.side === 'over' ? 'Over' : 'Under'} ${next.line}`;
+  } else if (next.market === 'moneyline') {
+    const who = next.side === 'away' ? away : home;
+    next.label = `${who} ML ${next.odds > 0 ? '+' : ''}${next.odds}`;
+  }
+  return next;
+}
+
 function gradeLeg(leg, game) {
   if (!game || (game.status?.bucket !== 'final' && !game.status?.completed)) {
     return null;
@@ -595,7 +620,10 @@ function placeBet(user, body = {}, boards = []) {
     if (hit.game.kind === 'golf') {
       throw Object.assign(new Error('Golf is board-only — pick a team game'), { status: 400 });
     }
-    return buildLegFromGame(hit.game, hit.leagueId, hit.leagueLabel, leg.market, leg.side);
+    return applyQuotedPrice(
+      buildLegFromGame(hit.game, hit.leagueId, hit.leagueLabel, leg.market, leg.side),
+      leg
+    );
   });
 
   // Unique events in a parlay

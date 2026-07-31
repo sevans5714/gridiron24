@@ -155,13 +155,28 @@ function publicMember(m) {
   };
 }
 
-function publicOption(o) {
+function publicOption(o, at = Date.now()) {
+  const ends = Date.parse(o.auctionEndsAt || '');
+  const msLeft = Number.isFinite(ends) ? Math.max(0, ends - at) : 0;
+  const bids = Array.isArray(o.bids) ? o.bids : [];
+  const high = bids.slice().sort((a, b) => Number(b.amount) - Number(a.amount))[0] || null;
   return {
     id: o.id,
     label: o.label,
     meta: o.meta || null,
     choices: Array.isArray(o.choices) ? o.choices : null,
-    result: o.result || null
+    result: o.result || null,
+    reserve: Number.isFinite(Number(o.reserve)) ? Number(o.reserve) : null,
+    auctionHours: Number.isFinite(Number(o.auctionHours)) ? Number(o.auctionHours) : null,
+    auctionEndsAt: o.auctionEndsAt || null,
+    auctionMsLeft: o.status === 'auction' ? msLeft : 0,
+    status: o.status || null,
+    highBid: high
+      ? { amount: Number(high.amount) || 0, name: high.name || '—', userId: high.userId }
+      : null,
+    ownerId: o.ownerId || null,
+    ownerName: o.ownerName || null,
+    winningBid: o.winningBid != null ? Number(o.winningBid) : null
   };
 }
 
@@ -203,7 +218,8 @@ function publicPool(pool, viewerId) {
     createdAt: pool.createdAt,
     memberCount: members.length,
     members: members.map(publicMember),
-    options: (pool.options || []).map(publicOption),
+    options: (pool.options || []).map((o) => publicOption(o)),
+    startingCash: pool.startingCash != null ? Number(pool.startingCash) : null,
     joined: Boolean(me),
     isOwner: pool.ownerId === viewerId,
     me: me ? publicMember(me) : null,
@@ -243,6 +259,11 @@ function listTypes() {
 function getOverview(viewer = null) {
   const store = readStore();
   const viewerId = viewer?.id || null;
+  let dirty = false;
+  for (const p of store.pools) {
+    if (p.type === 'auction' && settleAuctionLots(p)) dirty = true;
+  }
+  if (dirty) writeStore(store);
   const pools = store.pools
     .slice()
     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
@@ -372,6 +393,7 @@ function addOption(viewer, poolId, body = {}) {
       choices = ['Away', 'Home'];
     }
   }
+
   const option = {
     id: crypto.randomUUID(),
     label,
@@ -379,11 +401,208 @@ function addOption(viewer, poolId, body = {}) {
     choices,
     result: null
   };
+
+  if (pool.type === 'auction') {
+    const reserve = clampNum(body.reserve ?? body.price, 0, 100000, 0);
+    const auctionHours = clampNum(body.auctionHours, 1, 168, 24);
+    const openNow = body.openAuction !== false && body.openAuction !== 'false';
+    const at = Date.now();
+    option.reserve = reserve;
+    option.auctionHours = auctionHours;
+    option.bids = [];
+    option.status = openNow ? 'auction' : 'listed';
+    option.auctionEndsAt = openNow ? new Date(at + auctionHours * 3600000).toISOString() : null;
+    option.ownerId = null;
+    option.ownerName = null;
+    option.winningBid = null;
+    if (body.meta == null && reserve > 0) {
+      option.meta = `Reserve $${reserve}`;
+    }
+  }
+
   pool.options = pool.options || [];
   pool.options.push(option);
   store.pools[idx] = pool;
   writeStore(store);
   return { ok: true, pool: publicPool(pool, viewer.id) };
+}
+
+function settleAuctionLots(pool, at = Date.now()) {
+  let dirty = false;
+  for (const o of pool.options || []) {
+    if (o.status !== 'auction') continue;
+    const ends = Date.parse(o.auctionEndsAt || '');
+    if (!Number.isFinite(ends) || ends > at) continue;
+    const bids = Array.isArray(o.bids) ? o.bids : [];
+    const high = bids.slice().sort((a, b) => Number(b.amount) - Number(a.amount))[0];
+    const reserve = Number(o.reserve) || 0;
+    if (high && Number(high.amount) >= reserve) {
+      o.status = 'sold';
+      o.ownerId = high.userId;
+      o.ownerName = high.name;
+      o.winningBid = Number(high.amount);
+      const buyer = (pool.members || []).find((m) => m.userId === high.userId);
+      if (buyer && buyer.cash != null) {
+        buyer.cash = Math.max(0, (Number(buyer.cash) || 0) - Number(high.amount));
+        buyer.score = (Number(buyer.score) || 0) + 1;
+      }
+    } else {
+      o.status = 'unsold';
+    }
+    dirty = true;
+  }
+  return dirty;
+}
+
+function placeLotBid(viewer, poolId, body = {}) {
+  if (!viewer?.id) throw err(401, 'Sign in required');
+  const store = readStore();
+  const { idx, pool } = findPoolOrThrow(store, poolId);
+  if (pool.type !== 'auction') throw err(400, 'Bidding is only for auction pools');
+  settleAuctionLots(pool);
+  if (pool.status !== 'open') throw err(400, 'Pool is locked');
+
+  const member = (pool.members || []).find((m) => m.userId === viewer.id);
+  if (!member) throw err(403, 'Join the pool before bidding');
+
+  const optionId = String(body.optionId || '').trim();
+  const amount = Math.floor(Number(body.amount));
+  if (!Number.isFinite(amount) || amount < 1) throw err(400, 'Enter a bid amount');
+
+  const option = (pool.options || []).find((o) => o.id === optionId);
+  if (!option) throw err(404, 'Lot not found');
+  if (option.status !== 'auction') throw err(400, 'Auction is not open for this lot');
+  const ends = Date.parse(option.auctionEndsAt || '');
+  if (!Number.isFinite(ends) || ends <= Date.now()) {
+    settleAuctionLots(pool);
+    writeStore(store);
+    throw err(400, 'Auction has ended');
+  }
+
+  const bids = Array.isArray(option.bids) ? option.bids : [];
+  const high = bids.slice().sort((a, b) => Number(b.amount) - Number(a.amount))[0];
+  const minNext = Math.max((Number(option.reserve) || 0), high ? Number(high.amount) + 1 : 1);
+  if (amount < minNext) throw err(400, `Bid must be at least $${minNext}`);
+
+  let reserved = 0;
+  for (const o of pool.options || []) {
+    if (o.status !== 'auction' || o.id === option.id) continue;
+    const t = (o.bids || []).slice().sort((a, b) => Number(b.amount) - Number(a.amount))[0];
+    if (t && t.userId === viewer.id) reserved += Number(t.amount) || 0;
+  }
+  const avail = Math.max(0, (Number(member.cash) || 0) - reserved);
+  if (amount > avail) throw err(400, `Not enough cash — you have $${avail} available`);
+
+  option.bids = bids;
+  option.bids.push({
+    userId: viewer.id,
+    name: member.name,
+    amount,
+    at: new Date().toISOString()
+  });
+  store.pools[idx] = pool;
+  writeStore(store);
+  return { ok: true, pool: publicPool(pool, viewer.id) };
+}
+
+function assignMember(viewer, poolId, body = {}) {
+  const store = readStore();
+  const { idx, pool } = findPoolOrThrow(store, poolId);
+  requireOwner(pool, viewer);
+  if (pool.status === 'closed' || pool.status === 'settled') {
+    throw err(400, 'This pool is closed');
+  }
+  const targetId = String(body.userId || '').trim();
+  const targetName = String(body.name || '').trim().slice(0, 80) || 'Member';
+  if (!targetId) throw err(400, 'Pick a member to assign');
+  if ((pool.members || []).some((m) => m.userId === targetId)) {
+    return { ok: true, pool: publicPool(pool, viewer.id), alreadyJoined: true };
+  }
+  if ((pool.members || []).length >= MAX_MEMBERS) throw err(400, 'Pool is full');
+  const buyIn = Number(pool.buyIn) || 0;
+  pool.members.push({
+    userId: targetId,
+    name: targetName,
+    joinedAt: new Date().toISOString(),
+    alive: true,
+    score: 0,
+    cash: pool.type === 'auction' ? Number(pool.startingCash) || 500 : null,
+    assignedBy: viewer.id
+  });
+  pool.pot = (Number(pool.pot) || 0) + buyIn;
+  store.pools[idx] = pool;
+  writeStore(store);
+  return { ok: true, pool: publicPool(pool, viewer.id), assigned: true };
+}
+
+function importOptions(viewer, poolId, body = {}) {
+  const store = readStore();
+  const { idx, pool } = findPoolOrThrow(store, poolId);
+  requireOwner(pool, viewer);
+  if (pool.status !== 'open') throw err(400, 'Pool is locked');
+
+  let items = Array.isArray(body.items) ? body.items : null;
+  if (!items && body.text) {
+    items = String(body.text)
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const parts = line.split(/[|,;\t]/).map((p) => p.trim()).filter(Boolean);
+        return {
+          label: parts[0],
+          reserve: parts[1] != null ? Number(String(parts[1]).replace(/[^0-9.]/g, '')) : undefined,
+          auctionHours: parts[2] != null ? Number(parts[2]) : undefined,
+          meta: parts.length > 1 ? parts.slice(1).join(' · ') : undefined,
+          choices: pool.type !== 'auction' && parts.length >= 3 ? parts.slice(1) : undefined
+        };
+      });
+  }
+  if (!items || !items.length) throw err(400, 'Paste items (one per line)');
+
+  pool.options = pool.options || [];
+  let added = 0;
+  const openNow = body.openAuctions !== false && body.openAuctions !== 'false';
+  const at = Date.now();
+
+  for (const item of items.slice(0, 40)) {
+    if (pool.options.length >= MAX_OPTIONS) break;
+    const label = String(item.label || item.name || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .slice(0, MAX_OPTION_LABEL);
+    if (!label) continue;
+
+    const option = {
+      id: crypto.randomUUID(),
+      label,
+      meta: String(item.meta || '').trim().slice(0, 80) || null,
+      choices: Array.isArray(item.choices) && item.choices.length >= 2
+        ? item.choices.map((c) => String(c).trim().slice(0, 60)).filter(Boolean).slice(0, 12)
+        : (pool.type === 'pickem' || pool.type === 'confidence' || pool.type === 'survivor'
+          ? ['Away', 'Home']
+          : null),
+      result: null
+    };
+
+    if (pool.type === 'auction') {
+      const reserve = clampNum(item.reserve ?? item.price, 0, 100000, 0);
+      const auctionHours = clampNum(item.auctionHours ?? item.hours, 1, 168, 24);
+      option.reserve = reserve;
+      option.auctionHours = auctionHours;
+      option.bids = [];
+      option.status = openNow ? 'auction' : 'listed';
+      option.auctionEndsAt = openNow ? new Date(at + auctionHours * 3600000).toISOString() : null;
+      if (!option.meta && reserve > 0) option.meta = `Reserve $${reserve}`;
+    }
+
+    pool.options.push(option);
+    added += 1;
+  }
+
+  store.pools[idx] = pool;
+  writeStore(store);
+  return { ok: true, pool: publicPool(pool, viewer.id), imported: added };
 }
 
 function submitEntry(viewer, poolId, body = {}) {
@@ -614,7 +833,10 @@ function handleAction(viewer, body = {}) {
   if (action === 'create') return createPool(viewer, body);
   if (!poolId) throw err(400, 'poolId required');
   if (action === 'join') return joinPool(viewer, poolId);
+  if (action === 'assign' || action === 'assign_member') return assignMember(viewer, poolId, body);
+  if (action === 'import' || action === 'import_options') return importOptions(viewer, poolId, body);
   if (action === 'add_option') return addOption(viewer, poolId, body);
+  if (action === 'bid' || action === 'bid_lot') return placeLotBid(viewer, poolId, body);
   if (action === 'submit') return submitEntry(viewer, poolId, body);
   if (action === 'claim_square') return claimSquare(viewer, poolId, body);
   if (action === 'set_digits') return setDigits(viewer, poolId, body);

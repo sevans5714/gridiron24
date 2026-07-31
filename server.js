@@ -36,12 +36,13 @@ const logos = require('./logos-store');
 const invites = require('./invites-store');
 const weeklyWrap = require('./weekly-wrap');
 const calendar = require('./calendar-store');
-const powerRankings = require('./power-rankings-store');
+const powerRankingsCompute = require('./power-rankings-compute');
 const rulesSyncStore = require('./rules-sync-store');
 const espnResilient = require('./espn-resilient');
 const rosterViolations = require('./roster-violations-store');
 const keepers = require('./keepers-store');
 const career = require('./career-store');
+const recordsLib = require('./records');
 const polls = require('./polls-store');
 const inbox = require('./inbox-store');
 const welcomeMessage = require('./welcome-message');
@@ -57,6 +58,7 @@ const survivorPool = require('./survivor-pool-store');
 const paperBook = require('./paper-book-store');
 const deathPool = require('./death-pool-store');
 const deathPoolNews = require('./death-pool-news');
+const mockDraftRooms = require('./mock-draft-rooms-store');
 const customPools = require('./custom-pool-store');
 const futuresMarkets = require('./futures-markets');
 const {
@@ -328,7 +330,9 @@ function isLoungeOnlyAllowedPath(pathname) {
     '/api/sports-scores',
     '/api/leagues',
     '/api/beta/draft-pool',
-    '/api/beta/draft'
+    '/api/beta/player-news',
+    '/api/beta/draft',
+    '/api/mock-draft'
   ]);
   if (exact.has(pathname)) return true;
   if (pathname.startsWith('/api/members-chat/')) return true;
@@ -1106,6 +1110,236 @@ async function loadHistorySeason(seasonParam) {
   };
 }
 
+/**
+ * Build franchise record book from current + archived seasons (matchups + standings).
+ */
+async function loadRecordBook() {
+  const catalog = historySeasonEntries();
+  const bags = [];
+  const errors = [];
+  const fetched = new Set();
+
+  for (const entry of catalog) {
+    const season = Number(entry.season);
+    const yearLabel = entry.yearNumber
+      ? `Year ${entry.yearNumber} (${season})`
+      : String(season);
+    const confSpecs = [];
+    for (const conf of config.conferences) {
+      const leagueId = conf.key === 'detail'
+        ? entry.detailEspnLeagueId
+        : (conf.key === 'overtime' ? entry.overtimeEspnLeagueId : conf.espnLeagueId);
+      if (!leagueId) continue;
+      confSpecs.push({ conf, leagueId: Number(leagueId) });
+    }
+    // Deduplicate same ESPN league mapped to both conferences
+    const seenLeague = new Set();
+    for (const { conf, leagueId } of confSpecs) {
+      const fetchKey = `${season}:${leagueId}`;
+      if (seenLeague.has(leagueId) || fetched.has(fetchKey)) continue;
+      seenLeague.add(leagueId);
+      fetched.add(fetchKey);
+      const confForFetch = { ...conf, espnLeagueId: leagueId };
+      try {
+        const raw = await fetchEspnRaw(
+          confForFetch,
+          ['mTeam', 'mMatchup', 'mStatus'],
+          'records',
+          {},
+          season
+        );
+        const normalized = normalizeLeague(raw, confForFetch);
+        const teamsById = new Map();
+        for (const t of normalized.teams || []) {
+          teamsById.set(Number(t.id), {
+            ...t,
+            conferenceKey: conf.key,
+            conferenceName: conf.shortName || conf.name
+          });
+        }
+        bags.push({
+          season,
+          yearLabel,
+          conferenceKey: conf.key,
+          conferenceName: conf.shortName || conf.name,
+          teamsById,
+          schedule: raw.schedule || []
+        });
+      } catch (err) {
+        errors.push({
+          season,
+          conferenceKey: conf.key,
+          leagueId,
+          error: err.message || 'Could not load'
+        });
+      }
+    }
+  }
+
+  const book = recordsLib.buildRecordBook(bags);
+  return {
+    ok: true,
+    records: book.records,
+    seasonsScanned: book.seasonsScanned,
+    gamesScanned: book.gamesScanned,
+    seasonsAvailable: catalog.map((e) => ({
+      season: e.season,
+      label: e.label,
+      yearNumber: e.yearNumber || null
+    })),
+    errors: errors.length ? errors : undefined,
+    espnAuthConfigured: Boolean(process.env.ESPN_SWID && process.env.ESPN_S2),
+    generatedAt: new Date().toISOString()
+  };
+}
+
+/**
+ * Live system power rankings for Detail + Overtime.
+ * Hidden until both drafts complete; preseason uses Week 1 projections.
+ */
+async function loadSystemPowerRankings() {
+  const generatedAt = new Date().toISOString();
+  const season = Number(config.season);
+  const conferences = Array.isArray(config.conferences) ? config.conferences : [];
+
+  const draftStatus = [];
+  for (const conf of conferences) {
+    try {
+      const board = await loadDraftBoard(conf.key);
+      draftStatus.push({
+        key: conf.key,
+        name: conf.shortName || conf.name,
+        ok: true,
+        drafted: Boolean(board?.draft?.drafted),
+        inProgress: Boolean(board?.draft?.inProgress)
+      });
+    } catch (err) {
+      draftStatus.push({
+        key: conf.key,
+        name: conf.shortName || conf.name,
+        ok: false,
+        drafted: false,
+        inProgress: false,
+        error: err.message || 'Unavailable'
+      });
+    }
+  }
+
+  const draftsComplete = draftStatus.length > 0
+    && draftStatus.every((d) => d.ok && d.drafted && !d.inProgress);
+
+  if (!draftsComplete) {
+    return {
+      ok: true,
+      mode: 'pre_draft',
+      message: 'Power rankings will be displayed after the draft.',
+      latest: null,
+      rankings: [],
+      draftStatus,
+      season,
+      generatedAt
+    };
+  }
+
+  const leagueBags = await Promise.all(conferences.map(async (conference) => {
+    try {
+      const raw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], 'power-rankings');
+      const data = normalizeLeague(raw, conference);
+      const week1 = normalizeSchedule(raw, conference, 1);
+      const projectedById = new Map();
+      for (const m of week1.matchups || []) {
+        if (m.home?.id != null) projectedById.set(Number(m.home.id), Number(m.home.projected) || 0);
+        if (m.away?.id != null) projectedById.set(Number(m.away.id), Number(m.away.projected) || 0);
+      }
+      const teams = (data.teams || []).map((t) => ({
+        conferenceKey: conference.key,
+        conferenceName: conference.shortName || conference.name,
+        teamId: Number(t.id),
+        teamName: t.name,
+        logo: t.logo || null,
+        wins: Number(t.wins) || 0,
+        losses: Number(t.losses) || 0,
+        ties: Number(t.ties) || 0,
+        gamesPlayed: Number(t.gamesPlayed) || 0,
+        pointsFor: Number(t.pointsFor) || 0,
+        pointsAgainst: Number(t.pointsAgainst) || 0,
+        streakType: t.streakType || 'NONE',
+        streakLength: Number(t.streakLength) || 0,
+        week1Projected: projectedById.get(Number(t.id)) || 0
+      }));
+      return {
+        ok: true,
+        key: conference.key,
+        currentMatchupPeriod: data.currentMatchupPeriod,
+        teams
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        key: conference.key,
+        error: err.message || 'Could not load',
+        teams: []
+      };
+    }
+  }));
+
+  const errors = leagueBags.filter((b) => !b.ok).map((b) => ({
+    conferenceKey: b.key,
+    error: b.error
+  }));
+  const allTeams = leagueBags.flatMap((b) => b.teams || []);
+  if (!allTeams.length) {
+    return {
+      ok: true,
+      mode: 'unavailable',
+      message: 'Power rankings are unavailable right now.',
+      latest: null,
+      rankings: [],
+      draftStatus,
+      errors: errors.length ? errors : undefined,
+      season,
+      generatedAt
+    };
+  }
+
+  const preseason = !powerRankingsCompute.seasonHasStarted(allTeams);
+  const currentWeek = leagueBags
+    .map((b) => Number(b.currentMatchupPeriod))
+    .filter((n) => Number.isFinite(n) && n > 0)
+    .sort((a, b) => b - a)[0] || 1;
+
+  const ranks = powerRankingsCompute.buildRankRows(allTeams, { preseason });
+  const week = preseason ? 1 : currentWeek;
+  const notes = preseason
+    ? 'Preseason power rankings — ordered by Week 1 projected fantasy points.'
+    : 'System power rankings — record, points scored, point differential, and recent form.';
+
+  const latest = {
+    id: 'system',
+    week,
+    season,
+    mode: preseason ? 'preseason' : 'in_season',
+    notes,
+    ranks,
+    authorId: null,
+    authorName: 'System',
+    createdAt: generatedAt,
+    system: true
+  };
+
+  return {
+    ok: true,
+    mode: latest.mode,
+    message: null,
+    latest,
+    rankings: [latest],
+    draftStatus,
+    errors: errors.length ? errors : undefined,
+    season,
+    generatedAt
+  };
+}
+
 async function fetchEspnLeague(conference) {
   const raw = await fetchEspnRaw(conference, ['mTeam', 'mSettings', 'mStatus'], 'league');
   return normalizeLeague(raw, conference);
@@ -1620,7 +1854,56 @@ function normalizeTransactions(raw, conference) {
   };
 }
 
-async function loadTransactionsPayload() {
+async function loadTransactionsPayload(leagueScope = null) {
+  if (leagueScope?.scope === 'aaa') {
+    const affiliate = getAffiliatedLeague(leagueScope.conferenceKey || 'aaa');
+    const espnId = Number(affiliate?.espnLeagueId);
+    if (!affiliate || !Number.isFinite(espnId) || espnId <= 0) {
+      return {
+        season: config.season,
+        generatedAt: new Date().toISOString(),
+        leagueScope,
+        conferences: [{
+          ok: false,
+          key: 'aaa',
+          name: affiliate?.name || 'AAA League',
+          shortName: affiliate?.shortName || 'AAA',
+          logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
+          error: 'AAA League ESPN ID is not configured yet',
+          transactions: []
+        }]
+      };
+    }
+    const conference = {
+      key: affiliate.key,
+      name: affiliate.name,
+      shortName: affiliate.shortName || 'AAA',
+      espnLeagueId: espnId,
+      logo: affiliate.logo || '/assets/aaa-league.png?v=6'
+    };
+    let row;
+    try {
+      const raw = await fetchEspnRaw(conference, ['mTeam', 'mTransactions2'], 'aaa-transactions');
+      row = { ok: true, ...normalizeTransactions(raw, conference) };
+    } catch (error) {
+      row = {
+        ok: false,
+        key: conference.key,
+        name: conference.name,
+        shortName: conference.shortName,
+        logo: conference.logo,
+        error: error.message || 'Unavailable',
+        transactions: []
+      };
+    }
+    return {
+      season: config.season,
+      generatedAt: new Date().toISOString(),
+      leagueScope,
+      conferences: [row]
+    };
+  }
+
   const conferences = await Promise.all(
     config.conferences.map(async (conference) => {
       try {
@@ -1642,6 +1925,7 @@ async function loadTransactionsPayload() {
   return {
     season: config.season,
     generatedAt: new Date().toISOString(),
+    leagueScope: leagueScope || { scope: 'gridiron' },
     conferences
   };
 }
@@ -2413,7 +2697,7 @@ async function apiFantasyLeaders(res, weekParam, leagueScope = null) {
       name: affiliate.name,
       shortName: affiliate.shortName || 'AAA',
       espnLeagueId: espnId,
-      logo: affiliate.logo || '/assets/aaa-league.png'
+      logo: affiliate.logo || '/assets/aaa-league.png?v=6'
     };
     results = [await fantasyLeadersForConference(conference, weekParam, 'aaa-leaders')];
   } else {
@@ -2479,7 +2763,7 @@ async function loadAaaLeagueSettings() {
       name: affiliate?.name || 'AAA League',
       shortName: affiliate?.shortName || 'AAA',
       leagueId: null,
-      logo: affiliate?.logo || '/assets/aaa-league.png',
+      logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
       error: 'AAA League ESPN ID is not configured'
     };
   }
@@ -2488,7 +2772,7 @@ async function loadAaaLeagueSettings() {
     name: affiliate.name || 'AAA League',
     shortName: affiliate.shortName || 'AAA',
     espnLeagueId: espnId,
-    logo: affiliate.logo || '/assets/aaa-league.png'
+    logo: affiliate.logo || '/assets/aaa-league.png?v=6'
   };
   try {
     const raw = await fetchEspnRaw(conference, ['mSettings', 'mStatus'], 'aaa-settings');
@@ -2771,13 +3055,13 @@ async function loadFantasySportsBoards() {
         name: affiliate.name || 'AAA League',
         shortName: affiliate.shortName || 'AAA',
         espnLeagueId: espnId,
-        logo: affiliate.logo || '/assets/aaa-league.png'
+        logo: affiliate.logo || '/assets/aaa-league.png?v=6'
       };
       const aaa = await scheduleForConference(conference, null, 'aaa-matchup');
       boards.push(sportsScoreboard.boardFromFantasyConferences({
         id: 'aaa',
         label: affiliate.shortName || 'AAA',
-        logo: '/assets/aaa-league.png?v=3'
+        logo: '/assets/aaa-league.png?v=6'
       }, [aaa]));
     }
   } catch (err) {
@@ -2788,7 +3072,7 @@ async function loadFantasySportsBoards() {
       label: 'AAA',
       kind: 'team',
       fantasy: true,
-      logo: '/assets/aaa-league.png?v=3',
+      logo: '/assets/aaa-league.png?v=6',
       error: err.message || 'Unavailable',
       counts: { live: 0, final: 0, upcoming: 0 },
       games: []
@@ -2814,7 +3098,7 @@ async function apiSchedule(res, weekParam, leagueScope = null) {
           key: 'aaa',
           name: affiliate?.name || 'AAA League',
           shortName: affiliate?.shortName || 'AAA',
-          logo: affiliate?.logo || '/assets/aaa-league.png',
+          logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
           error: 'AAA League ESPN ID is not configured yet'
         }]
       });
@@ -2824,7 +3108,7 @@ async function apiSchedule(res, weekParam, leagueScope = null) {
       name: affiliate.name,
       shortName: affiliate.shortName || 'AAA',
       espnLeagueId: espnId,
-      logo: affiliate.logo || '/assets/aaa-league.png'
+      logo: affiliate.logo || '/assets/aaa-league.png?v=6'
     };
     results = [await scheduleForConference(conference, weekParam, 'aaa-matchup')];
   } else {
@@ -3319,6 +3603,188 @@ function deliverWelcomeInboxIfNeeded(user) {
   }
 }
 
+const pendingInboxSyncAt = new Map();
+
+/**
+ * Keep owner/commissioner inboxes stocked with digests for open work:
+ * pending account approvals, rule proposals awaiting owner, feature requests, roster patrol.
+ */
+function syncPendingInboxDigests(user, { force = false } = {}) {
+  if (!user?.id || user.approved === false) return;
+  const isOwner = users.isSiteOwner(user);
+  const isCommish = users.isCommissioner(user);
+  if (!isOwner && !isCommish) return;
+
+  const now = Date.now();
+  const last = pendingInboxSyncAt.get(user.id) || 0;
+  if (!force && now - last < 90_000) return;
+  pendingInboxSyncAt.set(user.id, now);
+
+  try {
+    const pendingUsers = users.listUsers().filter((u) => u.approved === false);
+    const pendingNames = pendingUsers
+      .map((u) => `• ${u.name || u.loginName} (${u.loginName}) — ${u.email || 'no email'}`)
+      .join('\n');
+    inbox.upsertDigest({
+      toUserId: user.id,
+      digestKey: 'digest:pending-users',
+      type: 'pending_approvals',
+      fingerprint: pendingUsers.map((u) => u.id).sort().join(',') || 'none',
+      subject: pendingUsers.length
+        ? `${pendingUsers.length} account${pendingUsers.length === 1 ? '' : 's'} awaiting approval`
+        : null,
+      body: pendingUsers.length
+        ? [
+          'PENDING APPROVALS',
+          '',
+          pendingNames,
+          '',
+          'Open League Tools → Member Access to approve or reject these accounts.'
+        ].join('\n')
+        : null,
+      meta: {
+        digest: true,
+        href: '/league-tools.html',
+        count: pendingUsers.length,
+        pendingApprovals: true
+      }
+    });
+
+    const openViolations = rosterViolations.listOpen({ season: config.season });
+    const violationLines = openViolations
+      .slice(0, 12)
+      .map((v) => `• ${v.teamName || 'Team'} — ${v.playerName || 'player'} (${v.conferenceKey || 'league'})`)
+      .join('\n');
+    inbox.upsertDigest({
+      toUserId: user.id,
+      digestKey: 'digest:roster-violations',
+      type: 'roster_violations',
+      fingerprint: openViolations.map((v) => v.id).sort().join(',') || 'none',
+      subject: openViolations.length
+        ? `${openViolations.length} open roster violation${openViolations.length === 1 ? '' : 's'}`
+        : null,
+      body: openViolations.length
+        ? [
+          'ROSTER PATROL',
+          '',
+          violationLines,
+          openViolations.length > 12 ? `…and ${openViolations.length - 12} more.` : '',
+          '',
+          'Open League Tools → Roster Violations to review.'
+        ].filter(Boolean).join('\n')
+        : null,
+      meta: {
+        digest: true,
+        href: '/league-tools.html',
+        count: openViolations.length,
+        rosterViolations: true
+      }
+    });
+
+    if (!isOwner) return;
+
+    const waitingRules = ruleProposals.listProposals({
+      status: ruleProposals.STATUS.SUBMITTED,
+      limit: 50
+    });
+    for (const p of waitingRules) {
+      inbox.ensureRelatedMessage({
+        toUserId: user.id,
+        relatedId: p.id,
+        type: 'rule_proposal',
+        subject: `RULE CHANGE — from ${p.authorName || 'member'}`,
+        body: [
+          'RULE CHANGE PROPOSAL',
+          '',
+          `From: ${p.authorName || 'member'}`,
+          '',
+          p.text,
+          '',
+          'Open your inbox on the full site to Open Vote or Dismiss.'
+        ].join('\n'),
+        meta: {
+          ruleChange: true,
+          proposalId: p.id,
+          status: p.status
+        }
+      });
+    }
+    inbox.upsertDigest({
+      toUserId: user.id,
+      digestKey: 'digest:rule-proposals',
+      type: 'pending_approvals',
+      fingerprint: waitingRules.map((p) => p.id).sort().join(',') || 'none',
+      subject: waitingRules.length
+        ? `${waitingRules.length} rule proposal${waitingRules.length === 1 ? '' : 's'} awaiting you`
+        : null,
+      body: waitingRules.length
+        ? [
+          'RULE PROPOSALS AWAITING OWNER',
+          '',
+          ...waitingRules.map((p) => `• ${p.authorName || 'member'} — ${(p.text || '').slice(0, 90)}`),
+          '',
+          'Open each RULE CHANGE letter in your inbox to Open Vote or Dismiss.'
+        ].join('\n')
+        : null,
+      meta: {
+        digest: true,
+        href: '/inbox.html',
+        count: waitingRules.length,
+        ruleProposals: true
+      }
+    });
+
+    const openFeatures = featureRequests.listRequests({ status: 'submitted', limit: 50 });
+    for (const f of openFeatures) {
+      inbox.ensureRelatedMessage({
+        toUserId: user.id,
+        relatedId: f.id,
+        type: 'feature_request',
+        subject: `FEATURE REQUEST — from ${f.authorName || 'member'}`,
+        body: [
+          'FEATURE REQUEST',
+          '',
+          `From: ${f.authorName || 'member'}`,
+          '',
+          f.text
+        ].join('\n'),
+        meta: {
+          featureRequest: true,
+          requestId: f.id,
+          authorName: f.authorName,
+          authorId: f.authorId
+        }
+      });
+    }
+    inbox.upsertDigest({
+      toUserId: user.id,
+      digestKey: 'digest:feature-requests',
+      type: 'pending_approvals',
+      fingerprint: openFeatures.map((f) => f.id).sort().join(',') || 'none',
+      subject: openFeatures.length
+        ? `${openFeatures.length} feature request${openFeatures.length === 1 ? '' : 's'} open`
+        : null,
+      body: openFeatures.length
+        ? [
+          'OPEN FEATURE REQUESTS',
+          '',
+          ...openFeatures.map((f) => `• ${f.authorName || 'member'} — ${(f.text || '').slice(0, 90)}`),
+          '',
+          'Each request also has its own FEATURE REQUEST letter in this inbox.'
+        ].join('\n')
+        : null,
+      meta: {
+        digest: true,
+        href: '/inbox.html',
+        count: openFeatures.length,
+        featureRequests: true
+      }
+    });
+  } catch (err) {
+    console.warn('[pending-inbox] sync failed', err.message || err);
+  }
+}
+
 /**
  * Which league HQ/nav/scoreboard a user should see.
  * Site owner: preferred-league cookie (exclusive switcher).
@@ -3331,7 +3797,9 @@ function leagueScopeForUser(user, req = null) {
       scope: 'gridiron',
       conferenceKey: null,
       homePath: '/home.html',
+      scoreboardPath: '/scoreboard',
       label: 'GridIron 24',
+      logo: '/assets/gridiron24-league.png?v=5',
       canSwitchLeagues: false,
       preferredLeague: null
     };
@@ -3345,7 +3813,9 @@ function leagueScopeForUser(user, req = null) {
         scope: 'aaa',
         conferenceKey: 'aaa',
         homePath: '/aaa.html',
+        scoreboardPath: '/aaa-scoreboard',
         label: affiliate?.name || 'AAA League',
+        logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
         canSwitchLeagues: true,
         preferredLeague: 'aaa'
       };
@@ -3354,7 +3824,9 @@ function leagueScopeForUser(user, req = null) {
       scope: 'gridiron',
       conferenceKey: null,
       homePath: '/home.html',
+      scoreboardPath: '/scoreboard',
       label: 'GridIron 24',
+      logo: '/assets/gridiron24-league.png?v=5',
       canSwitchLeagues: true,
       preferredLeague: 'gridiron'
     };
@@ -3374,7 +3846,9 @@ function leagueScopeForUser(user, req = null) {
       scope: 'aaa',
       conferenceKey,
       homePath: homePathForUser(user, req),
+      scoreboardPath: '/aaa-scoreboard',
       label: affiliate?.name || (conferenceKey === 'aaa' ? 'AAA League' : conferenceKey),
+      logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
       canSwitchLeagues: false,
       preferredLeague: null
     };
@@ -3383,9 +3857,44 @@ function leagueScopeForUser(user, req = null) {
     scope: 'gridiron',
     conferenceKey: conferenceKey || null,
     homePath: homePathForUser(user, req),
+    scoreboardPath: '/scoreboard',
     label: 'GridIron 24',
+    logo: '/assets/gridiron24-league.png?v=5',
     canSwitchLeagues: false,
     preferredLeague: null
+  };
+}
+
+/** Scoreboard pages can request a specific league via ?league=aaa|gridiron. */
+function resolveLeagueScope(user, req, requestedLeague) {
+  const personal = leagueScopeForUser(user, req);
+  const want = String(requestedLeague || '').trim().toLowerCase();
+  if (want !== 'aaa' && want !== 'gridiron') return personal;
+  if (user && !personal.canSwitchLeagues && personal.scope !== want) {
+    return personal;
+  }
+  if (want === 'aaa') {
+    const affiliate = getAffiliatedLeague('aaa');
+    return {
+      scope: 'aaa',
+      conferenceKey: 'aaa',
+      homePath: '/aaa.html',
+      scoreboardPath: '/aaa-scoreboard',
+      label: affiliate?.name || 'AAA League',
+      logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
+      canSwitchLeagues: personal.canSwitchLeagues,
+      preferredLeague: personal.preferredLeague
+    };
+  }
+  return {
+    scope: 'gridiron',
+    conferenceKey: null,
+    homePath: '/home.html',
+    scoreboardPath: '/scoreboard',
+    label: 'GridIron 24',
+    logo: '/assets/gridiron24-league.png?v=5',
+    canSwitchLeagues: personal.canSwitchLeagues,
+    preferredLeague: personal.preferredLeague
   };
 }
 
@@ -3393,11 +3902,7 @@ function leagueScopeForUser(user, req = null) {
 const GRIDIRON_ONLY_PAGES = new Set([
   '/standings.html',
   '/teams.html',
-  '/draft.html',
   '/history.html',
-  '/transactions.html',
-  '/rankings.html',
-  '/schedules.html',
   '/playoffs.html'
 ]);
 
@@ -3420,6 +3925,31 @@ function isDefaultHomeNext(nextPath) {
 function getAffiliatedLeague(key = 'aaa') {
   const list = Array.isArray(config.affiliatedLeagues) ? config.affiliatedLeagues : [];
   return list.find((l) => l.key === key) || list[0] || null;
+}
+
+/** AAA playoff field size: 10→5, 12→6, 14→8 (default 6 for the current 12-team setting). */
+function aaaPlayoffSlots(teamCount) {
+  const n = Number(teamCount);
+  if (n === 10) return 5;
+  if (n === 14) return 8;
+  if (n === 12) return 6;
+  if (Number.isFinite(n) && n > 0 && n < 12) return 5;
+  if (Number.isFinite(n) && n > 12) return 8;
+  const locked = Number(getAffiliatedLeague('aaa')?.payouts?.teamCount);
+  if (locked === 10) return 5;
+  if (locked === 14) return 8;
+  return 6;
+}
+
+function aaaConferenceFromAffiliate(affiliate) {
+  const espnId = Number(affiliate?.espnLeagueId);
+  return {
+    key: affiliate?.key || 'aaa',
+    name: affiliate?.name || 'AAA League',
+    shortName: affiliate?.shortName || 'AAA',
+    espnLeagueId: Number.isFinite(espnId) && espnId > 0 ? espnId : null,
+    logo: affiliate?.logo || '/assets/aaa-league.png?v=6'
+  };
 }
 
 /** GridIron conferences plus affiliated leagues (for admin assignment keys). */
@@ -3601,7 +4131,7 @@ async function buildAaaPayload() {
     shortName: 'AAA',
     espnLeagueId: null,
     role: 'feeder',
-    logo: '/assets/aaa-league.png',
+    logo: '/assets/aaa-league.png?v=6',
     payouts: {
       buyInPerTeam: 50,
       teamCountMin: 10,
@@ -3623,7 +4153,7 @@ async function buildAaaPayload() {
     name: affiliate.name,
     shortName: affiliate.shortName,
     role: affiliate.role || 'feeder',
-    logo: affiliate.logo || '/assets/aaa-league.png',
+    logo: affiliate.logo || '/assets/aaa-league.png?v=6',
     season: config.season,
     payouts,
     scoring: officialPack.scoring,
@@ -3646,6 +4176,8 @@ async function buildAaaPayload() {
       champion: null,
       promotee: null,
       scoringSync: null,
+      playoffSlots: aaaPlayoffSlots(affiliate.payouts?.teamCount || 12),
+      playoffCutRank: aaaPlayoffSlots(affiliate.payouts?.teamCount || 12) + 1,
       message: 'AAA League ESPN ID is not configured yet. Scoring follows GridIron 24; standings and hot/cold unlock when the ESPN league ID is set.'
     };
   }
@@ -3701,6 +4233,8 @@ async function buildAaaPayload() {
       espnLeagueId: espnId,
       espnLeagueName: data.espnLeagueName || null,
       teamCount: teams.length,
+      playoffSlots: aaaPlayoffSlots(teams.length || affiliate.payouts?.teamCount || 12),
+      playoffCutRank: aaaPlayoffSlots(teams.length || affiliate.payouts?.teamCount || 12) + 1,
       week,
       matchups,
       teams,
@@ -3730,6 +4264,257 @@ async function buildAaaPayload() {
       week: null,
       matchups: [],
       error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
+    };
+  }
+}
+
+async function buildAaaPlayoffsPayload() {
+  const affiliate = getAffiliatedLeague('aaa') || {
+    key: 'aaa',
+    name: 'AAA League',
+    shortName: 'AAA',
+    espnLeagueId: null,
+    logo: '/assets/aaa-league.png?v=6',
+    payouts: { teamCount: 12 }
+  };
+  const conference = aaaConferenceFromAffiliate(affiliate);
+  const configured = Number.isFinite(Number(conference.espnLeagueId)) && Number(conference.espnLeagueId) > 0;
+  const lockedCount = Number(affiliate.payouts?.teamCount) || 12;
+  const base = {
+    ok: true,
+    configured,
+    season: config.season,
+    generatedAt: new Date().toISOString(),
+    key: conference.key,
+    name: conference.name,
+    shortName: conference.shortName,
+    logo: conference.logo,
+    teamCount: lockedCount,
+    playoffSlots: aaaPlayoffSlots(lockedCount),
+    playoffCutRank: aaaPlayoffSlots(lockedCount) + 1,
+    formatNote: 'AAA playoffs: 10 teams → 5 make it · 12 teams → 6 make it · 14 teams → 8 make it'
+  };
+
+  if (!configured) {
+    return {
+      ...base,
+      ok: false,
+      error: 'AAA League ESPN ID is not configured yet',
+      seeds: [],
+      rounds: null,
+      superBowl: null
+    };
+  }
+
+  try {
+    const [league, w14, w15, w16, w17] = await Promise.all([
+      fetchEspnLeague(conference),
+      scheduleForConference(conference, 14, 'aaa-matchup'),
+      scheduleForConference(conference, 15, 'aaa-matchup'),
+      scheduleForConference(conference, 16, 'aaa-matchup'),
+      scheduleForConference(conference, 17, 'aaa-matchup')
+    ]);
+    const teams = league.teams || [];
+    const teamCount = teams.length || lockedCount;
+    const slots = aaaPlayoffSlots(teamCount);
+    const byId = new Map(teams.map((t) => [t.id, t]));
+    const bySeed = new Map();
+    for (const t of teams) {
+      if (Number(t.playoffSeed) > 0) bySeed.set(Number(t.playoffSeed), t);
+    }
+    if (bySeed.size < slots) {
+      teams.slice(0, slots).forEach((t, i) => {
+        if (!bySeed.has(i + 1)) bySeed.set(i + 1, { ...t, playoffSeed: i + 1, provisional: true });
+      });
+    }
+
+    const slot = (seedNum) => {
+      const t = bySeed.get(seedNum);
+      if (!t) return { seed: seedNum, name: `#${seedNum} Seed`, logo: null, id: null, provisional: true };
+      return {
+        seed: seedNum,
+        id: t.id,
+        name: t.name,
+        logo: t.logo || null,
+        provisional: Boolean(t.provisional) || Number(t.playoffSeed || 0) === 0
+      };
+    };
+
+    const withSeed = (side) => {
+      if (!side) return null;
+      const seed = Number(byId.get(side.id)?.playoffSeed || 0) || null;
+      return { ...side, seed };
+    };
+    const formatGame = (m, fallbackLabel) => {
+      if (!m) {
+        return {
+          label: fallbackLabel,
+          status: 'upcoming',
+          home: null,
+          away: null,
+          winner: 'UNDECIDED'
+        };
+      }
+      const decided = m.winner === 'HOME' || m.winner === 'AWAY';
+      return {
+        label: fallbackLabel,
+        status: decided ? 'final' : (Number(m.home?.score || 0) + Number(m.away?.score || 0) > 0 ? 'live' : 'upcoming'),
+        winner: m.winner || 'UNDECIDED',
+        home: withSeed(m.home),
+        away: withSeed(m.away),
+        playoffTierType: m.playoffTierType || null
+      };
+    };
+
+    const playable = (weekPayload) => (weekPayload?.matchups || []).filter((m) => m.home && m.away);
+    const p14 = playable(w14);
+    const p15 = playable(w15);
+    const p16 = playable(w16);
+    const p17 = playable(w17);
+
+    let rounds;
+    if (slots === 8) {
+      const r1 = [
+        pickMatchupForSeeds(p14, 1, 8, byId) || p14[0] || null,
+        pickMatchupForSeeds(p14, 4, 5, byId) || p14[1] || null,
+        pickMatchupForSeeds(p14, 2, 7, byId) || p14[2] || null,
+        pickMatchupForSeeds(p14, 3, 6, byId) || p14[3] || null
+      ];
+      const winners15 = p15.filter(isWinnersBracketMatchup);
+      const semis = (winners15.length ? winners15 : p15).slice(0, 2);
+      const title16 = p16.find(isWinnersBracketMatchup) || p16[0] || null;
+      const third16 = p16.find(isConsolationMatchup)
+        || p16.find((m) => m.id !== title16?.id)
+        || null;
+      rounds = {
+        format: 'eight',
+        wildCard: {
+          week: 14,
+          label: 'Week 14 · Round of 8',
+          games: [
+            formatGame(r1[0], '#1 vs #8'),
+            formatGame(r1[1], '#4 vs #5'),
+            formatGame(r1[2], '#2 vs #7'),
+            formatGame(r1[3], '#3 vs #6')
+          ]
+        },
+        semifinals: {
+          week: 15,
+          label: 'Week 15 · Semifinals',
+          games: [
+            formatGame(semis[0], 'Semifinal 1'),
+            formatGame(semis[1], 'Semifinal 2')
+          ]
+        },
+        finals: {
+          week: 16,
+          label: 'Week 16 · Title + 3rd',
+          title: formatGame(title16, 'AAA Championship'),
+          third: formatGame(third16, 'Third Place')
+        }
+      };
+    } else if (slots === 5) {
+      const game45 = pickMatchupForSeeds(p14, 4, 5, byId) || p14[0] || null;
+      const game23 = pickMatchupForSeeds(p14, 2, 3, byId) || p14[1] || p14[0] || null;
+      const winners15 = p15.filter(isWinnersBracketMatchup);
+      const semis = (winners15.length ? winners15 : p15).slice(0, 2);
+      const title16 = p16.find(isWinnersBracketMatchup) || p16[0] || null;
+      const third16 = p16.find(isConsolationMatchup)
+        || p16.find((m) => m.id !== title16?.id)
+        || null;
+      rounds = {
+        format: 'five',
+        wildCard: {
+          week: 14,
+          label: 'Week 14 · Wild Card',
+          bye1: slot(1),
+          game45: formatGame(game45, '#4 vs #5'),
+          game23: formatGame(game23, '#2 vs #3')
+        },
+        semifinals: {
+          week: 15,
+          label: 'Week 15 · Semifinals',
+          games: [
+            formatGame(semis[0], 'Semifinal 1'),
+            formatGame(semis[1], 'Semifinal 2')
+          ]
+        },
+        finals: {
+          week: 16,
+          label: 'Week 16 · Title + 3rd',
+          title: formatGame(title16, 'AAA Championship'),
+          third: formatGame(third16, 'Third Place')
+        }
+      };
+    } else {
+      // 6 make it (12-team setting) — same shape as one GridIron conference
+      const game45 = pickMatchupForSeeds(p14, 4, 5, byId) || p14[0] || null;
+      const game36 = pickMatchupForSeeds(p14, 3, 6, byId) || p14[1] || p14[0] || null;
+      const winners15 = p15.filter(isWinnersBracketMatchup);
+      const semis = (winners15.length ? winners15 : p15).slice(0, 2);
+      const title16 = p16.find(isWinnersBracketMatchup) || p16[0] || null;
+      const third16 = p16.find(isConsolationMatchup)
+        || p16.find((m) => m.id !== title16?.id)
+        || null;
+      rounds = {
+        format: 'six',
+        wildCard: {
+          week: 14,
+          label: 'Week 14 · Wild Card',
+          bye1: slot(1),
+          bye2: slot(2),
+          game45: formatGame(game45, '#4 vs #5'),
+          game36: formatGame(game36, '#3 vs #6')
+        },
+        semifinals: {
+          week: 15,
+          label: 'Week 15 · Semifinals',
+          games: [
+            formatGame(semis[0], 'Semifinal 1'),
+            formatGame(semis[1], 'Semifinal 2')
+          ]
+        },
+        finals: {
+          week: 16,
+          label: 'Week 16 · Title + 3rd',
+          title: formatGame(title16, 'AAA Championship'),
+          third: formatGame(third16, 'Third Place')
+        }
+      };
+    }
+
+    const titleFrom16 = rounds.finals?.title || null;
+    const bowl17 = p17.find(isWinnersBracketMatchup) || p17[0] || null;
+    const superBowl = bowl17
+      ? formatGame(bowl17, 'AAA Super Bowl')
+      : (titleFrom16
+        ? { ...titleFrom16, label: 'AAA Super Bowl' }
+        : formatGame(null, 'AAA Super Bowl'));
+
+    return {
+      ...base,
+      ok: true,
+      teamCount,
+      playoffSlots: slots,
+      playoffCutRank: slots + 1,
+      seeds: Array.from({ length: slots }, (_, i) => slot(i + 1)),
+      rounds,
+      superBowl,
+      weeks: {
+        14: Boolean(w14?.ok),
+        15: Boolean(w15?.ok),
+        16: Boolean(w16?.ok),
+        17: Boolean(w17?.ok)
+      }
+    };
+  } catch (error) {
+    return {
+      ...base,
+      ok: false,
+      error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message,
+      seeds: [],
+      rounds: null,
+      superBowl: null
     };
   }
 }
@@ -4006,7 +4791,10 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/auth') {
       const user = getSessionUser(req);
-      if (user) deliverWelcomeInboxIfNeeded(user);
+      if (user) {
+        deliverWelcomeInboxIfNeeded(user);
+        syncPendingInboxDigests(user, { force: true });
+      }
       return sendJson(res, 200, {
         authenticated: Boolean(user),
         authConfigured: true,
@@ -4031,29 +4819,20 @@ const server = http.createServer(async (req, res) => {
         body = {};
       }
       const league = String(body.league || '').trim().toLowerCase() === 'aaa' ? 'aaa' : 'gridiron';
-      const affiliate = getAffiliatedLeague('aaa');
-      const scope = league === 'aaa'
-        ? {
-            scope: 'aaa',
-            conferenceKey: 'aaa',
-            homePath: '/aaa.html',
-            label: affiliate?.name || 'AAA League',
-            canSwitchLeagues: true,
-            preferredLeague: 'aaa'
-          }
-        : {
-            scope: 'gridiron',
-            conferenceKey: null,
-            homePath: '/home.html',
-            label: 'GridIron 24',
-            canSwitchLeagues: true,
-            preferredLeague: 'gridiron'
-          };
+      const scope = resolveLeagueScope(user, req, league);
+      // Cookie is the source of truth for owners after this response.
+      const stamped = {
+        ...scope,
+        preferredLeague: league,
+        canSwitchLeagues: true,
+        homePath: league === 'aaa' ? '/aaa.html' : '/home.html',
+        scoreboardPath: league === 'aaa' ? '/aaa-scoreboard' : '/scoreboard'
+      };
       return sendJson(res, 200, {
         ok: true,
         preferredLeague: league,
-        homePath: scope.homePath,
-        leagueScope: scope
+        homePath: stamped.homePath,
+        leagueScope: stamped
       }, { 'Set-Cookie': preferredLeagueCookieHeader(league) });
     }
 
@@ -4117,6 +4896,11 @@ const server = http.createServer(async (req, res) => {
         }
         // Invite token admits to the Members Lounge — no separate commissioner approval step.
         if (!user.loungeMember) {
+          for (const staffUser of users.listUsers()) {
+            if (users.isSiteOwner(staffUser) || users.isCommissioner(staffUser)) {
+              syncPendingInboxDigests(staffUser, { force: true });
+            }
+          }
           return sendJson(res, 201, {
             ok: true,
             pendingApproval: true,
@@ -4161,6 +4945,7 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 401, { ok: false, error: 'Incorrect login name or password' });
       }
       deliverWelcomeInboxIfNeeded(user);
+      syncPendingInboxDigests(user, { force: true });
       const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
       const token = signSession(user.id, expiresAt);
       return sendJson(res, 200, {
@@ -4626,6 +5411,28 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/scoreboard' || pathname === '/scoreboard.html') {
+      const user = getSessionUser(req);
+      if (user && !users.isSiteOwner(user) && leagueScopeForUser(user, req).scope === 'aaa') {
+        res.writeHead(302, {
+          Location: '/aaa-scoreboard',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache'
+        });
+        return res.end();
+      }
+      return sendFile(res, path.join(PUBLIC_DIR, 'scoreboard.html'));
+    }
+
+    if (pathname === '/aaa-scoreboard' || pathname === '/aaa-scoreboard.html') {
+      const user = getSessionUser(req);
+      if (user && !users.isSiteOwner(user) && leagueScopeForUser(user, req).scope !== 'aaa') {
+        res.writeHead(302, {
+          Location: '/scoreboard',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache'
+        });
+        return res.end();
+      }
       return sendFile(res, path.join(PUBLIC_DIR, 'scoreboard.html'));
     }
 
@@ -4827,6 +5634,12 @@ const server = http.createServer(async (req, res) => {
         if (action === 'join') {
           return sendJson(res, 200, deathPool.joinPool(publicAuthor, body.poolId));
         }
+        if (action === 'assign' || action === 'assign_member') {
+          return sendJson(res, 200, deathPool.assignMember(publicAuthor, body));
+        }
+        if (action === 'import' || action === 'import_noms') {
+          return sendJson(res, 200, deathPool.importNoms(publicAuthor, body));
+        }
         if (action === 'nominate' || action === 'draft_pick' || action === 'pick') {
           return sendJson(res, 200, deathPool.nominate(publicAuthor, body));
         }
@@ -4861,7 +5674,7 @@ const server = http.createServer(async (req, res) => {
       const viewer = requireLoungeMember(req, res);
       if (!viewer) return;
       try {
-        const scores = await sportsScoreboard.getSportsScores({});
+        const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6 });
         const boards = scores.leagues || [];
         const book = paperBook.getBook(users.publicUser(viewer), boards);
         const futuresBoard = await futuresMarkets.getFuturesBoard().catch(() => ({
@@ -4869,16 +5682,33 @@ const server = http.createServer(async (req, res) => {
           markets: [],
           errors: [{ error: 'Futures unavailable' }]
         }));
-        const PRIORITY_SPORTS = new Set(['nfl', 'ncaaf', 'nba', 'mlb', 'nhl', 'ncaab']);
+        const fantasyIds = sportsScoreboard.FANTASY_LEAGUE_IDS || new Set();
         const ticketBoard = boards
-          .filter((b) => b.ok !== false && b.kind !== 'golf' && PRIORITY_SPORTS.has(String(b.id || '').toLowerCase()))
+          .filter((b) => {
+            if (b.ok === false) return false;
+            if (b.kind === 'golf') return false;
+            if (b.fantasy) return false;
+            const id = String(b.id || '').toLowerCase();
+            if (fantasyIds.has(id)) return false;
+            return true;
+          })
           .map((b) => ({
             id: b.id,
             label: b.label,
             logo: b.logo || null,
             games: (b.games || [])
-              .filter((g) => g.status?.bucket !== 'final' && g.odds)
-              .slice(0, 14)
+              .filter((g) => g.status?.bucket !== 'final')
+              .sort((a, b) => {
+                const ao = a.odds ? 0 : 1;
+                const bo = b.odds ? 0 : 1;
+                if (ao !== bo) return ao - bo;
+                const order = { live: 0, upcoming: 1, final: 2 };
+                const as = order[a.status?.bucket] ?? 3;
+                const bs = order[b.status?.bucket] ?? 3;
+                if (as !== bs) return as - bs;
+                return String(a.date || '').localeCompare(String(b.date || ''));
+              })
+              .slice(0, 80)
               .map((g) => ({
                 id: g.id,
                 date: g.date,
@@ -4941,7 +5771,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (action === 'bet') {
-          const scores = await sportsScoreboard.getSportsScores({});
+          const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6 });
           const boards = scores.leagues || [];
           const book = paperBook.placeBet(publicAuthor, body, boards);
           if (book.placedSlip) {
@@ -4971,6 +5801,126 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/mock-draft' && req.method === 'GET') {
+      const user = requireLoungeMember(req, res);
+      if (!user) return;
+      const roomId = String(requestUrl.searchParams.get('roomId') || '').trim();
+      try {
+        const poolPayload = await nflverseDraft.loadDraftPool({ activeOnly: true });
+        const pool = poolPayload.players || [];
+        if (roomId) {
+          let room = mockDraftRooms.getRoom(roomId);
+          if (!room) return sendJson(res, 404, { ok: false, error: 'Mock draft not found' });
+          if (mockDraftRooms.advanceRoom(room, pool)) {
+            room = mockDraftRooms.saveRoom(room);
+          }
+          return sendJson(res, 200, {
+            ok: true,
+            room: mockDraftRooms.publicRoom(room, user.id),
+            generatedAt: new Date().toISOString()
+          });
+        }
+        const rooms = mockDraftRooms.listActiveRooms().map((r) => {
+          mockDraftRooms.advanceRoom(r, pool);
+          mockDraftRooms.saveRoom(r);
+          return mockDraftRooms.publicRoom(r, user.id);
+        });
+        return sendJson(res, 200, { ok: true, rooms, generatedAt: new Date().toISOString() });
+      } catch (err) {
+        return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Could not load mock draft' });
+      }
+    }
+
+    if (pathname === '/api/mock-draft' && req.method === 'POST') {
+      const user = requireLoungeMember(req, res);
+      if (!user) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      const action = String(body.action || '').trim().toLowerCase();
+      const publicAuthor = users.publicUser(user);
+      try {
+        const poolPayload = await nflverseDraft.loadDraftPool({ activeOnly: true });
+        const pool = poolPayload.players || [];
+
+        if (action === 'create') {
+          const room = mockDraftRooms.createRoom({
+            user: publicAuthor,
+            teamCount: body.teamCount,
+            rounds: body.rounds,
+            pickSeconds: body.pickSeconds,
+            seatIndex: body.seatIndex,
+            teamNames: body.teamNames
+          });
+          mockDraftRooms.advanceRoom(room, pool);
+          mockDraftRooms.saveRoom(room);
+          const pub = mockDraftRooms.publicRoom(room, user.id);
+          const clockLabel = `${Math.round(room.pickSeconds / 60)}:00`;
+          let chatItem = null;
+          try {
+            chatItem = membersChat.addMessage({
+              body: `started a mock draft · ${clockLabel} pick clock`,
+              author: publicAuthor,
+              kind: 'mock',
+              meta: {
+                type: 'mock_start',
+                roomId: room.id,
+                teams: room.teamCount,
+                rounds: room.rounds,
+                pickSeconds: room.pickSeconds,
+                pickDeadline: room.pickDeadline,
+                order: 'snake',
+                seat: room.teamNames[room.seats.find((s) => s.userId === user.id)?.index] || null,
+                openSeats: room.seats.filter((s) => !s.userId).length,
+                status: room.status,
+                link: `/members.html#mock-draft?room=${encodeURIComponent(room.id)}`,
+                linkLabel: 'Join Mock Draft'
+              },
+              skipRateLimit: true
+            });
+          } catch { /* best-effort */ }
+          return sendJson(res, 201, { ok: true, room: pub, chatItem });
+        }
+
+        if (action === 'join') {
+          let room = body.seatIndex != null
+            ? mockDraftRooms.joinSeat({
+                roomId: body.roomId,
+                user: publicAuthor,
+                seatIndex: body.seatIndex
+              })
+            : mockDraftRooms.claimOpenSeat({ roomId: body.roomId, user: publicAuthor });
+          mockDraftRooms.advanceRoom(room, pool);
+          room = mockDraftRooms.saveRoom(room);
+          return sendJson(res, 200, { ok: true, room: mockDraftRooms.publicRoom(room, user.id) });
+        }
+
+        if (action === 'pick') {
+          const room = mockDraftRooms.humanPick({
+            roomId: body.roomId,
+            user: publicAuthor,
+            playerId: body.playerId,
+            pool
+          });
+          return sendJson(res, 200, { ok: true, room: mockDraftRooms.publicRoom(room, user.id) });
+        }
+
+        if (action === 'tick') {
+          let room = mockDraftRooms.getRoom(body.roomId);
+          if (!room) return sendJson(res, 404, { ok: false, error: 'Mock draft not found' });
+          if (mockDraftRooms.advanceRoom(room, pool)) room = mockDraftRooms.saveRoom(room);
+          return sendJson(res, 200, { ok: true, room: mockDraftRooms.publicRoom(room, user.id) });
+        }
+
+        return sendJson(res, 400, { ok: false, error: 'Unknown mock draft action' });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Mock draft action failed' });
+      }
+    }
+
     if (pathname === '/api/beta/draft-pool' && req.method === 'GET') {
       try {
         const season = requestUrl.searchParams.get('season');
@@ -4981,6 +5931,24 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, err.status || 502, {
           ok: false,
           error: err.message || 'Draft pool unavailable'
+        });
+      }
+    }
+
+    if (pathname === '/api/beta/player-news' && req.method === 'GET') {
+      try {
+        const payload = await nflverseDraft.getPlayerNews({
+          espnId: requestUrl.searchParams.get('espnId'),
+          sleeperId: requestUrl.searchParams.get('sleeperId'),
+          name: requestUrl.searchParams.get('name'),
+          limit: requestUrl.searchParams.get('limit')
+        });
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 502, {
+          ok: false,
+          error: err.message || 'Player news unavailable',
+          items: []
         });
       }
     }
@@ -5039,6 +6007,7 @@ const server = http.createServer(async (req, res) => {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
       presence.touch(users.publicUser(user));
+      syncPendingInboxDigests(user);
       return sendJson(res, 200, {
         ok: true,
         online: presence.listOnline(),
@@ -5092,10 +6061,12 @@ const server = http.createServer(async (req, res) => {
         if (postType === 'mock_start' || postType === 'mock') {
           const teams = Math.max(2, Math.min(16, Number(body.teams) || 12));
           const rounds = Math.max(1, Math.min(20, Number(body.rounds) || 15));
+          const pickSeconds = mockDraftRooms.clampPickSeconds(body.pickSeconds || 60);
           const firstPick = String(body.firstPick || '').trim().slice(0, 80);
           const firstPos = String(body.firstPos || '').trim().slice(0, 8);
           const seat = String(body.seatName || '').trim().slice(0, 60);
-          const bits = [`${teams} teams`, `${rounds} rounds`, 'snake'];
+          const roomId = String(body.roomId || '').trim() || null;
+          const bits = [`${teams} teams`, `${rounds} rounds`, 'snake', `${Math.round(pickSeconds / 60)}:00 clock`];
           if (seat) bits.push(`seat ${seat}`);
           item = membersChat.addMessage({
             body: firstPick
@@ -5105,14 +6076,21 @@ const server = http.createServer(async (req, res) => {
             kind: 'mock',
             meta: {
               type: 'mock_start',
+              roomId,
               teams,
               rounds,
+              pickSeconds,
+              pickDeadline: body.pickDeadline || null,
               order: 'snake',
               firstPick: firstPick || null,
               firstPos: firstPos || null,
               seat: seat || null,
-              link: '/members.html#mock-draft',
-              linkLabel: 'Open Mock Draft'
+              openSeats: body.openSeats != null ? Number(body.openSeats) : null,
+              status: body.status || 'live',
+              link: roomId
+                ? `/members.html#mock-draft?room=${encodeURIComponent(roomId)}`
+                : '/members.html#mock-draft',
+              linkLabel: roomId ? 'Join Mock Draft' : 'Open Mock Draft'
             },
             skipRateLimit: true
           });
@@ -5670,6 +6648,7 @@ const server = http.createServer(async (req, res) => {
             };
           }
         }
+        syncPendingInboxDigests(admin, { force: true });
         return sendJson(res, 200, {
           ok: true,
           user: updated,
@@ -5692,6 +6671,7 @@ const server = http.createServer(async (req, res) => {
         // Reject = delete pending account (and clear any team assignment).
         try { logos.unassignTeam(userId); } catch { /* may have no team */ }
         const removed = users.deleteUser(userId, admin.id);
+        syncPendingInboxDigests(admin, { force: true });
         return sendJson(res, 200, { ok: true, user: removed });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not reject account' });
@@ -6501,7 +7481,9 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const item = featureRequests.createRequest({ text: body.text || body.request, author: user });
-        const staff = staffRecipients().filter((u) => u.id !== user.id);
+        const owners = users.listUsers().filter(
+          (u) => users.isSiteOwner(u) && u.approved !== false && u.id !== user.id
+        );
         const authorName = user.name || user.loginName || 'member';
         const subject = `FEATURE REQUEST — from ${authorName}`;
         const msgBody = [
@@ -6511,9 +7493,9 @@ const server = http.createServer(async (req, res) => {
           '',
           item.text
         ].join('\n');
-        if (staff.length) {
+        if (owners.length) {
           inbox.sendToUsers({
-            toUserIds: staff.map((u) => u.id),
+            toUserIds: owners.map((u) => u.id),
             from: user,
             subject,
             body: msgBody,
@@ -6534,7 +7516,7 @@ const server = http.createServer(async (req, res) => {
           body: [
             'FEATURE REQUEST',
             '',
-            'Your feature request was sent to league staff:',
+            'Your feature request was sent to the site owner:',
             '',
             item.text
           ].join('\n'),
@@ -6546,6 +7528,9 @@ const server = http.createServer(async (req, res) => {
             featureRequest: true
           }
         });
+        for (const owner of owners) {
+          syncPendingInboxDigests(owner, { force: true });
+        }
         return sendJson(res, 201, {
           ok: true,
           request: featureRequests.publicRequest(item)
@@ -6663,6 +7648,11 @@ const server = http.createServer(async (req, res) => {
             ruleChange: true
           }
         });
+        for (const staffUser of staff) {
+          if (users.isSiteOwner(staffUser) || users.isCommissioner(staffUser)) {
+            syncPendingInboxDigests(staffUser, { force: true });
+          }
+        }
         return sendJson(res, 201, {
           ok: true,
           proposal: ruleProposals.publicProposal(item, { user })
@@ -6713,6 +7703,7 @@ const server = http.createServer(async (req, res) => {
             ruleChange: true
           }
         });
+        syncPendingInboxDigests(user, { force: true });
         return sendJson(res, 200, { ok: true, proposal: pub });
       } catch (err) {
         return sendJson(res, err.status || 400, {
@@ -6728,6 +7719,7 @@ const server = http.createServer(async (req, res) => {
       const id = pathname.slice('/api/rule-proposals/'.length, -'/dismiss'.length);
       try {
         const updated = ruleProposals.dismissProposal(id, { by: user });
+        syncPendingInboxDigests(user, { force: true });
         return sendJson(res, 200, {
           ok: true,
           proposal: ruleProposals.publicProposal(updated, { user })
@@ -6892,6 +7884,11 @@ const server = http.createServer(async (req, res) => {
       return res.end();
     }
 
+    if (pathname === '/aaa-playoffs' || pathname === '/aaa-playoffs/') {
+      res.writeHead(302, { Location: '/aaa-playoffs.html' });
+      return res.end();
+    }
+
     if (pathname === '/team-logo.html') {
       res.writeHead(302, { Location: '/profile.html#logo' });
       return res.end();
@@ -6938,6 +7935,19 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, err.status || 500, {
           ok: false,
           error: err.message || 'Could not load history',
+          detail: err.detail || null
+        });
+      }
+    }
+
+    if (pathname === '/api/records' && req.method === 'GET') {
+      try {
+        const payload = await loadRecordBook();
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Could not load record book',
           detail: err.detail || null
         });
       }
@@ -7312,6 +8322,7 @@ const server = http.createServer(async (req, res) => {
           result.openCount = result.open.length;
           result.notifications = (result.notifications || []).filter((n) => n.conferenceKey === user.conference);
         }
+        syncPendingInboxDigests(user, { force: true });
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 500, { ok: false, error: err.message || 'Roster violations scan failed' });
@@ -7339,6 +8350,7 @@ const server = http.createServer(async (req, res) => {
           by: user.loginName || user.name || 'staff',
           notes: body.notes
         });
+        syncPendingInboxDigests(user, { force: true });
         return sendJson(res, 200, { ok: true, violation: closed });
       } catch (err) {
         return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Could not acknowledge' });
@@ -7346,12 +8358,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/schedule') {
-      const scope = leagueScopeForUser(getSessionUser(req), req);
+      const user = getSessionUser(req);
+      const scope = resolveLeagueScope(user, req, requestUrl.searchParams.get('league'));
       return await apiSchedule(res, requestUrl.searchParams.get('week'), scope);
     }
 
     if (pathname === '/api/fantasy-leaders') {
-      const scope = leagueScopeForUser(getSessionUser(req), req);
+      const user = getSessionUser(req);
+      const scope = resolveLeagueScope(user, req, requestUrl.searchParams.get('league'));
       return await apiFantasyLeaders(res, requestUrl.searchParams.get('week'), scope);
     }
 
@@ -7382,6 +8396,15 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/aaa/playoffs') {
+      try {
+        const payload = await buildAaaPlayoffsPayload();
+        return sendJson(res, payload.ok === false && payload.error ? 502 : 200, payload);
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load AAA playoffs' });
+      }
+    }
+
     if (pathname === '/api/playoffs') {
       try {
         const payload = await buildPlayoffsPayload();
@@ -7393,7 +8416,9 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/transactions') {
       try {
-        const payload = await loadTransactionsPayload();
+        const user = getSessionUser(req);
+        const scope = leagueScopeForUser(user, req);
+        const payload = await loadTransactionsPayload(scope);
         return sendJson(res, 200, payload);
       } catch (err) {
         return sendJson(res, 500, { ok: false, error: err.message || 'Could not load transactions' });
@@ -7467,47 +8492,30 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/power-rankings' && req.method === 'GET') {
-      return sendJson(res, 200, {
-        ok: true,
-        latest: powerRankings.latestRanking(),
-        rankings: powerRankings.listRankings(),
-        generatedAt: new Date().toISOString()
-      });
+      try {
+        const payload = await loadSystemPowerRankings();
+        return sendJson(res, 200, payload);
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Could not load power rankings',
+          detail: err.detail || null
+        });
+      }
     }
 
     if (pathname === '/api/power-rankings' && req.method === 'POST') {
-      const user = requireCommissioner(req, res);
-      if (!user) return;
-      let body;
-      try {
-        body = await readJsonBody(req);
-      } catch {
-        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
-      }
-      try {
-        const item = powerRankings.saveRanking({
-          week: body.week,
-          season: config.season,
-          ranks: body.ranks,
-          notes: body.notes,
-          author: user
-        });
-        return sendJson(res, 201, { ok: true, item });
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save rankings' });
-      }
+      return sendJson(res, 410, {
+        ok: false,
+        error: 'Power rankings are system-generated now — publishing from League Tools is retired.'
+      });
     }
 
     if (pathname.startsWith('/api/power-rankings/') && req.method === 'DELETE') {
-      const user = requireCommissioner(req, res);
-      if (!user) return;
-      const id = pathname.slice('/api/power-rankings/'.length);
-      try {
-        powerRankings.deleteRanking(id, user);
-        return sendJson(res, 200, { ok: true });
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete ranking' });
-      }
+      return sendJson(res, 410, {
+        ok: false,
+        error: 'Power rankings are system-generated now — there is nothing to delete.'
+      });
     }
 
     if (pathname === '/api/payouts') {

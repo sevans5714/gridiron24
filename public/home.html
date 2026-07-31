@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     .aaa-portal {
       display: inline-flex;
@@ -114,7 +114,7 @@
         transparent;
     }
     .hq-hero img {
-      width: min(448px, 69vw);
+      width: min(14rem, 52vw);
       height: auto;
       display: block;
       margin: 0 auto;
@@ -241,15 +241,23 @@
       margin: 0 0 0.9rem;
       min-height: 2.85rem;
       padding: 0.55rem 1.2rem;
-      border-bottom: 1px solid rgba(47, 109, 255, 0.28);
+      border-bottom: 1px solid var(--line);
       background:
-        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
-        linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
+        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.16), transparent 55%),
+        linear-gradient(180deg, rgba(47, 109, 255, 0.12), rgba(47, 109, 255, 0.04));
       position: relative;
       display: flex;
       align-items: center;
       justify-content: flex-start;
       text-align: left;
+    }
+    html[data-theme="day"] .hq-board .section-head,
+    html[data-theme="day"] .news-block .section-head,
+    html[data-theme="day"] .board-block .section-head {
+      background:
+        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(31, 94, 240, 0.1), transparent 55%),
+        linear-gradient(180deg, rgba(31, 94, 240, 0.08), rgba(31, 94, 240, 0.02));
+      border-bottom-color: rgba(20, 24, 31, 0.1);
     }
     .hq-board .section-head::before {
       content: "";
@@ -417,6 +425,12 @@
       text-align: right;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      padding-left: 0.55rem;
+    }
+    html[data-theme="day"] .mini-table th.num,
+    html[data-theme="day"] .mini-table td.num {
+      border-left-color: rgba(20, 28, 40, 0.14);
     }
     .mini-table td {
       padding: 0.42rem 0.35rem;
@@ -475,12 +489,12 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #8eb6ff;
+      color: var(--blue);
       opacity: 1;
     }
     .mini-table tr.cut-line.relegation td {
       border-top-color: rgba(196, 90, 48, 0.85);
-      color: #e8a078;
+      color: var(--detail);
     }
     .mini-table .relegation-zone td { opacity: 0.78; }
 
@@ -651,10 +665,10 @@
       margin: 0 0 0.9rem;
       min-height: 2.85rem;
       padding: 0.55rem 1.2rem;
-      border-bottom: 1px solid rgba(47, 109, 255, 0.28);
+      border-bottom: 1px solid var(--line);
       background:
-        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.28), transparent 55%),
-        linear-gradient(180deg, rgba(47, 109, 255, 0.2), rgba(47, 109, 255, 0.06));
+        radial-gradient(ellipse 80% 120% at 8% 0%, rgba(47, 109, 255, 0.16), transparent 55%),
+        linear-gradient(180deg, rgba(47, 109, 255, 0.12), rgba(47, 109, 255, 0.04));
       position: relative;
       display: flex;
       align-items: center;
@@ -914,6 +928,7 @@
       .motw-side img { width: 4.75rem; height: 4.75rem; }
       .hotnot-team img { width: 4rem; height: 4rem; }
       .hq-main { font-size: 1.12rem; }
+      .hq-hero img { width: min(11rem, 58vw); }
       .hq-hero .tag { font-size: clamp(1.2rem, 5.2vw, 1.55rem); }
     }
   </style>
@@ -997,7 +1012,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')

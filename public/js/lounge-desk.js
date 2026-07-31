@@ -3,13 +3,599 @@
  */
 (function () {
   const POS_ORDER = { QB: 0, RB: 1, WR: 2, TE: 3, K: 4, 'D/ST': 5 };
-  const STORAGE_KEY = 'gi24.mockDraft.v2';
+  const STORAGE_KEY = 'gi24.mockDraft.v4';
+  const TARGETS_KEY = 'gi24.mockTargets.v1';
+  const COMPLETE_NUM_KEY = 'gi24.mockDraftCompleteNum.v1';
   const TEAM_COUNTS = new Set([10, 12, 14]);
+  const ROUND_OPTIONS = new Set([8, 10, 12, 15, 16, 18]);
   const DEFAULT_TEAM_COUNT = 12;
+  const DEFAULT_ROUNDS = 15;
   const DEFAULT_STARTERS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
   const STARTER_LABEL_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
   const FLEX_ELIGIBLE = new Set(['RB', 'WR', 'TE']);
   const DEFAULT_BENCH = 6;
+  const CPU_STYLES = ['balanced', 'zeroRb', 'rbHeavy', 'qbEarly', 'tePremium'];
+  const PICK_SECONDS_OPTIONS = new Set([60, 120, 180]);
+  const DEFAULT_PICK_SECONDS = 60;
+
+  let draftLive = false;
+  let pickDeadline = null;
+  let pickTimerId = null;
+  let pickTimerHandling = false;
+  let pickSeconds = DEFAULT_PICK_SECONDS;
+  let roomId = null;
+  let roomSeats = null;
+  let roomPollId = null;
+  let roomSyncing = false;
+  let pendingJoinRoomId = null;
+  let awaitingSeatClaim = false;
+  let targetIds = [];
+  let mockSideTab = 'roster';
+  let profilePlayerId = null;
+  let dragPlayerId = null;
+  let suppressNextClick = false;
+  let profileClickTimer = null;
+  let turnCueKey = null;
+  let audioCtx = null;
+  let mockCompleteShown = false;
+
+  function isMultiplayer() {
+    return Boolean(roomId);
+  }
+
+  function getPickSeconds() {
+    const el = document.getElementById('mock-pick-seconds');
+    const v = Number(el?.value || pickSeconds || DEFAULT_PICK_SECONDS);
+    if (PICK_SECONDS_OPTIONS.has(v)) return v;
+    return DEFAULT_PICK_SECONDS;
+  }
+
+  function clockLabelText(sec = getPickSeconds()) {
+    return formatPickClock(Math.max(0, Number(sec) || DEFAULT_PICK_SECONDS));
+  }
+
+  function parseMockRoomFromHash() {
+    const raw = String(location.hash || '').replace(/^#/, '');
+    const [path, qs] = raw.split('?');
+    const base = String(path || '').toLowerCase();
+    if (base !== 'mock-draft' && base !== 'mock') return null;
+    const params = new URLSearchParams(qs || '');
+    const id = String(params.get('room') || '').trim();
+    return id || null;
+  }
+
+  function stopRoomPoll() {
+    if (roomPollId) {
+      clearInterval(roomPollId);
+      roomPollId = null;
+    }
+  }
+
+  function leaveRoomLocal() {
+    stopRoomPoll();
+    roomId = null;
+    roomSeats = null;
+    pendingJoinRoomId = null;
+    awaitingSeatClaim = false;
+  }
+
+  function normalizeRounds(n) {
+    const v = Number(n);
+    return ROUND_OPTIONS.has(v) ? v : DEFAULT_ROUNDS;
+  }
+
+  function formatPickClock(seconds) {
+    const s = Math.max(0, Number(seconds) || 0);
+    const mm = Math.floor(s / 60);
+    const ss = String(s % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
+  function stopPickTimer() {
+    if (pickTimerId) {
+      clearInterval(pickTimerId);
+      pickTimerId = null;
+    }
+    pickDeadline = null;
+    document.getElementById('mock-pick-timer')?.classList.remove('is-low', 'is-urgent');
+    document.getElementById('mock-clock-timer')?.classList.remove('is-low', 'is-urgent');
+  }
+
+  function setDraftLive(on) {
+    draftLive = Boolean(on);
+    const bar = document.getElementById('mock-start-bar');
+    const btn = document.getElementById('mock-start');
+    const label = document.getElementById('mock-start-label');
+    const sub = document.getElementById('mock-start-sub');
+    const copy = document.getElementById('mock-start-copy');
+    const liveTimer = document.getElementById('mock-live-timer');
+    const liveLabel = document.querySelector('#mock-live-timer .mock-live-timer-label');
+    const clockSel = document.getElementById('mock-pick-seconds');
+    const done = !currentSlot();
+    const clockTxt = clockLabelText(pickSeconds || getPickSeconds());
+    const waitingSeat = awaitingSeatClaim;
+    const mine = canUserDraftNow();
+    bar?.classList.toggle('is-live', draftLive && !done);
+    bar?.classList.toggle('is-done', done);
+    bar?.classList.toggle('is-my-clock', mine);
+    if (clockSel) clockSel.disabled = draftLive || isMultiplayer();
+    if (btn) {
+      if (waitingSeat) {
+        if (label) label.textContent = 'Choose a seat';
+        if (sub) sub.textContent = 'Open slots below';
+        btn.disabled = true;
+        btn.setAttribute('aria-label', 'Choose a seat');
+      } else if (done) {
+        if (label) label.textContent = 'Draft Complete';
+        if (sub) sub.textContent = 'Reset the board to run another mock';
+        btn.disabled = true;
+        btn.setAttribute('aria-label', 'Draft complete');
+      } else if (draftLive) {
+        if (label) label.textContent = 'Draft Live';
+        if (sub) sub.textContent = `${clockTxt} pick clock`;
+        btn.disabled = true;
+        btn.setAttribute('aria-label', 'Draft live');
+      } else {
+        if (label) label.textContent = 'Start Draft';
+        if (sub) sub.textContent = `${clockTxt} pick clock · snake order`;
+        btn.disabled = false;
+        btn.setAttribute('aria-label', 'Start Draft');
+      }
+    }
+    if (copy) {
+      if (waitingSeat) {
+        copy.innerHTML = `<strong>Join in progress</strong><span>Select an open seat on the board.</span>`;
+      } else if (done) {
+        copy.innerHTML = `<strong>Board is final</strong><span>Review your roster, or reset and fire another mock.</span>`;
+      } else if (draftLive && mine) {
+        copy.innerHTML = `<strong>ON THE CLOCK</strong><span>Pick before 0:00 — best available auto-selects if time expires.</span>`;
+      } else if (draftLive) {
+        copy.innerHTML = isMultiplayer()
+          ? `<strong>Live mock</strong><span>Humans get ${esc(clockTxt)} · open seats auto-draft.</span>`
+          : `<strong>Waiting</strong><span>CPU clubs are picking — you’ll hear a cue when you’re up next.</span>`;
+      } else {
+        copy.innerHTML = `<strong>Set your seat, then hit the button</strong><span>CPU clubs draft instantly between your turns. Miss the clock and best available is auto-selected.</span>`;
+      }
+    }
+    if (liveLabel) liveLabel.textContent = mine ? 'ON THE CLOCK' : 'Pick clock';
+    if (liveTimer) liveTimer.hidden = !(draftLive && !done);
+    updateDraftDropState();
+  }
+
+  function secondsLeftOnClock() {
+    if (!pickDeadline) return null;
+    return Math.max(0, Math.ceil((pickDeadline - Date.now()) / 1000));
+  }
+
+  function paintPickTimer() {
+    const left = secondsLeftOnClock();
+    const mine = canUserDraftNow();
+    const text = left == null
+      ? (mine ? clockLabelText(getPickSeconds()) : '—')
+      : formatPickClock(left);
+    const low = left != null && left <= 10;
+    const urgent = left != null && left <= 5;
+    ['mock-pick-timer', 'mock-clock-timer'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      el.classList.toggle('is-low', low);
+      el.classList.toggle('is-urgent', urgent);
+      el.classList.toggle('is-mine', mine);
+    });
+    const liveLabel = document.querySelector('#mock-live-timer .mock-live-timer-label');
+    if (liveLabel) liveLabel.textContent = mine ? 'ON THE CLOCK' : 'Pick clock';
+  }
+
+  function bestAvailablePlayer() {
+    const avail = availablePlayers();
+    if (!avail.length) return null;
+    return avail.slice().sort((a, b) => {
+      const ra = a.overallRank != null ? Number(a.overallRank) : 9999;
+      const rb = b.overallRank != null ? Number(b.overallRank) : 9999;
+      if (ra !== rb) return ra - rb;
+      const pa = a.projectedPoints2026 != null ? Number(a.projectedPoints2026) : -1;
+      const pb = b.projectedPoints2026 != null ? Number(b.projectedPoints2026) : -1;
+      if (pb !== pa) return pb - pa;
+      const aa = a.adp != null ? Number(a.adp) : 9999;
+      const ab = b.adp != null ? Number(b.adp) : 9999;
+      if (aa !== ab) return aa - ab;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    })[0] || null;
+  }
+
+  function afterUserTurn() {
+    if (!draftLive) return;
+    if (isMultiplayer()) {
+      renderMock();
+      return 0;
+    }
+    const filled = runCpuUntilUserPick();
+    const slot = currentSlot();
+    if (!slot) {
+      stopPickTimer();
+      setDraftLive(true);
+      renderMock();
+      setMockStatus('Draft complete', true);
+      return;
+    }
+    startPickTimer();
+    renderMock();
+    return filled;
+  }
+
+  function onPickTimeout() {
+    if (pickTimerHandling || !draftLive || !mock) return;
+    if (isMultiplayer()) {
+      // Server autodrafts on tick / poll when the deadline expires.
+      syncRoom({ tick: true }).catch(() => {});
+      return;
+    }
+    const slot = currentSlot();
+    if (!slot || slot.teamIndex !== mock.seatIndex) {
+      stopPickTimer();
+      return;
+    }
+    pickTimerHandling = true;
+    try {
+      const player = bestAvailablePlayer();
+      if (!player) {
+        setMockStatus('No players left to auto-draft', false);
+        stopPickTimer();
+        return;
+      }
+      if (!makePick(player.id, { silent: true, cpu: false, auto: true })) return;
+      setMockStatus(`Time’s up — auto-drafted ${player.name}`, true);
+      afterUserTurn();
+    } finally {
+      pickTimerHandling = false;
+    }
+  }
+
+  function tickPickTimer() {
+    if (!draftLive || !pickDeadline) return;
+    paintPickTimer();
+    const left = secondsLeftOnClock();
+    if (left != null && left <= 0) {
+      if (isMultiplayer()) {
+        paintPickTimer();
+        syncRoom({ tick: true }).catch(() => {});
+        return;
+      }
+      stopPickTimer();
+      onPickTimeout();
+    }
+  }
+
+  function startPickTimer(fromDeadlineIso) {
+    if (pickTimerId) {
+      clearInterval(pickTimerId);
+      pickTimerId = null;
+    }
+    document.getElementById('mock-pick-timer')?.classList.remove('is-low', 'is-urgent');
+    document.getElementById('mock-clock-timer')?.classList.remove('is-low', 'is-urgent');
+    if (!draftLive || !mock) {
+      pickDeadline = null;
+      paintPickTimer();
+      return;
+    }
+    const slot = currentSlot();
+    const myTurn = slot && slot.teamIndex === mock.seatIndex;
+    if (fromDeadlineIso) {
+      const ts = Date.parse(fromDeadlineIso);
+      pickDeadline = Number.isFinite(ts) ? ts : null;
+    } else if (isMultiplayer()) {
+      if (!myTurn) {
+        // Show server deadline for whoever is on the clock, if we still have one.
+        paintPickTimer();
+        if (pickDeadline) pickTimerId = setInterval(tickPickTimer, 200);
+        return;
+      }
+      if (!pickDeadline) {
+        paintPickTimer();
+        return;
+      }
+    } else if (!myTurn) {
+      pickDeadline = null;
+      paintPickTimer();
+      return;
+    } else {
+      pickDeadline = Date.now() + getPickSeconds() * 1000;
+    }
+    paintPickTimer();
+    if (pickDeadline) pickTimerId = setInterval(tickPickTimer, 200);
+  }
+
+  function endDraftSession() {
+    stopPickTimer();
+    stopRoomPoll();
+    draftLive = false;
+    turnCueKey = null;
+    mockCompleteShown = false;
+    closeMockCompleteScreen();
+    if (!awaitingSeatClaim) leaveRoomLocal();
+    setDraftLive(false);
+  }
+
+  function closeMockCompleteScreen() {
+    const dialog = document.getElementById('mock-complete-dialog');
+    if (dialog?.open) dialog.close();
+  }
+
+  function nextMockDraftNumber() {
+    let n = 1;
+    try {
+      n = Math.max(0, Number(localStorage.getItem(COMPLETE_NUM_KEY)) || 0) + 1;
+      localStorage.setItem(COMPLETE_NUM_KEY, String(n));
+    } catch {
+      /* ignore */
+    }
+    return n;
+  }
+
+  function completeSlotRowHtml(row, isBench) {
+    const empty = !row.player;
+    const label = isBench ? 'BN' : row.slot;
+    const bye = !empty && row.player.byeWeek != null ? String(row.player.byeWeek) : '';
+    const team = !empty ? (row.player.nflTeam || '') : '';
+    return `<div class="mock-complete-row${isBench ? ' is-bench' : ''}${empty ? ' is-empty' : ''}">
+      <span class="slot" data-pos="${esc(label)}">${esc(label)}</span>
+      <span class="nm">${empty
+        ? 'Open'
+        : `${esc(row.player.playerName)}${team ? `<em>${esc(team)}</em>` : ''}`
+      }</span>
+      <span class="bye">${empty ? '' : (bye ? `Bye ${esc(bye)}` : '—')}</span>
+    </div>`;
+  }
+
+  function showMockCompleteScreen() {
+    if (!mock || currentSlot() || !mock.picks.length) return;
+    if (mockCompleteShown) return;
+    const dialog = document.getElementById('mock-complete-dialog');
+    const title = document.getElementById('mock-complete-title');
+    const tag = document.getElementById('mock-complete-tag');
+    const meta = document.getElementById('mock-complete-meta');
+    const board = document.getElementById('mock-complete-board');
+    if (!dialog || !board) return;
+    mockCompleteShown = true;
+    const draftNum = nextMockDraftNumber();
+    const totalSlots = rosterPlan.starters.length + rosterPlan.bench;
+    if (title) title.textContent = `Mock Draft #${draftNum} is now complete`;
+    if (tag) tag.textContent = 'Good luck this season!';
+    if (meta) {
+      const you = mock.teamNames[mock.seatIndex] || 'Your team';
+      meta.innerHTML = [
+        `<span class="mock-complete-chip">${esc(String(mock.teamNames.length))} teams</span>`,
+        `<span class="mock-complete-chip">${esc(String(mock.rounds))} rounds</span>`,
+        `<span class="mock-complete-chip">${esc(String(mock.picks.length))} picks</span>`,
+        `<span class="mock-complete-chip">Your seat · ${esc(you)}</span>`
+      ].join('');
+    }
+    board.innerHTML = mock.teamNames.map((name, i) => {
+      const picks = picksForTeam(i);
+      const roster = assignPicksToRoster(picks);
+      const you = i === mock.seatIndex;
+      return `<article class="mock-complete-team${you ? ' is-you' : ''}">
+        <div class="mock-complete-team-head">
+          <strong>${you ? '★ ' : ''}${esc(name)}</strong>
+          <span>${picks.length} / ${totalSlots}</span>
+        </div>
+        <div class="mock-complete-slots">
+          ${roster.starters.map((r) => completeSlotRowHtml(r, false)).join('')}
+          <div class="mock-complete-divider">Bench</div>
+          ${roster.bench.map((r) => completeSlotRowHtml(r, true)).join('')}
+        </div>
+      </article>`;
+    }).join('');
+    try {
+      dialog.showModal();
+    } catch {
+      /* ignore if already open */
+    }
+  }
+
+  function maybeShowMockComplete() {
+    if (!mock || !draftLive) return;
+    if (currentSlot() || !mock.picks.length) return;
+    showMockCompleteScreen();
+  }
+
+  async function startDraftSession() {
+    if (!mock) return;
+    unlockDraftAudio();
+    if (awaitingSeatClaim) {
+      setMockStatus('Pick an open seat to join first', false);
+      return;
+    }
+    if (!poolAll.length) {
+      setMockStatus('Player pool still loading…', false);
+      return;
+    }
+    if (!currentSlot()) {
+      setMockStatus('Draft is already complete — reset to start again', false);
+      return;
+    }
+    pickSeconds = getPickSeconds();
+    const clockTxt = clockLabelText(pickSeconds);
+
+    // Multiplayer room (chat announce + joinable seats)
+    try {
+      const res = await fetch('/api/mock-draft', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          teamCount: mock.teamNames.length,
+          rounds: mock.rounds,
+          pickSeconds,
+          seatIndex: mock.seatIndex,
+          teamNames: mock.teamNames
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok || !data.room) {
+        throw new Error(data.error || 'Could not start mock draft room');
+      }
+      applyRoom(data.room);
+      if (data.chatItem) {
+        window.dispatchEvent(new CustomEvent('gi:mock-started', { detail: { item: data.chatItem } }));
+      }
+      startRoomPoll();
+      const slot = currentSlot();
+      const onMe = slot && slot.teamIndex === mock.seatIndex;
+      setMockStatus(
+        onMe ? `Draft live — you’re on the clock (${clockTxt})` : 'Draft live — waiting on the board',
+        true
+      );
+      history.replaceState(null, '', `#mock-draft?room=${encodeURIComponent(roomId)}`);
+      return;
+    } catch (err) {
+      // Fall back to solo local draft if room create fails
+      setMockStatus(err.message || 'Room unavailable — running local mock', false);
+    }
+
+    draftLive = true;
+    setDraftLive(true);
+    const before = mock.picks.length;
+    const filled = runCpuUntilUserPick();
+    const slot = currentSlot();
+    if (!slot) {
+      setDraftLive(true);
+      renderMock();
+      setMockStatus('Draft complete', true);
+      return;
+    }
+    startPickTimer();
+    renderMock();
+    if (slot.teamIndex === mock.seatIndex) {
+      setMockStatus(
+        filled || before
+          ? `You’re on the clock — ${clockTxt} to pick`
+          : `Draft started — you’re on the clock (${clockTxt})`,
+        true
+      );
+    } else {
+      setMockStatus('Draft started', true);
+    }
+  }
+
+  function applyRoom(room) {
+    if (!room || !mock) return;
+    roomId = room.id;
+    pendingJoinRoomId = null;
+    pickSeconds = Number(room.pickSeconds) || DEFAULT_PICK_SECONDS;
+    const clockEl = document.getElementById('mock-pick-seconds');
+    if (clockEl && PICK_SECONDS_OPTIONS.has(pickSeconds)) clockEl.value = String(pickSeconds);
+    const teamsEl = document.getElementById('mock-teams');
+    const roundsEl = document.getElementById('mock-rounds');
+    if (teamsEl) teamsEl.value = String(room.teamCount || mock.teamNames.length);
+    if (roundsEl) roundsEl.value = String(room.rounds || mock.rounds);
+    mock.teamNames = Array.isArray(room.teamNames) ? room.teamNames.slice() : mock.teamNames;
+    mock.rounds = Number(room.rounds) || mock.rounds;
+    mock.picks = Array.isArray(room.picks) ? room.picks.slice() : [];
+    roomSeats = Array.isArray(room.seats) ? room.seats : [];
+    if (room.mySeatIndex != null && Number.isFinite(Number(room.mySeatIndex))) {
+      mock.seatIndex = Number(room.mySeatIndex);
+      awaitingSeatClaim = false;
+    } else {
+      awaitingSeatClaim = true;
+    }
+    draftLive = room.status === 'live';
+    if (room.pickDeadline) {
+      const ts = Date.parse(room.pickDeadline);
+      pickDeadline = Number.isFinite(ts) ? ts : null;
+    } else {
+      pickDeadline = null;
+    }
+    setDraftLive(draftLive);
+    if (draftLive && room.status !== 'done') {
+      startPickTimer(room.pickDeadline || null);
+    } else {
+      stopPickTimer();
+    }
+    renderMock();
+    if (room.status === 'done') {
+      setMockStatus('Draft complete', true);
+      showMockCompleteScreen();
+    } else if (awaitingSeatClaim) {
+      setMockStatus('Select an open seat to join', true);
+    }
+  }
+
+  async function syncRoom({ tick = false } = {}) {
+    if (!roomId || roomSyncing) return null;
+    roomSyncing = true;
+    try {
+      let data;
+      if (tick) {
+        const res = await fetch('/api/mock-draft', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'tick', roomId })
+        });
+        data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Tick failed');
+      } else {
+        const res = await fetch(`/api/mock-draft?roomId=${encodeURIComponent(roomId)}`, {
+          credentials: 'same-origin',
+          cache: 'no-store'
+        });
+        data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not sync mock draft');
+      }
+      if (data.room) applyRoom(data.room);
+      return data.room || null;
+    } catch (err) {
+      setMockStatus(err.message || 'Lost connection to mock draft', false);
+      return null;
+    } finally {
+      roomSyncing = false;
+    }
+  }
+
+  function startRoomPoll() {
+    stopRoomPoll();
+    if (!roomId) return;
+    roomPollId = setInterval(() => {
+      syncRoom({ tick: true }).catch(() => {});
+    }, 2500);
+  }
+
+  async function claimSeat(seatIndex) {
+    const id = roomId || pendingJoinRoomId;
+    if (!id) return;
+    const res = await fetch('/api/mock-draft', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'join', roomId: id, seatIndex })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok || !data.room) {
+      throw new Error(data.error || 'Could not claim seat');
+    }
+    applyRoom(data.room);
+    startRoomPoll();
+    history.replaceState(null, '', `#mock-draft?room=${encodeURIComponent(roomId)}`);
+    setMockStatus(`Joined as pick #${seatIndex + 1}`, true);
+  }
+
+  async function loadJoinRoom(id) {
+    pendingJoinRoomId = id;
+    const res = await fetch(`/api/mock-draft?roomId=${encodeURIComponent(id)}`, {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok || !data.room) {
+      pendingJoinRoomId = null;
+      throw new Error(data.error || 'Mock draft not found');
+    }
+    applyRoom(data.room);
+    if (!awaitingSeatClaim) startRoomPoll();
+  }
 
   function esc(v = '') {
     return String(v)
@@ -33,49 +619,18 @@
     return list;
   }
 
+  function teamLogoHtml(t, cls = 'logo') {
+    if (t?.logo) {
+      return `<img class="${esc(cls)}" src="${esc(t.logo)}" alt="" width="42" height="42" loading="lazy" referrerpolicy="no-referrer" />`;
+    }
+    return `<span class="${esc(cls)} is-blank" aria-hidden="true"></span>`;
+  }
+
   function recordLine(t) {
     const ties = Number(t.ties || 0);
     return ties > 0
-      ? `${t.wins}-${t.losses}-${ties}`
-      : `${t.wins}-${t.losses}`;
-  }
-
-  function winPct(t) {
-    const w = Number(t.wins || 0);
-    const l = Number(t.losses || 0);
-    const ti = Number(t.ties || 0);
-    const g = w + l + ti;
-    if (!g) return 0;
-    return (w + ti * 0.5) / g;
-  }
-
-  function flattenTeams(payload) {
-    const out = [];
-    for (const conf of payload.conferences || []) {
-      if (!conf || conf.ok === false) continue;
-      for (const t of conf.teams || []) {
-        out.push({
-          ...t,
-          conferenceKey: conf.key,
-          conferenceName: conf.shortName || conf.name || conf.key
-        });
-      }
-    }
-    return out;
-  }
-
-  function bestOf(teams, scoreFn, preferHigher = true) {
-    let best = null;
-    let bestScore = preferHigher ? -Infinity : Infinity;
-    for (const t of teams) {
-      const s = scoreFn(t);
-      if (!Number.isFinite(s)) continue;
-      if (preferHigher ? s > bestScore : s < bestScore) {
-        best = t;
-        bestScore = s;
-      }
-    }
-    return best ? { team: best, score: bestScore } : null;
+      ? `${Number(t.wins || 0)}-${Number(t.losses || 0)}-${ties}`
+      : `${Number(t.wins || 0)}-${Number(t.losses || 0)}`;
   }
 
   function pointDiff(t) {
@@ -90,73 +645,61 @@
     return String(n);
   }
 
-  function teamLogoHtml(t, cls = 'logo') {
-    if (t?.logo) {
-      return `<img class="${esc(cls)}" src="${esc(t.logo)}" alt="" width="42" height="42" loading="lazy" referrerpolicy="no-referrer" />`;
+  let historySeasonCache = Object.create(null);
+  let historySeasonsCatalog = [];
+  let selectedHistorySeason = null;
+
+  function renderFranchiseCards(payload) {
+    const records = Array.isArray(payload?.records) ? payload.records : [];
+    if (!records.length) {
+      const errHint = payload?.error
+        ? esc(payload.error)
+        : 'No completed games yet — records unlock once matchups finish.';
+      return `<div class="records-empty">${errHint}</div>`;
     }
-    return `<span class="${esc(cls)} is-blank" aria-hidden="true"></span>`;
+
+    const cards = records.map((r) => {
+      const yearTxt = r.yearLabel || (r.year != null ? String(r.year) : '—');
+      const valueLine = [r.value, r.valueSuffix].filter(Boolean).join(' ');
+      return `<article class="record-card" data-record="${esc(r.id || '')}">
+        <div class="record-card-mark">${teamLogoHtml(r, 'logo')}</div>
+        <div class="record-card-main">
+          <p class="record-card-label">${esc(r.label)}</p>
+          <p class="record-card-value">${esc(valueLine)}</p>
+          <p class="record-card-holder">
+            <strong>${esc(r.teamName || '—')}</strong>
+            <span>${esc(r.owner || '—')}</span>
+            <span class="record-card-year">${esc(yearTxt)}</span>
+          </p>
+          ${r.detail || r.conferenceName
+            ? `<p class="record-card-detail">${esc([r.detail, r.conferenceName].filter(Boolean).join(' · '))}</p>`
+            : ''}
+        </div>
+      </article>`;
+    }).join('');
+
+    const seasons = (payload.seasonsScanned || []).join(', ');
+    const note = seasons
+      ? `Built from ${esc(String(payload.gamesScanned || 0))} decided games · seasons ${esc(seasons)}. Add prior years in League Tools → Season Archive to expand the book.`
+      : 'Records refresh from ESPN matchups.';
+
+    return `
+      <div class="records-book">${cards}</div>
+      <p class="records-note">${note}</p>
+    `;
   }
 
-  function renderRecordBook(payload) {
-    const body = document.getElementById('records-body');
-    if (!body) return;
-
-    const teams = flattenTeams(payload || {});
-    const confs = (payload.conferences || []).filter((c) => c && c.ok !== false && (c.teams || []).length);
-    if (!teams.length) {
-      body.innerHTML = `<div class="records-empty">Standings are not available yet.</div>`;
-      return;
+  function renderSeasonStandings(payload) {
+    const confs = (payload?.conferences || []).filter((c) => c && c.ok !== false && (c.teams || []).length);
+    if (!confs.length) {
+      const failed = (payload?.conferences || []).find((c) => c && c.ok === false);
+      const hint = failed?.error
+        || payload?.error
+        || 'Standings unavailable for this season.';
+      return `<div class="records-empty">${esc(hint)}</div>`;
     }
 
-    const leaders = [
-      {
-        label: 'Best record',
-        hit: bestOf(teams, (t) => winPct(t) * 1000 + Number(t.wins || 0)),
-        value: (h) => h.team.name,
-        meta: (h) => `${recordLine(h.team)} · ${h.team.conferenceName}`
-      },
-      {
-        label: 'Scoring lead',
-        hit: bestOf(teams, (t) => Number(t.pointsFor || 0)),
-        value: (h) => Number(h.score).toFixed(0),
-        meta: (h) => h.team.name
-      },
-      {
-        label: 'Point diff',
-        hit: bestOf(teams, (t) => pointDiff(t)),
-        value: (h) => {
-          const d = Number(h.score);
-          return `${d > 0 ? '+' : ''}${d.toFixed(0)}`;
-        },
-        meta: (h) => h.team.name
-      },
-      {
-        label: 'Hot streak',
-        hit: bestOf(
-          teams.filter((t) => t.streakType === 'WIN'),
-          (t) => Number(t.streakLength || 0)
-        ),
-        value: (h) => `${h.score} wins`,
-        meta: (h) => h.team.name
-      }
-    ].filter((c) => c.hit);
-
-    const leadersHtml = leaders.length
-      ? `<div class="records-leaders">
-          ${leaders.map((c) => `
-            <article class="record-leader">
-              ${teamLogoHtml(c.hit.team)}
-              <div>
-                <p class="label">${esc(c.label)}</p>
-                <p class="value">${esc(c.value(c.hit))}</p>
-                <p class="meta">${esc(c.meta(c.hit))}</p>
-              </div>
-            </article>
-          `).join('')}
-        </div>`
-      : '';
-
-    const confHtml = confs.map((c) => {
+    return `<div class="records-conferences">${confs.map((c) => {
       const list = c.teams || [];
       const rows = list.map((t, i) => {
         const diff = pointDiff(t);
@@ -168,7 +711,7 @@
             ${teamLogoHtml(t, 'logo')}
             <div>
               <strong>${esc(t.name)}</strong>
-              <span>${esc(t.owner || '—')}${t.playoffSeed ? ` · Seed ${esc(t.playoffSeed)}` : ''} · ${esc(streakLabel(t))}</span>
+              <span>${esc(t.owner || '—')}${t.playoffSeed ? ` · Seed ${esc(String(t.playoffSeed))}` : ''} · ${esc(streakLabel(t))}</span>
             </div>
           </div>
           <span class="rec">${esc(recordLine(t))}</span>
@@ -189,13 +732,109 @@
         </div>
         ${rows}
       </section>`;
+    }).join('')}</div>`;
+  }
+
+  function pickDefaultHistorySeason(seasons) {
+    const list = Array.isArray(seasons) ? seasons : [];
+    const prior = list.find((s) => !String(s.label || '').toLowerCase().includes('current'));
+    return Number(prior?.season || list[0]?.season) || null;
+  }
+
+  function renderHistorySeasonChips() {
+    const mount = document.getElementById('records-season-tabs');
+    if (!mount) return;
+    if (!historySeasonsCatalog.length) {
+      mount.innerHTML = '';
+      return;
+    }
+    mount.innerHTML = historySeasonsCatalog.map((s) => {
+      const season = Number(s.season);
+      const active = season === Number(selectedHistorySeason);
+      const label = s.yearNumber
+        ? `Y${s.yearNumber} · ${season}`
+        : (s.label || String(season));
+      return `<button type="button" class="records-season-chip${active ? ' is-active' : ''}" data-history-season="${season}" aria-pressed="${active ? 'true' : 'false'}">${esc(label)}</button>`;
     }).join('');
+  }
+
+  async function loadHistorySeason(season) {
+    const key = String(season || '');
+    if (key && historySeasonCache[key]) return historySeasonCache[key];
+    const qs = season != null ? `?season=${encodeURIComponent(season)}` : '';
+    const res = await fetch(`/api/history${qs}`, { credentials: 'same-origin', cache: 'no-store' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) {
+      throw new Error(data.error || 'Could not load season archive');
+    }
+    if (Array.isArray(data.seasons) && data.seasons.length) {
+      historySeasonsCatalog = data.seasons;
+    }
+    const resolved = Number(data.season);
+    if (Number.isFinite(resolved)) {
+      historySeasonCache[String(resolved)] = data;
+    }
+    return data;
+  }
+
+  async function showHistorySeason(season) {
+    const body = document.getElementById('records-archive-body');
+    if (!body) return;
+    selectedHistorySeason = Number(season) || selectedHistorySeason;
+    renderHistorySeasonChips();
+    body.innerHTML = `<div class="records-empty">Loading season…</div>`;
+    try {
+      const data = await loadHistorySeason(selectedHistorySeason);
+      selectedHistorySeason = Number(data.season) || selectedHistorySeason;
+      renderHistorySeasonChips();
+      const entryLabel = data.entry?.label || String(data.season || '');
+      body.innerHTML = `
+        ${renderSeasonStandings(data)}
+        <p class="records-note">${esc(entryLabel)}${data.entry?.notes ? ` · ${esc(data.entry.notes)}` : ''}</p>
+      `;
+    } catch (err) {
+      body.innerHTML = `<div class="records-empty">${esc(err.message || 'Could not load season')}</div>`;
+    }
+  }
+
+  function wireHistorySeasonTabs() {
+    const mount = document.getElementById('records-season-tabs');
+    if (!mount || mount.dataset.wired === '1') return;
+    mount.dataset.wired = '1';
+    mount.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-history-season]');
+      if (!btn) return;
+      const season = Number(btn.getAttribute('data-history-season'));
+      if (!Number.isFinite(season) || season === selectedHistorySeason) return;
+      showHistorySeason(season);
+    });
+  }
+
+  function renderRecordBook(payload) {
+    const body = document.getElementById('records-body');
+    if (!body) return;
 
     body.innerHTML = `
-      ${leadersHtml}
-      <div class="records-conferences">${confHtml}</div>
-      <p class="records-note">Live ESPN standings · <a href="/history.html">Season archive</a> for prior years</p>
+      <div class="records-franchise">
+        <h3 class="records-subhead">Franchise records</h3>
+        ${renderFranchiseCards(payload)}
+      </div>
+      <div class="records-archive" id="records-archive">
+        <h3 class="records-subhead">Historical seasons</h3>
+        <div class="records-season-tabs" id="records-season-tabs" role="tablist" aria-label="Historical seasons"></div>
+        <div id="records-archive-body"><div class="records-empty">Loading seasons…</div></div>
+      </div>
     `;
+    wireHistorySeasonTabs();
+  }
+
+  async function loadRecordBook() {
+    const res = await fetch('/api/records', { credentials: 'same-origin' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) {
+      throw new Error(data.error || 'Could not load record book');
+    }
+    return data;
   }
 
   /* —— Mock draft (browser-local) —— */
@@ -331,17 +970,365 @@
         seatIndex: mock.seatIndex,
         season: mock.season
       }));
+      localStorage.setItem(TARGETS_KEY, JSON.stringify(targetIds));
     } catch { /* ignore */ }
   }
 
   function restoreMock() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY)
+        || localStorage.getItem('gi24.mockDraft.v3')
+        || localStorage.getItem('gi24.mockDraft.v2');
       if (!raw) return null;
       return JSON.parse(raw);
     } catch {
       return null;
     }
+  }
+
+  function restoreTargets() {
+    try {
+      const raw = localStorage.getItem(TARGETS_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+      targetIds = Array.isArray(list) ? list.map(String).filter(Boolean) : [];
+    } catch {
+      targetIds = [];
+    }
+  }
+
+  function shortPlayerName(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'PLAYER';
+    if (parts.length === 1) return parts[0].toUpperCase();
+    const first = parts[0][0] || '';
+    const last = parts[parts.length - 1] || '';
+    return `${first}.${last}`.toUpperCase();
+  }
+
+  function findPlayer(playerId) {
+    return poolAll.find((p) => p.id === playerId || String(p.id) === String(playerId)) || null;
+  }
+
+  function isTargeted(playerId) {
+    const id = String(playerId);
+    return targetIds.some((t) => String(t) === id);
+  }
+
+  function addTarget(playerId) {
+    const player = findPlayer(playerId);
+    if (!player) return false;
+    if (isTargeted(player.id)) return false;
+    targetIds.unshift(String(player.id));
+    persistMock();
+    renderTargets();
+    renderPool();
+    setMockStatus(`Targeted ${player.name}`, true);
+    return true;
+  }
+
+  function removeTarget(playerId) {
+    const id = String(playerId);
+    const before = targetIds.length;
+    targetIds = targetIds.filter((t) => String(t) !== id);
+    if (targetIds.length === before) return false;
+    persistMock();
+    renderTargets();
+    renderPool();
+    return true;
+  }
+
+  function canUserDraftNow() {
+    if (!mock || awaitingSeatClaim || !draftLive) return false;
+    const next = currentSlot();
+    return Boolean(next && next.teamIndex === mock.seatIndex);
+  }
+
+  function confirmDraftPlayer(playerId) {
+    const player = findPlayer(playerId);
+    if (!player) {
+      setMockStatus('Player not in pool', false);
+      return Promise.resolve(false);
+    }
+    if (takenIds().has(player.id) || takenIds().has(Number(player.id))) {
+      setMockStatus('Already drafted', false);
+      return Promise.resolve(false);
+    }
+    if (!draftLive) {
+      setMockStatus('Press Start Draft first', false);
+      return Promise.resolve(false);
+    }
+    if (awaitingSeatClaim) {
+      setMockStatus('Claim a seat first', false);
+      return Promise.resolve(false);
+    }
+    if (!canUserDraftNow()) {
+      setMockStatus('Not your pick — wait for the clock', false);
+      return Promise.resolve(false);
+    }
+
+    const dialog = document.getElementById('mock-confirm-dialog');
+    const title = document.getElementById('mock-confirm-title');
+    const body = document.getElementById('mock-confirm-player');
+    if (!dialog || !title || !body) {
+      return executeUserPick(player.id);
+    }
+
+    const short = shortPlayerName(player.name);
+    title.textContent = `Draft ${short}?`;
+    const head = player.headshot
+      ? `<img src="${esc(player.headshot)}" alt="" width="54" height="54" loading="lazy" referrerpolicy="no-referrer" />`
+      : `<span class="ph" aria-hidden="true">FP</span>`;
+    body.innerHTML = `${head}<div>
+      <strong>${esc(player.name)}</strong>
+      <span>${esc(player.position || '')} · ${esc(player.team || 'FA')}${player.byeWeek != null ? ` · Bye ${esc(String(player.byeWeek))}` : ''}</span>
+    </div>`;
+
+    return new Promise((resolve) => {
+      const onClose = () => {
+        dialog.removeEventListener('close', onClose);
+        const ok = dialog.returnValue === 'yes';
+        if (!ok) {
+          resolve(false);
+          return;
+        }
+        executeUserPick(player.id).then(resolve);
+      };
+      dialog.addEventListener('close', onClose);
+      try {
+        dialog.showModal();
+      } catch {
+        dialog.removeEventListener('close', onClose);
+        if (confirm(`Draft ${short}?`)) {
+          executeUserPick(player.id).then(resolve);
+        } else {
+          resolve(false);
+        }
+      }
+    });
+  }
+
+  async function executeUserPick(playerId) {
+    if (!canUserDraftNow()) {
+      setMockStatus('Not your pick — wait for the clock', false);
+      updateDraftDropState();
+      return false;
+    }
+    if (isMultiplayer()) {
+      const ok = await makePickAsync(playerId);
+      if (ok) {
+        removeTarget(playerId);
+        setMockSideTab('roster');
+      }
+      return ok;
+    }
+    stopPickTimer();
+    if (!makePick(playerId)) {
+      startPickTimer();
+      return false;
+    }
+    removeTarget(playerId);
+    setMockSideTab('roster');
+    const filled = afterUserTurn();
+    const clockTxt = clockLabelText(getPickSeconds());
+    if (filled > 0) {
+      setMockStatus(`You picked · CPU made ${filled} pick${filled === 1 ? '' : 's'} · clock reset`, true);
+    } else if (currentSlot()) {
+      setMockStatus(`You’re on the clock — ${clockTxt}`, true);
+    }
+    return true;
+  }
+
+  function setMockSideTab(tab) {
+    mockSideTab = tab === 'targets' || tab === 'recent' ? tab : 'roster';
+    document.querySelectorAll('.mock-side-tabs [data-mock-side]').forEach((btn) => {
+      const on = btn.getAttribute('data-mock-side') === mockSideTab;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('[data-mock-side-panel]').forEach((panel) => {
+      const on = panel.getAttribute('data-mock-side-panel') === mockSideTab;
+      panel.classList.toggle('is-on', on);
+      panel.hidden = !on;
+    });
+  }
+
+  function injuryLabel(player) {
+    const raw = String(player?.injuryStatus || '').trim();
+    if (!raw) return null;
+    const upper = raw.toUpperCase();
+    if (['ACTIVE', 'HEALTHY', 'NONE', 'N/A', 'NA', 'NULL'].includes(upper)) return null;
+    return raw;
+  }
+
+  function injuryBadgeHtml(player) {
+    const label = injuryLabel(player);
+    if (!label) return '';
+    return `<button type="button" class="mock-injury" data-injury-id="${esc(player.id)}" title="${esc(label)} — injury news" aria-label="Injury news: ${esc(label)}">
+      <span class="mock-injury-cross" aria-hidden="true">✚</span>
+    </button>`;
+  }
+
+  function injuryDetailHtml(player) {
+    const label = injuryLabel(player);
+    if (!label) return `<p class="records-empty">No injury designation.</p>`;
+    const bits = [
+      `<p><strong>${esc(label)}</strong>${player.injuryBodyPart ? ` · ${esc(player.injuryBodyPart)}` : ''}</p>`
+    ];
+    if (player.injuryNotes) bits.push(`<p>${esc(player.injuryNotes)}</p>`);
+    if (player.practiceDescription || player.practiceStatus) {
+      bits.push(`<p class="sub">Practice: ${esc(player.practiceDescription || player.practiceStatus)}</p>`);
+    }
+    return bits.join('');
+  }
+
+  function injuryNewsItemsHtml(items) {
+    if (!items?.length) return '';
+    return items.map((item) => `
+      <article class="mock-news-item">
+        ${item.url
+          ? `<a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.headline)}</a>`
+          : `<strong>${esc(item.headline)}</strong>`}
+        ${item.description && item.description !== item.headline
+          ? `<p>${esc(item.description)}</p>`
+          : ''}
+      </article>
+    `).join('');
+  }
+
+  async function fetchPlayerNewsItems(player) {
+    if (!player?.espnId) return [];
+    const res = await fetch(
+      `/api/beta/player-news?espnId=${encodeURIComponent(player.espnId)}&name=${encodeURIComponent(player.name || '')}`,
+      { credentials: 'same-origin', cache: 'no-store' }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'News unavailable');
+    return Array.isArray(data.items) ? data.items : [];
+  }
+
+  async function openInjuryDetail(playerId) {
+    const player = findPlayer(playerId);
+    const dialog = document.getElementById('mock-injury-dialog');
+    const title = document.getElementById('mock-injury-title');
+    const body = document.getElementById('mock-injury-body');
+    if (!player || !dialog || !body) return;
+    if (title) title.textContent = `${shortPlayerName(player.name)} · Injury news`;
+    const meta = [player.position, player.team || 'FA'].filter(Boolean).join(' · ');
+    body.innerHTML = `
+      <p class="mock-injury-meta">${esc(meta)}</p>
+      <div class="mock-news-injury">${injuryDetailHtml(player)}</div>
+      <div class="mock-injury-news" data-injury-news>
+        <p class="mock-profile-note">Loading injury news…</p>
+      </div>
+    `;
+    try {
+      dialog.showModal();
+    } catch { /* ignore */ }
+    const newsMount = body.querySelector('[data-injury-news]');
+    try {
+      const items = await fetchPlayerNewsItems(player);
+      if (!newsMount.isConnected) return;
+      if (!items.length) {
+        newsMount.innerHTML = injuryLabel(player)
+          ? `<p class="mock-profile-note">No recent headlines — status above is the latest injury report.</p>`
+          : `<p class="mock-profile-note">No recent injury headlines.</p>`;
+        return;
+      }
+      newsMount.innerHTML = `
+        <p class="mock-news-label">Player news</p>
+        ${injuryNewsItemsHtml(items)}
+      `;
+    } catch (err) {
+      if (!newsMount?.isConnected) return;
+      newsMount.innerHTML = `<p class="mock-profile-note">${esc(err.message || 'News unavailable')}</p>`;
+    }
+  }
+
+  async function loadPlayerNews(player) {
+    const mount = document.getElementById('mock-profile-news');
+    if (!mount) return;
+    mount.innerHTML = `<p class="mock-profile-note">Loading player news…</p>`;
+    try {
+      const items = await fetchPlayerNewsItems(player);
+      if (!items.length) {
+        mount.innerHTML = injuryLabel(player)
+          ? `<div class="mock-news-box"><p class="mock-news-label">Injury</p>${injuryDetailHtml(player)}</div>`
+          : `<p class="mock-profile-note">No recent headlines.</p>`;
+        return;
+      }
+      const injuryBlock = injuryLabel(player)
+        ? `<div class="mock-news-injury">${injuryDetailHtml(player)}</div>`
+        : '';
+      mount.innerHTML = `
+        ${injuryBlock}
+        <div class="mock-news-box">
+          <p class="mock-news-label">Player news</p>
+          ${injuryNewsItemsHtml(items)}
+        </div>
+      `;
+    } catch (err) {
+      mount.innerHTML = injuryLabel(player)
+        ? `<div class="mock-news-box"><p class="mock-news-label">Injury</p>${injuryDetailHtml(player)}</div>
+           <p class="mock-profile-note">${esc(err.message || 'News unavailable')}</p>`
+        : `<p class="mock-profile-note">${esc(err.message || 'News unavailable')}</p>`;
+    }
+  }
+
+  function openPlayerProfile(playerId) {
+    const player = findPlayer(playerId);
+    const dialog = document.getElementById('mock-profile-dialog');
+    const body = document.getElementById('mock-profile-body');
+    if (!player || !dialog || !body) return;
+    profilePlayerId = player.id;
+    const head = player.headshot
+      ? `<img src="${esc(player.headshot)}" alt="" width="72" height="72" loading="lazy" referrerpolicy="no-referrer" />`
+      : `<span class="ph" aria-hidden="true">FP</span>`;
+    const taken = takenIds().has(player.id) || takenIds().has(Number(player.id));
+    const injury = injuryLabel(player);
+    body.innerHTML = `
+      <div class="mock-profile-hero">
+        ${head}
+        <div>
+          <h3 id="mock-profile-title"><span>${esc(player.name)}</span>${injury ? injuryBadgeHtml(player) : ''}</h3>
+          <p class="mock-profile-meta">${esc(player.position || '')} · ${esc(player.team || 'FA')}${player.byeWeek != null ? ` · Bye ${esc(String(player.byeWeek))}` : ''}${player.jersey ? ` · #${esc(String(player.jersey))}` : ''}${injury ? ` · ${esc(injury)}` : ''}</p>
+        </div>
+      </div>
+      <div class="mock-profile-grid">
+        <div class="mock-profile-stat"><span>Rank</span><strong>${esc(String(player.overallRank ?? '—'))}</strong></div>
+        <div class="mock-profile-stat"><span>Pos rk</span><strong>${player.posRank != null ? esc(`${player.position}${player.posRank}`) : '—'}</strong></div>
+        <div class="mock-profile-stat"><span>ADP</span><strong>${esc(fmtAdp(player.adp))}</strong></div>
+        <div class="mock-profile-stat"><span>Bye</span><strong>${player.byeWeek != null ? esc(String(player.byeWeek)) : '—'}</strong></div>
+        <div class="mock-profile-stat"><span>’25 FP</span><strong>${esc(fmtPts(player.fantasyPoints2025))}</strong></div>
+        <div class="mock-profile-stat"><span>Proj</span><strong>${esc(fmtPts(player.projectedPoints2026))}</strong></div>
+        <div class="mock-profile-stat"><span>PPG</span><strong>${esc(fmtPts(player.avgPpg))}</strong></div>
+        <div class="mock-profile-stat"><span>Δ</span><strong>${esc(fmtDelta(player.delta))}</strong></div>
+      </div>
+      <div id="mock-profile-news"><p class="mock-profile-note">Loading player news…</p></div>
+      ${taken ? '<p class="mock-profile-note">Already drafted.</p>' : ''}
+      ${player.college ? `<p class="mock-profile-note">${esc(player.college)}</p>` : ''}
+    `;
+    const targetBtn = document.getElementById('mock-profile-target');
+    const draftBtn = document.getElementById('mock-profile-draft');
+    if (targetBtn) {
+      targetBtn.textContent = isTargeted(player.id) ? 'Remove target' : 'Add target';
+      targetBtn.disabled = taken;
+    }
+    if (draftBtn) {
+      draftBtn.disabled = taken || !canUserDraftNow();
+      draftBtn.textContent = canUserDraftNow() ? 'Draft' : 'Wait your turn';
+    }
+    try {
+      dialog.showModal();
+    } catch {
+      /* ignore */
+    }
+    loadPlayerNews(player);
+  }
+
+  function closePlayerProfile() {
+    const dialog = document.getElementById('mock-profile-dialog');
+    profilePlayerId = null;
+    if (dialog?.open) dialog.close();
   }
 
   function shuffle(arr) {
@@ -365,7 +1352,7 @@
       || (saved?.teamNames?.length ? saved.teamNames : null)
       || [];
     const list = padTeamNames(sourceNames, count);
-    const r = Number(rounds) || Number(saved?.rounds) || 15;
+    const r = normalizeRounds(rounds || saved?.rounds || DEFAULT_ROUNDS);
     const sameBoard = Array.isArray(saved?.picks)
       && saved.teamNames?.join('\0') === list.join('\0')
       && Number(saved.rounds) === r;
@@ -390,9 +1377,25 @@
   function fillSeatSelect() {
     const sel = document.getElementById('mock-seat');
     if (!sel || !mock) return;
-    sel.innerHTML = mock.teamNames.map((name, i) =>
-      `<option value="${i}"${i === mock.seatIndex ? ' selected' : ''}>${i + 1}. ${esc(name)}</option>`
-    ).join('');
+    if (awaitingSeatClaim && roomSeats) {
+      sel.innerHTML = roomSeats.map((seat, i) => {
+        const name = mock.teamNames[i] || `Team ${i + 1}`;
+        const taken = Boolean(seat.userId);
+        const label = taken
+          ? `#${i + 1} · ${seat.userName || name} (taken)`
+          : `#${i + 1} · ${name} (open)`;
+        return `<option value="${i}" ${taken ? 'disabled' : ''}>${esc(label)}</option>`;
+      }).join('');
+      sel.value = '';
+      sel.disabled = false;
+      return;
+    }
+    sel.disabled = draftLive || isMultiplayer();
+    sel.innerHTML = mock.teamNames.map((name, i) => {
+      const seat = roomSeats?.[i];
+      const who = seat?.userName && !seat.isCpu ? ` · ${seat.userName}` : '';
+      return `<option value="${i}"${i === mock.seatIndex ? ' selected' : ''}>#${i + 1} · ${esc(name)}${esc(who)}</option>`;
+    }).join('');
   }
 
   function posBadge(pos) {
@@ -400,22 +1403,139 @@
     return `<span class="mock-pos-badge" data-pos="${esc(p)}">${esc(p)}</span>`;
   }
 
+  function unlockDraftAudio() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      if (!audioCtx) audioCtx = new Ctx();
+      if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+      return audioCtx;
+    } catch {
+      return null;
+    }
+  }
+
+  function playTone({ freq = 440, duration = 0.15, type = 'sine', gain = 0.08, when = 0 } = {}) {
+    const ctx = unlockDraftAudio();
+    if (!ctx) return;
+    const t0 = ctx.currentTime + when;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.02);
+  }
+
+  function playUpNextSound() {
+    // Soft two-note “you’re on deck”
+    playTone({ freq: 523.25, duration: 0.14, type: 'triangle', gain: 0.07, when: 0 });
+    playTone({ freq: 659.25, duration: 0.18, type: 'triangle', gain: 0.08, when: 0.14 });
+  }
+
+  function playOnClockSound() {
+    // Sharper three-beep “you’re up”
+    playTone({ freq: 880, duration: 0.1, type: 'square', gain: 0.05, when: 0 });
+    playTone({ freq: 880, duration: 0.1, type: 'square', gain: 0.05, when: 0.14 });
+    playTone({ freq: 1174.7, duration: 0.18, type: 'square', gain: 0.06, when: 0.28 });
+  }
+
+  function maybePlayTurnCues() {
+    if (!draftLive || !mock || awaitingSeatClaim) {
+      turnCueKey = null;
+      return;
+    }
+    const next = currentSlot();
+    if (!next) {
+      turnCueKey = null;
+      return;
+    }
+    const onClock = next.teamIndex === mock.seatIndex;
+    const following = pickSlot(mock.teamNames.length, mock.rounds, 'snake', mock.picks.length + 1);
+    const upNext = !onClock && following && following.teamIndex === mock.seatIndex;
+    const key = onClock
+      ? `clock:${next.overall}:${mock.seatIndex}`
+      : (upNext ? `next:${next.overall}:${mock.seatIndex}` : `idle:${next.overall}`);
+    if (key === turnCueKey) return;
+    const prev = turnCueKey;
+    turnCueKey = key;
+    if (onClock) {
+      playOnClockSound();
+      return;
+    }
+    if (upNext && (!prev || !String(prev).startsWith('next:'))) {
+      playUpNextSound();
+    }
+  }
+
+  function updateDraftDropState() {
+    const drop = document.getElementById('mock-draft-drop');
+    if (!drop) return;
+    const live = canUserDraftNow();
+    drop.classList.toggle('is-armed', live);
+    drop.classList.toggle('is-locked', draftLive && !live);
+    drop.setAttribute('aria-disabled', live ? 'false' : 'true');
+    const strong = drop.querySelector('strong');
+    const span = drop.querySelector('span');
+    if (strong) strong.textContent = live ? 'Draft player' : (draftLive ? 'Wait your turn' : 'Draft player');
+    if (span) {
+      span.textContent = live
+        ? 'Drop here · or double-click a name'
+        : (draftLive ? 'Picks lock until you’re on the clock' : 'Start draft to enable picks');
+    }
+  }
+
+  function lastPickForTeam(teamIndex) {
+    if (!mock?.picks?.length) return null;
+    for (let i = mock.picks.length - 1; i >= 0; i -= 1) {
+      if (mock.picks[i].teamIndex === teamIndex) return mock.picks[i];
+    }
+    return null;
+  }
+
   function renderOrder() {
     const el = document.getElementById('mock-order');
     if (!el || !mock) return;
     const next = currentSlot();
+    const following = next
+      ? pickSlot(mock.teamNames.length, mock.rounds, 'snake', mock.picks.length + 1)
+      : null;
+    el.style.setProperty('--mock-seats', String(mock.teamNames.length));
     el.innerHTML = mock.teamNames.map((name, i) => {
       const onClock = next && next.teamIndex === i;
-      const you = i === mock.seatIndex;
+      const upNext = !onClock && following && following.teamIndex === i;
+      const seat = roomSeats?.[i];
+      const you = !awaitingSeatClaim && i === mock.seatIndex;
+      const open = awaitingSeatClaim && seat && !seat.userId;
+      const human = seat && seat.userId && !seat.isCpu;
+      const last = lastPickForTeam(i);
       const cls = [
         'mock-seat-chip',
         you ? 'is-you' : '',
-        onClock ? 'is-clock' : ''
+        onClock ? 'is-clock' : '',
+        upNext ? 'is-next' : '',
+        open ? 'is-open' : '',
+        human && !you ? 'is-human' : ''
       ].filter(Boolean).join(' ');
-      return `<div class="${cls}" title="${esc(name)}">
+      const sub = human ? (seat.userName || 'Member') : (seat && seat.isCpu !== false && isMultiplayer() ? 'CPU' : name);
+      const canClick = open || (!draftLive && !isMultiplayer() && !awaitingSeatClaim);
+      const title = open
+        ? `Claim seat ${i + 1}`
+        : `Draft position ${i + 1}: ${name}${human ? ` · ${seat.userName}` : ''}`;
+      const status = onClock ? 'ON THE CLOCK' : (upNext ? 'UP NEXT' : '');
+      return `<button type="button" class="${cls}" data-seat="${i}" ${canClick ? '' : 'disabled'} title="${esc(title)}">
         <span class="n">${i + 1}</span>
-        <span class="nm">${esc(name)}</span>
-      </div>`;
+        <span class="nm">${esc(open ? name : (you ? name : sub))}</span>
+        ${status ? `<span class="st">${status}</span>` : ''}
+        <span class="last${last ? '' : ' is-empty'}">${last
+          ? `${esc(last.position || '')} ${esc(last.playerName)}`
+          : '—'}</span>
+      </button>`;
     }).join('');
   }
 
@@ -425,26 +1545,62 @@
     const metaEl = document.getElementById('mock-clock-meta');
     const overallEl = document.getElementById('mock-clock-overall');
     const labelEl = document.getElementById('mock-clock-label');
+    const timerEl = document.getElementById('mock-clock-timer');
     if (!pickEl || !metaEl || !mock) return;
     const next = currentSlot();
     const total = mock.teamNames.length * mock.rounds;
-    clock?.classList.remove('is-yours', 'is-done');
+    clock?.classList.remove('is-yours', 'is-done', 'is-waiting');
+    if (!draftLive) {
+      const seatLabel = awaitingSeatClaim
+        ? 'Pick an open seat to join'
+        : `${mock.teamNames[mock.seatIndex] || 'Your team'} · Pick #${mock.seatIndex + 1}`;
+      pickEl.textContent = seatLabel;
+      metaEl.textContent = awaitingSeatClaim
+        ? `${mock.teamNames.length} teams · ${mock.rounds} rounds · ${clockLabelText(pickSeconds || getPickSeconds())} clock`
+        : `${mock.teamNames.length} teams · ${mock.rounds} rounds · snake · press Start Draft`;
+      if (overallEl) overallEl.textContent = awaitingSeatClaim ? 'Join' : 'Ready';
+      if (labelEl) labelEl.textContent = awaitingSeatClaim ? 'Join mock' : 'Pre-draft';
+      if (timerEl) {
+        timerEl.textContent = clockLabelText(pickSeconds || getPickSeconds());
+        timerEl.classList.remove('is-low', 'is-urgent');
+      }
+      setDraftLive(false);
+      updateDraftDropState();
+      return;
+    }
     if (!next) {
       pickEl.textContent = 'Draft complete';
       metaEl.textContent = `${mock.picks.length} picks · ${mock.teamNames.length} teams · ${mock.rounds} rounds`;
       if (overallEl) overallEl.textContent = 'Done';
       if (labelEl) labelEl.textContent = 'Final board';
+      if (timerEl) {
+        timerEl.textContent = '0:00';
+        timerEl.classList.remove('is-low', 'is-urgent');
+      }
       clock?.classList.add('is-done');
+      stopPickTimer();
+      setDraftLive(true);
+      updateDraftDropState();
+      maybeShowMockComplete();
       return;
     }
     const yours = next.teamIndex === mock.seatIndex;
-    if (labelEl) labelEl.textContent = yours ? 'Your pick' : 'On the clock';
+    if (labelEl) labelEl.textContent = yours ? 'ON THE CLOCK' : 'On the clock';
     pickEl.textContent = yours
       ? `${mock.teamNames[next.teamIndex]} · Round ${next.round}`
       : `${mock.teamNames[next.teamIndex]} · Round ${next.round} · Pick ${next.pick}`;
-    metaEl.textContent = `${total - mock.picks.length} remaining · snake`;
+    metaEl.textContent = yours
+      ? `Pick #${next.overall} of ${total} · auto-best at 0:00`
+      : `Pick #${next.overall} of ${total} · ${total - mock.picks.length} left · snake`;
     if (overallEl) overallEl.textContent = `#${next.overall}`;
     if (yours) clock?.classList.add('is-yours');
+    else clock?.classList.add('is-waiting');
+    const timerLabel = document.getElementById('mock-clock-timer-label');
+    if (timerLabel) timerLabel.textContent = yours ? 'ON THE CLOCK' : 'Pick clock';
+    paintPickTimer();
+    setDraftLive(true);
+    maybePlayTurnCues();
+    updateDraftDropState();
   }
 
   function fmtPts(n) {
@@ -505,13 +1661,62 @@
     return bits.join(' · ');
   }
 
-  let mockSort = { key: 'proj', dir: 'desc' };
+  let mockSort = { key: 'rank', dir: 'asc' };
+  let mockPoolFilter = 'BEST';
 
-  function sortPoolRows(rows) {
+  function openStarterNeedSlots(teamIndex) {
+    if (!mock) return [];
+    const picks = picksForTeam(teamIndex);
+    const roster = assignPicksToRoster(picks);
+    const slots = [];
+    for (const row of roster.starters) {
+      if (row.player) continue;
+      const slot = String(row.slot || '').toUpperCase();
+      if (!slot) continue;
+      slots.push(slot === 'DST' ? 'D/ST' : slot);
+    }
+    return slots;
+  }
+
+  function needEligiblePositions(teamIndex) {
+    const slots = openStarterNeedSlots(teamIndex);
+    const out = [];
+    const seen = new Set();
+    const push = (pos) => {
+      if (seen.has(pos)) return;
+      seen.add(pos);
+      out.push(pos);
+    };
+    for (const slot of slots) {
+      if (slot === 'FLEX') {
+        push('RB');
+        push('WR');
+        push('TE');
+      } else if (slot === 'D/ST' || slot === 'DST') {
+        push('D/ST');
+      } else {
+        push(slot);
+      }
+    }
+    return { slots, positions: out };
+  }
+
+  function needPriorityForPos(pos, needPositions) {
+    const i = needPositions.indexOf(String(pos || '').toUpperCase());
+    return i === -1 ? 99 : i;
+  }
+
+  function sortPoolRows(rows, opts = {}) {
     const { key, dir } = mockSort;
     const mul = dir === 'asc' ? 1 : -1;
     const num = (v, missing) => (v == null || !Number.isFinite(Number(v)) ? missing : Number(v));
+    const needPositions = opts.needPositions || null;
     return rows.slice().sort((a, b) => {
+      if (needPositions?.length) {
+        const na = needPriorityForPos(a.position, needPositions);
+        const nb = needPriorityForPos(b.position, needPositions);
+        if (na !== nb) return na - nb;
+      }
       let cmp = 0;
       if (key === 'player') {
         cmp = String(a.name || '').localeCompare(String(b.name || ''));
@@ -534,9 +1739,10 @@
         cmp = num(a.avgPpg, -1) - num(b.avgPpg, -1);
       } else if (key === 'delta') {
         cmp = num(a.delta, 0) - num(b.delta, 0);
-      } else {
-        // proj / rank default
+      } else if (key === 'proj') {
         cmp = num(a.projectedPoints2026, -1) - num(b.projectedPoints2026, -1);
+      } else {
+        cmp = num(a.overallRank, 9999) - num(b.overallRank, 9999);
       }
       if (cmp) {
         const naturalAsc = key === 'player' || key === 'pos' || key === 'team' || key === 'adp' || key === 'posrk' || key === 'bye' || key === 'rank';
@@ -544,7 +1750,9 @@
           ? (dir === 'asc' ? cmp : -cmp)
           : cmp * mul;
       }
-      // tie-breakers
+      const ra = num(a.overallRank, 9999);
+      const rb = num(b.overallRank, 9999);
+      if (ra !== rb) return ra - rb;
       const pa = num(a.projectedPoints2026, -1);
       const pb = num(b.projectedPoints2026, -1);
       if (pb !== pa) return pb - pa;
@@ -553,16 +1761,59 @@
   }
 
   function filteredPool() {
-    const pos = document.getElementById('mock-pos')?.value || 'ALL';
+    const filter = mockPoolFilter || 'BEST';
     const q = String(document.getElementById('mock-search')?.value || '').trim().toLowerCase();
-    const rows = availablePlayers()
-      .filter((p) => (pos === 'ALL' ? true : p.position === pos))
-      .filter((p) => {
-        if (!q) return true;
-        const hay = `${p.name || ''} ${p.team || ''} ${p.position || ''}`.toLowerCase();
-        return hay.includes(q);
-      });
+    const need = needEligiblePositions(mock?.seatIndex ?? 0);
+    let rows = availablePlayers().filter((p) => {
+      if (!q) return true;
+      const hay = `${p.name || ''} ${p.team || ''} ${p.position || ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+
+    if (filter === 'NEED') {
+      if (need.positions.length) {
+        rows = rows.filter((p) => need.positions.includes(String(p.position || '').toUpperCase()));
+        return sortPoolRows(rows, { needPositions: need.positions });
+      }
+      return sortPoolRows(rows);
+    }
+    if (filter !== 'BEST' && filter !== 'ALL') {
+      rows = rows.filter((p) => String(p.position || '').toUpperCase() === filter);
+    }
     return sortPoolRows(rows);
+  }
+
+  function markPoolFilterTabs() {
+    const need = needEligiblePositions(mock?.seatIndex ?? 0);
+    if (mockPoolFilter === 'NEED' && !need.positions.length) {
+      mockPoolFilter = 'BEST';
+    }
+    const needBtn = document.querySelector('#mock-pool-filters [data-pool-filter="NEED"]');
+    if (needBtn) {
+      needBtn.disabled = need.positions.length === 0;
+      needBtn.title = need.positions.length
+        ? `Open starters: ${need.slots.join(', ')}`
+        : 'All starting lineup spots filled';
+    }
+    document.querySelectorAll('#mock-pool-filters [data-pool-filter]').forEach((btn) => {
+      const key = btn.getAttribute('data-pool-filter');
+      const on = key === mockPoolFilter;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    const hint = document.getElementById('mock-pool-need-hint');
+    if (hint) {
+      if (mockPoolFilter === 'NEED' && need.positions.length) {
+        hint.hidden = false;
+        hint.innerHTML = `Open starters <strong>${esc(need.slots.join(' · '))}</strong> · showing ${esc(need.positions.join(' · '))}`;
+      } else if (mockPoolFilter === 'BEST') {
+        hint.hidden = false;
+        hint.textContent = 'Best available across the board';
+      } else {
+        hint.hidden = true;
+        hint.textContent = '';
+      }
+    }
   }
 
   function markPoolSortHeaders() {
@@ -581,15 +1832,26 @@
     const list = document.getElementById('mock-pool-list');
     const count = document.getElementById('mock-pool-count');
     if (!list) return;
+    markPoolFilterTabs();
     const rows = filteredPool().slice(0, 200);
-    if (count) count.textContent = `${availablePlayers().length} left`;
+    if (count) {
+      const left = availablePlayers().length;
+      const shown = mockPoolFilter === 'BEST' ? left : rows.length;
+      count.textContent = mockPoolFilter === 'BEST' || mockPoolFilter === 'ALL'
+        ? `${left} left`
+        : `${shown} shown · ${left} left`;
+    }
     markPoolSortHeaders();
     if (!rows.length) {
-      list.innerHTML = `<div class="records-empty">No players match.</div>`;
+      const empty = !poolAll.length
+        ? 'Loading player pool…'
+        : mockPoolFilter === 'NEED'
+          ? 'No players left for your open starter spots.'
+          : 'No players match.';
+      list.innerHTML = `<div class="records-empty">${empty}</div>`;
       return;
     }
-    const next = currentSlot();
-    const canPick = Boolean(next);
+    const canPick = canUserDraftNow();
     list.innerHTML = rows.map((p) => {
       const head = p.headshot
         ? `<img class="mock-head" src="${esc(p.headshot)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />`
@@ -597,19 +1859,19 @@
       const logo = p.teamLogo
         ? `<img class="mock-team" src="${esc(p.teamLogo)}" alt="" width="16" height="16" loading="lazy" referrerpolicy="no-referrer" />`
         : '';
-      const scout = scoutingLine(p);
       const delta = Number(p.delta);
       const deltaCls = Number.isFinite(delta)
         ? (delta > 1 ? ' is-up' : delta < -1 ? ' is-down' : '')
         : '';
       const rk = p.overallRank != null ? p.overallRank : '—';
       const posRk = p.posRank != null ? `${esc(p.position)}${p.posRank}` : '—';
-      return `<button type="button" class="mock-player" data-id="${esc(p.id)}" ${canPick ? '' : 'disabled'}>
+      const targeted = isTargeted(p.id);
+      const injury = injuryBadgeHtml(p);
+      return `<div class="mock-player${targeted ? ' is-targeted' : ''}${injury ? ' has-injury' : ''}" role="button" tabindex="0" data-id="${esc(p.id)}" draggable="true" title="Click profile · double-click draft${canPick ? '' : ' (when on the clock)'} · drag to Targets or Draft">
         <span class="mock-rank" title="Overall rank">${esc(String(rk))}</span>
         ${head}
         <span class="mock-player-main">
-          <strong>${esc(p.name)}</strong>
-          <span class="mock-scout">${scout ? esc(scout) : '—'}</span>
+          <strong class="mock-player-name">${esc(p.name)}${injury}</strong>
         </span>
         ${posBadge(p.position)}
         <span class="mock-cell mock-team-cell" title="${esc(p.team || 'FA')}">${logo}<em>${esc(p.team || 'FA')}</em></span>
@@ -620,14 +1882,17 @@
         <span class="mock-cell num" title="Points per game">${esc(fmtPts(p.avgPpg))}</span>
         <span class="mock-cell num is-proj" title="Projected season points">${esc(fmtPts(p.projectedPoints2026))}</span>
         <span class="mock-cell num mock-delta${deltaCls}" title="Proj vs prior season">${esc(fmtDelta(p.delta))}</span>
-      </button>`;
+      </div>`;
     }).join('');
   }
 
   function renderMyTeam() {
     const list = document.getElementById('mock-myteam-list');
     const count = document.getElementById('mock-myteam-count');
+    const headLabel = document.getElementById('mock-myteam-label')
+      || document.querySelector('.mock-myteam .mock-panel-head span:first-child');
     if (!list || !mock) return;
+    if (headLabel) headLabel.textContent = mock.teamNames[mock.seatIndex] || 'My roster';
     const mine = picksForTeam(mock.seatIndex);
     const roster = assignPicksToRoster(mine);
     const totalSlots = roster.starters.length + rosterPlan.bench;
@@ -635,12 +1900,14 @@
     const rowHtml = (row, isBench) => {
       const empty = !row.player;
       const label = isBench ? 'BN' : row.slot;
+      const bye = !empty && row.player.byeWeek != null ? String(row.player.byeWeek) : '';
       return `<div class="mock-slot-row${isBench ? ' is-bench' : ''}${empty ? ' is-empty' : ' is-filled'}">
         <span class="slot" data-pos="${esc(label)}">${esc(label)}</span>
         <span class="nm">${empty
           ? `<span class="open">Open</span>`
           : `${esc(row.player.playerName)}<em>${esc(row.player.nflTeam || '')}</em>`
         }</span>
+        <span class="bye" title="Bye week">${empty ? '' : (bye ? `Bye ${esc(bye)}` : '—')}</span>
       </div>`;
     };
     list.innerHTML = `
@@ -650,27 +1917,59 @@
     `;
   }
 
-  function renderPicks() {
-    const list = document.getElementById('mock-picks-list');
-    const count = document.getElementById('mock-picks-count');
-    if (!list || !mock) return;
-    if (count) count.textContent = String(mock.picks.length);
-    if (!mock.picks.length) {
-      list.innerHTML = `<div class="records-empty">No picks yet — board is open.</div>`;
+  function renderTargets() {
+    const list = document.getElementById('mock-targets-list');
+    const count = document.getElementById('mock-targets-count');
+    if (!list) return;
+    const taken = takenIds();
+    const rows = targetIds
+      .map((id) => findPlayer(id))
+      .filter(Boolean);
+    const stillOpen = rows.filter((p) => !taken.has(p.id) && !taken.has(Number(p.id)));
+    if (stillOpen.length !== targetIds.length) {
+      targetIds = stillOpen.map((p) => String(p.id));
+      persistMock();
+    }
+    if (count) count.textContent = String(stillOpen.length);
+    if (!stillOpen.length) {
+      list.innerHTML = `<div class="records-empty">Drag players here to build your board.</div>`;
       return;
     }
-    const rows = mock.picks.slice().reverse().slice(0, 18);
+    list.innerHTML = stillOpen.map((p) => {
+      const head = p.headshot
+        ? `<img class="mock-head" src="${esc(p.headshot)}" alt="" width="34" height="34" loading="lazy" referrerpolicy="no-referrer" />`
+        : `<span class="mock-head is-blank" aria-hidden="true"></span>`;
+      return `<div class="mock-target-row" data-id="${esc(p.id)}" draggable="true" title="Double-click to draft · drag to Draft player">
+        ${head}
+        <span class="nm">${esc(p.name)}<em>${esc(p.position || '')} · ${esc(p.team || 'FA')}</em></span>
+        <span class="bye">${p.byeWeek != null ? `Bye ${esc(String(p.byeWeek))}` : '—'}</span>
+        <button type="button" class="x" data-remove-target="${esc(p.id)}" aria-label="Remove target">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  function renderPicks() {
+    const list = document.getElementById('mock-recent-list') || document.getElementById('mock-picks-list');
+    const count = document.getElementById('mock-recent-count') || document.getElementById('mock-picks-count');
+    if (!list || !mock) return;
+    if (count) count.textContent = String(mock.picks.length);
+    const picksCount = document.getElementById('mock-picks-count');
+    if (picksCount && picksCount !== count) picksCount.textContent = String(mock.picks.length);
+    if (!mock.picks.length) {
+      list.innerHTML = `<div class="records-empty">No picks yet.</div>`;
+      return;
+    }
+    const rows = mock.picks.slice().reverse().slice(0, 24);
     list.innerHTML = rows.map((p) => {
       const head = p.headshot
-        ? `<img class="mock-head" src="${esc(p.headshot)}" alt="" width="38" height="38" loading="lazy" referrerpolicy="no-referrer" />`
+        ? `<img class="mock-head" src="${esc(p.headshot)}" alt="" width="34" height="34" loading="lazy" referrerpolicy="no-referrer" />`
         : `<span class="mock-head is-blank" aria-hidden="true"></span>`;
-      return `<article class="mock-pick-card${p.teamIndex === mock.seatIndex ? ' is-mine' : ''}">
+      const club = p.teamIndex === mock.seatIndex ? 'You' : (p.teamName || 'Club');
+      const mine = p.teamIndex === mock.seatIndex;
+      return `<article class="mock-recent-row${mine ? ' is-mine' : ''}" title="${esc(p.teamName)} took ${esc(p.playerName)}">
         ${head}
-        <div>
-          <div class="num">#${esc(p.overall)} · ${esc(p.position || '')}</div>
-          <strong>${esc(p.playerName)}</strong>
-          <div class="who">${esc(p.teamName)}${p.teamIndex === mock.seatIndex ? ' · you' : ''}</div>
-        </div>
+        <span class="nm">${esc(p.playerName)}<em>#${esc(p.overall)} · ${esc(p.position || '')} · ${esc(club)}</em></span>
+        <span class="bye">${p.byeWeek != null ? `Bye ${esc(String(p.byeWeek))}` : '—'}</span>
       </article>`;
     }).join('');
   }
@@ -683,7 +1982,9 @@
     const others = mock.teamNames
       .map((name, i) => ({ name, i, picks: picksForTeam(i) }))
       .filter((t) => t.i !== mock.seatIndex);
-    if (count) count.textContent = `${others.length} teams`;
+    if (count) {
+      count.innerHTML = `${others.length} teams · <span id="mock-picks-count">${mock.picks.length}</span> picks`;
+    }
     if (!others.length) {
       list.innerHTML = `<div class="records-empty">No other teams.</div>`;
       return;
@@ -709,13 +2010,15 @@
     renderClock();
     renderPool();
     renderMyTeam();
+    renderTargets();
     renderPicks();
     renderOtherTeams();
+    setMockSideTab(mockSideTab);
     persistMock();
   }
 
   function announceMockStart(player) {
-    if (!mock) return;
+    if (!mock || isMultiplayer()) return;
     const seatName = mock.teamNames[mock.seatIndex] || '';
     fetch('/api/members-chat', {
       method: 'POST',
@@ -725,6 +2028,7 @@
         type: 'mock_start',
         teams: mock.teamNames.length,
         rounds: mock.rounds,
+        pickSeconds: getPickSeconds(),
         seatName,
         firstPick: player?.name || '',
         firstPos: player?.position || ''
@@ -739,21 +2043,51 @@
       .catch(() => { /* chat announce is best-effort */ });
   }
 
-  function makePick(playerId) {
-    if (!mock) return;
+  async function makePickRemote(playerId) {
+    if (!roomId) return false;
+    const res = await fetch('/api/mock-draft', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'pick', roomId, playerId })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok || !data.room) {
+      throw new Error(data.error || 'Pick failed');
+    }
+    applyRoom(data.room);
+    return true;
+  }
+
+  function makePick(playerId, opts = {}) {
+    if (!mock) return false;
+    if (awaitingSeatClaim) {
+      if (!opts.silent) setMockStatus('Claim a seat before picking', false);
+      return false;
+    }
+    const silent = opts.silent === true;
     const slot = currentSlot();
     if (!slot) {
-      setMockStatus('Draft is complete', false);
-      return;
+      if (!silent) setMockStatus('Draft is complete', false);
+      return false;
     }
-    const player = poolAll.find((p) => p.id === playerId);
+    if (isMultiplayer()) {
+      if (opts.cpu === true || opts.auto === true) return false;
+      if (slot.teamIndex !== mock.seatIndex) {
+        if (!silent) setMockStatus('Not your pick', false);
+        return false;
+      }
+      // Async path — caller should use makePickAsync for multiplayer UI clicks
+      return false;
+    }
+    const player = poolAll.find((p) => p.id === playerId || String(p.id) === String(playerId));
     if (!player) {
-      setMockStatus('Player not in pool', false);
-      return;
+      if (!silent) setMockStatus('Player not in pool', false);
+      return false;
     }
-    if (takenIds().has(player.id)) {
-      setMockStatus('Already drafted', false);
-      return;
+    if (takenIds().has(player.id) || takenIds().has(Number(player.id))) {
+      if (!silent) setMockStatus('Already drafted', false);
+      return false;
     }
     const starting = mock.picks.length === 0;
     mock.picks.push({
@@ -767,30 +2101,211 @@
       teamLogo: player.teamLogo,
       byeWeek: player.byeWeek,
       fantasyPoints2025: player.fantasyPoints2025,
-      projectedPoints2026: player.projectedPoints2026
+      projectedPoints2026: player.projectedPoints2026,
+      adp: player.adp,
+      cpu: opts.cpu === true
     });
     if (starting) announceMockStart(player);
-    setMockStatus(`Picked ${player.name} for ${mock.teamNames[slot.teamIndex]}`, true);
-    renderMock();
+    if (!silent) {
+      setMockStatus(`Picked ${player.name} for ${mock.teamNames[slot.teamIndex]}`, true);
+      renderMock();
+    }
+    return true;
   }
 
-  function autoPickOne() {
+  async function makePickAsync(playerId) {
+    if (isMultiplayer()) {
+      try {
+        await makePickRemote(playerId);
+        const player = poolAll.find((p) => p.id === playerId || String(p.id) === String(playerId));
+        setMockStatus(player ? `Picked ${player.name}` : 'Pick locked in', true);
+        return true;
+      } catch (err) {
+        setMockStatus(err.message || 'Pick failed', false);
+        return false;
+      }
+    }
+    return makePick(playerId);
+  }
+
+  function cpuStyleForTeam(teamIndex) {
+    return CPU_STYLES[Math.abs(Number(teamIndex) || 0) % CPU_STYLES.length];
+  }
+
+  function teamDraftState(teamIndex) {
+    const picks = picksForTeam(teamIndex);
+    const roster = assignPicksToRoster(picks);
+    const openBySlot = {};
+    for (const row of roster.starters) {
+      if (row.player) continue;
+      openBySlot[row.slot] = (openBySlot[row.slot] || 0) + 1;
+    }
+    const byPos = {};
+    for (const p of picks) {
+      const pos = String(p.position || '').toUpperCase();
+      byPos[pos] = (byPos[pos] || 0) + 1;
+    }
+    const openStarterPos = (pos) => {
+      if (pos === 'RB' || pos === 'WR' || pos === 'TE') {
+        return (openBySlot[pos] || 0) + (openBySlot.FLEX || 0);
+      }
+      return openBySlot[pos] || 0;
+    };
+    return {
+      picks,
+      roster,
+      openBySlot,
+      byPos,
+      openStarterPos,
+      startersFilled: roster.starters.filter((r) => r.player).length,
+      startersTotal: roster.starters.length
+    };
+  }
+
+  function recentPosRun(pos, lookback = 6) {
+    const recent = (mock?.picks || []).slice(-lookback);
+    if (!recent.length) return 0;
+    return recent.filter((p) => String(p.position || '').toUpperCase() === pos).length / recent.length;
+  }
+
+  function scoreCpuPlayer(player, slot, state, style) {
+    const pos = String(player.position || '').toUpperCase();
+    const overall = slot.overall;
+    const round = slot.round;
+    const rounds = mock.rounds;
+    const teams = mock.teamNames.length;
+    const late = round >= Math.max(rounds - 1, 7);
+    const midLate = round >= Math.max(5, Math.floor(rounds * 0.55));
+
+    if (pos === 'K' && !late && round < Math.max(6, rounds - 2)) return -1e9;
+    if (pos === 'D/ST' && round < Math.max(5, rounds - 3)) return -1e9;
+
+    const proj = Number(player.projectedPoints2026);
+    const prior = Number(player.fantasyPoints2025);
+    const adp = Number(player.adp);
+    const rank = Number(player.overallRank) || 999;
+    const posRank = Number(player.posRank) || 99;
+
+    let score = 0;
+    if (Number.isFinite(proj)) score += proj * 1.15;
+    else if (Number.isFinite(prior)) score += prior * 0.85;
+    else score += Math.max(0, 220 - rank);
+
+    if (Number.isFinite(adp)) {
+      const gap = adp - overall;
+      // Value: ADP is soon / already passed → take them. Far later → leave them.
+      if (gap <= 0) score += 38 + Math.min(28, Math.abs(gap) * 1.4);
+      else if (gap <= teams * 0.65) score += 22 - gap * 0.55;
+      else if (gap <= teams * 1.4) score += 6 - gap * 0.15;
+      else score -= Math.min(55, (gap - teams) * 1.1);
+    } else {
+      score += Math.max(0, 40 - rank * 0.35);
+    }
+
+    const owned = state.byPos[pos] || 0;
+    const openPos = state.openStarterPos(pos);
+    const openFlex = state.openBySlot.FLEX || 0;
+
+    if (openPos > 0) score += 34 + openPos * 10;
+    else if ((pos === 'RB' || pos === 'WR' || pos === 'TE') && openFlex > 0) score += 18;
+    else if (owned === 0 && round <= 4 && (pos === 'RB' || pos === 'WR')) score += 12;
+    else if (owned >= 1 && pos === 'QB') score -= round < 8 ? 70 : 18;
+    else if (owned >= 2 && pos === 'TE') score -= 28;
+    else if (owned >= 3 && (pos === 'RB' || pos === 'WR')) score -= midLate ? 4 : 22;
+    else if (owned === 0 && pos === 'TE' && posRank <= 3 && round <= 5) score += 26;
+    else if (owned === 0 && pos === 'QB' && posRank <= 5 && round >= 3 && round <= 7) score += 16;
+
+    // Prefer filling empty starters before pure bench depth.
+    const startersLeft = state.startersTotal - state.startersFilled;
+    if (startersLeft > 0 && openPos <= 0 && !(FLEX_ELIGIBLE.has(pos) && openFlex > 0) && pos !== 'K') {
+      score -= 20;
+    }
+
+    if (round <= 3) {
+      if (pos === 'RB' || pos === 'WR') score += 14;
+      if (pos === 'QB' && posRank > 3) score -= 35;
+      if (pos === 'TE' && posRank > 4) score -= 18;
+      if (pos === 'K') score -= 120;
+    }
+
+    // Positional run chase / avoid — slight herd behavior.
+    const runShare = recentPosRun(pos);
+    if (runShare >= 0.5 && (pos === 'RB' || pos === 'WR') && openPos > 0) score += 10;
+    if (runShare >= 0.66 && pos === 'QB' && owned === 0) score += 8;
+
+    if (style === 'zeroRb') {
+      if (pos === 'WR' && round <= 4) score += 18;
+      if (pos === 'RB' && round <= 2) score -= 22;
+      if (pos === 'RB' && round >= 3 && round <= 6) score += 10;
+    } else if (style === 'rbHeavy') {
+      if (pos === 'RB' && round <= 5) score += 16;
+      if (pos === 'WR' && round <= 2) score -= 8;
+    } else if (style === 'qbEarly') {
+      if (pos === 'QB' && owned === 0 && round >= 2 && round <= 6 && posRank <= 8) score += 28;
+    } else if (style === 'tePremium') {
+      if (pos === 'TE' && owned === 0 && posRank <= 5 && round <= 6) score += 24;
+    }
+
+    if (late && pos === 'K') score += 55 + (Number.isFinite(proj) ? proj * 0.2 : 0);
+    if (round >= rounds - 1 && owned === 0 && pos === 'K') score += 40;
+
+    // Tiny noise so boards don't clone.
+    score += (Math.random() - 0.5) * 7;
+    return score;
+  }
+
+  function chooseCpuPlayer(slot) {
     const avail = availablePlayers();
-    if (!avail.length || !currentSlot()) return false;
+    if (!avail.length || !slot) return null;
+    const state = teamDraftState(slot.teamIndex);
+    const style = cpuStyleForTeam(slot.teamIndex);
+    let best = null;
+    let bestScore = -Infinity;
+    const shortlist = [];
+    for (const p of avail) {
+      const s = scoreCpuPlayer(p, slot, state, style);
+      if (s < -1e8) continue;
+      shortlist.push({ p, s });
+      if (s > bestScore) {
+        bestScore = s;
+        best = p;
+      }
+    }
+    if (!shortlist.length) return avail[0] || null;
+    shortlist.sort((a, b) => b.s - a.s);
+    const top = shortlist.slice(0, Math.min(5, shortlist.length));
+    // Weighted pick among top candidates (favorite still most likely).
+    const weights = top.map((_, i) => Math.max(1, 6 - i));
+    const total = weights.reduce((a, b) => a + b, 0);
+    let roll = Math.random() * total;
+    for (let i = 0; i < top.length; i += 1) {
+      roll -= weights[i];
+      if (roll <= 0) return top[i].p;
+    }
+    return best || top[0].p;
+  }
+
+  function autoPickOne(opts = {}) {
     const slot = currentSlot();
-    const preferK = slot.round >= Math.max(6, mock.rounds - 1);
-    const ranked = avail
-      .filter((p) => (preferK ? true : p.position !== 'K'))
-      .sort((a, b) => {
-        const pa = a.projectedPoints2026 != null ? Number(a.projectedPoints2026) : -1;
-        const pb = b.projectedPoints2026 != null ? Number(b.projectedPoints2026) : -1;
-        return pb - pa;
-      });
-    const pickFrom = ranked.length ? ranked : avail;
-    // Take from the top of the board with a little noise.
-    const player = pickFrom[Math.floor(Math.random() * Math.min(pickFrom.length, 12))];
-    makePick(player.id);
-    return true;
+    if (!slot) return false;
+    const player = chooseCpuPlayer(slot);
+    if (!player) return false;
+    return makePick(player.id, { silent: opts.silent === true, cpu: true });
+  }
+
+  function runCpuUntilUserPick(opts = {}) {
+    if (!mock || isMultiplayer()) return 0;
+    let n = 0;
+    const max = mock.teamNames.length * mock.rounds + 2;
+    while (n < max) {
+      const slot = currentSlot();
+      if (!slot) break;
+      if (opts.includeUser !== true && slot.teamIndex === mock.seatIndex) break;
+      if (!autoPickOne({ silent: true })) break;
+      n += 1;
+    }
+    if (n > 0 || opts.forceRender) renderMock();
+    return n;
   }
 
   async function loadRosterPlan() {
@@ -838,37 +2353,283 @@
   }
 
   function wireMock() {
-    document.getElementById('mock-pool-list')?.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-id]');
-      if (!btn || btn.disabled) return;
-      makePick(btn.getAttribute('data-id'));
+    document.getElementById('mock-start')?.addEventListener('click', () => {
+      startDraftSession();
     });
-    document.getElementById('mock-seat')?.addEventListener('change', (e) => {
-      mock.seatIndex = Number(e.target.value) || 0;
+    document.getElementById('mock-pick-seconds')?.addEventListener('change', (e) => {
+      if (draftLive || isMultiplayer()) {
+        e.target.value = String(pickSeconds || DEFAULT_PICK_SECONDS);
+        return;
+      }
+      pickSeconds = getPickSeconds();
+      const sub = document.getElementById('mock-start-sub');
+      if (sub && !draftLive) sub.textContent = `${clockLabelText(pickSeconds)} pick clock · snake order`;
+      const timerEl = document.getElementById('mock-clock-timer');
+      if (timerEl && !draftLive) timerEl.textContent = clockLabelText(pickSeconds);
+      const liveTimer = document.getElementById('mock-pick-timer');
+      if (liveTimer && !draftLive) liveTimer.textContent = clockLabelText(pickSeconds);
+    });
+    document.getElementById('mock-pool-list')?.addEventListener('click', (e) => {
+      const injuryBtn = e.target.closest('[data-injury-id]');
+      if (injuryBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearTimeout(profileClickTimer);
+        openInjuryDetail(injuryBtn.getAttribute('data-injury-id'));
+        return;
+      }
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+      const btn = e.target.closest('[data-id]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      clearTimeout(profileClickTimer);
+      profileClickTimer = setTimeout(() => openPlayerProfile(id), 220);
+    });
+    document.getElementById('mock-pool-list')?.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const injuryBtn = e.target.closest('[data-injury-id]');
+      if (injuryBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        openInjuryDetail(injuryBtn.getAttribute('data-injury-id'));
+        return;
+      }
+      const row = e.target.closest('.mock-player[data-id]');
+      if (!row || e.target.closest('a, button')) return;
+      e.preventDefault();
+      openPlayerProfile(row.getAttribute('data-id'));
+    });
+    document.getElementById('mock-pool-list')?.addEventListener('dblclick', (e) => {
+      if (e.target.closest('[data-injury-id]')) return;
+      const btn = e.target.closest('[data-id]');
+      if (!btn) return;
+      e.preventDefault();
+      clearTimeout(profileClickTimer);
+      suppressNextClick = true;
+      closePlayerProfile();
+      confirmDraftPlayer(btn.getAttribute('data-id'));
+    });
+    document.getElementById('mock-pool-list')?.addEventListener('dragstart', (e) => {
+      if (e.target.closest('[data-injury-id]')) {
+        e.preventDefault();
+        return;
+      }
+      const btn = e.target.closest('[data-id]');
+      if (!btn || !e.dataTransfer) return;
+      dragPlayerId = btn.getAttribute('data-id');
+      e.dataTransfer.setData('text/plain', dragPlayerId || '');
+      e.dataTransfer.effectAllowed = 'copyMove';
+      btn.classList.add('is-dragging');
+    });
+    document.getElementById('mock-pool-list')?.addEventListener('dragend', (e) => {
+      e.target.closest('[data-id]')?.classList.remove('is-dragging');
+      dragPlayerId = null;
+      document.querySelectorAll('.is-hot').forEach((el) => el.classList.remove('is-hot'));
+    });
+
+    const wireDropZone = (el, kind) => {
+      if (!el) return;
+      el.addEventListener('dragover', (e) => {
+        if (kind === 'draft' && !canUserDraftNow()) {
+          if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+          el.classList.add('is-locked');
+          return;
+        }
+        e.preventDefault();
+        el.classList.add('is-hot');
+        if (e.dataTransfer) e.dataTransfer.dropEffect = kind === 'draft' ? 'copy' : 'move';
+      });
+      el.addEventListener('dragleave', () => el.classList.remove('is-hot'));
+      el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        el.classList.remove('is-hot');
+        const id = (e.dataTransfer?.getData('text/plain') || dragPlayerId || '').trim();
+        if (!id) return;
+        if (kind === 'targets') {
+          setMockSideTab('targets');
+          addTarget(id);
+          return;
+        }
+        if (!canUserDraftNow()) {
+          setMockStatus('Not your pick — wait for the clock', false);
+          return;
+        }
+        confirmDraftPlayer(id);
+      });
+    };
+    wireDropZone(document.getElementById('mock-draft-drop'), 'draft');
+    wireDropZone(document.getElementById('mock-targets-list'), 'targets');
+
+    document.querySelector('.mock-side-tabs')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-mock-side]');
+      if (!btn) return;
+      setMockSideTab(btn.getAttribute('data-mock-side'));
+    });
+
+    document.getElementById('mock-targets-list')?.addEventListener('click', (e) => {
+      const remove = e.target.closest('[data-remove-target]');
+      if (remove) {
+        e.stopPropagation();
+        clearTimeout(profileClickTimer);
+        removeTarget(remove.getAttribute('data-remove-target'));
+        return;
+      }
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+      const row = e.target.closest('[data-id]');
+      if (!row) return;
+      const id = row.getAttribute('data-id');
+      clearTimeout(profileClickTimer);
+      profileClickTimer = setTimeout(() => openPlayerProfile(id), 220);
+    });
+    document.getElementById('mock-targets-list')?.addEventListener('dblclick', (e) => {
+      const row = e.target.closest('[data-id]');
+      if (!row || e.target.closest('[data-remove-target]')) return;
+      e.preventDefault();
+      clearTimeout(profileClickTimer);
+      suppressNextClick = true;
+      closePlayerProfile();
+      confirmDraftPlayer(row.getAttribute('data-id'));
+    });
+    document.getElementById('mock-targets-list')?.addEventListener('dragstart', (e) => {
+      const row = e.target.closest('[data-id]');
+      if (!row || !e.dataTransfer || e.target.closest('[data-remove-target]')) return;
+      dragPlayerId = row.getAttribute('data-id');
+      e.dataTransfer.setData('text/plain', dragPlayerId || '');
+      e.dataTransfer.effectAllowed = 'copyMove';
+    });
+    document.getElementById('mock-targets-list')?.addEventListener('dragend', () => {
+      dragPlayerId = null;
+      document.querySelectorAll('.is-hot').forEach((el) => el.classList.remove('is-hot'));
+    });
+
+    document.getElementById('mock-profile-close')?.addEventListener('click', closePlayerProfile);
+    document.getElementById('mock-profile-dialog')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closePlayerProfile();
+      const injuryBtn = e.target.closest('[data-injury-id]');
+      if (injuryBtn) {
+        e.preventDefault();
+        openInjuryDetail(injuryBtn.getAttribute('data-injury-id'));
+      }
+    });
+    document.getElementById('mock-injury-close')?.addEventListener('click', () => {
+      document.getElementById('mock-injury-dialog')?.close();
+    });
+    document.getElementById('mock-injury-dialog')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) e.currentTarget.close();
+    });
+    const closeComplete = () => closeMockCompleteScreen();
+    document.getElementById('mock-complete-close')?.addEventListener('click', closeComplete);
+    document.getElementById('mock-complete-done')?.addEventListener('click', closeComplete);
+    document.getElementById('mock-complete-dialog')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeComplete();
+    });
+    document.getElementById('mock-profile-target')?.addEventListener('click', () => {
+      if (profilePlayerId == null) return;
+      if (isTargeted(profilePlayerId)) {
+        removeTarget(profilePlayerId);
+        document.getElementById('mock-profile-target').textContent = 'Add target';
+      } else {
+        addTarget(profilePlayerId);
+        setMockSideTab('targets');
+        document.getElementById('mock-profile-target').textContent = 'Remove target';
+      }
+    });
+    document.getElementById('mock-profile-draft')?.addEventListener('click', async () => {
+      if (profilePlayerId == null) return;
+      const id = profilePlayerId;
+      closePlayerProfile();
+      await confirmDraftPlayer(id);
+    });
+
+    document.getElementById('mock-order')?.addEventListener('click', async (e) => {
+      const chip = e.target.closest('[data-seat]');
+      if (!chip || !mock || chip.disabled) return;
+      const idx = Number(chip.getAttribute('data-seat'));
+      if (!Number.isFinite(idx) || idx < 0 || idx >= mock.teamNames.length) return;
+      if (awaitingSeatClaim) {
+        const seat = roomSeats?.[idx];
+        if (seat?.userId) {
+          setMockStatus('That seat is taken', false);
+          return;
+        }
+        try {
+          await claimSeat(idx);
+        } catch (err) {
+          setMockStatus(err.message || 'Could not claim seat', false);
+        }
+        return;
+      }
+      if (draftLive || isMultiplayer()) {
+        setMockStatus('Seat locked while the draft is live — reset to change', false);
+        return;
+      }
+      mock.seatIndex = idx;
       renderMock();
+      setMockStatus(`You’re pick #${idx + 1} · ${mock.teamNames[idx]}`, true);
+    });
+    document.getElementById('mock-seat')?.addEventListener('change', async (e) => {
+      const idx = Number(e.target.value);
+      if (awaitingSeatClaim) {
+        if (!Number.isFinite(idx)) return;
+        try {
+          await claimSeat(idx);
+        } catch (err) {
+          setMockStatus(err.message || 'Could not claim seat', false);
+          fillSeatSelect();
+        }
+        return;
+      }
+      if (draftLive || isMultiplayer()) {
+        e.target.value = String(mock.seatIndex);
+        setMockStatus('Seat locked while the draft is live — reset to change', false);
+        return;
+      }
+      mock.seatIndex = Number.isFinite(idx) ? idx : 0;
+      renderMock();
+      setMockStatus(`You’re pick #${mock.seatIndex + 1} · ${mock.teamNames[mock.seatIndex]}`, true);
     });
     document.getElementById('mock-teams')?.addEventListener('change', (e) => {
       const count = normalizeTeamCount(e.target.value);
-      if (mock.picks.length && !confirm('Changing team count clears the board. Continue?')) {
+      if ((mock.picks.length || draftLive || isMultiplayer()) && !confirm('Changing team count clears the board. Continue?')) {
         e.target.value = String(mock.teamNames.length);
         return;
       }
+      endDraftSession();
+      leaveRoomLocal();
       applyTeamCount(count);
       renderMock();
       setMockStatus(`Set to ${count} teams`, true);
     });
     document.getElementById('mock-rounds')?.addEventListener('change', (e) => {
-      const rounds = Number(e.target.value) || 15;
-      if (mock.picks.length && !confirm('Changing rounds clears the board. Continue?')) {
+      const rounds = normalizeRounds(e.target.value);
+      if ((mock.picks.length || draftLive || isMultiplayer()) && !confirm('Changing rounds clears the board. Continue?')) {
         e.target.value = String(mock.rounds);
         return;
       }
+      endDraftSession();
+      leaveRoomLocal();
       mock.rounds = rounds;
       mock.picks = [];
+      e.target.value = String(rounds);
       renderMock();
       setMockStatus(`Set to ${rounds} rounds`, true);
     });
-    document.getElementById('mock-pos')?.addEventListener('change', renderPool);
+    document.getElementById('mock-pool-filters')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-pool-filter]');
+      if (!btn || btn.disabled) return;
+      const key = btn.getAttribute('data-pool-filter');
+      if (!key) return;
+      mockPoolFilter = key;
+      if (key === 'BEST') mockSort = { key: 'rank', dir: 'asc' };
+      else if (key === 'NEED') mockSort = { key: 'rank', dir: 'asc' };
+      renderPool();
+    });
     document.getElementById('mock-search')?.addEventListener('input', renderPool);
     document.querySelector('.mock-pool-cols')?.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-sort]');
@@ -884,43 +2645,160 @@
       renderPool();
     });
     document.getElementById('mock-shuffle')?.addEventListener('click', () => {
-      if (mock.picks.length && !confirm('Shuffle clears current picks. Continue?')) return;
+      if (isMultiplayer()) {
+        setMockStatus('Shuffle unavailable in a live room', false);
+        return;
+      }
+      if ((mock.picks.length || draftLive) && !confirm('Shuffle clears current picks. Continue?')) return;
+      endDraftSession();
       const count = mock.teamNames.length;
       const pool = teamNames.length ? teamNames : mock.teamNames;
       mock.teamNames = padTeamNames(shuffle(pool), count);
       mock.picks = [];
-      mock.seatIndex = 0;
+      mock.seatIndex = Math.min(mock.seatIndex, count - 1);
       renderMock();
-      setMockStatus('Draft order shuffled', true);
+      setMockStatus('Draft order shuffled — set your pick #, then Start Draft', true);
     });
     document.getElementById('mock-undo')?.addEventListener('click', () => {
+      if (isMultiplayer()) {
+        setMockStatus('Undo unavailable in a live room', false);
+        return;
+      }
       if (!mock.picks.length) return;
+      stopPickTimer();
       const removed = mock.picks.pop();
       setMockStatus(`Undid ${removed.playerName}`, true);
+      if (draftLive) {
+        runCpuUntilUserPick();
+        if (currentSlot()?.teamIndex === mock.seatIndex) startPickTimer();
+      }
       renderMock();
     });
     document.getElementById('mock-reset')?.addEventListener('click', () => {
-      if (mock.picks.length && !confirm('Reset the mock draft?')) return;
+      if ((mock.picks.length || draftLive || isMultiplayer()) && !confirm('Reset the mock draft?')) return;
+      endDraftSession();
+      leaveRoomLocal();
       mock.picks = [];
+      history.replaceState(null, '', '#mock-draft');
       renderMock();
-      setMockStatus('Board reset', true);
+      setMockStatus('Board reset — set your pick #, then Start Draft', true);
     });
-    document.getElementById('mock-auto')?.addEventListener('click', () => {
-      if (!autoPickOne()) setMockStatus('Nothing left to pick', false);
+    document.getElementById('mock-run-to-me')?.addEventListener('click', () => {
+      if (isMultiplayer()) {
+        setMockStatus('Run-to-me unavailable in a live room', false);
+        return;
+      }
+      if (!draftLive) {
+        setMockStatus('Press Start Draft first', false);
+        return;
+      }
+      const slot = currentSlot();
+      if (!slot) {
+        setMockStatus('Draft is complete', false);
+        return;
+      }
+      if (slot.teamIndex === mock.seatIndex) {
+        setMockStatus('You’re already on the clock', true);
+        return;
+      }
+      const n = runCpuUntilUserPick();
+      startPickTimer();
+      renderMock();
+      const clockTxt = clockLabelText(getPickSeconds());
+      setMockStatus(
+        n ? `CPU drafted ${n} pick${n === 1 ? '' : 's'} — you’re up (${clockTxt})` : 'Nothing to simulate',
+        n > 0
+      );
+    });
+    document.getElementById('mock-auto')?.addEventListener('click', async () => {
+      if (isMultiplayer()) {
+        if (!draftLive || awaitingSeatClaim) {
+          setMockStatus('Press Start Draft first', false);
+          return;
+        }
+        const slot = currentSlot();
+        if (!slot || slot.teamIndex !== mock.seatIndex) {
+          setMockStatus('Not your pick', false);
+          return;
+        }
+        const player = bestAvailablePlayer();
+        if (!player) {
+          setMockStatus('Nothing left to pick', false);
+          return;
+        }
+        await makePickAsync(player.id);
+        return;
+      }
+      if (!draftLive) {
+        setMockStatus('Press Start Draft first', false);
+        return;
+      }
+      const slot = currentSlot();
+      if (!slot) {
+        setMockStatus('Nothing left to pick', false);
+        return;
+      }
+      stopPickTimer();
+      const wasUser = slot.teamIndex === mock.seatIndex;
+      if (!autoPickOne()) {
+        setMockStatus('Nothing left to pick', false);
+        return;
+      }
+      if (wasUser) {
+        afterUserTurn();
+        setMockStatus('CPU picked for you · clock reset', true);
+        return;
+      }
+      const filled = runCpuUntilUserPick();
+      startPickTimer();
+      renderMock();
+      setMockStatus(`CPU pick made${filled ? ` · ${filled} more to your turn` : ''}`, true);
     });
     document.getElementById('mock-autofill')?.addEventListener('click', () => {
-      if (!confirm('Auto-fill the rest of the draft with random picks?')) return;
+      if (isMultiplayer()) {
+        setMockStatus('Fill rest unavailable in a live room', false);
+        return;
+      }
+      if (!confirm('Auto-fill the rest of the draft with CPU picks?')) return;
+      stopPickTimer();
+      draftLive = true;
       let n = 0;
-      while (autoPickOne()) n += 1;
-      setMockStatus(n ? `Filled ${n} picks` : 'Nothing to fill', n > 0);
+      while (autoPickOne({ silent: true })) n += 1;
+      setDraftLive(true);
+      renderMock();
+      setMockStatus(n ? `CPU filled ${n} picks` : 'Nothing to fill', n > 0);
     });
   }
 
   async function boot() {
     wireMock();
     try {
-      const [leagues] = await Promise.all([loadTeamNames(), loadRosterPlan()]);
-      renderRecordBook(leagues);
+      const [, , book] = await Promise.all([
+        loadTeamNames(),
+        loadRosterPlan(),
+        loadRecordBook()
+      ]);
+      renderRecordBook(book);
+      try {
+        const history = await loadHistorySeason();
+        selectedHistorySeason = pickDefaultHistorySeason(history.seasons || historySeasonsCatalog)
+          || Number(history.season)
+          || null;
+        renderHistorySeasonChips();
+        if (selectedHistorySeason != null) {
+          await showHistorySeason(selectedHistorySeason);
+        } else {
+          const archiveBody = document.getElementById('records-archive-body');
+          if (archiveBody) {
+            archiveBody.innerHTML = `<div class="records-empty">No archived seasons yet. Commissioners can add them in League Tools → Season Archive.</div>`;
+          }
+        }
+      } catch (histErr) {
+        const archiveBody = document.getElementById('records-archive-body');
+        if (archiveBody) {
+          archiveBody.innerHTML = `<div class="records-empty">${esc(histErr.message || 'Could not load historical seasons')}</div>`;
+        }
+      }
       const teamsEl = document.getElementById('mock-teams');
       const roundsEl = document.getElementById('mock-rounds');
       const saved = restoreMock();
@@ -930,34 +2808,68 @@
       if (teamsEl) teamsEl.value = String(teamCount);
       ensureMock(
         teamNames,
-        Number(roundsEl?.value) || 15,
+        normalizeRounds(roundsEl?.value || saved?.rounds || DEFAULT_ROUNDS),
         teamCount
       );
       if (roundsEl) roundsEl.value = String(mock.rounds);
       if (teamsEl) teamsEl.value = String(mock.teamNames.length);
+      pickSeconds = getPickSeconds();
+      restoreTargets();
       renderMock();
       await loadPool().then((data) => {
         renderMock();
         setMockStatus(
-          `Pool ready · ${poolAll.length} players · ${mock.teamNames.length} teams${mock.season ? ` · roster ${mock.season}` : ''}${data.statsSeason ? ` · ’${String(data.statsSeason).slice(-2)} FP` : ''}${data.projectionSeason ? ` · ’${String(data.projectionSeason).slice(-2)} proj` : ''}`,
+          `Pool ready · set your pick # · press Start Draft · ${poolAll.length} players · ${mock.teamNames.length}×${mock.rounds}${mock.season ? ` · roster ${mock.season}` : ''}${data.statsSeason ? ` · ’${String(data.statsSeason).slice(-2)} FP` : ''}${data.projectionSeason ? ` · ’${String(data.projectionSeason).slice(-2)} proj` : ''}`,
           true
         );
       });
-    } catch (err) {
-      renderRecordBook({ conferences: [] });
-      setMockStatus(err.message || 'Could not start desk tools', false);
-      const body = document.getElementById('records-body');
-      if (body && !body.querySelector('.record-card')) {
-        body.innerHTML = `<div class="records-empty">${esc(err.message || 'Could not load standings')}</div>`;
+      const joinId = parseMockRoomFromHash();
+      if (joinId) {
+        try {
+          await loadJoinRoom(joinId);
+        } catch (err) {
+          setMockStatus(err.message || 'Could not join mock draft', false);
+        }
       }
+    } catch (err) {
+      renderRecordBook({ records: [], error: err.message || 'Could not load record book' });
+      loadHistorySeason()
+        .then((history) => {
+          selectedHistorySeason = pickDefaultHistorySeason(history.seasons || historySeasonsCatalog)
+            || Number(history.season)
+            || null;
+          renderHistorySeasonChips();
+          if (selectedHistorySeason != null) return showHistorySeason(selectedHistorySeason);
+          const archiveBody = document.getElementById('records-archive-body');
+          if (archiveBody) {
+            archiveBody.innerHTML = `<div class="records-empty">No archived seasons yet. Commissioners can add them in League Tools → Season Archive.</div>`;
+          }
+          return null;
+        })
+        .catch((histErr) => {
+          const archiveBody = document.getElementById('records-archive-body');
+          if (archiveBody) {
+            archiveBody.innerHTML = `<div class="records-empty">${esc(histErr.message || 'Could not load historical seasons')}</div>`;
+          }
+        });
+      setMockStatus(err.message || 'Could not start desk tools', false);
     }
 
-    if (location.hash === '#record-book' || location.hash === '#records') {
+    const hashBase = String(location.hash || '').split('?')[0].toLowerCase();
+    if (hashBase === '#record-book' || hashBase === '#records') {
       document.getElementById('record-book')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    if (location.hash === '#mock-draft' || location.hash === '#mock') {
+    if (hashBase === '#mock-draft' || hashBase === '#mock') {
       document.getElementById('mock-draft')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    window.addEventListener('hashchange', () => {
+      const id = parseMockRoomFromHash();
+      if (!id || id === roomId) return;
+      loadJoinRoom(id).catch((err) => {
+        setMockStatus(err.message || 'Could not join mock draft', false);
+      });
+    });
   }
 
   if (document.readyState === 'loading') {

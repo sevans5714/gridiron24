@@ -8,26 +8,47 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
-      --mo-blue-hot: var(--mo-blue-hot);
+      --mo-blue-hot: #5b9bff;
       --mo-gold: #e8c45a;
       --mo-gold-soft: #f3d98a;
       --mo-silver: #dce6f5;
       --mo-muted: #8fa0b8;
       --mo-text: #f4f7ff;
       --mo-good: #4dff9a;
-      --mo-live: var(--mo-live);
-      --mo-upcoming: var(--mo-upcoming);
-      --mo-results: var(--mo-results);
+      --mo-live: #4dff9a;
+      --mo-upcoming: #f0d78c;
+      --mo-results: #7ec8ff;
       --mo-due: #ff9b6a;
+      --mo-casino: #e8c45a;
+      --mo-casino-soft: #f3d98a;
+      --mo-casino-ink: #0d1410;
+      --mo-casino-felt: #3ecf8a;
       --mo-line: rgba(126, 200, 255, 0.14);
       --mo-field: #02060f;
       --mo-card: rgba(0, 0, 0, 0.22);
       --mo-card-live: rgba(20, 48, 34, 0.45);
       --mo-wash: rgba(47, 123, 255, 0.22);
+      --mo-surface: rgba(0, 0, 0, 0.32);
+      --mo-surface-2: rgba(0, 0, 0, 0.28);
+      --mo-input: rgba(8, 14, 28, 0.85);
+      --mo-btn-ink: #e8f2ff;
+      --mo-head-grad: linear-gradient(180deg, rgba(28, 22, 12, 0.95), rgba(12, 10, 18, 0.9));
+      --mo-panel-records:
+        radial-gradient(ellipse 70% 55% at 20% -10%, rgba(47, 123, 255, 0.2), transparent 55%),
+        radial-gradient(ellipse 40% 40% at 100% 90%, rgba(232, 196, 90, 0.1), transparent 50%),
+        linear-gradient(180deg, rgba(8, 14, 30, 0.97) 0%, rgba(4, 8, 18, 0.94) 100%);
+      --mo-panel-mock:
+        radial-gradient(ellipse 70% 55% at 80% -10%, rgba(47, 123, 255, 0.22), transparent 55%),
+        radial-gradient(ellipse 45% 40% at 0% 100%, rgba(232, 196, 90, 0.08), transparent 50%),
+        linear-gradient(180deg, rgba(8, 14, 30, 0.97) 0%, rgba(4, 8, 18, 0.94) 100%);
+      --mo-panel-degen:
+        radial-gradient(ellipse 70% 50% at 40% -12%, rgba(232, 196, 90, 0.14), transparent 55%),
+        radial-gradient(ellipse 55% 45% at 100% 90%, rgba(32, 110, 72, 0.28), transparent 55%),
+        linear-gradient(180deg, rgba(6, 18, 14, 0.98) 0%, rgba(3, 8, 10, 0.96) 100%);
       color: var(--mo-text);
       background-color: var(--mo-field);
       background-image:
@@ -40,9 +61,9 @@
     html[data-theme="day"] body[data-page="members"] {
       --mo-blue: #1f5ef0;
       --mo-blue-hot: #1f5ef0;
-      --mo-gold: #9a7b1a;
-      --mo-gold-soft: #8a6e18;
-      --mo-silver: #4a5563;
+      --mo-gold: #a16207;
+      --mo-gold-soft: #92400e;
+      --mo-silver: #334155;
       --mo-muted: #5a6573;
       --mo-text: #14181f;
       --mo-good: #15803d;
@@ -50,11 +71,26 @@
       --mo-upcoming: #a16207;
       --mo-results: #1f5ef0;
       --mo-due: #c2410c;
+      --mo-casino: #a16207;
+      --mo-casino-soft: #92400e;
+      --mo-casino-ink: #ffffff;
+      --mo-casino-felt: #15803d;
       --mo-line: rgba(20, 24, 31, 0.12);
       --mo-field: #e8ecf1;
-      --mo-card: rgba(255, 255, 255, 0.92);
-      --mo-card-live: rgba(220, 252, 231, 0.85);
+      --mo-card: #ffffff;
+      --mo-card-live: #ecfdf3;
       --mo-wash: rgba(31, 94, 240, 0.1);
+      --mo-surface: #ffffff;
+      --mo-surface-2: #f3f5f8;
+      --mo-input: #ffffff;
+      --mo-btn-ink: #ffffff;
+      --mo-head-grad: linear-gradient(180deg, #fffbeb 0%, #f8fafc 100%);
+      --mo-panel-records:
+        linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+      --mo-panel-mock:
+        linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+      --mo-panel-degen:
+        linear-gradient(180deg, #f7fbf8 0%, #fffbeb 45%, #f8fafc 100%);
       color: var(--mo-text);
       background-color: var(--mo-field);
       background-image:
@@ -90,7 +126,13 @@
       border-bottom: 1px solid rgba(20, 24, 31, 0.1);
       box-shadow: 0 6px 18px rgba(20, 24, 31, 0.06);
     }
-    body[data-page="members"] .topbar .shell,
+    body[data-page="members"] .topbar .shell {
+      max-width: min(110rem, 100%);
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: clamp(0.5rem, 1vw, 1.125rem);
+      padding-right: clamp(1rem, 2vw, 2.25rem);
+    }
     body[data-page="members"] .site-footer.shell {
       max-width: min(110rem, 100%);
       margin-left: auto;
@@ -123,36 +165,6 @@
     }
     html[data-theme="day"] body[data-page="members"] .site-footer-mark {
       filter: drop-shadow(0 2px 8px rgba(20, 24, 31, 0.16));
-    }
-
-    .lounge-theme-toggle {
-      appearance: none;
-      flex: 0 0 auto;
-      font-family: "Oswald", sans-serif;
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--mo-blue-hot);
-      background: rgba(47, 123, 255, 0.12);
-      border: 1px solid rgba(126, 200, 255, 0.28);
-      padding: 0.35rem 0.65rem;
-      cursor: pointer;
-      border-radius: 0.25rem;
-    }
-    .lounge-theme-toggle:hover {
-      color: var(--mo-text);
-      border-color: rgba(126, 200, 255, 0.5);
-      background: rgba(47, 123, 255, 0.2);
-    }
-    html[data-theme="day"] .lounge-theme-toggle {
-      color: var(--mo-blue);
-      background: rgba(31, 94, 240, 0.08);
-      border-color: rgba(31, 94, 240, 0.28);
-    }
-    html[data-theme="day"] .lounge-theme-toggle:hover {
-      color: var(--mo-text);
-      background: rgba(31, 94, 240, 0.14);
     }
 
     .lounge {
@@ -689,10 +701,29 @@
     .sgame-sides { display: grid; gap: 0.08rem; }
     .sgame-row {
       display: grid;
-      grid-template-columns: 1.35rem minmax(0, 1fr) auto auto;
+      grid-template-columns: 1.35rem minmax(0, 1fr);
       align-items: center;
-      gap: 0.22rem;
+      gap: 0.35rem;
       min-height: 1.1rem;
+    }
+    .sgame-row.has-line {
+      grid-template-columns: 1.35rem minmax(0, 1fr) auto;
+    }
+    .sgame-teamline {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+    .sgame-teamline > .sgame-abbr,
+    .sgame-teamline > .sgame-namecell {
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+    .sgame-teamline > .sgame-score {
+      flex: 0 0 auto;
+      text-align: left;
+      margin-left: 0.05rem;
     }
     .sgame-row img,
     .sgame-logo {
@@ -718,6 +749,34 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .sgame-namecell {
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .sgame-namecell .sgame-abbr {
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+    .sgame-rec {
+      flex: 0 0 auto;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--mo-muted);
+      white-space: nowrap;
+      opacity: 0.92;
+    }
+    .sgame-row.is-winner .sgame-rec {
+      color: rgba(255, 255, 255, 0.72);
+      opacity: 1;
+    }
+    html[data-theme="day"] .sgame-row.is-winner .sgame-rec {
+      color: rgba(20, 28, 40, 0.55);
     }
     .sgame-row.is-winner .sgame-abbr,
     .sgame-row.is-winner .sgame-score {
@@ -792,7 +851,7 @@
       max-height: var(--sports-board-h);
       overflow: hidden;
       align-content: stretch;
-      padding: 0.35rem 0.45rem 0.45rem;
+      padding: 0;
       border: 1px solid rgba(126, 200, 255, 0.14);
       border-radius: 0.4rem;
       background: rgba(2, 8, 18, 0.45);
@@ -804,9 +863,8 @@
       min-width: 0;
       min-height: 0;
       height: 100%;
-      padding: 0.15rem 0.1rem 0;
+      padding: 0.55rem 0.7rem 0.55rem;
       border: 0;
-      border-radius: 0;
       background: transparent;
       box-shadow: none;
     }
@@ -817,14 +875,15 @@
       gap: 0.75rem;
       flex: 0 0 auto;
       margin: 0 0 0.4rem;
-      padding: 0 0.15rem 0.4rem;
+      padding: 0 0 0.4rem;
       border-bottom: 1px solid rgba(126, 200, 255, 0.16);
     }
     .sgolf-title {
       margin: 0;
       font-family: "Oswald", sans-serif;
-      font-size: 0.95rem;
-      letter-spacing: 0.06em;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--mo-text);
       min-width: 0;
@@ -835,7 +894,7 @@
     .sgolf-meta {
       flex: 0 0 auto;
       font-family: "Oswald", sans-serif;
-      font-size: 0.64rem;
+      font-size: 0.68rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--mo-muted);
@@ -848,56 +907,61 @@
       flex: 1 1 auto;
       min-height: 0;
       overflow: hidden;
-      gap: 0.35rem;
     }
-    .sgolf-cols {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0 0.85rem;
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow: hidden;
-      align-content: start;
-    }
-    .sgolf-col {
+    .sgolf-list {
       display: flex;
       flex-direction: column;
-      min-width: 0;
+      flex: 1 1 auto;
       min-height: 0;
-      overflow: hidden;
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(126, 200, 255, 0.35) transparent;
+    }
+    .sgolf-list::-webkit-scrollbar { width: 6px; }
+    .sgolf-list::-webkit-scrollbar-thumb {
+      background: rgba(126, 200, 255, 0.28);
+      border-radius: 999px;
     }
     .sgolf-row {
       display: grid;
-      grid-template-columns: 1.7rem minmax(0, 1fr) 2.15rem minmax(3.5rem, auto);
-      gap: 0.2rem 0.4rem;
+      grid-template-columns: 2.4rem minmax(0, 1fr) 2.75rem 3.5rem;
+      column-gap: 0.65rem;
       align-items: center;
       flex: 0 0 auto;
-      min-height: 1.2rem;
-      padding: 0.12rem 0.05rem;
-      border-bottom: 1px solid rgba(126, 200, 255, 0.08);
-      font-size: 0.72rem;
+      min-height: 1.55rem;
+      padding: 0.22rem 0.15rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.07);
+      font-size: 0.8rem;
       color: var(--mo-silver);
+    }
+    .sgolf-row:nth-child(even):not(.is-head) {
+      background: rgba(255, 255, 255, 0.025);
     }
     .sgolf-row:last-child { border-bottom: 0; }
     .sgolf-row.is-head {
-      position: static;
-      min-height: 0;
-      padding: 0 0.05rem 0.22rem;
-      border-bottom: 1px solid rgba(126, 200, 255, 0.16);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      min-height: 1.35rem;
+      padding: 0.1rem 0.15rem 0.28rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.18);
       color: var(--mo-muted);
       font-family: "Oswald", sans-serif;
-      font-size: 0.56rem;
+      font-size: 0.62rem;
       font-weight: 600;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      background: transparent;
+      background: rgba(2, 8, 18, 0.97);
     }
     .sgolf-row.is-live { color: var(--mo-live); }
     .sgolf-pos {
       font-family: "Oswald", sans-serif;
-      font-weight: 600;
-      font-size: 0.7rem;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
       color: var(--mo-gold);
+      font-variant-numeric: tabular-nums;
     }
     .sgolf-row.is-head .sgolf-pos,
     .sgolf-row.is-head .sgolf-score,
@@ -908,13 +972,13 @@
       overflow: hidden;
       text-overflow: ellipsis;
       color: inherit;
-      font-size: 0.7rem;
-      font-weight: 500;
+      font-size: 0.84rem;
+      font-weight: 600;
     }
     .sgolf-score {
       font-family: "Oswald", sans-serif;
-      font-size: 0.72rem;
-      font-weight: 600;
+      font-size: 0.88rem;
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
       text-align: right;
       color: var(--mo-text);
@@ -923,20 +987,36 @@
     .sgolf-thru {
       text-align: right;
       font-family: "Oswald", sans-serif;
-      font-size: 0.68rem;
-      font-weight: 500;
-      letter-spacing: 0.01em;
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
       color: var(--mo-muted);
       white-space: nowrap;
-      overflow: visible;
-      text-overflow: clip;
-      min-width: 0;
+      font-variant-numeric: tabular-nums;
     }
-    .sgolf-row.is-live .sgolf-thru { color: rgba(157, 255, 196, 0.75); }
+    .sgolf-row.is-live .sgolf-thru { color: rgba(157, 255, 196, 0.8); }
     .sgolf-empty {
-      padding: 0.55rem 0.15rem;
+      padding: 1.25rem 0.5rem;
+      text-align: center;
       color: var(--mo-muted);
-      font-size: 0.82rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    html[data-theme="day"] .sports-grid.is-golf-board {
+      background: #fff;
+      border-color: rgba(20, 24, 31, 0.1);
+      box-shadow: 0 2px 10px rgba(20, 24, 31, 0.05);
+    }
+    html[data-theme="day"] .sgolf-board-head,
+    html[data-theme="day"] .sgolf-row.is-head {
+      border-bottom-color: rgba(20, 24, 31, 0.1);
+    }
+    html[data-theme="day"] .sgolf-row.is-head { background: #fff; }
+    html[data-theme="day"] .sgolf-row { border-bottom-color: rgba(20, 24, 31, 0.06); }
+    html[data-theme="day"] .sgolf-row:nth-child(even):not(.is-head) {
+      background: rgba(31, 94, 240, 0.03);
     }
 
     /* —— Chat room (Discord-style channel) —— */
@@ -1001,10 +1081,14 @@
       font-family: Tahoma, "Segoe UI", sans-serif;
       font-size: 0.68rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      text-transform: none;
       color: rgba(255, 255, 255, 0.78);
       flex: 0 0 auto;
+    }
+    .im-title .im-app-roll {
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
     .im-title h2 {
       margin: 0;
@@ -1074,14 +1158,14 @@
       border: 0;
       background: var(--aim-paper);
       overflow: hidden;
-      min-height: 20rem;
+      min-height: 24rem;
     }
     .im-main {
       display: grid;
-      grid-template-rows: minmax(12rem, 1fr) auto;
+      grid-template-rows: minmax(15rem, 1fr) auto;
       gap: 0;
       min-width: 0;
-      min-height: 20rem;
+      min-height: 24rem;
       padding: 0;
       border: 0;
       border-right: 1px solid #b8ad8e;
@@ -1091,8 +1175,8 @@
       display: flex;
       flex-direction: column;
       gap: 0.05rem;
-      min-height: 12rem;
-      max-height: min(52vh, 28rem);
+      min-height: 15rem;
+      max-height: min(58vh, 34rem);
       padding: 0.55rem 0.65rem 0.4rem;
       overflow-x: hidden;
       overflow-y: auto;
@@ -1372,6 +1456,27 @@
       text-decoration: none;
     }
     .im-mock-link:hover { text-decoration: underline; }
+    .im-mock-clock {
+      margin: 0.35rem 0 0;
+      font-size: 0.85rem;
+      color: #1e3a6e;
+      font-variant-numeric: tabular-nums;
+    }
+    .im-mock-clock-label {
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #2f5aa8;
+      margin-right: 0.35rem;
+    }
+    .im-mock-clock-value {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .im-mock-clock.is-low .im-mock-clock-value { color: #b45309; }
+    .im-mock-clock.is-urgent .im-mock-clock-value { color: #b91c1c; }
 
     .im-compose-wrap {
       display: grid;
@@ -1448,8 +1553,8 @@
     .chat-compose-row:focus-within { border-color: transparent; }
     .chat-compose textarea {
       width: 100%;
-      min-height: 2.6rem;
-      max-height: 7rem;
+      min-height: 3.25rem;
+      max-height: 8.5rem;
       resize: none;
       padding: 0.4rem 0.5rem;
       border: 1px solid #8a8270;
@@ -2042,27 +2147,30 @@
     .gambler-subtabs {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem;
-      margin: 0 0 0.85rem;
+      gap: 0.1rem 0.2rem;
+      margin: 0 0 0.75rem;
     }
     .gambler-subtabs button {
       appearance: none;
       font-family: "Oswald", sans-serif;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       font-weight: 600;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: rgba(255, 200, 170, 0.75);
-      padding: 0.4rem 0.7rem;
-      border: 1px solid rgba(232, 120, 90, 0.28);
-      background: rgba(0, 0, 0, 0.25);
+      color: var(--mo-muted);
+      padding: 0.28rem 0.5rem;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
       cursor: pointer;
     }
-    .gambler-subtabs button:hover { color: #fff; border-color: rgba(255, 176, 138, 0.5); }
+    .gambler-subtabs button:hover { color: var(--mo-casino); }
     .gambler-subtabs button.is-active {
-      color: #1a0a06;
-      background: #ffb08a;
-      border-color: #ffb08a;
+      color: var(--mo-casino);
+      background: transparent;
+      border-color: transparent;
+      border-bottom-color: var(--mo-casino);
+      font-weight: 700;
     }
     .gambler-panel[hidden] { display: none !important; }
     .gambler-panel > .lounge-section-label { display: none; }
@@ -2076,9 +2184,9 @@
     .cpool-type {
       text-align: left;
       padding: 0.65rem 0.7rem;
-      border: 1px solid rgba(232, 120, 90, 0.22);
+      border: 1px solid rgba(232, 196, 90, 0.22);
       background: rgba(0, 0, 0, 0.28);
-      color: rgba(255, 230, 220, 0.9);
+      color: rgba(244, 247, 255, 0.92);
       cursor: pointer;
       font: inherit;
     }
@@ -2088,7 +2196,7 @@
       font-size: 0.82rem;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #ffb08a;
+      color: var(--mo-casino);
       margin-bottom: 0.25rem;
     }
     .cpool-type span {
@@ -2098,15 +2206,15 @@
       color: var(--mo-muted);
     }
     .cpool-type.is-on {
-      border-color: rgba(255, 176, 138, 0.55);
-      background: rgba(232, 120, 90, 0.16);
+      border-color: rgba(243, 217, 138, 0.55);
+      background: rgba(232, 196, 90, 0.16);
     }
     .cpool-create {
       display: grid;
       gap: 0.55rem;
       margin: 0 0 1rem;
       padding: 0.75rem;
-      border: 1px solid rgba(232, 120, 90, 0.2);
+      border: 1px solid rgba(232, 196, 90, 0.2);
       background: rgba(0, 0, 0, 0.22);
     }
     .cpool-create .row {
@@ -2139,9 +2247,9 @@
       appearance: none;
       min-height: 2.2rem;
       padding: 0.4rem 0.9rem;
-      border: 1px solid rgba(255, 176, 138, 0.45);
-      background: rgba(232, 120, 90, 0.25);
-      color: #ffb08a;
+      border: 1px solid rgba(243, 217, 138, 0.45);
+      background: rgba(232, 196, 90, 0.25);
+      color: var(--mo-casino);
       font-family: "Oswald", sans-serif;
       font-weight: 700;
       letter-spacing: 0.1em;
@@ -2165,7 +2273,7 @@
       font: inherit;
       width: 100%;
     }
-    .cpool-card.is-active { border-color: rgba(255, 176, 138, 0.55); }
+    .cpool-card.is-active { border-color: rgba(243, 217, 138, 0.55); }
     .cpool-card .title {
       font-family: "Oswald", sans-serif;
       letter-spacing: 0.04em;
@@ -2175,7 +2283,7 @@
     .cpool-card .tag {
       display: inline-block;
       margin-right: 0.35rem;
-      color: #ffb08a;
+      color: var(--mo-casino);
       font-size: 0.72rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -2226,8 +2334,8 @@
       color: var(--mo-live);
     }
     .cpool-squares button.is-taken:not(.is-mine) {
-      background: rgba(232, 120, 90, 0.18);
-      color: #ffb08a;
+      background: rgba(232, 196, 90, 0.18);
+      color: var(--mo-casino);
     }
     .cpool-opt {
       display: grid;
@@ -2252,20 +2360,297 @@
       background: rgba(77, 255, 154, 0.15);
       color: var(--mo-live);
     }
+    .cpool-create .row button[type="button"],
+    .cpool-btn-ghost {
+      appearance: none;
+      border: 1px solid var(--mo-line);
+      border-radius: 0.45rem;
+      padding: 0.55rem 0.85rem;
+      background: transparent;
+      color: var(--mo-muted);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .cpool-create .row button[type="button"]:hover,
+    .cpool-btn-ghost:hover {
+      color: var(--mo-text);
+      border-color: color-mix(in srgb, var(--mo-text) 35%, var(--mo-line));
+    }
+
     .cpool-status { margin: 0.65rem 0 0; min-height: 1.2em; font-size: 0.88rem; color: var(--mo-muted); }
     .cpool-status.is-ok { color: var(--mo-good); }
     .cpool-status.is-err { color: #ff8f8f; }
+    .cpool-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 0.85rem 1.1rem;
+      margin-bottom: 0.9rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--mo-line);
+    }
+    .cpool-toolbar h3 {
+      margin: 0;
+      font-family: "Oswald", sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .cpool-toolbar p {
+      margin: 0.25rem 0 0;
+      color: var(--mo-muted);
+      font-size: 0.88rem;
+      max-width: 36rem;
+    }
+    .cpool-toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .cpool-toolbar-actions button {
+      appearance: none;
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 45%, var(--mo-line));
+      border-radius: 0.55rem;
+      padding: 0.55rem 0.95rem;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--mo-gold) 22%, transparent), transparent 70%), var(--mo-surface-2);
+      color: var(--mo-text);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .cpool-toolbar-actions button:hover {
+      border-color: var(--mo-gold);
+      color: #fff;
+    }
+    .cpool-create-dialog {
+      width: min(40rem, calc(100vw - 1.25rem));
+      max-width: calc(100vw - 1.25rem);
+    }
+    .cpool-create-card {
+      width: min(40rem, 100%);
+      max-height: min(90vh, 44rem);
+      overflow: auto;
+      position: relative;
+    }
+    .cpool-create-lead {
+      margin: 0.2rem 0 0.95rem;
+      color: var(--mo-muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .cpool-create-dialog .cpool-types {
+      margin-bottom: 0.85rem;
+    }
+    .cpool-empty {
+      padding: 1.35rem 1rem;
+      text-align: center;
+      border: 1px dashed var(--mo-line);
+      border-radius: 0.85rem;
+      background: color-mix(in srgb, var(--mo-surface-2) 80%, transparent);
+    }
+    .cpool-empty strong {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-family: "Oswald", sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .cpool-empty p {
+      margin: 0 0 0.85rem;
+      color: var(--mo-muted);
+      font-size: 0.9rem;
+    }
+    .cpool-empty button {
+      appearance: none;
+      border: 1px solid var(--mo-line);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.9rem;
+      background: var(--mo-surface);
+      color: var(--mo-text);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
 
-    /* —— Record Book (standings board) —— */
+    /* —— Record Book (franchise records) —— */
     .lounge-section.is-records {
-      border-color: rgba(232, 196, 90, 0.3);
-      background:
-        radial-gradient(ellipse 65% 50% at 50% -12%, rgba(232, 196, 90, 0.16), transparent 55%),
-        radial-gradient(ellipse 35% 40% at 0% 80%, rgba(47, 123, 255, 0.08), transparent 50%),
-        linear-gradient(180deg, rgba(14, 12, 24, 0.96) 0%, rgba(6, 8, 16, 0.94) 100%);
+      --mock-qb: #ff6b6b;
+      --mock-rb: #3dd68c;
+      --mock-wr: #5b9dff;
+      --mock-te: #c084fc;
+      --mock-k: #f5b942;
+      --mock-dst: #94a3b8;
+      --mock-flex: #2dd4bf;
+      --mock-bn: #64748b;
+      border-color: color-mix(in srgb, var(--mo-blue) 40%, var(--mo-line));
+      background: var(--mo-panel-records);
       overflow: hidden;
     }
-    .lounge-section.is-records .lounge-section-label h2 { color: var(--mo-gold-soft); }
+    .lounge-section.is-records .lounge-section-label h2 { color: var(--mo-blue-hot); }
+    .records-book {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    .record-card {
+      --record-accent: var(--mo-blue);
+      display: grid;
+      grid-template-columns: 3rem minmax(0, 1fr);
+      gap: 0.75rem;
+      align-items: start;
+      padding: 0.85rem 0.95rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--mo-line);
+      border-left: 3px solid var(--record-accent);
+      background: var(--mo-surface);
+      min-width: 0;
+    }
+    .record-card[data-record="winStreak"] { --record-accent: var(--mock-rb); }
+    .record-card[data-record="loseStreak"] { --record-accent: var(--mock-qb); }
+    .record-card[data-record="highScore"] { --record-accent: var(--mock-k); }
+    .record-card[data-record="blowout"] { --record-accent: var(--mock-wr); }
+    .record-card[data-record="seasonPf"] { --record-accent: var(--mock-te); }
+    .record-card[data-record="mostWins"] { --record-accent: var(--mock-flex); }
+    .record-card-mark .logo {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.55rem;
+      object-fit: contain;
+      background: transparent;
+      box-shadow: var(--logo-lift, 0 4px 12px rgba(0, 0, 0, 0.25));
+    }
+    .record-card-mark .logo.is-blank {
+      display: block;
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.55rem;
+      border: 1px solid var(--mo-line);
+      background: var(--mo-surface-2);
+    }
+    .record-card-label {
+      margin: 0;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .record-card-value {
+      margin: 0.25rem 0 0.45rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--mo-text);
+      line-height: 1.05;
+      font-variant-numeric: tabular-nums;
+    }
+    .record-card-holder {
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.35rem 0.65rem;
+      font-size: 0.88rem;
+      color: var(--mo-text);
+    }
+    .record-card-holder strong {
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+    .record-card-holder > span:not(.record-card-year) {
+      color: var(--mo-muted);
+    }
+    .record-card-year {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.12rem 0.4rem;
+      border-radius: 0.3rem;
+      background: color-mix(in srgb, var(--record-accent) 22%, transparent);
+      color: var(--mo-text);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .record-card-detail {
+      margin: 0.4rem 0 0;
+      font-size: 0.75rem;
+      color: var(--mo-muted);
+      line-height: 1.35;
+    }
+    .records-note {
+      margin: 0.85rem 0 0;
+      font-size: 0.78rem;
+      color: var(--mo-muted);
+      line-height: 1.4;
+    }
+    .records-empty {
+      padding: 1.25rem 0.25rem;
+      color: var(--mo-muted);
+      font-size: 0.95rem;
+    }
+    .records-subhead {
+      margin: 0 0 0.75rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-blue-hot);
+    }
+    .records-archive {
+      margin-top: 1.35rem;
+      padding-top: 1.15rem;
+      border-top: 1px solid var(--mo-line);
+    }
+    .records-season-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0 0 0.85rem;
+    }
+    .records-season-chip {
+      appearance: none;
+      border: 1px solid var(--mo-line);
+      background: var(--mo-surface);
+      color: var(--mo-muted);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.7rem;
+      border-radius: 0.4rem;
+      cursor: pointer;
+    }
+    .records-season-chip:hover {
+      color: var(--mo-text);
+      border-color: color-mix(in srgb, var(--mo-blue) 45%, var(--mo-line));
+    }
+    .records-season-chip.is-active {
+      color: var(--mo-text);
+      border-color: var(--mo-blue);
+      background: color-mix(in srgb, var(--mo-blue) 18%, var(--mo-surface));
+      box-shadow: inset 0 -2px 0 var(--mo-blue-hot);
+    }
+    @media (max-width: 720px) {
+      .records-book { grid-template-columns: 1fr; }
+    }
     .records-leaders {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2278,31 +2663,31 @@
       gap: 0.55rem;
       align-items: center;
       padding: 0.65rem 0.75rem;
-      border-radius: 0.85rem;
-      border: 1px solid rgba(232, 196, 90, 0.22);
-      background: rgba(0, 0, 0, 0.32);
-      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+      border-radius: 0.75rem;
+      border: 1px solid var(--mo-line);
+      background: var(--mo-surface);
       min-width: 0;
     }
     .record-leader .logo {
       width: 2.6rem;
       height: 2.6rem;
       border-radius: 0.55rem;
-      object-fit: cover;
-      background: #111;
+      object-fit: contain;
+      background: transparent;
     }
     .record-leader .logo.is-blank {
       display: block;
-      border: 1px solid rgba(232, 196, 90, 0.2);
-      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--mo-line);
+      background: var(--mo-surface-2);
     }
     .record-leader .label {
       margin: 0;
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 0.7rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--mo-gold);
+      color: var(--mo-muted);
     }
     .record-leader .value {
       margin: 0.1rem 0 0;
@@ -2330,10 +2715,9 @@
       gap: 0.85rem;
     }
     .records-conf {
-      border-radius: 1rem;
-      border: 1px solid rgba(232, 196, 90, 0.16);
-      background: rgba(0, 0, 0, 0.32);
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+      border-radius: 0.75rem;
+      border: 1px solid var(--mo-line);
+      background: var(--mo-surface);
       overflow: hidden;
       min-width: 0;
     }
@@ -2343,19 +2727,20 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.7rem 0.85rem 0.55rem;
-      background: linear-gradient(180deg, rgba(28, 22, 12, 0.95), rgba(12, 10, 18, 0.9));
-      border-bottom: 1px solid rgba(232, 196, 90, 0.12);
+      background: var(--mo-surface-2);
+      border-bottom: 1px solid var(--mo-line);
     }
     .records-conf-head .title {
       display: flex;
       align-items: center;
       gap: 0.45rem;
       min-width: 0;
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 1rem;
-      letter-spacing: 0.1em;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--mo-gold-soft);
+      color: var(--mo-blue-hot);
     }
     .records-conf-head .title img {
       width: 1.35rem;
@@ -2364,26 +2749,53 @@
       border-radius: 0.2rem;
     }
     .records-conf-head .sub {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       color: var(--mo-muted);
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-family: "Oswald", sans-serif;
+      font-weight: 700;
     }
     .records-cols {
       display: grid;
       grid-template-columns: 1.6rem minmax(0, 1fr) 3.4rem 3.2rem 2.4rem;
       gap: 0.4rem 0.45rem;
       padding: 0.3rem 0.85rem;
-      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-family: "Oswald", sans-serif;
       font-size: 0.66rem;
+      font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: rgba(176, 198, 230, 0.5);
+      color: var(--mo-muted);
     }
     .records-cols .r,
     .records-cols .pf,
     .records-cols .diff { text-align: right; }
+    .records-cols .r,
+    .records-cols .pf,
+    .records-cols .diff,
+    .records-row .rec,
+    .records-row .pf,
+    .records-row .diff {
+      border-left: 1px solid rgba(126, 200, 255, 0.14);
+      padding-left: 0.45rem;
+    }
+    .records-cols .pf,
+    .records-row .pf {
+      border-left-color: rgba(126, 200, 255, 0.22);
+    }
+    html[data-theme="day"] .records-cols .r,
+    html[data-theme="day"] .records-cols .pf,
+    html[data-theme="day"] .records-cols .diff,
+    html[data-theme="day"] .records-row .rec,
+    html[data-theme="day"] .records-row .pf,
+    html[data-theme="day"] .records-row .diff {
+      border-left-color: rgba(20, 28, 40, 0.12);
+    }
+    html[data-theme="day"] .records-cols .pf,
+    html[data-theme="day"] .records-row .pf {
+      border-left-color: rgba(20, 28, 40, 0.2);
+    }
     .records-row {
       display: grid;
       grid-template-columns: 1.6rem minmax(0, 1fr) 3.4rem 3.2rem 2.4rem;
@@ -2402,7 +2814,7 @@
       color: rgba(176, 198, 230, 0.45);
       font-variant-numeric: tabular-nums;
     }
-    .records-row.is-top .rank { color: var(--mo-gold); }
+    .records-row.is-top .rank { color: var(--mo-blue-hot); }
     .records-team {
       display: grid;
       grid-template-columns: 1.7rem minmax(0, 1fr);
@@ -2448,7 +2860,7 @@
       font-size: 0.86rem;
     }
     .records-row .rec { color: var(--mo-silver); }
-    .records-row .pf { color: var(--mo-gold-soft); }
+    .records-row .pf { color: var(--mo-blue-hot); }
     .records-row .diff { color: var(--mo-muted); font-size: 0.78rem; }
     .records-row .diff.is-plus { color: var(--mo-good); }
     .records-row .diff.is-minus { color: #ff8f8f; }
@@ -2458,7 +2870,7 @@
       color: var(--mo-muted);
     }
     .records-note a {
-      color: var(--mo-gold-soft);
+      color: var(--mo-blue-hot);
       text-decoration: none;
     }
     .records-note a:hover { text-decoration: underline; }
@@ -2478,14 +2890,225 @@
       --mock-dst: #94a3b8;
       --mock-flex: #2dd4bf;
       --mock-bn: #64748b;
-      border-color: rgba(47, 123, 255, 0.32);
-      background:
-        radial-gradient(ellipse 70% 55% at 50% -10%, rgba(47, 123, 255, 0.22), transparent 55%),
-        radial-gradient(ellipse 40% 40% at 100% 30%, rgba(232, 196, 90, 0.08), transparent 50%),
-        linear-gradient(180deg, rgba(8, 14, 30, 0.97) 0%, rgba(4, 8, 18, 0.94) 100%);
+      border-color: color-mix(in srgb, var(--mo-blue) 40%, var(--mo-line));
+      background: var(--mo-panel-mock);
       overflow: hidden;
     }
     .lounge-section.is-mock .lounge-section-label h2 { color: var(--mo-blue-hot); }
+    .mock-start-bar {
+      display: grid;
+      grid-template-columns: minmax(16rem, 1.2fr) minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 1rem 1.35rem;
+      margin: 0 0 1rem;
+      padding: 1.05rem 1.15rem;
+      border-radius: 1.15rem;
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 35%, var(--mo-line));
+      background:
+        radial-gradient(ellipse 55% 120% at 12% 50%, color-mix(in srgb, var(--mo-blue) 22%, transparent), transparent 60%),
+        radial-gradient(ellipse 40% 100% at 88% 40%, color-mix(in srgb, var(--mo-gold) 14%, transparent), transparent 55%),
+        var(--mo-surface);
+      overflow: hidden;
+      position: relative;
+    }
+    .mock-start-bar.is-live {
+      border-color: color-mix(in srgb, var(--mo-good) 45%, var(--mo-line));
+      background:
+        radial-gradient(ellipse 55% 120% at 12% 50%, color-mix(in srgb, var(--mo-good) 16%, transparent), transparent 60%),
+        radial-gradient(ellipse 40% 100% at 88% 40%, color-mix(in srgb, var(--mo-blue) 10%, transparent), transparent 55%),
+        var(--mo-surface);
+    }
+    .mock-start-bar.is-done {
+      border-color: var(--mo-line);
+      background: var(--mo-surface-2);
+    }
+    .mock-start-btn {
+      position: relative;
+      appearance: none;
+      isolation: isolate;
+      display: grid;
+      justify-items: start;
+      gap: 0.12rem;
+      border: 1px solid color-mix(in srgb, #fff 18%, var(--mo-blue));
+      border-radius: 0.85rem;
+      min-height: 5.1rem;
+      padding: 0.85rem 1.35rem 0.9rem 1.25rem;
+      background:
+        linear-gradient(135deg, #4d8fff 0%, var(--mo-blue) 42%, #1749d4 100%);
+      color: #fff;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      overflow: hidden;
+      flex: 0 0 auto;
+      width: 100%;
+      max-width: 24rem;
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--mo-blue) 40%, transparent),
+        0 12px 32px color-mix(in srgb, var(--mo-blue) 42%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+      animation: mock-start-breathe 2.4s ease-in-out infinite;
+    }
+    .mock-start-btn-glow {
+      position: absolute;
+      inset: -40% -20%;
+      background: radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.35), transparent 42%);
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .mock-start-btn-sheen {
+      position: absolute;
+      top: 0;
+      left: -60%;
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+      transform: skewX(-18deg);
+      pointer-events: none;
+      z-index: 1;
+      animation: mock-start-sheen 3.2s ease-in-out infinite;
+    }
+    .mock-start-btn-kicker,
+    .mock-start-btn-label,
+    .mock-start-btn-sub {
+      position: relative;
+      z-index: 2;
+    }
+    .mock-start-btn-kicker {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.78);
+    }
+    .mock-start-btn-label {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: clamp(2rem, 4.2vw, 2.65rem);
+      line-height: 0.95;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+    }
+    .mock-start-btn-sub {
+      margin-top: 0.15rem;
+      font-family: "Source Sans 3", system-ui, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: rgba(255, 255, 255, 0.82);
+    }
+    .mock-start-btn:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.015);
+      filter: brightness(1.06);
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--mo-gold) 55%, var(--mo-blue)),
+        0 16px 40px color-mix(in srgb, var(--mo-blue) 50%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .mock-start-btn:active:not(:disabled) {
+      transform: translateY(0) scale(0.99);
+    }
+    .mock-start-btn:disabled {
+      cursor: default;
+      animation: none;
+      transform: none;
+    }
+    .mock-start-btn:disabled .mock-start-btn-sheen { animation: none; opacity: 0; }
+    .mock-start-bar.is-live .mock-start-btn {
+      background: linear-gradient(135deg, #1f9d5a 0%, #15803d 55%, #0f6a32 100%);
+      border-color: color-mix(in srgb, #fff 16%, #15803d);
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--mo-good) 35%, transparent),
+        0 10px 28px color-mix(in srgb, var(--mo-good) 28%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      animation: none;
+    }
+    .mock-start-bar.is-done .mock-start-btn {
+      background: var(--mo-surface-2);
+      color: var(--mo-muted);
+      border-color: var(--mo-line);
+      box-shadow: none;
+    }
+    .mock-start-bar.is-done .mock-start-btn-kicker,
+    .mock-start-bar.is-done .mock-start-btn-sub { color: var(--mo-muted); }
+    .mock-start-bar.is-done .mock-start-btn-label { color: var(--mo-text); text-shadow: none; }
+    @keyframes mock-start-breathe {
+      0%, 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--mo-blue) 40%, transparent), 0 12px 32px color-mix(in srgb, var(--mo-blue) 42%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.28); }
+      50% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--mo-gold) 50%, var(--mo-blue)), 0 16px 42px color-mix(in srgb, var(--mo-blue) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.34); }
+    }
+    @keyframes mock-start-sheen {
+      0%, 35% { left: -60%; opacity: 0; }
+      45% { opacity: 1; }
+      70%, 100% { left: 120%; opacity: 0; }
+    }
+    .mock-start-copy {
+      display: grid;
+      gap: 0.25rem;
+      min-width: 0;
+    }
+    .mock-start-copy strong {
+      font-family: "Oswald", sans-serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--mo-text);
+    }
+    .mock-start-copy span {
+      color: var(--mo-muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .mock-live-timer {
+      display: grid;
+      justify-items: end;
+      gap: 0.1rem;
+      min-width: 5.5rem;
+    }
+    @media (max-width: 900px) {
+      .mock-start-bar {
+        grid-template-columns: 1fr;
+      }
+      .mock-start-btn { max-width: none; }
+      .mock-live-timer { justify-items: start; }
+    }
+    .mock-live-timer-label {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .mock-live-timer-value {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      line-height: 1;
+      letter-spacing: 0.04em;
+      color: var(--mo-text);
+      font-variant-numeric: tabular-nums;
+    }
+    .mock-live-timer-value.is-low { color: var(--mo-upcoming); }
+    .mock-live-timer-value.is-urgent {
+      color: #ef4444;
+      animation: mock-timer-blink 0.7s ease-in-out infinite;
+    }
+    @keyframes mock-timer-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    .mock-clock-timer {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: clamp(1.75rem, 3.2vw, 2.35rem);
+      line-height: 1;
+      letter-spacing: 0.04em;
+      color: var(--mo-gold-soft);
+      font-variant-numeric: tabular-nums;
+    }
+    .mock-clock.is-yours .mock-clock-timer { color: var(--mo-good); }
+    .mock-clock-timer.is-low { color: var(--mo-upcoming); }
+    .mock-clock-timer.is-urgent { color: #ef4444; }
     .mock-toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -2494,8 +3117,8 @@
       margin: 0 0 0.85rem;
       padding: 0.55rem 0.65rem;
       border-radius: 0.85rem;
-      background: rgba(0, 0, 0, 0.28);
-      border: 1px solid rgba(126, 200, 255, 0.1);
+      background: var(--mo-surface-2);
+      border: 1px solid var(--mo-line);
     }
     .mock-toolbar label {
       display: inline-flex;
@@ -2510,9 +3133,9 @@
     .mock-toolbar select,
     .mock-toolbar input[type="search"] {
       appearance: none;
-      border: 1px solid rgba(126, 200, 255, 0.18);
+      border: 1px solid var(--mo-line);
       border-radius: 0.45rem;
-      background: rgba(8, 14, 28, 0.85);
+      background: var(--mo-input);
       color: var(--mo-text);
       padding: 0.38rem 0.55rem;
       font: inherit;
@@ -2525,18 +3148,18 @@
       appearance: none;
       border: 0;
       border-radius: 0.45rem;
-      background: linear-gradient(180deg, rgba(47, 123, 255, 0.4), rgba(47, 123, 255, 0.22));
-      color: #e8f2ff;
+      background: var(--mo-blue);
+      color: var(--mo-btn-ink);
       padding: 0.42rem 0.75rem;
       font-family: "Bebas Neue", "Oswald", sans-serif;
       font-size: 0.88rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       cursor: pointer;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      box-shadow: none;
     }
     .mock-toolbar button:hover,
-    .mock-pick-btn:hover { filter: brightness(1.12); }
+    .mock-pick-btn:hover { filter: brightness(1.08); }
     .mock-toolbar button:disabled,
     .mock-pick-btn:disabled { opacity: 0.4; cursor: default; filter: none; }
 
@@ -2547,14 +3170,15 @@
       gap: 0.75rem 1.25rem;
       align-items: center;
       margin: 0 0 0.85rem;
-      padding: 1rem 1.15rem;
+      padding: 0.95rem 1.05rem;
       border-radius: 1rem;
-      border: 1px solid rgba(232, 196, 90, 0.35);
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 40%, var(--mo-line));
       background:
-        linear-gradient(105deg, rgba(232, 196, 90, 0.16), rgba(47, 123, 255, 0.08) 55%, transparent),
-        rgba(0, 0, 0, 0.35);
+        linear-gradient(105deg, color-mix(in srgb, var(--mo-gold) 14%, transparent), color-mix(in srgb, var(--mo-blue) 8%, transparent) 55%, transparent),
+        var(--mo-surface);
       overflow: hidden;
     }
+    .mock-clock-main { min-width: 0; }
     .mock-clock.is-yours {
       border-color: rgba(77, 255, 154, 0.55);
       box-shadow: 0 0 0 1px rgba(77, 255, 154, 0.15), 0 0 28px rgba(77, 255, 154, 0.12);
@@ -2591,13 +3215,90 @@
     }
     .mock-clock-side {
       text-align: right;
+      display: grid;
+      gap: 0.45rem;
+      justify-items: end;
+      align-content: center;
+    }
+    .mock-clock-timer-wrap {
+      display: grid;
+      gap: 0.15rem;
+      justify-items: end;
+    }
+    .mock-clock-timer-label {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .mock-clock.is-yours .mock-clock-timer-label {
+      color: var(--mo-good);
+    }
+    .mock-clock-timer {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      line-height: 0.95;
+      letter-spacing: 0.04em;
+      color: var(--mo-gold-soft);
+      font-variant-numeric: tabular-nums;
+    }
+    .mock-clock.is-yours .mock-clock-timer { color: var(--mo-good); }
+    .mock-clock-timer.is-low { color: var(--mo-upcoming); }
+    .mock-clock-timer.is-urgent { color: #ef4444; }
+    .mock-draft-drop {
+      display: grid;
+      gap: 0.12rem;
+      min-width: 9.5rem;
+      padding: 0.55rem 0.7rem;
+      border: 1px dashed color-mix(in srgb, var(--mo-blue) 55%, var(--mo-line));
+      border-radius: 0.65rem;
+      background: color-mix(in srgb, var(--mo-blue) 12%, var(--mo-surface));
+      text-align: center;
+      cursor: copy;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+    .mock-draft-drop.is-locked {
+      opacity: 0.55;
+      border-style: solid;
+      border-color: var(--mo-line);
+      background: var(--mo-surface-2);
+      cursor: not-allowed;
+    }
+    .mock-draft-drop.is-armed {
+      border-color: color-mix(in srgb, var(--mo-good) 55%, var(--mo-line));
+      background: color-mix(in srgb, var(--mo-good) 14%, var(--mo-surface));
+    }
+    .mock-draft-drop strong {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-text);
+    }
+    .mock-draft-drop span {
+      font-size: 0.68rem;
+      color: var(--mo-muted);
+      line-height: 1.25;
+    }
+    .mock-draft-drop.is-hot,
+    .mock-targets-drop.is-hot {
+      border-color: var(--mo-good);
+      background: color-mix(in srgb, var(--mo-good) 16%, var(--mo-surface));
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--mo-good) 35%, transparent);
+    }
+    .mock-clock.is-yours .mock-draft-drop {
+      border-color: color-mix(in srgb, var(--mo-good) 60%, var(--mo-line));
+      animation: mock-clock-pulse 1.8s ease-in-out infinite;
     }
     .mock-clock-overall {
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 2rem;
+      font-size: 1.15rem;
       line-height: 1;
       letter-spacing: 0.04em;
-      color: var(--mo-gold-soft);
+      color: var(--mo-muted);
     }
     .mock-clock .meta {
       margin-top: 0.25rem;
@@ -2606,47 +3307,84 @@
     }
 
     .mock-order {
-      display: flex;
-      gap: 0.45rem;
+      display: grid;
+      grid-template-columns: repeat(var(--mock-seats, 12), minmax(0, 1fr));
+      gap: 0.4rem;
       margin: 0 0 1rem;
-      padding: 0.15rem 0.1rem 0.35rem;
-      overflow-x: auto;
-      scrollbar-width: thin;
+      padding: 0.15rem 0;
+      width: 100%;
     }
     .mock-order .mock-seat-chip {
-      flex: 0 0 auto;
       display: grid;
-      grid-template-rows: auto auto;
+      grid-template-rows: auto auto auto auto;
       justify-items: center;
-      gap: 0.2rem;
-      min-width: 4.4rem;
-      max-width: 6.5rem;
-      padding: 0.45rem 0.4rem 0.4rem;
+      align-content: start;
+      gap: 0.18rem;
+      min-width: 0;
+      width: 100%;
+      padding: 0.45rem 0.3rem 0.4rem;
       border-radius: 0.75rem;
-      border: 1px solid rgba(126, 200, 255, 0.14);
-      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--mo-line);
+      background: var(--mo-surface);
       color: var(--mo-muted);
       text-align: center;
+      cursor: pointer;
+      font: inherit;
+      appearance: none;
+      box-shadow: none;
+    }
+    .mock-order .mock-seat-chip:hover {
+      border-color: color-mix(in srgb, var(--mo-gold) 50%, var(--mo-line));
+      color: var(--mo-text);
+      filter: none;
     }
     .mock-order .mock-seat-chip .n {
-      width: 1.65rem;
-      height: 1.65rem;
+      width: 1.55rem;
+      height: 1.55rem;
       display: grid;
       place-items: center;
       border-radius: 999px;
       font-family: "Oswald", sans-serif;
-      font-size: 0.78rem;
+      font-size: 0.74rem;
       font-weight: 700;
       background: rgba(47, 123, 255, 0.2);
       color: var(--mo-blue-hot);
     }
     .mock-order .mock-seat-chip .nm {
       font-size: 0.68rem;
+      font-weight: 700;
       line-height: 1.15;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       max-width: 100%;
+      color: inherit;
+    }
+    .mock-order .mock-seat-chip .st {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-good);
+      line-height: 1.1;
+    }
+    .mock-order .mock-seat-chip.is-next .st {
+      color: var(--mo-upcoming);
+    }
+    .mock-order .mock-seat-chip .last {
+      font-size: 0.62rem;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+      color: var(--mo-text);
+      opacity: 0.9;
+    }
+    .mock-order .mock-seat-chip .last.is-empty {
+      color: var(--mo-muted);
+      opacity: 0.55;
     }
     .mock-order .mock-seat-chip.is-you {
       border-color: rgba(232, 196, 90, 0.5);
@@ -2667,6 +3405,34 @@
       background: rgba(77, 255, 154, 0.28);
       color: var(--mo-good);
     }
+    .mock-order .mock-seat-chip.is-next {
+      border-color: color-mix(in srgb, var(--mo-upcoming) 55%, var(--mo-line));
+      background: color-mix(in srgb, var(--mo-upcoming) 12%, var(--mo-surface));
+    }
+    .mock-order .mock-seat-chip.is-open {
+      border-style: dashed;
+      border-color: rgba(47, 123, 255, 0.65);
+      cursor: pointer;
+    }
+    .mock-order .mock-seat-chip.is-open .n {
+      background: rgba(47, 123, 255, 0.45);
+      color: #e8f0ff;
+    }
+    .mock-order .mock-seat-chip.is-human:not(.is-you) {
+      border-color: rgba(47, 123, 255, 0.4);
+    }
+    @media (max-width: 900px) {
+      .mock-order {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        grid-template-columns: none;
+      }
+      .mock-order .mock-seat-chip {
+        flex: 0 0 5.6rem;
+        width: 5.6rem;
+      }
+    }
 
     .mock-layout {
       display: grid;
@@ -2675,11 +3441,11 @@
       align-items: stretch;
     }
     .mock-panel {
-      border: 1px solid rgba(126, 200, 255, 0.12);
+      border: 1px solid var(--mo-line);
       border-radius: 1rem;
-      background: rgba(0, 0, 0, 0.32);
+      background: var(--mo-surface);
       min-width: 0;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
       overflow: hidden;
     }
     .mock-pool {
@@ -2694,9 +3460,116 @@
       overflow: auto;
       --mock-cols: 2.1rem 2.35rem minmax(11rem, 1.6fr) 2.5rem 3.1rem 2.2rem 2.6rem 3rem 3rem 2.6rem 3.1rem 2.8rem;
     }
-    .mock-myteam {
+    .mock-myteam,
+    .mock-side {
       max-height: 38rem;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .mock-side-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+      border-bottom: 1px solid var(--mo-line);
+      background: var(--mo-surface-2);
+      flex: 0 0 auto;
+    }
+    .mock-side-tabs button {
+      appearance: none;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      margin: 0;
+      padding: 0.65rem 0.35rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+      cursor: pointer;
+    }
+    .mock-side-tabs button:hover { color: var(--mo-text); }
+    .mock-side-tabs button.is-on {
+      color: var(--mo-text);
+      border-bottom-color: var(--mo-blue);
+      background: color-mix(in srgb, var(--mo-blue) 10%, transparent);
+    }
+    .mock-side-panel {
+      flex: 1 1 auto;
+      min-height: 0;
       overflow: auto;
+      display: none;
+    }
+    .mock-side-panel.is-on { display: block; }
+    .mock-side-head { position: sticky; top: 0; }
+    .mock-targets-drop {
+      min-height: 12rem;
+      padding-bottom: 0.65rem;
+    }
+    .mock-target-row,
+    .mock-recent-row {
+      display: grid;
+      grid-template-columns: 2.1rem minmax(0, 1fr) auto auto;
+      gap: 0.45rem;
+      align-items: center;
+      margin: 0.35rem 0.65rem;
+      padding: 0.45rem 0.55rem;
+      border-radius: 0.65rem;
+      border: 1px solid rgba(126, 200, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 0.86rem;
+      cursor: grab;
+    }
+    .mock-target-row:active { cursor: grabbing; }
+    .mock-target-row .nm,
+    .mock-recent-row .nm {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+      color: var(--mo-text);
+    }
+    .mock-target-row .nm em,
+    .mock-recent-row .nm em {
+      display: block;
+      font-style: normal;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--mo-muted);
+    }
+    .mock-target-row .bye,
+    .mock-recent-row .bye,
+    .mock-slot-row .bye {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--mo-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .mock-target-row .x {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--mo-muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 0.15rem 0.35rem;
+    }
+    .mock-target-row .x:hover { color: #ff8f8f; }
+    .mock-target-row.is-taken {
+      opacity: 0.45;
+    }
+    .mock-recent-row {
+      grid-template-columns: 2.1rem minmax(0, 1fr) auto;
+      cursor: default;
+    }
+    .mock-recent-row.is-mine {
+      border-color: color-mix(in srgb, var(--mo-gold) 40%, var(--mo-line));
+      background: color-mix(in srgb, var(--mo-gold) 10%, transparent);
     }
     .mock-panel-head {
       position: sticky;
@@ -2707,18 +3580,97 @@
       align-items: baseline;
       gap: 0.5rem;
       padding: 0.7rem 0.85rem 0.55rem;
-      background: linear-gradient(180deg, rgba(10, 18, 36, 0.98), rgba(8, 14, 28, 0.94));
+      background: var(--mo-surface-2);
       font-family: "Bebas Neue", "Oswald", sans-serif;
       font-size: 0.95rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--mo-silver);
       flex: 0 0 auto;
+      border-bottom: 1px solid var(--mo-line);
     }
     .mock-panel-head span:last-child {
       font-size: 0.78rem;
       letter-spacing: 0.06em;
       color: var(--mo-muted);
+    }
+    .mock-pool-head {
+      display: grid;
+      gap: 0.45rem;
+      align-items: start;
+      padding-bottom: 0.65rem;
+    }
+    .mock-pool-head-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .mock-pool-head-row span:last-child {
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      color: var(--mo-muted);
+    }
+    .mock-pool-filters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.15rem 0;
+      font-family: "Oswald", sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .mock-pool-filters button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      margin: 0;
+      padding: 0.15rem 0.45rem;
+      color: var(--mo-muted);
+      font: inherit;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 0.3rem;
+    }
+    .mock-pool-filters button:hover {
+      color: var(--mo-text);
+      filter: none;
+      box-shadow: none;
+    }
+    .mock-pool-filters button.is-on {
+      color: var(--mo-gold-soft);
+      background: rgba(232, 196, 90, 0.12);
+    }
+    .mock-pool-filters button:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+    .mock-filter-div {
+      width: 1px;
+      height: 0.85rem;
+      margin: 0 0.2rem;
+      background: rgba(126, 200, 255, 0.22);
+      flex: 0 0 auto;
+    }
+    .mock-pool-need-hint {
+      margin: 0;
+      font-family: "Source Sans 3", system-ui, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      color: var(--mo-muted);
+      line-height: 1.35;
+    }
+    .mock-pool-need-hint[hidden] { display: none !important; }
+    .mock-pool-need-hint strong {
+      color: var(--mo-gold-soft);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
     }
     .mock-pool-cols {
       position: sticky;
@@ -2730,9 +3682,9 @@
       align-items: center;
       min-width: 52rem;
       padding: 0.35rem 0.75rem;
-      background: rgba(6, 12, 24, 0.98);
-      border-bottom: 1px solid rgba(126, 200, 255, 0.14);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+      background: var(--mo-surface-2);
+      border-bottom: 1px solid var(--mo-line);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
     }
     .mock-pool-cols button,
     .mock-pool-cols .c-blank {
@@ -2757,7 +3709,12 @@
       text-align: left;
     }
     .mock-pool-cols button:hover { color: var(--mo-blue-hot); }
-    .mock-pool-cols button.is-on { color: #fff; }
+    .mock-pool-cols button.is-on {
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 0.18em;
+      text-decoration-thickness: 1px;
+    }
 
     .mock-player {
       display: grid;
@@ -2816,8 +3773,20 @@
       border: 1px solid rgba(126, 200, 255, 0.12);
     }
     .mock-player-main { min-width: 0; }
+    .mock-player-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      max-width: 100%;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--mo-text);
+      line-height: 1.2;
+    }
     .mock-player-main strong {
-      display: block;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
       font-size: 0.92rem;
       font-weight: 700;
       color: var(--mo-text);
@@ -2825,25 +3794,141 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       line-height: 1.2;
+      max-width: 100%;
     }
-    .mock-scout {
-      display: block;
-      margin-top: 0.12rem;
+    .mock-injury {
+      appearance: none;
+      border: 0;
+      background: color-mix(in srgb, #ef4444 18%, transparent);
+      color: #ff8f8f;
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      padding: 0;
+      margin-left: 0.35rem;
+      cursor: pointer;
+      flex: 0 0 auto;
+      vertical-align: middle;
+      position: relative;
+      z-index: 2;
+    }
+    .mock-injury:hover {
+      background: color-mix(in srgb, #ef4444 32%, transparent);
+      color: #fff;
+    }
+    .mock-injury:focus-visible {
+      outline: 2px solid #ff8f8f;
+      outline-offset: 2px;
+    }
+    .mock-injury-cross {
+      font-size: 0.78rem;
+      line-height: 1;
+      font-weight: 700;
+      pointer-events: none;
+    }
+    .mock-injury-card {
+      width: min(28rem, 100%);
+    }
+    .mock-injury-meta {
+      margin: 0 0 0.65rem;
+      color: var(--mo-muted);
+      font-size: 0.85rem;
+    }
+    .mock-injury-news {
+      margin-top: 0.15rem;
+    }
+    .mock-injury-news .mock-news-label {
+      margin: 0 0 0.45rem;
+    }
+    .mock-injury-news .mock-news-item {
+      margin: 0 0 0.55rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.08);
+    }
+    .mock-injury-news .mock-news-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+    .mock-injury-news .mock-news-item a,
+    .mock-injury-news .mock-news-item strong {
+      color: var(--mo-text);
+      font-size: 0.9rem;
+      line-height: 1.35;
+      text-decoration: none;
+    }
+    .mock-injury-news .mock-news-item a:hover {
+      color: var(--mo-blue-hot);
+      text-decoration: underline;
+    }
+    .mock-injury-news .mock-news-item p {
+      margin: 0.3rem 0 0;
+      color: var(--mo-muted);
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+    #mock-injury-body .mock-news-injury {
+      margin-bottom: 0.75rem;
+    }
+    .mock-profile-hero h3 {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .mock-news-box,
+    .mock-news-injury {
+      margin: 0 0 0.85rem;
+      padding: 0.7rem 0.75rem;
+      border: 1px solid var(--mo-line);
+      border-radius: 0.65rem;
+      background: var(--mo-surface-2);
+    }
+    .mock-news-injury {
+      border-left: 3px solid #ef4444;
+    }
+    .mock-news-label {
+      margin: 0 0 0.45rem;
+      font-family: "Oswald", sans-serif;
       font-size: 0.68rem;
-      color: rgba(176, 198, 230, 0.62);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.01em;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .mock-news-item {
+      padding: 0.4rem 0;
+      border-top: 1px solid var(--mo-line);
+    }
+    .mock-news-item:first-of-type { border-top: 0; padding-top: 0; }
+    .mock-news-item a,
+    .mock-news-item strong {
+      color: var(--mo-text);
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-decoration: none;
+      line-height: 1.3;
+    }
+    .mock-news-item a:hover { text-decoration: underline; }
+    .mock-news-item p,
+    .mock-news-injury p,
+    .mock-news-box p {
+      margin: 0.25rem 0 0;
+      color: var(--mo-muted);
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+    .mock-news-box p.sub,
+    .mock-news-injury p.sub { font-size: 0.76rem; }
+    #mock-injury-body p { margin: 0 0 0.45rem; color: var(--mo-text); line-height: 1.4; }
+    #mock-injury-body p.sub { color: var(--mo-muted); }
+    .mock-scout {
+      display: none;
     }
     .mock-player-main span {
-      display: block;
-      font-size: 0.72rem;
-      color: var(--mo-muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      display: none;
     }
     .mock-cell {
       font-family: "Oswald", sans-serif;
@@ -2924,7 +4009,7 @@
 
     .mock-slot-row {
       display: grid;
-      grid-template-columns: 3.2rem minmax(0, 1fr);
+      grid-template-columns: 3.2rem minmax(0, 1fr) auto;
       gap: 0.5rem;
       align-items: center;
       margin: 0.35rem 0.65rem;
@@ -2977,27 +4062,451 @@
     .mock-slot-row .nm {
       min-width: 0;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
       color: var(--mo-text);
       font-weight: 600;
+      line-height: 1.2;
     }
     .mock-slot-row .nm em {
+      display: block;
+      margin-top: 0.12rem;
       font-style: normal;
       color: var(--mo-muted);
       font-size: 0.72rem;
       font-weight: 500;
-      margin-left: 0.3rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .mock-slot-divider {
       margin: 0.55rem 0.65rem 0.15rem;
       padding: 0.2rem 0.15rem;
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 0.72rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: rgba(176, 198, 230, 0.5);
+      color: var(--mo-muted);
     }
+
+    .mock-complete-dialog {
+      width: min(72rem, calc(100vw - 1.25rem));
+      max-width: calc(100vw - 1.25rem);
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .mock-complete-dialog::backdrop {
+      background:
+        radial-gradient(ellipse 70% 50% at 50% 0%, rgba(47, 123, 255, 0.28), transparent 55%),
+        rgba(4, 10, 18, 0.84);
+    }
+    .mock-complete-sheet {
+      max-height: min(92vh, 56rem);
+      overflow: auto;
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 35%, var(--mo-line));
+      border-radius: 1.1rem;
+      background:
+        linear-gradient(165deg, color-mix(in srgb, var(--mo-gold) 10%, transparent), transparent 38%),
+        linear-gradient(180deg, color-mix(in srgb, var(--mo-blue) 10%, transparent), transparent 42%),
+        var(--mo-surface);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
+      color: var(--mo-text);
+    }
+    .mock-complete-hero {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.85rem 1rem;
+      align-items: center;
+      padding: 1.1rem 1.2rem;
+      border-bottom: 1px solid var(--mo-line);
+      background: color-mix(in srgb, var(--mo-surface) 92%, transparent);
+      backdrop-filter: blur(8px);
+    }
+    .mock-complete-logo {
+      width: 3.5rem;
+      height: 3.5rem;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+    }
+    .mock-complete-kicker {
+      margin: 0 0 0.2rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mo-gold);
+    }
+    .mock-complete-hero h3 {
+      margin: 0;
+      font-family: "Oswald", sans-serif;
+      font-size: clamp(1.35rem, 2.6vw, 1.85rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.15;
+    }
+    .mock-complete-tag {
+      margin: 0.35rem 0 0;
+      color: var(--mo-muted);
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+    .mock-complete-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem 0.65rem;
+      padding: 0.85rem 1.2rem 0.15rem;
+    }
+    .mock-complete-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.28rem 0.55rem;
+      border: 1px solid var(--mo-line);
+      border-radius: 999px;
+      background: var(--mo-surface-2);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .mock-complete-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+      gap: 0.75rem;
+      padding: 0.85rem 1.2rem 1.15rem;
+    }
+    .mock-complete-team {
+      border: 1px solid var(--mo-line);
+      border-radius: 0.85rem;
+      background: var(--mo-surface-2);
+      overflow: hidden;
+      min-width: 0;
+    }
+    .mock-complete-team.is-you {
+      border-color: color-mix(in srgb, var(--mo-gold) 50%, var(--mo-line));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mo-gold) 20%, transparent);
+    }
+    .mock-complete-team-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.5rem;
+      padding: 0.65rem 0.75rem 0.55rem;
+      border-bottom: 1px solid var(--mo-line);
+      background: color-mix(in srgb, var(--mo-blue) 8%, transparent);
+    }
+    .mock-complete-team-head strong {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mock-complete-team-head span {
+      flex: 0 0 auto;
+      font-size: 0.7rem;
+      color: var(--mo-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .mock-complete-slots {
+      display: grid;
+      gap: 0.28rem;
+      padding: 0.55rem 0.55rem 0.7rem;
+    }
+    .mock-complete-row {
+      display: grid;
+      grid-template-columns: 2.7rem minmax(0, 1fr) auto;
+      gap: 0.4rem;
+      align-items: center;
+      padding: 0.32rem 0.4rem;
+      border-radius: 0.45rem;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .mock-complete-row.is-bench {
+      opacity: 0.88;
+      border-style: dashed;
+      border-color: rgba(126, 200, 255, 0.1);
+    }
+    .mock-complete-row.is-empty {
+      opacity: 0.45;
+    }
+    .mock-complete-row .slot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 1.4rem;
+      padding: 0.1rem 0.25rem;
+      border-radius: 0.3rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #061018;
+      background: var(--mock-bn);
+    }
+    .mock-complete-row .slot[data-pos="QB"] { background: var(--mock-qb); }
+    .mock-complete-row .slot[data-pos="RB"] { background: var(--mock-rb); }
+    .mock-complete-row .slot[data-pos="WR"] { background: var(--mock-wr); }
+    .mock-complete-row .slot[data-pos="TE"] { background: var(--mock-te); }
+    .mock-complete-row .slot[data-pos="K"] { background: var(--mock-k); }
+    .mock-complete-row .slot[data-pos="D/ST"],
+    .mock-complete-row .slot[data-pos="DST"] { background: var(--mock-dst); }
+    .mock-complete-row .slot[data-pos="FLEX"] { background: var(--mock-flex); }
+    .mock-complete-row .slot[data-pos="BN"] { background: var(--mock-bn); color: #e8eef8; }
+    .mock-complete-row .nm {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--mo-text);
+    }
+    .mock-complete-row .nm em {
+      font-style: normal;
+      color: var(--mo-muted);
+      font-weight: 500;
+      font-size: 0.7rem;
+      margin-left: 0.25rem;
+    }
+    .mock-complete-row .bye {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--mo-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .mock-complete-divider {
+      margin: 0.25rem 0.15rem 0.05rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .mock-complete-foot {
+      position: sticky;
+      bottom: 0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.65rem;
+      padding: 0.85rem 1.2rem 1.1rem;
+      border-top: 1px solid var(--mo-line);
+      background: color-mix(in srgb, var(--mo-surface) 94%, transparent);
+      backdrop-filter: blur(8px);
+    }
+    .mock-complete-foot .mock-dialog-yes {
+      min-width: 10rem;
+    }
+    @media (max-width: 720px) {
+      .mock-complete-hero {
+        position: sticky;
+        grid-template-columns: auto minmax(0, 1fr);
+        padding-right: 2.75rem;
+      }
+      .mock-complete-hero .mock-dialog-close {
+        position: absolute;
+        top: 0.55rem;
+        right: 0.55rem;
+      }
+      .mock-complete-board {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mock-dialog {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      max-width: calc(100vw - 2rem);
+    }
+    .mock-dialog::backdrop {
+      background: rgba(4, 10, 18, 0.72);
+    }
+    .mock-dialog-card {
+      width: min(22rem, 100%);
+      margin: 0;
+      padding: 1.15rem 1.2rem 1.2rem;
+      border: 1px solid var(--mo-line);
+      border-radius: 1rem;
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--mo-blue) 12%, transparent), transparent 45%),
+        var(--mo-surface);
+      color: var(--mo-text);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    }
+    .mock-profile-card {
+      width: min(26rem, 100%);
+      position: relative;
+    }
+    .mock-dialog-kicker {
+      margin: 0 0 0.35rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .mock-dialog-card h3 {
+      margin: 0 0 0.85rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.15;
+    }
+    .mock-dialog-player {
+      display: grid;
+      grid-template-columns: 3.4rem minmax(0, 1fr);
+      gap: 0.75rem;
+      align-items: center;
+      margin: 0 0 1.1rem;
+      padding: 0.7rem 0.75rem;
+      border: 1px solid var(--mo-line);
+      border-radius: 0.75rem;
+      background: var(--mo-surface-2);
+    }
+    .mock-dialog-player img,
+    .mock-dialog-player .ph {
+      width: 3.4rem;
+      height: 3.4rem;
+      border-radius: 0.55rem;
+      object-fit: cover;
+      background: #111;
+    }
+    .mock-dialog-player .ph {
+      display: grid;
+      place-items: center;
+      color: var(--mo-muted);
+      font-size: 0.75rem;
+    }
+    .mock-dialog-player strong {
+      display: block;
+      font-size: 1rem;
+    }
+    .mock-dialog-player span {
+      display: block;
+      margin-top: 0.2rem;
+      color: var(--mo-muted);
+      font-size: 0.82rem;
+    }
+    .mock-dialog-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+    }
+    .mock-dialog-yes,
+    .mock-dialog-no,
+    .mock-dialog-close {
+      appearance: none;
+      border: 1px solid var(--mo-line);
+      border-radius: 0.55rem;
+      padding: 0.65rem 0.75rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .mock-dialog-yes {
+      border-color: color-mix(in srgb, var(--mo-good) 50%, var(--mo-line));
+      background: color-mix(in srgb, var(--mo-good) 22%, transparent);
+      color: var(--mo-text);
+    }
+    .mock-dialog-no {
+      background: var(--mo-surface-2);
+      color: var(--mo-muted);
+    }
+    .mock-dialog-close {
+      position: absolute;
+      top: 0.55rem;
+      right: 0.55rem;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      line-height: 1;
+      font-size: 1.25rem;
+      color: var(--mo-muted);
+      background: transparent;
+    }
+    .mock-profile-hero {
+      display: grid;
+      grid-template-columns: 4.5rem minmax(0, 1fr);
+      gap: 0.85rem;
+      align-items: center;
+      margin: 0 0 0.95rem;
+      padding-right: 1.5rem;
+    }
+    .mock-profile-hero img,
+    .mock-profile-hero .ph {
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 0.7rem;
+      object-fit: cover;
+      background: #111;
+    }
+    .mock-profile-hero .ph {
+      display: grid;
+      place-items: center;
+      color: var(--mo-muted);
+    }
+    .mock-profile-hero h3 {
+      margin: 0 0 0.25rem;
+      font-size: 1.35rem;
+    }
+    .mock-profile-meta {
+      color: var(--mo-muted);
+      font-size: 0.88rem;
+    }
+    .mock-profile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.45rem;
+      margin: 0 0 1rem;
+    }
+    .mock-profile-stat {
+      padding: 0.55rem 0.6rem;
+      border: 1px solid var(--mo-line);
+      border-radius: 0.55rem;
+      background: var(--mo-surface-2);
+    }
+    .mock-profile-stat span {
+      display: block;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.64rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .mock-profile-stat strong {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: 0.98rem;
+    }
+    .mock-profile-note {
+      margin: 0 0 1rem;
+      color: var(--mo-muted);
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+    .mock-player.is-targeted {
+      box-shadow: inset 3px 0 0 var(--mo-gold);
+    }
+    .mock-player[draggable="true"] { cursor: grab; }
+    .mock-player[draggable="true"]:active { cursor: grabbing; }
 
     .mock-ticker {
       margin-top: 0.9rem;
@@ -3020,8 +4529,8 @@
       width: 11.5rem;
       padding: 0.55rem 0.6rem;
       border-radius: 0.8rem;
-      border: 1px solid rgba(126, 200, 255, 0.14);
-      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--mo-line);
+      background: var(--mo-surface);
       display: grid;
       grid-template-columns: 2.4rem minmax(0, 1fr);
       gap: 0.5rem;
@@ -3075,14 +4584,14 @@
     .mock-other-team {
       padding: 0.55rem 0.6rem 0.65rem;
       border-radius: 0.8rem;
-      border: 1px solid rgba(126, 200, 255, 0.12);
-      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--mo-line);
+      background: var(--mo-surface);
       min-height: 5.5rem;
     }
     .mock-other-team.is-clock {
-      border-color: rgba(77, 255, 154, 0.5);
-      background: linear-gradient(160deg, rgba(77, 255, 154, 0.12), rgba(0, 0, 0, 0.32));
-      box-shadow: 0 0 18px rgba(77, 255, 154, 0.1);
+      border-color: color-mix(in srgb, var(--mo-good) 45%, var(--mo-line));
+      background: linear-gradient(160deg, color-mix(in srgb, var(--mo-good) 12%, transparent), var(--mo-surface));
+      box-shadow: none;
     }
     .mock-other-team .ot-name {
       display: flex;
@@ -3255,12 +4764,10 @@
 
     /* —— Casala's Palace Sports Book —— */
     .lounge-section.is-degen {
-      border-color: rgba(232, 120, 90, 0.3);
-      background:
-        radial-gradient(ellipse 50% 45% at 6% 0%, rgba(232, 120, 90, 0.14), transparent 55%),
-        linear-gradient(180deg, rgba(28, 12, 10, 0.94) 0%, rgba(10, 6, 8, 0.92) 100%);
+      border-color: color-mix(in srgb, var(--mo-casino) 40%, var(--mo-line));
+      background: var(--mo-panel-degen);
     }
-    .lounge-section.is-degen .lounge-section-label h2 { color: #ffb08a; }
+    .lounge-section.is-degen .lounge-section-label h2 { color: var(--mo-casino); }
     .palace-label .palace-kicker {
       margin: 0 0 0.25rem;
       font-family: "Source Sans 3", system-ui, sans-serif;
@@ -3268,7 +4775,7 @@
       font-weight: 700;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: #efd782;
+      color: var(--mo-gold);
     }
     .palace-label h2 {
       font-size: clamp(1.15rem, 2.4vw, 1.65rem);
@@ -3278,15 +4785,15 @@
     }
     .degen-scoreboard {
       margin: 0 0 0.9rem;
-      border: 1px solid rgba(232, 120, 90, 0.32);
+      border: 1px solid rgba(232, 196, 90, 0.32);
       background:
-        linear-gradient(180deg, rgba(40, 16, 12, 0.95) 0%, rgba(12, 6, 8, 0.92) 100%);
-      box-shadow: inset 0 1px 0 rgba(255, 176, 138, 0.12);
+        linear-gradient(180deg, rgba(10, 28, 20, 0.95) 0%, rgba(4, 12, 10, 0.92) 100%);
+      box-shadow: inset 0 1px 0 rgba(243, 217, 138, 0.12);
       overflow: hidden;
     }
     html[data-theme="day"] .degen-scoreboard {
-      border-color: rgba(194, 65, 12, 0.28);
-      background: linear-gradient(180deg, #fffaf7 0%, #fff 100%);
+      border-color: rgba(161, 98, 7, 0.28);
+      background: linear-gradient(180deg, #fffbeb 0%, #fff 100%);
       box-shadow: 0 8px 20px rgba(20, 24, 31, 0.06);
     }
     .degen-scoreboard-head {
@@ -3295,10 +4802,10 @@
       justify-content: space-between;
       gap: 0.75rem;
       padding: 0.55rem 0.85rem 0.45rem;
-      border-bottom: 1px solid rgba(232, 120, 90, 0.22);
+      border-bottom: 1px solid rgba(232, 196, 90, 0.22);
     }
     html[data-theme="day"] .degen-scoreboard-head {
-      border-bottom-color: rgba(194, 65, 12, 0.16);
+      border-bottom-color: rgba(161, 98, 7, 0.16);
     }
     .degen-scoreboard-head .kicker {
       font-family: "Oswald", sans-serif;
@@ -3306,9 +4813,9 @@
       font-weight: 600;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: rgba(255, 176, 138, 0.72);
+      color: rgba(243, 217, 138, 0.72);
     }
-    html[data-theme="day"] .degen-scoreboard-head .kicker { color: #c2410c; }
+    html[data-theme="day"] .degen-scoreboard-head .kicker { color: var(--mo-casino); }
     .degen-scoreboard-head .who {
       font-family: "Bebas Neue", "Oswald", sans-serif;
       font-size: 1.15rem;
@@ -3331,10 +4838,10 @@
       text-align: center;
     }
     .degen-score-cell + .degen-score-cell:not(.is-dash) {
-      border-left: 1px solid rgba(232, 120, 90, 0.18);
+      border-left: 1px solid rgba(232, 196, 90, 0.18);
     }
     html[data-theme="day"] .degen-score-cell + .degen-score-cell:not(.is-dash) {
-      border-left-color: rgba(194, 65, 12, 0.12);
+      border-left-color: rgba(161, 98, 7, 0.12);
     }
     .degen-score-cell.is-dash {
       padding-inline: 0.15rem;
@@ -3343,17 +4850,17 @@
     }
     .degen-score-cell.is-dash .value {
       font-size: 1.4rem;
-      color: rgba(255, 176, 138, 0.45);
+      color: rgba(243, 217, 138, 0.45);
       line-height: 1;
     }
-    html[data-theme="day"] .degen-score-cell.is-dash .value { color: rgba(194, 65, 12, 0.35); }
+    html[data-theme="day"] .degen-score-cell.is-dash .value { color: rgba(161, 98, 7, 0.35); }
     .degen-score-cell .label {
       font-family: "Oswald", sans-serif;
       font-size: 0.66rem;
       font-weight: 600;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: rgba(255, 176, 138, 0.7);
+      color: rgba(243, 217, 138, 0.7);
     }
     html[data-theme="day"] .degen-score-cell .label { color: var(--mo-muted); }
     .degen-score-cell .value {
@@ -3388,7 +4895,7 @@
     .degen-stat {
       padding: 0.65rem 0.75rem;
       border-radius: 0.75rem;
-      border: 1px solid rgba(232, 120, 90, 0.22);
+      border: 1px solid rgba(232, 196, 90, 0.22);
       background: rgba(0, 0, 0, 0.28);
     }
     .degen-stat.is-cash {
@@ -3402,7 +4909,7 @@
       font-size: 0.72rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #ffb08a;
+      color: var(--mo-casino);
     }
     .degen-stat .value {
       margin: 0.25rem 0 0;
@@ -3414,150 +4921,370 @@
     .degen-tabs {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.35rem;
-      margin: 0 0 0.85rem;
+      gap: 0.1rem 0.2rem;
+      margin: 0 0 0.65rem;
     }
     .degen-tabs button {
       appearance: none;
-      border: 1px solid rgba(232, 120, 90, 0.28);
-      border-radius: 999px;
-      background: rgba(0, 0, 0, 0.28);
+      display: inline-flex;
+      align-items: center;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      background: transparent;
       color: var(--mo-muted);
-      padding: 0.4rem 0.85rem;
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 0.88rem;
-      letter-spacing: 0.08em;
+      padding: 0.28rem 0.5rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       cursor: pointer;
     }
     .degen-tabs button.is-on,
     .degen-tabs button:hover {
-      color: #fff;
-      border-color: rgba(255, 176, 138, 0.55);
-      background: rgba(232, 120, 90, 0.28);
+      color: var(--mo-casino);
+      border-bottom-color: var(--mo-casino);
+      background: transparent;
+      font-weight: 700;
     }
     .degen-chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.35rem;
-      margin: 0 0 0.75rem;
+      justify-content: flex-start;
+      gap: 0.1rem 0.2rem;
+      margin: 0 0 0.45rem;
     }
     .degen-chip {
       appearance: none;
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      border: 1px solid rgba(232, 120, 90, 0.22);
-      border-radius: 0.55rem;
-      background: rgba(0, 0, 0, 0.28);
+      border: 0;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      background: transparent;
       color: var(--mo-muted);
-      padding: 0.35rem 0.65rem;
-      font: inherit;
-      font-size: 0.82rem;
+      padding: 0.28rem 0.5rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
       cursor: pointer;
     }
-    .degen-chip img { width: 1rem; height: 1rem; object-fit: contain; }
+    .degen-chip img {
+      width: 1rem;
+      height: 1rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      opacity: 0.85;
+    }
+    .degen-chip.is-on img { opacity: 1; }
     .degen-chip.is-on,
     .degen-chip:hover {
+      color: var(--mo-casino);
+      border-bottom-color: var(--mo-casino);
+      background: transparent;
+      font-weight: 700;
+    }
+    .degen-slate-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 0.65rem;
+      margin: 0 0 0.4rem;
+    }
+    .degen-days {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.1rem 0.2rem;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .degen-day {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.28rem 0.5rem;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--mo-muted);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .degen-day em {
+      font-style: normal;
+      opacity: 0.65;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+    }
+    .degen-day.is-on,
+    .degen-day:hover {
+      color: var(--mo-casino);
+      border-bottom-color: var(--mo-casino);
+      background: transparent;
+      font-weight: 700;
+    }
+    .degen-team-search {
+      flex: 0 1 12rem;
+      min-width: 9rem;
+      margin: 0;
+    }
+    .degen-team-search input {
+      width: 100%;
+      min-height: 2rem;
+      padding: 0.35rem 0.6rem;
+      border: 1px solid rgba(232, 196, 90, 0.25);
+      background: rgba(0, 0, 0, 0.35);
       color: var(--mo-text);
-      border-color: rgba(255, 176, 138, 0.5);
-      background: rgba(232, 120, 90, 0.2);
+      font: inherit;
+      font-size: 0.86rem;
+    }
+    .degen-team-search input::placeholder { color: var(--mo-muted); }
+    html[data-theme="day"] .degen-team-search input {
+      background: var(--mo-surface-2);
+      border-color: var(--mo-line);
+      color: var(--mo-text);
+    }
+    .degen-day-group {
+      display: grid;
+      gap: 0.55rem;
+      margin: 0 0 0.85rem;
+    }
+    .degen-day-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin: 0;
+      padding: 0.15rem 0.1rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mo-casino);
+    }
+    .degen-day-heading span {
+      font-family: "Source Sans 3", system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--mo-muted);
+      text-transform: none;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
     .degen-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.55fr) minmax(15rem, 0.85fr);
-      gap: 0.85rem;
+      grid-template-columns: minmax(0, 1.65fr) minmax(15rem, 0.8fr);
+      gap: 0.9rem;
       align-items: start;
     }
+    .degen-board { display: grid; gap: 0.55rem; }
     .degen-game {
-      padding: 0.65rem 0.7rem 0.7rem;
-      border-radius: 0.8rem;
-      border: 1px solid rgba(232, 120, 90, 0.16);
-      background: rgba(0, 0, 0, 0.28);
-      margin: 0 0 0.5rem;
-    }
-    .degen-game-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.5rem;
-      align-items: baseline;
-      margin: 0 0 0.45rem;
-    }
-    .degen-game .matchup {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--mo-text);
-      display: flex;
-      gap: 0.35rem;
-      align-items: baseline;
+      padding: 0.55rem 0.65rem 0.6rem;
+      border: 1px solid rgba(232, 196, 90, 0.18);
+      background:
+        linear-gradient(180deg, rgba(10, 22, 16, 0.9) 0%, rgba(4, 10, 12, 0.88) 100%);
       margin: 0;
     }
-    .degen-game .matchup em {
-      font-style: normal;
-      color: var(--mo-muted);
-      font-size: 0.75rem;
+    html[data-theme="day"] .degen-game {
+      background: #fff;
+      border-color: rgba(20, 24, 31, 0.1);
+      box-shadow: 0 2px 8px rgba(20, 24, 31, 0.05);
     }
-    .degen-game .kick { font-size: 0.72rem; color: var(--mo-muted); margin: 0; }
-    .degen-grid-head {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.3rem;
-      margin: 0 0 0.25rem;
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 0.66rem;
-      letter-spacing: 0.08em;
+    .degen-game-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 0.35rem;
+      padding: 0 0.1rem;
+    }
+    .degen-game-meta .kick {
+      margin: 0;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: rgba(255, 176, 138, 0.55);
+      color: var(--mo-muted);
+    }
+    .degen-game-meta .live {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--mo-live);
+    }
+    .degen-game-cols,
+    .degen-game-row {
+      display: grid;
+      grid-template-columns: minmax(7.5rem, 1.35fr) repeat(3, minmax(4.25rem, 1fr));
+      gap: 0.35rem;
+      align-items: center;
+    }
+    .degen-game-cols {
+      margin: 0 0 0.25rem;
+      padding: 0 0.05rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(243, 217, 138, 0.55);
       text-align: center;
     }
-    .degen-grid-lines {
+    .degen-game-cols span:first-child { text-align: left; }
+    html[data-theme="day"] .degen-game-cols { color: rgba(161, 98, 7, 0.55); }
+    .degen-game-row + .degen-game-row {
+      margin-top: 0.3rem;
+      padding-top: 0.3rem;
+      border-top: 1px solid rgba(232, 196, 90, 0.1);
+    }
+    html[data-theme="day"] .degen-game-row + .degen-game-row {
+      border-top-color: rgba(20, 24, 31, 0.08);
+    }
+    .degen-team {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-width: 0;
+      padding-right: 0.2rem;
+    }
+    .degen-team-logo {
+      width: 1.75rem;
+      height: 1.75rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      border-radius: 0;
+      background: transparent;
+    }
+    .degen-team-logo.is-blank {
+      display: block;
+      border-radius: 0.2rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="day"] .degen-team-logo.is-blank {
+      background: rgba(20, 24, 31, 0.06);
+      border-color: rgba(20, 24, 31, 0.1);
+    }
+    .degen-team-text {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.3rem;
+      gap: 0.05rem;
+      min-width: 0;
+    }
+    .degen-team-text .abbr {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--mo-text);
+      line-height: 1.1;
+    }
+    .degen-team-text .name {
+      font-size: 0.68rem;
+      color: var(--mo-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.15;
     }
     .degen-cell {
       appearance: none;
-      border: 1px solid rgba(232, 120, 90, 0.2);
-      border-radius: 0.45rem;
-      background: rgba(20, 8, 6, 0.65);
+      display: grid;
+      gap: 0.1rem;
+      justify-items: center;
+      align-content: center;
+      min-height: 2.55rem;
+      border: 1px solid rgba(232, 196, 90, 0.22);
+      border-radius: 0.2rem;
+      background: rgba(0, 0, 0, 0.35);
       color: var(--mo-text);
-      padding: 0.45rem 0.3rem;
+      padding: 0.35rem 0.25rem;
       font: inherit;
-      font-size: 0.78rem;
-      font-weight: 600;
       text-align: center;
       cursor: pointer;
     }
+    html[data-theme="day"] .degen-cell {
+      background: #f8faf8;
+      border-color: rgba(20, 24, 31, 0.12);
+    }
+    .degen-cell-main {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .degen-cell-sub {
+      font-size: 0.64rem;
+      font-weight: 600;
+      color: var(--mo-muted);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
     .degen-cell.is-empty {
-      display: grid;
-      place-items: center;
-      color: rgba(176, 198, 230, 0.3);
+      color: rgba(176, 198, 230, 0.28);
       border-style: dashed;
       background: transparent;
       cursor: default;
     }
     .degen-cell.is-on,
     button.degen-cell:hover:not(.is-empty) {
-      border-color: rgba(255, 176, 138, 0.65);
-      background: rgba(232, 120, 90, 0.28);
+      border-color: rgba(243, 217, 138, 0.7);
+      background: rgba(232, 196, 90, 0.22);
       color: #fff;
+    }
+    .degen-cell.is-on .degen-cell-sub,
+    button.degen-cell:hover:not(.is-empty) .degen-cell-sub {
+      color: rgba(255, 255, 255, 0.75);
+    }
+    html[data-theme="day"] .degen-cell.is-on,
+    html[data-theme="day"] button.degen-cell:hover:not(.is-empty) {
+      color: var(--mo-text);
+      background: rgba(161, 98, 7, 0.12);
+      border-color: rgba(161, 98, 7, 0.45);
+    }
+    html[data-theme="day"] .degen-cell.is-on .degen-cell-sub,
+    html[data-theme="day"] button.degen-cell:hover:not(.is-empty) .degen-cell-sub {
+      color: var(--mo-muted);
     }
     .degen-ticket {
       position: sticky;
       top: 0.75rem;
       padding: 0;
-      border-radius: 0.2rem;
-      border: 1px solid rgba(232, 120, 90, 0.4);
+      border-radius: 0.35rem;
+      border: 1px solid rgba(232, 196, 90, 0.4);
       background:
-        linear-gradient(180deg, rgba(36, 14, 10, 0.98) 0%, rgba(10, 6, 8, 0.96) 100%);
+        linear-gradient(180deg, rgba(12, 28, 20, 0.98) 0%, rgba(6, 12, 12, 0.97) 100%);
       box-shadow:
-        0 18px 36px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 176, 138, 0.14);
+        0 14px 28px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(243, 217, 138, 0.12);
       overflow: hidden;
     }
     html[data-theme="day"] .degen-ticket {
-      border-color: rgba(194, 65, 12, 0.28);
-      background: linear-gradient(180deg, #fffdfb 0%, #fff7f2 100%);
+      border-color: rgba(161, 98, 7, 0.28);
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(161, 98, 7, 0.08), transparent 55%),
+        linear-gradient(180deg, #fffef8 0%, #fffbeb 100%);
       box-shadow: 0 12px 28px rgba(20, 24, 31, 0.08);
     }
     .degen-ticket-head {
@@ -3565,53 +5292,57 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 0.65rem;
-      padding: 0.75rem 0.85rem 0.65rem;
-      border-bottom: 1px dashed rgba(232, 120, 90, 0.35);
-      background: rgba(232, 120, 90, 0.1);
+      padding: 0.8rem 0.9rem 0.7rem;
+      border-bottom: 1px solid rgba(232, 196, 90, 0.28);
+      background: rgba(232, 196, 90, 0.12);
     }
     html[data-theme="day"] .degen-ticket-head {
-      border-bottom-color: rgba(194, 65, 12, 0.22);
-      background: rgba(194, 65, 12, 0.06);
+      border-bottom-color: rgba(161, 98, 7, 0.18);
+      background: rgba(161, 98, 7, 0.06);
     }
     .degen-ticket-kicker {
-      margin: 0 0 0.15rem;
+      margin: 0 0 0.2rem;
       font-family: "Oswald", sans-serif;
       font-size: 0.64rem;
       font-weight: 600;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: rgba(255, 176, 138, 0.72);
+      color: rgba(243, 217, 138, 0.72);
     }
-    html[data-theme="day"] .degen-ticket-kicker { color: #c2410c; }
+    html[data-theme="day"] .degen-ticket-kicker { color: var(--mo-casino); }
     .degen-ticket h3 {
       margin: 0;
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      letter-spacing: 0.08em;
+      font-family: "Oswald", sans-serif;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      font-size: 1.25rem;
-      color: #ffb08a;
-      font-weight: 400;
-      line-height: 1;
+      font-size: 1.05rem;
+      color: var(--mo-casino);
+      font-weight: 700;
+      line-height: 1.15;
     }
-    html[data-theme="day"] .degen-ticket h3 { color: #9a3412; }
+    html[data-theme="day"] .degen-ticket h3 { color: var(--mo-casino-soft); }
     .degen-ticket-legs {
-      padding: 0.15rem 0.75rem 0.35rem;
-      min-height: 3.5rem;
+      padding: 0.25rem 0.85rem 0.4rem;
+      min-height: 3.25rem;
+      max-height: min(40vh, 18rem);
+      overflow: auto;
     }
     .degen-slip-empty {
-      padding: 1rem 0.25rem !important;
+      padding: 1.15rem 0.5rem !important;
       text-align: center;
-      border: 1px dashed rgba(232, 120, 90, 0.25);
-      margin: 0.45rem 0;
-      border-radius: 0.35rem;
+      border: 1px dashed rgba(232, 196, 90, 0.28);
+      margin: 0.5rem 0;
+      border-radius: 0.4rem;
+      font-size: 0.86rem;
+      color: var(--mo-muted);
     }
     .degen-leg {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto auto;
-      gap: 0.45rem;
+      gap: 0.5rem;
       align-items: center;
-      padding: 0.55rem 0.15rem;
-      border-bottom: 1px solid rgba(232, 120, 90, 0.14);
+      padding: 0.6rem 0.1rem;
+      border-bottom: 1px solid rgba(232, 196, 90, 0.14);
       font-size: 0.86rem;
     }
     .degen-leg:last-child { border-bottom: 0; }
@@ -3631,11 +5362,11 @@
       font-size: 0.95rem;
       font-weight: 700;
       letter-spacing: 0.03em;
-      color: #ffb08a;
+      color: var(--mo-casino);
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
-    html[data-theme="day"] .degen-leg-odds { color: #c2410c; }
+    html[data-theme="day"] .degen-leg-odds { color: var(--mo-casino); }
     .degen-leg button {
       appearance: none;
       border: 1px solid rgba(255, 143, 143, 0.28);
@@ -3643,9 +5374,9 @@
       color: #ff8f8f;
       cursor: pointer;
       font-size: 0.78rem;
-      padding: 0.2rem 0.4rem;
+      padding: 0.28rem 0.45rem;
       min-height: auto;
-      border-radius: 0.25rem;
+      border-radius: 999px;
       line-height: 1;
     }
     .degen-leg button:hover {
@@ -3653,26 +5384,29 @@
       color: #fff;
     }
     .degen-ticket-summary {
-      padding: 0.7rem 0.85rem 0.85rem;
-      border-top: 1px dashed rgba(232, 120, 90, 0.35);
-      background: rgba(0, 0, 0, 0.22);
+      padding: 0.75rem 0.9rem 0.9rem;
+      border-top: 1px solid rgba(232, 196, 90, 0.28);
+      background: rgba(0, 0, 0, 0.28);
+      display: grid;
+      gap: 0.55rem;
     }
     html[data-theme="day"] .degen-ticket-summary {
-      border-top-color: rgba(194, 65, 12, 0.2);
-      background: rgba(255, 247, 242, 0.85);
+      border-top-color: rgba(161, 98, 7, 0.16);
+      background: rgba(255, 251, 235, 0.9);
     }
     .degen-slip-bar {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 0.45rem;
       align-items: end;
-      margin: 0 0 0.55rem;
+      margin: 0;
     }
     .degen-slip-bar label {
       display: flex;
       flex-direction: column;
       gap: 0.2rem;
       flex: 1 1 auto;
+      min-width: 0;
       font-size: 0.68rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -3681,29 +5415,30 @@
     }
     .degen-slip-bar input {
       width: 100%;
-      max-width: 8rem;
-      border-radius: 0.35rem;
-      border-color: rgba(232, 120, 90, 0.35);
+      max-width: none;
+      border-radius: 0.4rem;
+      border-color: rgba(232, 196, 90, 0.35);
       font-family: "Oswald", sans-serif;
-      font-size: 1.05rem;
+      font-size: 1.1rem;
       font-weight: 700;
+      min-height: 2.35rem;
     }
     .degen-payout-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.4rem;
-      margin: 0 0 0.55rem;
+      gap: 0.45rem;
+      margin: 0;
     }
     .degen-payout-grid > div {
       display: grid;
-      gap: 0.12rem;
-      padding: 0.45rem 0.55rem;
-      border: 1px solid rgba(232, 120, 90, 0.2);
-      border-radius: 0.35rem;
-      background: rgba(0, 0, 0, 0.22);
+      gap: 0.15rem;
+      padding: 0.5rem 0.55rem;
+      border: 1px solid rgba(232, 196, 90, 0.22);
+      border-radius: 0.4rem;
+      background: rgba(0, 0, 0, 0.28);
     }
     html[data-theme="day"] .degen-payout-grid > div {
-      border-color: rgba(194, 65, 12, 0.16);
+      border-color: rgba(161, 98, 7, 0.14);
       background: #fff;
     }
     .degen-payout-grid .label {
@@ -3714,12 +5449,13 @@
       color: var(--mo-muted);
     }
     .degen-payout-grid strong {
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 1.2rem;
-      letter-spacing: 0.04em;
+      font-family: "Oswald", sans-serif;
+      font-size: 1.15rem;
+      letter-spacing: 0.03em;
       color: var(--mo-text);
-      font-weight: 400;
+      font-weight: 700;
       line-height: 1;
+      font-variant-numeric: tabular-nums;
     }
     .degen-payout-grid > div:last-child strong { color: var(--mo-good); }
     html[data-theme="day"] .degen-payout-grid > div:last-child strong { color: #15803d; }
@@ -3727,35 +5463,48 @@
     .lounge-section.is-degen .degen-more,
     .lounge-section.is-degen .degen-btn-lock,
     .lounge-section.is-degen .degen-btn-ghost {
-      border-radius: 0.35rem;
-      border: 1px solid rgba(232, 120, 90, 0.4);
-      background: rgba(232, 120, 90, 0.28);
-      color: #ffd2bc;
+      border-radius: 0.4rem;
+      border: 1px solid rgba(232, 196, 90, 0.4);
+      background: rgba(232, 196, 90, 0.28);
+      color: var(--mo-casino-soft);
       letter-spacing: 0.08em;
     }
     .lounge-section.is-degen .degen-btn-ghost {
       background: transparent;
-      color: rgba(255, 200, 170, 0.85);
+      color: rgba(243, 217, 138, 0.9);
+      min-height: 2.35rem;
+      padding: 0 0.85rem;
+      flex: 0 0 auto;
     }
     .lounge-section.is-degen .degen-btn-lock {
       width: 100%;
-      min-height: 2.55rem;
-      margin-top: 0.35rem;
+      min-height: 2.75rem;
+      margin: 0;
+      font-family: "Oswald", sans-serif;
       font-size: 1.05rem;
-      background: linear-gradient(180deg, rgba(255, 140, 90, 0.55), rgba(200, 80, 50, 0.45));
-      border-color: rgba(255, 176, 138, 0.55);
-      color: #fff;
-      box-shadow: 0 8px 18px rgba(180, 60, 30, 0.25);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #f3d98a 0%, #c9a227 100%);
+      border-color: rgba(243, 217, 138, 0.65);
+      color: var(--mo-casino-ink);
+      box-shadow: 0 10px 22px rgba(201, 162, 39, 0.28);
     }
     .lounge-section.is-degen .degen-slip-bar button:hover,
     .lounge-section.is-degen .degen-more:hover,
     .lounge-section.is-degen .degen-btn-lock:hover,
     .lounge-section.is-degen .degen-btn-ghost:hover {
-      background: rgba(232, 120, 90, 0.42);
+      background: rgba(232, 196, 90, 0.42);
       color: #fff;
     }
     .lounge-section.is-degen .degen-btn-lock:hover {
-      background: linear-gradient(180deg, rgba(255, 150, 100, 0.7), rgba(220, 90, 55, 0.55));
+      background: linear-gradient(180deg, #f7e4a4 0%, #d4af37 100%);
+      color: var(--mo-casino-ink);
+    }
+    .lounge-section.is-degen .degen-btn-lock:disabled {
+      opacity: 0.45;
+      box-shadow: none;
+      cursor: default;
     }
     .degen-payout {
       margin: 0.35rem 0 0;
@@ -3763,6 +5512,16 @@
       color: var(--mo-muted);
     }
     .degen-payout strong { color: var(--mo-text); }
+    .degen-slip-status {
+      margin: 0;
+      min-height: 0;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      color: var(--mo-muted);
+    }
+    .degen-slip-status[hidden] { display: none !important; }
+    .degen-slip-status.is-ok { color: var(--mo-good); }
+    .degen-slip-status.is-err { color: #ff8f8f; }
     .degen-note {
       margin: 0.45rem 0 0;
       font-size: 0.74rem;
@@ -3775,10 +5534,10 @@
       margin: 0 0 0.65rem;
       padding: 0.65rem 0.75rem;
       border-radius: 0.75rem;
-      border: 1px solid rgba(232, 120, 90, 0.22);
+      border: 1px solid rgba(232, 196, 90, 0.22);
       background: rgba(0, 0, 0, 0.28);
     }
-    .degen-future-banner strong { color: #ffb08a; }
+    .degen-future-banner strong { color: var(--mo-casino); }
     .degen-future-banner span { color: var(--mo-muted); font-size: 0.82rem; }
     .degen-future-grid {
       display: grid;
@@ -3788,7 +5547,7 @@
     .degen-future-pick {
       appearance: none;
       text-align: left;
-      border: 1px solid rgba(232, 120, 90, 0.2);
+      border: 1px solid rgba(232, 196, 90, 0.2);
       border-radius: 0.55rem;
       background: rgba(0, 0, 0, 0.28);
       color: var(--mo-text);
@@ -3800,14 +5559,14 @@
     .degen-future-pick em {
       display: block;
       font-style: normal;
-      color: #ffb08a;
+      color: var(--mo-casino);
       margin-top: 0.15rem;
       font-family: "Oswald", sans-serif;
     }
     .degen-future-pick.is-on,
     .degen-future-pick:hover {
-      border-color: rgba(255, 176, 138, 0.55);
-      background: rgba(232, 120, 90, 0.22);
+      border-color: rgba(243, 217, 138, 0.55);
+      background: rgba(232, 196, 90, 0.22);
     }
     .degen-more {
       margin-top: 0.65rem;
@@ -3825,12 +5584,12 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
       font-size: 0.9rem;
-      color: #ffb08a;
+      color: var(--mo-casino);
       font-weight: 400;
     }
     .degen-slip-row, .degen-lb-row {
       padding: 0.45rem 0;
-      border-bottom: 1px solid rgba(232, 120, 90, 0.1);
+      border-bottom: 1px solid rgba(232, 196, 90, 0.1);
       font-size: 0.86rem;
     }
     .degen-slip-row .top, .degen-lb-row {
@@ -3847,8 +5606,8 @@
       gap: 0.65rem;
       margin: 0 0 0.65rem;
       padding: 0.55rem 0.7rem;
-      border: 1px solid rgba(255, 176, 138, 0.35);
-      background: rgba(232, 120, 90, 0.12);
+      border: 1px solid rgba(243, 217, 138, 0.35);
+      background: rgba(232, 196, 90, 0.12);
     }
     .degen-league-banner img {
       width: 2.1rem;
@@ -3862,7 +5621,7 @@
       font-size: 0.68rem;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: rgba(255, 176, 138, 0.75);
+      color: rgba(243, 217, 138, 0.75);
     }
     .degen-league-banner .name {
       margin: 0.1rem 0 0;
@@ -3870,8 +5629,14 @@
       font-size: 1.35rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #ffb08a;
+      color: var(--mo-casino);
       line-height: 1;
+    }
+    .degen-lines-asof {
+      margin: 0 0 0.55rem;
+      font-size: 0.72rem;
+      color: var(--mo-muted);
+      letter-spacing: 0.02em;
     }
     .degen-betting-league {
       display: inline-flex;
@@ -3879,7 +5644,7 @@
       gap: 0.35rem;
       margin: 0;
       padding: 0.25rem 0.45rem;
-      border: 1px solid rgba(255, 176, 138, 0.28);
+      border: 1px solid rgba(243, 217, 138, 0.28);
       border-radius: 0.25rem;
       background: rgba(0, 0, 0, 0.25);
       font-size: 0.72rem;
@@ -3888,7 +5653,7 @@
     }
     html[data-theme="day"] .degen-betting-league {
       background: rgba(255, 255, 255, 0.8);
-      border-color: rgba(194, 65, 12, 0.2);
+      border-color: rgba(161, 98, 7, 0.2);
     }
     .degen-betting-league img {
       width: 1.05rem;
@@ -3896,28 +5661,38 @@
       object-fit: contain;
     }
     .degen-betting-league strong,
-    .degen-betting-league span { color: #ffb08a; font-weight: 600; }
-    html[data-theme="day"] .degen-betting-league span { color: #9a3412; }
+    .degen-betting-league span { color: var(--mo-casino); font-weight: 600; }
+    html[data-theme="day"] .degen-betting-league span { color: var(--mo-casino-soft); }
     .degen-private {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.45rem;
-      margin: 0 0 0.15rem;
-      font-size: 0.8rem;
-      color: rgba(255, 200, 220, 0.85);
+      margin: 0;
+      padding: 0.35rem 0.55rem;
+      width: fit-content;
+      border-radius: 999px;
+      border: 1px solid rgba(196, 92, 154, 0.35);
+      background: rgba(196, 92, 154, 0.1);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(255, 200, 220, 0.92);
       cursor: pointer;
       user-select: none;
     }
-    html[data-theme="day"] .degen-private { color: #9f1239; }
-    .degen-private input { accent-color: #c45c9a; }
+    html[data-theme="day"] .degen-private {
+      color: #9f1239;
+      border-color: rgba(159, 18, 57, 0.25);
+      background: rgba(159, 18, 57, 0.06);
+    }
+    .degen-private input { accent-color: var(--mo-casino); }
     .degen-best-open {
       margin: 0;
       padding: 0.7rem 0.85rem 0.85rem;
-      border-top: 1px solid rgba(232, 120, 90, 0.2);
+      border-top: 1px solid rgba(232, 196, 90, 0.2);
       background: rgba(0, 0, 0, 0.15);
     }
     html[data-theme="day"] .degen-best-open {
-      border-top-color: rgba(194, 65, 12, 0.14);
+      border-top-color: rgba(161, 98, 7, 0.14);
       background: rgba(255, 255, 255, 0.45);
     }
     .degen-best-open h4 {
@@ -3932,7 +5707,7 @@
       font-weight: 600;
     }
     .degen-best-open h4 span {
-      color: #ffb08a;
+      color: var(--mo-casino);
       font-variant-numeric: tabular-nums;
     }
     .degen-slip-row.is-locked {
@@ -3941,25 +5716,31 @@
       padding-left: 0.45rem;
     }
     .degen-empty { color: var(--mo-muted); font-size: 0.9rem; padding: 0.35rem 0; }
-    .degen-status { margin: 0.65rem 0 0; min-height: 1.2em; font-size: 0.88rem; color: var(--mo-muted); }
+    .degen-status {
+      margin: 0.55rem 0 0;
+      min-height: 0;
+      font-size: 0.85rem;
+      color: var(--mo-muted);
+    }
+    .degen-status[hidden] { display: none !important; }
     .degen-status.is-ok { color: var(--mo-good); }
     .degen-status.is-err { color: #ff8f8f; }
 
     .degen-standings {
       padding: 0;
       border-radius: 0.2rem;
-      border: 1px solid rgba(232, 120, 90, 0.28);
+      border: 1px solid rgba(232, 196, 90, 0.28);
       background: rgba(0, 0, 0, 0.28);
       overflow: hidden;
     }
     html[data-theme="day"] .degen-standings {
-      border-color: rgba(194, 65, 12, 0.22);
+      border-color: rgba(161, 98, 7, 0.22);
       background: #fff;
     }
     .degen-standings > .degen-note {
       margin: 0;
       padding: 0.65rem 0.85rem;
-      border-bottom: 1px solid rgba(232, 120, 90, 0.16);
+      border-bottom: 1px solid rgba(232, 196, 90, 0.16);
     }
     .degen-standings-board { display: grid; }
     .degen-standings-row {
@@ -3968,7 +5749,7 @@
       gap: 0.35rem;
       align-items: center;
       padding: 0.45rem 0.75rem;
-      border-bottom: 1px solid rgba(232, 120, 90, 0.1);
+      border-bottom: 1px solid rgba(232, 196, 90, 0.1);
       font-size: 0.88rem;
     }
     .degen-standings-row:last-child { border-bottom: 0; }
@@ -3977,13 +5758,13 @@
       font-size: 0.68rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: rgba(255, 176, 138, 0.7);
-      background: rgba(232, 120, 90, 0.1);
-      border-bottom-color: rgba(232, 120, 90, 0.22);
+      color: rgba(243, 217, 138, 0.7);
+      background: rgba(232, 196, 90, 0.1);
+      border-bottom-color: rgba(232, 196, 90, 0.22);
     }
     html[data-theme="day"] .degen-standings-row.is-head {
       color: var(--mo-muted);
-      background: rgba(194, 65, 12, 0.06);
+      background: rgba(161, 98, 7, 0.06);
     }
     .degen-standings-row.is-me {
       background: rgba(77, 255, 154, 0.08);
@@ -4009,6 +5790,8 @@
       font-family: "Oswald", sans-serif;
       font-variant-numeric: tabular-nums;
       color: var(--mo-text);
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      padding-left: 0.35rem;
     }
     .degen-standings-row .funds {
       text-align: right;
@@ -4016,8 +5799,16 @@
       font-variant-numeric: tabular-nums;
       color: #b8ffd6;
       font-weight: 600;
+      border-left: 1px solid rgba(255, 255, 255, 0.16);
+      padding-left: 0.45rem;
     }
-    html[data-theme="day"] .degen-standings-row .funds { color: #15803d; }
+    html[data-theme="day"] .degen-standings-row .num {
+      border-left-color: rgba(20, 28, 40, 0.12);
+    }
+    html[data-theme="day"] .degen-standings-row .funds {
+      border-left-color: rgba(20, 28, 40, 0.2);
+      color: #15803d;
+    }
 
     /* —— Death Pool —— */
     .lounge-section.is-death {
@@ -4197,6 +5988,88 @@
       border: 1px solid rgba(240, 160, 176, 0.28);
       background: rgba(0, 0, 0, 0.28);
     }
+    .death-watch-fold {
+      margin: 1.1rem 0 0;
+      border: 1px solid rgba(240, 160, 176, 0.22);
+      background: rgba(0, 0, 0, 0.18);
+      padding: 0.55rem 0.75rem 0.75rem;
+    }
+    .death-watch-fold > summary {
+      cursor: pointer;
+      font-family: "Oswald", sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #f0a0b0;
+      margin-bottom: 0.55rem;
+    }
+    .death-flow {
+      margin: 0 0 1rem;
+      padding: 0.75rem 0.85rem;
+      border: 1px dashed rgba(240, 160, 176, 0.28);
+      background: rgba(160, 60, 80, 0.1);
+      color: var(--mo-muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+    .death-flow strong { color: #f0a0b0; }
+    .death-join-gate {
+      margin: 0 0 1rem;
+      padding: 1.15rem 1.1rem;
+      border: 2px solid rgba(240, 160, 176, 0.45);
+      background:
+        radial-gradient(ellipse 70% 80% at 50% 0%, rgba(180, 70, 95, 0.28), transparent 60%),
+        rgba(0, 0, 0, 0.35);
+      text-align: center;
+    }
+    .death-join-gate h3 {
+      margin: 0 0 0.35rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 1.35rem;
+      letter-spacing: 0.04em;
+      color: var(--mo-text);
+    }
+    .death-join-gate .buy-in-hero,
+    .death-join-flash .buy-in-hero {
+      margin: 0.55rem 0 0.75rem;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      letter-spacing: 0.04em;
+      line-height: 1;
+      color: #f0a0b0;
+    }
+    .death-join-gate .buy-in-hero span,
+    .death-join-flash .buy-in-hero span {
+      display: block;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+      margin-bottom: 0.25rem;
+    }
+    .death-join-gate .meta { margin: 0 0 0.85rem; color: var(--mo-muted); font-size: 0.88rem; }
+    .death-join-flash {
+      margin: 0 0 1rem;
+      padding: 1.1rem 1rem;
+      border: 2px solid rgba(77, 255, 154, 0.45);
+      background: rgba(21, 128, 61, 0.18);
+      text-align: center;
+    }
+    .death-join-flash .buy-in-hero { color: #7dcca0; }
+    .death-join-flash p { margin: 0 0 0.45rem; color: var(--mo-text); }
+    .death-join-flash button {
+      margin-top: 0.35rem;
+      padding: 0.45rem 0.85rem;
+      border: 1px solid rgba(77, 255, 154, 0.4);
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+      cursor: pointer;
+    }
+    html[data-theme="day"] .death-join-gate,
+    html[data-theme="day"] .death-join-flash,
+    html[data-theme="day"] .death-flow {
+      background: rgba(255, 255, 255, 0.65);
+    }
     .death-watch-head {
       display: flex;
       flex-wrap: wrap;
@@ -4246,10 +6119,19 @@
       .degen-score-cell.is-funds {
         grid-column: 1 / -1;
         border-left: 0;
-        border-top: 1px solid rgba(232, 120, 90, 0.18);
+        border-top: 1px solid rgba(232, 196, 90, 0.18);
       }
       .degen-ticket { position: static; }
       .surv-row { grid-template-columns: 1fr; gap: 0.25rem; }
+      .degen-game-cols,
+      .degen-game-row {
+        grid-template-columns: minmax(5.5rem, 1.1fr) repeat(3, minmax(3.6rem, 1fr));
+        gap: 0.28rem;
+      }
+      .degen-team-text .name { display: none; }
+      .degen-team-logo { width: 1.5rem; height: 1.5rem; }
+      .degen-cell { min-height: 2.35rem; padding: 0.28rem 0.15rem; }
+      .degen-cell-main { font-size: 0.84rem; }
     }
 
     @media (max-width: 900px) {
@@ -4279,13 +6161,18 @@
         grid-template-columns: 1fr;
       }
       .mock-pool,
-      .mock-myteam {
+      .mock-myteam,
+      .mock-side {
         max-height: 22rem;
       }
       .mock-clock {
         grid-template-columns: 1fr;
       }
-      .mock-clock-side { text-align: left; }
+      .mock-clock-side {
+        text-align: left;
+        justify-items: stretch;
+      }
+      .mock-draft-drop { min-width: 0; }
       .board-body {
         grid-template-columns: minmax(0, 1fr);
         gap: 0.3rem;
@@ -4297,7 +6184,7 @@
       .im-main {
         border-right: 0;
         border-bottom: 1px solid #b8ad8e;
-        min-height: 16rem;
+        min-height: 20rem;
       }
       .im-buddies {
         padding: 0;
@@ -4305,7 +6192,7 @@
         border-top: 1px solid #b8ad8e;
       }
       .presence-list { max-height: 9rem; }
-      .chat-log { max-height: min(42vh, 22rem); }
+      .chat-log { max-height: min(50vh, 28rem); }
     }
 
     @media (max-width: 520px) {
@@ -4319,13 +6206,9 @@
         grid-template-columns: 1fr;
         grid-template-rows: minmax(0, 1fr);
       }
-      .sgolf-cols {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0 0.55rem;
-      }
       .sgolf-row {
-        grid-template-columns: 1.55rem minmax(0, 1fr) 2rem minmax(3.2rem, auto);
-        gap: 0.15rem 0.3rem;
+        grid-template-columns: 2.1rem minmax(0, 1fr) 2.4rem 3.1rem;
+        column-gap: 0.45rem;
       }
       .sgame.is-golf { grid-column: auto; }
       .board-body {
@@ -4402,17 +6285,19 @@
       color: var(--mo-live);
     }
     html[data-theme="day"] .gambler-subtabs button,
-    html[data-theme="day"] .degen-tabs button,
-    html[data-theme="day"] .degen-chip,
     html[data-theme="day"] .surv-row,
     html[data-theme="day"] .death-story,
     html[data-theme="day"] .mock-toolbar,
     html[data-theme="day"] .records-card,
     html[data-theme="day"] .mock-team-card,
-    html[data-theme="day"] .mock-pool-cols {
-      background: rgba(245, 247, 250, 0.98);
-      border-bottom-color: rgba(20, 24, 31, 0.1);
-      box-shadow: 0 6px 12px rgba(20, 24, 31, 0.06);
+    html[data-theme="day"] .mock-pool-cols,
+    html[data-theme="day"] .mock-other-team,
+    html[data-theme="day"] .degen-stat,
+    html[data-theme="day"] .cpool-card {
+      background: var(--mo-surface-2);
+      border-color: var(--mo-line);
+      box-shadow: 0 4px 12px rgba(20, 24, 31, 0.05);
+      color: var(--mo-text);
     }
     html[data-theme="day"] .mock-pool-cols button { color: var(--mo-muted); }
     html[data-theme="day"] .mock-pool-cols button.is-on,
@@ -4429,24 +6314,102 @@
       border-color: rgba(20, 24, 31, 0.12);
       color: var(--mo-text);
     }
-    html[data-theme="day"] .gambler-subtabs button:hover,
+    html[data-theme="day"] .mock-clock.is-yours {
+      border-color: rgba(21, 128, 61, 0.45);
+      box-shadow: 0 0 0 1px rgba(21, 128, 61, 0.12);
+      background:
+        linear-gradient(105deg, rgba(21, 128, 61, 0.1), rgba(31, 94, 240, 0.06) 55%, transparent),
+        var(--mo-surface);
+      animation: none;
+    }
+    html[data-theme="day"] .mock-order .mock-seat-chip.is-you {
+      border-color: rgba(161, 98, 7, 0.45);
+      background: #fffbeb;
+    }
+    html[data-theme="day"] .mock-order .mock-seat-chip.is-clock {
+      border-color: rgba(21, 128, 61, 0.4);
+      background: #ecfdf3;
+    }
+    html[data-theme="day"] .mock-pool-filters button.is-on {
+      color: var(--mo-gold-soft);
+      background: rgba(161, 98, 7, 0.1);
+    }
+    html[data-theme="day"] .gambler-subtabs button:hover {
+      color: var(--mo-casino);
+      border-bottom-color: var(--mo-casino);
+      background: transparent;
+    }
     html[data-theme="day"] .degen-tabs button:hover,
     html[data-theme="day"] .degen-tabs button.is-on,
-    html[data-theme="day"] .degen-chip.is-on {
-      color: var(--mo-text);
-      border-color: rgba(31, 94, 240, 0.4);
-      background: rgba(31, 94, 240, 0.1);
+    html[data-theme="day"] .degen-chip.is-on,
+    html[data-theme="day"] .degen-chip:hover,
+    html[data-theme="day"] .degen-day.is-on,
+    html[data-theme="day"] .degen-day:hover {
+      color: var(--mo-casino);
+      border-bottom-color: var(--mo-casino);
+      background: transparent;
     }
     html[data-theme="day"] .gambler-subtabs button.is-active {
-      color: #fff;
-      background: var(--mo-blue);
-      border-color: var(--mo-blue);
+      color: var(--mo-casino);
+      background: transparent;
+      border-color: transparent;
+      border-bottom-color: var(--mo-casino);
     }
     html[data-theme="day"] .lounge-section.is-records,
     html[data-theme="day"] .lounge-section.is-mock,
+    html[data-theme="day"] .lounge-section.is-degen,
     html[data-theme="day"] .lounge-section.is-gambler {
-      border-color: rgba(20, 24, 31, 0.1);
-      background: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+      border-color: var(--mo-line);
+      background: var(--mo-panel-mock);
+    }
+    html[data-theme="day"] .lounge-section.is-records {
+      background: var(--mo-panel-records);
+    }
+    html[data-theme="day"] .lounge-section.is-degen {
+      background: var(--mo-panel-degen);
+    }
+    html[data-theme="day"] .surv-row .badge { color: #15803d; }
+    html[data-theme="day"] .surv-row.is-out .badge,
+    html[data-theme="day"] .surv-status.is-err { color: #b91c1c; }
+    html[data-theme="day"] .record-leader .logo,
+    html[data-theme="day"] .record-card-mark .logo.is-blank {
+      background: var(--mo-surface-2);
+    }
+    html[data-theme="day"] .record-card {
+      background: var(--mo-surface);
+      border-color: var(--mo-line);
+      box-shadow: 0 4px 12px rgba(20, 24, 31, 0.05);
+    }
+    html[data-theme="day"] .palace-label h2 {
+      color: var(--mo-casino);
+      text-shadow: none;
+    }
+    html[data-theme="day"] .cpool-card,
+    html[data-theme="day"] .cpool-panel,
+    html[data-theme="day"] .degen-ticket,
+    html[data-theme="day"] .degen-book-card,
+    html[data-theme="day"] .death-card,
+    html[data-theme="day"] .surv-board,
+    html[data-theme="day"] .gambler-panel,
+    html[data-theme="day"] .lounge-desk-jump {
+      background: var(--mo-surface);
+      border-color: var(--mo-line);
+      color: var(--mo-text);
+      box-shadow: 0 4px 14px rgba(20, 24, 31, 0.06);
+    }
+    html[data-theme="day"] .lounge-desk-jump button {
+      color: var(--mo-muted);
+      background: transparent;
+      border-color: transparent;
+    }
+    html[data-theme="day"] .lounge-desk-jump button.is-active {
+      color: var(--mo-text);
+      border-bottom-color: var(--mo-blue);
+      background: transparent;
+    }
+    html[data-theme="day"] .gambler-subtabs button,
+    html[data-theme="day"] .degen-tabs button {
+      color: color-mix(in srgb, var(--mo-casino) 75%, var(--mo-muted));
     }
     html[data-theme="day"] body[data-page="members"] .sync {
       color: var(--mo-muted);
@@ -4471,7 +6434,6 @@
     <div class="shell topbar-inner">
       <nav class="nav" id="site-nav" aria-label="Primary"></nav>
       <div class="sync" id="lastUpdated">Lounge</div>
-      <button type="button" class="lounge-theme-toggle" id="lounge-theme-toggle" aria-label="Switch color theme">Day</button>
     </div>
   </header>
   <section class="page-hero shell" hidden>
@@ -4521,12 +6483,29 @@
         <div class="lounge-section-label">
           <h2>Record Book</h2>
         </div>
-        <div id="records-body"><div class="records-empty">Pulling standings…</div></div>
+        <div id="records-body"><div class="records-empty">Pulling franchise records…</div></div>
       </section>
 
       <section class="lounge-section is-mock lounge-desk-panel" id="mock-draft" data-desk-panel="mock" aria-label="Mock draft generator" role="tabpanel" hidden>
         <div class="lounge-section-label">
           <h2>Mock Draft</h2>
+        </div>
+        <div class="mock-start-bar" id="mock-start-bar">
+          <button type="button" class="mock-start-btn" id="mock-start" aria-label="Start Draft">
+            <span class="mock-start-btn-glow" aria-hidden="true"></span>
+            <span class="mock-start-btn-sheen" aria-hidden="true"></span>
+            <span class="mock-start-btn-kicker">Mock Draft</span>
+            <span class="mock-start-btn-label" id="mock-start-label">Start Draft</span>
+            <span class="mock-start-btn-sub" id="mock-start-sub">1:00 pick clock · snake order</span>
+          </button>
+          <div class="mock-start-copy" id="mock-start-copy">
+            <strong>Set your seat, then hit the button</strong>
+            <span>CPU clubs draft instantly between your turns. Miss the clock and best available is auto-selected.</span>
+          </div>
+          <div class="mock-live-timer" id="mock-live-timer" hidden>
+            <span class="mock-live-timer-label">Your clock</span>
+            <span class="mock-live-timer-value" id="mock-pick-timer">1:00</span>
+          </div>
         </div>
         <div class="mock-toolbar">
           <label>Teams
@@ -4540,78 +6519,183 @@
             <select id="mock-rounds" aria-label="Draft rounds">
               <option value="8">8</option>
               <option value="10">10</option>
+              <option value="12">12</option>
               <option value="15" selected>15</option>
+              <option value="16">16</option>
+              <option value="18">18</option>
             </select>
           </label>
-          <label>Your seat
-            <select id="mock-seat" aria-label="Your draft seat"></select>
+          <label>Your pick #
+            <select id="mock-seat" aria-label="Your draft position"></select>
           </label>
-          <label>Pos
-            <select id="mock-pos" aria-label="Position filter">
-              <option value="ALL">All</option>
-              <option value="QB">QB</option>
-              <option value="RB">RB</option>
-              <option value="WR">WR</option>
-              <option value="TE">TE</option>
-              <option value="K">K</option>
-              <option value="D/ST">D/ST</option>
+          <label>Pick clock
+            <select id="mock-pick-seconds" aria-label="Pick clock length">
+              <option value="60" selected>1:00</option>
+              <option value="120">2:00</option>
+              <option value="180">3:00</option>
             </select>
           </label>
           <label class="mock-search-wrap">Search
             <input type="search" id="mock-search" placeholder="Player name" autocomplete="off" />
           </label>
           <button type="button" id="mock-shuffle">Shuffle order</button>
-          <button type="button" id="mock-auto">Auto-pick</button>
+          <button type="button" id="mock-run-to-me">Run to my pick</button>
+          <button type="button" id="mock-auto">CPU pick</button>
           <button type="button" id="mock-autofill">Fill rest</button>
           <button type="button" id="mock-undo">Undo</button>
           <button type="button" id="mock-reset">Reset</button>
         </div>
         <div class="mock-clock" id="mock-clock">
-          <div>
-            <div class="label" id="mock-clock-label">On the clock</div>
-            <div class="pick" id="mock-clock-pick">Starting…</div>
-          </div>
-          <div class="mock-clock-side">
-            <div class="mock-clock-overall" id="mock-clock-overall">#—</div>
+          <div class="mock-clock-main">
+            <div class="label" id="mock-clock-label">Ready</div>
+            <div class="pick" id="mock-clock-pick">Set your pick #, then Start Draft</div>
             <div class="meta" id="mock-clock-meta"></div>
           </div>
+          <div class="mock-clock-side">
+            <div class="mock-clock-timer-wrap">
+              <span class="mock-clock-timer-label" id="mock-clock-timer-label">Pick clock</span>
+              <div class="mock-clock-timer" id="mock-clock-timer" aria-live="polite">—</div>
+            </div>
+            <div class="mock-clock-overall" id="mock-clock-overall">#—</div>
+            <div
+              class="mock-draft-drop"
+              id="mock-draft-drop"
+              data-drop="draft"
+              aria-label="Drop a player here to draft"
+            >
+              <strong>Draft player</strong>
+              <span>Drop here · or double-click a name</span>
+            </div>
+          </div>
         </div>
-        <div class="mock-order" id="mock-order" aria-label="Draft order"></div>
+        <div class="mock-order" id="mock-order" aria-label="Draft order — click a seat to set your pick #"></div>
         <div class="mock-layout">
           <div class="mock-panel mock-pool">
-            <div class="mock-panel-head"><span>Available players</span><span id="mock-pool-count">0 left</span></div>
+            <div class="mock-panel-head mock-pool-head">
+              <div class="mock-pool-head-row">
+                <span>Available players</span>
+                <span id="mock-pool-count">0 left</span>
+              </div>
+              <div class="mock-pool-filters" id="mock-pool-filters" role="tablist" aria-label="Board filters">
+                <button type="button" role="tab" data-pool-filter="BEST" class="is-on" aria-selected="true">Best</button>
+                <span class="mock-filter-div" aria-hidden="true"></span>
+                <button type="button" role="tab" data-pool-filter="NEED" aria-selected="false" title="Open starter spots on your roster">Need</button>
+                <span class="mock-filter-div" aria-hidden="true"></span>
+                <button type="button" role="tab" data-pool-filter="QB" aria-selected="false">QB</button>
+                <span class="mock-filter-div" aria-hidden="true"></span>
+                <button type="button" role="tab" data-pool-filter="RB" aria-selected="false">RB</button>
+                <span class="mock-filter-div" aria-hidden="true"></span>
+                <button type="button" role="tab" data-pool-filter="WR" aria-selected="false">WR</button>
+                <span class="mock-filter-div" aria-hidden="true"></span>
+                <button type="button" role="tab" data-pool-filter="TE" aria-selected="false">TE</button>
+                <span class="mock-filter-div" aria-hidden="true"></span>
+                <button type="button" role="tab" data-pool-filter="K" aria-selected="false">K</button>
+                <span class="mock-filter-div" aria-hidden="true"></span>
+                <button type="button" role="tab" data-pool-filter="D/ST" aria-selected="false">D/ST</button>
+              </div>
+              <p class="mock-pool-need-hint" id="mock-pool-need-hint" hidden></p>
+            </div>
             <div class="mock-pool-scroll">
               <div class="mock-pool-cols" role="row">
-                <button type="button" data-sort="rank" data-label="Rk" title="Overall rank">Rk</button>
+                <button type="button" data-sort="rank" data-label="Rk" title="Sort by overall rank">Rk</button>
                 <span class="c-blank" aria-hidden="true"></span>
-                <button type="button" class="c-player" data-sort="player" data-label="Player">Player</button>
-                <button type="button" data-sort="pos" data-label="Pos">Pos</button>
-                <button type="button" data-sort="team" data-label="Tm">Tm</button>
-                <button type="button" data-sort="bye" data-label="Bye">Bye</button>
-                <button type="button" data-sort="adp" data-label="ADP">ADP</button>
-                <button type="button" data-sort="posrk" data-label="PosRk">PosRk</button>
-                <button type="button" data-sort="fp" data-label="’25">’25</button>
-                <button type="button" data-sort="ppg" data-label="PPG">PPG</button>
-                <button type="button" data-sort="proj" data-label="Proj">Proj</button>
-                <button type="button" data-sort="delta" data-label="Δ">Δ</button>
+                <button type="button" class="c-player" data-sort="player" data-label="Player" title="Sort by name">Player</button>
+                <button type="button" data-sort="pos" data-label="Pos" title="Sort by position">Pos</button>
+                <button type="button" data-sort="team" data-label="Tm" title="Sort by NFL team">Tm</button>
+                <button type="button" data-sort="bye" data-label="Bye" title="Sort by bye week">Bye</button>
+                <button type="button" data-sort="adp" data-label="ADP" title="Sort by average draft position">ADP</button>
+                <button type="button" data-sort="posrk" data-label="PosRk" title="Sort by position rank">PosRk</button>
+                <button type="button" data-sort="fp" data-label="’25" title="Sort by prior season fantasy points">’25</button>
+                <button type="button" data-sort="ppg" data-label="PPG" title="Sort by points per game">PPG</button>
+                <button type="button" data-sort="proj" data-label="Proj" title="Sort by projected points">Proj</button>
+                <button type="button" data-sort="delta" data-label="Δ" title="Sort by proj vs prior season">Δ</button>
               </div>
               <div id="mock-pool-list"><div class="records-empty">Loading player pool…</div></div>
             </div>
           </div>
-          <div class="mock-panel mock-myteam">
-            <div class="mock-panel-head"><span>My roster</span><span id="mock-myteam-count">0 / 0</span></div>
-            <div id="mock-myteam-list"><div class="records-empty">Pick your seat to build a roster.</div></div>
+          <div class="mock-panel mock-side">
+            <div class="mock-side-tabs" role="tablist" aria-label="Roster tools">
+              <button type="button" role="tab" data-mock-side="roster" class="is-on" aria-selected="true">My Roster</button>
+              <button type="button" role="tab" data-mock-side="targets" aria-selected="false">Targets</button>
+              <button type="button" role="tab" data-mock-side="recent" aria-selected="false">Recent</button>
+            </div>
+            <div class="mock-side-panel is-on" data-mock-side-panel="roster" role="tabpanel">
+              <div class="mock-panel-head mock-side-head"><span id="mock-myteam-label">My roster</span><span id="mock-myteam-count">0 / 0</span></div>
+              <div id="mock-myteam-list"><div class="records-empty">Pick your seat to build a roster.</div></div>
+            </div>
+            <div class="mock-side-panel" data-mock-side-panel="targets" role="tabpanel" hidden>
+              <div class="mock-panel-head mock-side-head"><span>Targets</span><span id="mock-targets-count">0</span></div>
+              <div
+                class="mock-targets-drop"
+                id="mock-targets-list"
+                data-drop="targets"
+                aria-label="Drop players here to target them"
+              >
+                <div class="records-empty">Drag players here to build your board.</div>
+              </div>
+            </div>
+            <div class="mock-side-panel" data-mock-side-panel="recent" role="tabpanel" hidden>
+              <div class="mock-panel-head mock-side-head"><span>Recently drafted</span><span id="mock-recent-count">0</span></div>
+              <div id="mock-recent-list"><div class="records-empty">No picks yet.</div></div>
+            </div>
           </div>
         </div>
-        <div class="mock-ticker">
-          <div class="mock-panel-head"><span>Recent picks</span><span id="mock-picks-count">0</span></div>
-          <div class="mock-recent-rail" id="mock-picks-list"><div class="records-empty">No picks yet.</div></div>
-        </div>
         <div class="mock-league">
-          <div class="mock-panel-head"><span>League board</span><span id="mock-others-count">0 teams</span></div>
+          <div class="mock-panel-head"><span>League board</span><span id="mock-others-count">0 teams · <span id="mock-picks-count">0</span> picks</span></div>
           <div class="mock-others-grid" id="mock-others-list"><div class="records-empty">Waiting on draft order…</div></div>
         </div>
         <p class="mock-status" id="mock-status" role="status"></p>
+
+        <dialog class="mock-dialog mock-complete-dialog" id="mock-complete-dialog" aria-labelledby="mock-complete-title">
+          <div class="mock-complete-sheet">
+            <header class="mock-complete-hero">
+              <img class="mock-complete-logo" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="72" height="72" decoding="async" />
+              <div>
+                <p class="mock-complete-kicker">GridIron 24 · Members Lounge</p>
+                <h3 id="mock-complete-title">Mock Draft complete</h3>
+                <p class="mock-complete-tag" id="mock-complete-tag">Good luck this season!</p>
+              </div>
+              <button type="button" class="mock-dialog-close" id="mock-complete-close" aria-label="Close">×</button>
+            </header>
+            <div class="mock-complete-meta" id="mock-complete-meta"></div>
+            <div class="mock-complete-board" id="mock-complete-board"></div>
+            <footer class="mock-complete-foot">
+              <button type="button" class="mock-dialog-yes" id="mock-complete-done">Back to board</button>
+            </footer>
+          </div>
+        </dialog>
+
+        <dialog class="mock-dialog" id="mock-injury-dialog" aria-labelledby="mock-injury-title">
+          <div class="mock-dialog-card mock-injury-card">
+            <button type="button" class="mock-dialog-close" id="mock-injury-close" aria-label="Close">×</button>
+            <p class="mock-dialog-kicker">Injury report</p>
+            <h3 id="mock-injury-title">Injury news</h3>
+            <div id="mock-injury-body"></div>
+          </div>
+        </dialog>
+
+        <dialog class="mock-dialog" id="mock-confirm-dialog" aria-labelledby="mock-confirm-title">
+          <form method="dialog" class="mock-dialog-card">
+            <p class="mock-dialog-kicker">Confirm pick</p>
+            <h3 id="mock-confirm-title">Draft player?</h3>
+            <div class="mock-dialog-player" id="mock-confirm-player"></div>
+            <div class="mock-dialog-actions">
+              <button type="submit" value="no" class="mock-dialog-no">No</button>
+              <button type="submit" value="yes" class="mock-dialog-yes">Yes</button>
+            </div>
+          </form>
+        </dialog>
+
+        <dialog class="mock-dialog" id="mock-profile-dialog" aria-labelledby="mock-profile-title">
+          <div class="mock-dialog-card mock-profile-card">
+            <button type="button" class="mock-dialog-close" id="mock-profile-close" aria-label="Close">×</button>
+            <div id="mock-profile-body"></div>
+            <div class="mock-dialog-actions">
+              <button type="button" class="mock-dialog-no" id="mock-profile-target">Add target</button>
+              <button type="button" class="mock-dialog-yes" id="mock-profile-draft">Draft</button>
+            </div>
+          </div>
+        </dialog>
       </section>
 
       <section class="lounge-section is-degen lounge-desk-panel" id="gambler-desk" data-desk-panel="gambler" aria-label="Casala's Palace Sports Book and Casino" role="tabpanel" hidden>
@@ -4621,30 +6705,28 @@
         </div>
         <nav class="gambler-subtabs" id="gambler-subtabs" aria-label="Casala's Palace tools">
           <button type="button" data-gambler="book" class="is-active">Sportsbook</button>
-          <button type="button" data-gambler="survivor">Survivor</button>
-          <button type="button" data-gambler="death">Death Pool</button>
-          <button type="button" data-gambler="create">Pool Creator</button>
+          <button type="button" data-gambler="pools">Pools</button>
         </nav>
 
         <div class="gambler-panel" data-gambler-panel="book" id="degenerate-book">
           <div id="degenerate-book-root"><div class="records-empty">Loading sportsbook…</div></div>
-          <p class="degen-status" id="degen-status" role="status"></p>
+          <p class="degen-status" id="degen-status" role="status" hidden></p>
         </div>
 
-        <div class="gambler-panel" data-gambler-panel="survivor" id="survivor-pool" hidden>
-          <div id="survivor-pool-root"><div class="records-empty">Loading survivor pool…</div></div>
-          <p class="surv-status" id="survivor-status" role="status"></p>
-        </div>
-
-        <div class="gambler-panel" data-gambler-panel="death" id="death-pool" hidden>
-          <div id="death-pool-root"><div class="records-empty">Loading death pool…</div></div>
-          <p class="death-status" id="death-status" role="status"></p>
-        </div>
-
-        <div class="gambler-panel" data-gambler-panel="create" id="pool-creator" hidden>
-          <div id="custom-pools-root"><div class="records-empty">Loading pool creator…</div></div>
+        <div class="gambler-panel" data-gambler-panel="pools" id="pool-creator" hidden>
+          <div id="custom-pools-root"><div class="records-empty">Loading pools…</div></div>
           <p class="cpool-status" id="cpool-status" role="status"></p>
         </div>
+
+        <dialog class="mock-dialog cpool-create-dialog" id="cpool-create-dialog" aria-labelledby="cpool-create-title">
+          <div class="mock-dialog-card cpool-create-card">
+            <button type="button" class="mock-dialog-close" id="cpool-create-close" aria-label="Close">×</button>
+            <p class="mock-dialog-kicker">Casala's Palace</p>
+            <h3 id="cpool-create-title">Create a pool</h3>
+            <p class="cpool-create-lead">Pick a format, name it, and open it for the lounge.</p>
+            <div id="cpool-create-mount"></div>
+          </div>
+        </dialog>
       </section>
 
       <div class="lounge-mid">
@@ -4652,7 +6734,7 @@
           <div class="im-titlebar">
             <div class="im-titlebar-left">
               <div class="im-title">
-                <p class="im-app">Instant Message</p>
+                <p class="im-app"><span class="im-app-roll">ROLL CALL</span> - Instant message</p>
                 <h2>Roll Call</h2>
               </div>
             </div>
@@ -4669,14 +6751,14 @@
                 <form class="chat-compose" id="chat-form">
                   <label class="chat-compose-label" for="chat-input">Message</label>
                   <div class="chat-compose-row">
-                    <textarea id="chat-input" maxlength="1000" rows="2" placeholder="Type a message…" autocomplete="off"></textarea>
+                    <textarea id="chat-input" maxlength="1000" rows="3" placeholder="Type a message…" autocomplete="off"></textarea>
                     <button type="submit" id="chat-send">Send</button>
                   </div>
                 </form>
               </div>
             </div>
             <aside class="im-buddies" id="presence-card" aria-label="Online members">
-              <div class="im-buddies-head">Buddy List — 0<small>Online now</small></div>
+              <div class="im-buddies-head">Online now</div>
               <div class="presence-list" id="presence-list"><div class="presence-empty">Nobody else is signed on.</div></div>
             </aside>
           </div>
@@ -4700,9 +6782,9 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
-  <script src="/js/lounge-desk.js?v=10"></script>
-  <script src="/js/lounge-games.js?v=13"></script>
+  <script src="/js/nav.js?v=94"></script>
+  <script src="/js/lounge-desk.js?v=23"></script>
+  <script src="/js/lounge-games.js?v=21"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -4848,17 +6930,15 @@
 
     function sportsGolfBoardHtml(g) {
       const meta = sportsMetaLine(g);
-      const colCount = window.matchMedia('(max-width: 520px)').matches ? 2 : 3;
-      const perCol = 8;
-      const leaders = (Array.isArray(g.leaders) ? g.leaders : []).slice(0, colCount * perCol);
+      const leaders = (Array.isArray(g.leaders) ? g.leaders : []).slice(0, 30);
       const thruHead = leaders.some((p) => p.state === 'in') ? 'Thru' : 'Tee';
       const head = `<div class="sgolf-row is-head" aria-hidden="true">
         <span class="sgolf-pos">Pos</span>
         <span class="sgolf-name">Player</span>
-        <span class="sgolf-score">Sc</span>
+        <span class="sgolf-score">Score</span>
         <span class="sgolf-thru">${esc(thruHead)}</span>
       </div>`;
-      const rowHtml = (p) => {
+      const rows = leaders.map((p) => {
         const live = p.state === 'in';
         const thruRaw = p.thru || '—';
         const thru = sportsCompactGolfThru(thruRaw);
@@ -4868,13 +6948,7 @@
           <span class="sgolf-score">${esc(p.score || '—')}</span>
           <span class="sgolf-thru" title="${esc(thruRaw)}">${esc(thru)}</span>
         </div>`;
-      };
-      const cols = [];
-      for (let c = 0; c < colCount; c += 1) {
-        const chunk = leaders.slice(c * perCol, (c + 1) * perCol);
-        if (!chunk.length && c > 0) break;
-        cols.push(`<div class="sgolf-col">${head}${chunk.map(rowHtml).join('') || '<div class="sgolf-empty">—</div>'}</div>`);
-      }
+      }).join('');
       const round = g.status?.shortDetail || '';
       const status = meta.live
         ? (round && !/^in progress$/i.test(round) ? round : 'Live')
@@ -4886,7 +6960,7 @@
         </header>
         <div class="sgolf-table">
           ${leaders.length
-            ? `<div class="sgolf-cols">${cols.join('')}</div>`
+            ? `<div class="sgolf-list">${head}${rows}</div>`
             : '<div class="sgolf-empty">No leaderboard yet</div>'}
         </div>
       </article>`;
@@ -4944,19 +7018,24 @@
     function sportsGameHtml(g) {
       const bucket = g.status?.bucket || 'upcoming';
       const meta = sportsMetaLine(g);
-      const odds = g.odds || null;
       const fantasy = Boolean(g.fantasy || g.league === 'gi24' || g.league === 'aaa');
-      const hasLines = sportsHasLines(g);
-      const wagered = !fantasy && sportsWageredIds.has(String(g.id));
+      const noBetting = !fantasy && String(g.league || '') === 'ncaaf';
+      const odds = noBetting ? null : (g.odds || null);
+      const hasLines = !noBetting && sportsHasLines(g);
+      const showLineCol = hasLines || fantasy;
+      const wagered = !fantasy && !noBetting && sportsWageredIds.has(String(g.id));
       const watchHtml = meta.watch
         ? `<span class="sgame-watch" title="Watch on ${esc(meta.watch)}">${esc(meta.watch)}</span>`
         : '';
       const ouLabel = odds?.overUnder != null ? sportsFormatTotal(odds.overUnder) : '';
-      const ouHtml = ouLabel
-        ? `<span class="sgame-ou" title="${esc(odds.provider === 'Projected' || fantasy ? 'Projected total' : (odds.provider ? `${odds.provider} total` : 'Game total'))}">O/U ${esc(ouLabel)}</span>`
-        : (fantasy
-          ? `<span class="sgame-ou is-blank" title="No projected total">O/U —</span>`
-          : `<span class="sgame-ou is-blank" title="No total posted">O/U —</span>`);
+      let ouHtml = '';
+      if (!noBetting) {
+        ouHtml = ouLabel
+          ? `<span class="sgame-ou" title="${esc(odds.provider === 'Projected' || fantasy ? 'Projected total' : (odds.provider ? `${odds.provider} total` : 'Game total'))}">O/U ${esc(ouLabel)}</span>`
+          : (fantasy
+            ? `<span class="sgame-ou is-blank" title="No projected total">O/U —</span>`
+            : '');
+      }
 
       if (g.kind === 'golf') return sportsGolfBoardHtml(g);
 
@@ -4980,25 +7059,39 @@
         } else {
           scoreHtml = `<span class="sgame-score is-blank">—</span>`;
         }
-        const line = sportsSideLine(oddsSide, odds);
-        const lineTitle = fantasy
-          ? (odds?.details || 'Projected point difference')
-          : (odds?.details || odds?.provider || 'Line');
-        const lineHtml = line
-          ? `<span class="sgame-line" title="${esc(lineTitle)}">${esc(line)}</span>`
-          : `<span class="sgame-line is-blank" title="${fantasy ? 'No projected line' : 'No line posted'}">—</span>`;
+        let lineHtml = '';
+        if (showLineCol) {
+          const line = sportsSideLine(oddsSide, odds);
+          const lineTitle = fantasy
+            ? (odds?.details || 'Projected point difference')
+            : (odds?.details || odds?.provider || 'Line');
+          lineHtml = line
+            ? `<span class="sgame-line" title="${esc(lineTitle)}">${esc(line)}</span>`
+            : (fantasy
+              ? `<span class="sgame-line is-blank" title="No projected line">—</span>`
+              : '');
+        }
         const logo = t.logo
           ? `<img class="sgame-logo" src="${esc(t.logo)}" alt="" width="28" height="28" loading="eager" decoding="async" referrerpolicy="no-referrer" />`
           : `<span class="sgame-logo-fallback" aria-hidden="true"></span>`;
-        return `<div class="sgame-row${win ? ' is-winner' : ''}">
+        const record = fantasy && t.record ? String(t.record) : '';
+        const nameCell = record
+          ? `<span class="sgame-namecell">
+              <span class="sgame-abbr" title="${esc(t.name || t.abbreviation || '')}">${esc(t.abbreviation || t.shortName || '?')}</span>
+              <span class="sgame-rec" title="Season record">${esc(record)}</span>
+            </span>`
+          : `<span class="sgame-abbr" title="${esc(t.name || t.abbreviation || '')}">${esc(t.abbreviation || t.shortName || '?')}</span>`;
+        return `<div class="sgame-row${showLineCol && lineHtml ? ' has-line' : ''}${win ? ' is-winner' : ''}">
           ${logo}
-          <span class="sgame-abbr" title="${esc(t.name || t.abbreviation || '')}">${esc(t.abbreviation || t.shortName || '?')}</span>
-          ${scoreHtml}
+          <div class="sgame-teamline">
+            ${nameCell}
+            ${scoreHtml}
+          </div>
           ${lineHtml}
         </div>`;
       };
 
-      return `<article class="sgame is-${esc(bucket)}${fantasy ? ' is-fantasy' : ''}${hasLines ? '' : ' is-nolines'}${wagered ? ' is-wagered' : ''}" data-event-id="${esc(String(g.id || ''))}" title="${esc(g.name || '')}${wagered ? ' · Your Casala\'s bet' : ''}">
+      return `<article class="sgame is-${esc(bucket)}${fantasy ? ' is-fantasy' : ''}${hasLines || fantasy ? '' : ' is-nolines'}${wagered ? ' is-wagered' : ''}" data-event-id="${esc(String(g.id || ''))}" title="${esc(g.name || '')}${wagered ? ' · Your Casala\'s bet' : ''}">
         <div class="sgame-top">
           <span class="sgame-when${meta.live ? ' sgame-status is-live' : ''}">${esc(meta.when)}</span>
           <span class="sgame-top-right">
@@ -5409,8 +7502,8 @@
         .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
       if (head) {
         head.innerHTML = people.length
-          ? `Buddy List — ${people.length}<small>Online now · click to @mention</small>`
-          : `Buddy List — 0<small>Online now</small>`;
+          ? `Online now<small>Click to @mention</small>`
+          : `Online now`;
       }
       if (!people.length) {
         el.innerHTML = `<div class="presence-empty">Nobody else is signed on.</div>`;
@@ -5499,24 +7592,33 @@
 
     function mockCardHtml(m) {
       const meta = m.meta || {};
+      const pickSec = Number(meta.pickSeconds) || 60;
+      const clockLabel = `${Math.max(1, Math.round(pickSec / 60))}:00`;
       const bits = [
         meta.teams != null ? `${meta.teams} teams` : null,
         meta.rounds != null ? `${meta.rounds} rounds` : null,
         meta.order || 'snake',
+        `${clockLabel} clock`,
         meta.seat ? `seat ${meta.seat}` : null
       ].filter(Boolean);
       const first = meta.firstPick
         ? `<p class="im-mock-meta">First pick · <strong>${esc(meta.firstPick)}</strong>${meta.firstPos ? ` (${esc(meta.firstPos)})` : ''}</p>`
         : '';
-      const href = meta.link || '/members.html#mock-draft';
-      const label = meta.linkLabel || 'Open Mock Draft';
+      const roomId = meta.roomId ? String(meta.roomId) : '';
+      const href = meta.link || (roomId ? `/members.html#mock-draft?room=${encodeURIComponent(roomId)}` : '/members.html#mock-draft');
+      const label = meta.linkLabel || (roomId ? 'Join Mock Draft' : 'Open Mock Draft');
+      const openBit = meta.openSeats != null
+        ? `<p class="im-mock-meta">${esc(String(meta.openSeats))} open seat${Number(meta.openSeats) === 1 ? '' : 's'}</p>`
+        : '';
       return `
-        <div class="im-mock-card">
+        <div class="im-mock-card" data-mock-room="${esc(roomId)}" data-pick-seconds="${esc(String(pickSec))}" data-pick-deadline="${esc(meta.pickDeadline || '')}">
           <p class="im-mock-kicker">Mock draft</p>
           <p class="im-mock-title">${esc(m.authorName || 'Member')} is drafting</p>
           <p class="im-mock-meta">${esc(bits.join(' · '))}</p>
+          <p class="im-mock-clock" aria-live="polite"><span class="im-mock-clock-label">On the clock</span> <strong class="im-mock-clock-value">${esc(clockLabel)}</strong></p>
           ${first}
-          <a class="im-mock-link" href="${esc(href)}">${esc(label)}</a>
+          ${openBit}
+          <a class="im-mock-link" href="${esc(href)}" data-join-mock="${esc(roomId)}">${esc(label)}</a>
         </div>`;
     }
 
@@ -5556,6 +7658,67 @@
         </div>`;
     }
 
+    function formatMockClock(seconds) {
+      const s = Math.max(0, Number(seconds) || 0);
+      const mm = Math.floor(s / 60);
+      const ss = String(s % 60).padStart(2, '0');
+      return `${mm}:${ss}`;
+    }
+
+    function paintMockChatClocks() {
+      document.querySelectorAll('.im-mock-card[data-mock-room]').forEach((card) => {
+        const valueEl = card.querySelector('.im-mock-clock-value');
+        const clockEl = card.querySelector('.im-mock-clock');
+        if (!valueEl) return;
+        const deadline = card.getAttribute('data-pick-deadline');
+        const pickSec = Number(card.getAttribute('data-pick-seconds')) || 60;
+        let left = pickSec;
+        if (deadline) {
+          const ts = Date.parse(deadline);
+          if (Number.isFinite(ts)) left = Math.max(0, Math.ceil((ts - Date.now()) / 1000));
+        }
+        valueEl.textContent = formatMockClock(left);
+        clockEl?.classList.toggle('is-low', left <= 10 && left > 0);
+        clockEl?.classList.toggle('is-urgent', left <= 5 && left > 0);
+      });
+    }
+
+    async function syncMockChatDeadlines() {
+      const cards = [...document.querySelectorAll('.im-mock-card[data-mock-room]')];
+      const ids = [...new Set(cards.map((c) => c.getAttribute('data-mock-room')).filter(Boolean))];
+      if (!ids.length) return;
+      await Promise.all(ids.map(async (roomId) => {
+        try {
+          const res = await fetch(`/api/mock-draft?roomId=${encodeURIComponent(roomId)}`, { cache: 'no-store' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok || !data.room) return;
+          const room = data.room;
+          document.querySelectorAll(`.im-mock-card[data-mock-room="${CSS.escape(roomId)}"]`).forEach((card) => {
+            if (room.pickDeadline) card.setAttribute('data-pick-deadline', room.pickDeadline);
+            else card.removeAttribute('data-pick-deadline');
+            if (room.pickSeconds) card.setAttribute('data-pick-seconds', String(room.pickSeconds));
+            const link = card.querySelector('.im-mock-link');
+            if (link && room.status === 'done') {
+              link.textContent = 'Draft finished';
+            } else if (link && room.openSeatCount === 0 && room.status === 'live') {
+              link.textContent = 'Watch Mock Draft';
+            }
+          });
+        } catch { /* best-effort */ }
+      }));
+      paintMockChatClocks();
+    }
+
+    function startMockChatClocks() {
+      paintMockChatClocks();
+      clearInterval(window.__giMockClockTick);
+      window.__giMockClockTick = setInterval(paintMockChatClocks, 250);
+      clearInterval(window.__giMockClockSync);
+      window.__giMockClockSync = setInterval(() => {
+        syncMockChatDeadlines().catch(() => {});
+      }, 4000);
+    }
+
     function renderChat() {
       const log = document.getElementById('chat-log');
       if (!log) return;
@@ -5571,7 +7734,7 @@
         const who = m.authorName || 'Member';
         const isBet = m.kind === 'bet';
         const isMock = m.kind === 'mock';
-        const color = isBet ? '#c45c26' : isMock ? '#2f5aa8' : screenColor(m.authorId || who);
+        const color = isBet ? '#c9a227' : isMock ? '#2f5aa8' : screenColor(m.authorId || who);
         const prev = chatMessages[i - 1];
         const compact = !isBet && !isMock && sameAuthorBurst(prev, m) && prev?.kind !== 'bet' && prev?.kind !== 'mock';
         const stamp = fmtChatTime(m.createdAt);
@@ -5613,6 +7776,7 @@
         });
       });
       if (stick) log.scrollTop = log.scrollHeight;
+      paintMockChatClocks();
     }
 
     function mergeChat(incoming) {
@@ -5827,7 +7991,7 @@
     function leagueLogoForMember(m) {
       const key = String(m?.membershipLeague || '').toLowerCase();
       if (key === 'aaa') {
-        return { src: '/assets/aaa-league.png?v=3', alt: 'AAA' };
+        return { src: '/assets/aaa-league.png?v=6', alt: 'AAA' };
       }
       if (key === 'gridiron') {
         return { src: '/assets/gridiron24-league-sm.png?v=5', alt: 'GridIron 24' };
@@ -5898,7 +8062,7 @@
     }
 
     function setGamblerTab(key, { updateHash = false } = {}) {
-      const next = ['book', 'survivor', 'death', 'create'].includes(key) ? key : 'book';
+      const next = ['book', 'pools'].includes(key) ? key : 'book';
       document.querySelectorAll('#gambler-subtabs [data-gambler]').forEach((btn) => {
         const on = btn.getAttribute('data-gambler') === next;
         btn.classList.toggle('is-active', on);
@@ -5910,9 +8074,7 @@
       if (updateHash) {
         const hashMap = {
           book: '#gambler',
-          survivor: '#survivor-pool',
-          death: '#death-pool',
-          create: '#pool-creator'
+          pools: '#pools'
         };
         history.replaceState(null, '', hashMap[next] || '#gambler');
       }
@@ -5938,9 +8100,7 @@
         if (next === 'gambler' && gambler) {
           const gMap = {
             book: '#gambler',
-            survivor: '#survivor-pool',
-            death: '#death-pool',
-            create: '#pool-creator'
+            pools: '#pools'
           };
           history.replaceState(null, '', gMap[gambler] || '#gambler');
         } else {
@@ -5952,7 +8112,8 @@
     }
 
     function applyDeskHash(rawHash) {
-      const hash = String(rawHash || '').toLowerCase();
+      const full = String(rawHash || '');
+      const hash = full.split('?')[0].toLowerCase();
       if (hash === '#record-book' || hash === '#records') {
         setDeskTab('records');
         return;
@@ -5961,16 +8122,16 @@
         setDeskTab('mock');
         return;
       }
-      if (hash === '#survivor-pool' || hash === '#survivor') {
-        setDeskTab('gambler', { gambler: 'survivor' });
-        return;
-      }
-      if (hash === '#death-pool' || hash === '#death') {
-        setDeskTab('gambler', { gambler: 'death' });
-        return;
-      }
-      if (hash === '#pool-creator' || hash === '#pools' || hash === '#create-pool') {
-        setDeskTab('gambler', { gambler: 'create' });
+      if (
+        hash === '#pools' ||
+        hash === '#pool-creator' ||
+        hash === '#create-pool' ||
+        hash === '#survivor-pool' ||
+        hash === '#survivor' ||
+        hash === '#death-pool' ||
+        hash === '#death'
+      ) {
+        setDeskTab('gambler', { gambler: 'pools' });
         return;
       }
       if (
@@ -6015,66 +8176,6 @@
       }
     }
 
-    function syncLoungeThemeToggle() {
-      const btn = document.getElementById('lounge-theme-toggle');
-      if (!btn) return;
-      const theme = window.GridIronNav?.getTheme?.()
-        || document.documentElement.getAttribute('data-theme')
-        || 'night';
-      const isDay = theme === 'day';
-      btn.textContent = isDay ? 'Night' : 'Day';
-      btn.setAttribute('aria-label', isDay ? 'Switch to night theme' : 'Switch to day theme');
-      btn.title = isDay ? 'Switch to night' : 'Switch to day';
-    }
-
-    function placeLoungeThemeToggle() {
-      const btn = document.getElementById('lounge-theme-toggle');
-      const topbarInner = document.querySelector('.topbar-inner');
-      if (!btn || !topbarInner) return;
-      let right = topbarInner.querySelector('.topbar-right');
-      if (!right) {
-        right = document.createElement('div');
-        right.className = 'topbar-right';
-        const syncEl = document.getElementById('lastUpdated');
-        if (syncEl) right.appendChild(syncEl);
-        topbarInner.appendChild(right);
-      }
-      right.insertBefore(btn, right.firstChild);
-    }
-
-    async function toggleLoungeTheme() {
-      const current = window.GridIronNav?.getTheme?.()
-        || document.documentElement.getAttribute('data-theme')
-        || 'night';
-      const next = current === 'day' ? 'night' : 'day';
-      window.GridIronNav?.setTheme?.(next);
-      if (!window.GridIronNav?.setTheme) {
-        document.documentElement.setAttribute('data-theme', next);
-        try { localStorage.setItem('gi-theme', next); } catch { /* ignore */ }
-      }
-      syncLoungeThemeToggle();
-      try {
-        await fetch('/api/preferences', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({ theme: next })
-        });
-      } catch { /* local theme still applied */ }
-    }
-
-    placeLoungeThemeToggle();
-    syncLoungeThemeToggle();
-    document.getElementById('lounge-theme-toggle')?.addEventListener('click', () => {
-      toggleLoungeTheme();
-    });
-    // Re-sync label after nav applies the user's saved theme.
-    document.addEventListener('DOMContentLoaded', () => {
-      placeLoungeThemeToggle();
-      setTimeout(syncLoungeThemeToggle, 50);
-      setTimeout(syncLoungeThemeToggle, 400);
-    });
-
     (async () => {
       wireChatForm();
       document.addEventListener('gi:presence', (e) => {
@@ -6111,6 +8212,7 @@
         await load();
         await loadChat();
         startChatPoll();
+        startMockChatClocks();
         syncLoungeThemeToggle();
         if (location.hash === '#room') {
           document.getElementById('room')?.scrollIntoView({ behavior: 'smooth', block: 'start' });

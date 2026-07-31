@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     .book {
       max-width: 52rem;
@@ -16,7 +16,8 @@
     }
 
     .rule-mark {
-      margin: 0.35rem 0 1rem;
+      margin: 0.85rem 0 1.35rem;
+      padding: 0.35rem 0;
     }
     .rule-mark img {
       width: min(100%, 18rem);
@@ -168,13 +169,22 @@
       flex-wrap: wrap;
       gap: 0.5rem;
       margin: 0.75rem 0 0.25rem;
+      /* Same palette as Members Lounge mock draft */
+      --mock-qb: #ff6b6b;
+      --mock-rb: #3dd68c;
+      --mock-wr: #5b9dff;
+      --mock-te: #c084fc;
+      --mock-k: #f5b942;
+      --mock-dst: #94a3b8;
+      --mock-flex: #2dd4bf;
+      --mock-bn: #64748b;
     }
     .slot {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 0.2rem;
+      gap: 0.35rem;
       min-width: 4.5rem;
       min-height: 3.75rem;
       padding: 0.55rem 0.7rem;
@@ -183,14 +193,32 @@
       text-align: center;
     }
     .slot .pos {
-      font-family: var(--page-title), var(--display);
-      font-size: 1.2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.6rem;
+      padding: 0.22rem 0.45rem;
+      border-radius: 0.3rem;
+      font-family: "Oswald", var(--display), sans-serif;
+      font-size: 0.95rem;
       font-weight: 700;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--text);
+      color: #061018;
       line-height: 1;
+      background: var(--mock-bn);
     }
+    .slot[data-pos="QB"] .pos { background: var(--mock-qb); }
+    .slot[data-pos="RB"] .pos { background: var(--mock-rb); }
+    .slot[data-pos="WR"] .pos { background: var(--mock-wr); }
+    .slot[data-pos="TE"] .pos { background: var(--mock-te); }
+    .slot[data-pos="K"] .pos { background: var(--mock-k); }
+    .slot[data-pos="D/ST"] .pos,
+    .slot[data-pos="DST"] .pos { background: var(--mock-dst); color: #0b1220; }
+    .slot[data-pos="FLEX"] .pos { background: var(--mock-flex); }
+    .slot[data-pos="Bench"] .pos,
+    .slot[data-pos="BN"] .pos,
+    .slot[data-pos="IR"] .pos { background: var(--mock-bn); color: #e8eef8; }
     .slot .cnt {
       font-family: var(--display);
       font-size: 0.95rem;
@@ -201,7 +229,7 @@
       line-height: 1;
     }
     .slot.bench {
-      opacity: 0.72;
+      opacity: 0.85;
     }
     .slot.bench .cnt {
       color: var(--muted);
@@ -385,8 +413,7 @@
         </section>
         <section class="section">
           <h3 class="section-title">§2.02 Official Calendar</h3>
-          <p>Key dates for the season are set forth below and may be updated by the Commissioner.</p>
-          <div id="calendar-rules"><div class="msg">Loading calendar…</div></div>
+          <p>Key dates for the season are set by the league owner and the Commissioner and may be updated as needed. See the <a href="/calendar.html">league calendar</a> for current dates.</p>
         </section>
       </article>
 
@@ -468,6 +495,7 @@
         </section>
         <section class="section">
           <h3 class="section-title">§5.02 GridIron Bowl</h3>
+          <p class="rule-mark"><img src="/assets/gridiron-bowl.png?v=5" alt="GridIron Bowl" width="1024" height="682" /></p>
           <p>In Week 17, the Detail Conference champion and the Overtime Conference champion shall meet in the GridIron Bowl. The champion is determined by each entrant’s Week 17 ESPN fantasy score.</p>
         </section>
         <section class="section">
@@ -482,7 +510,7 @@
         </section>
         <section class="section">
           <h3 class="section-title">§5.04 Mayor's Cup</h3>
-          <p class="rule-mark"><img src="/assets/mayors-cup.png?v=4" alt="Mayor's Cup" width="1024" height="768" /></p>
+          <p class="rule-mark"><img src="/assets/mayors-cup.png?v=5" alt="Mayor's Cup" width="1024" height="768" /></p>
           <p>In Week 17, the relegated Detail franchise and the relegated Overtime franchise shall meet in the Mayor's Cup.</p>
           <ol>
             <li>The Mayor's Cup is decided by each entrant’s Week 17 ESPN fantasy score.</li>
@@ -537,7 +565,7 @@
         </section>
         <section class="section">
           <h3 class="section-title">§7.03 Final Authority</h3>
-          <p>Matters not expressly covered by this Rule Book, and disputes arising under it, are decided by the Commissioner.</p>
+          <p>Matters not expressly covered by this Rule Book, and disputes arising under it, are decided by a league vote. A simple majority of the league pool — more than fifty percent (50%) of franchises voting in favor — carries the issue.</p>
         </section>
       </article>
     </div>
@@ -547,7 +575,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script src="/js/conference-diff.js?v=5"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -573,17 +601,6 @@
       }
     }
 
-    function fmtDate(d) {
-      if (!d) return 'TBD';
-      try {
-        return new Date(`${d}T12:00:00`).toLocaleDateString([], {
-          month: 'short', day: 'numeric', year: 'numeric'
-        });
-      } catch {
-        return d;
-      }
-    }
-
     function noteBullets(notes = '') {
       const parts = String(notes)
         .split(/(?<=\.)\s+/)
@@ -602,7 +619,7 @@
       });
       if (!sorted.length) return '<p>Lineup settings unavailable.</p>';
       return `<div class="lineup-row">${sorted.map((s) => `
-        <div class="slot${['Bench', 'IR'].includes(s.label) ? ' bench' : ''}">
+        <div class="slot${['Bench', 'IR'].includes(s.label) ? ' bench' : ''}" data-pos="${esc(s.label)}">
           <span class="pos">${esc(s.label)}</span>
           <span class="cnt">×${esc(String(s.count))}</span>
         </div>`).join('')}</div>`;
@@ -628,24 +645,6 @@
           </div>`).join('');
         return `<section class="group-panel"><h3>${esc(group)}</h3>${rules}</section>`;
       }).join('')}</div>`;
-    }
-
-    async function loadCalendar() {
-      const mount = document.getElementById('calendar-rules');
-      try {
-        const res = await fetch('/api/calendar', { cache: 'no-store' });
-        const data = await res.json();
-        const events = data.events || [];
-        if (!events.length) {
-          mount.innerHTML = '<p>Season calendar is not published yet.</p>';
-          return;
-        }
-        mount.innerHTML = `<ol>${events.map((e) => `
-          <li><strong>${esc(fmtDate(e.date))}</strong> — ${esc(e.title)}${e.notes ? `: ${esc(e.notes)}` : ''}</li>
-        `).join('')}</ol>`;
-      } catch (err) {
-        mount.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
-      }
     }
 
     async function loadScoring() {
@@ -693,7 +692,7 @@
     function prizeLogo(label = '') {
       const l = String(label).toLowerCase();
       if (l.includes('mayor') || l.includes('relegation') || l.includes('toilet')) {
-        return '/assets/mayors-cup.png?v=4';
+        return '/assets/mayors-cup.png?v=5';
       }
       if ((l.includes('third') || l.includes('3rd')) && l.includes('overtime')) {
         return '/assets/overtime-3rd-place.png';
@@ -703,11 +702,11 @@
       }
       if (l.includes('third') || l.includes('3rd')) return '/assets/detail-3rd-place.png';
       if (l.includes('winner') || l.includes('bowl') || (l.includes('gridiron') && !l.includes('conference'))) {
-        return '/assets/gridiron-bowl.png?v=3';
+        return '/assets/gridiron-bowl.png?v=5';
       }
       if (l.includes('overtime')) return '/assets/overtime-conference.png';
       if (l.includes('detail')) return '/assets/detail-conference.png';
-      return '/assets/gridiron-bowl.png?v=3';
+      return '/assets/gridiron-bowl.png?v=5';
     }
 
     async function loadPayouts() {
@@ -759,7 +758,7 @@
       }
     }
 
-    Promise.all([loadCalendar(), loadScoring(), loadPayouts()]).then(() => {
+    Promise.all([loadScoring(), loadPayouts()]).then(() => {
       const hash = location.hash;
       if (hash) {
         const el = document.querySelector(hash);

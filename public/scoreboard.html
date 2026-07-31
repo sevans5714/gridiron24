@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
     :root,
     html[data-theme="night"] {
@@ -797,8 +797,8 @@
   </header>
 
   <section class="sb-hero shell">
-    <img class="brand-logo" src="/assets/gridiron24-league.png?v=5" alt="GridIron 24" width="280" height="280" />
-    <h1>Scoreboard</h1>
+    <img class="brand-logo" id="sb-brand-logo" src="/assets/gridiron24-league.png?v=5" alt="GridIron 24" width="280" height="280" />
+    <h1 id="sb-title">Scoreboard</h1>
   </section>
 
   <div class="shell">
@@ -838,13 +838,53 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script>
+    (function () {
+      const isAaa = /aaa-scoreboard/i.test(window.location.pathname);
+      document.body.dataset.page = isAaa ? 'aaa-scoreboard' : 'scoreboard';
+      document.body.dataset.league = isAaa ? 'aaa' : 'gridiron';
+    })();
+  </script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const REFRESH_MS = 30_000;
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
+    const SCOREBOARD_LEAGUE = document.body.dataset.league === 'aaa' ? 'aaa' : 'gridiron';
+    const LEAGUE_BRAND = SCOREBOARD_LEAGUE === 'aaa'
+      ? {
+          logo: '/assets/aaa-league.png?v=6',
+          name: 'AAA League',
+          title: 'AAA Scoreboard'
+        }
+      : {
+          logo: '/assets/gridiron24-league.png?v=5',
+          name: 'GridIron 24',
+          title: 'Scoreboard'
+        };
+
+    document.title = `${LEAGUE_BRAND.title} · GridIron 24`;
+
+    (function applyBrand() {
+      const logo = document.getElementById('sb-brand-logo');
+      const title = document.getElementById('sb-title');
+      if (logo) {
+        logo.src = LEAGUE_BRAND.logo;
+        logo.alt = LEAGUE_BRAND.name;
+      }
+      if (title) title.textContent = LEAGUE_BRAND.title;
+    })();
+
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    function leagueQs(extra = {}) {
+      const params = new URLSearchParams({ league: SCOREBOARD_LEAGUE });
+      Object.entries(extra).forEach(([k, v]) => {
+        if (v != null && v !== '') params.set(k, String(v));
+      });
+      return `?${params.toString()}`;
+    }
 
     let pollTimer = null;
     let nflFlipTimer = null;
@@ -1135,11 +1175,18 @@
 
     async function loadLeaders(week) {
       try {
-        const qs = week ? `?week=${encodeURIComponent(week)}` : '';
+        const qs = leagueQs(week ? { week } : {});
         const res = await fetch(`/api/fantasy-leaders${qs}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`Leaders ${res.status}`);
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'Leaders unavailable');
+        if (data.leagueScope?.logo) {
+          const logo = document.getElementById('sb-brand-logo');
+          if (logo) {
+            logo.src = data.leagueScope.logo;
+            logo.alt = data.leagueScope.label || LEAGUE_BRAND.name;
+          }
+        }
         renderLeaders(data);
       } catch (err) {
         const track = document.getElementById('leaders-track');
@@ -1250,10 +1297,17 @@
         document.getElementById('boards').innerHTML = '<div class="board-empty">Powering up scoreboard…</div>';
       }
       try {
-        const qs = week ? `?week=${encodeURIComponent(week)}` : '';
+        const qs = leagueQs(week ? { week } : {});
         const res = await fetch(`/api/schedule${qs}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
+        if (data.leagueScope?.logo) {
+          const logo = document.getElementById('sb-brand-logo');
+          if (logo) {
+            logo.src = data.leagueScope.logo;
+            logo.alt = data.leagueScope.label || LEAGUE_BRAND.name;
+          }
+        }
         currentWeek = Number(data.week);
         fantasySeason = Number(data.season) || fantasySeason;
         const livePeriod = data.conferences?.find((c) => c.ok)?.currentMatchupPeriod;

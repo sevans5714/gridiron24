@@ -8,8 +8,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <link rel="stylesheet" href="/css/site.css?v=131" />
   <style>
+    :root {
+      --mock-qb: #ff6b6b;
+      --mock-rb: #3dd68c;
+      --mock-wr: #5b9dff;
+      --mock-te: #c084fc;
+      --mock-k: #f5b942;
+      --mock-dst: #94a3b8;
+      --mock-flex: #2dd4bf;
+      --mock-bn: #64748b;
+    }
     .roster-controls {
       display: flex;
       flex-wrap: wrap;
@@ -116,22 +126,52 @@
       font-size: 0.72rem;
       margin-bottom: 0.25rem;
     }
-    .slot { color: #8eb6ff; font-weight: 700; font-size: 0.82rem; }
     .slot-roster { list-style: none; margin: 0; padding: 0; }
+    .slot-roster-divider {
+      margin: 1rem 0 0.45rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--line);
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
     .slot-roster-row {
       display: grid;
-      grid-template-columns: 3.25rem minmax(0, 1fr) auto auto;
+      grid-template-columns: 2.75rem minmax(0, 1fr) auto auto;
       gap: 0.65rem 0.85rem;
-      align-items: baseline;
-      padding: 0.7rem 0;
+      align-items: center;
+      padding: 0.65rem 0;
       border-bottom: 1px solid var(--line);
     }
     .slot-roster-row:last-child { border-bottom: 0; }
     .slot-roster-row .slot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.35rem;
+      padding: 0.2rem 0.35rem;
+      border-radius: 0.3rem;
       font-family: var(--display);
-      letter-spacing: 0.06em;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
+      color: #061018;
+      background: var(--mock-bn);
     }
+    .slot-roster-row .slot[data-pos="QB"] { background: var(--mock-qb); }
+    .slot-roster-row .slot[data-pos="RB"] { background: var(--mock-rb); }
+    .slot-roster-row .slot[data-pos="WR"] { background: var(--mock-wr); }
+    .slot-roster-row .slot[data-pos="TE"] { background: var(--mock-te); }
+    .slot-roster-row .slot[data-pos="K"] { background: var(--mock-k); }
+    .slot-roster-row .slot[data-pos="D/ST"],
+    .slot-roster-row .slot[data-pos="DST"] { background: var(--mock-dst); color: #0b1220; }
+    .slot-roster-row .slot[data-pos="FLEX"] { background: var(--mock-flex); }
+    .slot-roster-row .slot[data-pos="BN"],
+    .slot-roster-row .slot[data-pos="IR"] { background: var(--mock-bn); color: #e8eef8; }
     .slot-roster-row .nm { min-width: 0; font-weight: 600; }
     .slot-roster-row .nm .pro {
       display: block;
@@ -190,7 +230,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/nav.js?v=94"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     function record(t) {
@@ -207,7 +247,29 @@
       return 'ok';
     }
     function starterSlots(slot) {
-      return !['Bench', 'IR'].includes(slot);
+      return !['Bench', 'IR', 'IR/Covid', 'IR/COVID'].includes(String(slot || ''));
+    }
+    function slotPosLabel(slot) {
+      const s = String(slot || '');
+      if (s === 'Bench') return 'BN';
+      if (s.startsWith('IR')) return 'IR';
+      return s || '—';
+    }
+    function rosterRowHtml(p, week) {
+      const empty = p.empty || !p.name;
+      const status = empty ? '—' : (p.injuryStatus || '—');
+      const isStarter = starterSlots(p.slot);
+      const bad = !empty && injClass(p.injuryStatus) === 'bad' && isStarter;
+      const onBye = !empty && week && Number(p.byeWeek) === Number(week);
+      const pos = slotPosLabel(p.slot);
+      return `<li class="slot-roster-row ${[empty ? 'is-empty' : '', bad ? 'row-bad' : ''].filter(Boolean).join(' ')}">
+        <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
+        <span class="nm">${empty ? '—' : esc(p.name)}
+          ${empty ? '' : `<span class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}${onBye ? ` · Bye ${esc(String(p.byeWeek))}` : ''}</span>`}
+        </span>
+        <span class="nums">${empty ? '—' : fmt(p.weekPoints)}<small>${empty ? '' : `proj ${fmt(p.weekProjected)}`}</small></span>
+        <span class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</span>
+      </li>`;
     }
 
     let conferences = [];
@@ -257,6 +319,12 @@
       }
       const team = teams.find((t) => Number(t.id) === Number(activeTeamId)) || teams[0];
       const roster = team.roster || [];
+      const lineup = (team.lineup && team.lineup.length)
+        ? team.lineup
+        : roster.filter((p) => p.empty || starterSlots(p.slot));
+      const bench = (team.bench && team.bench.length)
+        ? team.bench
+        : roster.filter((p) => !p.empty && !starterSlots(p.slot));
       const m = team.currentMatchup;
 
       boards.innerHTML = `
@@ -286,21 +354,9 @@
                 <span style="color:var(--muted);"> · Proj ${fmt(m.away?.projected)} – ${fmt(m.home?.projected)}</span>
               </div>` : `<div class="empty">No matchup this week.</div>`}
             <ul class="slot-roster" role="list">
-                ${(roster || []).map((p) => {
-                  const empty = p.empty || !p.name;
-                  const status = empty ? '—' : (p.injuryStatus || '—');
-                  const bad = !empty && injClass(p.injuryStatus) === 'bad' && starterSlots(p.slot);
-                  const onBye = !empty && week && Number(p.byeWeek) === Number(week);
-                  return `<li class="slot-roster-row ${[empty ? 'is-empty' : '', bad ? 'row-bad' : ''].filter(Boolean).join(' ')}">
-                    <span class="slot">${esc(p.slot)}</span>
-                    <span class="nm">${empty ? '—' : esc(p.name)}
-                      ${empty ? '' : `<span class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}${onBye ? ` · Bye ${esc(String(p.byeWeek))}` : ''}</span>`}
-                    </span>
-                    <span class="nums">${empty ? '—' : fmt(p.weekPoints)}<small>${empty ? '' : `proj ${fmt(p.weekProjected)}`}</small></span>
-                    <span class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</span>
-                  </li>`;
-                }).join('')}
-              </ul>
+              ${lineup.map((p) => rosterRowHtml(p, week)).join('')}
+              ${bench.length ? `<li class="slot-roster-divider" aria-hidden="true">Bench / IR</li>${bench.map((p) => rosterRowHtml(p, week)).join('')}` : ''}
+            </ul>
           </div>
         </div>`;
 
