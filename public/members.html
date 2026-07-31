@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=116" />
+  <link rel="stylesheet" href="/css/site.css?v=118" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -1392,6 +1392,253 @@
       align-self: stretch;
     }
 
+    /* —— Record Book —— */
+    .lounge-section.is-records {
+      border-color: rgba(232, 196, 90, 0.22);
+      background:
+        radial-gradient(ellipse 55% 45% at 90% 0%, rgba(232, 196, 90, 0.1), transparent 55%),
+        linear-gradient(180deg, rgba(18, 16, 28, 0.92) 0%, rgba(8, 10, 20, 0.88) 100%);
+    }
+    .lounge-section.is-records .lounge-section-label h2 { color: var(--mo-gold-soft); }
+    .records-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    .record-card {
+      padding: 0.85rem 0.95rem 0.95rem;
+      border: 1px solid rgba(232, 196, 90, 0.18);
+      background: rgba(0, 0, 0, 0.22);
+      min-width: 0;
+    }
+    .record-card .label {
+      margin: 0;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 0.82rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-gold);
+    }
+    .record-card .value {
+      margin: 0.35rem 0 0;
+      font-family: "Oswald", "Bebas Neue", sans-serif;
+      font-size: clamp(1.15rem, 2.2vw, 1.45rem);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--mo-text);
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+    .record-card .meta {
+      margin: 0.3rem 0 0;
+      font-size: 0.84rem;
+      color: var(--mo-muted);
+    }
+    .records-note {
+      margin: 0.85rem 0 0;
+      font-size: 0.82rem;
+      color: var(--mo-muted);
+    }
+    .records-empty {
+      padding: 1rem;
+      color: var(--mo-muted);
+      font-size: 0.95rem;
+    }
+
+    /* —— Mock Draft —— */
+    .lounge-section.is-mock {
+      border-color: rgba(47, 123, 255, 0.28);
+      background:
+        radial-gradient(ellipse 60% 50% at 8% 0%, rgba(47, 123, 255, 0.16), transparent 55%),
+        linear-gradient(180deg, rgba(10, 18, 36, 0.94) 0%, rgba(5, 10, 22, 0.9) 100%);
+    }
+    .lounge-section.is-mock .lounge-section-label h2 { color: var(--mo-blue-hot); }
+    .mock-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem 0.75rem;
+      margin: 0 0 0.9rem;
+    }
+    .mock-toolbar label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.82rem;
+      color: var(--mo-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+    }
+    .mock-toolbar select,
+    .mock-toolbar input[type="search"] {
+      appearance: none;
+      border: 1px solid rgba(126, 200, 255, 0.22);
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--mo-text);
+      padding: 0.4rem 0.55rem;
+      font: inherit;
+      font-size: 0.9rem;
+      min-width: 0;
+    }
+    .mock-toolbar button,
+    .mock-pick-btn {
+      appearance: none;
+      border: 1px solid rgba(126, 200, 255, 0.35);
+      background: rgba(47, 123, 255, 0.18);
+      color: var(--mo-blue-hot);
+      padding: 0.4rem 0.7rem;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .mock-toolbar button:hover,
+    .mock-pick-btn:hover { background: rgba(47, 123, 255, 0.32); }
+    .mock-toolbar button:disabled,
+    .mock-pick-btn:disabled { opacity: 0.45; cursor: default; }
+    .mock-clock {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.5rem 1rem;
+      margin: 0 0 0.9rem;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid rgba(232, 196, 90, 0.28);
+      background: linear-gradient(180deg, rgba(232, 196, 90, 0.1), transparent 75%);
+    }
+    .mock-clock .label {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-gold);
+    }
+    .mock-clock .pick {
+      margin-top: 0.2rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .mock-clock .meta { color: var(--mo-muted); font-size: 0.88rem; }
+    .mock-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(14rem, 0.85fr);
+      gap: 1rem;
+      align-items: start;
+    }
+    .mock-pool,
+    .mock-picks {
+      border: 1px solid rgba(126, 200, 255, 0.14);
+      background: rgba(0, 0, 0, 0.22);
+      max-height: 26rem;
+      overflow: auto;
+    }
+    .mock-pool-head,
+    .mock-picks-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.55rem 0.7rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.14);
+      background: rgba(8, 14, 28, 0.96);
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .mock-player {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.55rem;
+      align-items: center;
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border: 0;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.08);
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+    }
+    .mock-player:hover { background: rgba(47, 123, 255, 0.12); }
+    .mock-player img {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      object-fit: cover;
+      background: #111;
+    }
+    .mock-player strong {
+      display: block;
+      font-size: 0.95rem;
+      color: var(--mo-text);
+    }
+    .mock-player span {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--mo-muted);
+    }
+    .mock-player .pos {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      letter-spacing: 0.08em;
+      color: var(--mo-blue-hot);
+      font-size: 0.9rem;
+    }
+    .mock-pick-row {
+      display: grid;
+      grid-template-columns: 2.4rem minmax(0, 1fr);
+      gap: 0.45rem;
+      padding: 0.45rem 0.7rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.08);
+      font-size: 0.86rem;
+    }
+    .mock-pick-row .num {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      color: var(--mo-gold);
+      letter-spacing: 0.04em;
+    }
+    .mock-pick-row strong { color: var(--mo-text); }
+    .mock-pick-row .who { color: var(--mo-muted); font-size: 0.78rem; }
+    .mock-status {
+      margin: 0.65rem 0 0;
+      min-height: 1.2em;
+      font-size: 0.88rem;
+      color: var(--mo-muted);
+    }
+    .mock-status.is-ok { color: var(--mo-good); }
+    .mock-status.is-err { color: #ff8f8f; }
+    .mock-order {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin: 0 0 0.85rem;
+    }
+    .mock-order span {
+      padding: 0.2rem 0.45rem;
+      border: 1px solid rgba(126, 200, 255, 0.16);
+      font-size: 0.72rem;
+      color: var(--mo-muted);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .mock-order span.is-you {
+      border-color: rgba(232, 196, 90, 0.45);
+      color: var(--mo-gold-soft);
+    }
+    .mock-order span em {
+      font-style: normal;
+      color: var(--mo-blue-hot);
+      margin-right: 0.25rem;
+    }
+
     @media (max-width: 900px) {
       .lounge-hero {
         margin-left: calc(-1 * clamp(1rem, 2vw, 2.25rem));
@@ -1406,6 +1653,12 @@
       .lounge-mid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
+      }
+      .records-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .mock-layout {
+        grid-template-columns: 1fr;
       }
       .board-body {
         grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1537,6 +1790,76 @@
         <aside class="lounge-section is-dues lounge-dues" id="pay-panel" aria-label="League dues"></aside>
       </div>
 
+      <section class="lounge-section is-records" id="record-book" aria-label="Record book">
+        <div class="lounge-section-label">
+          <div>
+            <p class="eyebrow">Season so far</p>
+            <h2>Record Book</h2>
+          </div>
+          <div class="aside" id="records-aside">Loading…</div>
+        </div>
+        <div id="records-body"><div class="records-empty">Pulling standings…</div></div>
+      </section>
+
+      <section class="lounge-section is-mock" id="mock-draft" aria-label="Mock draft generator">
+        <div class="lounge-section-label">
+          <div>
+            <p class="eyebrow">Draft room</p>
+            <h2>Mock Draft</h2>
+          </div>
+          <div class="aside">Snake · private to your browser</div>
+        </div>
+        <div class="mock-toolbar">
+          <label>Rounds
+            <select id="mock-rounds" aria-label="Draft rounds">
+              <option value="8">8</option>
+              <option value="10">10</option>
+              <option value="15" selected>15</option>
+            </select>
+          </label>
+          <label>Your seat
+            <select id="mock-seat" aria-label="Your draft seat"></select>
+          </label>
+          <label>Pos
+            <select id="mock-pos" aria-label="Position filter">
+              <option value="ALL">All</option>
+              <option value="QB">QB</option>
+              <option value="RB">RB</option>
+              <option value="WR">WR</option>
+              <option value="TE">TE</option>
+              <option value="K">K</option>
+            </select>
+          </label>
+          <label class="mock-search-wrap">Search
+            <input type="search" id="mock-search" placeholder="Player name" autocomplete="off" />
+          </label>
+          <button type="button" id="mock-shuffle">Shuffle order</button>
+          <button type="button" id="mock-auto">Auto-pick</button>
+          <button type="button" id="mock-autofill">Fill rest</button>
+          <button type="button" id="mock-undo">Undo</button>
+          <button type="button" id="mock-reset">Reset</button>
+        </div>
+        <div class="mock-order" id="mock-order" aria-label="Draft order"></div>
+        <div class="mock-clock" id="mock-clock">
+          <div>
+            <div class="label">On the clock</div>
+            <div class="pick" id="mock-clock-pick">Starting…</div>
+          </div>
+          <div class="meta" id="mock-clock-meta"></div>
+        </div>
+        <div class="mock-layout">
+          <div class="mock-pool">
+            <div class="mock-pool-head"><span>Available</span><span id="mock-pool-count">0</span></div>
+            <div id="mock-pool-list"><div class="records-empty">Loading player pool…</div></div>
+          </div>
+          <div class="mock-picks">
+            <div class="mock-picks-head"><span>Picks</span><span id="mock-picks-count">0</span></div>
+            <div id="mock-picks-list"><div class="records-empty">No picks yet.</div></div>
+          </div>
+        </div>
+        <p class="mock-status" id="mock-status" role="status"></p>
+      </section>
+
       <section class="lounge-section is-roll roll-section" aria-label="Membership roll">
         <div class="lounge-section-label">
           <div>
@@ -1553,6 +1876,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=77"></script>
+  <script src="/js/lounge-desk.js?v=1"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -2464,6 +2788,12 @@
         }
         if (location.hash === '#board') {
           document.getElementById('sports-board')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (location.hash === '#record-book' || location.hash === '#records') {
+          document.getElementById('record-book')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (location.hash === '#mock-draft' || location.hash === '#mock') {
+          document.getElementById('mock-draft')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       } catch (err) {
         document.getElementById('boards').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
