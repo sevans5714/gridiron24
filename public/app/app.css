@@ -653,6 +653,117 @@ a {
 
 /* ── Games / scoreboard ── */
 
+.mu-boards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .mu-boards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mu-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.mu-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.7rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 55%),
+    var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.mu-card.is-live {
+  border-color: rgba(61, 220, 132, 0.35);
+  box-shadow: var(--shadow-card), 0 0 0 1px rgba(61, 220, 132, 0.12), 0 0 24px rgba(61, 220, 132, 0.08);
+}
+
+.mu-side {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  align-items: center;
+  min-width: 0;
+}
+.mu-side.is-home {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.mu-side img {
+  width: 2.35rem;
+  height: 2.35rem;
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+}
+.mu-meta {
+  min-width: 0;
+}
+.mu-side.is-away .mu-meta { text-align: left; }
+.mu-side.is-home .mu-meta { text-align: right; }
+.mu-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mu-proj {
+  margin-top: 0.12rem;
+  font-family: var(--label);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mu-score {
+  font-family: var(--display);
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  min-width: 2.6rem;
+  text-align: center;
+}
+.mu-side.is-away .mu-score { text-align: right; }
+.mu-side.is-home .mu-score { text-align: left; }
+.mu-side.is-winner .mu-name,
+.mu-side.is-winner .mu-score {
+  color: var(--good);
+}
+.mu-side.is-loser {
+  opacity: 0.52;
+}
+
+.mu-mid {
+  display: grid;
+  justify-items: center;
+  min-width: 3.1rem;
+  padding: 0 0.15rem;
+}
+.mu-status {
+  font-family: var(--label);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mu-status.live { color: var(--good); }
+.mu-status.final { color: var(--gold, #efd782); }
+
 .game {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);

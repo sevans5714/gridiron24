@@ -670,21 +670,27 @@
     const awayCls = winner === 'AWAY' ? 'is-winner' : (decided ? 'is-loser' : '');
     const homeCls = winner === 'HOME' ? 'is-winner' : (decided ? 'is-loser' : '');
     return `
-      <div class="game${statusCls === 'live' ? ' is-live' : ''}">
-        <div class="game-team ${awayCls}">
+      <article class="mu-card${statusCls === 'live' ? ' is-live' : ''}${decided ? ' is-final' : ''}">
+        <div class="mu-side is-away ${awayCls}">
           <img src="${esc(m.away?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
-          <div class="nm">${esc(m.away?.name || 'TBD')}</div>
+          <div class="mu-meta">
+            <div class="mu-name">${esc(m.away?.name || 'TBD')}</div>
+            <div class="mu-proj">P ${fmtScore(m.away?.projected)}</div>
+          </div>
+          <div class="mu-score">${fmtScore(m.away?.score)}</div>
         </div>
-        <div class="game-mid">
-          <div class="game-score">${fmtScore(m.away?.score)}-${fmtScore(m.home?.score)}</div>
-          <div class="game-status ${statusCls}">${status}</div>
-          <div class="game-proj">P ${fmtScore(m.away?.projected)}-${fmtScore(m.home?.projected)}</div>
+        <div class="mu-mid">
+          <span class="mu-status ${statusCls}">${status}</span>
         </div>
-        <div class="game-team ${homeCls}">
+        <div class="mu-side is-home ${homeCls}">
+          <div class="mu-score">${fmtScore(m.home?.score)}</div>
+          <div class="mu-meta">
+            <div class="mu-name">${esc(m.home?.name || 'TBD')}</div>
+            <div class="mu-proj">P ${fmtScore(m.home?.projected)}</div>
+          </div>
           <img src="${esc(m.home?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
-          <div class="nm">${esc(m.home?.name || 'TBD')}</div>
         </div>
-      </div>`;
+      </article>`;
   }
 
   function myTeamRef() {
@@ -793,16 +799,25 @@
           ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
           <h2>${esc(conf.shortName || conf.name)} · Wk ${esc(String(conf.week || state.week || ''))}</h2>
         </div>
-        ${games || '<div class="msg">No matchups this week.</div>'}
+        <div class="mu-list">
+          ${games || '<div class="msg">No matchups this week.</div>'}
+        </div>
       </div>`;
   }
 
   function renderScoreboard() {
     const mount = document.getElementById('scoreboard-mount');
     if (!mount || !state.schedule) return;
-    const confs = state.schedule.conferences || [];
-    const conf = confs.find((c) => c.key === state.scoreConf) || confs[0];
+    const confs = (state.schedule.conferences || []).filter((c) => c && c.key !== 'aaa');
     const seg = document.getElementById('score-seg');
+    // Show both conferences side-by-side when we have Detail + Overtime.
+    const dual = confs.length >= 2;
+    if (seg) seg.hidden = dual;
+    if (dual) {
+      mount.innerHTML = `<div class="mu-boards">${confs.map((c) => scoreboardHtml(c)).join('')}</div>`;
+      return;
+    }
+    const conf = confs.find((c) => c.key === state.scoreConf) || confs[0];
     if (seg && confs.length <= 1) seg.hidden = true;
     else if (seg) {
       seg.hidden = false;
@@ -861,37 +876,15 @@
     const matchupHtml = m
       ? `<div class="matchup-card">
           <div class="lbl">Week ${esc(String(m.week || week))} matchup</div>
-          <div class="game">
-            <div class="game-team">
-              <img src="${esc(m.away?.logo || PLACEHOLDER)}" alt="" />
-              <div class="nm">${esc(m.away?.name || 'TBD')}</div>
-            </div>
-            <div class="game-mid">
-              <div class="game-score">${fmtScore(m.away?.score)}-${fmtScore(m.home?.score)}</div>
-              <div class="game-proj">P ${fmtScore(m.away?.projected)}-${fmtScore(m.home?.projected)}</div>
-            </div>
-            <div class="game-team">
-              <img src="${esc(m.home?.logo || PLACEHOLDER)}" alt="" />
-              <div class="nm">${esc(m.home?.name || 'TBD')}</div>
-            </div>
-          </div>
+          ${gameRow(m)}
         </div>`
       : `<div class="matchup-card is-placeholder">
           <div class="lbl">Week ${esc(String(week || '—'))} matchup</div>
-          <div class="game">
-            <div class="game-team">
-              <img src="${esc(t?.logo || PLACEHOLDER)}" alt="" />
-              <div class="nm">${esc(t?.name || 'Your team')}</div>
-            </div>
-            <div class="game-mid">
-              <div class="game-score">—</div>
-              <div class="game-proj">Upcoming</div>
-            </div>
-            <div class="game-team">
-              <img src="${esc(PLACEHOLDER)}" alt="" />
-              <div class="nm">Opponent</div>
-            </div>
-          </div>
+          ${gameRow({
+            away: { name: t?.name || 'Your team', logo: t?.logo || PLACEHOLDER, score: null, projected: null },
+            home: { name: 'Opponent', logo: PLACEHOLDER, score: null, projected: null },
+            winner: 'UNDECIDED'
+          })}
         </div>`;
 
     const starterRows = lineup.length ? lineup : emptySlotRows();
