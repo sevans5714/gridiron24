@@ -876,7 +876,25 @@
             </div>
           </div>
         </div>`
-      : `<div class="msg">No matchup posted this week.</div>`;
+      : `<div class="matchup-card is-placeholder">
+          <div class="lbl">Week ${esc(String(week || '—'))} matchup</div>
+          <div class="game">
+            <div class="game-team">
+              <img src="${esc(t?.logo || PLACEHOLDER)}" alt="" />
+              <div class="nm">${esc(t?.name || 'Your team')}</div>
+            </div>
+            <div class="game-mid">
+              <div class="game-score">—</div>
+              <div class="game-proj">Upcoming</div>
+            </div>
+            <div class="game-team">
+              <img src="${esc(PLACEHOLDER)}" alt="" />
+              <div class="nm">Opponent</div>
+            </div>
+          </div>
+        </div>`;
+
+    const starterRows = lineup.length ? lineup : emptySlotRows();
 
     mount.innerHTML = `
       <div class="team-hero">
@@ -898,7 +916,7 @@
       </div>
       ${matchupHtml}
       <div class="section-label">Starters</div>
-      ${slotRosterListHtml(lineup, { showPts: true })}
+      ${slotRosterListHtml(starterRows, { showPts: true })}
       ${bench.length ? `<div class="section-label">Bench / IR</div>${slotRosterListHtml(bench, { showPts: true })}` : ''}
       ${data.keeper ? `<p class="msg" style="margin-top:1rem;">Keeper: <strong>${esc(data.keeper.playerName)}</strong> · Round ${esc(String(data.keeper.costRound))}</p>` : ''}
     `;
@@ -1276,13 +1294,54 @@
   const DEFAULT_STARTER_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
 
   function emptySlotRows(slots = DEFAULT_STARTER_SLOTS) {
-    return (slots || DEFAULT_STARTER_SLOTS).map((slot) => ({
+    const list = (slots && slots.length) ? slots : DEFAULT_STARTER_SLOTS;
+    return list.map((slot) => ({
       slot,
       name: null,
       empty: true,
       points: null,
       weekPoints: null
     }));
+  }
+
+  function placeholderTeamSide(role = 'away') {
+    const mine = state.myTeam?.team;
+    if (role === 'home' || !mine) {
+      return {
+        id: null,
+        name: role === 'home' ? 'Opponent' : 'Away',
+        logo: PLACEHOLDER,
+        score: null,
+        projected: null,
+        lineup: emptySlotRows(),
+        bench: []
+      };
+    }
+    return {
+      id: mine.id,
+      name: mine.name || 'Your team',
+      logo: mine.logo || PLACEHOLDER,
+      score: null,
+      projected: null,
+      lineup: emptySlotRows(
+        (state.myTeam?.matchupBox?.lineupSlots || [])
+          .map((s) => s.slot)
+          .filter(Boolean)
+      ),
+      bench: []
+    };
+  }
+
+  function resolveMatchupSides(box, fallbackMatchup) {
+    if (box?.away && box?.home) return { away: box.away, home: box.home, isPlaceholder: false };
+    if (fallbackMatchup?.away && fallbackMatchup?.home) {
+      return { away: fallbackMatchup.away, home: fallbackMatchup.home, isPlaceholder: false };
+    }
+    return {
+      away: placeholderTeamSide('away'),
+      home: placeholderTeamSide('home'),
+      isPlaceholder: true
+    };
   }
 
   function slotRosterListHtml(players, { showPts = true } = {}) {
@@ -1293,49 +1352,76 @@
         const bad = !empty && injClass(p.injuryStatus) === 'bad';
         return `<li class="slot-roster-row${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''}">
           <span class="slot">${esc(p.slot || '—')}</span>
-          <span class="nm">${empty ? '—' : esc(p.name)}${!empty && p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}</span>
-          ${showPts ? `<span class="pts">${empty ? '' : fmtPts(p.points != null ? p.points : p.weekPoints)}</span>` : ''}
+          <span class="nm">${empty ? `<span class="slot-open">${esc(p.slot || 'Open')}</span>` : esc(p.name)}${!empty && p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}</span>
+          ${showPts ? `<span class="pts">${empty ? '—' : fmtPts(p.points != null ? p.points : p.weekPoints)}</span>` : ''}
         </li>`;
       }).join('')}
     </ul>`;
   }
 
   function matchupScoreboardHtml(box, fallbackMatchup, week) {
-    if (!box?.away || !box?.home) {
-      if (!fallbackMatchup) return `<div class="home-matchup"><div class="msg">No matchup loaded yet.</div></div>`;
+    if (box?.away && box?.home) {
+      const away = box.away;
+      const home = box.home;
+      const winner = String(box.winner || 'UNDECIDED').toUpperCase();
+      const decided = winner === 'HOME' || winner === 'AWAY';
+      const inProgress = !decided && (Number(away.score || 0) > 0 || Number(home.score || 0) > 0);
+      const status = decided ? 'Final' : inProgress ? 'Live' : 'Upcoming';
+      const statusCls = decided ? 'final' : inProgress ? 'live' : '';
+      const awayWin = winner === 'AWAY';
+      const homeWin = winner === 'HOME';
+      return `
+        <div class="home-matchup pulse-box">
+          <div class="section-label">Your matchup · Week ${esc(String(box.week || week))} · <span class="game-status ${statusCls}">${status}</span></div>
+          <div class="box-scoreboard">
+            <div class="box-team ${awayWin ? 'is-winner' : decided ? 'is-loser' : ''}">
+              <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
+              <div class="meta">
+                <div class="nm">${esc(away.name)}</div>
+                <div class="score">${fmtScore(away.score)}</div>
+                <div class="proj">Proj ${fmtScore(away.projected)}</div>
+              </div>
+            </div>
+            <div class="box-vs">VS</div>
+            <div class="box-team ${homeWin ? 'is-winner' : decided ? 'is-loser' : ''}">
+              <div class="meta">
+                <div class="nm">${esc(home.name)}</div>
+                <div class="score">${fmtScore(home.score)}</div>
+                <div class="proj">Proj ${fmtScore(home.projected)}</div>
+              </div>
+              <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
+            </div>
+          </div>
+        </div>`;
+    }
+
+    if (fallbackMatchup?.away && fallbackMatchup?.home) {
       const st = matchupStatus(fallbackMatchup);
       return `<div class="home-matchup">
         <div class="section-label">Your matchup · Week ${esc(String(fallbackMatchup.week || week))}${st?.inProgress ? ' · Live' : st?.decided ? ' · Final' : ''}</div>
         ${gameRow(fallbackMatchup)}
       </div>`;
     }
-    const away = box.away;
-    const home = box.home;
-    const winner = String(box.winner || 'UNDECIDED').toUpperCase();
-    const decided = winner === 'HOME' || winner === 'AWAY';
-    const inProgress = !decided && (Number(away.score || 0) > 0 || Number(home.score || 0) > 0);
-    const status = decided ? 'Final' : inProgress ? 'Live' : 'Upcoming';
-    const statusCls = decided ? 'final' : inProgress ? 'live' : '';
-    const awayWin = winner === 'AWAY';
-    const homeWin = winner === 'HOME';
+
+    const { away, home } = resolveMatchupSides(null, null);
     return `
-      <div class="home-matchup pulse-box">
-        <div class="section-label">Your matchup · Week ${esc(String(box.week || week))} · <span class="game-status ${statusCls}">${status}</span></div>
+      <div class="home-matchup pulse-box is-placeholder">
+        <div class="section-label">Your matchup · Week ${esc(String(week || '—'))} · <span class="game-status">Upcoming</span></div>
         <div class="box-scoreboard">
-          <div class="box-team ${awayWin ? 'is-winner' : decided ? 'is-loser' : ''}">
+          <div class="box-team">
             <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
             <div class="meta">
               <div class="nm">${esc(away.name)}</div>
-              <div class="score">${fmtScore(away.score)}</div>
-              <div class="proj">Proj ${fmtScore(away.projected)}</div>
+              <div class="score">—</div>
+              <div class="proj">Proj —</div>
             </div>
           </div>
           <div class="box-vs">VS</div>
-          <div class="box-team ${homeWin ? 'is-winner' : decided ? 'is-loser' : ''}">
+          <div class="box-team">
             <div class="meta">
               <div class="nm">${esc(home.name)}</div>
-              <div class="score">${fmtScore(home.score)}</div>
-              <div class="proj">Proj ${fmtScore(home.projected)}</div>
+              <div class="score">—</div>
+              <div class="proj">Proj —</div>
             </div>
             <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
           </div>
@@ -1344,16 +1430,17 @@
   }
 
   function matchupRostersHtml(box, fallbackMatchup) {
-    const away = box?.away || fallbackMatchup?.away;
-    const home = box?.home || fallbackMatchup?.home;
-    if (!away || !home) return '';
-    const slots = (box?.lineupSlots || []).map((s) => s.slot).filter(Boolean);
+    const slots = (box?.lineupSlots || [])
+      .map((s) => s.slot)
+      .filter(Boolean);
+    const starterSlots = slots.length ? slots : DEFAULT_STARTER_SLOTS;
+    const { away, home } = resolveMatchupSides(box, fallbackMatchup);
     const myLineup = (state.myTeam?.lineup || []).filter((p) => p.empty || isStarter(p.slot));
     const myBench = (state.myTeam?.bench || state.myTeam?.roster || [])
       .filter((p) => !p.empty && !isStarter(p.slot));
     const myId = Number(state.myTeam?.team?.id);
-    let awayLine = (box?.away?.lineup?.length ? box.away.lineup : emptySlotRows(slots));
-    let homeLine = (box?.home?.lineup?.length ? box.home.lineup : emptySlotRows(slots));
+    let awayLine = (box?.away?.lineup?.length ? box.away.lineup : emptySlotRows(starterSlots));
+    let homeLine = (box?.home?.lineup?.length ? box.home.lineup : emptySlotRows(starterSlots));
     let awayBench = Array.isArray(box?.away?.bench) ? box.away.bench.filter((p) => p?.name) : [];
     let homeBench = Array.isArray(box?.home?.bench) ? box.home.bench.filter((p) => p?.name) : [];
     // After draft, ESPN roster fills slots; prefer named lineup over empty placeholders.
@@ -1363,6 +1450,8 @@
       if (Number(away?.id) === myId && !awayBench.length && myBench.length) awayBench = myBench;
       if (Number(home?.id) === myId && !homeBench.length && myBench.length) homeBench = myBench;
     }
+    if (!awayLine.length) awayLine = emptySlotRows(starterSlots);
+    if (!homeLine.length) homeLine = emptySlotRows(starterSlots);
 
     function benchBlock(players, sideKey) {
       if (!players.length) return '';
@@ -1375,7 +1464,7 @@
 
     return `
       <div class="home-section matchup-rosters">
-        <div class="section-label">Lineups</div>
+        <div class="section-label">Starting lineups</div>
         <div class="roster-team-block">
           <div class="roster-team-head">
             <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
