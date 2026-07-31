@@ -499,6 +499,13 @@
       color: var(--mo-muted);
       font-family: "Oswald", sans-serif;
     }
+    .sgame-top-right {
+      display: inline-flex;
+      gap: 0.45rem;
+      align-items: baseline;
+      flex: 0 0 auto;
+      min-width: 0;
+    }
     .sgame-when {
       color: #c5d0de;
       font-weight: 600;
@@ -521,9 +528,9 @@
     .sgame-sides { display: grid; gap: 0.08rem; }
     .sgame-row {
       display: grid;
-      grid-template-columns: 1.65rem minmax(0, 1fr) auto;
+      grid-template-columns: 1.65rem minmax(0, 1fr) auto auto;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.3rem;
       min-height: 1.2rem;
     }
     .sgame-row img,
@@ -569,6 +576,24 @@
       color: rgba(155, 170, 188, 0.55);
       font-size: 0.8rem;
       font-family: "Oswald", sans-serif;
+    }
+    .sgame-line {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      color: #efd782;
+      min-width: 2.1rem;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .sgame-line.is-blank { color: rgba(155, 170, 188, 0.35); }
+    .sgame-ou {
+      color: #7ec8ff;
+      font-weight: 600;
+      flex: 0 0 auto;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
     }
     .sgame.is-golf { grid-column: auto; }
     .sgame.is-pad {
@@ -2054,11 +2079,29 @@
       </article>`;
     }
 
+    function sportsFormatSpread(n) {
+      if (n == null || !Number.isFinite(Number(n))) return '';
+      const v = Number(n);
+      if (v === 0) return 'PK';
+      return v > 0 ? `+${v}` : String(v);
+    }
+
+    function sportsSideLine(oddsSide, odds) {
+      if (!odds || !oddsSide) return '';
+      const spread = sportsFormatSpread(oddsSide.spread);
+      if (spread) return spread;
+      return oddsSide.moneyline ? String(oddsSide.moneyline) : '';
+    }
+
     function sportsGameHtml(g) {
       const bucket = g.status?.bucket || 'upcoming';
       const meta = sportsMetaLine(g);
+      const odds = g.odds || null;
       const watchHtml = meta.watch
         ? `<span class="sgame-watch" title="Watch on ${esc(meta.watch)}">${esc(meta.watch)}</span>`
+        : '';
+      const ouHtml = odds?.overUnder != null
+        ? `<span class="sgame-ou" title="${esc(odds.provider ? `${odds.provider} total` : 'Game total')}">O/U ${esc(String(odds.overUnder))}</span>`
         : '';
 
       if (g.kind === 'golf') return sportsGolfBoardHtml(g);
@@ -2066,11 +2109,15 @@
       const showScore = bucket === 'final' || bucket === 'live';
       const awayWin = bucket === 'final' && Boolean(g.away?.winner);
       const homeWin = bucket === 'final' && Boolean(g.home?.winner);
-      const side = (t, win) => {
+      const side = (t, win, oddsSide) => {
         if (!t) return '';
         const score = showScore && t.score != null
           ? `<span class="sgame-score">${esc(String(t.score))}</span>`
           : `<span class="sgame-score is-blank">—</span>`;
+        const line = sportsSideLine(oddsSide, odds);
+        const lineHtml = line
+          ? `<span class="sgame-line" title="${esc(odds?.details || odds?.provider || 'Line')}">${esc(line)}</span>`
+          : `<span class="sgame-line is-blank" aria-hidden="true"></span>`;
         const logo = t.logo
           ? `<img class="sgame-logo" src="${esc(t.logo)}" alt="" width="28" height="28" loading="eager" decoding="async" referrerpolicy="no-referrer" />`
           : `<span class="sgame-logo-fallback" aria-hidden="true"></span>`;
@@ -2078,17 +2125,21 @@
           ${logo}
           <span class="sgame-abbr" title="${esc(t.name || t.abbreviation || '')}">${esc(t.abbreviation || t.shortName || '?')}</span>
           ${score}
+          ${lineHtml}
         </div>`;
       };
 
       return `<article class="sgame is-${esc(bucket)}" title="${esc(g.name || '')}">
         <div class="sgame-top">
           <span class="sgame-when${meta.live ? ' sgame-status is-live' : ''}">${esc(meta.when)}</span>
-          ${watchHtml}
+          <span class="sgame-top-right">
+            ${ouHtml}
+            ${watchHtml}
+          </span>
         </div>
         <div class="sgame-sides">
-          ${side(g.away, awayWin)}
-          ${side(g.home, homeWin)}
+          ${side(g.away, awayWin, odds?.away)}
+          ${side(g.home, homeWin, odds?.home)}
         </div>
       </article>`;
     }

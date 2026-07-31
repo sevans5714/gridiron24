@@ -110,6 +110,7 @@ function gameShape({
     broadcasts: broadcasts || [],
     away,
     home,
+    odds: null,
     leaders: null
   };
 }
