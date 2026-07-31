@@ -2112,12 +2112,37 @@ footer.site-footer {
   color: var(--muted-2);
   font-size: var(--fs-xs);
   line-height: var(--lh-snug);
-  border-top: 1px solid var(--line);
+  border-top: 0;
   background: transparent;
   box-shadow: none;
 }
 footer.site-footer::before {
-  content: none;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(12rem, 42vw);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(142, 182, 255, 0.45) 18%,
+    rgba(142, 182, 255, 0.55) 50%,
+    rgba(142, 182, 255, 0.45) 82%,
+    transparent
+  );
+  pointer-events: none;
+}
+html[data-theme="day"] footer.site-footer::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(31, 94, 240, 0.28) 18%,
+    rgba(31, 94, 240, 0.35) 50%,
+    rgba(31, 94, 240, 0.28) 82%,
+    transparent
+  );
 }
 .site-footer-credit {
   display: inline-flex;
