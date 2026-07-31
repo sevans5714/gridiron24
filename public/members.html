@@ -1617,11 +1617,11 @@
     }
     .mock-player {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      gap: 0.55rem;
+      grid-template-columns: 2.25rem 1.4rem minmax(0, 1fr) auto;
+      gap: 0.45rem 0.55rem;
       align-items: center;
       width: 100%;
-      padding: 0.55rem 0.7rem;
+      padding: 0.5rem 0.7rem;
       border: 0;
       border-bottom: 1px solid rgba(126, 200, 255, 0.08);
       background: transparent;
@@ -1631,29 +1631,65 @@
       font: inherit;
     }
     .mock-player:hover { background: rgba(47, 123, 255, 0.12); }
-    .mock-player img {
-      width: 2rem;
-      height: 2rem;
+    .mock-head,
+    .mock-team {
+      width: 2.25rem;
+      height: 2.25rem;
       border-radius: 999px;
       object-fit: cover;
       background: #111;
     }
-    .mock-player strong {
+    .mock-team {
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 0.15rem;
+      object-fit: contain;
+      background: transparent;
+    }
+    .mock-head.is-blank,
+    .mock-team.is-blank {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(126, 200, 255, 0.12);
+    }
+    .mock-player-main {
+      min-width: 0;
+    }
+    .mock-player-main strong {
       display: block;
       font-size: 0.95rem;
       color: var(--mo-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .mock-player span {
+    .mock-player-main span {
       display: block;
-      font-size: 0.78rem;
+      font-size: 0.74rem;
       color: var(--mo-muted);
     }
-    .mock-player .pos {
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      letter-spacing: 0.08em;
-      color: var(--mo-blue-hot);
-      font-size: 0.9rem;
+    .mock-stats {
+      display: grid;
+      gap: 0.15rem;
+      justify-items: end;
+      flex: 0 0 auto;
     }
+    .mock-stat {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--mo-silver);
+      line-height: 1.1;
+    }
+    .mock-stat em {
+      font-style: normal;
+      margin-right: 0.3rem;
+      color: var(--mo-muted);
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .mock-stat.is-proj { color: var(--mo-gold-soft); }
     .mock-pick-row {
       display: grid;
       grid-template-columns: 2.4rem minmax(0, 1fr);
@@ -1840,7 +1876,7 @@
             <p class="eyebrow">Draft room</p>
             <h2>Mock Draft</h2>
           </div>
-          <div class="aside">Snake · private to your browser</div>
+          <div class="aside">2026 roster · ’25 FP · ’26 proj · snake</div>
         </div>
         <div class="mock-toolbar">
           <label>Rounds
@@ -1947,7 +1983,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=77"></script>
-  <script src="/js/lounge-desk.js?v=2"></script>
+  <script src="/js/lounge-desk.js?v=3"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')

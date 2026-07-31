@@ -1,6 +1,7 @@
 /**
- * Beta platform draft — player pool from nflverse season rosters.
- * Independent of ESPN Fantasy (main HQ stays on ESPN).
+ * Beta / lounge draft pool — current NFL fantasy players with:
+ * roster + headshot (nflverse), 2025 fantasy points (nflverse stats),
+ * 2026 projections (Sleeper), bye week (schedule), team logos (nflverse teams).
  */
 const fs = require('fs');
 const path = require('path');
@@ -10,6 +11,17 @@ const DRAFT_FILE = path.join(DATA_DIR, 'beta-draft.json');
 const FANTASY_POSITIONS = new Set(['QB', 'RB', 'WR', 'TE', 'K']);
 const EXCLUDE_STATUS = new Set(['INA', 'RET', 'CUT', 'NWT', 'EXE']);
 const POOL_CACHE_MS = 6 * 60 * 60 * 1000;
+const UA = 'GridIron24-DraftPool/2.0';
+
+const ROSTER_URL = (season) =>
+  `https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_${season}.csv`;
+const STATS_URL = (season) =>
+  `https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_reg_${season}.csv`;
+const SCHEDULE_URL = 'https://github.com/nflverse/nflverse-data/releases/download/schedules/games.csv';
+const TEAMS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/teams/teams_colors_logos.csv';
+const SLEEPER_PLAYERS_URL = 'https://api.sleeper.app/v1/players/nfl';
+const SLEEPER_PROJ_URL = (season) => `https://api.sleeper.app/v1/projections/nfl/regular/${season}`;
+const SLEEPER_HEADSHOT = (id) => `https://sleepercdn.com/content/nfl/players/thumb/${id}.jpg`;
 
 let poolCache = { key: '', at: 0, players: null, meta: null };
 
@@ -69,22 +81,44 @@ function parseCsv(text) {
   });
 }
 
-function rosterUrl(season) {
-  return `https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_${season}.csv`;
-}
-
-async function fetchRosterCsv(season) {
-  const url = rosterUrl(season);
+async function fetchText(url, { accept = 'text/csv,*/*' } = {}) {
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'GridIron24-BetaDraft/1.0', Accept: 'text/csv' },
+    headers: { 'User-Agent': UA, Accept: accept },
     redirect: 'follow'
   });
   if (!res.ok) {
-    throw Object.assign(new Error(`Could not load nflverse roster ${season} (${res.status})`), {
-      status: 502
-    });
+    throw Object.assign(new Error(`Fetch failed ${url} (${res.status})`), { status: 502 });
   }
   return res.text();
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    headers: { 'User-Agent': UA, Accept: 'application/json' },
+    redirect: 'follow'
+  });
+  if (!res.ok) {
+    throw Object.assign(new Error(`Fetch failed ${url} (${res.status})`), { status: 502 });
+  }
+  return res.json();
+}
+
+function normName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function matchKey(name, team, position) {
+  return `${normName(name)}|${String(team || '').toUpperCase()}|${String(position || '').toUpperCase()}`;
+}
+
+function toNum(value) {
+  if (value == null || value === '') return null;
+  const n = Number(String(value).replace(/,/g, ''));
+  return Number.isFinite(n) ? n : null;
 }
 
 function normalizePlayer(row, season) {
@@ -112,7 +146,12 @@ function normalizePlayer(row, season) {
     college: String(row.college || '').trim() || null,
     draftNumber: String(row.draft_number || '').trim() || null,
     draftClub: String(row.draft_club || '').trim() || null,
-    season: Number(season)
+    season: Number(season),
+    byeWeek: null,
+    teamLogo: null,
+    fantasyPoints2025: null,
+    projectedPoints2026: null,
+    sleeperId: null
   };
 }
 
@@ -124,14 +163,107 @@ function filterDraftPool(players, { activeOnly = true } = {}) {
   });
 }
 
+function buildByeMap(scheduleRows, season) {
+  const year = String(season);
+  const played = new Map();
+  for (const row of scheduleRows) {
+    if (String(row.season) !== year) continue;
+    if (String(row.game_type || 'REG').toUpperCase() !== 'REG') continue;
+    const week = Number(row.week);
+    if (!Number.isFinite(week) || week < 1 || week > 18) continue;
+    for (const side of ['away_team', 'home_team']) {
+      const team = String(row[side] || '').trim().toUpperCase();
+      if (!team) continue;
+      if (!played.has(team)) played.set(team, new Set());
+      played.get(team).add(week);
+    }
+  }
+  const byes = new Map();
+  for (const [team, weeks] of played) {
+    const missing = [];
+    for (let w = 1; w <= 18; w += 1) {
+      if (!weeks.has(w)) missing.push(w);
+    }
+    if (missing.length === 1) byes.set(team, missing[0]);
+  }
+  return byes;
+}
+
+function buildTeamLogoMap(teamRows) {
+  const map = new Map();
+  for (const row of teamRows) {
+    const abbr = String(row.team_abbr || '').trim().toUpperCase();
+    if (!abbr) continue;
+    const logo = String(row.team_logo_espn || row.team_logo_squared || '').trim();
+    if (logo) map.set(abbr, logo);
+  }
+  return map;
+}
+
+function buildStats2025Map(statRows) {
+  const map = new Map();
+  for (const row of statRows) {
+    const id = String(row.player_id || '').trim();
+    if (!id) continue;
+    const ppr = toNum(row.fantasy_points_ppr);
+    const std = toNum(row.fantasy_points);
+    const pts = ppr != null ? ppr : std;
+    if (pts == null) continue;
+    map.set(id, Math.round(pts * 10) / 10);
+  }
+  return map;
+}
+
+function buildSleeperMaps(sleeperPlayers, projections) {
+  const byGsis = new Map();
+  const byKey = new Map();
+  for (const [sleeperId, row] of Object.entries(sleeperPlayers || {})) {
+    if (!row || typeof row !== 'object') continue;
+    const pos = String(row.position || '').toUpperCase();
+    if (!FANTASY_POSITIONS.has(pos)) continue;
+    const team = String(row.team || row.team_abbr || '').toUpperCase() || null;
+    const name = String(row.full_name || `${row.first_name || ''} ${row.last_name || ''}`).trim();
+    if (!name) continue;
+    const projRow = projections?.[sleeperId] || null;
+    const projected = toNum(projRow?.pts_ppr ?? projRow?.pts_half_ppr ?? projRow?.pts_std);
+    const payload = {
+      sleeperId: String(sleeperId),
+      projectedPoints2026: projected != null ? Math.round(projected * 10) / 10 : null,
+      headshot: SLEEPER_HEADSHOT(sleeperId),
+      team,
+      position: pos,
+      name
+    };
+    const gsis = String(row.gsis_id || '').trim();
+    if (gsis) byGsis.set(gsis, payload);
+    byKey.set(matchKey(name, team, pos), payload);
+    byKey.set(matchKey(name, '', pos), payload);
+  }
+  return { byGsis, byKey };
+}
+
+async function loadRoster(season) {
+  try {
+    const csv = await fetchText(ROSTER_URL(season));
+    return { season, rows: parseCsv(csv) };
+  } catch (err) {
+    const prior = season - 1;
+    const csv = await fetchText(ROSTER_URL(prior));
+    return { season: prior, rows: parseCsv(csv) };
+  }
+}
+
 async function loadDraftPool({ season, activeOnly = true, force = false } = {}) {
   const year = Number(season) || new Date().getFullYear();
-  const key = `${year}:${activeOnly ? 'active' : 'all'}`;
+  const priorSeason = year - 1;
+  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v2`;
   if (!force && poolCache.players && poolCache.key === key && Date.now() - poolCache.at < POOL_CACHE_MS) {
     return {
       ok: true,
-      source: 'nflverse-rosters',
-      season: year,
+      source: poolCache.meta.source,
+      season: poolCache.meta.season,
+      statsSeason: poolCache.meta.statsSeason,
+      projectionSeason: poolCache.meta.projectionSeason,
       fetchedAt: new Date(poolCache.at).toISOString(),
       cacheMs: POOL_CACHE_MS,
       counts: poolCache.meta.counts,
@@ -139,45 +271,77 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
     };
   }
 
-  let csv;
-  let usedSeason = year;
-  try {
-    csv = await fetchRosterCsv(year);
-  } catch (err) {
-    if (year !== year - 1) {
-      usedSeason = year - 1;
-      csv = await fetchRosterCsv(usedSeason);
-    } else {
-      throw err;
-    }
-  }
+  const roster = await loadRoster(year);
 
-  const rows = parseCsv(csv);
-  const normalized = rows
-    .map((row) => normalizePlayer(row, usedSeason))
+  const [statsCsv, scheduleCsv, teamsCsv, sleeperPlayers, sleeperProj] = await Promise.all([
+    fetchText(STATS_URL(priorSeason)).catch(() => ''),
+    fetchText(SCHEDULE_URL).catch(() => ''),
+    fetchText(TEAMS_URL).catch(() => ''),
+    fetchJson(SLEEPER_PLAYERS_URL).catch(() => ({})),
+    fetchJson(SLEEPER_PROJ_URL(year)).catch(() => ({}))
+  ]);
+
+  const statsMap = buildStats2025Map(statsCsv ? parseCsv(statsCsv) : []);
+  const byeMap = buildByeMap(scheduleCsv ? parseCsv(scheduleCsv) : [], year);
+  const logoMap = buildTeamLogoMap(teamsCsv ? parseCsv(teamsCsv) : []);
+  const sleeper = buildSleeperMaps(sleeperPlayers, sleeperProj);
+
+  const normalized = roster.rows
+    .map((row) => normalizePlayer(row, roster.season))
     .filter(Boolean);
-  const players = filterDraftPool(normalized, { activeOnly })
-    .sort((a, b) => {
-      const pos = a.position.localeCompare(b.position);
-      if (pos) return pos;
-      return a.name.localeCompare(b.name);
-    });
+
+  const players = filterDraftPool(normalized, { activeOnly }).map((p) => {
+    const statsPts = p.gsisId ? statsMap.get(p.gsisId) : null;
+    const sleeperHit = (p.gsisId && sleeper.byGsis.get(p.gsisId))
+      || sleeper.byKey.get(matchKey(p.name, p.team, p.position))
+      || sleeper.byKey.get(matchKey(p.name, '', p.position))
+      || null;
+
+    return {
+      ...p,
+      byeWeek: (p.team && byeMap.get(p.team)) || null,
+      teamLogo: (p.team && logoMap.get(p.team)) || null,
+      fantasyPoints2025: statsPts != null ? statsPts : null,
+      projectedPoints2026: sleeperHit?.projectedPoints2026 ?? null,
+      sleeperId: sleeperHit?.sleeperId || null,
+      headshot: p.headshot || sleeperHit?.headshot || null
+    };
+  }).sort((a, b) => {
+    const pa = a.projectedPoints2026 != null ? a.projectedPoints2026 : -1;
+    const pb = b.projectedPoints2026 != null ? b.projectedPoints2026 : -1;
+    if (pb !== pa) return pb - pa;
+    const fa = a.fantasyPoints2025 != null ? a.fantasyPoints2025 : -1;
+    const fb = b.fantasyPoints2025 != null ? b.fantasyPoints2025 : -1;
+    if (fb !== fa) return fb - fa;
+    const pos = a.position.localeCompare(b.position);
+    if (pos) return pos;
+    return a.name.localeCompare(b.name);
+  });
 
   const counts = { total: players.length };
   for (const p of players) counts[p.position] = (counts[p.position] || 0) + 1;
 
+  const meta = {
+    source: 'nflverse+sleeper',
+    season: roster.season,
+    statsSeason: priorSeason,
+    projectionSeason: year,
+    counts
+  };
+
   poolCache = {
-    key: `${usedSeason}:${activeOnly ? 'active' : 'all'}`,
+    key,
     at: Date.now(),
     players,
-    meta: { counts }
+    meta
   };
 
   return {
     ok: true,
-    source: 'nflverse-rosters',
-    season: usedSeason,
-    requestedSeason: year,
+    source: meta.source,
+    season: meta.season,
+    statsSeason: meta.statsSeason,
+    projectionSeason: meta.projectionSeason,
     fetchedAt: new Date().toISOString(),
     cacheMs: POOL_CACHE_MS,
     counts,
@@ -290,6 +454,8 @@ async function getDraftBoard() {
     pool: {
       source: pool.source,
       season: pool.season,
+      statsSeason: pool.statsSeason,
+      projectionSeason: pool.projectionSeason,
       counts: {
         total: available.length,
         byPosition: available.reduce((acc, p) => {
@@ -325,6 +491,10 @@ async function makePick(playerId, actor = null) {
     position: player.position,
     nflTeam: player.team,
     headshot: player.headshot,
+    teamLogo: player.teamLogo,
+    byeWeek: player.byeWeek,
+    fantasyPoints2025: player.fantasyPoints2025,
+    projectedPoints2026: player.projectedPoints2026,
     pickedAt: new Date().toISOString(),
     pickedBy: actor?.loginName || actor?.name || null
   };

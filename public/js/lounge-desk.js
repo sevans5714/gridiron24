@@ -269,16 +269,31 @@
     metaEl.textContent = `Overall #${next.overall} · ${total - mock.picks.length} left · snake`;
   }
 
+  function fmtPts(n) {
+    if (n == null || !Number.isFinite(Number(n))) return '—';
+    return Number(n).toFixed(1);
+  }
+
   function filteredPool() {
     const pos = document.getElementById('mock-pos')?.value || 'ALL';
     const q = String(document.getElementById('mock-search')?.value || '').trim().toLowerCase();
     return availablePlayers()
       .filter((p) => (pos === 'ALL' ? true : p.position === pos))
-      .filter((p) => (!q ? true : String(p.name || '').toLowerCase().includes(q)))
+      .filter((p) => {
+        if (!q) return true;
+        const hay = `${p.name || ''} ${p.team || ''} ${p.position || ''}`.toLowerCase();
+        return hay.includes(q);
+      })
       .sort((a, b) => {
-        const pa = POS_ORDER[a.position] ?? 9;
-        const pb = POS_ORDER[b.position] ?? 9;
-        if (pa !== pb) return pa - pb;
+        const pa = a.projectedPoints2026 != null ? Number(a.projectedPoints2026) : -1;
+        const pb = b.projectedPoints2026 != null ? Number(b.projectedPoints2026) : -1;
+        if (pb !== pa) return pb - pa;
+        const fa = a.fantasyPoints2025 != null ? Number(a.fantasyPoints2025) : -1;
+        const fb = b.fantasyPoints2025 != null ? Number(b.fantasyPoints2025) : -1;
+        if (fb !== fa) return fb - fa;
+        const oa = POS_ORDER[a.position] ?? 9;
+        const ob = POS_ORDER[b.position] ?? 9;
+        if (oa !== ob) return oa - ob;
         return String(a.name).localeCompare(String(b.name));
       });
   }
@@ -287,7 +302,7 @@
     const list = document.getElementById('mock-pool-list');
     const count = document.getElementById('mock-pool-count');
     if (!list) return;
-    const rows = filteredPool().slice(0, 120);
+    const rows = filteredPool().slice(0, 160);
     if (count) count.textContent = String(availablePlayers().length);
     if (!rows.length) {
       list.innerHTML = `<div class="records-empty">No players match.</div>`;
@@ -295,16 +310,26 @@
     }
     const next = currentSlot();
     const canPick = Boolean(next);
-    list.innerHTML = rows.map((p) => `
-      <button type="button" class="mock-player" data-id="${esc(p.id)}" ${canPick ? '' : 'disabled'}>
-        ${p.headshot ? `<img src="${esc(p.headshot)}" alt="" width="32" height="32" loading="lazy" referrerpolicy="no-referrer" />` : '<span></span>'}
-        <span>
+    list.innerHTML = rows.map((p) => {
+      const head = p.headshot
+        ? `<img class="mock-head" src="${esc(p.headshot)}" alt="" width="36" height="36" loading="lazy" referrerpolicy="no-referrer" />`
+        : `<span class="mock-head is-blank" aria-hidden="true"></span>`;
+      const logo = p.teamLogo
+        ? `<img class="mock-team" src="${esc(p.teamLogo)}" alt="${esc(p.team || '')}" width="22" height="22" loading="lazy" referrerpolicy="no-referrer" />`
+        : `<span class="mock-team is-blank" aria-hidden="true"></span>`;
+      return `<button type="button" class="mock-player" data-id="${esc(p.id)}" ${canPick ? '' : 'disabled'}>
+        ${head}
+        ${logo}
+        <span class="mock-player-main">
           <strong>${esc(p.name)}</strong>
-          <span>${esc(p.nflTeam || p.team || 'FA')}</span>
+          <span>${esc(p.position)} · ${esc(p.team || 'FA')}${p.byeWeek ? ` · Bye ${esc(p.byeWeek)}` : ''}</span>
         </span>
-        <span class="pos">${esc(p.position)}</span>
-      </button>
-    `).join('');
+        <span class="mock-stats" title="2025 PPR fantasy points / 2026 PPR projection">
+          <span class="mock-stat"><em>’25</em>${esc(fmtPts(p.fantasyPoints2025))}</span>
+          <span class="mock-stat is-proj"><em>’26</em>${esc(fmtPts(p.projectedPoints2026))}</span>
+        </span>
+      </button>`;
+    }).join('');
   }
 
   function renderPicks() {
@@ -322,7 +347,7 @@
         <div class="num">#${esc(p.overall)}</div>
         <div>
           <strong>${esc(p.playerName)}</strong>
-          <div class="who">${esc(p.position)} · ${esc(p.nflTeam || 'FA')} · ${esc(p.teamName)}</div>
+          <div class="who">${esc(p.position)} · ${esc(p.nflTeam || 'FA')}${p.byeWeek ? ` · Bye ${esc(p.byeWeek)}` : ''} · ${esc(p.teamName)}</div>
         </div>
       </div>
     `).join('');
@@ -360,7 +385,11 @@
       playerName: player.name,
       position: player.position,
       nflTeam: player.team,
-      headshot: player.headshot
+      headshot: player.headshot,
+      teamLogo: player.teamLogo,
+      byeWeek: player.byeWeek,
+      fantasyPoints2025: player.fantasyPoints2025,
+      projectedPoints2026: player.projectedPoints2026
     });
     setMockStatus(`Picked ${player.name} for ${mock.teamNames[slot.teamIndex]}`, true);
     renderMock();
@@ -369,14 +398,18 @@
   function autoPickOne() {
     const avail = availablePlayers();
     if (!avail.length || !currentSlot()) return false;
-    // Light positional bias: prefer skill positions early, kickers late.
     const slot = currentSlot();
     const preferK = slot.round >= Math.max(6, mock.rounds - 1);
-    const pool = preferK
-      ? avail
-      : avail.filter((p) => p.position !== 'K');
-    const pickFrom = pool.length ? pool : avail;
-    const player = pickFrom[Math.floor(Math.random() * Math.min(pickFrom.length, 40))];
+    const ranked = avail
+      .filter((p) => (preferK ? true : p.position !== 'K'))
+      .sort((a, b) => {
+        const pa = a.projectedPoints2026 != null ? Number(a.projectedPoints2026) : -1;
+        const pb = b.projectedPoints2026 != null ? Number(b.projectedPoints2026) : -1;
+        return pb - pa;
+      });
+    const pickFrom = ranked.length ? ranked : avail;
+    // Take from the top of the board with a little noise.
+    const player = pickFrom[Math.floor(Math.random() * Math.min(pickFrom.length, 12))];
     makePick(player.id);
     return true;
   }
@@ -386,7 +419,11 @@
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load draft pool');
     poolAll = data.players || [];
-    if (mock) mock.season = data.season || mock.season;
+    if (mock) {
+      mock.season = data.season || mock.season;
+      mock.statsSeason = data.statsSeason || null;
+      mock.projectionSeason = data.projectionSeason || null;
+    }
     return data;
   }
 
@@ -468,9 +505,13 @@
       const roundsEl = document.getElementById('mock-rounds');
       if (roundsEl) roundsEl.value = String(mock.rounds);
       renderMock();
-      await loadPool();
-      renderMock();
-      setMockStatus(`Pool ready · ${poolAll.length} players${mock.season ? ` · ${mock.season}` : ''}`, true);
+      await loadPool().then((data) => {
+        renderMock();
+        setMockStatus(
+          `Pool ready · ${poolAll.length} players${mock.season ? ` · roster ${mock.season}` : ''}${data.statsSeason ? ` · ’${String(data.statsSeason).slice(-2)} FP` : ''}${data.projectionSeason ? ` · ’${String(data.projectionSeason).slice(-2)} proj` : ''}`,
+          true
+        );
+      });
     } catch (err) {
       renderRecordBook({ conferences: [] });
       setMockStatus(err.message || 'Could not start desk tools', false);
