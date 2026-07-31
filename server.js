@@ -52,6 +52,8 @@ const { compareSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
 const sportsScoreboard = require('./sports-scoreboard');
 const nflverseDraft = require('./nflverse-draft');
+const survivorPool = require('./survivor-pool-store');
+const paperBook = require('./paper-book-store');
 const {
   sendPasswordResetEmail,
   sendInviteEmail,
@@ -4357,6 +4359,130 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, err.status || 502, {
           ok: false,
           error: err.message || 'Sports scores unavailable'
+        });
+      }
+    }
+
+    if (pathname === '/api/survivor-pool' && req.method === 'GET') {
+      const viewer = requireLoungeMember(req, res);
+      if (!viewer) return;
+      try {
+        // Auto-settle current NFL week when finals exist.
+        const scores = await sportsScoreboard.getSportsScores({ leagues: 'nfl' });
+        const nfl = (scores.leagues || []).find((l) => l.id === 'nfl');
+        const weekNum = Number(nfl?.week?.number) || null;
+        if (weekNum && nfl?.games?.length) {
+          survivorPool.settleWeek(weekNum, nfl.games);
+        }
+        return sendJson(res, 200, {
+          ...survivorPool.getPool(users.publicUser(viewer)),
+          nflWeek: weekNum,
+          nflSlate: (nfl?.games || []).map((g) => ({
+            id: g.id,
+            date: g.date,
+            status: g.status,
+            away: g.away,
+            home: g.home
+          })),
+          generatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Survivor pool unavailable'
+        });
+      }
+    }
+
+    if (pathname === '/api/survivor-pool' && req.method === 'POST') {
+      const user = requireLoungeMember(req, res);
+      if (!user) return;
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const action = String(body.action || '').toLowerCase();
+        if (action === 'join') {
+          return sendJson(res, 200, survivorPool.joinPool(users.publicUser(user)));
+        }
+        if (action === 'pick') {
+          return sendJson(res, 200, survivorPool.makePick(users.publicUser(user), {
+            week: body.week,
+            teamAbbr: body.teamAbbr
+          }));
+        }
+        return sendJson(res, 400, { ok: false, error: 'Unknown survivor action' });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Survivor action failed'
+        });
+      }
+    }
+
+    if (pathname === '/api/paper-book' && req.method === 'GET') {
+      const viewer = requireLoungeMember(req, res);
+      if (!viewer) return;
+      try {
+        const scores = await sportsScoreboard.getSportsScores({});
+        const boards = scores.leagues || [];
+        const book = paperBook.getBook(users.publicUser(viewer), boards);
+        const ticketBoard = boards
+          .filter((b) => b.ok !== false && b.kind !== 'golf')
+          .map((b) => ({
+            id: b.id,
+            label: b.label,
+            logo: b.logo || null,
+            games: (b.games || [])
+              .filter((g) => g.status?.bucket !== 'final' && g.odds)
+              .map((g) => ({
+                id: g.id,
+                date: g.date,
+                status: g.status,
+                away: g.away,
+                home: g.home,
+                odds: g.odds,
+                broadcasts: g.broadcasts || []
+              }))
+          }))
+          .filter((b) => b.games.length);
+        return sendJson(res, 200, {
+          ...book,
+          boards: ticketBoard,
+          generatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Sportsbook unavailable'
+        });
+      }
+    }
+
+    if (pathname === '/api/paper-book' && req.method === 'POST') {
+      const user = requireLoungeMember(req, res);
+      if (!user) return;
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const scores = await sportsScoreboard.getSportsScores({});
+        const boards = scores.leagues || [];
+        if (String(body.action || 'bet').toLowerCase() === 'bet') {
+          const book = paperBook.placeBet(users.publicUser(user), body, boards);
+          return sendJson(res, 200, book);
+        }
+        return sendJson(res, 400, { ok: false, error: 'Unknown sportsbook action' });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Bet failed'
         });
       }
     }

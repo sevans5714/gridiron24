@@ -1736,6 +1736,310 @@
       margin-right: 0.25rem;
     }
 
+    /* —— Survivor Pool —— */
+    .lounge-section.is-survivor {
+      border-color: rgba(72, 200, 140, 0.28);
+      background:
+        radial-gradient(ellipse 55% 45% at 92% 8%, rgba(72, 200, 140, 0.12), transparent 55%),
+        linear-gradient(180deg, rgba(8, 22, 18, 0.94) 0%, rgba(5, 12, 14, 0.9) 100%);
+    }
+    .lounge-section.is-survivor .lounge-section-label h2 { color: #7dffb8; }
+    .surv-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1rem;
+      margin: 0 0 1rem;
+      font-size: 0.88rem;
+      color: var(--mo-muted);
+    }
+    .surv-stats strong { color: var(--mo-text); font-weight: 600; }
+    .surv-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: end;
+      margin: 0 0 1rem;
+    }
+    .surv-actions label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .surv-actions select,
+    .surv-actions button,
+    .degen-slip-bar input,
+    .degen-slip-bar button,
+    .degen-ticket button {
+      font: inherit;
+      border-radius: 0;
+    }
+    .surv-actions select,
+    .degen-slip-bar input {
+      min-height: 2.35rem;
+      padding: 0.35rem 0.55rem;
+      border: 1px solid rgba(126, 200, 255, 0.28);
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--mo-text);
+    }
+    .surv-actions button,
+    .degen-slip-bar button,
+    .degen-ticket button {
+      min-height: 2.35rem;
+      padding: 0.4rem 0.9rem;
+      border: 1px solid rgba(72, 200, 140, 0.45);
+      background: rgba(72, 200, 140, 0.18);
+      color: #b8ffd6;
+      cursor: pointer;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .surv-actions button:hover,
+    .degen-slip-bar button:hover,
+    .degen-ticket button:hover {
+      background: rgba(72, 200, 140, 0.3);
+      color: #fff;
+    }
+    .surv-actions button:disabled,
+    .degen-slip-bar button:disabled,
+    .degen-ticket button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .surv-slate {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+      gap: 0.45rem;
+      margin: 0 0 1rem;
+    }
+    .surv-game {
+      padding: 0.55rem 0.65rem;
+      border: 1px solid rgba(126, 200, 255, 0.14);
+      background: rgba(0, 0, 0, 0.22);
+      font-size: 0.82rem;
+    }
+    .surv-game .match { color: var(--mo-text); font-weight: 600; }
+    .surv-game .meta { color: var(--mo-muted); font-size: 0.74rem; margin-top: 0.2rem; }
+    .surv-board {
+      display: grid;
+      gap: 0.35rem;
+    }
+    .surv-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 2fr);
+      gap: 0.55rem;
+      align-items: center;
+      padding: 0.45rem 0.6rem;
+      border: 1px solid rgba(126, 200, 255, 0.12);
+      background: rgba(0, 0, 0, 0.18);
+      font-size: 0.84rem;
+    }
+    .surv-row.is-me { border-color: rgba(72, 200, 140, 0.4); }
+    .surv-row.is-out { opacity: 0.55; }
+    .surv-row .name { font-weight: 600; color: var(--mo-text); overflow-wrap: anywhere; }
+    .surv-row .badge {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      color: #7dffb8;
+    }
+    .surv-row.is-out .badge { color: #ff8f8f; }
+    .surv-row .picks { color: var(--mo-muted); font-size: 0.78rem; overflow-wrap: anywhere; }
+    .surv-status { margin: 0.65rem 0 0; min-height: 1.2em; font-size: 0.88rem; color: var(--mo-muted); }
+    .surv-status.is-ok { color: var(--mo-good); }
+    .surv-status.is-err { color: #ff8f8f; }
+
+    /* —— Degenerate Gambler —— */
+    .lounge-section.is-degen {
+      border-color: rgba(232, 120, 90, 0.3);
+      background:
+        radial-gradient(ellipse 50% 45% at 6% 0%, rgba(232, 120, 90, 0.14), transparent 55%),
+        linear-gradient(180deg, rgba(28, 12, 10, 0.94) 0%, rgba(10, 6, 8, 0.92) 100%);
+    }
+    .lounge-section.is-degen .lounge-section-label h2 { color: #ffb08a; }
+    .degen-bank {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin: 0 0 1rem;
+    }
+    .degen-stat {
+      padding: 0.65rem 0.75rem;
+      border: 1px solid rgba(232, 120, 90, 0.22);
+      background: rgba(0, 0, 0, 0.25);
+    }
+    .degen-stat .label {
+      margin: 0;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #ffb08a;
+    }
+    .degen-stat .value {
+      margin: 0.25rem 0 0;
+      font-family: "Oswald", "Bebas Neue", sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--mo-text);
+    }
+    .degen-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(16rem, 0.9fr);
+      gap: 0.85rem;
+      align-items: start;
+    }
+    .degen-league {
+      margin: 0 0 0.85rem;
+    }
+    .degen-league-head {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 0 0 0.45rem;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #ffb08a;
+      font-size: 0.95rem;
+    }
+    .degen-league-head img { width: 1.15rem; height: 1.15rem; object-fit: contain; }
+    .degen-game {
+      padding: 0.55rem 0.65rem;
+      border: 1px solid rgba(232, 120, 90, 0.16);
+      background: rgba(0, 0, 0, 0.22);
+      margin: 0 0 0.4rem;
+    }
+    .degen-game .matchup {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--mo-text);
+      margin: 0 0 0.4rem;
+    }
+    .degen-game .kick { font-size: 0.74rem; color: var(--mo-muted); margin: 0 0 0.45rem; }
+    .degen-lines {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+    .degen-lines button {
+      font: inherit;
+      font-size: 0.72rem;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid rgba(232, 120, 90, 0.28);
+      background: rgba(232, 120, 90, 0.1);
+      color: var(--mo-text);
+      cursor: pointer;
+      border-radius: 0;
+    }
+    .degen-lines button.is-on,
+    .degen-lines button:hover {
+      background: rgba(232, 120, 90, 0.28);
+      border-color: rgba(255, 176, 138, 0.55);
+      color: #fff;
+    }
+    .degen-ticket {
+      position: sticky;
+      top: 0.75rem;
+      padding: 0.75rem;
+      border: 1px solid rgba(232, 120, 90, 0.28);
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .degen-ticket h3 {
+      margin: 0 0 0.55rem;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 1.05rem;
+      color: #ffb08a;
+      font-weight: 400;
+    }
+    .degen-leg {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      align-items: start;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.8rem;
+    }
+    .degen-leg button {
+      min-height: auto;
+      padding: 0.15rem 0.4rem;
+      font-size: 0.7rem;
+      border-color: rgba(255, 143, 143, 0.35);
+      background: transparent;
+      color: #ff8f8f;
+    }
+    .degen-slip-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: end;
+      margin: 0.65rem 0 0;
+    }
+    .degen-slip-bar label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .degen-slip-bar input { width: 5.5rem; }
+    .degen-payout {
+      margin: 0.55rem 0 0;
+      font-size: 0.84rem;
+      color: var(--mo-muted);
+    }
+    .degen-payout strong { color: var(--mo-text); }
+    .degen-slips, .degen-lb {
+      margin: 1rem 0 0;
+    }
+    .degen-slips h3, .degen-lb h3 {
+      margin: 0 0 0.45rem;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+      color: #ffb08a;
+      font-weight: 400;
+    }
+    .degen-slip-row, .degen-lb-row {
+      display: grid;
+      gap: 0.25rem;
+      padding: 0.5rem 0.55rem;
+      border: 1px solid rgba(232, 120, 90, 0.14);
+      background: rgba(0, 0, 0, 0.18);
+      margin: 0 0 0.35rem;
+      font-size: 0.8rem;
+    }
+    .degen-slip-row .top, .degen-lb-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      color: var(--mo-text);
+    }
+    .degen-slip-row .legs { color: var(--mo-muted); }
+    .degen-slip-row .won { color: var(--mo-good); }
+    .degen-slip-row .lost { color: #ff8f8f; }
+    .degen-status { margin: 0.65rem 0 0; min-height: 1.2em; font-size: 0.88rem; color: var(--mo-muted); }
+    .degen-status.is-ok { color: var(--mo-good); }
+    .degen-status.is-err { color: #ff8f8f; }
+    .degen-empty { color: var(--mo-muted); font-size: 0.9rem; padding: 0.35rem 0; }
+
+    @media (max-width: 900px) {
+      .degen-layout { grid-template-columns: 1fr; }
+      .degen-bank { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .degen-ticket { position: static; }
+      .surv-row { grid-template-columns: 1fr; gap: 0.25rem; }
+    }
+
     @media (max-width: 900px) {
       .lounge-hero {
         margin-left: calc(-1 * clamp(1rem, 2vw, 2.25rem));
@@ -1856,6 +2160,8 @@
       <nav class="lounge-desk-jump" aria-label="Lounge desk tools">
         <a href="#record-book">Record Book</a>
         <a href="#mock-draft">Mock Draft</a>
+        <a href="#survivor-pool">Survivor</a>
+        <a href="#degenerate-book">Degenerate Gambler</a>
         <a href="#room">Roll Call</a>
       </nav>
 
@@ -1929,6 +2235,32 @@
         <p class="mock-status" id="mock-status" role="status"></p>
       </section>
 
+      <section class="lounge-section is-survivor" id="survivor-pool" aria-label="Survivor pool">
+        <div class="lounge-section-label">
+          <div>
+            <p class="eyebrow">Last team standing</p>
+            <h2>Survivor Pool</h2>
+          </div>
+          <div class="aside" id="survivor-aside">Loading…</div>
+        </div>
+        <p class="records-note" style="margin-top:0">Pick one NFL winner each week. Use a team once. Miss and you’re out.</p>
+        <div id="survivor-pool-root"><div class="records-empty">Loading survivor pool…</div></div>
+        <p class="surv-status" id="survivor-status" role="status"></p>
+      </section>
+
+      <section class="lounge-section is-degen" id="degenerate-book" aria-label="Degenerate Gambler sportsbook">
+        <div class="lounge-section-label">
+          <div>
+            <p class="eyebrow">Paper sportsbook</p>
+            <h2>Degenerate Gambler</h2>
+          </div>
+          <div class="aside" id="degen-aside">Fun money only</div>
+        </div>
+        <p class="records-note" style="margin-top:0">Straights and parlays vs the spread, moneylines, and totals. Tracks your record. No real cash — just pride and pain.</p>
+        <div id="degenerate-book-root"><div class="records-empty">Loading sportsbook…</div></div>
+        <p class="degen-status" id="degen-status" role="status"></p>
+      </section>
+
       <div class="lounge-mid">
         <section class="lounge-section is-chat im-window" id="room" aria-label="Roll Call chat room">
           <div class="im-titlebar">
@@ -1984,6 +2316,7 @@
   </footer>
   <script src="/js/nav.js?v=77"></script>
   <script src="/js/lounge-desk.js?v=3"></script>
+  <script src="/js/lounge-games.js?v=1"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -2937,6 +3270,12 @@
         }
         if (location.hash === '#mock-draft' || location.hash === '#mock') {
           document.getElementById('mock-draft')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (location.hash === '#survivor-pool' || location.hash === '#survivor') {
+          document.getElementById('survivor-pool')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (location.hash === '#degenerate-book' || location.hash === '#degen' || location.hash === '#book') {
+          document.getElementById('degenerate-book')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       } catch (err) {
         document.getElementById('boards').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
