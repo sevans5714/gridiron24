@@ -1443,7 +1443,6 @@
     let homeLine = (box?.home?.lineup?.length ? box.home.lineup : emptySlotRows(starterSlots));
     let awayBench = Array.isArray(box?.away?.bench) ? box.away.bench.filter((p) => p?.name) : [];
     let homeBench = Array.isArray(box?.home?.bench) ? box.home.bench.filter((p) => p?.name) : [];
-    // After draft, ESPN roster fills slots; prefer named lineup over empty placeholders.
     if (myLineup.some((p) => p.name) && Number.isFinite(myId)) {
       if (Number(away?.id) === myId && !awayLine.some((p) => p.name)) awayLine = myLineup;
       if (Number(home?.id) === myId && !homeLine.some((p) => p.name)) homeLine = myLineup;
@@ -1453,11 +1452,33 @@
     if (!awayLine.length) awayLine = emptySlotRows(starterSlots);
     if (!homeLine.length) homeLine = emptySlotRows(starterSlots);
 
+    const rowCount = Math.max(awayLine.length, homeLine.length, starterSlots.length);
+    const rows = [];
+    for (let i = 0; i < rowCount; i += 1) {
+      const a = awayLine[i] || emptySlotRows([starterSlots[i] || '—'])[0];
+      const h = homeLine[i] || emptySlotRows([starterSlots[i] || a?.slot || '—'])[0];
+      const slot = a?.slot || h?.slot || starterSlots[i] || '—';
+      rows.push({ slot, away: a, home: h });
+    }
+
+    function playerCell(p, side) {
+      const empty = p?.empty || !p?.name;
+      const bad = !empty && injClass(p.injuryStatus) === 'bad';
+      const pts = empty ? '—' : fmtPts(p.points != null ? p.points : p.weekPoints);
+      const name = empty
+        ? `<span class="slot-open">${esc(p?.slot || 'Open')}</span>`
+        : `${esc(p.name)}${p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}`;
+      return `<div class="box-player ${side}${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''}">
+        <span class="nm">${name}</span>
+        <span class="pts">${pts}</span>
+      </div>`;
+    }
+
     function benchBlock(players, sideKey) {
       if (!players.length) return '';
       const open = state.boxBenchOpen?.[sideKey];
       return `<details class="box-bench" data-bench-side="${esc(sideKey)}"${open ? ' open' : ''}>
-        <summary>Bench / IR (${players.length})</summary>
+        <summary>${esc(sideKey === 'away' ? (away.name || 'Away') : (home.name || 'Home'))} bench / IR (${players.length})</summary>
         ${slotRosterListHtml(players)}
       </details>`;
     }
@@ -1465,21 +1486,33 @@
     return `
       <div class="home-section matchup-rosters">
         <div class="section-label">Starting lineups</div>
-        <div class="roster-team-block">
-          <div class="roster-team-head">
-            <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
-            <strong>${esc(away.name || 'Away')}</strong>
+        <div class="box-lineups">
+          <div class="box-lineup-heads">
+            <div class="box-lineup-head is-away">
+              <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
+              <strong>${esc(away.name || 'Away')}</strong>
+            </div>
+            <div class="box-lineup-pos-label" aria-hidden="true">Pos</div>
+            <div class="box-lineup-head is-home">
+              <strong>${esc(home.name || 'Home')}</strong>
+              <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
+            </div>
           </div>
-          ${slotRosterListHtml(awayLine)}
-          ${benchBlock(awayBench, 'away')}
+          <div class="box-cols" aria-hidden="true">
+            <span>Player · Score</span>
+            <span></span>
+            <span>Player · Score</span>
+          </div>
+          ${rows.map((row) => `
+            <div class="box-row">
+              ${playerCell(row.away, 'away')}
+              <div class="box-mid">${esc(row.slot)}</div>
+              ${playerCell(row.home, 'home')}
+            </div>
+          `).join('')}
         </div>
-        <hr class="roster-team-divider" />
-        <div class="roster-team-block">
-          <div class="roster-team-head">
-            <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
-            <strong>${esc(home.name || 'Home')}</strong>
-          </div>
-          ${slotRosterListHtml(homeLine)}
+        <div class="box-bench-row">
+          ${benchBlock(awayBench, 'away')}
           ${benchBlock(homeBench, 'home')}
         </div>
       </div>`;
