@@ -842,7 +842,6 @@
     <div class="sb-boards" id="boards">
       <div class="board-empty">Powering up scoreboard…</div>
     </div>
-    <p class="sb-foot" id="refresh-note">Updates every 30 seconds from ESPN</p>
   </main>
 
   <footer class="shell site-footer">
@@ -1164,14 +1163,10 @@
       loading = on;
       const bar = document.getElementById('refresh-bar');
       const boards = document.getElementById('boards');
-      const note = document.getElementById('refresh-note');
       bar?.classList.toggle('is-on', on);
       boards?.classList.toggle('is-refreshing', on);
-      if (on) {
-        if (note) note.textContent = 'Pulling latest scores from ESPN…';
-      } else {
+      if (!on) {
         liveMode = currentWeek != null && currentWeek === currentMatchupPeriod;
-        if (note) note.textContent = 'Updates every 30 seconds from ESPN';
       }
     }
 
