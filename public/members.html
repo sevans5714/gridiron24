@@ -424,14 +424,14 @@
     }
     .lounge-scorecol.is-upcoming .sports-col-head h2 { color: #efd782; }
 
-    /* Fixed full board — same footprint for every league */
+    /* Fixed full board — denser columns so more games fit */
     .sports-grid {
       --sports-board-h: clamp(19.5rem, 38vh, 24rem);
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       grid-template-rows: repeat(3, minmax(0, 1fr));
       align-content: stretch;
-      gap: 0.55rem 0.75rem;
+      gap: 0.4rem 0.4rem;
       height: var(--sports-board-h);
       min-height: var(--sports-board-h);
       max-height: var(--sports-board-h);
@@ -469,7 +469,7 @@
 
     .sgame {
       min-width: 0;
-      padding: 0.4rem 0.15rem 0.45rem;
+      padding: 0.3rem 0.1rem 0.35rem;
       border: 0;
       border-bottom: 1px solid rgba(126, 200, 255, 0.12);
       border-radius: 0;
@@ -528,30 +528,30 @@
     .sgame-sides { display: grid; gap: 0.08rem; }
     .sgame-row {
       display: grid;
-      grid-template-columns: 1.65rem minmax(0, 1fr) auto auto;
+      grid-template-columns: 1.35rem minmax(0, 1fr) auto auto;
       align-items: center;
-      gap: 0.3rem;
-      min-height: 1.2rem;
+      gap: 0.22rem;
+      min-height: 1.1rem;
     }
     .sgame-row img,
     .sgame-logo {
-      width: 1.85rem;
-      height: 1.85rem;
+      width: 1.45rem;
+      height: 1.45rem;
       object-fit: contain;
       flex: 0 0 auto;
       filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
       image-rendering: -webkit-optimize-contrast;
     }
     .sgame-logo-fallback {
-      width: 1.85rem;
-      height: 1.85rem;
+      width: 1.45rem;
+      height: 1.45rem;
       border-radius: 0.15rem;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(126, 200, 255, 0.15);
     }
     .sgame-abbr {
       font-family: "Oswald", sans-serif;
-      font-size: 0.95rem;
+      font-size: 0.86rem;
       letter-spacing: 0.04em;
       color: var(--mo-text);
       white-space: nowrap;
@@ -565,10 +565,10 @@
     }
     .sgame-score {
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-variant-numeric: tabular-nums;
       color: #d7e2ef;
-      min-width: 1.35rem;
+      min-width: 1.15rem;
       text-align: right;
       line-height: 1;
     }
@@ -579,11 +579,11 @@
     }
     .sgame-line {
       font-family: "Oswald", sans-serif;
-      font-size: 0.68rem;
+      font-size: 0.62rem;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.02em;
       color: #efd782;
-      min-width: 2.1rem;
+      min-width: 1.75rem;
       text-align: right;
       white-space: nowrap;
     }
@@ -2048,7 +2048,9 @@
       .lounge-hero img { width: 100%; }
       .sports-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        --sports-board-h: clamp(18rem, 40vh, 22rem);
+        grid-template-rows: repeat(4, minmax(0, 1fr));
+        gap: 0.35rem 0.35rem;
+        --sports-board-h: clamp(20rem, 44vh, 26rem);
       }
       .sports-face { padding: 0.35rem 0 0.15rem; }
       .lounge-mid {
@@ -2086,9 +2088,9 @@
     @media (max-width: 520px) {
       .sports-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-rows: repeat(5, minmax(0, 1fr));
-        gap: 0.4rem 0.55rem;
-        --sports-board-h: clamp(20rem, 48vh, 26rem);
+        grid-template-rows: repeat(6, minmax(0, 1fr));
+        gap: 0.3rem 0.4rem;
+        --sports-board-h: clamp(22rem, 52vh, 28rem);
       }
       .sports-grid.is-golf-board {
         grid-template-columns: 1fr;
@@ -2342,7 +2344,7 @@
     const SPORTS_POLL_LIVE_MS = 15000;
     const SPORTS_FLIP_MS = 7000;
     const SPORTS_FLIP_PAUSE_MS = 20000;
-    const SPORTS_SLOT = 9;
+    const SPORTS_SLOT = 12;
     const SPORTS_GOLF_SLOT = 1;
 
     async function readJsonResponse(res, fallbackError) {
