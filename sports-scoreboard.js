@@ -168,16 +168,38 @@ function golfPositionSort(a, b) {
   return (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0);
 }
 
+/** ESPN often puts an ISO tee time in displayValue between rounds — never show that raw. */
+function golfThruLabel(status = {}) {
+  if (status.displayThru) return String(status.displayThru);
+  const thruN = Number(status.thru);
+  if (Number.isFinite(thruN) && thruN > 0) return thruN >= 18 ? 'F' : String(thruN);
+
+  const dv = String(status.displayValue || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}T/.test(dv)) {
+    const tee = String(status.detail || '').trim();
+    return tee || '—';
+  }
+  if (dv && dv !== '-') return dv;
+
+  const detail = String(status.detail || '').trim();
+  if (detail && !/^scheduled$/i.test(detail)) return detail;
+  return '—';
+}
+
 function normalizeGolfEvent(event) {
   const competition = event?.competitions?.[0] || {};
-  const status = competition.status || event.status || {};
-  const type = status.type || {};
+  const eventType = event?.status?.type || {};
+  const compStatus = competition.status || {};
+  const compType = compStatus.type || {};
+  // Tournament-level state wins: round "Play Complete" must not mark a live event final.
+  const type = eventType.state ? eventType : compType;
   const state = String(type.state || 'pre');
   const completed = Boolean(type.completed);
   const bucket = statusBucket(state, completed);
   const broadcasts = (competition.broadcasts || [])
     .flatMap((b) => b.names || [])
     .filter(Boolean);
+  const roundDetail = compType.shortDetail || compType.detail || type.shortDetail || type.detail || '';
 
   const leaders = (competition.competitors || [])
     .slice()
@@ -185,14 +207,19 @@ function normalizeGolfEvent(event) {
     .slice(0, GOLF_LEADER_LIMIT)
     .map((row) => {
       const athlete = row.athlete || {};
+      const rowStatus = row.status || {};
+      const scoreRaw = row.score?.displayValue ?? row.score;
+      const score = (scoreRaw == null || scoreRaw === '')
+        ? (rowStatus.todayDetail || '—')
+        : String(scoreRaw);
       return {
         id: row.id || athlete.id || null,
         name: athlete.displayName || athlete.fullName || '',
         shortName: athlete.shortName || athlete.displayName || '',
-        position: row.status?.position?.displayName || '—',
-        score: row.score?.displayValue || row.status?.detail || '—',
-        thru: row.status?.displayThru || row.status?.displayValue || '',
-        state: row.status?.type?.state || state
+        position: rowStatus.position?.displayName || '—',
+        score,
+        thru: golfThruLabel(rowStatus),
+        state: rowStatus.type?.state || state
       };
     });
 
@@ -209,10 +236,10 @@ function normalizeGolfEvent(event) {
       completed,
       name: type.name || '',
       description: type.description || '',
-      detail: type.detail || '',
-      shortDetail: type.shortDetail || type.detail || '',
+      detail: roundDetail || type.detail || '',
+      shortDetail: roundDetail || type.shortDetail || type.detail || '',
       clock: null,
-      period: status.period || 0
+      period: compStatus.period || 0
     },
     venue: event.courses?.[0]?.name || null,
     broadcasts,
