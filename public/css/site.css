@@ -2759,7 +2759,7 @@ body.has-install-sheet {
   .panel-title .meta { display: none; }
 
   .site-footer-mark {
-    width: clamp(2.4rem, 12vw, 3.18rem);
+    width: clamp(2.88rem, 14.4vw, 3.82rem);
     height: auto;
   }
 }
