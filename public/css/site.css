@@ -409,9 +409,14 @@ body {
   padding-left: 1.15rem !important;
 }
 .nav > .rule-proposal-slot::before {
-  height: 1.05rem;
-  opacity: 0.85;
-  background: color-mix(in srgb, var(--topbar-border) 55%, transparent);
+  height: 1.25rem;
+  opacity: 1;
+  background: rgba(142, 182, 255, 0.42);
+  box-shadow: 0 0 6px rgba(47, 109, 255, 0.25);
+}
+html[data-theme="day"] .nav > .rule-proposal-slot::before {
+  background: rgba(31, 94, 240, 0.28);
+  box-shadow: none;
 }
 
 .rule-proposal-btn {
