@@ -539,7 +539,7 @@
     if (onAaa) {
       el.title = 'Switch to GridIron 24';
       el.setAttribute('aria-label', 'Switch to GridIron 24');
-      el.innerHTML = `<img src="/assets/gridiron24-league-sm.png?v=3" alt="" width="44" height="44" decoding="async" />`;
+      el.innerHTML = `<img src="/assets/gridiron24-league-sm.png?v=4" alt="" width="44" height="44" decoding="async" />`;
       el.onclick = (e) => {
         e.preventDefault();
         switchLeague('gridiron');
