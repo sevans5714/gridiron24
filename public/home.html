@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=108" />
+  <link rel="stylesheet" href="/css/site.css?v=109" />
   <style>
     .aaa-portal {
       display: inline-flex;
@@ -40,6 +40,41 @@
     html[data-theme="day"] .aaa-portal img {
       filter: drop-shadow(0 2px 5px rgba(20, 24, 31, 0.2));
     }
+
+    body[data-page="home"] {
+      background:
+        radial-gradient(ellipse 85% 55% at 50% -8%, rgba(47, 109, 255, 0.22), transparent 58%),
+        radial-gradient(ellipse 42% 38% at 8% 72%, rgba(255, 122, 24, 0.12), transparent 52%),
+        radial-gradient(ellipse 42% 38% at 92% 68%, rgba(226, 35, 42, 0.11), transparent 52%),
+        linear-gradient(180deg, #0b1220 0%, #070b14 32%, #05070e 100%);
+    }
+    html[data-theme="day"] body[data-page="home"] {
+      background:
+        radial-gradient(ellipse 85% 55% at 50% -8%, rgba(31, 94, 240, 0.14), transparent 58%),
+        radial-gradient(ellipse 42% 38% at 8% 72%, rgba(232, 106, 12, 0.08), transparent 52%),
+        radial-gradient(ellipse 42% 38% at 92% 68%, rgba(201, 29, 36, 0.07), transparent 52%),
+        linear-gradient(180deg, #eef2f8 0%, #e8ecf1 100%);
+    }
+    body[data-page="home"] .topbar {
+      border-bottom-color: rgba(47, 109, 255, 0.32);
+      background:
+        radial-gradient(ellipse 70% 140% at 50% -40%, rgba(47, 109, 255, 0.28), transparent 60%),
+        linear-gradient(180deg, #152038 0%, #0c121f 100%);
+      box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.55),
+        0 0 40px rgba(47, 109, 255, 0.1);
+    }
+    html[data-theme="day"] body[data-page="home"] .topbar {
+      border-bottom-color: rgba(31, 94, 240, 0.22);
+      background:
+        radial-gradient(ellipse 70% 140% at 50% -40%, rgba(31, 94, 240, 0.12), transparent 60%),
+        linear-gradient(180deg, #ffffff 0%, #e8eef8 100%);
+      box-shadow: 0 8px 22px rgba(20, 24, 31, 0.1);
+    }
+    body[data-page="home"] .nav a {
+      font-size: 0.92rem;
+      letter-spacing: 0.09em;
+    }
     body[data-page="home"] .topbar-right {
       max-width: none;
       gap: 0.85rem;
@@ -47,14 +82,16 @@
 
     .hq-hero {
       text-align: center;
-      padding: 1.55rem 0 1.35rem;
-      border-bottom: 1px solid var(--line);
+      padding: 1.85rem 0 1.65rem;
+      border-bottom: 1px solid rgba(47, 109, 255, 0.28);
       background:
-        radial-gradient(ellipse 70% 80% at 50% 25%, rgba(47, 109, 255, 0.12), transparent 60%),
-        var(--bg);
+        radial-gradient(ellipse 75% 90% at 50% 20%, rgba(47, 109, 255, 0.2), transparent 62%),
+        radial-gradient(ellipse 50% 60% at 18% 90%, rgba(255, 122, 24, 0.08), transparent 55%),
+        radial-gradient(ellipse 50% 60% at 82% 90%, rgba(226, 35, 42, 0.08), transparent 55%),
+        transparent;
     }
     .hq-hero img {
-      width: min(520px, 82vw);
+      width: min(560px, 86vw);
       height: auto;
       display: block;
       margin: 0 auto;
@@ -64,34 +101,54 @@
       filter: drop-shadow(0 10px 22px rgba(20, 24, 31, 0.18));
     }
     .hq-hero .tag {
-      margin: 1rem 0 0;
+      margin: 1.25rem 0 0;
       font-family: var(--display);
-      font-size: clamp(1rem, 2.6vw, 1.35rem);
+      font-size: clamp(1.35rem, 3.8vw, 1.95rem);
       font-weight: 600;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      line-height: 1.3;
+      line-height: 1.25;
       color: var(--text);
     }
     .hq-hero .tag .t { color: var(--blue); }
-    .hq-hero .tag .d { color: var(--muted); }
+    .hq-hero .tag .d {
+      color: #c5cedb;
+      text-shadow:
+        0 0 6px rgba(200, 215, 240, 0.45),
+        0 0 14px rgba(170, 190, 220, 0.25);
+    }
+    html[data-theme="day"] .hq-hero .tag .d {
+      color: var(--muted);
+      text-shadow: none;
+    }
     .hq-hero .tag .c {
       color: var(--text);
       font-weight: 700;
     }
     html[data-theme="night"] .hq-hero .tag .c {
       color: #f2f5fa;
-      background: linear-gradient(180deg, #ffffff 0%, #c5cedb 52%, #9aa8ba 100%);
+      background: linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #e8eef6 28%,
+        #a8b4c4 58%,
+        #dde4ee 78%,
+        #8e9aab 100%
+      );
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
+      filter:
+        drop-shadow(0 0 6px rgba(230, 240, 255, 0.85))
+        drop-shadow(0 0 14px rgba(190, 210, 240, 0.55))
+        drop-shadow(0 0 28px rgba(160, 185, 230, 0.35));
     }
-    .hq-hero .tag .sep { color: var(--muted-2); margin: 0 0.3em; }
+    .hq-hero .tag .sep { color: var(--muted-2); margin: 0 0.35em; }
 
     .hq-main {
-      padding-top: 1.35rem;
+      padding-top: 1.5rem;
       padding-bottom: 2.25rem;
-      font-size: 1.12rem;
+      font-size: 1.22rem;
     }
 
     .section-head {
@@ -104,7 +161,7 @@
     .section-head h2 {
       margin: 0;
       font-family: var(--display);
-      font-size: clamp(1.25rem, 2.5vw, 1.55rem);
+      font-size: clamp(1.45rem, 3vw, 1.85rem);
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -114,7 +171,7 @@
     .section-head a,
     .section-head .hint {
       color: #9ec0ff;
-      font-size: 1rem;
+      font-size: 1.08rem;
       font-weight: 600;
       text-decoration: none;
     }
@@ -282,12 +339,12 @@
     .mini-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 1rem;
+      font-size: 1.08rem;
     }
     .mini-table th {
       padding: 0.4rem 0.35rem 0.5rem;
       text-align: left;
-      font-size: 0.78rem;
+      font-size: 0.84rem;
       letter-spacing: 0.07em;
       text-transform: uppercase;
       color: var(--muted);
@@ -795,7 +852,8 @@
       .standings-preview { grid-template-columns: 1fr; }
       .motw-side img { width: 4.75rem; height: 4.75rem; }
       .hotnot-team img { width: 4rem; height: 4rem; }
-      .hq-main { font-size: 1.06rem; }
+      .hq-main { font-size: 1.12rem; }
+      .hq-hero .tag { font-size: clamp(1.2rem, 5.2vw, 1.55rem); }
     }
   </style>
 </head>

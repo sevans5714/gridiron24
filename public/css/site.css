@@ -38,9 +38,9 @@
 :root,
 html[data-theme="night"] {
   color-scheme: dark;
-  --bg: #050505;
-  --panel: #111111;
-  --panel-2: #171717;
+  --bg: #06090f;
+  --panel: #0e1420;
+  --panel-2: #131b2a;
   --text: #f2f2f2;
   --muted: #9b9b9b;
   --muted-2: #7a7a7a;
@@ -54,14 +54,14 @@ html[data-theme="night"] {
   --display: "Bebas Neue", Impact, sans-serif;
   --page-title: "Oswald", "Bebas Neue", Impact, sans-serif;
   --body: "Source Sans 3", system-ui, sans-serif;
-  --topbar-bg: #0c0c0c;
-  --topbar-bg-top: #141414;
-  --topbar-bg-bottom: #0a0a0a;
-  --topbar-border: rgba(255, 255, 255, 0.12);
-  --topbar-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --body-wash: rgba(47, 109, 255, 0.06);
-  --body-mid: #080808;
-  --field-bg: #0c0c0c;
+  --topbar-bg: #0c1422;
+  --topbar-bg-top: #162238;
+  --topbar-bg-bottom: #0a121e;
+  --topbar-border: rgba(47, 109, 255, 0.28);
+  --topbar-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 36px rgba(47, 109, 255, 0.08);
+  --body-wash: rgba(47, 109, 255, 0.16);
+  --body-mid: #0a1220;
+  --field-bg: #0c1420;
   --field-text: #fff;
   --nav-hover: #fff;
   --chip-border: rgba(255, 255, 255, 0.22);
@@ -88,10 +88,10 @@ html[data-theme="night"] {
   --logo-shadow-lg: none;
   --logo-lift: 0 2px 10px rgba(0, 0, 0, 0.35);
   --row-hover: rgba(255, 255, 255, 0.03);
-  --ticker-face-top: #101820;
-  --ticker-face-bottom: #0a1018;
-  --ticker-fade-left: #0a1018;
-  --ticker-fade-right: #060606;
+  --ticker-face-top: #101a2c;
+  --ticker-face-bottom: #0a1220;
+  --ticker-fade-left: #0a1220;
+  --ticker-fade-right: #06090f;
   --ticker-item: rgba(255, 255, 255, 0.9);
   --ticker-item-hover: #fff;
   --ticker-shadow: 0 6px 28px rgba(0, 0, 0, 0.35);
