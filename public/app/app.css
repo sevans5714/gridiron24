@@ -1211,6 +1211,14 @@ a {
   box-shadow: var(--shadow-card);
 }
 
+.matchup-card .mu-card {
+  margin-bottom: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
 .matchup-card .game {
   margin-bottom: 0;
   border: 0;
