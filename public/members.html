@@ -750,7 +750,7 @@
       font-size: 0.82rem;
     }
 
-    /* —— Chat room (Yahoo Messenger–style window) —— */
+    /* —— Chat room (Discord-style channel) —— */
     .lounge-mid {
       display: grid;
       grid-template-columns: minmax(0, 1.85fr) minmax(15rem, 0.75fr);
@@ -762,11 +762,27 @@
     }
 
     .im-window {
+      --dc-bg: #313338;
+      --dc-sidebar: #2b2d31;
+      --dc-deep: #1e1f22;
+      --dc-hover: #2e3035;
+      --dc-input: #383a40;
+      --dc-text: #dbdee1;
+      --dc-heading: #f2f3f5;
+      --dc-muted: #949ba4;
+      --dc-blurple: #5865f2;
+      --dc-green: #23a559;
+      --dc-danger: #ed4245;
+      --dc-mention: rgba(88, 101, 242, 0.28);
       display: grid;
       grid-template-rows: auto auto minmax(0, 1fr);
       gap: 0;
       overflow: hidden;
-      min-height: 22rem;
+      min-height: 24rem;
+      border: 1px solid rgba(0, 0, 0, 0.45) !important;
+      border-radius: 0.5rem !important;
+      background: var(--dc-bg) !important;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35) !important;
     }
     .lounge-section.is-chat.im-window {
       padding: 0;
@@ -776,38 +792,39 @@
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      padding: 0.42rem 0.7rem;
-      background: linear-gradient(180deg, #4a7fe0 0%, #2f5fc0 48%, #244ea3 100%);
+      padding: 0.7rem 1rem;
+      background: var(--dc-bg);
       border-bottom: 1px solid rgba(0, 0, 0, 0.35);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
     }
     .im-titlebar-left { min-width: 0; }
     .im-title {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 0.45rem;
       min-width: 0;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+    }
+    .im-title .im-hash {
+      font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--dc-muted);
+      flex: 0 0 auto;
     }
     .im-title .im-app {
-      margin: 0;
-      font-family: Tahoma, "Segoe UI", "Source Sans 3", sans-serif;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.78);
-      white-space: nowrap;
+      display: none;
     }
     .im-title h2 {
       margin: 0;
-      font-family: Tahoma, "Segoe UI", "Source Sans 3", sans-serif;
-      font-size: 0.92rem;
+      font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+      font-size: 1rem;
       font-weight: 700;
-      letter-spacing: 0.01em;
+      letter-spacing: 0;
       text-transform: none;
-      color: #fff;
-      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+      color: var(--dc-heading);
+      text-shadow: none;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -817,112 +834,165 @@
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      padding: 0.28rem 0.7rem;
-      background: linear-gradient(180deg, #1a2740, #141e32);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      font-family: Tahoma, "Segoe UI", "Source Sans 3", sans-serif;
-      font-size: 0.72rem;
-      color: #9eb0c8;
+      padding: 0.35rem 1rem 0.55rem;
+      background: var(--dc-bg);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.28);
+      font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+      font-size: 0.78rem;
+      color: var(--dc-muted);
     }
     .im-toolbar strong {
-      color: #d7e2ef;
-      font-weight: 700;
+      color: var(--dc-text);
+      font-weight: 600;
     }
     .chat-live {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.12rem 0.45rem;
-      border: 1px solid rgba(255, 255, 255, 0.22);
+      gap: 0.4rem;
+      padding: 0.2rem 0.55rem;
+      border: 0;
       border-radius: 999px;
-      background: rgba(0, 0, 0, 0.18);
-      font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #c8ffd8;
+      background: rgba(0, 0, 0, 0.22);
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      color: #b5fac3;
       flex: 0 0 auto;
     }
     .chat-live .dot {
-      width: 0.4rem;
-      height: 0.4rem;
+      width: 0.45rem;
+      height: 0.45rem;
       border-radius: 50%;
-      background: #3ddc84;
-      box-shadow: 0 0 6px #3ddc84;
+      background: var(--dc-green);
+      box-shadow: 0 0 6px rgba(35, 165, 89, 0.7);
       animation: mo-pulse 1.4s ease-in-out infinite;
     }
-    .chat-live.is-idle { color: rgba(255, 255, 255, 0.7); }
+    .chat-live.is-idle { color: var(--dc-muted); }
     .chat-live.is-idle .dot {
-      background: #94a3b8;
+      background: #6d6f78;
       box-shadow: none;
       animation: none;
     }
 
     .im-body {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(10.5rem, 12.5rem);
+      grid-template-columns: minmax(0, 1fr) minmax(12rem, 14rem);
       gap: 0;
       margin: 0;
       border: 0;
-      background: #0b1220;
+      background: var(--dc-bg);
       overflow: hidden;
-      min-height: 18rem;
+      min-height: 20rem;
     }
     .im-main {
       display: grid;
-      grid-template-rows: minmax(11rem, 1fr) auto;
+      grid-template-rows: minmax(12rem, 1fr) auto;
       gap: 0;
       min-width: 0;
-      min-height: 18rem;
+      min-height: 20rem;
       padding: 0;
       border: 0;
-      border-right: 1px solid rgba(0, 0, 0, 0.45);
-      background: #0b1220;
+      border-right: 1px solid rgba(0, 0, 0, 0.35);
+      background: var(--dc-bg);
     }
     .chat-log {
       display: flex;
       flex-direction: column;
-      gap: 0.05rem;
-      min-height: 11rem;
-      max-height: min(44vh, 22rem);
-      padding: 0.55rem 0.65rem;
+      gap: 0;
+      min-height: 12rem;
+      max-height: min(52vh, 28rem);
+      padding: 0.85rem 0 0.35rem;
       overflow-x: hidden;
       overflow-y: auto;
-      background: #eef2f7;
-      color: #1a2433;
-      font-family: Tahoma, "Segoe UI", "Source Sans 3", system-ui, sans-serif;
-      font-size: 0.9rem;
-      line-height: 1.4;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+      background: var(--dc-bg);
+      color: var(--dc-text);
+      font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.375;
+      box-shadow: none;
       -webkit-overflow-scrolling: touch;
+      scrollbar-color: #1a1b1e transparent;
+    }
+    .chat-log::-webkit-scrollbar { width: 0.45rem; }
+    .chat-log::-webkit-scrollbar-thumb {
+      background: #1a1b1e;
+      border-radius: 999px;
     }
     .chat-empty {
-      margin: 0;
-      padding: 1.1rem 0.25rem;
-      color: #64748b;
-      font-family: Tahoma, "Segoe UI", sans-serif;
+      margin: 1.5rem 1rem;
+      padding: 1.1rem 1rem;
+      color: var(--dc-muted);
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
       letter-spacing: 0;
       text-transform: none;
-      font-size: 0.88rem;
-      text-align: center;
+      font-size: 0.95rem;
+      text-align: left;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .chat-empty strong {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--dc-heading);
     }
     .im-line {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.45rem;
-      align-items: baseline;
-      padding: 0.18rem 0.1rem;
+      grid-template-columns: 2.75rem minmax(0, 1fr);
+      gap: 0.65rem;
+      align-items: start;
+      padding: 0.2rem 1rem 0.2rem 1rem;
+      margin-top: 1.05rem;
       border-bottom: 0;
-      line-height: 1.4;
+      line-height: 1.375;
       background: transparent;
       box-shadow: none;
+      position: relative;
+    }
+    .im-line.is-compact {
+      margin-top: 0;
+      padding-top: 0.05rem;
+      padding-bottom: 0.05rem;
     }
     .im-line:hover,
-    .im-line.mine {
-      background: rgba(47, 109, 255, 0.06);
+    .im-line.mine:hover {
+      background: var(--dc-hover);
       box-shadow: none;
     }
+    .im-line.mine { background: transparent; }
+    .im-avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.02em;
+      flex: 0 0 auto;
+      user-select: none;
+      margin-top: 0.1rem;
+    }
+    .im-line.is-compact .im-avatar {
+      visibility: hidden;
+      height: 0.85rem;
+      width: 2.5rem;
+      margin: 0;
+    }
+    .im-line-body { min-width: 0; }
+    .im-line-head {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.15rem 0.55rem;
+      margin-bottom: 0.1rem;
+      min-width: 0;
+    }
+    .im-line.is-compact .im-line-head { display: none; }
     .im-line-main { min-width: 0; word-break: break-word; }
     .im-who {
       cursor: pointer;
@@ -930,150 +1000,197 @@
       background: transparent;
       padding: 0;
       font: inherit;
-      font-weight: 700;
-      color: #1d4ed8;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #fff;
+      line-height: 1.2;
     }
-    .im-who:hover { text-decoration: underline; filter: brightness(0.9); }
+    .im-who:hover { text-decoration: underline; filter: brightness(1.05); }
     .im-who:disabled { cursor: default; text-decoration: none; }
-    .im-sep { color: #475569; margin-right: 0.2rem; font-weight: 700; }
-    .im-text { white-space: pre-wrap; color: #1a2433; }
+    .im-sep { display: none; }
+    .im-text {
+      white-space: pre-wrap;
+      color: var(--dc-text);
+      font-weight: 400;
+    }
+    .im-line.is-compact .im-text { padding-left: 0; }
     .im-text .chat-mention,
     .chat-mention {
-      color: #1d4ed8;
-      font-weight: 700;
-      background: rgba(47, 109, 255, 0.12);
-      padding: 0 0.15rem;
-      border-radius: 0.15rem;
+      color: #c9cdfb;
+      font-weight: 600;
+      background: var(--dc-mention);
+      padding: 0 0.2rem;
+      border-radius: 0.2rem;
       text-shadow: none;
     }
     .im-meta {
       display: flex;
       align-items: center;
-      gap: 0.3rem;
-      font-size: 0.68rem;
-      color: #64748b;
-      opacity: 0.85;
+      gap: 0.35rem;
+      font-size: 0.7rem;
+      color: var(--dc-muted);
+      opacity: 1;
+      font-weight: 500;
     }
-    .im-line:hover .im-meta,
-    .im-line:focus-within .im-meta { opacity: 1; }
+    .im-line.is-compact .im-meta-time {
+      position: absolute;
+      left: 0.35rem;
+      top: 0.15rem;
+      width: 2.9rem;
+      text-align: right;
+      font-size: 0.62rem;
+      color: var(--dc-muted);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .im-line.is-compact:hover .im-meta-time { opacity: 1; }
+    .im-line:not(.is-compact) .im-meta-time { display: none; }
+    .im-line:not(.is-compact) .im-meta .im-meta-stamp { display: inline; }
     .chat-msg-del {
       appearance: none;
-      border: 0;
-      background: transparent;
-      color: #dc2626;
+      border: 1px solid #1e1f22;
+      background: #2b2d31;
+      color: var(--dc-muted);
       font: inherit;
-      font-size: 0.75rem;
+      font-size: 0.85rem;
+      line-height: 1;
       cursor: pointer;
-      padding: 0;
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+      opacity: 0;
+      position: absolute;
+      right: 0.75rem;
+      top: -0.45rem;
+      z-index: 2;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    }
+    .im-line.is-compact .chat-msg-del { top: 0.05rem; }
+    .im-line:hover .chat-msg-del,
+    .im-line:focus-within .chat-msg-del { opacity: 1; }
+    .chat-msg-del:hover {
+      color: var(--dc-danger);
+      background: #35373c;
     }
 
     .im-compose-wrap {
       display: grid;
-      gap: 0.35rem;
-      padding: 0.45rem 0.55rem 0.55rem;
-      background: linear-gradient(180deg, #d5dde8 0%, #c4cedc 100%);
-      border-top: 1px solid #8fa0b5;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      gap: 0.4rem;
+      padding: 0.35rem 1rem 1rem;
+      background: var(--dc-bg);
+      border-top: 0;
+      box-shadow: none;
     }
     .mention-bar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 0.35rem 0.5rem;
-      padding: 0;
+      padding: 0 0.15rem;
     }
     .mention-bar[hidden] { display: none !important; }
     .mention-bar-label {
-      font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.68rem;
-      font-weight: 700;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
       letter-spacing: 0;
       text-transform: none;
-      color: #475569;
+      color: var(--dc-muted);
     }
     .mention-chip {
       appearance: none;
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      padding: 0.1rem 0.4rem;
-      border: 1px solid #7a90ab;
-      border-radius: 0.2rem;
-      background: #fff;
-      color: #1d4ed8;
-      font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.75rem;
-      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border: 0;
+      border-radius: 0.25rem;
+      background: var(--dc-mention);
+      color: #c9cdfb;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
       letter-spacing: 0;
       cursor: pointer;
       box-shadow: none;
     }
-    .mention-chip:hover { background: #eef4ff; text-decoration: none; }
-    .mention-chip .x { opacity: 0.65; }
+    .mention-chip:hover { background: rgba(88, 101, 242, 0.4); text-decoration: none; }
+    .mention-chip .x { opacity: 0.7; }
 
     .chat-compose {
       display: grid;
-      gap: 0.28rem;
+      gap: 0;
       padding: 0;
       border: 0;
       background: transparent;
     }
     .chat-compose-label {
-      font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #334155;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
     .chat-compose-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.45rem;
-      align-items: stretch;
+      gap: 0.5rem;
+      align-items: end;
+      padding: 0.55rem 0.75rem;
+      border-radius: 0.55rem;
+      background: var(--dc-input);
+      border: 1px solid transparent;
+    }
+    .chat-compose-row:focus-within {
+      border-color: rgba(88, 101, 242, 0.45);
     }
     .chat-compose textarea {
       width: 100%;
-      min-height: 2.35rem;
-      max-height: 5.5rem;
-      resize: vertical;
-      padding: 0.45rem 0.55rem;
-      border: 1px solid #6b7f98;
-      border-radius: 0.2rem;
-      background: #fff;
-      color: #1a2433;
-      font-family: Tahoma, "Segoe UI", "Source Sans 3", sans-serif;
-      font-size: 0.9rem;
+      min-height: 2.4rem;
+      max-height: 7rem;
+      resize: none;
+      padding: 0.35rem 0.15rem;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--dc-heading);
+      font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+      font-size: 0.95rem;
       line-height: 1.35;
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+      box-shadow: none;
     }
     .chat-compose textarea:focus {
       outline: none;
-      border-color: #2f6dff;
-      box-shadow: 0 0 0 2px rgba(47, 109, 255, 0.2);
+      border-color: transparent;
+      box-shadow: none;
     }
-    .chat-compose textarea::placeholder { color: #94a3b8; }
+    .chat-compose textarea::placeholder { color: #6d6f78; }
     .chat-compose button {
       appearance: none;
-      align-self: stretch;
-      min-height: 2.35rem;
-      min-width: 4.25rem;
-      padding: 0.35rem 0.9rem;
-      border: 1px solid #4b5f78;
-      border-radius: 0.2rem;
-      background: linear-gradient(180deg, #f7f9fc 0%, #d5deea 55%, #b8c5d6 100%);
-      color: #1a2433;
-      font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.82rem;
-      font-weight: 700;
+      align-self: center;
+      min-height: 2rem;
+      min-width: 4rem;
+      padding: 0.35rem 0.85rem;
+      border: 0;
+      border-radius: 0.3rem;
+      background: var(--dc-blurple);
+      color: #fff;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
       letter-spacing: 0;
       text-transform: none;
       cursor: pointer;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      box-shadow: none;
     }
-    .chat-compose button:disabled { opacity: 0.5; cursor: default; }
+    .chat-compose button:disabled { opacity: 0.45; cursor: default; }
     .chat-compose button:hover:not(:disabled) {
-      color: #0f172a;
-      border-bottom-color: #4b5f78;
-      background: linear-gradient(180deg, #ffffff 0%, #e4ebf4 55%, #c5d0e0 100%);
+      color: #fff;
+      border-bottom-color: transparent;
+      background: #4752c4;
     }
 
     .im-buddies {
@@ -1081,47 +1198,48 @@
       grid-template-rows: auto minmax(0, 1fr);
       gap: 0.35rem;
       align-content: start;
-      padding: 0.45rem 0.5rem 0.5rem;
-      background: #121a2b;
-      border-left: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 0.85rem 0.55rem 0.65rem;
+      background: var(--dc-sidebar);
+      border-left: 0;
     }
     .im-buddies-head {
-      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
       font-size: 0.72rem;
       font-weight: 700;
-      letter-spacing: 0;
-      text-transform: none;
-      color: #d7e2ef;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--dc-muted);
       line-height: 1.25;
-      padding: 0.15rem 0.2rem 0.35rem;
-      border-bottom: 1px solid rgba(126, 200, 255, 0.14);
+      padding: 0.15rem 0.45rem 0.55rem;
+      border-bottom: 0;
     }
     .im-buddies-head small {
       display: block;
-      margin-top: 0.15rem;
-      font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.65rem;
+      margin-top: 0.25rem;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      font-size: 0.7rem;
       letter-spacing: 0;
       text-transform: none;
-      color: #8494ab;
+      color: #6d6f78;
       font-weight: 500;
     }
     .presence-list {
       display: grid;
       gap: 0.05rem;
-      max-height: min(42vh, 20rem);
+      max-height: min(48vh, 24rem);
       overflow-y: auto;
       align-content: start;
+      padding: 0 0.15rem;
     }
     .presence-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 0.4rem;
+      justify-content: flex-start;
+      gap: 0.55rem;
       width: 100%;
-      padding: 0.28rem 0.3rem;
+      padding: 0.35rem 0.45rem;
       border: 0;
-      border-radius: 0.2rem;
+      border-radius: 0.3rem;
       background: transparent;
       color: inherit;
       font: inherit;
@@ -1129,46 +1247,53 @@
       cursor: pointer;
     }
     .presence-row:hover {
-      background: rgba(47, 109, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
       transform: none;
       border: 0;
     }
-    .presence-row:hover .nm { color: #fff; }
+    .presence-row:hover .nm { color: var(--dc-heading); }
+    .presence-avatar {
+      position: relative;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      flex: 0 0 auto;
+    }
+    .presence-avatar::after {
+      content: "";
+      position: absolute;
+      right: -0.05rem;
+      bottom: -0.05rem;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--dc-green);
+      border: 2px solid var(--dc-sidebar);
+    }
     .presence-row .nm {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-family: Tahoma, "Segoe UI", sans-serif;
-      font-weight: 600;
-      font-size: 0.82rem;
-      color: #c5d0de;
+      display: block;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      font-weight: 500;
+      font-size: 0.88rem;
+      color: var(--dc-muted);
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .presence-row .nm::before {
-      content: "";
-      width: 0.42rem;
-      height: 0.42rem;
-      border-radius: 50%;
-      background: #3ddc84;
-      box-shadow: 0 0 5px rgba(61, 220, 132, 0.55);
-      flex: 0 0 auto;
-    }
-    .presence-row.is-me .nm::before { background: #7ec8ff; box-shadow: none; }
-    .presence-row .lg {
-      font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: #7ec8ff;
-      opacity: 0.85;
-    }
+    .presence-row .nm::before { display: none; }
+    .presence-row.is-me .nm { color: var(--dc-text); }
+    .presence-row .lg { display: none; }
     .presence-empty {
-      padding: 0.55rem 0.25rem;
-      color: #8494ab;
-      font-family: Tahoma, "Segoe UI", sans-serif;
-      font-size: 0.78rem;
+      padding: 0.55rem 0.45rem;
+      color: var(--dc-muted);
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      font-size: 0.82rem;
     }
     .presence-row.is-me { cursor: default; }
 
@@ -2077,12 +2202,12 @@
         min-height: 16rem;
       }
       .im-buddies {
-        padding: 0.45rem 0.55rem 0.65rem;
+        padding: 0.65rem 0.55rem 0.75rem;
         border-left: 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        border-top: 1px solid rgba(0, 0, 0, 0.35);
       }
       .presence-list { max-height: 9rem; }
-      .chat-log { max-height: min(38vh, 18rem); }
+      .chat-log { max-height: min(42vh, 22rem); }
     }
 
     @media (max-width: 520px) {
@@ -2264,12 +2389,13 @@
       </section>
 
       <div class="lounge-mid">
-        <section class="lounge-section is-chat im-window" id="room" aria-label="Roll Call chat room">
+        <section class="lounge-section is-chat im-window" id="room" aria-label="Roll Call chat channel">
           <div class="im-titlebar">
             <div class="im-titlebar-left">
               <div class="im-title">
-                <p class="im-app">Chat Room</p>
-                <h2>Roll Call</h2>
+                <span class="im-hash" aria-hidden="true">#</span>
+                <p class="im-app">Channel</p>
+                <h2>roll-call</h2>
               </div>
             </div>
             <div class="chat-live is-idle" id="chat-live"><span class="dot" aria-hidden="true"></span><span id="chat-live-label">Connecting</span></div>
@@ -2279,20 +2405,20 @@
           </div>
           <div class="im-body">
             <div class="im-main">
-              <div class="chat-log" id="chat-log" aria-live="polite"><div class="chat-empty">Signing on to the lounge…</div></div>
+              <div class="chat-log" id="chat-log" aria-live="polite"><div class="chat-empty"><strong>Welcome to #roll-call!</strong>This is the start of the channel. Say something.</div></div>
               <div class="im-compose-wrap">
                 <div class="mention-bar" id="mention-bar" hidden></div>
                 <form class="chat-compose" id="chat-form">
                   <label class="chat-compose-label" for="chat-input">Message</label>
                   <div class="chat-compose-row">
-                    <textarea id="chat-input" maxlength="1000" rows="2" placeholder="Type a message…" autocomplete="off"></textarea>
+                    <textarea id="chat-input" maxlength="1000" rows="1" placeholder="Message #roll-call" autocomplete="off"></textarea>
                     <button type="submit" id="chat-send">Send</button>
                   </div>
                 </form>
               </div>
             </div>
-            <aside class="im-buddies" id="presence-card" aria-label="Users in room">
-              <div class="im-buddies-head">Users in Room<small>Click a name to @mention</small></div>
+            <aside class="im-buddies" id="presence-card" aria-label="Online members">
+              <div class="im-buddies-head">Online — 0<small>Click a name to @mention</small></div>
               <div class="presence-list" id="presence-list"><div class="presence-empty">No one else is here yet.</div></div>
             </aside>
           </div>
@@ -2892,8 +3018,8 @@
         .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
       if (head) {
         head.innerHTML = people.length
-          ? `Users in Room (${people.length})<small>Click a name to @mention</small>`
-          : `Users in Room<small>Click a name to @mention</small>`;
+          ? `Online — ${people.length}<small>Click a name to @mention</small>`
+          : `Online — 0<small>Click a name to @mention</small>`;
       }
       if (!people.length) {
         el.innerHTML = `<div class="presence-empty">No one else is here yet.</div>`;
@@ -2901,8 +3027,11 @@
       }
       el.innerHTML = people.map((m) => {
           const mine = m.id === chatViewerId;
+          const color = screenColor(m.id || m.name);
+          const letters = initials(m.name || '?');
           return `
           <button type="button" class="presence-row${mine ? ' is-me' : ''}" data-mention-id="${esc(m.id)}" data-mention-name="${esc(m.name)}" ${mine ? 'disabled' : ''} title="${mine ? 'You' : `Mention ${esc(m.name)}`}">
+            <span class="presence-avatar" style="background:${esc(color)}" aria-hidden="true">${esc(letters)}</span>
             <span class="nm">${esc(m.name)}${mine ? ' (you)' : ''}</span>
             <span class="lg">${mine ? 'You' : '@'}</span>
           </button>`;
@@ -2924,16 +3053,33 @@
     }
 
     const AIM_COLORS = [
-      '#c41e3a', '#d9480f', '#e67700', '#2b8a3e', '#0b7285',
-      '#1864ab', '#5f3dc4', '#9c36b5', '#a61e4d', '#087f5b',
-      '#364fc7', '#e8590c'
+      '#ed4245', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c',
+      '#3498db', '#9b59b6', '#e91e63', '#00bcd4', '#8bc34a',
+      '#ff5722', '#7c4dff'
     ];
+
+    function initials(name) {
+      const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+      }
+      return String(parts[0] || '?').slice(0, 2).toUpperCase();
+    }
 
     function screenColor(id) {
       const s = String(id || 'x');
       let h = 0;
       for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
       return AIM_COLORS[h % AIM_COLORS.length];
+    }
+
+    function sameAuthorBurst(prev, next) {
+      if (!prev || !next) return false;
+      if (!prev.authorId || prev.authorId !== next.authorId) return false;
+      const a = Date.parse(prev.createdAt || '');
+      const b = Date.parse(next.createdAt || '');
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+      return Math.abs(b - a) < 7 * 60 * 1000;
     }
 
     function setChatLive(on) {
@@ -2953,27 +3099,37 @@
       if (!log) return;
       const stick = nearBottom(log) || chatMessages.length <= 1;
       if (!chatMessages.length) {
-        log.innerHTML = `<div class="chat-empty">No one’s talking… say something.</div>`;
+        log.innerHTML = `<div class="chat-empty"><strong>Welcome to #roll-call!</strong>This is the start of the channel. Say something.</div>`;
         return;
       }
       const canModerate = Boolean(state?.canManage);
-      log.innerHTML = chatMessages.map((m) => {
+      log.innerHTML = chatMessages.map((m, i) => {
         const mine = m.authorId && m.authorId === chatViewerId;
         const canDelete = mine || canModerate;
         const who = m.authorName || 'Member';
         const color = screenColor(m.authorId || who);
-        return `<article class="im-line${mine ? ' mine' : ''}" data-id="${esc(m.id)}">
-          <div class="im-line-main">
-            <button type="button" class="im-who" style="color:${esc(color)}"
-              data-mention-id="${esc(m.authorId || '')}" data-mention-name="${esc(who)}"
-              ${mine || !m.authorId ? 'disabled' : ''}
-              title="${mine || !m.authorId ? '' : `Mention ${esc(who)}`}">${esc(who)}</button><span class="im-sep">:</span>
-            <span class="im-text">${formatChatBody(m.body)}</span>
+        const letters = initials(who);
+        const compact = sameAuthorBurst(chatMessages[i - 1], m);
+        const stamp = fmtChatTime(m.createdAt);
+        return `<article class="im-line${mine ? ' mine' : ''}${compact ? ' is-compact' : ''}" data-id="${esc(m.id)}">
+          <div class="im-avatar" style="background:${esc(color)}" aria-hidden="true">${esc(letters)}</div>
+          <div class="im-line-body">
+            <div class="im-line-head">
+              <button type="button" class="im-who" style="color:${esc(color)}"
+                data-mention-id="${esc(m.authorId || '')}" data-mention-name="${esc(who)}"
+                ${mine || !m.authorId ? 'disabled' : ''}
+                title="${mine || !m.authorId ? '' : `Mention ${esc(who)}`}">${esc(who)}</button>
+              <div class="im-meta">
+                <span class="im-meta-stamp">${esc(stamp)}</span>
+              </div>
+            </div>
+            <div class="im-line-main">
+              <span class="im-sep">:</span>
+              <span class="im-text">${formatChatBody(m.body)}</span>
+            </div>
           </div>
-          <div class="im-meta">
-            <span>${esc(fmtChatTime(m.createdAt))}</span>
-            ${canDelete ? `<button type="button" class="chat-msg-del" data-del-chat="${esc(m.id)}">×</button>` : ''}
-          </div>
+          <span class="im-meta-time" aria-hidden="true">${esc(stamp)}</span>
+          ${canDelete ? `<button type="button" class="chat-msg-del" data-del-chat="${esc(m.id)}" title="Delete" aria-label="Delete message">×</button>` : ''}
         </article>`;
       }).join('');
       log.querySelectorAll('[data-del-chat]').forEach((btn) => {
