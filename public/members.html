@@ -105,6 +105,34 @@
         0 0 0 1px rgba(47, 123, 255, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.07);
     }
+    .sports-hero-title {
+      margin: 0 0 0.85rem;
+      padding: 0.55rem 0.5rem 0.7rem;
+      text-align: center;
+      border-bottom: 1px solid rgba(47, 109, 255, 0.22);
+      background:
+        radial-gradient(ellipse 80% 120% at 50% 0%, rgba(47, 109, 255, 0.18), transparent 55%),
+        linear-gradient(180deg, rgba(47, 109, 255, 0.12), rgba(47, 109, 255, 0.03) 70%, transparent);
+    }
+    .sports-hero-title h2 {
+      margin: 0;
+      font-family: "Oswald", "Bebas Neue", Impact, sans-serif;
+      font-size: clamp(1.85rem, 5vw, 2.85rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #d8d8d8;
+      text-shadow:
+        0 0 8px rgba(200, 200, 200, 0.55),
+        0 0 18px rgba(180, 180, 180, 0.4),
+        0 0 36px rgba(160, 160, 160, 0.28);
+      line-height: 1;
+      animation: sports-title-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes sports-title-in {
+      from { opacity: 0; transform: translateY(0.35rem) scale(0.98); }
+      to { opacity: 1; transform: none; }
+    }
     .lounge-section.is-chat {
       overflow: hidden;
       padding: 0;
@@ -1399,6 +1427,7 @@
     @media (prefers-reduced-motion: reduce) {
       .sports-live-pill .pulse,
       .chat-live .dot { animation: none !important; }
+      .sports-hero-title h2 { animation: none !important; }
     }
   </style>
 </head>
@@ -1421,11 +1450,14 @@
       </header>
 
       <section class="lounge-section is-scoreboard" aria-label="Scoreboard">
+        <header class="sports-hero-title">
+          <h2>Scoreboard</h2>
+        </header>
         <div class="lounge-controls">
           <div class="sports-board-head">
             <div class="sports-league-mark">
               <img class="sports-league-logo" id="sports-league-logo" alt="" width="64" height="64" hidden decoding="async" referrerpolicy="no-referrer" />
-              <h2 class="sports-league-title" id="sports-league-title">Scoreboard</h2>
+              <h3 class="sports-league-title" id="sports-league-title">League</h3>
             </div>
             <div class="sports-meta">
               <span class="sports-live-pill" id="sports-live-pill" hidden><span class="pulse" aria-hidden="true"></span><span id="sports-live-count">0 live</span></span>
