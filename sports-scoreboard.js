@@ -30,6 +30,32 @@ const LEAGUES = {
     logo: NCAA_LOGO,
     lockLogo: true
   },
+  nba: {
+    id: 'nba',
+    label: 'NBA',
+    sport: 'basketball',
+    league: 'nba',
+    kind: 'team',
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png'
+  },
+  ncaam: {
+    id: 'ncaam',
+    label: 'College MBB',
+    sport: 'basketball',
+    league: 'mens-college-basketball',
+    kind: 'team',
+    logo: NCAA_LOGO,
+    lockLogo: true
+  },
+  ncaaw: {
+    id: 'ncaaw',
+    label: 'College WBB',
+    sport: 'basketball',
+    league: 'womens-college-basketball',
+    kind: 'team',
+    logo: NCAA_LOGO,
+    lockLogo: true
+  },
   mlb: {
     id: 'mlb',
     label: 'MLB',
@@ -48,9 +74,18 @@ const LEAGUES = {
   },
   cbase: {
     id: 'cbase',
-    label: 'College BB',
+    label: 'College Base',
     sport: 'baseball',
     league: 'college-baseball',
+    kind: 'team',
+    logo: NCAA_LOGO,
+    lockLogo: true
+  },
+  csoft: {
+    id: 'csoft',
+    label: 'College SB',
+    sport: 'baseball',
+    league: 'college-softball',
     kind: 'team',
     logo: NCAA_LOGO,
     lockLogo: true
@@ -91,7 +126,21 @@ const LEAGUES = {
   }
 };
 
-const DEFAULT_LEAGUES = ['nfl', 'ncaaf', 'mlb', 'llws', 'cbase', 'nhl', 'wnba', 'mls', 'golf'];
+const DEFAULT_LEAGUES = [
+  'nfl',
+  'ncaaf',
+  'nba',
+  'ncaam',
+  'ncaaw',
+  'mlb',
+  'llws',
+  'cbase',
+  'csoft',
+  'nhl',
+  'wnba',
+  'mls',
+  'golf'
+];
 /** Cap only as a safety valve — ESPN can return a full field. */
 const GOLF_LEADER_LIMIT = 24;
 

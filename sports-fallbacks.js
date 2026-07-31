@@ -515,8 +515,26 @@ async function fetchFallbackBoard(leagueId) {
       const games = await fetchSportsDbDay('Soccer', { leagueFilter: /major league soccer|\bmls\b/i, leagueId: 'mls' });
       return { source: 'thesportsdb', provider: 'TheSportsDB', games };
     }
+    if (id === 'nba') {
+      const games = await fetchSportsDbDay('Basketball', { leagueFilter: /\bnba\b/i, leagueId: 'nba' });
+      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
+    }
     if (id === 'wnba') {
       const games = await fetchSportsDbDay('Basketball', { leagueFilter: /wnba/i, leagueId: 'wnba' });
+      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
+    }
+    if (id === 'ncaam') {
+      const games = await fetchSportsDbDay('Basketball', {
+        leagueFilter: /ncaa|college|ncaab/i,
+        leagueId: 'ncaam'
+      });
+      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
+    }
+    if (id === 'ncaaw') {
+      const games = await fetchSportsDbDay('Basketball', {
+        leagueFilter: /ncaa.*women|women.*ncaa|wncaa|college/i,
+        leagueId: 'ncaaw'
+      });
       return { source: 'thesportsdb', provider: 'TheSportsDB', games };
     }
     if (id === 'ncaaf') {
@@ -528,9 +546,14 @@ async function fetchFallbackBoard(leagueId) {
       });
       return { source: 'thesportsdb', provider: 'TheSportsDB', games };
     }
-    if (id === 'llws' || id === 'cbase') {
+    if (id === 'llws' || id === 'cbase' || id === 'csoft') {
       const games = await fetchSportsDbDay('Baseball', {
-        leagueFilter: id === 'llws' ? /little league/i : /college|ncaa/i,
+        leagueFilter:
+          id === 'llws'
+            ? /little league/i
+            : id === 'csoft'
+              ? /softball|ncaa/i
+              : /college|ncaa/i,
         leagueId: id
       });
       return { source: 'thesportsdb', provider: 'TheSportsDB', games };
