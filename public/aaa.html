@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=117" />
+  <link rel="stylesheet" href="/css/site.css?v=118" />
   <style>
     body[data-page="aaa"] {
       background:
@@ -26,20 +26,41 @@
         linear-gradient(180deg, #eef2f8 0%, #e8ecf1 100%);
     }
     body[data-page="aaa"] .topbar {
-      border-bottom-color: rgba(47, 109, 255, 0.32);
+      border-bottom: 1px solid rgba(142, 182, 255, 0.42);
       background:
         radial-gradient(ellipse 70% 140% at 50% -40%, rgba(47, 109, 255, 0.28), transparent 60%),
         linear-gradient(180deg, #152038 0%, #0c121f 100%);
       box-shadow:
+        0 1px 0 rgba(47, 109, 255, 0.55),
         0 10px 28px rgba(0, 0, 0, 0.55),
         0 0 40px rgba(47, 109, 255, 0.1);
     }
+    body[data-page="aaa"] .topbar::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -2px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #2f6dff 18%, #7ec8ff 50%, #2f6dff 82%, transparent);
+      pointer-events: none;
+      z-index: 1;
+    }
     html[data-theme="day"] body[data-page="aaa"] .topbar {
-      border-bottom-color: rgba(31, 94, 240, 0.22);
+      border-bottom: 1px solid rgba(31, 94, 240, 0.28);
       background:
         radial-gradient(ellipse 70% 140% at 50% -40%, rgba(31, 94, 240, 0.12), transparent 60%),
         linear-gradient(180deg, #ffffff 0%, #e8eef8 100%);
-      box-shadow: 0 8px 22px rgba(20, 24, 31, 0.1);
+      box-shadow:
+        0 1px 0 rgba(31, 94, 240, 0.2),
+        0 8px 22px rgba(20, 24, 31, 0.1);
+    }
+    html[data-theme="day"] body[data-page="aaa"] .topbar::after {
+      background: linear-gradient(90deg, transparent, #1f5ef0 18%, #5b8cff 50%, #1f5ef0 82%, transparent);
+      opacity: 0.85;
+    }
+    body[data-page="aaa"] .ticker-wrap {
+      padding-top: 1rem;
     }
 
     .hq-hero {
