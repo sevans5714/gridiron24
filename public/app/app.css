@@ -2811,6 +2811,60 @@ a {
   letter-spacing: 0.03em;
 }
 
+.install-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: end center;
+  padding: 1rem;
+  background: rgba(2, 6, 15, 0.72);
+  backdrop-filter: blur(6px);
+}
+.install-sheet[hidden] { display: none !important; }
+.install-sheet-card {
+  width: min(100%, 24rem);
+  margin-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  padding: 1.15rem 1.15rem 1.25rem;
+  border: 1px solid rgba(142, 182, 255, 0.28);
+  border-radius: 1rem;
+  background: #0b1220;
+  color: #f2f5fa;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+.install-sheet-card h3 {
+  margin: 0 0 0.45rem;
+  font-family: var(--display), "Bebas Neue", Impact, sans-serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.install-sheet-card p,
+.install-sheet-card ol {
+  margin: 0 0 0.85rem;
+  color: rgba(242, 245, 250, 0.72);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+.install-sheet-card ol { padding-left: 1.15rem; }
+.install-sheet-card li + li { margin-top: 0.35rem; }
+.install-sheet-card strong { color: #fff; }
+.install-sheet-card .btn {
+  width: 100%;
+  appearance: none;
+  border: 1px solid #2f6dff;
+  background: #2f6dff;
+  color: #fff;
+  font-family: "Oswald", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+}
+body.has-install-sheet { overflow: hidden; }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

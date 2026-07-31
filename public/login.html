@@ -9,14 +9,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="GridIron24" />
   <title>Sign In · GridIron 24</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=38" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=38" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=38" />
+  <link rel="manifest" href="/manifest.webmanifest?v=43" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=43" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=43" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=109" />
+  <link rel="stylesheet" href="/css/site.css?v=110" />
 </head>
 <body class="auth-page">
   <form class="auth-card wide" id="login-form" autocomplete="on">
@@ -51,13 +51,14 @@
 
   <div class="auth-install-sheet" id="install-sheet" hidden>
     <div class="auth-install-sheet-card" role="dialog" aria-modal="true" aria-labelledby="ios-install-title">
-      <h3 id="ios-install-title">Add GridIron24</h3>
+      <h3 id="ios-install-title">Install GridIron24</h3>
       <ol>
-        <li>Tap <strong>Share</strong></li>
+        <li>Sign in below</li>
+        <li>On the app screen, tap <strong>Share</strong></li>
         <li>Tap <strong>Add to Home Screen</strong></li>
-        <li>Tap <strong>Add</strong></li>
       </ol>
-      <button type="button" class="btn" id="install-sheet-close">Done</button>
+      <p class="auth-install-note">Use <strong>Safari</strong> — Chrome on iPhone can only save a bookmark.</p>
+      <button type="button" class="btn" id="install-sheet-close">Got it</button>
     </div>
   </div>
 
@@ -201,8 +202,12 @@
       setInstallStatus('');
 
       if (isIos) {
+        markPending();
         resetInstallBtn();
+        setInstallLabel('Sign in to finish install');
+        setInstallStatus('Safari only — after sign-in, Share → Add to Home Screen on the app.');
         openIosSheet();
+        loginInput?.focus();
         return;
       }
 
@@ -307,7 +312,7 @@
     });
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/sw.js', { scope: '/app/' }).catch(() => {});
     }
 
     if (isStandalone) {

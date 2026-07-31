@@ -2201,9 +2201,11 @@
   }
 
   function wireInstall() {
-    // Install UI lives only on /enter. Here we silently finish a pending install.
     const pending = new URLSearchParams(location.search).get('install') === '1'
       || localStorage.getItem('gi-pwa-install-pending') === '1';
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const sheet = document.getElementById('install-sheet');
 
     function clearPending() {
       try { localStorage.removeItem('gi-pwa-install-pending'); } catch { /* ignore */ }
@@ -2214,10 +2216,28 @@
       }
     }
 
+    function openIosSheet() {
+      if (!sheet) return;
+      sheet.hidden = false;
+      document.body.classList.add('has-install-sheet');
+    }
+
+    function closeIosSheet() {
+      if (!sheet) return;
+      sheet.hidden = true;
+      document.body.classList.remove('has-install-sheet');
+      clearPending();
+    }
+
+    document.getElementById('install-sheet-close')?.addEventListener('click', closeIosSheet);
+    sheet?.addEventListener('click', (e) => {
+      if (e.target === sheet) closeIosSheet();
+    });
+
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       state.deferredInstall = e;
-      if (!pending) return;
+      if (!pending || isIos) return;
       try {
         e.prompt();
         Promise.resolve(e.userChoice).finally(() => {
@@ -2231,10 +2251,19 @@
 
     window.addEventListener('appinstalled', clearPending);
     if (!pending) return;
-    // Clean the flag if already running as an installed app.
+
     const standalone = window.matchMedia('(display-mode: standalone)').matches
       || navigator.standalone === true;
-    if (standalone) clearPending();
+    if (standalone) {
+      clearPending();
+      return;
+    }
+
+    // iOS ignores Chrome install prompts — Add to Home Screen must happen on /app/
+    // or Safari saves a bookmark to the login/website page instead.
+    if (isIos) {
+      openIosSheet();
+    }
   }
 
   function registerSw() {

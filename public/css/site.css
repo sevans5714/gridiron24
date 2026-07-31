@@ -2478,6 +2478,15 @@ body.auth-page {
 .auth-install-sheet-card .btn {
   width: 100%;
 }
+.auth-install-note {
+  margin: 0 0 1rem !important;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(47, 109, 255, 0.28);
+  background: rgba(47, 109, 255, 0.1);
+  color: var(--text) !important;
+  font-size: 0.84rem !important;
+  line-height: 1.4 !important;
+}
 body.has-install-sheet {
   overflow: hidden;
 }

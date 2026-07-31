@@ -12,24 +12,24 @@
   <meta name="format-detection" content="telephone=no" />
   <meta name="description" content="GridIron24 — standings, scores, roster, lounge, and playoffs." />
   <title>GridIron24</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=42" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=42" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=42" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=42" />
+  <link rel="manifest" href="/manifest.webmanifest?v=44" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=44" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=44" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=44" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/app/app.css?v=42" />
+  <link rel="stylesheet" href="/app/app.css?v=44" />
 </head>
 <body class="app-shell">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
-    <img src="/assets/pwa/icon-192-transparent.png?v=42" alt="" width="96" height="96" />
+    <img src="/assets/pwa/icon-192-transparent.png?v=44" alt="" width="96" height="96" />
     <strong>GridIron24</strong>
   </div>
   <header class="app-top">
     <div class="app-top-row">
       <button type="button" class="brand" id="brand-home" aria-label="GridIron24 Home">
-        <img src="/assets/pwa/icon-192-transparent.png?v=42" alt="" width="192" height="192" />
+        <img src="/assets/pwa/icon-192-transparent.png?v=44" alt="" width="192" height="192" />
         <div class="brand-copy">
           <strong>GridIron24</strong>
           <span id="subtitle">Pulse</span>
@@ -207,6 +207,19 @@
     </button>
   </nav>
 
-  <script src="/app/app.js?v=42"></script>
+  <div class="install-sheet" id="install-sheet" hidden>
+    <div class="install-sheet-card" role="dialog" aria-modal="true" aria-labelledby="install-sheet-title">
+      <h3 id="install-sheet-title">Add GridIron24</h3>
+      <p>Do this from <strong>Safari</strong> while you are on this app screen — not the website.</p>
+      <ol>
+        <li>Tap <strong>Share</strong></li>
+        <li>Tap <strong>Add to Home Screen</strong></li>
+        <li>Tap <strong>Add</strong></li>
+      </ol>
+      <button type="button" class="btn" id="install-sheet-close">Done</button>
+    </div>
+  </div>
+
+  <script src="/app/app.js?v=44"></script>
 </body>
 </html>
