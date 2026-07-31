@@ -2078,10 +2078,10 @@ footer.site-footer::before {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0;
 }
 .site-footer-mark {
-  width: clamp(2.75rem, 7vw, 3.5rem);
+  width: clamp(3.3rem, 8.4vw, 4.2rem);
   height: auto;
   aspect-ratio: 1;
   object-fit: contain;
@@ -2090,15 +2090,7 @@ footer.site-footer::before {
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
 }
 .site-footer-brand {
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(1.15rem, 2.8vw, 1.45rem);
-  font-weight: 400;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text);
-  line-height: 1;
-  text-shadow: none;
+  display: none;
 }
 .site-footer-by {
   display: inline-flex;
@@ -2106,7 +2098,7 @@ footer.site-footer::before {
   flex-wrap: nowrap;
   align-items: baseline;
   justify-content: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   line-height: 1.2;
   margin: 0;
   padding: 0;
@@ -2116,7 +2108,7 @@ footer.site-footer::before {
 }
 .site-footer-label {
   font-family: "Source Sans 3", var(--body), system-ui, sans-serif;
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2125,7 +2117,7 @@ footer.site-footer::before {
 .site-footer-author {
   display: inline;
   font-family: "Bebas Neue", var(--display), Impact, sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.26rem;
   font-weight: 400;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -2706,7 +2698,7 @@ body.has-install-sheet {
   .panel-title .meta { display: none; }
 
   .site-footer-mark {
-    width: clamp(2rem, 10vw, 2.65rem);
+    width: clamp(2.4rem, 12vw, 3.18rem);
     height: auto;
   }
 }

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=106" />
+  <link rel="stylesheet" href="/css/site.css?v=107" />
   <style>
     .aaa-portal {
       display: inline-flex;
@@ -229,6 +229,15 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
+    .conf-week {
+      margin: 0;
+      color: var(--muted);
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
     .conf-admin {
       text-align: right;
       padding: 0;
@@ -238,7 +247,7 @@
     .conf-admin-name {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.05rem;
+      font-size: 1.26rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -250,7 +259,7 @@
     .conf-admin-role {
       margin: 0.2rem 0 0;
       font-family: var(--display);
-      font-size: 0.72rem;
+      font-size: 0.86rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -866,10 +875,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=74"></script>
+  <script src="/js/nav.js?v=76"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -898,7 +907,14 @@
       return `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
     }
 
-    function confHead(conf, { showAdmin = true } = {}) {
+    function confLogoSrc(conf) {
+      if (conf?.logo) return conf.logo;
+      if (conf?.key === 'overtime') return '/assets/overtime-conference.png';
+      if (conf?.key === 'detail') return '/assets/detail-conference.png';
+      return '';
+    }
+
+    function confHead(conf, { showAdmin = true, showWeek = true } = {}) {
       const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
       const admin = showAdmin && conf?.admin
         ? `<div class="conf-admin">
@@ -906,13 +922,28 @@
             <div class="conf-admin-role">Conference Admin</div>
           </div>`
         : '';
+      const week = showWeek && (conf?.week != null || conf?.currentMatchupPeriod != null)
+        ? `<div class="conf-week">Week ${esc(String(conf.week ?? conf.currentMatchupPeriod))}</div>`
+        : '';
+      const logoSrc = confLogoSrc(conf);
       return `
         <div class="conf-head ${tone}">
           <div class="conf-head-top">
-            ${conf?.logo ? `<span class="conf-mark"><img src="${esc(conf.logo)}" alt=""></span>` : ''}
-            <h3>${esc(conf?.shortName || conf?.name || 'Conference')}</h3>
+            ${logoSrc ? `<span class="conf-mark"><img src="${esc(logoSrc)}" alt=""></span>` : ''}
+            ${week}
           </div>
           ${admin}
+        </div>`;
+    }
+
+    function motwHead(conf) {
+      const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
+      const logoSrc = confLogoSrc(conf);
+      return `
+        <div class="conf-head ${tone} is-logo-only">
+          <div class="conf-head-top">
+            ${logoSrc ? `<span class="conf-mark"><img src="${esc(logoSrc)}" alt=""></span>` : ''}
+          </div>
         </div>`;
     }
 
@@ -986,15 +1017,15 @@
 
     function motwCard(conf) {
       if (!conf?.ok) {
-        return `<div class="motw-block">${confHead(conf)}<div class="empty">Unavailable</div></div>`;
+        return `<div class="motw-block">${motwHead(conf)}<div class="empty">Unavailable</div></div>`;
       }
       const m = pickMatchupOfWeek(conf.matchups);
       if (!m) {
-        return `<div class="motw-block">${confHead(conf)}<div class="empty">No matchups this week</div></div>`;
+        return `<div class="motw-block">${motwHead(conf)}<div class="empty">No matchups this week</div></div>`;
       }
       return `
         <div class="motw-block">
-          ${confHead({ ...conf, shortName: `${conf.shortName || conf.name} · Week ${conf.week}` })}
+          ${motwHead(conf)}
           <div class="motw">
             <div class="motw-side">
               ${teamLogo(m.away)}

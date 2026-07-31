@@ -1,4 +1,23 @@
 (function () {
+  // Home-screen / installed PWA must use the /app/ shell (bottom tabs), not website HQ.
+  try {
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.matchMedia('(display-mode: fullscreen)').matches
+      || window.matchMedia('(display-mode: minimal-ui)').matches
+      || navigator.standalone === true;
+    const path = String(location.pathname || '');
+    const authGate = path === '/enter' || path === '/enter.html'
+      || path === '/login.html' || path === '/register' || path === '/register.html'
+      || path === '/forgot' || path === '/forgot.html'
+      || path === '/reset' || path === '/reset.html'
+      || path === '/setup' || path === '/setup.html'
+      || path === '/register-league' || path === '/register-league.html';
+    if (standalone && !path.startsWith('/app') && !authGate) {
+      location.replace('/app/' + (location.hash || ''));
+      return;
+    }
+  } catch { /* ignore */ }
+
   const HOME_DEFAULT = '/home.html';
   let homePath = HOME_DEFAULT;
   let leagueScope = { scope: 'gridiron', conferenceKey: null, homePath: HOME_DEFAULT, label: 'GridIron 24' };
@@ -695,7 +714,7 @@
 
   function footerHtml(buildLabel) {
     const build = esc(buildLabel || 'Build …');
-    return `<span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
+    return `<span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
   }
 
   function ensureFooter(buildLabel) {

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=106" />
+  <link rel="stylesheet" href="/css/site.css?v=107" />
   <style>
     .section {
       padding: 1.75rem 0 0;
@@ -47,6 +47,9 @@
       gap: 0.75rem;
       min-width: 0;
       flex: 1 1 auto;
+    }
+    .board-brand .meta {
+      margin: 0;
     }
 
     .conf-logo {
@@ -88,7 +91,7 @@
     .board-admin-name {
       margin: 0;
       font-family: var(--display);
-      font-size: 1rem;
+      font-size: 1.2rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -101,7 +104,7 @@
     .board-admin-role {
       margin: 0;
       font-family: var(--display);
-      font-size: 0.7rem;
+      font-size: 0.84rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -326,11 +329,11 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=74"></script>
+  <script src="/js/nav.js?v=76"></script>
   <script>
     const escapeHtml = (value = '') => String(value)
       .replaceAll('&', '&amp;')
@@ -352,7 +355,7 @@
 
     function boardHead(conf) {
       const tone = conf.key === 'detail' ? 'detail' : 'overtime';
-      const week = conf.currentMatchupPeriod != null ? ` · Week ${conf.currentMatchupPeriod}` : '';
+      const week = conf.currentMatchupPeriod != null ? `Week ${conf.currentMatchupPeriod}` : '';
       const admin = conf.admin
         ? `<div class="board-admin">
             <div class="board-admin-name">${escapeHtml(conf.admin)}</div>
@@ -362,11 +365,8 @@
       return `
         <div class="board-head ${tone}">
           <div class="board-brand">
-            ${confLogo(conf.key, conf.name)}
-            <div>
-              <h2>${escapeHtml(conf.name)}</h2>
-              <div class="meta">ESPN ${conf.leagueId}${week}</div>
-            </div>
+            ${confLogo(conf.key, conf.shortName || conf.name || conf.key)}
+            ${week ? `<div class="meta">${escapeHtml(week)}</div>` : ''}
           </div>
           ${admin}
         </div>`;

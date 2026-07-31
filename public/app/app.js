@@ -638,7 +638,6 @@
       <div class="conf-block ${toneClass(conf.key)}">
         <div class="conf-head">
           ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
-          <h2>${esc(conf.shortName || conf.name)}</h2>
         </div>
         <div class="standings">
           <div class="s-row head">

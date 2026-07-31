@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=106" />
+  <link rel="stylesheet" href="/css/site.css?v=107" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -68,38 +68,52 @@
       color: var(--mo-muted);
     }
     body[data-page="members"] .site-footer-mark {
-      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
+      filter:
+        drop-shadow(0 0 10px rgba(142, 182, 255, 0.35))
+        drop-shadow(0 2px 10px rgba(0, 0, 0, 0.35))
+        brightness(1.12)
+        contrast(1.06);
     }
 
     .lounge {
       display: grid;
-      gap: clamp(1.75rem, 3.5vw, 2.75rem);
+      gap: clamp(1.35rem, 2.8vw, 2.1rem);
     }
 
-    /* Open floor — no cards */
+    /* Section plates — readable depth between scoreboard / chat / roll */
     .lounge-section {
       position: relative;
-      padding: 0;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-    .lounge-section.is-scoreboard,
-    .lounge-section.is-chat,
-    .lounge-section.is-roll {
-      border: 0;
-      background: transparent;
-      box-shadow: none;
-      padding: 0;
+      padding: clamp(0.95rem, 1.8vw, 1.35rem);
+      border: 1px solid rgba(126, 200, 255, 0.14);
+      border-radius: 0.55rem;
+      background:
+        linear-gradient(180deg, rgba(14, 24, 46, 0.88) 0%, rgba(6, 12, 26, 0.78) 100%);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
     .lounge-section.is-scoreboard {
       position: relative;
       z-index: 3;
-      margin-top: -2.5rem;
+      margin-top: 0.35rem;
+      border-color: rgba(126, 200, 255, 0.22);
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 0%, rgba(47, 123, 255, 0.16), transparent 58%),
+        linear-gradient(180deg, rgba(12, 22, 44, 0.94) 0%, rgba(5, 10, 22, 0.9) 100%);
+      box-shadow:
+        0 22px 48px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(47, 123, 255, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07);
     }
     .lounge-section.is-chat {
       overflow: visible;
+      border-color: rgba(126, 200, 255, 0.16);
+    }
+    .lounge-section.is-roll {
+      border-color: rgba(220, 230, 245, 0.14);
+      background:
+        radial-gradient(ellipse 60% 40% at 10% 0%, rgba(220, 230, 245, 0.06), transparent 55%),
+        linear-gradient(180deg, rgba(14, 20, 34, 0.9) 0%, rgba(6, 10, 20, 0.86) 100%);
     }
 
     .lounge-section-label {
@@ -141,12 +155,12 @@
       line-height: 1.35;
     }
 
-    /* —— Hero: full-bleed stadium mark, no plate —— */
+    /* —— Hero: keep crest readable, light fade only at edges —— */
     .lounge-hero {
       position: relative;
       text-align: center;
-      margin: -0.35rem calc(-1 * clamp(1rem, 2vw, 2.25rem)) 0;
-      padding: 0;
+      margin: -0.35rem calc(-1 * clamp(1rem, 2vw, 2.25rem)) 0.35rem;
+      padding: 0 0 0.5rem;
       border: 0;
       background: transparent;
       overflow: visible;
@@ -155,24 +169,16 @@
     .lounge-hero::before {
       content: "";
       position: absolute;
-      inset: 8% 5% 18%;
+      inset: 8% 5% 12%;
       background:
         radial-gradient(ellipse 55% 50% at 50% 42%, rgba(47, 123, 255, 0.38), transparent 70%),
-        radial-gradient(ellipse 40% 35% at 50% 70%, rgba(232, 196, 90, 0.08), transparent 70%);
+        radial-gradient(ellipse 40% 35% at 50% 70%, rgba(232, 196, 90, 0.1), transparent 70%);
       filter: blur(28px);
       pointer-events: none;
       z-index: 0;
     }
     .lounge-hero::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: -1px;
-      height: 38%;
-      background: linear-gradient(180deg, transparent 0%, rgba(2, 6, 15, 0.55) 45%, var(--mo-field) 100%);
-      pointer-events: none;
-      z-index: 2;
+      content: none;
     }
     .lounge-hero img {
       position: relative;
@@ -183,21 +189,23 @@
       height: auto;
       margin: 0 auto;
       -webkit-mask-image:
-        linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%),
-        linear-gradient(180deg, transparent 0%, #000 12%, #000 62%, transparent 100%);
+        linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%),
+        linear-gradient(180deg, transparent 0%, #000 8%, #000 88%, transparent 100%);
       -webkit-mask-composite: source-in;
       mask-image:
-        linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%),
-        linear-gradient(180deg, transparent 0%, #000 12%, #000 62%, transparent 100%);
+        linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%),
+        linear-gradient(180deg, transparent 0%, #000 8%, #000 88%, transparent 100%);
       mask-composite: intersect;
       filter:
+        brightness(1.08)
+        contrast(1.05)
         drop-shadow(0 0 28px rgba(47, 123, 255, 0.35))
-        drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
+        drop-shadow(0 18px 40px rgba(0, 0, 0, 0.45));
     }
     .lounge-tag {
       position: relative;
       z-index: 3;
-      margin: -1.5rem 0 0;
+      margin: -0.35rem 0 0;
       font-family: "Bebas Neue", "Oswald", sans-serif;
       font-size: clamp(1.05rem, 2.2vw, 1.4rem);
       letter-spacing: 0.32em;
@@ -332,15 +340,15 @@
     }
     .sports-tab .count { margin-left: 0.2rem; opacity: 0.65; }
 
-    /* —— Scores: open board on the field —— */
+    /* —— Scores board face —— */
     .sports-face {
-      margin-top: 0.35rem;
-      padding: 0.35rem 0 0.15rem;
+      margin-top: 0.55rem;
+      padding: 0.75rem 0.15rem 0.35rem;
       border: 0;
-      border-top: 1px solid rgba(126, 200, 255, 0.1);
+      border-top: 1px solid rgba(126, 200, 255, 0.12);
       background: transparent;
       box-shadow: none;
-      overflow: visible;
+      overflow: hidden;
     }
     .lounge-scores {
       display: grid;
@@ -383,14 +391,18 @@
     }
     .lounge-scorecol.is-upcoming .sports-col-head h2 { color: #efd782; }
 
+    /* Fixed full board — same footprint for every league */
     .sports-grid {
+      --sports-board-h: clamp(19.5rem, 38vh, 24rem);
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      align-content: start;
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      align-content: stretch;
       gap: 0.55rem 0.75rem;
-      height: auto;
-      max-height: none;
-      overflow: visible;
+      height: var(--sports-board-h);
+      min-height: var(--sports-board-h);
+      max-height: var(--sports-board-h);
+      overflow: hidden;
     }
     .sports-grid-golf {
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -402,12 +414,15 @@
     }
     .sports-empty {
       grid-column: 1 / -1;
+      grid-row: 1 / -1;
+      display: grid;
+      place-items: center;
       padding: 0.85rem 0;
       color: var(--mo-muted);
       font-family: "Oswald", sans-serif;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      font-size: 0.72rem;
+      font-size: 0.78rem;
     }
     .sports-page-meta {
       margin: 0.45rem 0 0;
@@ -522,28 +537,116 @@
       font-size: 0.8rem;
       font-family: "Oswald", sans-serif;
     }
-    .sgame.is-golf { grid-column: 1 / -1; }
+    .sgame.is-golf { grid-column: auto; }
+    .sgame.is-pad {
+      border-bottom-color: rgba(126, 200, 255, 0.05);
+      pointer-events: none;
+      min-height: 0;
+    }
+    .sports-grid.is-golf-board {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: none;
+      gap: 0.85rem;
+      height: var(--sports-board-h);
+      min-height: var(--sports-board-h);
+      max-height: var(--sports-board-h);
+      overflow-x: hidden;
+      overflow-y: auto;
+      align-content: start;
+      padding: 0.15rem 0.1rem 0.35rem;
+      border: 1px solid rgba(126, 200, 255, 0.14);
+      border-radius: 0.4rem;
+      background: rgba(2, 8, 18, 0.45);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      -webkit-overflow-scrolling: touch;
+    }
+    .sgolf-board {
+      min-width: 0;
+      padding: 0.7rem 0.75rem 0.8rem;
+      border: 1px solid rgba(126, 200, 255, 0.14);
+      border-radius: 0.4rem;
+      background:
+        linear-gradient(180deg, rgba(16, 28, 48, 0.92) 0%, rgba(6, 12, 24, 0.88) 100%);
+      box-shadow:
+        0 10px 24px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    .sgolf-board + .sgolf-board { margin-top: 0; }
+    .sgolf-board-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin: 0 0 0.55rem;
+      padding: 0 0 0.45rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.14);
+    }
     .sgolf-title {
-      margin: 0 0 0.2rem;
+      margin: 0;
       font-family: "Oswald", sans-serif;
-      font-size: 0.86rem;
+      font-size: 0.95rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
       color: var(--mo-text);
+      min-width: 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .sgolf-leaders { display: grid; gap: 0.1rem; }
+    .sgolf-meta {
+      flex: 0 0 auto;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.64rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+      white-space: nowrap;
+    }
+    .sgolf-meta.is-live { color: #9dffc4; font-weight: 700; }
+    .sgolf-table {
+      display: grid;
+      gap: 0;
+    }
     .sgolf-row {
       display: grid;
-      grid-template-columns: 1.4rem minmax(0, 1fr) 1.75rem 1.35rem;
-      gap: 0.2rem;
+      grid-template-columns: 2.1rem minmax(0, 1fr) 2.5rem 2.1rem;
+      gap: 0.35rem 0.55rem;
       align-items: center;
-      font-size: 0.72rem;
+      min-height: 1.55rem;
+      padding: 0.28rem 0.15rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.08);
+      font-size: 0.82rem;
       color: var(--mo-silver);
     }
+    .sgolf-row:last-child { border-bottom: 0; }
+    .sgolf-row.is-head {
+      min-height: 0;
+      padding: 0 0.15rem 0.35rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.16);
+      color: var(--mo-muted);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
     .sgolf-row.is-live { color: #9dffc4; }
-    .sgolf-pos { font-family: "Oswald", sans-serif; color: var(--mo-gold); }
-    .sgolf-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sgolf-pos {
+      font-family: "Oswald", sans-serif;
+      font-weight: 600;
+      color: var(--mo-gold);
+    }
+    .sgolf-row.is-head .sgolf-pos,
+    .sgolf-row.is-head .sgolf-score,
+    .sgolf-row.is-head .sgolf-thru { color: inherit; font-weight: 600; }
+    .sgolf-name {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: inherit;
+    }
     .sgolf-score {
       font-family: "Oswald", sans-serif;
       font-variant-numeric: tabular-nums;
@@ -552,10 +655,16 @@
     }
     .sgolf-thru {
       text-align: right;
-      font-size: 0.58rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
       letter-spacing: 0.04em;
-      text-transform: uppercase;
       color: var(--mo-muted);
+    }
+    .sgolf-row.is-live .sgolf-thru { color: rgba(157, 255, 196, 0.75); }
+    .sgolf-empty {
+      padding: 0.55rem 0.15rem;
+      color: var(--mo-muted);
+      font-size: 0.82rem;
     }
 
     /* —— Chat + dues —— */
@@ -572,19 +681,17 @@
     .im-window {
       display: grid;
       gap: 0;
-      padding: 0;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
       overflow: hidden;
+    }
+    .lounge-section.is-chat.im-window {
+      padding: clamp(0.85rem, 1.6vw, 1.15rem);
     }
     .im-titlebar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      padding: 0.35rem 0 0.75rem;
+      padding: 0 0 0.75rem;
       background: transparent;
       border-bottom: 1px solid rgba(126, 200, 255, 0.12);
     }
@@ -934,12 +1041,14 @@
 
     .lounge-dues {
       padding: clamp(0.95rem, 1.8vw, 1.25rem);
-      border: 1px solid rgba(77, 255, 154, 0.22);
-      border-radius: 0;
+      border: 1px solid rgba(77, 255, 154, 0.28);
+      border-radius: 0.55rem;
       background:
-        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(77, 255, 154, 0.14), transparent 55%),
-        linear-gradient(180deg, rgba(10, 42, 28, 0.72) 0%, rgba(4, 22, 16, 0.55) 100%);
-      box-shadow: none;
+        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(77, 255, 154, 0.16), transparent 55%),
+        linear-gradient(180deg, rgba(10, 42, 28, 0.88) 0%, rgba(4, 22, 16, 0.82) 100%);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(157, 255, 196, 0.1);
       overflow: visible;
       height: 100%;
       box-sizing: border-box;
@@ -1177,8 +1286,7 @@
       .lounge-hero img { width: 100%; }
       .sports-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        height: auto;
-        max-height: none;
+        --sports-board-h: clamp(18rem, 40vh, 22rem);
       }
       .sports-face { padding: 0.35rem 0 0.15rem; }
       .lounge-mid {
@@ -1204,9 +1312,15 @@
     @media (max-width: 520px) {
       .sports-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(5, minmax(0, 1fr));
         gap: 0.4rem 0.55rem;
+        --sports-board-h: clamp(20rem, 48vh, 26rem);
       }
-      .sgame.is-golf { grid-column: 1 / -1; }
+      .sports-grid.is-golf-board {
+        grid-template-columns: 1fr;
+        grid-template-rows: none;
+      }
+      .sgame.is-golf { grid-column: auto; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1230,7 +1344,7 @@
     <div class="flash" id="flash" hidden></div>
     <div class="lounge" id="sports-board" aria-label="Members lounge">
       <header class="lounge-hero">
-        <img src="/assets/members-lounge.jpg?v=7" alt="GridIron 24 Members Only" width="1024" height="576" decoding="async" />
+        <img src="/assets/members-lounge.jpg?v=8" alt="GridIron 24 Members Only" width="1024" height="576" decoding="async" />
       </header>
 
       <section class="lounge-section is-scoreboard" aria-label="Scoreboard">
@@ -1298,10 +1412,10 @@
     </div>
   </main>
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=74"></script>
+  <script src="/js/nav.js?v=76"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -1327,6 +1441,7 @@
     const SPORTS_FLIP_MS = 7000;
     const SPORTS_FLIP_PAUSE_MS = 20000;
     const SPORTS_SLOT = 9;
+    const SPORTS_GOLF_SLOT = 2;
 
     async function readJsonResponse(res, fallbackError) {
       const text = await res.text();
@@ -1416,6 +1531,37 @@
       return rows.filter((g) => (g.league || '') === leagueId);
     }
 
+    function sportsGolfBoardHtml(g) {
+      const meta = sportsMetaLine(g);
+      const leaders = (Array.isArray(g.leaders) ? g.leaders : []).slice(0, 18);
+      const rows = leaders.map((p) => {
+        const live = p.state === 'in';
+        const thru = p.thru ? (String(p.thru).toUpperCase() === 'F' || p.thru === '18' ? 'F' : p.thru) : '—';
+        return `<div class="sgolf-row${live ? ' is-live' : ''}">
+          <span class="sgolf-pos">${esc(p.position || '—')}</span>
+          <span class="sgolf-name" title="${esc(p.name || '')}">${esc(p.shortName || p.name || '—')}</span>
+          <span class="sgolf-score">${esc(p.score || '—')}</span>
+          <span class="sgolf-thru">${esc(thru)}</span>
+        </div>`;
+      }).join('');
+      const status = meta.live ? 'Live' : (meta.when || 'Golf');
+      return `<article class="sgolf-board is-${esc(g.status?.bucket || 'upcoming')}" title="${esc(g.name || '')}">
+        <header class="sgolf-board-head">
+          <h3 class="sgolf-title">${esc(g.shortName || g.name || 'Tournament')}</h3>
+          <span class="sgolf-meta${meta.live ? ' is-live' : ''}">${esc(status)}${meta.watch ? ` · ${esc(meta.watch)}` : ''}</span>
+        </header>
+        <div class="sgolf-table">
+          <div class="sgolf-row is-head" aria-hidden="true">
+            <span class="sgolf-pos">Pos</span>
+            <span class="sgolf-name">Player</span>
+            <span class="sgolf-score">Score</span>
+            <span class="sgolf-thru">Thru</span>
+          </div>
+          ${rows || '<div class="sgolf-empty">No leaderboard yet</div>'}
+        </div>
+      </article>`;
+    }
+
     function sportsGameHtml(g) {
       const bucket = g.status?.bucket || 'upcoming';
       const meta = sportsMetaLine(g);
@@ -1423,27 +1569,7 @@
         ? `<span class="sgame-watch" title="Watch on ${esc(meta.watch)}">${esc(meta.watch)}</span>`
         : '';
 
-      if (g.kind === 'golf') {
-        const leaders = (Array.isArray(g.leaders) ? g.leaders : []).slice(0, 3);
-        const rows = leaders.map((p) => {
-          const live = p.state === 'in';
-          const thru = p.thru ? (String(p.thru).toUpperCase() === 'F' || p.thru === '18' ? 'F' : p.thru) : '';
-          return `<div class="sgolf-row${live ? ' is-live' : ''}">
-            <span class="sgolf-pos">${esc(p.position || '—')}</span>
-            <span class="sgolf-name" title="${esc(p.name || '')}">${esc(p.shortName || p.name || '—')}</span>
-            <span class="sgolf-score">${esc(p.score || '—')}</span>
-            <span class="sgolf-thru">${esc(thru)}</span>
-          </div>`;
-        }).join('');
-        return `<article class="sgame is-golf is-${esc(bucket)}" title="${esc(g.name || '')}">
-          <div class="sgame-top">
-            <span class="sgame-when">${esc(meta.when)}</span>
-            ${watchHtml || `<span class="sgame-status${meta.live ? ' is-live' : ''}">${esc(meta.when)}</span>`}
-          </div>
-          <h3 class="sgolf-title">${esc(g.shortName || g.name || 'Tournament')}</h3>
-          <div class="sgolf-leaders">${rows || '<div class="sports-empty" style="padding:0.35rem 0">No leaderboard yet</div>'}</div>
-        </article>`;
-      }
+      if (g.kind === 'golf') return sportsGolfBoardHtml(g);
 
       const showScore = bucket === 'final' || bucket === 'live';
       const awayWin = bucket === 'final' && Boolean(g.away?.winner);
@@ -1493,7 +1619,9 @@
     }
 
     function sportsBoardPages(games) {
-      return Math.max(1, Math.ceil(games.length / SPORTS_SLOT));
+      const golfOnly = games.length > 0 && games.every((g) => g.kind === 'golf');
+      const slot = golfOnly ? SPORTS_GOLF_SLOT : SPORTS_SLOT;
+      return Math.max(1, Math.ceil(games.length / slot));
     }
 
     function sportsRotateIds() {
@@ -1593,11 +1721,21 @@
 
     function fillSportsRail(el, games, emptyMsg) {
       if (!el) return;
+      const golfOnly = games.length > 0 && games.every((g) => g.kind === 'golf');
+      el.classList.toggle('is-golf-board', golfOnly);
       if (!games.length) {
         el.innerHTML = `<div class="sports-empty">${emptyMsg}</div>`;
         return;
       }
-      el.innerHTML = games.map((g) => sportsGameHtml(g)).join('');
+      if (golfOnly) {
+        el.innerHTML = games.map((g) => sportsGameHtml(g)).join('');
+        return;
+      }
+      const cards = games.map((g) => sportsGameHtml(g));
+      while (cards.length < SPORTS_SLOT) {
+        cards.push('<article class="sgame is-pad" aria-hidden="true"></article>');
+      }
+      el.innerHTML = cards.join('');
     }
 
     function renderSportsBoard({ rebuildTabs = true } = {}) {
@@ -1646,7 +1784,8 @@
 
       const pages = sportsBoardPages(games);
       if (sportsPage >= pages) sportsPage = 0;
-      const page = sportsPageSlice(games, sportsPage, SPORTS_SLOT);
+      const golfOnly = games.length > 0 && games.every((g) => g.kind === 'golf');
+      const page = sportsPageSlice(games, sportsPage, golfOnly ? SPORTS_GOLF_SLOT : SPORTS_SLOT);
 
       grid.classList.remove('is-flip');
       void grid.offsetWidth;
