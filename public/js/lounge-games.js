@@ -305,8 +305,26 @@
 
     const acct = d.account || {};
     if (aside) {
-      aside.textContent = `${acct.record || '0-0'} · ${fmtMoney(acct.bankroll)} units`;
+      aside.textContent = `${acct.lastName || 'You'} · ${acct.record || '0-0'}`;
     }
+
+    const myFutureByMarket = new Map((d.openFutures || []).map((f) => [String(f.marketId), f]));
+    const futuresHtml = (d.futures?.markets || []).length
+      ? (d.futures.markets || []).map((market) => {
+          const mine = myFutureByMarket.get(String(market.id));
+          const outs = (market.outcomes || []).slice(0, 32).map((o) => {
+            const on = mine && String(mine.outcomeId) === String(o.id);
+            return `<button type="button" class="degen-future-pick${on ? ' is-on' : ''}" data-future="${attrJson({ marketId: market.id, outcomeId: o.id })}">${esc(o.name)} <em>${esc(fmtOdds(o.odds))}</em></button>`;
+          }).join('');
+          return `<div class="degen-future-market">
+            <div class="degen-future-head">
+              <strong>${esc(market.sport)} · ${esc(market.label)}</strong>
+              <span>${esc(market.title || '')}${mine ? ` · locked: ${esc(mine.selection)}` : ''}</span>
+            </div>
+            <div class="degen-future-grid">${outs || '<div class="degen-empty">No prices posted.</div>'}</div>
+          </div>`;
+        }).join('')
+      : `<div class="degen-empty">Futures board is quiet right now — try again soon.</div>`;
 
     const selected = new Set(book.slip.map(slipKey));
     const boardsHtml = (d.boards || []).length
@@ -389,23 +407,45 @@
         }).join('')
       : `<div class="degen-empty">No graded tickets yet.</div>`;
 
-    const lbHtml = (d.leaderboard || []).length
-      ? d.leaderboard.map((r, i) => `
-          <div class="degen-lb-row">
-            <span>${i + 1}. ${esc(r.name)} · ${esc(r.record)}</span>
-            <span>${esc(fmtMoney(r.unitsWon))}u · ${esc(fmtMoney(r.bankroll))}</span>
+    const openFuturesHtml = (d.openFutures || []).length
+      ? d.openFutures.map((f) => `
+          <div class="degen-slip-row">
+            <div class="top"><strong>${esc(f.sport)} future · ${esc(fmtOdds(f.odds))}</strong><span>record only</span></div>
+            <div class="legs">${esc(f.marketLabel)} · ${esc(f.selection)}</div>
           </div>`).join('')
-      : `<div class="degen-empty">Leaderboard empty.</div>`;
+      : `<div class="degen-empty">No open futures.</div>`;
+
+    const standings = d.standings || d.leaderboard || [];
+    const lbHtml = standings.length
+      ? standings.map((r, i) => `
+          <div class="degen-lb-row">
+            <span>${i + 1}. ${esc(r.lastName || r.name)}</span>
+            <span>${esc(r.record)}</span>
+          </div>`).join('')
+      : `<div class="degen-empty">No gambling record yet — place a pick.</div>`;
 
     root.innerHTML = `
       <div class="degen-bank">
-        <div class="degen-stat"><p class="label">Bankroll</p><p class="value">${esc(fmtMoney(acct.bankroll))}</p></div>
         <div class="degen-stat"><p class="label">Record</p><p class="value">${esc(acct.record || '0-0')}</p></div>
-        <div class="degen-stat"><p class="label">Units</p><p class="value">${esc(fmtMoney(acct.unitsWon))}</p></div>
-        <div class="degen-stat"><p class="label">Start</p><p class="value">${esc(d.startingBankroll || 1000)}</p></div>
+        <div class="degen-stat"><p class="label">Last name</p><p class="value">${esc(acct.lastName || '—')}</p></div>
+        <div class="degen-stat"><p class="label">Wins</p><p class="value">${esc(acct.wins || 0)}</p></div>
+        <div class="degen-stat"><p class="label">Losses</p><p class="value">${esc(acct.losses || 0)}</p></div>
+      </div>
+      <div class="degen-lb degen-standings">
+        <h3>Gambling standings</h3>
+        <p class="degen-note">Last name · W-L record. Futures count toward the board with no stake.</p>
+        ${lbHtml}
+      </div>
+      <div class="degen-futures">
+        <h3>Futures · record only</h3>
+        <p class="degen-note">Pick a champion. No units — just win or lose on your record. One open pick per market.</p>
+        ${futuresHtml}
       </div>
       <div class="degen-layout">
-        <div class="degen-board">${boardsHtml}</div>
+        <div class="degen-board">
+          <h3 class="degen-subhead">Game lines</h3>
+          ${boardsHtml}
+        </div>
         <aside class="degen-ticket">
           <h3>Bet slip · ${enriched.length > 1 ? 'Parlay' : 'Straight'}</h3>
           ${ticketLegs}
@@ -419,11 +459,20 @@
           <p class="degen-payout">Odds <strong>${esc(fmtOdds(odds))}</strong> · To win <strong id="degen-towin">${esc(fmtMoney(americanToWin(stakeDefault, odds)))}</strong></p>
         </aside>
       </div>
-      <div class="degen-slips"><h3>Open slips</h3>${openHtml}</div>
+      <div class="degen-slips"><h3>Open futures</h3>${openFuturesHtml}</div>
+      <div class="degen-slips"><h3>Open game slips</h3>${openHtml}</div>
       <div class="degen-slips"><h3>Recent results</h3>${recentHtml}</div>
-      <div class="degen-lb"><h3>Degenerate leaderboard</h3>${lbHtml}</div>
     `;
 
+    root.querySelectorAll('[data-future]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        try {
+          placeFuture(parseAttrJson(btn.getAttribute('data-future')));
+        } catch {
+          setDegenStatus('Could not lock that future', false);
+        }
+      });
+    });
     root.querySelectorAll('[data-leg]').forEach((btn) => {
       btn.addEventListener('click', () => {
         try {
@@ -461,6 +510,36 @@
       renderBook();
     } catch (err) {
       root.innerHTML = `<div class="records-empty">${esc(err.message)}</div>`;
+    }
+  }
+
+  async function placeFuture(payload) {
+    if (book.busy || !payload?.marketId || !payload?.outcomeId) return;
+    book.busy = true;
+    setDegenStatus('Locking future…');
+    try {
+      const res = await fetch('/api/paper-book', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'future',
+          marketId: payload.marketId,
+          outcomeId: payload.outcomeId
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Future failed');
+      book.data = data;
+      renderBook();
+      try {
+        window.dispatchEvent(new CustomEvent('gi:bet-placed', { detail: { future: data.placedFuture || null } }));
+      } catch { /* ignore */ }
+      setDegenStatus('Future locked — record only', true);
+    } catch (err) {
+      setDegenStatus(err.message, false);
+    } finally {
+      book.busy = false;
     }
   }
 

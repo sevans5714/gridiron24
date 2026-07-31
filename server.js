@@ -54,6 +54,7 @@ const sportsScoreboard = require('./sports-scoreboard');
 const nflverseDraft = require('./nflverse-draft');
 const survivorPool = require('./survivor-pool-store');
 const paperBook = require('./paper-book-store');
+const futuresMarkets = require('./futures-markets');
 const {
   sendPasswordResetEmail,
   sendInviteEmail,
@@ -4430,6 +4431,11 @@ const server = http.createServer(async (req, res) => {
         const scores = await sportsScoreboard.getSportsScores({});
         const boards = scores.leagues || [];
         const book = paperBook.getBook(users.publicUser(viewer), boards);
+        const futuresBoard = await futuresMarkets.getFuturesBoard().catch(() => ({
+          ok: false,
+          markets: [],
+          errors: [{ error: 'Futures unavailable' }]
+        }));
         const ticketBoard = boards
           .filter((b) => b.ok !== false && b.kind !== 'golf')
           .map((b) => ({
@@ -4452,6 +4458,7 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, {
           ...book,
           boards: ticketBoard,
+          futures: futuresBoard,
           generatedAt: new Date().toISOString()
         });
       } catch (err) {
@@ -4472,10 +4479,35 @@ const server = http.createServer(async (req, res) => {
         body = {};
       }
       try {
-        const scores = await sportsScoreboard.getSportsScores({});
-        const boards = scores.leagues || [];
-        if (String(body.action || 'bet').toLowerCase() === 'bet') {
-          const publicAuthor = users.publicUser(user);
+        const publicAuthor = users.publicUser(user);
+        const action = String(body.action || 'bet').toLowerCase();
+
+        if (action === 'future') {
+          const futuresBoard = await futuresMarkets.getFuturesBoard();
+          const book = paperBook.placeFuture(publicAuthor, body, futuresBoard);
+          if (book.placedFuture) {
+            try {
+              const chatPayload = paperBook.formatSlipChat(book.placedFuture);
+              if (chatPayload) {
+                membersChat.addMessage({
+                  body: chatPayload.body,
+                  author: publicAuthor,
+                  kind: 'bet',
+                  meta: chatPayload.meta,
+                  skipRateLimit: true
+                });
+              }
+            } catch { /* don't fail the pick if chat announce fails */ }
+          }
+          return sendJson(res, 200, {
+            ...book,
+            futures: futuresBoard
+          });
+        }
+
+        if (action === 'bet') {
+          const scores = await sportsScoreboard.getSportsScores({});
+          const boards = scores.leagues || [];
           const book = paperBook.placeBet(publicAuthor, body, boards);
           if (book.placedSlip) {
             try {

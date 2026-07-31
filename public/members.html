@@ -2182,10 +2182,10 @@
       color: var(--mo-muted);
     }
     .degen-payout strong { color: var(--mo-text); }
-    .degen-slips, .degen-lb {
+    .degen-slips, .degen-lb, .degen-futures {
       margin: 1rem 0 0;
     }
-    .degen-slips h3, .degen-lb h3 {
+    .degen-slips h3, .degen-lb h3, .degen-futures h3, .degen-subhead {
       margin: 0 0 0.45rem;
       font-family: "Bebas Neue", "Oswald", sans-serif;
       letter-spacing: 0.1em;
@@ -2193,6 +2193,66 @@
       font-size: 0.95rem;
       color: #ffb08a;
       font-weight: 400;
+    }
+    .degen-note {
+      margin: 0 0 0.65rem;
+      font-size: 0.82rem;
+      color: var(--mo-muted);
+    }
+    .degen-standings {
+      padding: 0.75rem;
+      border: 1px solid rgba(232, 120, 90, 0.22);
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .degen-future-market {
+      margin: 0 0 0.85rem;
+      padding: 0.65rem 0.7rem;
+      border: 1px solid rgba(232, 120, 90, 0.16);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .degen-future-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.35rem 0.75rem;
+      margin: 0 0 0.55rem;
+      font-size: 0.84rem;
+    }
+    .degen-future-head strong { color: #ffb08a; }
+    .degen-future-head span { color: var(--mo-muted); }
+    .degen-future-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+      gap: 0.35rem;
+    }
+    .degen-future-pick {
+      appearance: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.4rem;
+      align-items: baseline;
+      width: 100%;
+      text-align: left;
+      padding: 0.4rem 0.5rem;
+      border: 1px solid rgba(232, 120, 90, 0.28);
+      background: rgba(232, 120, 90, 0.08);
+      color: var(--mo-text);
+      font: inherit;
+      font-size: 0.78rem;
+      cursor: pointer;
+      border-radius: 0;
+    }
+    .degen-future-pick em {
+      font-style: normal;
+      color: #efd782;
+      font-weight: 700;
+      flex: 0 0 auto;
+    }
+    .degen-future-pick.is-on,
+    .degen-future-pick:hover {
+      background: rgba(232, 120, 90, 0.28);
+      border-color: rgba(255, 176, 138, 0.55);
+      color: #fff;
     }
     .degen-slip-row, .degen-lb-row {
       display: grid;
@@ -2442,7 +2502,7 @@
           </div>
           <div class="aside" id="degen-aside">Fun money only</div>
         </div>
-        <p class="records-note" style="margin-top:0">Straights and parlays vs the spread, moneylines, and totals. Tracks your record. No real cash — just pride and pain.</p>
+        <p class="records-note" style="margin-top:0">Game lines use fun-money slips. Futures are record-only — no stake. Gambling standings rank by last name and W-L.</p>
         <div id="degenerate-book-root"><div class="records-empty">Loading sportsbook…</div></div>
         <p class="degen-status" id="degen-status" role="status"></p>
       </section>
@@ -2503,7 +2563,7 @@
   </footer>
   <script src="/js/nav.js?v=77"></script>
   <script src="/js/lounge-desk.js?v=3"></script>
-  <script src="/js/lounge-games.js?v=3"></script>
+  <script src="/js/lounge-games.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -3167,9 +3227,11 @@
 
     function betCardHtml(m) {
       const meta = m.meta || {};
-      const typeLabel = meta.type === 'parlay'
-        ? `Parlay · ${(meta.legs || []).length} legs`
-        : 'Straight';
+      const typeLabel = meta.type === 'future'
+        ? `Future · ${meta.legs?.[0]?.leagueLabel || 'Season'}`
+        : meta.type === 'parlay'
+          ? `Parlay · ${(meta.legs || []).length} legs`
+          : 'Straight';
       const legs = Array.isArray(meta.legs) && meta.legs.length
         ? meta.legs.map((leg) => `
             <div class="im-bet-leg">
@@ -3179,12 +3241,15 @@
                 : ''}
             </div>`).join('')
         : `<div class="im-bet-leg">${esc(m.body || '')}</div>`;
+      const stakeLine = meta.type === 'future'
+        ? 'Record only · no stake'
+        : `${esc(fmtBetUnits(meta.stake))}u to win ${esc(fmtBetUnits(meta.toWin))}`;
       return `
         <div class="im-bet-card">
           <p class="im-bet-kicker">Degenerate Gambler</p>
           <p class="im-bet-type">${esc(typeLabel)} · ${esc(fmtBetOdds(meta.odds))}</p>
           <div class="im-bet-legs">${legs}</div>
-          <p class="im-bet-stake">${esc(fmtBetUnits(meta.stake))}u to win ${esc(fmtBetUnits(meta.toWin))}</p>
+          <p class="im-bet-stake">${stakeLine}</p>
         </div>`;
     }
 

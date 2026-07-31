@@ -1,10 +1,12 @@
 /**
  * Lounge paper sportsbook — Degenerate Gambler desk.
- * Fun-money straights + parlays across ESPN sports lines; tracks W-L and bankroll.
+ * Game slips use fun-money units; futures are record-only (no stake).
+ * Standings are win–loss by last name.
  */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const futuresMarkets = require('./futures-markets');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'paper-book.json');
@@ -13,13 +15,14 @@ const MIN_STAKE = 5;
 const MAX_STAKE = 500;
 const MAX_PARLAY_LEGS = 8;
 const MAX_OPEN_SLIPS = 40;
+const MAX_OPEN_FUTURES = 16;
 const MAX_HISTORY = 120;
 const DEFAULT_JUICE = -110;
 
 function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(FILE)) {
-    fs.writeFileSync(FILE, JSON.stringify({ accounts: {}, slips: [] }, null, 2));
+    fs.writeFileSync(FILE, JSON.stringify({ accounts: {}, slips: [], futures: [] }, null, 2));
   }
 }
 
@@ -29,10 +32,12 @@ function readStore() {
     const data = JSON.parse(fs.readFileSync(FILE, 'utf8'));
     return {
       accounts: data.accounts && typeof data.accounts === 'object' ? data.accounts : {},
-      slips: Array.isArray(data.slips) ? data.slips : []
+      slips: Array.isArray(data.slips) ? data.slips : [],
+      futures: Array.isArray(data.futures) ? data.futures : [],
+      champions: data.champions && typeof data.champions === 'object' ? data.champions : {}
     };
   } catch {
-    return { accounts: {}, slips: [] };
+    return { accounts: {}, slips: [], futures: [], champions: {} };
   }
 }
 
@@ -43,12 +48,28 @@ function writeStore(data) {
   fs.renameSync(tmp, FILE);
 }
 
+function lastNameOf(full) {
+  const parts = String(full || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!parts.length) return 'Player';
+  // Drop trailing generational suffixes for standings display.
+  const last = parts[parts.length - 1];
+  if (/^(jr\.?|sr\.?|ii|iii|iv)$/i.test(last) && parts.length >= 2) {
+    return parts[parts.length - 2];
+  }
+  return last;
+}
+
 function ensureAccount(store, user) {
   const id = user.id;
+  const fullName = user.name || user.loginName || 'Member';
   if (!store.accounts[id]) {
     store.accounts[id] = {
       userId: id,
-      name: user.name || user.loginName || 'Member',
+      name: fullName,
+      lastName: lastNameOf(fullName),
       bankroll: STARTING_BANKROLL,
       wins: 0,
       losses: 0,
@@ -57,7 +78,8 @@ function ensureAccount(store, user) {
       createdAt: new Date().toISOString()
     };
   } else {
-    store.accounts[id].name = user.name || user.loginName || store.accounts[id].name;
+    store.accounts[id].name = fullName;
+    store.accounts[id].lastName = lastNameOf(fullName);
   }
   return store.accounts[id];
 }
@@ -276,19 +298,114 @@ function settleSlip(slip, gameIndex) {
 
 function applySettlementToAccount(account, slip) {
   if (slip._applied) return;
+  const isFuture = slip.type === 'future';
   if (slip.status === 'won') {
     account.wins += 1;
-    account.bankroll = Math.round((account.bankroll + Number(slip.payout)) * 100) / 100;
-    account.unitsWon = Math.round((account.unitsWon + Number(slip.profit)) * 100) / 100;
+    if (!isFuture) {
+      account.bankroll = Math.round((account.bankroll + Number(slip.payout || 0)) * 100) / 100;
+      account.unitsWon = Math.round((account.unitsWon + Number(slip.profit || 0)) * 100) / 100;
+    }
   } else if (slip.status === 'lost') {
     account.losses += 1;
-    account.unitsWon = Math.round((account.unitsWon + Number(slip.profit)) * 100) / 100;
-    // stake already deducted at placement
+    if (!isFuture) {
+      account.unitsWon = Math.round((account.unitsWon + Number(slip.profit || 0)) * 100) / 100;
+    }
   } else if (slip.status === 'push') {
     account.pushes += 1;
-    account.bankroll = Math.round((account.bankroll + Number(slip.stake)) * 100) / 100;
+    if (!isFuture && Number(slip.stake) > 0) {
+      account.bankroll = Math.round((account.bankroll + Number(slip.stake)) * 100) / 100;
+    }
   }
   slip._applied = true;
+}
+
+function winPct(a) {
+  const w = Number(a.wins || 0);
+  const l = Number(a.losses || 0);
+  const g = w + l;
+  return g ? w / g : 0;
+}
+
+function publicRecord(a) {
+  return `${a.wins}-${a.losses}${a.pushes ? `-${a.pushes}` : ''}`;
+}
+
+function standingsRow(a) {
+  return {
+    userId: a.userId,
+    name: a.name,
+    lastName: a.lastName || lastNameOf(a.name),
+    wins: a.wins,
+    losses: a.losses,
+    pushes: a.pushes,
+    record: publicRecord(a),
+    winPct: Math.round(winPct(a) * 1000) / 1000
+  };
+}
+
+function buildStandings(store) {
+  const activeIds = new Set();
+  for (const a of Object.values(store.accounts)) {
+    if ((a.wins || 0) + (a.losses || 0) + (a.pushes || 0) > 0) activeIds.add(a.userId);
+  }
+  for (const s of store.slips || []) activeIds.add(s.userId);
+  for (const f of store.futures || []) activeIds.add(f.userId);
+
+  return Object.values(store.accounts)
+    .filter((a) => activeIds.has(a.userId))
+    .map(standingsRow)
+    .sort((a, b) => {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      if (b.winPct !== a.winPct) return b.winPct - a.winPct;
+      if (a.losses !== b.losses) return a.losses - b.losses;
+      return String(a.lastName).localeCompare(String(b.lastName), undefined, { sensitivity: 'base' });
+    })
+    .slice(0, 40);
+}
+
+function normTeam(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+}
+
+function teamMatchesChampion(pickName, championName) {
+  const a = normTeam(pickName);
+  const b = normTeam(championName);
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+}
+
+function settleFutures(store) {
+  const champions = store.champions || {};
+  let settled = 0;
+  for (const pick of store.futures || []) {
+    if (pick.status !== 'open' || pick._applied) continue;
+    const champ = champions[pick.boardId] || champions[pick.marketId];
+    if (!champ) continue;
+    const hit = teamMatchesChampion(pick.selection, champ);
+    pick.status = hit ? 'won' : 'lost';
+    pick.result = pick.status;
+    pick.champion = champ;
+    pick.settledAt = new Date().toISOString();
+    const account = store.accounts[pick.userId];
+    if (account) {
+      if (pick.status === 'won') account.wins += 1;
+      else account.losses += 1;
+    }
+    pick._applied = true;
+    settled += 1;
+  }
+  return settled;
+}
+
+function setChampion(boardId, teamName) {
+  const store = readStore();
+  if (!store.champions) store.champions = {};
+  store.champions[String(boardId)] = String(teamName || '').trim();
+  settleFutures(store);
+  writeStore(store);
+  return { ok: true, champions: store.champions };
 }
 
 function buildGameIndex(boards) {
@@ -315,7 +432,6 @@ function settleOpenSlips(boards) {
       settled += 1;
     }
   }
-  // Trim history
   const closed = store.slips.filter((s) => s.status !== 'open');
   if (closed.length > MAX_HISTORY) {
     const keepOpen = store.slips.filter((s) => s.status === 'open');
@@ -325,6 +441,7 @@ function settleOpenSlips(boards) {
       .slice(0, MAX_HISTORY);
     store.slips = [...keepOpen, ...keepClosed];
   }
+  settleFutures(store);
   writeStore(store);
   return settled;
 }
@@ -332,6 +449,7 @@ function settleOpenSlips(boards) {
 function getBook(user, boards = []) {
   if (boards?.length) settleOpenSlips(boards);
   const store = readStore();
+  settleFutures(store);
   const account = ensureAccount(store, user);
   writeStore(store);
 
@@ -339,34 +457,104 @@ function getBook(user, boards = []) {
     .filter((s) => s.userId === user.id)
     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
-  const leaderboard = Object.values(store.accounts)
-    .map((a) => ({
-      userId: a.userId,
-      name: a.name,
-      bankroll: a.bankroll,
-      wins: a.wins,
-      losses: a.losses,
-      pushes: a.pushes,
-      unitsWon: a.unitsWon,
-      record: `${a.wins}-${a.losses}${a.pushes ? `-${a.pushes}` : ''}`
-    }))
-    .sort((a, b) => b.unitsWon - a.unitsWon || b.bankroll - a.bankroll)
-    .slice(0, 24);
+  const myFutures = (store.futures || [])
+    .filter((f) => f.userId === user.id)
+    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+  const standings = buildStandings(store);
 
   return {
     ok: true,
     startingBankroll: STARTING_BANKROLL,
     account: {
+      name: account.name,
+      lastName: account.lastName || lastNameOf(account.name),
       bankroll: account.bankroll,
       wins: account.wins,
       losses: account.losses,
       pushes: account.pushes,
       unitsWon: account.unitsWon,
-      record: `${account.wins}-${account.losses}${account.pushes ? `-${account.pushes}` : ''}`
+      record: publicRecord(account)
     },
     open: mine.filter((s) => s.status === 'open'),
     recent: mine.filter((s) => s.status !== 'open').slice(0, 25),
-    leaderboard
+    openFutures: myFutures.filter((f) => f.status === 'open'),
+    recentFutures: myFutures.filter((f) => f.status !== 'open').slice(0, 20),
+    standings,
+    leaderboard: standings,
+    champions: store.champions || {}
+  };
+}
+
+function placeFuture(user, body = {}, futuresBoard = null) {
+  if (!user?.id) {
+    throw Object.assign(new Error('Sign in required'), { status: 401 });
+  }
+  const marketId = String(body.marketId || '').trim();
+  const outcomeId = String(body.outcomeId || '').trim();
+  if (!marketId || !outcomeId) {
+    throw Object.assign(new Error('Pick a futures market and team'), { status: 400 });
+  }
+
+  const board = futuresBoard || null;
+  const hit = board ? futuresMarkets.findOutcome(board, marketId, outcomeId) : null;
+  if (!hit) {
+    throw Object.assign(new Error('That futures price is no longer on the board'), { status: 404 });
+  }
+
+  const store = readStore();
+  settleFutures(store);
+  const account = ensureAccount(store, user);
+  if (!Array.isArray(store.futures)) store.futures = [];
+
+  const openCount = store.futures.filter((f) => f.userId === user.id && f.status === 'open').length;
+  if (openCount >= MAX_OPEN_FUTURES) {
+    throw Object.assign(new Error('Too many open futures — wait for some to grade'), { status: 400 });
+  }
+
+  // One open pick per market — replace prior open selection.
+  store.futures = store.futures.filter(
+    (f) => !(f.userId === user.id && f.marketId === hit.market.id && f.status === 'open')
+  );
+
+  const pick = {
+    id: crypto.randomUUID(),
+    userId: user.id,
+    name: account.name,
+    lastName: account.lastName || lastNameOf(account.name),
+    type: 'future',
+    marketId: hit.market.id,
+    boardId: hit.market.boardId,
+    sport: hit.market.sport,
+    marketLabel: hit.market.label,
+    title: hit.market.title,
+    selection: hit.outcome.name,
+    outcomeId: hit.outcome.id,
+    odds: hit.outcome.odds,
+    stake: 0,
+    status: 'open',
+    result: null,
+    champion: null,
+    createdAt: new Date().toISOString(),
+    settledAt: null,
+    _applied: false
+  };
+  store.futures.unshift(pick);
+  writeStore(store);
+
+  const book = getBook(user, []);
+  return {
+    ...book,
+    placedFuture: {
+      id: pick.id,
+      type: 'future',
+      sport: pick.sport,
+      marketLabel: pick.marketLabel,
+      title: pick.title,
+      selection: pick.selection,
+      odds: pick.odds,
+      createdAt: pick.createdAt
+    }
   };
 }
 
@@ -475,6 +663,29 @@ function formatSlipChat(slip) {
     if (!Number.isFinite(v)) return '—';
     return v % 1 ? v.toFixed(2) : String(v);
   };
+
+  if (slip.type === 'future') {
+    const body = [
+      `Degenerate future · ${slip.marketLabel || slip.title || 'Futures'}`,
+      `${slip.selection} (${fmtOdds(slip.odds)}) · record only`
+    ].join('\n');
+    return {
+      body,
+      meta: {
+        slipId: slip.id,
+        type: 'future',
+        stake: 0,
+        odds: slip.odds,
+        toWin: null,
+        legs: [{
+          label: `${slip.selection} ${fmtOdds(slip.odds)}`,
+          matchup: slip.title || slip.marketLabel,
+          leagueLabel: slip.sport
+        }]
+      }
+    };
+  }
+
   const typeLabel = slip.type === 'parlay'
     ? `Parlay (${(slip.legs || []).length} legs)`
     : 'Straight';
@@ -501,8 +712,11 @@ function formatSlipChat(slip) {
 module.exports = {
   getBook,
   placeBet,
+  placeFuture,
   settleOpenSlips,
+  setChampion,
   formatSlipChat,
+  lastNameOf,
   STARTING_BANKROLL,
   MIN_STAKE,
   MAX_STAKE,
