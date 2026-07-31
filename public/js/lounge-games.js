@@ -351,7 +351,7 @@
             ${games}
           </div>`;
         }).join('')
-      : `<div class="degen-empty">No open lines right now — check back when games post odds.</div>`;
+      : `<div class="degen-empty">No open lines right now. Lines fill from ESPN, then Bovada / other open feeds when ESPN is blank.</div>`;
 
     const enriched = book.slip.map((leg) => {
       const meta = findBoardLegOdds(leg.eventId, leg.market, leg.side) || {};

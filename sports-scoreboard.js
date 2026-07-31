@@ -6,6 +6,7 @@
 
 const espnResilient = require('./espn-resilient');
 const sportsFallbacks = require('./sports-fallbacks');
+const oddsEnrich = require('./odds-enrich');
 
 const CACHE_MS = 20_000;
 
@@ -178,52 +179,11 @@ function pickCompetitor(competitors, side) {
   };
 }
 
-function moneylineClose(sideOdds) {
-  if (!sideOdds || typeof sideOdds !== 'object') return null;
-  const close = sideOdds.close?.odds ?? sideOdds.odds ?? null;
-  return close == null || close === '' ? null : String(close);
-}
-
 /** Pull DraftKings (etc.) lines ESPN embeds on scoreboard competitions. */
 function pickOdds(competition) {
   const raw = Array.isArray(competition?.odds) ? competition.odds[0] : null;
-  if (!raw || typeof raw !== 'object') return null;
-
-  const spreadAbs = Number(raw.spread);
-  const ou = raw.overUnder == null || raw.overUnder === '' ? null : Number(raw.overUnder);
-  const awayFav = Boolean(raw.awayTeamOdds?.favorite);
-  const homeFav = Boolean(raw.homeTeamOdds?.favorite);
-
-  let awaySpread = null;
-  let homeSpread = null;
-  if (Number.isFinite(spreadAbs)) {
-    if (awayFav && !homeFav) {
-      awaySpread = -Math.abs(spreadAbs);
-      homeSpread = Math.abs(spreadAbs);
-    } else if (homeFav && !awayFav) {
-      homeSpread = -Math.abs(spreadAbs);
-      awaySpread = Math.abs(spreadAbs);
-    } else if (spreadAbs === 0) {
-      awaySpread = 0;
-      homeSpread = 0;
-    }
-  }
-
-  return {
-    details: raw.details ? String(raw.details) : null,
-    provider: raw.provider?.displayName || raw.provider?.name || null,
-    overUnder: Number.isFinite(ou) ? ou : null,
-    away: {
-      favorite: awayFav,
-      spread: awaySpread,
-      moneyline: moneylineClose(raw.moneyline?.away)
-    },
-    home: {
-      favorite: homeFav,
-      spread: homeSpread,
-      moneyline: moneylineClose(raw.moneyline?.home)
-    }
-  };
+  const normalized = oddsEnrich.normalizeEspnOddsBlob(raw);
+  return oddsEnrich.hasUsableOdds(normalized) ? normalized : null;
 }
 
 function normalizeTeamEvent(event, leagueId) {
@@ -492,23 +452,30 @@ async function getSportsScores({ leagues } = {}) {
     })
   );
 
+  const enriched = await oddsEnrich.enrichBoards(boards);
+
   const totals = { live: 0, final: 0, upcoming: 0, games: 0 };
-  for (const b of boards) {
-    totals.live += b.counts.live || 0;
-    totals.final += b.counts.final || 0;
-    totals.upcoming += b.counts.upcoming || 0;
+  let oddsFilled = 0;
+  for (const b of enriched) {
+    totals.live += b.counts?.live || 0;
+    totals.final += b.counts?.final || 0;
+    totals.upcoming += b.counts?.upcoming || 0;
     totals.games += (b.games || []).length;
+    for (const g of b.games || []) {
+      if (oddsEnrich.hasUsableOdds(g.odds)) oddsFilled += 1;
+    }
   }
 
   return {
     ok: true,
     source: usedFallback ? 'sports-fallback' : 'espn-site-scoreboard',
     fallbackUsed: usedFallback,
+    oddsFilled,
     upstream: espnResilient.getUpstreamStatus().site,
     fetchedAt,
     cacheMs: CACHE_MS,
     totals,
-    leagues: boards
+    leagues: enriched
   };
 }
 
