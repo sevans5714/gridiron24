@@ -24,7 +24,8 @@ const LEAGUES = {
     sport: 'football',
     league: 'college-football',
     kind: 'team',
-    logo: 'https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-football-college.png'
+    logo: '/assets/ncaa-logo.png',
+    lockLogo: true
   },
   mlb: {
     id: 'mlb',
@@ -345,7 +346,7 @@ async function getSportsScores({ leagues } = {}) {
           id: meta.id,
           label: meta.label,
           kind: meta.kind,
-          logo: pickLeagueLogo(raw, meta.logo),
+          logo: meta.lockLogo ? (meta.logo || null) : pickLeagueLogo(raw, meta.logo),
           from: from || 'live',
           source: 'espn',
           counts,

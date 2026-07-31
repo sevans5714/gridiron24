@@ -1513,6 +1513,7 @@
     let sportsData = null;
     let sportsFilter = 'ncaaf';
     let sportsPage = 0;
+    let sportsLeagueShown = null;
     let sportsPollTimer = null;
     let sportsFlipTimer = null;
     let sportsAuto = true;
@@ -1837,22 +1838,34 @@
       else markSportsTabs();
 
       const league = sportsLeagueMeta();
-      if (leagueTitle) leagueTitle.textContent = league.label;
-      if (leagueLogo) {
-        if (league.logo) {
-          leagueLogo.hidden = false;
-          leagueLogo.src = league.logo;
-          leagueLogo.alt = league.label;
-        } else {
-          leagueLogo.hidden = true;
-          leagueLogo.removeAttribute('src');
-          leagueLogo.alt = '';
+      const leagueChanged = sportsLeagueShown !== sportsFilter;
+      sportsLeagueShown = sportsFilter;
+
+      if (leagueChanged) {
+        if (leagueTitle) leagueTitle.textContent = league.label;
+        if (leagueLogo) {
+          if (league.logo) {
+            leagueLogo.hidden = false;
+            if (leagueLogo.getAttribute('src') !== league.logo) {
+              leagueLogo.src = league.logo;
+            }
+            leagueLogo.alt = league.label;
+          } else {
+            leagueLogo.hidden = true;
+            leagueLogo.removeAttribute('src');
+            leagueLogo.alt = '';
+          }
         }
-      }
-      if (leagueMark) {
-        leagueMark.classList.remove('is-flip');
-        void leagueMark.offsetWidth;
-        leagueMark.classList.add('is-flip');
+        if (leagueMark) {
+          leagueMark.classList.remove('is-flip');
+          void leagueMark.offsetWidth;
+          leagueMark.classList.add('is-flip');
+        }
+      } else {
+        // Keep header stable while paging games within the same league.
+        if (leagueTitle && leagueTitle.textContent !== league.label) {
+          leagueTitle.textContent = league.label;
+        }
       }
 
       const games = sportsOrderedGames(flatSportsGames(sportsData, sportsFilter));
