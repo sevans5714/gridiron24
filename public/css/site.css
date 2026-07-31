@@ -2176,12 +2176,12 @@ footer.site-footer::before {
 .site-footer-author {
   display: inline;
   font-family: "Bebas Neue", var(--display), Impact, sans-serif;
-  font-size: calc(1.26rem * 0.95);
+  font-size: 0.82rem;
   font-weight: 400;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--blue);
-  line-height: 1;
+  line-height: 1.2;
   text-shadow: none;
 }
 html[data-theme="day"] .site-footer-label {
