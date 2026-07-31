@@ -30,7 +30,7 @@
     sportsFlipTimer: null,
     sportsPollTimer: null,
     sportsAuto: true,
-    boxBenchOpen: false,
+    boxBenchOpen: { away: false, home: false },
     chatMessages: [],
     onlineUsers: [],
     chatViewerId: null,
@@ -1349,14 +1349,30 @@
     if (!away || !home) return '';
     const slots = (box?.lineupSlots || []).map((s) => s.slot).filter(Boolean);
     const myLineup = (state.myTeam?.lineup || []).filter((p) => p.empty || isStarter(p.slot));
+    const myBench = (state.myTeam?.bench || state.myTeam?.roster || [])
+      .filter((p) => !p.empty && !isStarter(p.slot));
     const myId = Number(state.myTeam?.team?.id);
     let awayLine = (box?.away?.lineup?.length ? box.away.lineup : emptySlotRows(slots));
     let homeLine = (box?.home?.lineup?.length ? box.home.lineup : emptySlotRows(slots));
+    let awayBench = Array.isArray(box?.away?.bench) ? box.away.bench.filter((p) => p?.name) : [];
+    let homeBench = Array.isArray(box?.home?.bench) ? box.home.bench.filter((p) => p?.name) : [];
     // After draft, ESPN roster fills slots; prefer named lineup over empty placeholders.
     if (myLineup.some((p) => p.name) && Number.isFinite(myId)) {
       if (Number(away?.id) === myId && !awayLine.some((p) => p.name)) awayLine = myLineup;
       if (Number(home?.id) === myId && !homeLine.some((p) => p.name)) homeLine = myLineup;
+      if (Number(away?.id) === myId && !awayBench.length && myBench.length) awayBench = myBench;
+      if (Number(home?.id) === myId && !homeBench.length && myBench.length) homeBench = myBench;
     }
+
+    function benchBlock(players, sideKey) {
+      if (!players.length) return '';
+      const open = state.boxBenchOpen?.[sideKey];
+      return `<details class="box-bench" data-bench-side="${esc(sideKey)}"${open ? ' open' : ''}>
+        <summary>Bench / IR (${players.length})</summary>
+        ${slotRosterListHtml(players)}
+      </details>`;
+    }
+
     return `
       <div class="home-section matchup-rosters">
         <div class="section-label">Lineups</div>
@@ -1366,6 +1382,7 @@
             <strong>${esc(away.name || 'Away')}</strong>
           </div>
           ${slotRosterListHtml(awayLine)}
+          ${benchBlock(awayBench, 'away')}
         </div>
         <hr class="roster-team-divider" />
         <div class="roster-team-block">
@@ -1374,6 +1391,7 @@
             <strong>${esc(home.name || 'Home')}</strong>
           </div>
           ${slotRosterListHtml(homeLine)}
+          ${benchBlock(homeBench, 'home')}
         </div>
       </div>`;
   }
@@ -1424,6 +1442,16 @@
           return;
         }
         navigate(btn.dataset.go, { push: true });
+      });
+    });
+    mount.querySelectorAll('details.box-bench[data-bench-side]').forEach((el) => {
+      el.addEventListener('toggle', () => {
+        const side = el.getAttribute('data-bench-side');
+        if (!side) return;
+        if (!state.boxBenchOpen || typeof state.boxBenchOpen !== 'object') {
+          state.boxBenchOpen = { away: false, home: false };
+        }
+        state.boxBenchOpen[side] = el.open;
       });
     });
     if (Math.abs(window.scrollY - scrollY) > 2) window.scrollTo(0, scrollY);

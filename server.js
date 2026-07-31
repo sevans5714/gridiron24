@@ -1329,6 +1329,12 @@ function normalizeMatchupBoxSide(side, teams, week, lineupSlotCounts, rosterTeam
   }
   const starters = entries.filter((e) => e.isStarter);
   let bench = entries.filter((e) => !e.isStarter);
+  // Matchup scoreboard payloads often include starters only — fill bench from roster.
+  if ((!bench.length || !bench.some((p) => p.name)) && rosterTeam) {
+    bench = rosterTeamEntriesAsPlayers(rosterTeam)
+      .filter((e) => !e.isStarter)
+      .sort((a, b) => slotSortKey(a.slot) - slotSortKey(b.slot) || String(a.name || '').localeCompare(String(b.name || '')));
+  }
   let lineup = fillStarterSlots(starters, lineupSlotCounts);
   if (statsMap) {
     lineup = applyPointsToLineup(lineup, statsMap);

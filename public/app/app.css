@@ -1599,9 +1599,9 @@ a {
 }
 
 .box-bench {
-  margin: 0 0 0.75rem;
+  margin: 0.15rem 0 0.35rem;
   border-top: 1px dashed var(--line);
-  padding-top: 0.35rem;
+  padding-top: 0.2rem;
 }
 
 .box-bench summary {
@@ -1613,14 +1613,23 @@ a {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   list-style: none;
-  padding: 0.35rem 0;
+  padding: 0.4rem 0 0.25rem;
 }
 
 .box-bench summary::-webkit-details-marker {
   display: none;
 }
 
-.box-row.is-bench .pts {
+.box-bench[open] summary {
+  color: var(--blue-soft);
+}
+
+.box-bench .slot-roster {
+  margin-top: 0.15rem;
+  opacity: 0.92;
+}
+
+.box-bench .slot-roster-row .pts {
   color: var(--muted);
 }
 
