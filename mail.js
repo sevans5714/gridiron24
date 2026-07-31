@@ -55,6 +55,7 @@ function brandedAssets(baseUrl) {
     overtimeLogo: `${origin}/assets/overtime-conference.png`,
     aaaLogo: `${origin}/assets/aaa-league.png?v=7`,
     gridironLeagueLogo: `${origin}/assets/gridiron24-league-sm.png?v=5`,
+    loungeHeroUrl: `${origin}/assets/members-lounge.jpg`,
     enterUrl: `${origin}/enter`
   };
 }
@@ -65,6 +66,7 @@ function brandedEmailHtml({
   eyebrow = '24 Teams · Two Conferences · One Champion',
   headline,
   bodyHtml,
+  midHtml = '',
   showConferences = true,
   membershipBadgeHtml = '',
   ctaLabel,
@@ -100,6 +102,13 @@ function brandedEmailHtml({
             </td>
           </tr>`
       : '');
+  const mid = midHtml
+    ? `<tr>
+            <td align="center" style="padding:0 20px 8px;">
+              ${midHtml}
+            </td>
+          </tr>`
+    : '';
   const cta = ctaLabel && ctaUrl
     ? `<tr>
             <td align="center" style="padding:6px 28px 10px;">
@@ -173,6 +182,7 @@ function brandedEmailHtml({
               ${bodyHtml}
             </td>
           </tr>
+          ${mid}
           ${conferences}
           ${cta}
           ${note}
@@ -193,6 +203,60 @@ function brandedEmailHtml({
 </html>`;
 }
 
+function loungeInviteMidHtml(c, assets) {
+  const features = Array.isArray(c.features) ? c.features : [];
+  const rows = [];
+  for (let i = 0; i < features.length; i += 2) {
+    const left = features[i];
+    const right = features[i + 1];
+    const cell = (f) => (f
+      ? `<td width="50%" valign="top" style="padding:6px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid rgba(126,200,255,0.22);border-radius:8px;background:linear-gradient(180deg,rgba(47,109,255,0.12),rgba(13,13,13,0.92));">
+              <tr>
+                <td style="padding:14px 14px 15px;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#efd782;margin:0 0 6px;">${escapeHtml(f.title)}</div>
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;color:#b8c4d6;">${escapeHtml(f.blurb)}</div>
+                </td>
+              </tr>
+            </table>
+          </td>`
+      : `<td width="50%" style="padding:6px;"></td>`);
+    rows.push(`<tr>${cell(left)}${cell(right)}</tr>`);
+  }
+
+  const hero = assets.loungeHeroUrl
+    ? `<tr>
+          <td style="padding:0 0 16px;">
+            <img src="${escapeHtml(assets.loungeHeroUrl)}" width="504" alt="Members Lounge" style="display:block;width:100%;max-width:504px;height:auto;border:0;border-radius:8px;border:1px solid rgba(255,255,255,0.08);" />
+          </td>
+        </tr>`
+    : '';
+
+  const heading = c.featuresHeading
+    ? `<tr>
+          <td align="center" style="padding:4px 8px 14px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#7ec8ff;">
+            ${escapeHtml(c.featuresHeading)}
+          </td>
+        </tr>`
+    : '';
+
+  const access = c.accessNote
+    ? `<tr>
+          <td align="center" style="padding:10px 8px 4px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8a8a8a;">
+            ${escapeHtml(c.accessNote)}
+          </td>
+        </tr>`
+    : '';
+
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:504px;width:100%;">
+      ${hero}
+      ${heading}
+      ${rows.join('')}
+      ${access}
+    </table>`;
+}
+
 function buildInviteEmail({
   inviteUrl,
   invitedByName,
@@ -201,7 +265,8 @@ function buildInviteEmail({
   loungeOnly
 }) {
   const inviteCopy = require('./invite-email-message');
-  const { enterUrl: homeUrl } = brandedAssets(baseUrl);
+  const assets = brandedAssets(baseUrl);
+  const homeUrl = assets.enterUrl;
   const c = inviteCopy.buildInviteCopy({
     inviteUrl,
     invitedByName,
@@ -210,19 +275,35 @@ function buildInviteEmail({
     loungeOnly
   });
 
-  const text =
-    `${c.subject}\n\n` +
-    `${c.bodyLead}\n\n` +
-    `Create your account here:\n${inviteUrl}\n\n` +
-    `${c.textExtra}\n\n` +
-    `${c.alreadyHaveAccount}\n\n` +
-    `GridIron 24 HQ · Fantasy Football\n` +
-    `${c.footerIgnore}\n`;
+  const featureLines = (c.features || [])
+    .map((f) => `• ${f.title} — ${f.blurb}`)
+    .join('\n');
+
+  const text = c.loungeOnly
+    ? `${c.subject}\n\n` +
+      `${c.bodyLead}\n\n` +
+      `${c.featuresHeading || "What's inside"}:\n${featureLines}\n\n` +
+      `${c.accessNote ? `${c.accessNote}\n\n` : ''}` +
+      `Create your account here:\n${inviteUrl}\n\n` +
+      `${c.textExtra}\n\n` +
+      `${c.alreadyHaveAccount}\n\n` +
+      `GridIron 24 HQ · Fantasy Football\n` +
+      `${c.footerIgnore}\n`
+    : `${c.subject}\n\n` +
+      `${c.bodyLead}\n\n` +
+      `Create your account here:\n${inviteUrl}\n\n` +
+      `${c.textExtra}\n\n` +
+      `${c.alreadyHaveAccount}\n\n` +
+      `GridIron 24 HQ · Fantasy Football\n` +
+      `${c.footerIgnore}\n`;
 
   const bodyHtml = c.loungeOnly
-    ? `<strong style="color:#ffffff;">${escapeHtml(c.who)}</strong> invited you to a ` +
-      `<strong style="color:#efd782;">Members Lounge</strong> social account for ` +
-      `<strong style="color:#efd782;">${escapeHtml(c.league)}</strong> — lounge access only, no franchise.`
+    ? `<strong style="color:#ffffff;">${escapeHtml(c.who)}</strong> invited you to the ` +
+      `<strong style="color:#efd782;">Members Lounge</strong> for ` +
+      `<strong style="color:#efd782;">${escapeHtml(c.league)}</strong>.` +
+      `<br /><span style="display:inline-block;margin-top:10px;color:#9aa8bc;font-size:14px;">` +
+      `Social access to hang with the league — scoreboard, desks, games, and Roll Call.` +
+      `</span>`
     : `<strong style="color:#ffffff;">${escapeHtml(c.who)}</strong> invited you to create your account for ` +
       `<strong style="color:#efd782;">${escapeHtml(c.league)}</strong>.`;
 
@@ -232,6 +313,8 @@ function buildInviteEmail({
     eyebrow: c.eyebrow,
     headline: c.headline,
     bodyHtml,
+    midHtml: c.loungeOnly ? loungeInviteMidHtml(c, assets) : '',
+    showConferences: !c.loungeOnly,
     ctaLabel: c.ctaLabel,
     ctaUrl: inviteUrl,
     noteHtml:

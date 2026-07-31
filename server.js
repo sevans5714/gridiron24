@@ -5686,7 +5686,6 @@ const server = http.createServer(async (req, res) => {
         const ticketBoard = boards
           .filter((b) => {
             if (b.ok === false) return false;
-            if (b.kind === 'golf') return false;
             if (b.fantasy) return false;
             const id = String(b.id || '').toLowerCase();
             if (fantasyIds.has(id)) return false;
@@ -5696,11 +5695,12 @@ const server = http.createServer(async (req, res) => {
             id: b.id,
             label: b.label,
             logo: b.logo || null,
+            kind: b.kind || 'team',
             games: (b.games || [])
               .filter((g) => g.status?.bucket !== 'final')
               .sort((a, b) => {
-                const ao = a.odds ? 0 : 1;
-                const bo = b.odds ? 0 : 1;
+                const ao = a.odds || (a.leaders && a.leaders.length) ? 0 : 1;
+                const bo = b.odds || (b.leaders && b.leaders.length) ? 0 : 1;
                 if (ao !== bo) return ao - bo;
                 const order = { live: 0, upcoming: 1, final: 2 };
                 const as = order[a.status?.bucket] ?? 3;
@@ -5713,9 +5713,13 @@ const server = http.createServer(async (req, res) => {
                 id: g.id,
                 date: g.date,
                 status: g.status,
+                kind: g.kind || b.kind || 'team',
+                name: g.name,
+                shortName: g.shortName,
                 away: g.away,
                 home: g.home,
                 odds: g.odds,
+                leaders: Array.isArray(g.leaders) ? g.leaders.slice(0, 20) : undefined,
                 broadcasts: g.broadcasts || []
               }))
           }))
@@ -5862,7 +5866,7 @@ const server = http.createServer(async (req, res) => {
           let chatItem = null;
           try {
             chatItem = membersChat.addMessage({
-              body: `started a mock draft · ${clockLabel} pick clock`,
+              body: `started a mock draft · ${clockLabel} pick clock · open seats can join`,
               author: publicAuthor,
               kind: 'mock',
               meta: {
@@ -6683,16 +6687,23 @@ const server = http.createServer(async (req, res) => {
       if (!user) return;
       const { buildInviteEmail } = require('./mail');
       const origin = requestOrigin(req);
+      const social = ['1', 'true', 'yes', 'social', 'lounge'].includes(
+        String(requestUrl.searchParams.get('social') || requestUrl.searchParams.get('lounge') || '')
+          .trim()
+          .toLowerCase()
+      );
       const content = buildInviteEmail({
         inviteUrl: `${origin}/register?invite=preview-sample-token`,
         invitedByName: user.name || user.loginName || 'Staff',
         leagueName: config.brand.name,
-        baseUrl: origin
+        baseUrl: origin,
+        loungeOnly: social
       });
       const format = String(requestUrl.searchParams.get('format') || 'html').toLowerCase();
       if (format === 'json') {
         return sendJson(res, 200, {
           ok: true,
+          loungeOnly: social,
           subject: content.subject,
           text: content.text,
           html: content.html,

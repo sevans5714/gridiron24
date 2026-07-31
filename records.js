@@ -267,11 +267,30 @@ function mergeCandidates(parts) {
   return merged;
 }
 
-function formatRecordLine(wins, losses, ties) {
-  const w = num(wins);
-  const l = num(losses);
-  const t = num(ties);
-  return t > 0 ? `${w}-${l}-${t}` : `${w}-${l}`;
+const RECORD_CATEGORIES = [
+  { id: 'winStreak', label: 'Longest win streak' },
+  { id: 'loseStreak', label: 'Longest losing streak' },
+  { id: 'highScore', label: 'Highest points in a game' },
+  { id: 'blowout', label: 'Largest margin of victory' },
+  { id: 'seasonPf', label: 'Highest season points' },
+  { id: 'mostWins', label: 'Most wins in a season' }
+];
+
+function vacantEntry(id, label) {
+  return {
+    id,
+    label,
+    value: null,
+    valueSuffix: null,
+    teamName: null,
+    owner: null,
+    year: null,
+    yearLabel: null,
+    logo: null,
+    conferenceName: null,
+    detail: null,
+    vacant: true
+  };
 }
 
 function weekSpan(startWeek, endWeek) {
@@ -280,12 +299,19 @@ function weekSpan(startWeek, endWeek) {
   return `Weeks ${startWeek}–${endWeek}`;
 }
 
+function formatRecordLine(wins, losses, ties) {
+  const w = num(wins);
+  const l = num(losses);
+  const t = num(ties);
+  return t > 0 ? `${w}-${l}-${t}` : `${w}-${l}`;
+}
+
 function buildRecordEntries(merged) {
-  const entries = [];
+  const byId = Object.create(null);
 
   if (merged.winStreak && merged.winStreak.value > 0) {
     const h = merged.winStreak;
-    entries.push({
+    byId.winStreak = {
       id: 'winStreak',
       label: 'Longest win streak',
       value: `${h.value}`,
@@ -296,13 +322,14 @@ function buildRecordEntries(merged) {
       yearLabel: h.yearLabel,
       logo: h.logo,
       conferenceName: h.conferenceName,
-      detail: weekSpan(h.startWeek, h.endWeek)
-    });
+      detail: weekSpan(h.startWeek, h.endWeek),
+      vacant: false
+    };
   }
 
   if (merged.loseStreak && merged.loseStreak.value > 0) {
     const h = merged.loseStreak;
-    entries.push({
+    byId.loseStreak = {
       id: 'loseStreak',
       label: 'Longest losing streak',
       value: `${h.value}`,
@@ -313,13 +340,14 @@ function buildRecordEntries(merged) {
       yearLabel: h.yearLabel,
       logo: h.logo,
       conferenceName: h.conferenceName,
-      detail: weekSpan(h.startWeek, h.endWeek)
-    });
+      detail: weekSpan(h.startWeek, h.endWeek),
+      vacant: false
+    };
   }
 
   if (merged.highScore && merged.highScore.value > 0) {
     const h = merged.highScore;
-    entries.push({
+    byId.highScore = {
       id: 'highScore',
       label: 'Highest points in a game',
       value: h.value.toFixed(1).replace(/\.0$/, ''),
@@ -334,13 +362,14 @@ function buildRecordEntries(merged) {
         h.week != null ? `Week ${h.week}` : null,
         h.opponent ? `vs ${h.opponent}` : null,
         h.playoff ? 'Playoffs' : null
-      ].filter(Boolean).join(' · ') || null
-    });
+      ].filter(Boolean).join(' · ') || null,
+      vacant: false
+    };
   }
 
   if (merged.blowout && merged.blowout.value > 0) {
     const h = merged.blowout;
-    entries.push({
+    byId.blowout = {
       id: 'blowout',
       label: 'Largest margin of victory',
       value: h.value.toFixed(1).replace(/\.0$/, ''),
@@ -357,13 +386,14 @@ function buildRecordEntries(merged) {
           ? `${Number(h.score).toFixed(1).replace(/\.0$/, '')}–${Number(h.opponentScore).toFixed(1).replace(/\.0$/, '')}`
           : null,
         h.opponent ? `vs ${h.opponent}` : null
-      ].filter(Boolean).join(' · ') || null
-    });
+      ].filter(Boolean).join(' · ') || null,
+      vacant: false
+    };
   }
 
   if (merged.seasonPf && merged.seasonPf.value > 0) {
     const h = merged.seasonPf;
-    entries.push({
+    byId.seasonPf = {
       id: 'seasonPf',
       label: 'Highest season points',
       value: h.value.toFixed(1).replace(/\.0$/, ''),
@@ -374,13 +404,14 @@ function buildRecordEntries(merged) {
       yearLabel: h.yearLabel,
       logo: h.logo,
       conferenceName: h.conferenceName,
-      detail: formatRecordLine(h.wins, h.losses, h.ties)
-    });
+      detail: formatRecordLine(h.wins, h.losses, h.ties),
+      vacant: false
+    };
   }
 
   if (merged.mostWins && num(merged.mostWins.wins) > 0) {
     const h = merged.mostWins;
-    entries.push({
+    byId.mostWins = {
       id: 'mostWins',
       label: 'Most wins in a season',
       value: String(h.wins),
@@ -391,11 +422,12 @@ function buildRecordEntries(merged) {
       yearLabel: h.yearLabel,
       logo: h.logo,
       conferenceName: h.conferenceName,
-      detail: formatRecordLine(h.wins, h.losses, h.ties)
-    });
+      detail: formatRecordLine(h.wins, h.losses, h.ties),
+      vacant: false
+    };
   }
 
-  return entries;
+  return RECORD_CATEGORIES.map((cat) => byId[cat.id] || vacantEntry(cat.id, cat.label));
 }
 
 function buildRecordBook(seasonBags) {
@@ -409,6 +441,7 @@ function buildRecordBook(seasonBags) {
 }
 
 module.exports = {
+  RECORD_CATEGORIES,
   decidedMatchups,
   collectSeasonCandidates,
   mergeCandidates,

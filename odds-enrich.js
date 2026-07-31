@@ -220,7 +220,7 @@ function hasUsableOdds(odds) {
 }
 
 function needsOdds(game) {
-  if (!game || game.kind === 'golf') return false;
+  if (!game || game.kind === 'golf' || game.kind === 'racing') return false;
   if (game.status?.bucket === 'final' || game.status?.completed) return false;
   return !hasUsableOdds(game.odds);
 }
@@ -503,13 +503,13 @@ async function mapPool(items, limit, worker) {
 }
 
 function isOpenForLines(game) {
-  if (!game || game.kind === 'golf') return false;
+  if (!game || game.kind === 'golf' || game.kind === 'racing') return false;
   if (game.status?.bucket === 'final' || game.status?.completed) return false;
   return true;
 }
 
 async function enrichBoard(board) {
-  if (!board?.ok || board.kind === 'golf') return board;
+  if (!board?.ok || board.kind === 'golf' || board.kind === 'racing') return board;
   const meta = LEAGUE_ODDS[board.id];
   if (!meta) return board;
   const games = Array.isArray(board.games) ? board.games : [];

@@ -5,8 +5,9 @@
  * Placeholders: {{who}} {{league}} {{inviteUrl}} {{homeUrl}} {{homeHost}}
  *
  * Preview (signed in as staff):
- *   /api/invites/preview-email          → HTML
- *   /api/invites/preview-email?format=json → subject + text + html
+ *   /api/invites/preview-email                 → full-member HTML
+ *   /api/invites/preview-email?social=1       → Members Lounge HTML
+ *   /api/invites/preview-email?format=json    → subject + text + html
  * League Tools → Invites also links the HTML preview.
  */
 
@@ -27,21 +28,61 @@ const copy = {
   footerIgnore: "If you weren't expecting this email, ignore it."
 };
 
+/** Ordered feature cards for the Members Lounge social invite. */
+const loungeFeatures = [
+  {
+    title: 'Live Scoreboard',
+    blurb: 'NFL slate plus GridIron 24 & AAA fantasy boards — live and upcoming.'
+  },
+  {
+    title: 'Record Book',
+    blurb: 'Franchise records, streaks, and historical seasons in one desk.'
+  },
+  {
+    title: 'Mock Draft',
+    blurb: 'Full snake practice with pick clock, targets, and CPU seats.'
+  },
+  {
+    title: "Casala's Palace",
+    blurb: 'Paper sportsbook — lines, futures, and fun-money standings.'
+  },
+  {
+    title: 'League Pools',
+    blurb: "Pick'em, confidence, squares, survivor, auctions, sweeps, and more."
+  },
+  {
+    title: 'Roll Call',
+    blurb: 'Lounge chat with who’s online — the social heart of HQ.'
+  },
+  {
+    title: 'Treasurer Desk',
+    blurb: 'Dues, payments, and the league money desk.'
+  },
+  {
+    title: 'Membership Roll',
+    blurb: 'See who’s in the lounge and claim your screen name.'
+  }
+];
+
 const socialCopy = {
   subject: "You're invited to the {{league}} Members Lounge",
-  preheader: '{{who}} invited you to the Members Lounge — chat, games, and the social desk.',
-  eyebrow: 'Members Lounge · Social access',
-  headline: "You're invited to the Lounge",
+  preheader:
+    '{{who}} invited you to the Members Lounge — scoreboard, Record Book, Mock Draft, Sportsbook, pools, Roll Call, and more.',
+  eyebrow: 'Members Lounge · Social Access',
+  headline: 'Welcome to the Lounge',
   bodyLead:
     '{{who}} invited you to a social account for the {{league}} Members Lounge. ' +
-    'You can hang in the lounge — this invite does not include a fantasy franchise.',
-  ctaLabel: 'Create your lounge account',
+    'Hang with the league — this invite is lounge access only (no fantasy franchise).',
+  featuresHeading: "What's inside",
+  features: loungeFeatures,
+  accessNote: 'Social membership · Members Lounge only · No franchise HQ',
+  ctaLabel: 'Enter the Members Lounge',
   note:
     'This invite link stays active until you create your account. ' +
-    'Social accounts sign in at {{homeHost}} and go straight to the Members Lounge.',
+    'Social accounts sign in at {{homeHost}} and land in the Members Lounge.',
   textExtra:
-    'This is a social (Members Lounge only) invite — no franchise assignment. ' +
-    'Create your account, then sign in anytime.',
+    'Create your account with the link above, then sign in anytime. ' +
+    'Social accounts land in the Members Lounge.',
   alreadyHaveAccount: 'Already have an account? Sign in: {{homeUrl}}',
   footerIgnore: "If you weren't expecting this email, ignore it."
 };
@@ -79,6 +120,9 @@ function buildInviteCopy({
     eyebrow: fill(src.eyebrow, vars),
     headline: fill(src.headline, vars),
     bodyLead: fill(src.bodyLead, vars),
+    featuresHeading: src.featuresHeading || '',
+    features: Array.isArray(src.features) ? src.features.slice() : [],
+    accessNote: src.accessNote || '',
     ctaLabel: fill(src.ctaLabel, vars),
     note: fill(src.note, vars),
     textExtra: fill(src.textExtra, vars),
@@ -97,6 +141,7 @@ function buildInviteCopy({
 module.exports = {
   copy,
   socialCopy,
+  loungeFeatures,
   fill,
   buildInviteCopy
 };

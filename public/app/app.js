@@ -579,10 +579,10 @@
       const meta = m.meta || {};
       const betHtml = isBet
         ? `<div class="im-bet-card${meta.private ? ' is-private' : ''}">
-            <div class="im-bet-kicker">${meta.private ? 'Private bet' : "Casala's"}</div>
+            <div class="im-bet-kicker">${meta.private ? "Casala's Palace · Private" : "Casala's Palace"}</div>
             <div class="im-bet-type">${esc(meta.type === 'parlay' ? `Parlay · ${(meta.legs || []).length} legs` : (meta.type === 'future' ? 'Future' : 'Straight'))}${Array.isArray(meta.leagues) && meta.leagues.length ? ` · ${esc(meta.leagues.join(' / '))}` : ''} · ${esc(Number(meta.odds) > 0 ? `+${meta.odds}` : String(meta.odds ?? '—'))}</div>
             <div class="im-bet-legs">${(meta.legs || []).map((leg) => `<div class="im-bet-leg"><strong>${esc(leg.label || 'Pick')}</strong></div>`).join('') || esc(m.body || '')}</div>
-            <div class="im-bet-stake">${meta.type === 'future' ? 'Record only' : `${esc(meta.stake)}u to win ${esc(meta.toWin)}`}${meta.private ? ' · locked' : ''}</div>
+            <div class="im-bet-stake">${meta.type === 'future' ? 'Record only' : `${esc(meta.stake)}u to win ${esc(meta.toWin)}`}</div>
             ${meta.private && meta.insult ? `<div class="im-bet-insult">${esc(meta.insult)}</div>` : ''}
           </div>`
         : '';

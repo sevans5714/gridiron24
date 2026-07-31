@@ -152,6 +152,15 @@ const LEAGUES = {
     url: 'https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard',
     logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-golf.png',
     seasonMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  },
+  nascar: {
+    id: 'nascar',
+    label: 'NASCAR',
+    sport: 'racing',
+    league: 'nascar-premier',
+    kind: 'racing',
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nascar.png',
+    seasonMonths: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
   }
 };
 
@@ -168,7 +177,8 @@ const DEFAULT_LEAGUES = [
   'nhl',
   'wnba',
   'mls',
-  'golf'
+  'golf',
+  'nascar'
 ];
 
 /** Fantasy boards injected by the server (GridIron 24 + AAA). */
@@ -360,14 +370,19 @@ function normalizeGolfEvent(event) {
       const score = (scoreRaw == null || scoreRaw === '')
         ? (rowStatus.todayDetail || '—')
         : String(scoreRaw);
+      const positionId = rowStatus.position?.id != null ? String(rowStatus.position.id) : null;
+      const orderN = Number(positionId);
       return {
         id: row.id || athlete.id || null,
         name: athlete.displayName || athlete.fullName || '',
         shortName: athlete.shortName || athlete.displayName || '',
         position: rowStatus.position?.displayName || '—',
+        positionId,
+        order: Number.isFinite(orderN) ? orderN : null,
         score,
         thru: golfThruLabel(rowStatus),
-        state: rowStatus.type?.state || state
+        state: rowStatus.type?.state || state,
+        winner: Boolean(row.winner)
       };
     });
 
@@ -395,6 +410,132 @@ function normalizeGolfEvent(event) {
     home: null,
     leaders
   };
+}
+
+function normalizeRacingEvent(event, leagueId = 'nascar') {
+  const competition = event?.competitions?.[0] || {};
+  const type = competition.status?.type || event?.status?.type || {};
+  const state = String(type.state || 'pre');
+  const completed = Boolean(type.completed);
+  const bucket = statusBucket(state, completed);
+  const broadcasts = (competition.broadcasts || [])
+    .flatMap((b) => b.names || [])
+    .filter(Boolean);
+  if (competition.broadcast && !broadcasts.length) {
+    const b = competition.broadcast;
+    if (typeof b === 'string') broadcasts.push(b);
+    else if (b?.market) broadcasts.push(String(b.market));
+  }
+
+  const leaders = (competition.competitors || [])
+    .slice()
+    .sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999))
+    .slice(0, GOLF_LEADER_LIMIT)
+    .map((row) => {
+      const athlete = row.athlete || {};
+      const order = Number(row.order);
+      return {
+        id: row.id || athlete.id || null,
+        name: athlete.displayName || athlete.fullName || '',
+        shortName: athlete.shortName || athlete.displayName || '',
+        position: Number.isFinite(order) ? String(order) : '—',
+        positionId: Number.isFinite(order) ? String(order) : null,
+        order: Number.isFinite(order) ? order : null,
+        score: '—',
+        thru: row.winner ? 'W' : (completed && Number.isFinite(order) ? 'F' : '—'),
+        state,
+        winner: Boolean(row.winner)
+      };
+    });
+
+  return {
+    id: event.id,
+    league: leagueId,
+    kind: 'racing',
+    name: event.name || '',
+    shortName: event.shortName || event.name || '',
+    date: event.date || competition.date || competition.startDate || null,
+    status: {
+      bucket,
+      state,
+      completed,
+      name: type.name || '',
+      description: type.description || '',
+      detail: type.detail || '',
+      shortDetail: type.shortDetail || type.detail || '',
+      clock: null,
+      period: competition.status?.period || 0
+    },
+    venue: competition.venue?.fullName || null,
+    broadcasts,
+    away: null,
+    home: null,
+    leaders
+  };
+}
+
+let nascarStandingsCache = { at: 0, leaders: [] };
+
+async function fetchNascarStandingsLeaders() {
+  const now = Date.now();
+  if (now - nascarStandingsCache.at < 15 * 60_000 && nascarStandingsCache.leaders.length) {
+    return nascarStandingsCache.leaders;
+  }
+  try {
+    const hit = await espnResilient.fetchJsonResilient({
+      urls: [
+        'https://site.web.api.espn.com/apis/v2/sports/racing/nascar-premier/standings',
+        'https://site.api.espn.com/apis/v2/sports/racing/nascar-premier/standings'
+      ],
+      cacheKey: 'site:nascar:standings',
+      ttlMs: 15 * 60_000,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'GridIron24-MembersLounge/1.0'
+      },
+      lane: 'site'
+    });
+    const entries = hit.data?.children?.[0]?.standings?.entries || [];
+    const leaders = entries.slice(0, GOLF_LEADER_LIMIT).map((row, idx) => {
+      const athlete = row.athlete || {};
+      const rankStat = (row.stats || []).find((s) => s.name === 'rank' || s.abbreviation === 'RK');
+      const ptsStat = (row.stats || []).find((s) => s.name === 'championshipPts' || s.abbreviation === 'PTS');
+      const rank = Number(rankStat?.value);
+      const order = Number.isFinite(rank) ? rank : idx + 1;
+      return {
+        id: athlete.id || null,
+        name: athlete.displayName || athlete.fullName || '',
+        shortName: athlete.shortName || athlete.displayName || '',
+        position: String(order),
+        positionId: String(order),
+        order,
+        score: ptsStat?.displayValue || '—',
+        thru: 'RK',
+        state: 'pre',
+        winner: false,
+        provisional: true
+      };
+    }).filter((p) => p.id);
+    nascarStandingsCache = { at: now, leaders };
+    return leaders;
+  } catch {
+    return nascarStandingsCache.leaders || [];
+  }
+}
+
+async function fillRacingFields(games) {
+  const list = Array.isArray(games) ? games : [];
+  const needsField = list.some((g) => g?.kind === 'racing' && !(g.leaders && g.leaders.length)
+    && g.status?.bucket !== 'final');
+  if (!needsField) return list;
+  const standings = await fetchNascarStandingsLeaders();
+  if (!standings.length) return list;
+  return list.map((g) => {
+    if (g?.kind !== 'racing' || (g.leaders && g.leaders.length) || g.status?.bucket === 'final') {
+      return g;
+    }
+    return { ...g, leaders: standings };
+  });
 }
 
 async function fetchLeagueRaw(meta, { daysAhead = 0 } = {}) {
@@ -659,9 +800,14 @@ async function getSportsScores({ leagues, extraBoards = [], daysAhead = 0 } = {}
       }
       try {
         const { raw, from } = await fetchLeagueRaw(meta, { daysAhead });
-        const games = (raw.events || []).map((ev) =>
-          meta.kind === 'golf' ? normalizeGolfEvent(ev) : normalizeTeamEvent(ev, id)
-        );
+        let games = (raw.events || []).map((ev) => {
+          if (meta.kind === 'golf') return normalizeGolfEvent(ev);
+          if (meta.kind === 'racing') return normalizeRacingEvent(ev, meta.id);
+          return normalizeTeamEvent(ev, id);
+        });
+        if (meta.kind === 'racing') {
+          games = await fillRacingFields(games);
+        }
         const counts = { live: 0, final: 0, upcoming: 0 };
         for (const g of games) {
           counts[g.status.bucket] = (counts[g.status.bucket] || 0) + 1;

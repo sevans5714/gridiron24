@@ -47,6 +47,52 @@
     return Math.round(s * (100 / Math.abs(o)) * 100) / 100;
   }
 
+  function stakeFromToWin(toWin, odds) {
+    const w = Number(toWin);
+    const o = Number(odds);
+    if (!Number.isFinite(w) || !Number.isFinite(o) || o === 0 || w <= 0) return 0;
+    if (o > 0) return Math.round((w * 100 / o) * 100) / 100;
+    return Math.round((w * Math.abs(o) / 100) * 100) / 100;
+  }
+
+  function clampStake(n, bankroll) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return 5;
+    const max = Math.min(500, Math.max(5, Number(bankroll) || 500));
+    return Math.min(max, Math.max(5, Math.round(v * 100) / 100));
+  }
+
+  /** Half-points that favor the bettor vs the main line (positive = easier pick). */
+  function altFavorSteps(market, side, mainLine, altLine) {
+    const main = Number(mainLine);
+    const alt = Number(altLine);
+    if (!Number.isFinite(main) || !Number.isFinite(alt)) return 0;
+    if (market === 'total') {
+      return side === 'over' ? (main - alt) * 2 : (alt - main) * 2;
+    }
+    // spread: more points (higher line) favors that side
+    return (alt - main) * 2;
+  }
+
+  function juiceForAltSteps(steps) {
+    const s = Math.round(Number(steps) || 0);
+    if (s === 0) return -110;
+    if (s > 0) return Math.max(-500, -110 - s * 10);
+    const easier = [-110, -105, 100, 105, 110, 115, 120, 125, 130, 140, 150, 160, 175, 200, 225, 250, 300, 350, 400];
+    return easier[Math.min(-s, easier.length - 1)];
+  }
+
+  function altLinesAround(main, count = 6) {
+    const m = Number(main);
+    if (!Number.isFinite(m)) return [];
+    const out = [];
+    for (let i = -count; i <= count; i++) {
+      if (i === 0) continue;
+      out.push(Math.round((m + i * 0.5) * 2) / 2);
+    }
+    return out;
+  }
+
   /* ——— Survivor ——— */
   const surv = {
     data: null,
@@ -205,7 +251,8 @@
     pollTimer: null,
     lastStatus: null,
     dayFilter: 'all',
-    teamQuery: ''
+    teamQuery: '',
+    expandedGameId: null
   };
 
   const DEGEN_SPORT_ORDER = [
@@ -220,8 +267,23 @@
     'ncaaw',
     'cbase',
     'csoft',
-    'llws'
+    'llws',
+    'golf',
+    'nascar'
   ];
+
+  function isFieldBoardGame(g) {
+    return g?.kind === 'golf' || g?.kind === 'racing';
+  }
+
+  function winnerOddsByRank(rank0) {
+    const ladder = [
+      250, 400, 600, 800, 1000, 1200, 1500, 1800, 2000, 2500,
+      3000, 3500, 4000, 5000, 6000, 7500, 10000, 12500, 15000, 20000
+    ];
+    const i = Math.max(0, Number(rank0) || 0);
+    return ladder[Math.min(i, ladder.length - 1)];
+  }
 
   function pad2(n) {
     return String(n).padStart(2, '0');
@@ -267,7 +329,10 @@
       g?.away?.name,
       g?.home?.abbreviation,
       g?.home?.shortName,
-      g?.home?.name
+      g?.home?.name,
+      g?.name,
+      g?.shortName,
+      ...((g?.leaders || []).flatMap((p) => [p?.name, p?.shortName]))
     ];
     return parts.filter(Boolean).join(' ').toLowerCase();
   }
@@ -352,25 +417,55 @@
     return `${leg.eventId}|${leg.market}|${leg.side}`;
   }
 
+  function isFutureLeg(leg) {
+    return String(leg?.market || '') === 'future';
+  }
+
   function toggleLeg(leg) {
     const key = slipKey(leg);
     const idx = book.slip.findIndex((l) => slipKey(l) === key);
     if (idx >= 0) {
       book.slip.splice(idx, 1);
-    } else {
-      book.slip = book.slip.filter((l) => l.eventId !== leg.eventId);
-      if (book.slip.length >= 8) {
-        setDegenStatus('Max 8 legs on a parlay', false);
-        return;
-      }
-      book.slip.push(leg);
+      renderBook();
+      return;
     }
+
+    // Drop conflicts: same market on same game (or same futures market), keep other markets.
+    book.slip = book.slip.filter((l) => {
+      if (isFutureLeg(leg) && isFutureLeg(l)) {
+        return String(l.marketId) !== String(leg.marketId);
+      }
+      if (isFutureLeg(l) || isFutureLeg(leg)) return true;
+      if (String(l.eventId) !== String(leg.eventId)) return true;
+      return String(l.market) !== String(leg.market);
+    });
+
+    if (book.slip.length >= 8) {
+      setDegenStatus('Max 8 legs on a parlay', false);
+      return;
+    }
+    book.slip.push(leg);
     renderBook();
   }
 
   function removeLeg(key) {
     book.slip = book.slip.filter((l) => slipKey(l) !== key);
     renderBook();
+  }
+
+  function buildFutureLeg(market, outcome) {
+    return {
+      eventId: `future:${market.id}`,
+      market: 'future',
+      side: String(outcome.id),
+      marketId: market.id,
+      outcomeId: outcome.id,
+      odds: Number(outcome.odds),
+      line: null,
+      label: outcome.name,
+      matchup: market.label || market.title || 'Futures',
+      leagueLabel: market.sport || 'Futures'
+    };
   }
 
   function combineOdds(legs) {
@@ -423,6 +518,20 @@
             leagueLabel: board.label
           };
         }
+        if (market === 'winner') {
+          const field = Array.isArray(g.leaders) ? g.leaders : [];
+          const idx = field.findIndex((p) => String(p.id) === String(side));
+          if (idx < 0) return null;
+          const pick = field[idx];
+          const american = winnerOddsByRank(idx);
+          return {
+            line: null,
+            odds: american,
+            label: `${pick.shortName || pick.name || 'Pick'} to win`,
+            matchup: g.shortName || g.name || board.label,
+            leagueLabel: board.label
+          };
+        }
       }
     }
     return null;
@@ -470,12 +579,64 @@
     return t?.abbreviation || t?.shortName || fallback;
   }
 
+  function renderFieldWinnerCard(g, selected) {
+    const field = (Array.isArray(g.leaders) ? g.leaders : []).slice(0, 20);
+    const eventName = g.shortName || g.name || (g.kind === 'racing' ? 'Race' : 'Tournament');
+    const noun = g.kind === 'racing' ? 'driver' : 'golfer';
+    if (!field.length) {
+      return `<article class="degen-game degen-field">
+        <div class="degen-game-meta">
+          <span class="kick">${esc(eventName)}</span>
+          <span class="degen-game-meta-right">
+            ${g.status?.shortDetail ? `<span class="live">${esc(g.status.shortDetail)}</span>` : ''}
+          </span>
+        </div>
+        <div class="degen-empty">Field not posted yet — check back closer to ${esc(noun)} tee / green.</div>
+      </article>`;
+    }
+    const picks = field.map((p, idx) => {
+      const american = winnerOddsByRank(idx);
+      const payload = {
+        eventId: String(g.id),
+        market: 'winner',
+        side: String(p.id),
+        line: null,
+        odds: american,
+        label: `${p.shortName || p.name || 'Pick'} to win`,
+        matchup: eventName,
+        leagueLabel: ''
+      };
+      const key = `${g.id}|winner|${p.id}`;
+      return `<button type="button" class="degen-cell degen-winner${selected.has(key) ? ' is-on' : ''}" data-leg="${attrJson(payload)}">
+        <span class="degen-winner-pos">${esc(p.position || String(idx + 1))}</span>
+        <span class="degen-winner-name">${esc(p.shortName || p.name || '—')}</span>
+        <span class="degen-winner-odds">${esc(fmtOdds(american))}</span>
+      </button>`;
+    }).join('');
+    return `<article class="degen-game degen-field">
+      <div class="degen-game-meta">
+        <span class="kick">${esc(eventName)} · ${esc(fmtKick(g.date))}</span>
+        <span class="degen-game-meta-right">
+          ${g.status?.shortDetail
+            ? `<span class="live">${esc(g.status.shortDetail)}</span>`
+            : '<span class="live">Winner</span>'}
+        </span>
+      </div>
+      <p class="degen-field-note">Outright winner · paper odds by board order</p>
+      <div class="degen-winner-grid">${picks}</div>
+    </article>`;
+  }
+
   function renderGameCard(g, selected) {
+    if (isFieldBoardGame(g)) return renderFieldWinnerCard(g, selected);
     const away = g.away || {};
     const home = g.home || {};
     const awayAbbr = teamLabel(away, 'AWAY');
     const homeAbbr = teamLabel(home, 'HOME');
     const odds = g.odds || {};
+    const matchup = `${awayAbbr} @ ${homeAbbr}`;
+    const expanded = String(book.expandedGameId) === String(g.id);
+
     const cell = (primary, secondary, payload, key) => {
       if (!payload) return `<span class="degen-cell is-empty">—</span>`;
       return `<button type="button" class="degen-cell${selected.has(key) ? ' is-on' : ''}" data-leg="${attrJson(payload)}">
@@ -488,36 +649,71 @@
       const v = Number(n);
       return `${v > 0 ? '+' : ''}${v}`;
     };
-    const awaySpread = odds.away?.spread != null
+
+    const awaySpreadLine = odds.away?.spread;
+    const homeSpreadLine = odds.home?.spread;
+    const totalLine = odds.overUnder;
+
+    const awaySpread = awaySpreadLine != null
       ? cell(
-        fmtSpread(odds.away.spread),
+        fmtSpread(awaySpreadLine),
         '−110',
-        { eventId: String(g.id), market: 'spread', side: 'away' },
+        {
+          eventId: String(g.id), market: 'spread', side: 'away',
+          line: Number(awaySpreadLine), odds: -110,
+          label: `${awayAbbr} ${fmtSpread(awaySpreadLine)}`,
+          matchup, leagueLabel: ''
+        },
         `${g.id}|spread|away`
       )
       : cell(null);
-    const homeSpread = odds.home?.spread != null
+    const homeSpread = homeSpreadLine != null
       ? cell(
-        fmtSpread(odds.home.spread),
+        fmtSpread(homeSpreadLine),
         '−110',
-        { eventId: String(g.id), market: 'spread', side: 'home' },
+        {
+          eventId: String(g.id), market: 'spread', side: 'home',
+          line: Number(homeSpreadLine), odds: -110,
+          label: `${homeAbbr} ${fmtSpread(homeSpreadLine)}`,
+          matchup, leagueLabel: ''
+        },
         `${g.id}|spread|home`
       )
       : cell(null);
-    const over = odds.overUnder != null
-      ? cell(`O ${odds.overUnder}`, '−110', { eventId: String(g.id), market: 'total', side: 'over' }, `${g.id}|total|over`)
+    const over = totalLine != null
+      ? cell(`O ${totalLine}`, '−110', {
+          eventId: String(g.id), market: 'total', side: 'over',
+          line: Number(totalLine), odds: -110,
+          label: `Over ${totalLine}`, matchup, leagueLabel: ''
+        }, `${g.id}|total|over`)
       : cell(null);
-    const under = odds.overUnder != null
-      ? cell(`U ${odds.overUnder}`, '−110', { eventId: String(g.id), market: 'total', side: 'under' }, `${g.id}|total|under`)
+    const under = totalLine != null
+      ? cell(`U ${totalLine}`, '−110', {
+          eventId: String(g.id), market: 'total', side: 'under',
+          line: Number(totalLine), odds: -110,
+          label: `Under ${totalLine}`, matchup, leagueLabel: ''
+        }, `${g.id}|total|under`)
       : cell(null);
-    const awayMl = odds.away?.moneyline != null
-      ? cell(String(odds.away.moneyline), null, { eventId: String(g.id), market: 'moneyline', side: 'away' }, `${g.id}|moneyline|away`)
+    const awayMlRaw = odds.away?.moneyline;
+    const homeMlRaw = odds.home?.moneyline;
+    const awayMlN = Number(String(awayMlRaw || '').replace(/[^0-9+\-.]/g, ''));
+    const homeMlN = Number(String(homeMlRaw || '').replace(/[^0-9+\-.]/g, ''));
+    const awayMl = awayMlRaw != null
+      ? cell(String(awayMlRaw), null, {
+          eventId: String(g.id), market: 'moneyline', side: 'away',
+          odds: Number.isFinite(awayMlN) && awayMlN !== 0 ? awayMlN : -110,
+          label: `${awayAbbr} ML`, matchup, leagueLabel: ''
+        }, `${g.id}|moneyline|away`)
       : cell(null);
-    const homeMl = odds.home?.moneyline != null
-      ? cell(String(odds.home.moneyline), null, { eventId: String(g.id), market: 'moneyline', side: 'home' }, `${g.id}|moneyline|home`)
+    const homeMl = homeMlRaw != null
+      ? cell(String(homeMlRaw), null, {
+          eventId: String(g.id), market: 'moneyline', side: 'home',
+          odds: Number.isFinite(homeMlN) && homeMlN !== 0 ? homeMlN : -110,
+          label: `${homeAbbr} ML`, matchup, leagueLabel: ''
+        }, `${g.id}|moneyline|home`)
       : cell(null);
 
-    const row = (side, team, abbr, spreadBtn, totalBtn, mlBtn) => `
+    const row = (team, abbr, spreadBtn, totalBtn, mlBtn) => `
       <div class="degen-game-row">
         <div class="degen-team">
           ${teamLogoHtml(team)}
@@ -531,18 +727,88 @@
         ${mlBtn}
       </div>`;
 
-    return `<article class="degen-game">
+    const hasAlts = awaySpreadLine != null || homeSpreadLine != null || totalLine != null;
+    let altsHtml = '';
+    if (expanded && hasAlts) {
+      const spreadAlts = (side, abbr, main) => {
+        if (main == null || !Number.isFinite(Number(main))) return '';
+        return altLinesAround(main, 5).map((line) => {
+          const juice = juiceForAltSteps(altFavorSteps('spread', side, main, line));
+          const on = book.slip.some((l) =>
+            String(l.eventId) === String(g.id) && l.market === 'spread' && l.side === side && Number(l.line) === Number(line)
+          );
+          const payload = {
+            eventId: String(g.id), market: 'spread', side,
+            line, odds: juice,
+            label: `${abbr} ${fmtSpread(line)}`,
+            matchup, leagueLabel: '', alt: true
+          };
+          return `<button type="button" class="degen-cell degen-alt${on ? ' is-on' : ''}" data-leg="${attrJson(payload)}">
+            <span class="degen-cell-main">${esc(fmtSpread(line))}</span>
+            <span class="degen-cell-sub">${esc(fmtOdds(juice))}</span>
+          </button>`;
+        }).join('');
+      };
+
+      const totalAlts = (side, main) => {
+        if (main == null || !Number.isFinite(Number(main))) return '';
+        return altLinesAround(main, 5).map((line) => {
+          const juice = juiceForAltSteps(altFavorSteps('total', side, main, line));
+          const on = book.slip.some((l) =>
+            String(l.eventId) === String(g.id) && l.market === 'total' && l.side === side && Number(l.line) === Number(line)
+          );
+          const payload = {
+            eventId: String(g.id), market: 'total', side,
+            line, odds: juice,
+            label: `${side === 'over' ? 'Over' : 'Under'} ${line}`,
+            matchup, leagueLabel: '', alt: true
+          };
+          return `<button type="button" class="degen-cell degen-alt${on ? ' is-on' : ''}" data-leg="${attrJson(payload)}">
+            <span class="degen-cell-main">${esc(`${side === 'over' ? 'O' : 'U'} ${line}`)}</span>
+            <span class="degen-cell-sub">${esc(fmtOdds(juice))}</span>
+          </button>`;
+        }).join('');
+      };
+
+      altsHtml = `
+        <div class="degen-alts">
+          <div class="degen-alts-block">
+            <p class="degen-alts-label">${esc(awayAbbr)} spreads</p>
+            <div class="degen-alts-row">${spreadAlts('away', awayAbbr, awaySpreadLine)}</div>
+          </div>
+          <div class="degen-alts-block">
+            <p class="degen-alts-label">${esc(homeAbbr)} spreads</p>
+            <div class="degen-alts-row">${spreadAlts('home', homeAbbr, homeSpreadLine)}</div>
+          </div>
+          <div class="degen-alts-block">
+            <p class="degen-alts-label">Over alts</p>
+            <div class="degen-alts-row">${totalAlts('over', totalLine)}</div>
+          </div>
+          <div class="degen-alts-block">
+            <p class="degen-alts-label">Under alts</p>
+            <div class="degen-alts-row">${totalAlts('under', totalLine)}</div>
+          </div>
+        </div>`;
+    }
+
+    return `<article class="degen-game${expanded ? ' is-expanded' : ''}">
       <div class="degen-game-meta">
         <span class="kick">${esc(fmtKick(g.date))}</span>
-        ${g.status?.shortDetail && g.status?.bucket !== 'upcoming'
-          ? `<span class="live">${esc(g.status.shortDetail)}</span>`
-          : ''}
+        <span class="degen-game-meta-right">
+          ${g.status?.shortDetail && g.status?.bucket !== 'upcoming'
+            ? `<span class="live">${esc(g.status.shortDetail)}</span>`
+            : ''}
+          ${hasAlts
+            ? `<button type="button" class="degen-more-lines" data-expand-game="${esc(String(g.id))}">${expanded ? 'Hide alts' : 'More lines'}</button>`
+            : ''}
+        </span>
       </div>
       <div class="degen-game-cols" aria-hidden="true">
         <span></span><span>Spread</span><span>Total</span><span>ML</span>
       </div>
-      ${row('away', away, awayAbbr, awaySpread, over, awayMl)}
-      ${row('home', home, homeAbbr, homeSpread, under, homeMl)}
+      ${row(away, awayAbbr, awaySpread, over, awayMl)}
+      ${row(home, homeAbbr, homeSpread, under, homeMl)}
+      ${altsHtml}
     </article>`;
   }
 
@@ -624,12 +890,14 @@
       futuresBody = `
         <div class="degen-future-banner">
           <strong>${esc(market.label)}</strong>
-          <span>${esc(market.title || '')}${mine ? ` · your pick: ${esc(mine.selection)}` : ' · record only · no stake'}</span>
+          <span>${esc(market.title || '')} · tap to add to slip · record only (no stake)${mine ? ` · locked: ${esc(mine.selection)}` : ''}</span>
         </div>
         <div class="degen-future-grid">
           ${outs.map((o) => {
-            const on = mine && String(mine.outcomeId) === String(o.id);
-            return `<button type="button" class="degen-future-pick${on ? ' is-on' : ''}" data-future="${attrJson({ marketId: market.id, outcomeId: o.id })}">${esc(o.name)} <em>${esc(fmtOdds(o.odds))}</em></button>`;
+            const leg = buildFutureLeg(market, o);
+            const onSlip = selected.has(slipKey(leg));
+            const locked = mine && String(mine.outcomeId) === String(o.id);
+            return `<button type="button" class="degen-future-pick${onSlip || locked ? ' is-on' : ''}" data-future="${attrJson({ marketId: market.id, outcomeId: o.id })}">${esc(o.name)} <em>${esc(fmtOdds(o.odds))}</em></button>`;
           }).join('') || '<div class="degen-empty">No prices posted.</div>'}
         </div>
         ${more > 0
@@ -642,23 +910,35 @@
 
     // Keep the quoted line frozen on the slip until lock; board lines keep moving.
     const enriched = book.slip.map((leg) => {
-      if (leg.odds != null || leg.line != null) return leg;
+      if (isFutureLeg(leg)) return leg;
+      if (leg.odds != null && (leg.line != null || leg.market === 'moneyline' || leg.market === 'winner')) {
+        if (leg.label && leg.matchup) return leg;
+      }
       const meta = findBoardLegOdds(leg.eventId, leg.market, leg.side) || {};
-      return { ...leg, ...meta };
+      return { ...meta, ...leg };
     });
-    const odds = combineOdds(enriched);
+    const gameLegs = enriched.filter((l) => !isFutureLeg(l));
+    const futureLegs = enriched.filter(isFutureLeg);
+    const odds = combineOdds(gameLegs);
+    const eventCounts = new Map();
+    for (const l of gameLegs) {
+      eventCounts.set(String(l.eventId), (eventCounts.get(String(l.eventId)) || 0) + 1);
+    }
+    const isSgp = [...eventCounts.values()].some((n) => n > 1);
     const stakeDefault = Number.isFinite(Number(book.stake)) ? Number(book.stake) : 25;
+    const toWinDefault = americanToWin(stakeDefault, odds);
+    const payoutDefault = Math.round((stakeDefault + toWinDefault) * 100) / 100;
     const ticketLegs = enriched.length
       ? enriched.map((leg) => `
           <div class="degen-leg">
             <div class="degen-leg-body">
-              <div class="degen-leg-pick">${esc(leg.label || `${leg.market} ${leg.side}`)}</div>
-              <div class="degen-leg-meta">${esc(leg.leagueLabel || '')}${leg.matchup ? ` · ${esc(leg.matchup)}` : ''}</div>
+              <div class="degen-leg-pick">${esc(leg.label || `${leg.market} ${leg.side}`)}${isFutureLeg(leg) ? ' <em class="degen-leg-tag">future</em>' : ''}${leg.alt ? ' <em class="degen-leg-tag">alt</em>' : ''}${!isFutureLeg(leg) && (eventCounts.get(String(leg.eventId)) || 0) > 1 ? ' <em class="degen-leg-tag">sgp</em>' : ''}</div>
+              <div class="degen-leg-meta">${esc(leg.leagueLabel || '')}${leg.matchup ? ` · ${esc(leg.matchup)}` : ''}${isFutureLeg(leg) ? ' · record only' : ''}</div>
             </div>
             <div class="degen-leg-odds">${esc(fmtOdds(leg.odds))}</div>
             <button type="button" data-remove="${esc(slipKey(leg))}" aria-label="Remove leg">✕</button>
           </div>`).join('')
-      : `<div class="degen-empty degen-slip-empty">Tap a line to build a slip.</div>`;
+      : `<div class="degen-empty degen-slip-empty">Tap lines, alts, or futures to build a slip.</div>`;
 
     const openHtml = (d.open || []).length
       ? d.open.map((s) => {
@@ -709,7 +989,16 @@
         </div>`
       : `<div class="degen-empty">No gambling record yet — place a pick.</div>`;
 
-    const slipType = enriched.length > 1 ? 'Parlay' : 'Straight';
+    const slipType = !enriched.length
+      ? 'Empty'
+      : !gameLegs.length
+        ? 'Futures'
+        : gameLegs.length > 1
+          ? (isSgp && eventCounts.size === 1 ? 'Same game parlay' : isSgp ? 'Parlay · SGP' : 'Parlay')
+          : futureLegs.length
+            ? 'Straight + futures'
+            : 'Straight';
+    const stakeChips = [5, 10, 25, 50, 100];
     const ticketAside = `
       <aside class="degen-ticket" aria-label="Betting slip">
         <header class="degen-ticket-head">
@@ -721,34 +1010,84 @@
         </header>
         <div class="degen-ticket-legs">${ticketLegs}</div>
         <div class="degen-ticket-summary">
-          <div class="degen-payout-grid">
-            <div><span class="label">Odds</span><strong>${esc(fmtOdds(odds))}</strong></div>
-            <div><span class="label">To win</span><strong id="degen-towin">${esc(fmtCash(americanToWin(stakeDefault, odds)))}</strong></div>
-          </div>
-          <div class="degen-slip-bar">
-            <label>Stake
-              <input type="number" id="degen-stake" min="5" max="500" step="1" value="${stakeDefault}" />
-            </label>
-            <button type="button" id="degen-clear" class="degen-btn-ghost" ${enriched.length ? '' : 'disabled'}>Clear</button>
-          </div>
-          <label class="degen-private">
-            <input type="checkbox" id="degen-private"${book.privateBet ? ' checked' : ''} />
-            <span>Private</span>
-          </label>
+          ${gameLegs.length
+            ? `<div class="degen-payout-grid">
+                <div><span class="label">Odds</span><strong>${esc(fmtOdds(odds))}</strong></div>
+                <div><span class="label">Payout</span><strong id="degen-payout">${esc(fmtCash(payoutDefault))}</strong></div>
+              </div>
+              <div class="degen-stake-tools">
+                <div class="degen-stake-chips" role="group" aria-label="Quick stakes">
+                  ${stakeChips.map((n) => `
+                    <button type="button" class="degen-stake-chip${Number(stakeDefault) === n ? ' is-on' : ''}" data-stake-chip="${n}">$${n}</button>
+                  `).join('')}
+                  <button type="button" class="degen-stake-chip" data-stake-chip="max">Max</button>
+                </div>
+                <div class="degen-slip-bar degen-wager-bar">
+                  <label>Wager
+                    <input type="number" id="degen-stake" min="5" max="500" step="1" value="${stakeDefault}" />
+                  </label>
+                  <label>To win
+                    <input type="number" id="degen-towin-input" min="0" step="1" value="${toWinDefault}" />
+                  </label>
+                </div>
+                <div class="degen-slip-actions">
+                  <button type="button" id="degen-clear" class="degen-btn-ghost" ${enriched.length ? '' : 'disabled'}>Clear</button>
+                </div>
+              </div>`
+            : `<div class="degen-payout-grid">
+                <div><span class="label">Stake</span><strong>Record only</strong></div>
+                <div><span class="label">Futures</span><strong>${futureLegs.length || 0}</strong></div>
+              </div>
+              <div class="degen-slip-bar">
+                <button type="button" id="degen-clear" class="degen-btn-ghost" ${enriched.length ? '' : 'disabled'}>Clear</button>
+              </div>`}
+          ${futureLegs.length && gameLegs.length
+            ? `<p class="degen-note" style="margin:0.35rem 0 0;font-size:0.78rem;">Futures on this slip are record-only (no stake).</p>`
+            : ''}
+          ${isSgp && gameLegs.length > 1
+            ? `<p class="degen-note degen-sgp-note">Same-game legs are combined into one parlay.</p>`
+            : ''}
+          ${enriched.length
+            ? `<label class="degen-private">
+                <input type="checkbox" id="degen-private"${book.privateBet ? ' checked' : ''} />
+                <span>Private</span>
+              </label>`
+            : ''}
           <p class="degen-slip-status" id="degen-slip-status" role="status" hidden></p>
           <button type="button" id="degen-place" class="degen-btn-lock" ${enriched.length ? '' : 'disabled'}>Lock it in</button>
         </div>
         <div class="degen-best-open">
-          <h4>Your open bets <span>${(d.open || []).length}</span></h4>
-          ${(d.open || []).length
-            ? (d.open || []).slice(0, 6).map((s) => {
-                const leagues = [...new Set((s.legs || []).map((l) => l.leagueLabel).filter(Boolean))];
-                return `<div class="degen-slip-row is-locked">
-                  <div class="top"><strong>${esc(s.type)}${s.private ? ' · private' : ''}</strong><span>${esc(fmtCash(s.stake))}</span></div>
-                  <div class="legs">${leagues.length ? `${esc(leagues.join(' / '))} · ` : ''}${esc((s.legs || []).map((l) => l.label).join(' · '))}</div>
-                </div>`;
-              }).join('')
-            : `<div class="degen-empty">No locked tickets yet.</div>`}
+          <h4>Your open bets <span>${(d.open || []).length + (d.openFutures || []).length}</span></h4>
+          ${[
+            ...(d.open || []).slice(0, 4).map((s) => {
+              const leagues = [...new Set((s.legs || []).map((l) => l.leagueLabel).filter(Boolean))];
+              return `<div class="degen-slip-row is-locked">
+                <div class="top">
+                  <strong>${esc(s.type)}${s.private ? ' · private' : ''}</strong>
+                  <span>${esc(fmtCash(s.stake))}</span>
+                </div>
+                <div class="legs">${leagues.length ? `${esc(leagues.join(' / '))} · ` : ''}${esc((s.legs || []).map((l) => l.label).join(' · '))}</div>
+                <button type="button" class="degen-rebet" data-rebet="${attrJson({
+                  stake: s.stake,
+                  legs: (s.legs || []).map((l) => ({
+                    eventId: l.eventId,
+                    market: l.market,
+                    side: l.side,
+                    line: l.line,
+                    odds: l.odds,
+                    label: l.label,
+                    matchup: l.matchup,
+                    leagueLabel: l.leagueLabel
+                  }))
+                })}">Reuse legs</button>
+              </div>`;
+            }),
+            ...(d.openFutures || []).slice(0, 3).map((f) => `
+              <div class="degen-slip-row is-locked">
+                <div class="top"><strong>future${f.private ? ' · private' : ''}</strong><span>record</span></div>
+                <div class="legs">${esc(f.marketLabel)} · ${esc(f.selection)}</div>
+              </div>`)
+          ].join('') || `<div class="degen-empty">No locked tickets yet.</div>`}
         </div>
       </aside>`;
 
@@ -770,21 +1109,14 @@
           <div class="degen-days">${dayTabs}</div>
           <label class="degen-team-search">
             <span class="sr-only">Find team</span>
-            <input type="search" id="degen-team-q" placeholder="Find a team…" value="${esc(book.teamQuery || '')}" autocomplete="off" />
+            <input type="search" id="degen-team-q" placeholder="Find a team or player…" value="${esc(book.teamQuery || '')}" autocomplete="off" />
           </label>
         </div>
         ${linesUpdated ? `<p class="degen-lines-asof">${esc(linesUpdated)} · next 6 days</p>` : ''}
-        <div class="degen-layout">
-          <div class="degen-board">${gamesHtml || `<div class="degen-empty">No open lines right now.</div>`}</div>
-          ${ticketAside}
-        </div>`;
+        <div class="degen-board">${gamesHtml || `<div class="degen-empty">No open lines right now.</div>`}</div>`;
     } else if (tab === 'futures') {
       screen = `
         <div class="degen-chips">${futureTabs || '<span class="degen-empty">No futures</span>'}</div>
-        <label class="degen-private" style="margin:0 0 0.55rem;">
-          <input type="checkbox" id="degen-future-private" />
-          Mark next future private
-        </label>
         ${futuresBody}`;
     } else if (tab === 'tickets') {
       screen = `
@@ -803,24 +1135,19 @@
     const loses = Number(acct.losses || 0);
     root.innerHTML = `
       <div class="degen-scoreboard" aria-label="Your Casala's Palace standings">
-        <div class="degen-scoreboard-head">
+        <div class="degen-scoreboard-brand">
           <span class="kicker">Casala's Palace</span>
           <span class="who">${esc(acct.lastName || acct.name || 'You')}</span>
         </div>
-        <div class="degen-scoreboard-cols" role="group">
-          <div class="degen-score-cell is-wins">
-            <span class="label">Wins</span>
-            <span class="value">${esc(String(wins))}</span>
-          </div>
-          <div class="degen-score-cell is-dash" aria-hidden="true"><span class="value">–</span></div>
-          <div class="degen-score-cell is-loses">
-            <span class="label">Loses</span>
-            <span class="value">${esc(String(loses))}</span>
-          </div>
-          <div class="degen-score-cell is-funds">
-            <span class="label">Funds</span>
-            <span class="value">${esc(fmtCash(cash))}</span>
-          </div>
+        <div class="degen-scoreboard-stats">
+          <span class="stat is-record" title="Wins–Losses">
+            <em>Record</em>
+            <strong><b class="w">${esc(String(wins))}</b><i>–</i><b class="l">${esc(String(loses))}</b></strong>
+          </span>
+          <span class="stat is-funds">
+            <em>Funds</em>
+            <strong>${esc(fmtCash(cash))}</strong>
+          </span>
         </div>
       </div>
       <div class="degen-tabs" role="tablist">
@@ -829,7 +1156,10 @@
         <button type="button" role="tab" class="${tab === 'tickets' ? 'is-on' : ''}" data-tab="tickets">My bets</button>
         <button type="button" role="tab" class="${tab === 'standings' ? 'is-on' : ''}" data-tab="standings">Standings</button>
       </div>
-      <div class="degen-screen">${screen}</div>
+      <div class="degen-layout">
+        <div class="degen-screen">${screen}</div>
+        ${ticketAside}
+      </div>
     `;
 
     root.querySelectorAll('[data-tab]').forEach((btn) => {
@@ -886,10 +1216,21 @@
     root.querySelectorAll('[data-future]').forEach((btn) => {
       btn.addEventListener('click', () => {
         try {
-          placeFuture(parseAttrJson(btn.getAttribute('data-future')));
+          const payload = parseAttrJson(btn.getAttribute('data-future'));
+          const m = (book.data?.futures?.markets || []).find((x) => String(x.id) === String(payload.marketId));
+          const o = (m?.outcomes || []).find((x) => String(x.id) === String(payload.outcomeId));
+          if (!m || !o) throw new Error('missing');
+          toggleLeg(buildFutureLeg(m, o));
         } catch {
-          setDegenStatus('Could not lock that future', false);
+          setDegenStatus('Could not add that future', false);
         }
+      });
+    });
+    root.querySelectorAll('[data-expand-game]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-expand-game');
+        book.expandedGameId = String(book.expandedGameId) === String(id) ? null : id;
+        renderBook();
       });
     });
     root.querySelectorAll('[data-leg]').forEach((btn) => {
@@ -897,7 +1238,8 @@
         try {
           const leg = parseAttrJson(btn.getAttribute('data-leg'));
           const meta = findBoardLegOdds(leg.eventId, leg.market, leg.side) || {};
-          toggleLeg({ ...leg, ...meta });
+          // Payload wins so alternate lines/odds stick.
+          toggleLeg({ ...meta, ...leg, leagueLabel: leg.leagueLabel || meta.leagueLabel || board?.label || '' });
         } catch {
           setDegenStatus('Could not add that line', false);
         }
@@ -911,9 +1253,60 @@
       renderBook();
     });
     const stakeInput = document.getElementById('degen-stake');
-    const toWinEl = document.getElementById('degen-towin');
+    const toWinInput = document.getElementById('degen-towin-input');
+    const payoutEl = document.getElementById('degen-payout');
+    const syncPayout = (stakeVal) => {
+      const win = americanToWin(stakeVal, odds);
+      if (toWinInput && document.activeElement !== toWinInput) {
+        toWinInput.value = String(win);
+      }
+      if (payoutEl) payoutEl.textContent = fmtCash(Math.round((Number(stakeVal) + win) * 100) / 100);
+    };
     stakeInput?.addEventListener('input', () => {
-      if (toWinEl) toWinEl.textContent = fmtCash(americanToWin(stakeInput.value, odds));
+      book.stake = Number(stakeInput.value);
+      syncPayout(stakeInput.value);
+      root.querySelectorAll('[data-stake-chip]').forEach((chip) => {
+        chip.classList.toggle('is-on', chip.getAttribute('data-stake-chip') === String(Number(stakeInput.value)));
+      });
+    });
+    toWinInput?.addEventListener('input', () => {
+      const nextStake = clampStake(stakeFromToWin(toWinInput.value, odds), cash);
+      if (stakeInput) stakeInput.value = String(nextStake);
+      book.stake = nextStake;
+      if (payoutEl) {
+        payoutEl.textContent = fmtCash(Math.round((nextStake + Number(toWinInput.value || 0)) * 100) / 100);
+      }
+    });
+    root.querySelectorAll('[data-stake-chip]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const raw = btn.getAttribute('data-stake-chip');
+        const next = raw === 'max'
+          ? clampStake(Math.min(500, cash), cash)
+          : clampStake(raw, cash);
+        book.stake = next;
+        if (stakeInput) stakeInput.value = String(next);
+        syncPayout(next);
+        root.querySelectorAll('[data-stake-chip]').forEach((chip) => {
+          const v = chip.getAttribute('data-stake-chip');
+          chip.classList.toggle('is-on', v === 'max' ? next >= Math.min(500, cash) : Number(v) === next);
+        });
+      });
+    });
+    root.querySelectorAll('[data-rebet]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        try {
+          const payload = parseAttrJson(btn.getAttribute('data-rebet'));
+          const legs = Array.isArray(payload.legs) ? payload.legs.filter((l) => l?.eventId && l?.market && l?.side) : [];
+          if (!legs.length) throw new Error('missing');
+          book.slip = legs.slice(0, 8);
+          if (Number.isFinite(Number(payload.stake))) book.stake = clampStake(payload.stake, cash);
+          book.tab = 'lines';
+          setDegenStatus('Legs loaded onto your slip — adjust stake and lock in.', true);
+          renderBook();
+        } catch {
+          setDegenStatus('Could not reuse that ticket', false);
+        }
+      });
     });
     document.getElementById('degen-place')?.addEventListener('click', placeBet);
     if (book.lastStatus?.msg) {
@@ -939,75 +1332,86 @@
     }
   }
 
-  async function placeFuture(payload) {
-    if (book.busy || !payload?.marketId || !payload?.outcomeId) return;
-    book.busy = true;
-    setDegenStatus('Locking future…');
-    try {
-      const isPrivate = Boolean(document.getElementById('degen-future-private')?.checked);
-      const res = await fetch('/api/paper-book', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'future',
-          marketId: payload.marketId,
-          outcomeId: payload.outcomeId,
-          private: isPrivate
-        })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Future failed');
-      book.data = data;
-      await loadBook();
-      try {
-        window.dispatchEvent(new CustomEvent('gi:bet-placed', { detail: { future: data.placedFuture || null } }));
-      } catch { /* ignore */ }
-      setDegenStatus(isPrivate ? 'Private future locked.' : 'Future locked.', true);
-    } catch (err) {
-      setDegenStatus(err.message, false);
-    } finally {
-      book.busy = false;
-    }
+  async function postFuture(payload, isPrivate) {
+    const res = await fetch('/api/paper-book', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'future',
+        marketId: payload.marketId,
+        outcomeId: payload.outcomeId,
+        private: isPrivate
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Future failed');
+    return data;
   }
 
   async function placeBet() {
     if (book.busy || !book.slip.length) return;
     captureSlipForm();
+    const gameLegs = book.slip.filter((l) => !isFutureLeg(l));
+    const futureLegs = book.slip.filter(isFutureLeg);
     const stake = Number(document.getElementById('degen-stake')?.value);
     const isPrivate = Boolean(document.getElementById('degen-private')?.checked);
     book.busy = true;
     setDegenStatus('Submitting ticket…');
     try {
-      const res = await fetch('/api/paper-book', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'bet',
-          stake,
-          private: isPrivate,
-          legs: book.slip.map((l) => ({
-            eventId: l.eventId,
-            market: l.market,
-            side: l.side,
-            line: l.line,
-            odds: l.odds
-          }))
-        })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Bet failed');
-      book.data = data;
+      let lastSlip = null;
+      let lastFuture = null;
+
+      if (gameLegs.length) {
+        if (!Number.isFinite(stake) || stake < 5) {
+          throw new Error('Enter a stake of at least 5');
+        }
+        const res = await fetch('/api/paper-book', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'bet',
+            stake,
+            private: isPrivate,
+            legs: gameLegs.map((l) => ({
+              eventId: l.eventId,
+              market: l.market,
+              side: l.side,
+              line: l.line,
+              odds: l.odds
+            }))
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Bet failed');
+        book.data = data;
+        lastSlip = data.placedSlip || null;
+      }
+
+      for (const fl of futureLegs) {
+        const data = await postFuture(
+          { marketId: fl.marketId, outcomeId: fl.outcomeId },
+          isPrivate
+        );
+        book.data = data;
+        lastFuture = data.placedFuture || null;
+      }
+
       book.slip = [];
       book.privateBet = false;
       await loadBook();
+      const parts = [];
+      if (lastSlip) parts.push(isPrivate ? 'private ticket' : 'ticket');
+      if (lastFuture) parts.push(isPrivate ? 'private future' : 'future');
       setDegenStatus(
-        isPrivate ? 'Private ticket locked.' : 'Ticket locked.',
+        parts.length ? `${parts.join(' + ')} locked.` : 'Locked.',
         true
       );
       try {
-        window.dispatchEvent(new CustomEvent('gi:bet-placed', { detail: { slip: data.placedSlip || null } }));
+        window.dispatchEvent(new CustomEvent('gi:bet-placed', {
+          detail: { slip: lastSlip, future: lastFuture }
+        }));
       } catch { /* ignore */ }
     } catch (err) {
       setDegenStatus(err.message, false);

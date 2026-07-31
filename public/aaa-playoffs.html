@@ -187,15 +187,15 @@
       align-items: center;
       min-height: 2.05rem;
       padding: 0.28rem 0.35rem;
-      border-radius: 0.2rem;
-      background: rgba(0, 0, 0, 0.18);
+      border-radius: 0.35rem;
+      background: color-mix(in srgb, var(--panel-2) 88%, transparent);
     }
     .mu-row.is-winner {
       background: linear-gradient(90deg, rgba(61, 220, 132, 0.16), rgba(61, 220, 132, 0.04));
       box-shadow: inset 2px 0 0 #3ddc84;
     }
     .mu-row.is-loser { opacity: 0.48; }
-    .mu-row.is-bye { background: rgba(255, 255, 255, 0.03); }
+    .mu-row.is-bye { background: color-mix(in srgb, var(--panel) 70%, transparent); }
     .mu-seed {
       font-family: var(--display);
       font-size: 0.85rem;
@@ -206,7 +206,12 @@
     .mu-logo {
       width: 1.7rem;
       height: 1.7rem;
-      object-fit: contain;
+      object-fit: cover;
+      object-position: center;
+      background: transparent;
+      border-radius: 50%;
+      mix-blend-mode: lighten;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28));
     }
     .mu-name {
       min-width: 0;
@@ -264,12 +269,12 @@
       border: 1px solid rgba(91, 140, 255, 0.5);
       border-radius: 0.35rem;
       background:
-        radial-gradient(ellipse 90% 70% at 50% 0%, rgba(91,140,255,0.35), transparent 58%),
-        linear-gradient(180deg, #070d18 0%, #0c1424 42%, var(--panel) 100%);
+        radial-gradient(ellipse 90% 70% at 50% 0%, rgba(91,140,255,0.28), transparent 58%),
+        linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 92%, #1a2a4a) 0%, var(--panel) 100%);
       text-align: center;
       padding: 1.25rem 1.15rem 1.4rem;
       overflow: hidden;
-      box-shadow: 0 22px 56px rgba(0, 0, 0, 0.35), inset 0 0 80px rgba(91, 140, 255, 0.1);
+      box-shadow: 0 22px 56px rgba(0, 0, 0, 0.28), inset 0 0 80px rgba(91, 140, 255, 0.08);
     }
     .bowl-mark {
       width: min(100%, 18rem);
@@ -294,7 +299,7 @@
       align-items: center;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 0.35rem;
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.18));
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), color-mix(in srgb, var(--panel) 82%, transparent));
     }
     .bowl-side {
       display: flex;
@@ -304,9 +309,14 @@
       min-width: 0;
     }
     .bowl-side img {
-      width: 4.5rem;
-      height: 4.5rem;
-      object-fit: contain;
+      width: 2.75rem;
+      height: 2.75rem;
+      object-fit: cover;
+      object-position: center;
+      border-radius: 50%;
+      background: transparent;
+      mix-blend-mode: lighten;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
     }
     .bowl-side .nm {
       font-family: var(--display);
@@ -336,7 +346,12 @@
     html[data-theme="day"] .conf-tree {
       box-shadow: inset 0 0 40px rgba(47, 109, 255, 0.06);
     }
-    html[data-theme="day"] .mu-row { background: rgba(20, 28, 40, 0.05); }
+    html[data-theme="day"] .mu-row { background: rgba(20, 28, 40, 0.04); }
+    html[data-theme="day"] .mu-logo,
+    html[data-theme="day"] .bowl-side img {
+      mix-blend-mode: normal;
+      filter: drop-shadow(0 2px 6px rgba(20, 28, 40, 0.14));
+    }
     html[data-theme="day"] .bowl {
       background:
         radial-gradient(ellipse 80% 55% at 50% 18%, rgba(47,109,255,0.14), transparent 58%),
@@ -366,7 +381,6 @@
 
   <section class="page-hero shell reveal">
     <img class="page-hero-crest" src="/assets/aaa-league.png?v=7" alt="" width="160" height="160" decoding="async" />
-    <p class="eyebrow">AAA League</p>
     <h1>Playoff Bracket</h1>
     <p class="format-note" id="format-note">12 teams · top 6 make the playoffs</p>
   </section>

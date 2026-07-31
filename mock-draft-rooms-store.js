@@ -143,13 +143,24 @@ function publicRoom(room, viewerId = null) {
   };
 }
 
+function playerKey(id) {
+  return String(id ?? '').trim();
+}
+
 function takenIds(room) {
-  return new Set(room.picks.map((p) => Number(p.playerId)).filter(Number.isFinite));
+  return new Set(
+    (room.picks || [])
+      .map((p) => playerKey(p.playerId))
+      .filter(Boolean)
+  );
 }
 
 function bestAvailable(pool, room) {
   const taken = takenIds(room);
-  const avail = (pool || []).filter((p) => p && Number.isFinite(Number(p.id)) && !taken.has(Number(p.id)));
+  const avail = (pool || []).filter((p) => {
+    const id = playerKey(p?.id);
+    return id && !taken.has(id);
+  });
   if (!avail.length) return null;
   avail.sort((a, b) => {
     const aa = Number(a.adp ?? a.overallRank ?? 9999);
@@ -165,16 +176,17 @@ function bestAvailable(pool, room) {
 function applyPick(room, player, { cpu = false } = {}) {
   const slot = currentSlot(room);
   if (!slot) throw err(400, 'Draft is complete');
-  if (!player || !Number.isFinite(Number(player.id))) throw err(400, 'Invalid player');
-  if (takenIds(room).has(Number(player.id))) throw err(400, 'Already drafted');
+  const id = playerKey(player?.id);
+  if (!id) throw err(400, 'Invalid player');
+  if (takenIds(room).has(id)) throw err(400, 'Already drafted');
   room.picks.push({
     overall: slot.overall,
     round: slot.round,
     pick: slot.pick,
     teamIndex: slot.teamIndex,
     teamName: room.teamNames[slot.teamIndex],
-    playerId: Number(player.id),
-    playerName: player.name || player.fullName || `Player ${player.id}`,
+    playerId: id,
+    playerName: player.name || player.fullName || `Player ${id}`,
     position: player.position || '',
     nflTeam: player.team || player.nflTeam || '',
     headshot: player.headshot || null,
@@ -348,7 +360,7 @@ function humanPick({ roomId, user, playerId, pool }) {
   if (!seat?.userId || seat.userId !== user.id) {
     throw err(403, 'Not your turn');
   }
-  const player = (pool || []).find((p) => Number(p.id) === Number(playerId));
+  const player = (pool || []).find((p) => playerKey(p?.id) === playerKey(playerId));
   if (!player) throw err(400, 'Player not in pool');
   applyPick(room, player, { cpu: false });
   const next = currentSlot(room);

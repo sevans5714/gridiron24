@@ -131,12 +131,56 @@ function findGame(boards, eventId) {
   return null;
 }
 
+function winnerOddsByRank(rank0) {
+  const ladder = [
+    250, 400, 600, 800, 1000, 1200, 1500, 1800, 2000, 2500,
+    3000, 3500, 4000, 5000, 6000, 7500, 10000, 12500, 15000, 20000
+  ];
+  const i = Math.max(0, Number(rank0) || 0);
+  return ladder[Math.min(i, ladder.length - 1)];
+}
+
+function fieldEntries(game) {
+  return Array.isArray(game?.leaders) ? game.leaders : [];
+}
+
+function buildWinnerLeg(game, leagueId, leagueLabel, athleteId) {
+  const field = fieldEntries(game);
+  if (!field.length) {
+    throw Object.assign(new Error('Field not posted yet for that event'), { status: 400 });
+  }
+  const idx = field.findIndex((p) => String(p.id) === String(athleteId));
+  if (idx < 0) {
+    throw Object.assign(new Error('That pick is not on the posted field'), { status: 400 });
+  }
+  const pick = field[idx];
+  const odds = winnerOddsByRank(idx);
+  const eventName = game.shortName || game.name || (game.kind === 'racing' ? 'Race' : 'Tournament');
+  return {
+    eventId: String(game.id),
+    leagueId,
+    leagueLabel,
+    market: 'winner',
+    side: String(pick.id),
+    line: null,
+    odds,
+    label: `${pick.shortName || pick.name || 'Pick'} to win`,
+    matchup: eventName,
+    status: 'open',
+    result: null
+  };
+}
+
 function buildLegFromGame(game, leagueId, leagueLabel, market, side) {
+  const m = String(market || 'spread').toLowerCase();
+  if (m === 'winner' || m === 'outright') {
+    return buildWinnerLeg(game, leagueId, leagueLabel, side);
+  }
+
   const odds = game.odds || null;
-  if (!odds && market !== 'moneyline') {
+  if (!odds && m !== 'moneyline') {
     throw Object.assign(new Error('No line posted for that game yet'), { status: 400 });
   }
-  const m = String(market || 'spread').toLowerCase();
   const s = String(side || '').toLowerCase();
   const away = game.away?.abbreviation || 'AWAY';
   const home = game.home?.abbreviation || 'HOME';
@@ -215,15 +259,24 @@ function buildLegFromGame(game, leagueId, leagueLabel, market, side) {
   throw Object.assign(new Error('Unknown market'), { status: 400 });
 }
 
-function applyQuotedPrice(built, quote = {}) {
+function applyQuotedPrice(built, quote = {}, boardLine = null) {
   if (!built) return built;
   const next = { ...built };
   const qLine = Number(quote.line);
   const qOdds = Number(quote.odds);
   if ((next.market === 'spread' || next.market === 'total') && Number.isFinite(qLine)) {
+    const main = Number.isFinite(Number(boardLine)) ? Number(boardLine) : Number(next.line);
+    if (Number.isFinite(main) && Math.abs(qLine - main) > 7.01) {
+      throw Object.assign(new Error('Alternate line is too far from the posted number'), { status: 400 });
+    }
     next.line = qLine;
   }
-  if (Number.isFinite(qOdds) && qOdds !== 0) next.odds = qOdds;
+  if (Number.isFinite(qOdds) && qOdds !== 0) {
+    if (Math.abs(qOdds) > 25000) {
+      throw Object.assign(new Error('Odds out of range'), { status: 400 });
+    }
+    next.odds = qOdds;
+  }
 
   const parts = String(next.matchup || '').split('@').map((s) => s.trim());
   const away = parts[0] || '';
@@ -244,6 +297,19 @@ function gradeLeg(leg, game) {
   if (!game || (game.status?.bucket !== 'final' && !game.status?.completed)) {
     return null;
   }
+
+  if (leg.market === 'winner') {
+    const field = fieldEntries(game);
+    if (!field.length) return null;
+    const champ = field.find((p) => p.winner)
+      || field.find((p) => Number(p.order) === 1)
+      || field.find((p) => String(p.positionId || '') === '1')
+      || field.find((p) => String(p.position || '') === '1')
+      || null;
+    if (!champ?.id) return null;
+    return String(champ.id) === String(leg.side) ? 'win' : 'loss';
+  }
+
   const awayScore = Number(game.away?.score);
   const homeScore = Number(game.home?.score);
   if (!Number.isFinite(awayScore) || !Number.isFinite(homeScore)) return null;
@@ -617,19 +683,18 @@ function placeBet(user, body = {}, boards = []) {
     if (hit.game.status?.bucket === 'final' || hit.game.status?.completed) {
       throw Object.assign(new Error('That game is already final'), { status: 400 });
     }
-    if (hit.game.kind === 'golf') {
-      throw Object.assign(new Error('Golf is board-only — pick a team game'), { status: 400 });
-    }
-    return applyQuotedPrice(
-      buildLegFromGame(hit.game, hit.leagueId, hit.leagueLabel, leg.market, leg.side),
-      leg
-    );
+    const built = buildLegFromGame(hit.game, hit.leagueId, hit.leagueLabel, leg.market, leg.side);
+    return applyQuotedPrice(built, leg, built.line);
   });
 
-  // Unique events in a parlay
-  const eventIds = new Set(legs.map((l) => l.eventId));
-  if (eventIds.size !== legs.length) {
-    throw Object.assign(new Error('Parlay legs must be different games'), { status: 400 });
+  // Unique event+market only — same-game parlays (spread + total, etc.) are allowed.
+  const marketKeys = new Set();
+  for (const leg of legs) {
+    const key = `${leg.eventId}|${leg.market}`;
+    if (marketKeys.has(key)) {
+      throw Object.assign(new Error('That market is already on this slip for this game'), { status: 400 });
+    }
+    marketKeys.add(key);
   }
 
   const type = legs.length === 1 ? 'straight' : 'parlay';
@@ -683,6 +748,8 @@ function placeBet(user, body = {}, boards = []) {
         matchup: l.matchup,
         leagueLabel: l.leagueLabel,
         market: l.market,
+        side: l.side,
+        line: l.line,
         odds: l.odds
       })),
       createdAt: slip.createdAt
@@ -752,7 +819,7 @@ function formatSlipChat(slip) {
       };
     }
     const body = [
-      `Casala's future · ${slip.marketLabel || slip.title || 'Futures'}`,
+      `Casala's Palace future · ${slip.marketLabel || slip.title || 'Futures'}`,
       `${slip.selection} (${fmtOdds(slip.odds)}) · record only`
     ].join('\n');
     return {
@@ -782,7 +849,7 @@ function formatSlipChat(slip) {
   if (isPrivate) {
     return {
       body: [
-        `Private bet · ${typeLabel}${leagueBit} · ${fmtU(slip.stake)}u to win ${fmtU(slip.toWin)} (${fmtOdds(slip.odds)})`,
+        `Private · Casala's Palace · ${typeLabel}${leagueBit} · ${fmtU(slip.stake)}u to win ${fmtU(slip.toWin)} (${fmtOdds(slip.odds)})`,
         insult
       ].filter(Boolean).join('\n'),
       meta: {
@@ -805,7 +872,7 @@ function formatSlipChat(slip) {
 
   const legs = (slip.legs || []).map((l) => l.label || 'pick').join(' · ');
   const body = [
-    `Casala's bet · ${typeLabel}${leagueBit} · ${fmtU(slip.stake)}u to win ${fmtU(slip.toWin)} (${fmtOdds(slip.odds)})`,
+    `Casala's Palace · ${typeLabel}${leagueBit} · ${fmtU(slip.stake)}u to win ${fmtU(slip.toWin)} (${fmtOdds(slip.odds)})`,
     legs
   ].filter(Boolean).join('\n');
   const meta = {
