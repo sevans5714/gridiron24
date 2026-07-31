@@ -1748,6 +1748,22 @@ a {
   color: var(--muted);
   font-weight: 500;
 }
+.slot-roster-row .slot-open {
+  font-family: var(--label);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.home-matchup.is-placeholder,
+.matchup-card.is-placeholder {
+  opacity: 0.92;
+}
+.home-matchup.is-placeholder .box-team .score,
+.home-matchup.is-placeholder .box-team .proj {
+  color: var(--muted);
+}
 .slot-roster-row.is-inj .nm { color: #fca5a5; }
 .roster-team-divider {
   display: block;
