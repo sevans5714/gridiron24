@@ -262,6 +262,17 @@
       transform: none;
       background: var(--blue);
     }
+    .hq-board-side .section-head {
+      min-height: 0;
+      padding: 0.7rem 1rem;
+      align-items: flex-start;
+    }
+    .hq-board-side .section-head h2 {
+      font-size: clamp(1.05rem, 2.2vw, 1.28rem);
+      letter-spacing: 0.045em;
+      line-height: 1.2;
+      max-width: 100%;
+    }
 
     .standings-preview {
       display: grid;
@@ -297,8 +308,13 @@
       gap: 0.65rem;
       min-width: 0;
     }
+    .conf-title-wrap {
+      display: grid;
+      gap: 0.12rem;
+      min-width: 0;
+    }
     .conf-head img {
-      width: clamp(4.75rem, 12vw, 6.5rem);
+      width: clamp(3.25rem, 8vw, 4.5rem);
       height: auto;
       filter: none;
       box-shadow: var(--logo-lift);
@@ -306,19 +322,39 @@
     .conf-head h3 {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
+      line-height: 1.1;
     }
     .conf-week {
       margin: 0;
       color: var(--muted);
       font-family: var(--display);
-      font-size: 0.95rem;
+      font-size: 0.82rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+    }
+    .conf-head.is-compact {
+      margin-bottom: 0.55rem;
+      padding-bottom: 0.4rem;
+      justify-content: flex-start;
+    }
+    .conf-head.is-compact img {
+      width: 2.35rem;
+      max-width: 2.35rem;
+    }
+    .conf-head.is-compact h3 {
+      font-size: 0.98rem;
+      letter-spacing: 0.06em;
+    }
+    .conf-head.is-compact .conf-week {
+      font-size: 0.72rem;
+    }
+    .hq-board-side .conf-mark::after {
+      display: none;
     }
     .conf-admin {
       text-align: right;
@@ -329,7 +365,7 @@
     .conf-admin-name {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.26rem;
+      font-size: 1.05rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -341,7 +377,7 @@
     .conf-admin-role {
       margin: 0.2rem 0 0;
       font-family: var(--display);
-      font-size: 0.86rem;
+      font-size: 0.72rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -997,8 +1033,10 @@
       return '';
     }
 
-    function confHead(conf, { showAdmin = true, showWeek = true } = {}) {
+    function confHead(conf, { showAdmin = true, showWeek = true, compact = false } = {}) {
       const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
+      const title = conf?.shortName || conf?.name
+        || (tone === 'overtime' ? 'Overtime' : 'Detail');
       const admin = showAdmin && conf?.admin
         ? `<div class="conf-admin">
             <div class="conf-admin-name">${esc(conf.admin)}</div>
@@ -1010,24 +1048,20 @@
         : '';
       const logoSrc = confLogoSrc(conf);
       return `
-        <div class="conf-head ${tone}">
+        <div class="conf-head ${tone}${compact ? ' is-compact' : ''}">
           <div class="conf-head-top">
             ${logoSrc ? `<span class="conf-mark"><img src="${esc(logoSrc)}" alt=""></span>` : ''}
-            ${week}
+            <div class="conf-title-wrap">
+              <h3>${esc(title)}</h3>
+              ${week}
+            </div>
           </div>
           ${admin}
         </div>`;
     }
 
     function motwHead(conf) {
-      const tone = conf?.key === 'overtime' ? 'overtime' : 'detail';
-      const logoSrc = confLogoSrc(conf);
-      return `
-        <div class="conf-head ${tone} is-logo-only">
-          <div class="conf-head-top">
-            ${logoSrc ? `<span class="conf-mark"><img src="${esc(logoSrc)}" alt=""></span>` : ''}
-          </div>
-        </div>`;
+      return confHead(conf, { showAdmin: false, showWeek: true, compact: true });
     }
 
     function confBoard(conf) {
@@ -1180,19 +1214,19 @@
 
     function hotNotCard(conf) {
       if (!conf?.ok) {
-        return `<div class="conf-block">${confHead(conf, { showAdmin: false })}<div class="empty">Unavailable</div></div>`;
+        return `<div class="conf-block">${confHead(conf, { showAdmin: false, compact: true })}<div class="empty">Unavailable</div></div>`;
       }
       const teams = (conf.teams || []).slice();
       if (!teams.length) {
-        return `<div class="conf-block">${confHead(conf, { showAdmin: false })}<div class="empty">No teams yet</div></div>`;
+        return `<div class="conf-block">${confHead(conf, { showAdmin: false, compact: true })}<div class="empty">No teams yet</div></div>`;
       }
       const pick = pickHotNot(teams);
       if (!pick.ready || !pick.hot || !pick.cold) {
-        return `<div class="conf-block">${confHead(conf, { showAdmin: false })}</div>`;
+        return `<div class="conf-block">${confHead(conf, { showAdmin: false, compact: true })}</div>`;
       }
       return `
         <div class="conf-block">
-          ${confHead(conf, { showAdmin: false })}
+          ${confHead(conf, { showAdmin: false, compact: true })}
           <div class="hotnot">
             <div class="hotnot-col hot">
               <div class="label">Who’s Hot</div>

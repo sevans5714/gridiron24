@@ -226,6 +226,17 @@
       transform: none;
       background: var(--blue);
     }
+    .hq-board-side .section-head {
+      min-height: 0;
+      padding: 0.7rem 1rem;
+      align-items: flex-start;
+    }
+    .hq-board-side .section-head h2 {
+      font-size: clamp(1.05rem, 2.2vw, 1.28rem);
+      letter-spacing: 0.045em;
+      line-height: 1.2;
+      max-width: 100%;
+    }
 
     .standings-preview {
       display: grid;
@@ -261,8 +272,13 @@
       gap: 0.65rem;
       min-width: 0;
     }
+    .conf-title-wrap {
+      display: grid;
+      gap: 0.12rem;
+      min-width: 0;
+    }
     .conf-head img {
-      width: clamp(4.75rem, 12vw, 6.5rem);
+      width: clamp(3.25rem, 8vw, 4.5rem);
       height: auto;
       filter: none;
       box-shadow: var(--logo-lift);
@@ -270,10 +286,39 @@
     .conf-head h3 {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
+      line-height: 1.1;
+    }
+    .conf-week {
+      margin: 0;
+      color: var(--muted);
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .conf-head.is-compact {
+      margin-bottom: 0.55rem;
+      padding-bottom: 0.4rem;
+      justify-content: flex-start;
+    }
+    .conf-head.is-compact img {
+      width: 2.35rem;
+      max-width: 2.35rem;
+    }
+    .conf-head.is-compact h3 {
+      font-size: 0.98rem;
+      letter-spacing: 0.06em;
+    }
+    .conf-head.is-compact .conf-week {
+      font-size: 0.72rem;
+    }
+    .hq-board-side .conf-mark::after {
+      display: none;
     }
     .conf-admin {
       text-align: right;
@@ -970,11 +1015,18 @@
       return `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
     }
 
-    function confHead(conf) {
+    function confHead(conf, { compact = false, showWeek = false } = {}) {
+      const title = conf?.shortName || conf?.name || 'AAA';
+      const week = showWeek && conf?.week != null
+        ? `<div class="conf-week">Week ${esc(String(conf.week))}</div>`
+        : '';
       return `
-        <div class="conf-head aaa">
+        <div class="conf-head aaa${compact ? ' is-compact' : ''}">
           <div class="conf-head-top">
-            <h3>${esc(conf?.shortName || conf?.name || 'AAA')}</h3>
+            <div class="conf-title-wrap">
+              <h3>${esc(title)}</h3>
+              ${week}
+            </div>
           </div>
         </div>`;
     }
@@ -1046,19 +1098,18 @@
 
     function motwBoard(data) {
       if (!data?.configured) {
-        return `<div class="motw-block">${confHead(data)}<div class="empty">Matchups unlock with the AAA ESPN league.</div></div>`;
+        return `<div class="motw-block">${confHead(data, { compact: true })}<div class="empty">Matchups unlock with the AAA ESPN league.</div></div>`;
       }
       if (!data?.ok) {
-        return `<div class="motw-block">${confHead(data)}<div class="empty">Unavailable</div></div>`;
+        return `<div class="motw-block">${confHead(data, { compact: true })}<div class="empty">Unavailable</div></div>`;
       }
       const m = pickMatchupOfWeek(data.matchups);
       if (!m) {
-        return `<div class="motw-block">${confHead(data)}<div class="empty">No matchups this week</div></div>`;
+        return `<div class="motw-block">${confHead(data, { compact: true })}<div class="empty">No matchups this week</div></div>`;
       }
-      const weekLabel = data.week ? `AAA · Week ${data.week}` : (data.shortName || 'AAA');
       return `
         <div class="motw-block">
-          ${confHead({ ...data, shortName: weekLabel })}
+          ${confHead(data, { compact: true, showWeek: true })}
           <div class="motw">
             <div class="motw-side">
               ${teamLogo(m.away)}
@@ -1103,16 +1154,16 @@
 
     function hotNotBoard(data) {
       if (!data?.configured || !data?.ok) {
-        return `<div class="conf-block">${confHead(data)}<div class="empty">Form unlocks with AAA standings.</div></div>`;
+        return `<div class="conf-block">${confHead(data, { compact: true })}<div class="empty">Form unlocks with AAA standings.</div></div>`;
       }
       const hot = data.hot;
       const cold = data.cold;
       if (!hot || !cold) {
-        return `<div class="conf-block">${confHead(data)}<div class="empty">Not enough teams yet</div></div>`;
+        return `<div class="conf-block">${confHead(data, { compact: true })}<div class="empty">Not enough teams yet</div></div>`;
       }
       return `
         <div class="conf-block">
-          ${confHead(data)}
+          ${confHead(data, { compact: true, showWeek: true })}
           <div class="hotnot">
             <div class="hotnot-col hot">
               <div class="label">Who’s Hot</div>
