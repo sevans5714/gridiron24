@@ -2320,6 +2320,36 @@ a {
   cursor: default;
 }
 
+.im-line.is-bet .im-bubble {
+  border-color: rgba(232, 120, 90, 0.35);
+  background: linear-gradient(160deg, rgba(232, 120, 90, 0.18), rgba(255, 255, 255, 0.04));
+  max-width: min(96%, 24rem);
+}
+.im-bet-card { margin-top: 0.25rem; }
+.im-bet-kicker {
+  font-family: var(--label);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffb08a;
+  margin-bottom: 0.2rem;
+}
+.im-bet-type {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+.im-bet-legs { display: grid; gap: 0.2rem; margin-bottom: 0.4rem; }
+.im-bet-leg { font-size: 0.82rem; color: var(--text); }
+.im-bet-stake {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #efd782;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .im-text {
   display: block;
   margin: 0;

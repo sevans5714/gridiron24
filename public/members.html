@@ -1071,6 +1071,64 @@
       color: var(--dc-danger);
       background: #35373c;
     }
+    .im-line.is-bet {
+      margin-top: 1.05rem;
+    }
+    .im-line.is-bet.is-compact { margin-top: 0.35rem; }
+    .im-avatar.is-bet {
+      background: linear-gradient(145deg, #c45c26, #8b2e12) !important;
+      font-size: 1rem;
+    }
+    .im-bet-card {
+      margin-top: 0.35rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.4rem;
+      border: 1px solid rgba(255, 176, 138, 0.28);
+      background:
+        linear-gradient(135deg, rgba(232, 120, 90, 0.14), rgba(0, 0, 0, 0.2)),
+        #2b2d31;
+      max-width: 28rem;
+    }
+    .im-bet-kicker {
+      margin: 0 0 0.35rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #ffb08a;
+    }
+    .im-bet-type {
+      margin: 0 0 0.45rem;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--dc-heading);
+    }
+    .im-bet-legs {
+      display: grid;
+      gap: 0.28rem;
+      margin: 0 0 0.5rem;
+    }
+    .im-bet-leg {
+      font-size: 0.84rem;
+      color: var(--dc-text);
+      line-height: 1.3;
+    }
+    .im-bet-leg small {
+      display: block;
+      color: var(--dc-muted);
+      font-size: 0.72rem;
+    }
+    .im-bet-stake {
+      margin: 0;
+      padding-top: 0.4rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.82rem;
+      color: #efd782;
+      font-weight: 600;
+    }
+    .im-line.is-bet .im-text.is-fallback {
+      display: none;
+    }
 
     .im-compose-wrap {
       display: grid;
@@ -2444,7 +2502,7 @@
   </footer>
   <script src="/js/nav.js?v=77"></script>
   <script src="/js/lounge-desk.js?v=3"></script>
-  <script src="/js/lounge-games.js?v=1"></script>
+  <script src="/js/lounge-games.js?v=2"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -3094,6 +3152,41 @@
       return el.scrollHeight - el.scrollTop - el.clientHeight < px;
     }
 
+    function fmtBetOdds(o) {
+      const n = Number(o);
+      if (!Number.isFinite(n)) return '—';
+      return n > 0 ? `+${n}` : String(n);
+    }
+
+    function fmtBetUnits(n) {
+      const v = Number(n);
+      if (!Number.isFinite(v)) return '—';
+      return v % 1 ? v.toFixed(2) : String(v);
+    }
+
+    function betCardHtml(m) {
+      const meta = m.meta || {};
+      const typeLabel = meta.type === 'parlay'
+        ? `Parlay · ${(meta.legs || []).length} legs`
+        : 'Straight';
+      const legs = Array.isArray(meta.legs) && meta.legs.length
+        ? meta.legs.map((leg) => `
+            <div class="im-bet-leg">
+              <strong>${esc(leg.label || 'Pick')}</strong>
+              ${leg.matchup || leg.leagueLabel
+                ? `<small>${esc([leg.leagueLabel, leg.matchup].filter(Boolean).join(' · '))}</small>`
+                : ''}
+            </div>`).join('')
+        : `<div class="im-bet-leg">${esc(m.body || '')}</div>`;
+      return `
+        <div class="im-bet-card">
+          <p class="im-bet-kicker">Degenerate Gambler</p>
+          <p class="im-bet-type">${esc(typeLabel)} · ${esc(fmtBetOdds(meta.odds))}</p>
+          <div class="im-bet-legs">${legs}</div>
+          <p class="im-bet-stake">${esc(fmtBetUnits(meta.stake))}u to win ${esc(fmtBetUnits(meta.toWin))}</p>
+        </div>`;
+    }
+
     function renderChat() {
       const log = document.getElementById('chat-log');
       if (!log) return;
@@ -3107,12 +3200,14 @@
         const mine = m.authorId && m.authorId === chatViewerId;
         const canDelete = mine || canModerate;
         const who = m.authorName || 'Member';
-        const color = screenColor(m.authorId || who);
-        const letters = initials(who);
-        const compact = sameAuthorBurst(chatMessages[i - 1], m);
+        const isBet = m.kind === 'bet';
+        const color = isBet ? '#c45c26' : screenColor(m.authorId || who);
+        const letters = isBet ? 'DG' : initials(who);
+        const prev = chatMessages[i - 1];
+        const compact = !isBet && sameAuthorBurst(prev, m) && prev?.kind !== 'bet';
         const stamp = fmtChatTime(m.createdAt);
-        return `<article class="im-line${mine ? ' mine' : ''}${compact ? ' is-compact' : ''}" data-id="${esc(m.id)}">
-          <div class="im-avatar" style="background:${esc(color)}" aria-hidden="true">${esc(letters)}</div>
+        return `<article class="im-line${mine ? ' mine' : ''}${compact ? ' is-compact' : ''}${isBet ? ' is-bet' : ''}" data-id="${esc(m.id)}">
+          <div class="im-avatar${isBet ? ' is-bet' : ''}" style="background:${esc(color)}" aria-hidden="true">${esc(letters)}</div>
           <div class="im-line-body">
             <div class="im-line-head">
               <button type="button" class="im-who" style="color:${esc(color)}"
@@ -3125,7 +3220,8 @@
             </div>
             <div class="im-line-main">
               <span class="im-sep">:</span>
-              <span class="im-text">${formatChatBody(m.body)}</span>
+              ${isBet ? betCardHtml(m) : ''}
+              <span class="im-text${isBet ? ' is-fallback' : ''}">${isBet ? esc(m.body || '') : formatChatBody(m.body)}</span>
             </div>
           </div>
           <span class="im-meta-time" aria-hidden="true">${esc(stamp)}</span>
@@ -3404,6 +3500,9 @@
           onlineUsers = e.detail.online;
           renderPresence();
         }
+      });
+      document.addEventListener('gi:bet-placed', () => {
+        loadChat({ incremental: true }).catch(() => {});
       });
       loadSportsScores();
       document.addEventListener('visibilitychange', () => {

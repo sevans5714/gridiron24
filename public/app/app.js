@@ -552,10 +552,20 @@
     const slice = state.chatMessages.slice(-40);
     log.innerHTML = slice.map((m) => {
       const mine = m.authorId && m.authorId === state.chatViewerId;
-      return `<article class="im-line${mine ? ' mine' : ''}">
+      const isBet = m.kind === 'bet';
+      const meta = m.meta || {};
+      const betHtml = isBet
+        ? `<div class="im-bet-card">
+            <div class="im-bet-kicker">Degenerate Gambler</div>
+            <div class="im-bet-type">${esc(meta.type === 'parlay' ? `Parlay · ${(meta.legs || []).length} legs` : 'Straight')} · ${esc(Number(meta.odds) > 0 ? `+${meta.odds}` : String(meta.odds ?? '—'))}</div>
+            <div class="im-bet-legs">${(meta.legs || []).map((leg) => `<div class="im-bet-leg"><strong>${esc(leg.label || 'Pick')}</strong></div>`).join('') || esc(m.body || '')}</div>
+            <div class="im-bet-stake">${esc(meta.stake)}u to win ${esc(meta.toWin)}</div>
+          </div>`
+        : '';
+      return `<article class="im-line${mine ? ' mine' : ''}${isBet ? ' is-bet' : ''}">
         <div class="im-bubble">
           <button type="button" class="im-who" data-mention-name="${esc(m.authorName || '')}" ${mine ? 'disabled' : ''}>${esc(m.authorName || 'Member')}</button>
-          <span class="im-text">${esc(m.body || '')}</span>
+          ${betHtml || `<span class="im-text">${esc(m.body || '')}</span>`}
           <div class="im-meta">${esc(fmtChatTime(m.createdAt))}</div>
         </div>
       </article>`;

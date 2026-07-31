@@ -4475,7 +4475,24 @@ const server = http.createServer(async (req, res) => {
         const scores = await sportsScoreboard.getSportsScores({});
         const boards = scores.leagues || [];
         if (String(body.action || 'bet').toLowerCase() === 'bet') {
-          const book = paperBook.placeBet(users.publicUser(user), body, boards);
+          const publicAuthor = users.publicUser(user);
+          const book = paperBook.placeBet(publicAuthor, body, boards);
+          if (book.placedSlip) {
+            try {
+              const chatPayload = paperBook.formatSlipChat(book.placedSlip);
+              if (chatPayload) {
+                membersChat.addMessage({
+                  body: chatPayload.body,
+                  author: publicAuthor,
+                  kind: 'bet',
+                  meta: chatPayload.meta,
+                  skipRateLimit: true
+                });
+              }
+            } catch {
+              /* don't fail the bet if chat announce fails */
+            }
+          }
           return sendJson(res, 200, book);
         }
         return sendJson(res, 400, { ok: false, error: 'Unknown sportsbook action' });

@@ -491,6 +491,9 @@
       // Refresh boards (odds + settlement)
       await loadBook();
       setDegenStatus('Ticket in — good luck, degenerate', true);
+      try {
+        window.dispatchEvent(new CustomEvent('gi:bet-placed', { detail: { slip: data.placedSlip || null } }));
+      } catch { /* ignore */ }
     } catch (err) {
       setDegenStatus(err.message, false);
     } finally {

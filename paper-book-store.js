@@ -442,13 +442,67 @@ function placeBet(user, body = {}, boards = []) {
   };
   store.slips.unshift(slip);
   writeStore(store);
-  return getBook(user, boards);
+  const book = getBook(user, boards);
+  return {
+    ...book,
+    placedSlip: {
+      id: slip.id,
+      type: slip.type,
+      stake: slip.stake,
+      odds: slip.odds,
+      toWin: slip.toWin,
+      legs: (slip.legs || []).map((l) => ({
+        label: l.label,
+        matchup: l.matchup,
+        leagueLabel: l.leagueLabel,
+        market: l.market,
+        odds: l.odds
+      })),
+      createdAt: slip.createdAt
+    }
+  };
+}
+
+function formatSlipChat(slip) {
+  if (!slip) return null;
+  const fmtOdds = (o) => {
+    const n = Number(o);
+    if (!Number.isFinite(n)) return '—';
+    return n > 0 ? `+${n}` : String(n);
+  };
+  const fmtU = (n) => {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return '—';
+    return v % 1 ? v.toFixed(2) : String(v);
+  };
+  const typeLabel = slip.type === 'parlay'
+    ? `Parlay (${(slip.legs || []).length} legs)`
+    : 'Straight';
+  const legs = (slip.legs || []).map((l) => l.label || 'pick').join(' · ');
+  const body = [
+    `Degenerate bet · ${typeLabel} · ${fmtU(slip.stake)}u to win ${fmtU(slip.toWin)} (${fmtOdds(slip.odds)})`,
+    legs
+  ].filter(Boolean).join('\n');
+  const meta = {
+    slipId: slip.id,
+    type: slip.type,
+    stake: slip.stake,
+    odds: slip.odds,
+    toWin: slip.toWin,
+    legs: (slip.legs || []).map((l) => ({
+      label: l.label,
+      matchup: l.matchup,
+      leagueLabel: l.leagueLabel
+    }))
+  };
+  return { body, meta };
 }
 
 module.exports = {
   getBook,
   placeBet,
   settleOpenSlips,
+  formatSlipChat,
   STARTING_BANKROLL,
   MIN_STAKE,
   MAX_STAKE,

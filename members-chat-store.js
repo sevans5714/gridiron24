@@ -41,7 +41,9 @@ function publicMessage(m) {
     authorId: m.authorId,
     authorName: m.authorName,
     authorLeague: m.authorLeague || null,
-    createdAt: m.createdAt
+    createdAt: m.createdAt,
+    kind: m.kind || 'chat',
+    meta: m.meta && typeof m.meta === 'object' ? m.meta : null
   };
 }
 
@@ -62,7 +64,7 @@ function listMessages({ limit = 120, since = null, after = null } = {}) {
   return messages.map(publicMessage);
 }
 
-function addMessage({ body, author }) {
+function addMessage({ body, author, kind = 'chat', meta = null, skipRateLimit = false } = {}) {
   const cleanBody = String(body || '').trim();
   if (!cleanBody) throw Object.assign(new Error('Message is required'), { status: 400 });
   if (cleanBody.length > MAX_BODY) {
@@ -70,12 +72,14 @@ function addMessage({ body, author }) {
   }
   if (!author?.id) throw Object.assign(new Error('Sign in required'), { status: 401 });
 
-  const now = Date.now();
-  const prev = lastPostByUser.get(author.id) || 0;
-  if (now - prev < MIN_INTERVAL_MS) {
-    throw Object.assign(new Error('Slow down a second'), { status: 429 });
+  if (!skipRateLimit) {
+    const now = Date.now();
+    const prev = lastPostByUser.get(author.id) || 0;
+    if (now - prev < MIN_INTERVAL_MS) {
+      throw Object.assign(new Error('Slow down a second'), { status: 429 });
+    }
+    lastPostByUser.set(author.id, now);
   }
-  lastPostByUser.set(author.id, now);
 
   const store = readStore();
   const item = {
@@ -84,7 +88,9 @@ function addMessage({ body, author }) {
     authorId: author.id,
     authorName: author.name || author.loginName || 'Member',
     authorLeague: author.membershipLeague || null,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    kind: kind === 'bet' ? 'bet' : 'chat',
+    meta: meta && typeof meta === 'object' ? meta : null
   };
   store.messages.push(item);
   if (store.messages.length > MAX_MESSAGES) {
