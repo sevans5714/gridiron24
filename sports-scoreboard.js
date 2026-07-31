@@ -87,7 +87,8 @@ const LEAGUES = {
 };
 
 const DEFAULT_LEAGUES = ['nfl', 'ncaaf', 'mlb', 'llws', 'cbase', 'nhl', 'wnba', 'mls', 'golf'];
-const GOLF_LEADER_LIMIT = 12;
+/** Cap only as a safety valve — ESPN can return a full field. */
+const GOLF_LEADER_LIMIT = 120;
 
 function sitePathForMeta(meta) {
   if (meta.url) {

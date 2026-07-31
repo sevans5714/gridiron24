@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=99" />
+  <link rel="stylesheet" href="/css/site.css?v=106" />
   <style>
     body[data-page="payouts"] .page-hero {
       text-align: center;
@@ -187,10 +187,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=70"></script>
+  <script src="/js/nav.js?v=73"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -219,7 +219,7 @@
       if ((l.includes('third') || l.includes('3rd')) && l.includes('overtime')) return '/assets/overtime-3rd-place.png';
       if (l.includes('third') || l.includes('3rd')) return '/assets/detail-3rd-place.png';
       if (l.includes('winner') || l.includes('bowl') || (l.includes('gridiron') && !l.includes('conference'))) {
-        return '/assets/gridiron-bowl.png';
+        return '/assets/gridiron-bowl.png?v=3';
       }
       if (l.includes('detail') && (l.includes('championship') || l.includes('2nd') || l.includes('most'))) {
         return '/assets/detail-conference.png';
@@ -229,7 +229,7 @@
       }
       if (l.includes('detail')) return '/assets/detail-conference.png';
       if (l.includes('overtime')) return '/assets/overtime-conference.png';
-      return '/assets/gridiron-bowl.png';
+      return '/assets/gridiron-bowl.png?v=3';
     }
 
     function render(data) {

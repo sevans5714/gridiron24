@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=99" />
+  <link rel="stylesheet" href="/css/site.css?v=106" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -20,93 +20,86 @@
       --mo-text: #f4f7ff;
       --mo-good: #4dff9a;
       --mo-due: #ff9b6a;
-      --mo-line: rgba(126, 200, 255, 0.18);
+      --mo-line: rgba(126, 200, 255, 0.14);
+      --mo-field: #02060f;
       color: var(--mo-text);
-      background:
-        radial-gradient(ellipse 70% 42% at 50% -5%, rgba(47, 123, 255, 0.35), transparent 58%),
-        radial-gradient(ellipse 35% 28% at 12% 30%, rgba(232, 196, 90, 0.08), transparent 55%),
-        radial-gradient(ellipse 40% 30% at 88% 40%, rgba(47, 123, 255, 0.1), transparent 55%),
-        linear-gradient(180deg, #01040c 0%, #030a16 40%, #01040c 100%);
+      background-color: var(--mo-field);
+      background-image:
+        radial-gradient(ellipse 55% 38% at 50% 8%, rgba(47, 123, 255, 0.22), transparent 62%),
+        radial-gradient(ellipse 90% 55% at 50% -8%, rgba(10, 40, 110, 0.35), transparent 70%),
+        linear-gradient(180deg, #01040c 0%, #020814 32%, #01040c 100%);
       background-attachment: fixed;
     }
 
     body[data-page="members"] .page-hero { display: none; }
     body[data-page="members"] .page-main.shell {
-      padding-top: 0.35rem;
+      padding-top: 0;
       padding-bottom: 3.5rem;
       width: 100%;
       max-width: min(110rem, 100%);
       margin: 0 auto;
-      padding-left: clamp(1.15rem, 2.2vw, 2.5rem);
-      padding-right: clamp(1.15rem, 2.2vw, 2.5rem);
+      padding-left: clamp(1rem, 2vw, 2.25rem);
+      padding-right: clamp(1rem, 2vw, 2.25rem);
     }
     body[data-page="members"] .topbar {
-      background: rgba(1, 4, 12, 0.78);
-      backdrop-filter: blur(14px);
-      border-bottom-color: var(--mo-line);
+      background: rgba(1, 4, 12, 0.55);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(126, 200, 255, 0.08);
     }
     body[data-page="members"] .topbar .shell,
     body[data-page="members"] .site-footer.shell {
       max-width: min(110rem, 100%);
-      margin: 0 auto;
-      padding-left: clamp(1.15rem, 2.2vw, 2.5rem);
-      padding-right: clamp(1.15rem, 2.2vw, 2.5rem);
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: clamp(1rem, 2vw, 2.25rem);
+      padding-right: clamp(1rem, 2vw, 2.25rem);
     }
     body[data-page="members"] .site-footer {
-      border-top-color: var(--mo-line);
+      margin-top: auto;
+      border-top-color: rgba(126, 200, 255, 0.1);
       color: var(--mo-muted);
-      background:
-        linear-gradient(180deg, rgba(47, 109, 255, 0.1) 0%, transparent 40%),
-        linear-gradient(180deg, #07101f 0%, #040910 100%);
-      box-shadow:
-        0 -18px 48px rgba(0, 0, 0, 0.5),
-        inset 0 1px 0 rgba(126, 200, 255, 0.1);
+      background: transparent;
+      box-shadow: none;
     }
     body[data-page="members"] .site-footer-author { color: var(--mo-blue-hot); }
-    body[data-page="members"] .site-footer-brand { color: #e8f1ff; }
+    body[data-page="members"] .site-footer-brand { color: var(--mo-text); }
+    body[data-page="members"] .site-footer-label,
+    body[data-page="members"] .site-footer-build {
+      color: var(--mo-muted);
+    }
+    body[data-page="members"] .site-footer-mark {
+      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
+    }
 
     .lounge {
       display: grid;
-      gap: clamp(1.35rem, 2.5vw, 2rem);
+      gap: clamp(1.75rem, 3.5vw, 2.75rem);
     }
 
+    /* Open floor — no cards */
     .lounge-section {
       position: relative;
-      padding: clamp(1rem, 2vw, 1.35rem) clamp(0.85rem, 1.8vw, 1.25rem) clamp(1.1rem, 2vw, 1.5rem);
-      border: 1px solid var(--mo-line);
-      border-radius: 0.95rem;
-      background:
-        linear-gradient(180deg, rgba(10, 22, 44, 0.55), rgba(3, 8, 18, 0.35));
-      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
-    }
-    .lounge-section.is-hero {
-      padding: 0.85rem 0.75rem 1rem;
-      border-color: rgba(126, 200, 255, 0.14);
-      background:
-        radial-gradient(ellipse 70% 80% at 50% 20%, rgba(47, 123, 255, 0.16), transparent 65%),
-        linear-gradient(180deg, rgba(8, 16, 32, 0.4), rgba(2, 6, 14, 0.2));
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
       box-shadow: none;
     }
+    .lounge-section.is-scoreboard,
+    .lounge-section.is-chat,
+    .lounge-section.is-roll {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      padding: 0;
+    }
     .lounge-section.is-scoreboard {
-      border-color: rgba(47, 123, 255, 0.35);
-      background:
-        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(47, 109, 255, 0.14), transparent 55%),
-        linear-gradient(180deg, #071018 0%, #040a12 100%);
-      padding: clamp(0.85rem, 1.6vw, 1.15rem);
+      position: relative;
+      z-index: 3;
+      margin-top: -2.5rem;
     }
     .lounge-section.is-chat {
-      border-color: rgba(232, 196, 90, 0.22);
-      padding: 0;
-      overflow: hidden;
-      background: rgba(4, 12, 28, 0.72);
-    }
-    .lounge-section.is-dues {
-      border-color: rgba(232, 196, 90, 0.28);
-      background:
-        linear-gradient(180deg, rgba(40, 28, 8, 0.35), rgba(3, 8, 18, 0.4));
-    }
-    .lounge-section.is-roll {
-      border-color: rgba(126, 200, 255, 0.2);
+      overflow: visible;
     }
 
     .lounge-section-label {
@@ -116,8 +109,8 @@
       gap: 0.75rem;
       flex-wrap: wrap;
       margin: 0 0 0.85rem;
-      padding: 0 0 0.65rem;
-      border-bottom: 1px solid var(--mo-line);
+      padding: 0 0 0.55rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.12);
     }
     .lounge-section-label .eyebrow {
       margin: 0 0 0.2rem;
@@ -137,9 +130,10 @@
       text-transform: uppercase;
       color: var(--mo-text);
       line-height: 1;
+      text-shadow: 0 0 22px rgba(47, 123, 255, 0.25);
     }
     .lounge-section.is-dues .lounge-section-label h2,
-    .lounge-section.is-dues .pay-panel h2 { color: var(--mo-gold-soft); }
+    .lounge-section.is-dues .pay-panel h2 { color: #9dffc4; }
     .lounge-section.is-roll .lounge-section-label h2 { color: var(--mo-silver); }
     .lounge-section-label .aside {
       color: var(--mo-muted);
@@ -147,46 +141,63 @@
       line-height: 1.35;
     }
 
-    /* —— Hero mark —— */
+    /* —— Hero: full-bleed stadium mark, no plate —— */
     .lounge-hero {
       position: relative;
       text-align: center;
-      padding: 0.15rem 0 0.35rem;
+      margin: -0.35rem calc(-1 * clamp(1rem, 2vw, 2.25rem)) 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      overflow: visible;
+      isolation: isolate;
     }
     .lounge-hero::before {
       content: "";
       position: absolute;
-      left: 50%;
-      top: 42%;
-      width: min(28rem, 80vw);
-      height: min(16rem, 42vw);
-      transform: translate(-50%, -50%);
-      background: radial-gradient(ellipse at center, rgba(47, 123, 255, 0.28), transparent 70%);
-      filter: blur(18px);
+      inset: 8% 5% 18%;
+      background:
+        radial-gradient(ellipse 55% 50% at 50% 42%, rgba(47, 123, 255, 0.38), transparent 70%),
+        radial-gradient(ellipse 40% 35% at 50% 70%, rgba(232, 196, 90, 0.08), transparent 70%);
+      filter: blur(28px);
       pointer-events: none;
       z-index: 0;
+    }
+    .lounge-hero::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 38%;
+      background: linear-gradient(180deg, transparent 0%, rgba(2, 6, 15, 0.55) 45%, var(--mo-field) 100%);
+      pointer-events: none;
+      z-index: 2;
     }
     .lounge-hero img {
       position: relative;
       z-index: 1;
       display: block;
-      width: min(22rem, 68vw);
+      width: min(56rem, 100%);
       max-width: 100%;
       height: auto;
       margin: 0 auto;
-      /* Soft-edge blend so the stadium plate dissolves into the page */
       -webkit-mask-image:
-        radial-gradient(ellipse 78% 72% at 50% 48%, #000 42%, rgba(0, 0, 0, 0.55) 68%, transparent 86%);
+        linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%),
+        linear-gradient(180deg, transparent 0%, #000 12%, #000 62%, transparent 100%);
+      -webkit-mask-composite: source-in;
       mask-image:
-        radial-gradient(ellipse 78% 72% at 50% 48%, #000 42%, rgba(0, 0, 0, 0.55) 68%, transparent 86%);
+        linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%),
+        linear-gradient(180deg, transparent 0%, #000 12%, #000 62%, transparent 100%);
+      mask-composite: intersect;
       filter:
-        drop-shadow(0 0 18px rgba(47, 123, 255, 0.22))
-        drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
+        drop-shadow(0 0 28px rgba(47, 123, 255, 0.35))
+        drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
     }
     .lounge-tag {
       position: relative;
-      z-index: 1;
-      margin: 0.75rem 0 0;
+      z-index: 3;
+      margin: -1.5rem 0 0;
       font-family: "Bebas Neue", "Oswald", sans-serif;
       font-size: clamp(1.05rem, 2.2vw, 1.4rem);
       letter-spacing: 0.32em;
@@ -196,10 +207,10 @@
 
     .lounge-controls {
       display: grid;
-      gap: 0.45rem;
+      gap: 0.4rem;
       justify-items: stretch;
-      padding: 0 0 0.75rem;
-      border-bottom: 1px solid rgba(126, 200, 255, 0.14);
+      padding: 0 0 0.65rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.12);
       margin-bottom: 0;
     }
 
@@ -218,11 +229,19 @@
       min-width: 0;
     }
     .sports-league-logo {
-      width: 2.35rem;
-      height: 2.35rem;
+      width: 3.75rem;
+      height: 3.75rem;
       object-fit: contain;
       flex: 0 0 auto;
-      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.5));
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .sports-league-mark.is-flip .sports-league-logo {
+      animation: sports-logo-flip 0.4s ease both;
+    }
+    @keyframes sports-logo-flip {
+      from { opacity: 0; transform: scale(0.88) translateY(0.2rem); }
+      to { opacity: 1; transform: none; }
     }
     .sports-league-logo[hidden] { display: none !important; }
     .sports-league-title {
@@ -313,55 +332,68 @@
     }
     .sports-tab .count { margin-left: 0.2rem; opacity: 0.65; }
 
-    /* —— Scores: scoreboard cabinet —— */
+    /* —— Scores: open board on the field —— */
     .sports-face {
-      margin-top: 0.65rem;
-      padding: 0.75rem 0.85rem 0.55rem;
-      border: 1px solid rgba(126, 200, 255, 0.18);
-      background:
-        repeating-linear-gradient(
-          0deg,
-          rgba(255, 255, 255, 0.015) 0 1px,
-          transparent 1px 3px
-        ),
-        linear-gradient(180deg, #0a1524 0%, #060d18 100%);
-      box-shadow:
-        inset 0 0 40px rgba(20, 80, 180, 0.08),
-        0 10px 28px rgba(0, 0, 0, 0.35);
-      overflow: hidden;
+      margin-top: 0.35rem;
+      padding: 0.35rem 0 0.15rem;
+      border: 0;
+      border-top: 1px solid rgba(126, 200, 255, 0.1);
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
     }
     .lounge-scores {
       display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 0.85rem clamp(1rem, 2.5vw, 1.75rem);
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem clamp(0.85rem, 2vw, 1.35rem);
       padding: 0;
-      overflow: hidden;
     }
+    .lounge-scores[hidden],
+    .sports-grid-golf[hidden] { display: none !important; }
     .lounge-scorecol {
       min-width: 0;
-      overflow: hidden;
-      padding: 0.15rem 0.35rem 0.25rem;
+      padding: 0.1rem 0;
     }
-    .lounge-scorecol > h2 {
-      margin: 0 0 0.35rem;
-      padding-bottom: 0.35rem;
+    .sports-col-head {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin: 0 0 0.4rem;
+      padding-bottom: 0.3rem;
       border-bottom: 1px solid rgba(126, 200, 255, 0.16);
+    }
+    .sports-col-logo {
+      width: 1.85rem;
+      height: 1.85rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    }
+    .sports-col-logo[hidden] { display: none !important; }
+    .lounge-scorecol > .sports-col-head h2,
+    .lounge-scorecol > h2 {
+      margin: 0;
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: clamp(1.05rem, 2vw, 1.3rem);
+      font-size: clamp(0.95rem, 1.7vw, 1.15rem);
       font-weight: 400;
       letter-spacing: 0.16em;
       text-transform: uppercase;
       color: #9dffc4;
+      line-height: 1;
     }
-    .lounge-scorecol.is-upcoming > h2 { color: #efd782; }
+    .lounge-scorecol.is-upcoming .sports-col-head h2 { color: #efd782; }
 
     .sports-grid {
       display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       align-content: start;
-      gap: 0;
-      height: 18rem;
-      max-height: 18rem;
-      overflow: hidden;
+      gap: 0.55rem 0.75rem;
+      height: auto;
+      max-height: none;
+      overflow: visible;
+    }
+    .sports-grid-golf {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .sports-grid.is-flip { animation: sports-flip 0.35s ease both; }
     @keyframes sports-flip {
@@ -369,6 +401,7 @@
       to { opacity: 1; transform: none; }
     }
     .sports-empty {
+      grid-column: 1 / -1;
       padding: 0.85rem 0;
       color: var(--mo-muted);
       font-family: "Oswald", sans-serif;
@@ -387,29 +420,32 @@
     }
 
     .sgame {
-      padding: 0.38rem 0;
+      min-width: 0;
+      padding: 0.4rem 0.15rem 0.45rem;
       border: 0;
-      border-bottom: 1px solid rgba(126, 200, 255, 0.1);
+      border-bottom: 1px solid rgba(126, 200, 255, 0.12);
+      border-radius: 0;
       background: transparent;
       box-shadow: none;
     }
-    .sgame:last-child { border-bottom: 0; }
-    .sgame:hover { background: transparent; transform: none; box-shadow: none; }
-    .sgame.is-live .sgame-status { color: #9dffc4; }
-    .sgame.is-final { opacity: 0.78; }
-    .lounge-scorecol.is-upcoming .sgame,
-    .lounge-scorecol.is-upcoming .sgame:hover {
-      border-left: 0;
-      background: transparent;
+    .sgame:hover {
+      background: rgba(47, 123, 255, 0.06);
+      transform: none;
       box-shadow: none;
     }
+    .sgame.is-live {
+      border-bottom-color: rgba(77, 255, 154, 0.35);
+    }
+    .sgame.is-live .sgame-status,
+    .sgame.is-live .sgame-when { color: #9dffc4; }
+    .sgame.is-final { opacity: 0.72; }
     .sgame-top {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      gap: 0.45rem;
+      gap: 0.35rem;
       margin-bottom: 0.2rem;
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--mo-muted);
@@ -437,23 +473,23 @@
     .sgame-sides { display: grid; gap: 0.08rem; }
     .sgame-row {
       display: grid;
-      grid-template-columns: 1.45rem minmax(0, 1fr) auto;
+      grid-template-columns: 1.65rem minmax(0, 1fr) auto;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.35rem;
       min-height: 1.2rem;
     }
     .sgame-row img,
     .sgame-logo {
-      width: 1.4rem;
-      height: 1.4rem;
+      width: 1.85rem;
+      height: 1.85rem;
       object-fit: contain;
       flex: 0 0 auto;
       filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
       image-rendering: -webkit-optimize-contrast;
     }
     .sgame-logo-fallback {
-      width: 1.4rem;
-      height: 1.4rem;
+      width: 1.85rem;
+      height: 1.85rem;
       border-radius: 0.15rem;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(126, 200, 255, 0.15);
@@ -486,7 +522,7 @@
       font-size: 0.8rem;
       font-family: "Oswald", sans-serif;
     }
-    .sgame.is-golf { grid-column: auto; }
+    .sgame.is-golf { grid-column: 1 / -1; }
     .sgolf-title {
       margin: 0 0 0.2rem;
       font-family: "Oswald", sans-serif;
@@ -548,9 +584,9 @@
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      padding: 0.85rem 1rem;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid var(--mo-line);
+      padding: 0.35rem 0 0.75rem;
+      background: transparent;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.12);
     }
     .im-titlebar-left { min-width: 0; }
     .im-title .eyebrow {
@@ -625,7 +661,7 @@
       min-height: 18rem;
       padding: 0;
       border: 0;
-      border-right: 1px solid var(--mo-line);
+      border-right: 1px solid rgba(126, 200, 255, 0.1);
     }
     .chat-log {
       display: flex;
@@ -633,10 +669,10 @@
       gap: 0.1rem;
       min-height: 12rem;
       max-height: min(46vh, 24rem);
-      padding: 0.75rem 1rem;
+      padding: 0.65rem 0.15rem 0.65rem 0;
       overflow-x: hidden;
       overflow-y: auto;
-      background: rgba(0, 0, 0, 0.18);
+      background: transparent;
       font-family: "Source Sans 3", system-ui, sans-serif;
       font-size: 1.02rem;
       color: var(--mo-text);
@@ -717,7 +753,7 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 0.45rem 0.65rem;
-      padding: 0.55rem 1rem 0;
+      padding: 0.45rem 0 0;
     }
     .mention-bar[hidden] { display: none !important; }
     .mention-bar-label {
@@ -751,19 +787,20 @@
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 0.65rem;
       align-items: end;
-      padding: 0.85rem 1rem 1rem;
-      border-top: 1px solid var(--mo-line);
-      background: rgba(255, 255, 255, 0.02);
+      padding: 0.75rem 0 0.25rem;
+      border-top: 1px solid rgba(126, 200, 255, 0.12);
+      background: transparent;
     }
     .chat-compose textarea {
       width: 100%;
       min-height: 2.85rem;
       max-height: 7rem;
       resize: vertical;
-      padding: 0.65rem 0.8rem;
-      border: 1px solid rgba(126, 200, 255, 0.28);
-      border-radius: 0.55rem;
-      background: rgba(1, 6, 16, 0.85);
+      padding: 0.55rem 0;
+      border: 0;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.35);
+      border-radius: 0;
+      background: transparent;
       color: var(--mo-text);
       font: inherit;
       font-size: 1.02rem;
@@ -772,20 +809,21 @@
     }
     .chat-compose textarea:focus {
       outline: none;
-      border-color: rgba(126, 200, 255, 0.65);
-      box-shadow: 0 0 0 2px rgba(47, 123, 255, 0.18);
+      border-bottom-color: var(--mo-blue-hot);
+      box-shadow: none;
     }
     .chat-compose textarea::placeholder { color: rgba(143, 160, 184, 0.75); }
     .chat-compose button {
       appearance: none;
       align-self: end;
-      min-height: 2.85rem;
-      min-width: 4.85rem;
-      padding: 0.5rem 1rem;
-      border: 1px solid rgba(47, 123, 255, 0.55);
-      border-radius: 0.55rem;
-      background: linear-gradient(180deg, rgba(47, 123, 255, 0.28), rgba(20, 70, 160, 0.4));
-      color: #eef5ff;
+      min-height: 2.4rem;
+      min-width: 4.5rem;
+      padding: 0.35rem 0.85rem;
+      border: 0;
+      border-bottom: 2px solid var(--mo-blue);
+      border-radius: 0;
+      background: transparent;
+      color: var(--mo-blue-hot);
       font-family: "Oswald", sans-serif;
       font-size: 0.9rem;
       font-weight: 700;
@@ -797,15 +835,16 @@
     .chat-compose button:disabled { opacity: 0.45; cursor: default; }
     .chat-compose button:hover:not(:disabled) {
       color: #fff;
-      border-color: rgba(126, 200, 255, 0.85);
+      border-bottom-color: #fff;
     }
 
     .im-buddies {
       display: grid;
       gap: 0.55rem;
       align-content: start;
-      padding: 0.85rem 0.9rem 1rem;
-      background: rgba(0, 0, 0, 0.16);
+      padding: 0.35rem 0 0.25rem 1rem;
+      background: transparent;
+      border-left: 1px solid rgba(126, 200, 255, 0.1);
     }
     .im-buddies-head {
       font-family: "Bebas Neue", "Oswald", sans-serif;
@@ -894,17 +933,32 @@
     }
 
     .lounge-dues {
-      padding: 0;
-      border: 0;
-      background: transparent;
+      padding: clamp(0.95rem, 1.8vw, 1.25rem);
+      border: 1px solid rgba(77, 255, 154, 0.22);
+      border-radius: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(77, 255, 154, 0.14), transparent 55%),
+        linear-gradient(180deg, rgba(10, 42, 28, 0.72) 0%, rgba(4, 22, 16, 0.55) 100%);
       box-shadow: none;
       overflow: visible;
       height: 100%;
+      box-sizing: border-box;
+    }
+    .lounge-dues .lounge-section-label {
+      border-bottom-color: rgba(77, 255, 154, 0.22);
+    }
+    .lounge-dues .lounge-section-label h2,
+    .lounge-dues .pay-panel h2 {
+      color: #9dffc4;
+      text-shadow: 0 0 18px rgba(77, 255, 154, 0.2);
+    }
+    .lounge-dues .eyebrow {
+      color: rgba(157, 255, 196, 0.7);
     }
     .lounge-dues .pay-panel,
     .pay-panel {
       display: grid;
-      gap: 0.55rem;
+      gap: 0.7rem;
       margin: 0;
       padding: 0;
       border: 0;
@@ -919,35 +973,68 @@
       font-weight: 400;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--mo-gold-soft);
+      color: #9dffc4;
       text-shadow: none;
     }
     .lounge-dues p,
     .pay-panel p {
-      margin: 0 0 0.55rem;
-      color: var(--mo-silver);
+      margin: 0;
+      color: rgba(220, 245, 230, 0.88);
       line-height: 1.5;
       font-size: 0.95rem;
     }
     .pay-panel .treasurer { color: #fff; font-weight: 700; }
-    .pay-panel a { color: var(--mo-blue-hot); }
+    .pay-panel a { color: #9dffc4; }
+    .venmo-handle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin: 0.15rem 0 0.1rem;
+      padding: 0.55rem 0.7rem;
+      border: 1px solid rgba(0, 140, 255, 0.35);
+      background: rgba(0, 140, 255, 0.12);
+      text-decoration: none;
+      color: #fff;
+      width: fit-content;
+      max-width: 100%;
+    }
+    .venmo-handle:hover {
+      border-color: rgba(0, 200, 255, 0.65);
+      background: rgba(0, 140, 255, 0.2);
+    }
+    .venmo-handle img {
+      width: 4.6rem;
+      height: auto;
+      display: block;
+      flex: 0 0 auto;
+      filter: brightness(0) invert(1);
+    }
+    .venmo-handle .handle {
+      font-family: "Oswald", sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #fff;
+      white-space: nowrap;
+    }
     .pay-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem 1rem;
       align-items: center;
-      margin-top: 0.35rem;
+      margin-top: 0.15rem;
     }
     .btn-venmo {
       appearance: none;
       display: inline-flex;
       align-items: center;
+      gap: 0.45rem;
       min-height: 2.4rem;
       padding: 0.35rem 0;
       border: 0;
-      border-bottom: 2px solid var(--mo-blue);
+      border-bottom: 2px solid #008cff;
       background: transparent;
-      color: var(--mo-blue-hot);
+      color: #7ec8ff;
       font-family: "Oswald", sans-serif;
       font-size: 0.9rem;
       font-weight: 700;
@@ -958,24 +1045,6 @@
       box-shadow: none;
     }
     .btn-venmo:hover { color: #fff; border-bottom-color: #fff; filter: none; }
-    .btn-ghost {
-      appearance: none;
-      min-height: 2.4rem;
-      padding: 0.35rem 0;
-      border: 0;
-      border-bottom: 1px solid rgba(232, 196, 90, 0.45);
-      background: transparent;
-      color: var(--mo-gold-soft);
-      font: inherit;
-      font-size: 0.92rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-ghost:hover {
-      color: #fff;
-      border-bottom-color: #fff;
-      background: transparent;
-    }
     .dues-chip {
       display: inline-flex;
       align-items: center;
@@ -1031,13 +1100,12 @@
       font-size: 1.1rem;
     }
     .board-body {
-      padding: 0.55rem 0 0.35rem;
+      padding: 0.35rem 0 0.15rem;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-      gap: 0.35rem 1.25rem;
+      grid-template-columns: 1fr;
+      gap: 0;
     }
     .roll-empty {
-      grid-column: 1 / -1;
       padding: 1.15rem 0 0.35rem;
       color: var(--mo-muted);
       font-size: 0.98rem;
@@ -1046,9 +1114,13 @@
     .member-row {
       display: block;
       min-width: 0;
-      padding: 0.45rem 0;
+      padding: 0.55rem 0;
       border: 0;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.1);
       background: transparent;
+    }
+    .member-row:last-child {
+      border-bottom: 0;
     }
     .member-row .name {
       font-family: "Oswald", sans-serif;
@@ -1093,27 +1165,25 @@
     .lounge-section.is-dues .lounge-section-label {
       margin-bottom: 0.85rem;
     }
-    .lounge-section.is-chat .im-titlebar {
-      padding: 0.9rem 1rem 0.85rem;
-    }
     .lounge-mid > .lounge-section.is-dues {
       align-self: stretch;
     }
 
     @media (max-width: 900px) {
-      .lounge-hero img { width: min(17.5rem, 78vw); }
-      .lounge-scores {
-        grid-template-columns: 1fr;
-        gap: 1.1rem;
+      .lounge-hero {
+        margin-left: calc(-1 * clamp(1rem, 2vw, 2.25rem));
+        margin-right: calc(-1 * clamp(1rem, 2vw, 2.25rem));
       }
+      .lounge-hero img { width: 100%; }
       .sports-grid {
-        height: 15.5rem;
-        max-height: 15.5rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        height: auto;
+        max-height: none;
       }
-      .sports-face { padding: 0.65rem 0.55rem 0.4rem; }
+      .sports-face { padding: 0.35rem 0 0.15rem; }
       .lounge-mid {
         grid-template-columns: 1fr;
-        gap: 1.25rem;
+        gap: 1.5rem;
       }
       .im-body {
         grid-template-columns: 1fr;
@@ -1121,8 +1191,22 @@
       }
       .im-main {
         border-right: 0;
-        border-bottom: 1px solid var(--mo-line);
+        border-bottom: 1px solid rgba(126, 200, 255, 0.1);
       }
+      .im-buddies {
+        padding-left: 0;
+        border-left: 0;
+        border-top: 1px solid rgba(126, 200, 255, 0.1);
+        padding-top: 0.85rem;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .sports-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.4rem 0.55rem;
+      }
+      .sgame.is-golf { grid-column: 1 / -1; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1145,8 +1229,8 @@
   <main class="page-main shell">
     <div class="flash" id="flash" hidden></div>
     <div class="lounge" id="sports-board" aria-label="Members lounge">
-      <header class="lounge-section is-hero lounge-hero">
-        <img src="/assets/members-lounge.jpg?v=5" alt="GridIron 24 Members Only" width="1024" height="576" />
+      <header class="lounge-hero">
+        <img src="/assets/members-lounge.jpg?v=7" alt="GridIron 24 Members Only" width="1024" height="576" decoding="async" />
       </header>
 
       <section class="lounge-section is-scoreboard" aria-label="Scoreboard">
@@ -1164,19 +1248,8 @@
           <div class="sports-tabs" id="sports-tabs" role="tablist" aria-label="League filter"></div>
         </div>
         <div class="sports-face">
-          <div class="lounge-scores">
-            <section class="lounge-scorecol" aria-label="Live scores">
-              <h2>Live</h2>
-              <div class="sports-grid" id="sports-grid-left" aria-live="polite">
-                <div class="sports-empty">Loading…</div>
-              </div>
-            </section>
-            <section class="lounge-scorecol is-upcoming" aria-label="Upcoming scores">
-              <h2>Upcoming</h2>
-              <div class="sports-grid" id="sports-grid-right" aria-live="polite">
-                <div class="sports-empty">Loading…</div>
-              </div>
-            </section>
+          <div class="sports-grid" id="sports-grid" aria-live="polite">
+            <div class="sports-empty">Loading…</div>
           </div>
           <p class="sports-page-meta" id="sports-page-meta" hidden></p>
         </div>
@@ -1219,17 +1292,16 @@
             <p class="eyebrow">League desk</p>
             <h2>The membership roll</h2>
           </div>
-          <div class="aside">Invite token required</div>
         </div>
         <div class="boards" id="boards"><div class="msg">Loading the roll…</div></div>
       </section>
     </div>
   </main>
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=70"></script>
+  <script src="/js/nav.js?v=73"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -1254,7 +1326,7 @@
     const SPORTS_POLL_LIVE_MS = 15000;
     const SPORTS_FLIP_MS = 7000;
     const SPORTS_FLIP_PAUSE_MS = 20000;
-    const SPORTS_SLOT = 5;
+    const SPORTS_SLOT = 9;
 
     async function readJsonResponse(res, fallbackError) {
       const text = await res.text();
@@ -1410,24 +1482,34 @@
       return list.slice(p * size, p * size + size);
     }
 
-    function sportsBoardPages(live, upcoming) {
-      return Math.max(
-        1,
-        Math.ceil(live.length / SPORTS_SLOT),
-        Math.ceil(upcoming.length / SPORTS_SLOT)
-      );
+    function sportsOrderedGames(games) {
+      const rank = { live: 0, upcoming: 1, final: 2 };
+      return [...games].sort((a, b) => {
+        const ra = rank[a.status?.bucket] ?? 3;
+        const rb = rank[b.status?.bucket] ?? 3;
+        if (ra !== rb) return ra - rb;
+        return String(a.date || '').localeCompare(String(b.date || ''));
+      });
+    }
+
+    function sportsBoardPages(games) {
+      return Math.max(1, Math.ceil(games.length / SPORTS_SLOT));
     }
 
     function sportsRotateIds() {
       const boards = Array.isArray(sportsData?.leagues) ? sportsData.leagues : [];
-      const withAction = boards.filter((b) =>
-        (b.games || []).some((g) => {
-          const bucket = g.status?.bucket;
-          return bucket === 'live' || bucket === 'upcoming';
-        })
-      );
-      const pool = withAction.length ? withAction : boards.filter((b) => (b.games || []).length);
-      return pool.map((b) => b.id).filter(Boolean);
+      const scored = boards.map((b) => {
+        const games = b.games || [];
+        const live = games.filter((g) => g.status?.bucket === 'live').length;
+        const upcoming = games.filter((g) => g.status?.bucket === 'upcoming').length;
+        return { id: b.id, live, upcoming, total: games.length };
+      }).filter((b) => b.id && b.total > 0);
+      scored.sort((a, b) => {
+        if (b.live !== a.live) return b.live - a.live;
+        if (b.upcoming !== a.upcoming) return b.upcoming - a.upcoming;
+        return 0;
+      });
+      return scored.map((b) => b.id);
     }
 
     function markSportsTabs() {
@@ -1444,26 +1526,19 @@
       clearTimeout(sportsFlipTimer);
       if (!sportsAuto || document.hidden) return;
       sportsFlipTimer = setTimeout(() => {
-        const games = flatSportsGames(sportsData, sportsFilter);
-        const live = games.filter((g) => g.status?.bucket === 'live');
-        const upcoming = games.filter((g) => g.status?.bucket === 'upcoming');
-        const pages = sportsBoardPages(live, upcoming);
+        const games = sportsOrderedGames(flatSportsGames(sportsData, sportsFilter));
+        const pages = sportsBoardPages(games);
+        const ids = sportsRotateIds();
 
         if (pages > 1) {
           sportsPage = (sportsPage + 1) % pages;
-          if (sportsPage === 0) {
-            const ids = sportsRotateIds();
-            if (ids.length) {
-              const idx = ids.indexOf(sportsFilter);
-              sportsFilter = ids[(idx + 1 + ids.length) % ids.length];
-            }
-          }
-        } else {
-          const ids = sportsRotateIds();
-          if (ids.length) {
+          if (sportsPage === 0 && ids.length) {
             const idx = ids.indexOf(sportsFilter);
             sportsFilter = ids[(idx + 1 + ids.length) % ids.length];
           }
+        } else if (ids.length) {
+          const idx = ids.indexOf(sportsFilter);
+          sportsFilter = ids[(idx + 1 + ids.length) % ids.length];
           sportsPage = 0;
         }
 
@@ -1526,15 +1601,15 @@
     }
 
     function renderSportsBoard({ rebuildTabs = true } = {}) {
-      const left = document.getElementById('sports-grid-left');
-      const right = document.getElementById('sports-grid-right');
+      const grid = document.getElementById('sports-grid');
       const pill = document.getElementById('sports-live-pill');
       const liveCount = document.getElementById('sports-live-count');
       const updated = document.getElementById('sports-updated');
       const pageMeta = document.getElementById('sports-page-meta');
       const leagueTitle = document.getElementById('sports-league-title');
       const leagueLogo = document.getElementById('sports-league-logo');
-      if (!left || !right) return;
+      const leagueMark = document.querySelector('.sports-league-mark');
+      if (!grid) return;
 
       if (rebuildTabs) renderSportsTabs();
       else markSportsTabs();
@@ -1552,8 +1627,14 @@
           leagueLogo.alt = '';
         }
       }
+      if (leagueMark) {
+        leagueMark.classList.remove('is-flip');
+        void leagueMark.offsetWidth;
+        leagueMark.classList.add('is-flip');
+      }
 
-      const liveN = Number(sportsData?.totals?.live || 0);
+      const games = sportsOrderedGames(flatSportsGames(sportsData, sportsFilter));
+      const liveN = games.filter((g) => g.status?.bucket === 'live').length;
       if (pill) {
         pill.hidden = liveN < 1;
         if (liveCount) liveCount.textContent = `${liveN} live`;
@@ -1563,27 +1644,19 @@
         updated.textContent = `Updated ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`;
       }
 
-      const games = flatSportsGames(sportsData, sportsFilter);
-      const live = games.filter((g) => g.status?.bucket === 'live');
-      const upcoming = games.filter((g) => g.status?.bucket === 'upcoming');
-      const pages = sportsBoardPages(live, upcoming);
+      const pages = sportsBoardPages(games);
       if (sportsPage >= pages) sportsPage = 0;
+      const page = sportsPageSlice(games, sportsPage, SPORTS_SLOT);
 
-      const livePage = sportsPageSlice(live, sportsPage, SPORTS_SLOT);
-      const upcomingPage = sportsPageSlice(upcoming, sportsPage, SPORTS_SLOT);
-
-      left.classList.remove('is-flip');
-      right.classList.remove('is-flip');
-      void left.offsetWidth;
-      left.classList.add('is-flip');
-      right.classList.add('is-flip');
-      fillSportsRail(left, livePage, 'No games live right now.');
-      fillSportsRail(right, upcomingPage, 'Nothing upcoming on this slate.');
+      grid.classList.remove('is-flip');
+      void grid.offsetWidth;
+      grid.classList.add('is-flip');
+      fillSportsRail(grid, page, 'No games on this slate.');
 
       if (pageMeta) {
         if (pages > 1) {
           pageMeta.hidden = false;
-          pageMeta.textContent = `Board ${sportsPage + 1} / ${pages}`;
+          pageMeta.textContent = `${league.label} · ${sportsPage + 1} / ${pages}`;
         } else {
           pageMeta.hidden = true;
           pageMeta.textContent = '';
@@ -1613,11 +1686,8 @@
         if (sportsAuto) scheduleSportsFlip();
       } catch (err) {
         if (!sportsData) {
-          const msg = `<div class="sports-empty">${esc(err.message || 'Could not load scores')}</div>`;
-          const left = document.getElementById('sports-grid-left');
-          const right = document.getElementById('sports-grid-right');
-          if (left) left.innerHTML = msg;
-          if (right) right.innerHTML = msg;
+          const grid = document.getElementById('sports-grid');
+          if (grid) grid.innerHTML = `<div class="sports-empty">${esc(err.message || 'Could not load scores')}</div>`;
         }
       } finally {
         scheduleSportsPoll();
@@ -1636,7 +1706,7 @@
       el.textContent = text;
     }
 
-    function venmoUrl({ amount, note } = {}) {
+    function venmoUrl({ amount } = {}) {
       const user = String(state?.treasurer?.venmoUsername || 'James-Aceto').replace(/^@/, '').trim();
       const params = new URLSearchParams({
         txn: 'pay',
@@ -1647,21 +1717,8 @@
       if (Number.isFinite(dollars) && dollars > 0) {
         params.set('amount', String(dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2)));
       }
-      const memo = String(note || state?.treasurer?.note || 'League dues — GridIron 24 HQ').trim();
-      if (memo) params.set('note', memo);
       // Path-style /@user links currently 404 through Venmo’s payment-link redirect.
       return `https://venmo.com/?${params.toString()}`;
-    }
-
-    function copyText(text) {
-      if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      ta.remove();
-      return Promise.resolve();
     }
 
     function formatChatBody(text) {
@@ -1966,8 +2023,8 @@
       const amount = myLeague === 'aaa' ? state.dues.aaa : state.dues.gridiron;
       const leagueLabel = myLeague === 'aaa' ? 'AAA' : (myLeague === 'gridiron' ? 'GridIron 24' : null);
       const paid = Boolean(me?.duesPaid);
-      const note = `${t.note || 'League dues'} — ${me?.name || 'Member'}${leagueLabel ? ` (${leagueLabel})` : ''}`;
-      const href = venmoUrl({ amount, note });
+      const href = venmoUrl({ amount });
+      const venmoUser = String(t.venmoUsername || 'James-Aceto').replace(/^@/, '');
 
       el.innerHTML = `
         <div class="lounge-section-label">
@@ -1975,38 +2032,28 @@
             <p class="eyebrow">Treasurer desk</p>
             <h2>League dues</h2>
           </div>
-          <div class="aside">@${esc(t.venmoUsername)}</div>
         </div>
         <div class="pay-panel">
           <p>
             Season buy-in paid to treasurer
             <span class="treasurer">${esc(t.name)}</span>
-            on Venmo
             (<a href="mailto:${esc(t.email)}">${esc(t.email)}</a>).
           </p>
+          <a class="venmo-handle" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Pay @${esc(venmoUser)} on Venmo">
+            <img src="/assets/venmo.svg" alt="Venmo" width="92" height="17" decoding="async" />
+            <span class="handle">@${esc(venmoUser)}</span>
+          </a>
           <p>
             GridIron 24 <strong>${esc(money(state.dues.gridiron))}</strong>
             · AAA <strong>${esc(money(state.dues.aaa))}</strong>
           </p>
-          <div class="dues-chip ${paid ? 'paid' : 'due'}">
-            ${paid
-              ? `Dues marked paid${leagueLabel ? ` for ${esc(leagueLabel)}` : ''}`
-              : `Suggested amount ${esc(money(amount))}${leagueLabel ? ` for ${esc(leagueLabel)}` : ''}`}
-          </div>
+          ${paid
+            ? `<div class="dues-chip paid">Dues marked paid${leagueLabel ? ` for ${esc(leagueLabel)}` : ''}</div>`
+            : ''}
           <div class="pay-actions">
             <a class="btn-venmo" href="${esc(href)}" target="_blank" rel="noopener noreferrer">Pay with Venmo</a>
-            <button type="button" class="btn-ghost" id="copy-note">Copy note</button>
           </div>
         </div>`;
-
-      document.getElementById('copy-note')?.addEventListener('click', async () => {
-        try {
-          await copyText(note);
-          flash('Payment note copied.', true);
-        } catch {
-          flash('Could not copy note.', false);
-        }
-      });
     }
 
     function memberRow(m) {
@@ -2019,9 +2066,23 @@
     }
 
     function allMembers() {
-      if (Array.isArray(state.members) && state.members.length) return state.members.slice();
-      return [...(state.gridiron || []), ...(state.aaa || []), ...(state.unassigned || [])]
-        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+      const raw = Array.isArray(state.members) && state.members.length
+        ? state.members.slice()
+        : [...(state.gridiron || []), ...(state.aaa || []), ...(state.unassigned || [])];
+      const byName = new Map();
+      const rank = (u) => {
+        if (u?.siteOwner) return 0;
+        if (u?.role === 'commissioner') return 1;
+        if (u?.role === 'conference_admin') return 2;
+        return 3;
+      };
+      for (const m of raw) {
+        if (!m || m.open || !m.name) continue;
+        const key = String(m.name).trim().toLowerCase();
+        const prev = byName.get(key);
+        if (!prev || rank(m) < rank(prev)) byName.set(key, m);
+      }
+      return [...byName.values()].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
     }
 
     function renderUnifiedRoll() {
@@ -2037,7 +2098,7 @@
           <div class="board-body">
             ${members.length
               ? members.map((m) => memberRow(m)).join('')
-              : `<div class="roll-empty">No members yet. A commissioner invite token is required to enter the lounge.</div>`}
+              : `<div class="roll-empty">No members yet.</div>`}
           </div>
         </section>`;
     }

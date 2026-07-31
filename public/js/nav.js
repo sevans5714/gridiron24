@@ -539,7 +539,7 @@
     if (onAaa) {
       el.title = 'Switch to GridIron 24';
       el.setAttribute('aria-label', 'Switch to GridIron 24');
-      el.innerHTML = `<img src="/assets/gridiron24-league-sm.png?v=1" alt="" width="50" height="50" decoding="async" />`;
+      el.innerHTML = `<img src="/assets/gridiron24-league-sm.png?v=3" alt="" width="44" height="44" decoding="async" />`;
       el.onclick = (e) => {
         e.preventDefault();
         switchLeague('gridiron');
@@ -547,7 +547,7 @@
     } else {
       el.title = 'Switch to AAA League';
       el.setAttribute('aria-label', 'Switch to AAA League');
-      el.innerHTML = `<img src="/assets/aaa-league.png" alt="" width="50" height="50" decoding="async" />`;
+      el.innerHTML = `<img src="/assets/aaa-league.png?v=2" alt="" width="44" height="44" decoding="async" />`;
       el.onclick = (e) => {
         e.preventDefault();
         switchLeague('aaa');
@@ -695,7 +695,7 @@
 
   function footerHtml(buildLabel) {
     const build = esc(buildLabel || 'Build …');
-    return `<span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
+    return `<span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
   }
 
   function ensureFooter(buildLabel) {

@@ -64,6 +64,9 @@ function publicProposal(proposal, { user = null, includeVotes = false } = {}) {
   const eligibleCount = Number(proposal.eligibleCount || 0);
   const need = majorityNeeded(eligibleCount);
   const canVote = proposal.status === STATUS.VOTING && Boolean(user?.id) && !myVote;
+  const outstanding = proposal.status === STATUS.VOTING
+    ? Math.max(0, eligibleCount - total)
+    : 0;
 
   return {
     id: proposal.id,
@@ -79,6 +82,7 @@ function publicProposal(proposal, { user = null, includeVotes = false } = {}) {
     yes,
     no,
     totalVotes: total,
+    outstanding,
     myVote,
     canVote,
     ...(includeVotes ? { voterIds: Object.keys(proposal.votes || {}) } : {})
@@ -155,12 +159,14 @@ function openVote(id, { by, eligibleUsers = [] } = {}) {
 
 function maybeResolve(proposal) {
   if (!proposal || proposal.status !== STATUS.VOTING) return proposal;
-  const need = majorityNeeded(proposal.eligibleCount);
-  const { yes, no } = tally(proposal);
-  if (yes >= need) {
+  const eligible = Math.max(0, Number(proposal.eligibleCount) || 0);
+  const { yes, no, total } = tally(proposal);
+  // Vote stays open until every eligible member has cast a ballot.
+  if (eligible < 1 || total < eligible) return proposal;
+  if (yes > no) {
     proposal.status = STATUS.PASSED;
     proposal.decidedAt = new Date().toISOString();
-  } else if (no >= need) {
+  } else {
     proposal.status = STATUS.FAILED;
     proposal.decidedAt = new Date().toISOString();
   }

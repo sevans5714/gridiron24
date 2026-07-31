@@ -233,14 +233,40 @@ function setLeagueMembership(userId, patch = {}) {
   return publicUser(user);
 }
 
+function preferRollMember(a, b) {
+  const rank = (u) => {
+    if (u?.siteOwner) return 0;
+    if (u?.role === ROLES.COMMISSIONER) return 1;
+    if (u?.role === ROLES.CONFERENCE_ADMIN) return 2;
+    return 3;
+  };
+  const ra = rank(a);
+  const rb = rank(b);
+  if (ra !== rb) return ra < rb ? a : b;
+  return String(a?.loginName || '').localeCompare(String(b?.loginName || '')) <= 0 ? a : b;
+}
+
+/** One row per display name on the lounge roll (alt accounts share a name). */
+function dedupeRollByName(list) {
+  const map = new Map();
+  for (const m of list) {
+    const key = String(m?.name || '').trim().toLowerCase();
+    if (!key) continue;
+    const prev = map.get(key);
+    map.set(key, prev ? preferRollMember(prev, m) : m);
+  }
+  return [...map.values()].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+}
+
 function listLeagueMembers() {
   const store = readStore();
   // Lounge roll = accounts admitted by commissioner invite token (loungeMember).
   // League assignment (GridIron / AAA) is optional and unrelated to lounge entry.
-  const lounge = store.users
-    .map(publicUser)
-    .filter((u) => u.loungeMember)
-    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  const lounge = dedupeRollByName(
+    store.users
+      .map(publicUser)
+      .filter((u) => u.loungeMember)
+  );
 
   const byLeague = (key) => lounge
     .filter((u) => u.membershipLeague === key);

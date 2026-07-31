@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=99" />
+  <link rel="stylesheet" href="/css/site.css?v=106" />
   <style>
     .hq-hero {
       text-align: center;
@@ -182,7 +182,7 @@
       min-width: 0;
     }
     .conf-head img {
-      width: 3.25rem;
+      width: clamp(4.75rem, 12vw, 6.5rem);
       height: auto;
       filter: none;
       box-shadow: var(--logo-lift);
@@ -760,11 +760,15 @@
         radial-gradient(ellipse 70% 80% at 50% 25%, rgba(126, 200, 255, 0.12), transparent 60%),
         var(--bg);
     }
+    body[data-page="aaa"] .hq-hero img {
+      width: min(520px, 82vw);
+      height: auto;
+    }
     body[data-page="aaa"] .hq-hero .tag {
-      margin-top: 1.15rem;
-      font-size: clamp(1.55rem, 4.2vw, 2.25rem);
-      letter-spacing: 0.06em;
-      line-height: 1.2;
+      margin-top: 1rem;
+      font-size: clamp(1rem, 2.6vw, 1.35rem);
+      letter-spacing: 0.05em;
+      line-height: 1.3;
     }
     body[data-page="aaa"] .standings-preview {
       grid-template-columns: 1fr;
@@ -867,10 +871,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=70"></script>
+  <script src="/js/nav.js?v=73"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)

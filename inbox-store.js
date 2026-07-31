@@ -49,11 +49,19 @@ function publicMessage(msg) {
     body: msg.body,
     type: msg.type || 'general',
     relatedId: msg.relatedId || null,
+    threadId: msg.threadId || msg.id,
+    inReplyTo: msg.inReplyTo || null,
     meta: msg.meta && typeof msg.meta === 'object' ? msg.meta : {},
     readAt: msg.readAt || null,
     createdAt: msg.createdAt,
     unread: !msg.readAt
   };
+}
+
+function findForUser(messageId, userId) {
+  if (!messageId || !userId) return null;
+  const store = readStore();
+  return store.messages.find((m) => m.id === messageId && m.toUserId === userId) || null;
 }
 
 function sendMessage({
@@ -63,7 +71,9 @@ function sendMessage({
   body,
   type = 'general',
   relatedId = null,
-  meta = {}
+  meta = {},
+  threadId = null,
+  inReplyTo = null
 } = {}) {
   const cleanSubject = String(subject || '').trim();
   const cleanBody = String(body || '').trim();
@@ -74,8 +84,9 @@ function sendMessage({
   if (cleanBody.length > 8000) throw Object.assign(new Error('Message is too long'), { status: 400 });
 
   const store = readStore();
+  const id = crypto.randomUUID();
   const item = {
-    id: crypto.randomUUID(),
+    id,
     toUserId,
     fromUserId: from?.id || null,
     fromName: from?.name || from?.loginName || 'System',
@@ -83,6 +94,8 @@ function sendMessage({
     body: cleanBody,
     type: String(type || 'general'),
     relatedId: relatedId || null,
+    threadId: threadId || id,
+    inReplyTo: inReplyTo || null,
     meta: meta && typeof meta === 'object' ? meta : {},
     readAt: null,
     createdAt: new Date().toISOString()
@@ -102,10 +115,13 @@ function sendToUsers({
   body,
   type = 'general',
   relatedId = null,
-  meta = {}
+  meta = {},
+  threadId = null,
+  inReplyTo = null
 } = {}) {
   const ids = [...new Set((toUserIds || []).filter(Boolean))];
   const sent = [];
+  const sharedThread = threadId || (ids.length ? crypto.randomUUID() : null);
   for (const toUserId of ids) {
     sent.push(sendMessage({
       toUserId,
@@ -114,7 +130,9 @@ function sendToUsers({
       body,
       type,
       relatedId,
-      meta
+      meta,
+      threadId: sharedThread,
+      inReplyTo
     }));
   }
   return sent;
@@ -174,6 +192,7 @@ module.exports = {
   sendMessage,
   sendToUsers,
   listForUser,
+  findForUser,
   unreadCount,
   markRead,
   markAllRead,

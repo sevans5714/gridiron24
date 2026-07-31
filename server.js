@@ -540,6 +540,14 @@ function sendFile(res, filePath) {
       'Cache-Control': cacheControl
     };
     if (isAuthPage) headers.Pragma = 'no-cache';
+    // Allow the root service worker to control the /app/ shell scope.
+    if (fileName === 'sw.js') {
+      headers['Service-Worker-Allowed'] = '/app/';
+      headers['Cache-Control'] = 'no-cache';
+    }
+    if (fileName === 'manifest.webmanifest') {
+      headers['Cache-Control'] = 'no-cache';
+    }
 
     res.writeHead(200, headers);
     res.end(data);
@@ -1049,7 +1057,7 @@ function playerName(player) {
     || `Player ${player.id || ''}`;
 }
 
-function normalizeRosterTeam(team, conference, membersById) {
+function normalizeRosterTeam(team, conference, membersById, lineupSlotCounts = null) {
   const ownerId = team.primaryOwner || (team.owners || [])[0];
   const key = logos.logoKey(conference.key, team.id);
   const overrideLogo = logos.getOverrideMap().get(key);
@@ -1072,13 +1080,21 @@ function normalizeRosterTeam(team, conference, membersById) {
       injuryStatus: player.injuryStatus || null,
       acquisitionType: entry.acquisitionType || pool.acquisitionType || null,
       weekPoints: null,
-      weekProjected: null
+      weekProjected: null,
+      empty: false,
+      isStarter: !BENCH_OR_IR_SLOTS.has(slotId)
     };
   }).sort((a, b) => {
-    const order = { QB: 1, RB: 2, WR: 3, TE: 4, FLEX: 5, 'D/ST': 6, K: 7, Bench: 8, IR: 9 };
-    return (order[a.slot] || 50) - (order[b.slot] || 50) || a.name.localeCompare(b.name);
+    return slotSortKey(a.slot) - slotSortKey(b.slot) || String(a.name || '').localeCompare(String(b.name || ''));
   });
 
+  const counts = lineupSlotCounts || DEFAULT_STARTER_SLOT_COUNTS;
+  const lineup = fillStarterSlots(
+    entries.filter((e) => e.isStarter),
+    counts,
+    { weekStats: true }
+  );
+  const bench = entries.filter((e) => !e.isStarter);
   const record = team.record?.overall || {};
   return {
     id: team.id,
@@ -1093,7 +1109,10 @@ function normalizeRosterTeam(team, conference, membersById) {
     pointsFor: Number(record.pointsFor || team.points || 0),
     playoffSeed: Number(team.playoffSeed || 0),
     waiverRank: Number(team.waiverRank || 0),
-    roster: entries
+    lineupSlots: starterSlotPlan(counts),
+    lineup,
+    bench,
+    roster: [...lineup, ...bench]
   };
 }
 
@@ -1136,6 +1155,101 @@ function slotSortKey(slot) {
   return order[slot] || 50;
 }
 
+/** Classic starter shape when ESPN lineupSlotCounts are missing. */
+const DEFAULT_STARTER_SLOT_COUNTS = {
+  0: 1, // QB
+  2: 2, // RB
+  4: 2, // WR
+  6: 1, // TE
+  23: 1, // FLEX
+  16: 1, // D/ST
+  17: 1 // K
+};
+
+const STARTER_SLOT_ORDER = [0, 2, 4, 6, 23, 16, 17];
+
+function lineupSlotCountsFromRaw(raw) {
+  const counts = raw?.settings?.rosterSettings?.lineupSlotCounts;
+  if (counts && typeof counts === 'object') {
+    const hasStarter = Object.keys(counts).some((id) => {
+      const n = Number(id);
+      return Number(counts[id]) > 0 && !BENCH_OR_IR_SLOTS.has(n) && SLOT_LABELS[n];
+    });
+    if (hasStarter) return counts;
+  }
+  return DEFAULT_STARTER_SLOT_COUNTS;
+}
+
+function starterSlotPlan(counts) {
+  const src = counts && typeof counts === 'object' ? counts : DEFAULT_STARTER_SLOT_COUNTS;
+  const plan = [];
+  const seen = new Set();
+  for (const id of STARTER_SLOT_ORDER) {
+    const n = Number(src[id] ?? src[String(id)] ?? 0);
+    if (!(n > 0) || !SLOT_LABELS[id]) continue;
+    seen.add(id);
+    for (let i = 0; i < n; i += 1) {
+      plan.push({ slotId: id, slot: SLOT_LABELS[id] });
+    }
+  }
+  for (const [idStr, count] of Object.entries(src)) {
+    const id = Number(idStr);
+    if (!Number.isFinite(id) || seen.has(id) || BENCH_OR_IR_SLOTS.has(id) || !SLOT_LABELS[id]) continue;
+    const n = Number(count) || 0;
+    for (let i = 0; i < n; i += 1) {
+      plan.push({ slotId: id, slot: SLOT_LABELS[id] });
+    }
+  }
+  return plan.length ? plan : starterSlotPlan(DEFAULT_STARTER_SLOT_COUNTS);
+}
+
+function emptySlotPlayer(slotId, slot, { weekStats = false } = {}) {
+  return {
+    id: null,
+    name: null,
+    empty: true,
+    position: slot || '—',
+    slotId,
+    slot: slot || SLOT_LABELS[slotId] || '—',
+    proTeamId: null,
+    proTeam: '',
+    byeWeek: null,
+    injuryStatus: null,
+    acquisitionType: null,
+    points: null,
+    projected: null,
+    weekPoints: weekStats ? null : undefined,
+    weekProjected: weekStats ? null : undefined,
+    isStarter: !BENCH_OR_IR_SLOTS.has(Number(slotId))
+  };
+}
+
+function fillStarterSlots(players, counts, { weekStats = false } = {}) {
+  const plan = starterSlotPlan(counts);
+  const pool = (players || []).filter((p) => {
+    const sid = Number(p.slotId);
+    if (Number.isFinite(sid) && BENCH_OR_IR_SLOTS.has(sid)) return false;
+    if (p.isStarter === false) return false;
+    return true;
+  });
+  const used = new Set();
+  const filled = plan.map(({ slotId, slot }) => {
+    let idx = pool.findIndex((p, i) => !used.has(i) && Number(p.slotId) === slotId);
+    if (idx < 0) {
+      idx = pool.findIndex((p, i) => !used.has(i) && String(p.slot) === String(slot));
+    }
+    if (idx >= 0) {
+      used.add(idx);
+      return { ...pool[idx], empty: false, slot, slotId };
+    }
+    return emptySlotPlayer(slotId, slot, { weekStats });
+  });
+  pool.forEach((p, i) => {
+    if (!used.has(i)) filled.push({ ...p, empty: false });
+  });
+  return filled;
+}
+
 function normalizeMatchupLineupEntry(entry, week) {
   const pool = entry?.playerPoolEntry || {};
   const player = pool.player || {};
@@ -1157,28 +1271,81 @@ function normalizeMatchupLineupEntry(entry, week) {
   };
 }
 
-function normalizeMatchupBoxSide(side, teams, week) {
+/** Team mRoster entries → same shape as matchup lineup players (ESPN slot assignments). */
+function rosterTeamEntriesAsPlayers(rosterTeam) {
+  return (rosterTeam?.roster?.entries || []).map((entry) => {
+    const pool = entry.playerPoolEntry || {};
+    const player = pool.player || {};
+    const slotId = Number(entry.lineupSlotId);
+    const proTeamId = player.proTeamId || null;
+    const slot = SLOT_LABELS[slotId] || `Slot ${slotId}`;
+    return {
+      id: player.id || entry.playerId || null,
+      name: playerName(player),
+      position: POSITION_LABELS[player.defaultPositionId] || slot || '—',
+      slotId,
+      slot,
+      proTeamId,
+      proTeam: PRO_TEAM_ABBREV[proTeamId] || 'FA',
+      injuryStatus: player.injuryStatus || null,
+      points: null,
+      projected: null,
+      isStarter: !BENCH_OR_IR_SLOTS.has(slotId)
+    };
+  });
+}
+
+function lineupHasNamedPlayers(players) {
+  return (players || []).some((p) => p && !p.empty && p.name);
+}
+
+function applyPointsToLineup(players, statsMap) {
+  return (players || []).map((p) => {
+    if (p?.empty || p?.id == null) return p;
+    const hit = statsMap.get(Number(p.id));
+    if (!hit) return p;
+    return {
+      ...p,
+      points: hit.points ?? p.points,
+      projected: hit.projected ?? p.projected
+    };
+  });
+}
+
+function normalizeMatchupBoxSide(side, teams, week, lineupSlotCounts, rosterTeam = null, statsMap = null) {
   if (!side) return null;
   const team = teams.get(side.teamId) || {
     id: side.teamId,
     name: `Team ${side.teamId}`,
     logo: logos.PLACEHOLDER_LOGO
   };
-  const entries = matchupSideEntries(side)
+  let entries = matchupSideEntries(side)
     .map((entry) => normalizeMatchupLineupEntry(entry, week))
-    .sort((a, b) => slotSortKey(a.slot) - slotSortKey(b.slot) || a.name.localeCompare(b.name));
+    .sort((a, b) => slotSortKey(a.slot) - slotSortKey(b.slot) || String(a.name || '').localeCompare(String(b.name || '')));
+  // Scoreboard payloads often omit lineups until kickoff — use ESPN roster slots after draft.
+  if (!lineupHasNamedPlayers(entries.filter((e) => e.isStarter)) && rosterTeam) {
+    entries = rosterTeamEntriesAsPlayers(rosterTeam)
+      .sort((a, b) => slotSortKey(a.slot) - slotSortKey(b.slot) || String(a.name || '').localeCompare(String(b.name || '')));
+  }
+  const starters = entries.filter((e) => e.isStarter);
+  let bench = entries.filter((e) => !e.isStarter);
+  let lineup = fillStarterSlots(starters, lineupSlotCounts);
+  if (statsMap) {
+    lineup = applyPointsToLineup(lineup, statsMap);
+    bench = applyPointsToLineup(bench, statsMap);
+  }
   return {
     id: team.id,
     name: team.name,
     logo: team.logo || logos.PLACEHOLDER_LOGO,
     score: Number(side.totalPoints ?? 0),
     projected: Number(side.totalProjectedPointsLive ?? side.totalProjectedPoints ?? 0),
-    lineup: entries.filter((e) => e.isStarter),
-    bench: entries.filter((e) => !e.isStarter)
+    lineup,
+    bench
   };
 }
 
-function buildMatchupBox(raw, conference, week, focusTeamId) {
+function buildMatchupBox(raw, conference, week, focusTeamId, lineupSlotCounts = null, rosterRaw = null) {
   const teams = teamMapFromRaw(raw, conference.key);
   const tid = Number(focusTeamId);
   const match = (raw.schedule || []).find((m) =>
@@ -1186,8 +1353,14 @@ function buildMatchupBox(raw, conference, week, focusTeamId) {
     && (Number(m.home?.teamId) === tid || Number(m.away?.teamId) === tid)
   );
   if (!match) return null;
-  const home = normalizeMatchupBoxSide(match.home, teams, week);
-  const away = normalizeMatchupBoxSide(match.away, teams, week);
+  const counts = lineupSlotCounts || lineupSlotCountsFromRaw(rosterRaw || raw);
+  const rosterById = new Map((rosterRaw?.teams || raw?.teams || []).map((t) => [Number(t.id), t]));
+  const homeId = Number(match.home?.teamId);
+  const awayId = Number(match.away?.teamId);
+  const homeStats = collectPlayerWeekStats(raw, homeId, week);
+  const awayStats = collectPlayerWeekStats(raw, awayId, week);
+  const home = normalizeMatchupBoxSide(match.home, teams, week, counts, rosterById.get(homeId), homeStats);
+  const away = normalizeMatchupBoxSide(match.away, teams, week, counts, rosterById.get(awayId), awayStats);
   if (!home || !away) return null;
   return {
     week: Number(week),
@@ -1195,6 +1368,7 @@ function buildMatchupBox(raw, conference, week, focusTeamId) {
     home,
     away,
     isHome: Number(match.home?.teamId) === tid,
+    lineupSlots: starterSlotPlan(counts),
     generatedAt: new Date().toISOString()
   };
 }
@@ -1206,7 +1380,7 @@ async function loadTeamDetail(conferenceKey, teamId) {
   const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
   const team = (raw.teams || []).find((t) => Number(t.id) === Number(teamId));
   if (!team) throw Object.assign(new Error('Team not found'), { status: 404 });
-  const detail = normalizeRosterTeam(team, conference, membersById);
+  const detail = normalizeRosterTeam(team, conference, membersById, lineupSlotCountsFromRaw(raw));
 
   const baseSchedule = await fetchEspnRaw(
     conference,
@@ -1222,8 +1396,17 @@ async function loadTeamDetail(conferenceKey, teamId) {
   );
   const schedule = normalizeSchedule(scheduleRaw, conference, currentWeek);
   const weekStats = collectPlayerWeekStats(scheduleRaw, teamId, currentWeek);
-  detail.roster = applyWeekStatsToRoster(detail.roster, weekStats);
-  const matchupBox = buildMatchupBox(scheduleRaw, conference, currentWeek, teamId);
+  detail.lineup = applyWeekStatsToRoster(detail.lineup, weekStats);
+  detail.bench = applyWeekStatsToRoster(detail.bench, weekStats);
+  detail.roster = [...detail.lineup, ...detail.bench];
+  const matchupBox = buildMatchupBox(
+    scheduleRaw,
+    conference,
+    currentWeek,
+    teamId,
+    lineupSlotCountsFromRaw(raw),
+    raw
+  );
 
   let currentMatchup = null;
   for (const m of schedule.matchups || []) {
@@ -1289,11 +1472,14 @@ async function loadConferenceRosters(conferenceKey) {
   const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
   const currentWeek = Number(raw.status?.currentMatchupPeriod || 1);
   const schedule = normalizeSchedule(raw, conference, currentWeek);
+  const counts = lineupSlotCountsFromRaw(raw);
   const teams = (raw.teams || [])
     .map((t) => {
-      const detail = normalizeRosterTeam(t, conference, membersById);
+      const detail = normalizeRosterTeam(t, conference, membersById, counts);
       const weekStats = collectPlayerWeekStats(raw, detail.id, currentWeek);
-      detail.roster = applyWeekStatsToRoster(detail.roster, weekStats);
+      detail.lineup = applyWeekStatsToRoster(detail.lineup, weekStats);
+      detail.bench = applyWeekStatsToRoster(detail.bench, weekStats);
+      detail.roster = [...detail.lineup, ...detail.bench];
       let currentMatchup = null;
       for (const m of schedule.matchups || []) {
         if (Number(m.home?.id) === Number(detail.id) || Number(m.away?.id) === Number(detail.id)) {
@@ -5334,8 +5520,108 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         messages: inbox.listForUser(user.id),
         unread: inbox.unreadCount(user.id),
+        canSend: users.canSendInbox(user),
+        isStaff: users.isStaff(user),
+        isOwner: users.isSiteOwner(user),
         generatedAt: new Date().toISOString()
       });
+    }
+
+    if (pathname === '/api/inbox/recipients' && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      if (!users.canSendInbox(user)) {
+        return sendJson(res, 403, { ok: false, error: 'Only admins and the owner can message members' });
+      }
+      const recipients = users.listUsers()
+        .filter((u) => u.approved !== false && u.id !== user.id)
+        .map((u) => ({
+          id: u.id,
+          name: u.name || u.loginName || 'Member',
+          role: u.role || 'user'
+        }))
+        .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      return sendJson(res, 200, { ok: true, recipients });
+    }
+
+    if (pathname === '/api/inbox' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      if (!users.canSendInbox(user)) {
+        return sendJson(res, 403, { ok: false, error: 'Members cannot send or reply in Inbox' });
+      }
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const text = String(body.body || body.text || '').trim();
+        let subject = String(body.subject || '').trim();
+        let toUserId = String(body.toUserId || body.to || '').trim() || null;
+        let threadId = null;
+        let inReplyTo = null;
+        const replyToId = String(body.replyToId || body.inReplyTo || '').trim() || null;
+        const broadcast = body.broadcast === true || body.toAll === true;
+
+        if (replyToId) {
+          const original = inbox.findForUser(replyToId, user.id);
+          if (!original) {
+            return sendJson(res, 404, { ok: false, error: 'Original message not found' });
+          }
+          toUserId = original.fromUserId;
+          if (!toUserId) {
+            return sendJson(res, 400, { ok: false, error: 'Cannot reply to a system message' });
+          }
+          threadId = original.threadId || original.id;
+          inReplyTo = original.id;
+          if (!subject) {
+            const base = String(original.subject || 'Message').replace(/^Re:\s*/i, '');
+            subject = `Re: ${base}`.slice(0, 180);
+          }
+        }
+
+        if (!subject) subject = 'Message from GridIron 24 HQ';
+        if (!text) return sendJson(res, 400, { ok: false, error: 'Message body is required' });
+
+        if (broadcast) {
+          const ids = eligibleVoters().map((u) => u.id).filter((id) => id !== user.id);
+          const sent = inbox.sendToUsers({
+            toUserIds: ids,
+            from: user,
+            subject,
+            body: text,
+            type: 'general',
+            meta: { broadcast: true }
+          });
+          return sendJson(res, 201, { ok: true, sent: sent.length, broadcast: true });
+        }
+
+        if (!toUserId) {
+          return sendJson(res, 400, { ok: false, error: 'Recipient is required' });
+        }
+        const target = users.listUsers().find((u) => u.id === toUserId);
+        if (!target || target.approved === false) {
+          return sendJson(res, 404, { ok: false, error: 'Recipient not found' });
+        }
+        const message = inbox.sendMessage({
+          toUserId,
+          from: user,
+          subject,
+          body: text,
+          type: 'general',
+          threadId,
+          inReplyTo,
+          meta: inReplyTo ? { reply: true } : {}
+        });
+        return sendJson(res, 201, { ok: true, message });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not send message'
+        });
+      }
     }
 
     if (pathname === '/api/inbox/unread' && req.method === 'GET') {
@@ -5442,13 +5728,16 @@ const server = http.createServer(async (req, res) => {
         }
         const item = ruleProposals.createProposal({ text: body.text || body.proposal, author: user });
         const staff = staffRecipients().filter((u) => u.id !== user.id);
-        const subject = `Rule change proposal from ${user.name || user.loginName || 'member'}`;
+        const proposer = user.name || user.loginName || 'member';
+        const subject = `RULE CHANGE — proposal from ${proposer}`;
         const msgBody = [
-          `${user.name || user.loginName || 'A member'} submitted a rule change proposal:`,
+          'RULE CHANGE',
+          '',
+          `Proposed by: ${proposer}`,
           '',
           item.text,
           '',
-          'Open Inbox to review. The site owner can send this to a league-wide vote.'
+          'The site owner must send this for a league-wide vote from Inbox.'
         ].join('\n');
         inbox.sendToUsers({
           toUserIds: staff.map((u) => u.id),
@@ -5457,21 +5746,36 @@ const server = http.createServer(async (req, res) => {
           body: msgBody,
           type: 'rule_proposal',
           relatedId: item.id,
-          meta: { proposalId: item.id, status: item.status }
+          meta: {
+            proposalId: item.id,
+            status: item.status,
+            authorName: proposer,
+            authorId: user.id,
+            ruleChange: true
+          }
         });
         // Also leave a copy in the author's inbox for tracking.
         inbox.sendMessage({
           toUserId: user.id,
           from: user,
-          subject: 'Your rule change proposal was submitted',
+          subject: 'RULE CHANGE — your proposal was submitted',
           body: [
+            'RULE CHANGE',
+            '',
             'Your proposal was sent to league admins and the site owner:',
             '',
-            item.text
+            item.text,
+            '',
+            'It will not go to a league vote until the owner sends it.'
           ].join('\n'),
           type: 'rule_proposal',
           relatedId: item.id,
-          meta: { proposalId: item.id, status: item.status }
+          meta: {
+            proposalId: item.id,
+            status: item.status,
+            authorName: proposer,
+            ruleChange: true
+          }
         });
         return sendJson(res, 201, {
           ok: true,
@@ -5493,15 +5797,19 @@ const server = http.createServer(async (req, res) => {
         const eligible = eligibleVoters();
         const updated = ruleProposals.openVote(id, { by: user, eligibleUsers: eligible });
         const pub = ruleProposals.publicProposal(updated, { user });
-        const subject = 'League vote: rule change proposal';
+        const proposer = updated.authorName || 'A member';
+        const subject = 'RULE CHANGE — league vote open';
         const msgBody = [
-          'The site owner opened a league-wide vote on this rule change proposal.',
+          'RULE CHANGE',
+          '',
+          `Proposed by: ${proposer}`,
+          `Opened for vote by: ${user.name || user.loginName || 'Owner'}`,
           '',
           updated.text,
           '',
-          `Majority needed to pass or fail: ${pub.majorityNeeded} of ${pub.eligibleCount} members.`,
-          '',
-          'Vote Yes or No from your Inbox.'
+          `Every approved member must vote (${pub.eligibleCount} ballots).`,
+          'Vote YES or NO from your Inbox.',
+          'Running tallies appear after you vote. Final results are delivered to everyone when all ballots are in.'
         ].join('\n');
         inbox.sendToUsers({
           toUserIds: eligible.map((u) => u.id),
@@ -5513,8 +5821,10 @@ const server = http.createServer(async (req, res) => {
           meta: {
             proposalId: updated.id,
             status: updated.status,
-            majorityNeeded: pub.majorityNeeded,
-            eligibleCount: pub.eligibleCount
+            authorName: proposer,
+            authorId: updated.authorId,
+            eligibleCount: pub.eligibleCount,
+            ruleChange: true
           }
         });
         return sendJson(res, 200, { ok: true, proposal: pub });
@@ -5560,26 +5870,34 @@ const server = http.createServer(async (req, res) => {
         const pub = ruleProposals.publicProposal(updated, { user });
         if (before?.status === ruleProposals.STATUS.VOTING
           && (updated.status === ruleProposals.STATUS.PASSED || updated.status === ruleProposals.STATUS.FAILED)) {
-          const staff = staffRecipients();
+          const voters = Array.isArray(updated.eligibleUserIds) && updated.eligibleUserIds.length
+            ? updated.eligibleUserIds
+            : eligibleVoters().map((u) => u.id);
           const resultLabel = updated.status === ruleProposals.STATUS.PASSED ? 'PASSED' : 'FAILED';
+          const proposer = updated.authorName || 'A member';
           inbox.sendToUsers({
-            toUserIds: staff.map((u) => u.id),
+            toUserIds: voters,
             from: null,
-            subject: `Rule vote ${resultLabel}`,
+            subject: `RULE CHANGE — ${resultLabel}`,
             body: [
-              `The rule change proposal has ${resultLabel} by majority vote.`,
+              'RULE CHANGE',
+              '',
+              `Proposed by: ${proposer}`,
+              `Final result: ${resultLabel}`,
               '',
               updated.text,
               '',
-              `Final tally: Yes ${pub.yes} · No ${pub.no} (needed ${pub.majorityNeeded} of ${pub.eligibleCount}).`
+              `Final tally: Yes ${pub.yes} · No ${pub.no} (${pub.totalVotes} of ${pub.eligibleCount} voted).`
             ].join('\n'),
             type: 'rule_result',
             relatedId: updated.id,
             meta: {
               proposalId: updated.id,
               status: updated.status,
+              authorName: proposer,
               yes: pub.yes,
-              no: pub.no
+              no: pub.no,
+              ruleChange: true
             }
           });
         }
@@ -5784,6 +6102,8 @@ const server = http.createServer(async (req, res) => {
       const keeperWindow = keepers.getKeeperWindow(calendar.listEvents(), config.season);
       let team = null;
       let roster = [];
+      let lineup = [];
+      let bench = [];
       let keeper = null;
       let currentMatchup = null;
       let currentMatchupPeriod = null;
@@ -5824,6 +6144,8 @@ const server = http.createServer(async (req, res) => {
             try {
               const detail = await loadTeamDetail(claim.conferenceKey, claim.teamId);
               roster = detail?.team?.roster || [];
+              lineup = detail?.team?.lineup || [];
+              bench = detail?.team?.bench || [];
               if (detail?.team) {
                 team = {
                   ...(team || {}),
@@ -5871,6 +6193,8 @@ const server = http.createServer(async (req, res) => {
         logo,
         team,
         roster,
+        lineup,
+        bench,
         currentMatchup,
         matchupBox,
         currentMatchupPeriod,

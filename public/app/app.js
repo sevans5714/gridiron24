@@ -40,7 +40,13 @@
     loadingScores: false,
     authUser: null,
     dues: null,
-    deferredInstall: null
+    deferredInstall: null,
+    inbox: null,
+    inboxSelectedId: null,
+    playoffs: null,
+    playoffConf: 'detail',
+    draft: null,
+    unread: 0
   };
 
   const SPORTS_SLOT = 4;
@@ -48,14 +54,13 @@
   const SPORTS_POLL_MS = 25000;
   const SPORTS_POLL_LIVE_MS = 15000;
 
-  const syncEl = document.getElementById('sync');
   const subtitle = document.getElementById('subtitle');
   const teamChip = document.getElementById('team-chip');
 
-  function setSync(text, kind = '') {
-    if (!syncEl) return;
-    syncEl.textContent = text;
-    syncEl.className = `sync-pill${kind ? ` is-${kind}` : ''}`;
+  function firstName(user) {
+    const raw = String(user?.name || user?.loginName || '').trim();
+    if (!raw) return 'Member';
+    return raw.split(/\s+/)[0];
   }
 
   function updateTeamChip() {
@@ -121,16 +126,90 @@
     }
     if (name === 'more') {
       if (!state.leagues) loadStandings();
-      else renderStandings();
       loadFeed(state.feedTab);
       loadFinales();
       loadDues();
-      loadInboxCount();
+      loadInbox();
+      loadPlayoffs();
     }
+  }
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches
+      || window.matchMedia('(display-mode: fullscreen)').matches
+      || window.matchMedia('(display-mode: minimal-ui)').matches
+      || navigator.standalone === true;
+  }
+
+  function openExternal(url) {
+    // Only for true off-site actions (e.g. Venmo). Never used for GridIron HQ pages.
+    const href = String(url || '');
+    if (!href) return;
+    try {
+      const u = new URL(href, location.origin);
+      if (u.origin === location.origin) return;
+    } catch {
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function openMoreFeed(feed) {
+    const tab = String(feed || 'news');
+    state.feedTab = tab;
+    document.querySelectorAll('#view-more [data-feed]').forEach((b) => {
+      b.classList.toggle('is-on', b.dataset.feed === tab);
+    });
+    navigate('more', { push: true, scrollTop: false });
+    loadFeed(tab);
+    requestAnimationFrame(() => {
+      document.getElementById('feed-mount')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  function scrollMainTop() {
+    const main = document.querySelector('.app-main');
+    if (main) main.scrollTop = 0;
+  }
+
+  function jumpWithinMore(jump) {
+    if (!jump) return;
+    const id = jump === 'inbox' ? 'inbox-panel'
+      : jump === 'playoffs' ? 'playoffs-panel'
+      : jump === 'dues' ? 'dues-mount'
+      : null;
+    if (!id) return;
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  function resolveHashView(raw) {
+    const hash = String(raw || '').replace(/^#/, '');
+    return ({
+      home: 'home',
+      scores: 'scoreboard',
+      scoreboard: 'scoreboard',
+      team: 'team',
+      lounge: 'lounge',
+      feed: 'more',
+      more: 'more',
+      standings: 'more',
+      inbox: 'more',
+      playoffs: 'more',
+      dues: 'more'
+    })[hash] || null;
   }
 
   function showView(name) {
     state.view = name;
+    document.body.dataset.view = name;
     document.querySelectorAll('.view').forEach((el) => {
       const on = el.dataset.view === name;
       el.hidden = !on;
@@ -146,6 +225,17 @@
       if (on) btn.setAttribute('aria-current', 'page');
       else btn.removeAttribute('aria-current');
     });
+    if (subtitle) {
+      const week = state.week || state.myTeam?.currentMatchupPeriod;
+      const labels = {
+        home: week ? `Week ${week}` : 'Home',
+        scoreboard: week ? `Week ${week}` : 'Scores',
+        team: 'My Team',
+        lounge: 'Lounge',
+        more: 'More'
+      };
+      subtitle.textContent = labels[name] || 'Home';
+    }
     if (name === 'scoreboard' || name === 'home') startPolling();
     else stopPolling();
     if (name === 'lounge') {
@@ -157,6 +247,95 @@
       clearTimeout(state.sportsPollTimer);
     }
     ensureViewData(name);
+  }
+
+  function navigate(name, { push = false, replace = false, jump = null, scrollTop = true } = {}) {
+    const view = ['home', 'scoreboard', 'team', 'lounge', 'more'].includes(name) ? name : 'home';
+    const hash = jump && view === 'more' ? jump : view;
+    const url = `#${hash}`;
+    if (replace || (!push && !location.hash)) {
+      history.replaceState({ view, jump }, '', url);
+    } else if (push && (state.view !== view || jump)) {
+      history.pushState({ view, jump }, '', url);
+    } else {
+      history.replaceState({ view, jump }, '', url);
+    }
+    showView(view);
+    if (scrollTop) scrollMainTop();
+    if (jump) jumpWithinMore(jump);
+  }
+
+  function routeAppLink(href, event) {
+    let url;
+    try {
+      url = new URL(href, location.origin);
+    } catch {
+      return false;
+    }
+
+    // Real external destinations only (Venmo, etc.) — never GridIron HQ pages.
+    if (url.origin !== location.origin) {
+      event?.preventDefault();
+      openExternal(url.href);
+      return true;
+    }
+
+    // In-app hash / relative app routes
+    if (url.pathname === '/app' || url.pathname === '/app/' || url.pathname.startsWith('/app/')) {
+      event?.preventDefault();
+      const mapped = resolveHashView(url.hash) || 'home';
+      const jump = ['inbox', 'playoffs', 'dues'].includes(String(url.hash || '').replace('#', ''))
+        ? String(url.hash).replace('#', '')
+        : null;
+      navigate(jump ? 'more' : mapped, { push: true, jump });
+      return true;
+    }
+
+    const path = url.pathname;
+    if (path === '/members.html' || path.startsWith('/members')) {
+      event?.preventDefault();
+      navigate('lounge', { push: true });
+      return true;
+    }
+    if (path === '/inbox.html') {
+      event?.preventDefault();
+      navigate('more', { push: true, jump: 'inbox' });
+      return true;
+    }
+    if (path === '/my-roster.html') {
+      event?.preventDefault();
+      navigate('team', { push: true });
+      return true;
+    }
+    if (path === '/playoffs.html') {
+      event?.preventDefault();
+      navigate('more', { push: true, jump: 'playoffs' });
+      return true;
+    }
+    if (path === '/draft.html') {
+      event?.preventDefault();
+      openMoreFeed('draft');
+      return true;
+    }
+    if (path === '/transactions.html') {
+      event?.preventDefault();
+      openMoreFeed('moves');
+      return true;
+    }
+    if (path === '/schedules.html') {
+      event?.preventDefault();
+      openMoreFeed('schedule');
+      return true;
+    }
+    if (path === '/scoreboard.html') {
+      event?.preventDefault();
+      navigate('scoreboard', { push: true });
+      return true;
+    }
+
+    // All other same-origin pages stay out of the app — block navigation.
+    event?.preventDefault();
+    return true;
   }
 
   function setChatLive(on) {
@@ -446,10 +625,10 @@
       rows.push(`
         <div class="s-row body ${zone}">
           <div class="rank">${rank}</div>
-          <a class="team" href="/team.html?conference=${esc(conf.key)}&amp;teamId=${esc(team.id)}">
+          <div class="team">
             <img src="${esc(team.logo || PLACEHOLDER)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
             <div class="nm">${esc(team.name)}${mine ? ' · you' : ''}</div>
-          </a>
+          </div>
           <div class="num">${team.wins || 0}</div>
           <div class="num">${team.losses || 0}</div>
           <div class="num">${fmtPts(team.pointsFor)}</div>
@@ -472,15 +651,6 @@
           ${rows.join('')}
         </div>
       </div>`;
-  }
-
-  function renderStandings() {
-    const mount = document.getElementById('standings-mount');
-    if (!mount || !state.leagues) return;
-    const conf = (state.leagues.conferences || []).find((c) => c.key === state.standingsConf)
-      || (state.leagues.conferences || [])[0];
-    const { id } = myTeamRef();
-    mount.innerHTML = standingsHtml(conf, { highlightId: id });
   }
 
   function matchupStatus(m) {
@@ -686,9 +856,8 @@
     const logo = t?.logo || data.logo?.url || PLACEHOLDER;
     const m = data.currentMatchup;
     const week = data.currentMatchupPeriod || state.week || '';
-    const roster = data.roster || [];
-    const starters = roster.filter((p) => isStarter(p.slot));
-    const bench = roster.filter((p) => !isStarter(p.slot));
+    const lineup = (data.lineup || data.roster || []).filter((p) => p.empty || isStarter(p.slot));
+    const bench = (data.bench || data.roster || []).filter((p) => !p.empty && !isStarter(p.slot));
 
     const matchupHtml = m
       ? `<div class="matchup-card">
@@ -710,20 +879,6 @@
         </div>`
       : `<div class="msg">No matchup posted this week.</div>`;
 
-    const rosterRows = (list) => list.map((p) => {
-      const bad = injClass(p.injuryStatus) === 'bad' && isStarter(p.slot);
-      return `
-        <div class="roster-row ${isStarter(p.slot) ? '' : 'is-bench'}">
-          <div class="slot">${esc(p.slot || '—')}</div>
-          <div>
-            <div class="nm">${esc(p.name)}</div>
-            <div class="sub">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}</div>
-          </div>
-          <div class="num">${fmtPts(p.weekPoints)}</div>
-          <div class="inj ${bad ? 'bad' : 'ok'}">${esc(p.injuryStatus || '—')}</div>
-        </div>`;
-    }).join('');
-
     mount.innerHTML = `
       <div class="team-hero">
         <img src="${esc(logo)}" alt="" />
@@ -744,8 +899,8 @@
       </div>
       ${matchupHtml}
       <div class="section-label">Starters</div>
-      ${starters.length ? rosterRows(starters) : '<div class="msg">No roster yet.</div>'}
-      ${bench.length ? `<div class="section-label">Bench / IR</div>${rosterRows(bench)}` : ''}
+      ${slotRosterListHtml(lineup, { showPts: true })}
+      ${bench.length ? `<div class="section-label">Bench / IR</div>${slotRosterListHtml(bench, { showPts: true })}` : ''}
       ${data.keeper ? `<p class="msg" style="margin-top:1rem;">Keeper: <strong>${esc(data.keeper.playerName)}</strong> · Round ${esc(String(data.keeper.costRound))}</p>` : ''}
     `;
   }
@@ -857,6 +1012,32 @@
       }).join('');
       return;
     }
+    if (state.feedTab === 'draft') {
+      const picks = (state.draft?.picks || []).filter((p) => p.filled);
+      const list = picks.slice(-40).reverse();
+      if (!list.length) {
+        mount.innerHTML = `<div class="msg">No draft picks loaded for ${esc(state.standingsConf || 'this conference')}.</div>`;
+        return;
+      }
+      const teamById = new Map((state.draft?.columns || []).map((t) => [Number(t.id), t]));
+      const confName = state.draft?.conference?.shortName || state.draft?.conference?.name || state.standingsConf || 'Draft';
+      mount.innerHTML = `
+        <p class="msg" style="padding-top:0;">${esc(confName)} · latest picks</p>
+        ${list.map((p) => {
+          const player = p.fullName || [p.firstName, p.lastName].filter(Boolean).join(' ') || 'Player';
+          const franchise = teamById.get(Number(p.teamId));
+          const team = franchise?.name || franchise?.abbreviation || '';
+          return `<article class="draft-row">
+            <div class="pick">R${esc(String(p.round || '—'))} · #${esc(String(p.overall || p.roundPick || '—'))}</div>
+            <div class="body">
+              <div class="nm">${esc(player)}${p.position ? ` · ${esc(p.position)}` : ''}</div>
+              ${team ? `<div class="team">${esc(team)}</div>` : ''}
+            </div>
+          </article>`;
+        }).join('')}
+      `;
+      return;
+    }
     const latest = state.rankings?.latest;
     const ranks = latest?.ranks || [];
     if (!ranks.length) {
@@ -921,7 +1102,7 @@
       parts.push(`
         <div class="pulse-card">
           <div class="eyebrow">Week ${esc(String(finaleEventWeek(bowl)))} · GridIron Bowl</div>
-          <img class="mark" src="/assets/gridiron-bowl.png?v=2" alt="GridIron Bowl" width="1024" height="682" loading="eager" decoding="async" />
+          <img class="mark" src="/assets/gridiron-bowl.png?v=3" alt="GridIron Bowl" width="1024" height="682" loading="eager" decoding="async" />
           <div class="pulse-score">
             ${pulseSide(bowl.detail, 'detail')}
             <div class="mid">${(d != null && o != null) ? `${fmtPts(d)} – ${fmtPts(o)}` : 'VS'}</div>
@@ -954,7 +1135,7 @@
             <strong>GridIron Bowl</strong> — conference champions for the title.<br />
             <strong>${esc(cupName)}</strong> — last place in each conference; winner stays, loser leaves.
           </p>
-          <a class="quick-chip" href="/playoffs.html">Open playoff board</a>
+          <button type="button" class="quick-chip" data-app-jump="playoffs">Open playoffs</button>
         </div>`;
       return;
     }
@@ -995,7 +1176,7 @@
     return Number(state.dues.dues.gridiron);
   }
 
-  function venmoPayUrl({ amount, note } = {}) {
+  function venmoPayUrl({ amount } = {}) {
     const t = state.dues?.treasurer || {};
     const user = String(t.venmoUsername || 'James-Aceto').replace(/^@/, '').trim();
     const params = new URLSearchParams({
@@ -1007,33 +1188,32 @@
     if (Number.isFinite(dollars) && dollars > 0) {
       params.set('amount', String(dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2)));
     }
-    const memo = String(note || t.note || 'League dues — GridIron 24 HQ').trim();
-    if (memo) params.set('note', memo);
     return `https://venmo.com/?${params.toString()}`;
   }
 
   function duesCardHtml() {
     if (!state.dues?.treasurer) return '';
+    const paid = Boolean(state.authUser?.duesPaid || state.dues?.viewer?.duesPaid);
+    if (paid) return '';
     const t = state.dues.treasurer;
     const user = String(t.venmoUsername || 'James-Aceto').replace(/^@/, '');
     const league = membershipLeague();
     const amount = duesAmount();
-    const paid = Boolean(state.authUser?.duesPaid || state.dues?.viewer?.duesPaid);
-    const who = state.authUser?.name || state.authUser?.loginName || 'Member';
     const leagueLabel = league === 'aaa' ? 'AAA' : league === 'gridiron' ? 'GridIron 24' : 'League';
-    const note = `${t.note || 'League dues'} — ${who}${league ? ` (${leagueLabel})` : ''}`;
-    const href = venmoPayUrl({ amount: amount || '', note });
-    const status = paid
-      ? `<p class="dues-status is-paid">Dues marked paid${league ? ` for ${esc(leagueLabel)}` : ''}.</p>`
-      : amount != null
-        ? `<p class="dues-status is-due">You owe <strong>${esc(money(amount))}</strong>${league ? ` for ${esc(leagueLabel)}` : ''}.</p>`
-        : `<p class="dues-status">Pay league dues to @${esc(user)}.</p>`;
+    const href = venmoPayUrl({ amount: amount || '' });
+    const status = amount != null
+      ? `<p class="dues-status is-due">You owe <strong>${esc(money(amount))}</strong>${league ? ` for ${esc(leagueLabel)}` : ''}.</p>`
+      : `<p class="dues-status">Pay league dues to @${esc(user)}.</p>`;
 
     return `
       <div class="dues-card">
         <div class="section-label">League dues</div>
-        <p class="dues-to">Pay <strong>${esc(t.name || 'Jamie Aceto')}</strong> · @${esc(user)}</p>
+        <p class="dues-to">Pay <strong>${esc(t.name || 'Jamie Aceto')}</strong></p>
         ${status}
+        <a class="venmo-handle" href="${esc(href)}" target="_blank" rel="noopener noreferrer">
+          <img src="/assets/venmo.svg" alt="Venmo" width="72" height="14" decoding="async" />
+          <span>@${esc(user)}</span>
+        </a>
         <p class="dues-rates">GridIron ${esc(money(state.dues.dues?.gridiron))} · AAA ${esc(money(state.dues.dues?.aaa))}</p>
         <a class="btn-venmo" href="${esc(href)}" target="_blank" rel="noopener noreferrer">Pay with Venmo</a>
       </div>
@@ -1042,21 +1222,22 @@
 
   function renderDues() {
     const more = document.getElementById('dues-mount');
-    if (more) more.innerHTML = duesCardHtml() || `<div class="msg">Dues unavailable.</div>`;
+    if (!more) return;
+    const html = duesCardHtml();
+    more.innerHTML = html || '';
+    more.hidden = !html;
   }
 
   async function loadDues() {
     try {
-      if (!state.dues) {
-        const data = await apiGet('/api/members');
-        state.dues = {
-          treasurer: data.treasurer || { name: 'Jamie Aceto', venmoUsername: 'James-Aceto', note: 'League dues — GridIron 24 HQ' },
-          dues: data.dues || { gridiron: 100, aaa: 50 },
-          viewer: data.viewer || null
-        };
-        if (data.viewer && state.authUser) {
-          state.authUser = { ...state.authUser, ...data.viewer };
-        }
+      const data = await apiGet('/api/members');
+      state.dues = {
+        treasurer: data.treasurer || { name: 'Jamie Aceto', venmoUsername: 'James-Aceto', note: 'League dues — GridIron 24 HQ' },
+        dues: data.dues || { gridiron: 100, aaa: 50 },
+        viewer: data.viewer || null
+      };
+      if (data.viewer && state.authUser) {
+        state.authUser = { ...state.authUser, ...data.viewer };
       }
       renderDues();
       if (state.view === 'home') renderHome();
@@ -1072,21 +1253,55 @@
     }
   }
 
-  function boxPlayerCell(p, side) {
-    if (!p) {
-      return `<div class="box-player is-empty ${side}"><span class="nm"></span><span class="pts">—</span></div>`;
-    }
-    const inj = String(p.injuryStatus || '').toUpperCase();
-    const injBad = ['OUT', 'DOUBTFUL', 'IR', 'INJURY_RESERVE', 'INJURED_RESERVE'].includes(inj);
-    const name = `<span class="nm">${esc(p.name || '—')}${p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}</span>`;
-    const pts = `<span class="pts">${fmtPts(p.points)}</span>`;
-    return `
-      <div class="box-player ${side}${injBad ? ' is-inj' : ''}">
-        ${side === 'away' ? `${name}${pts}` : `${pts}${name}`}
+  function homeNewsHtml() {
+    const rows = (state.news || []).slice(0, 5);
+    if (!rows.length) {
+      return `<div class="home-section">
+        <div class="section-label">League news</div>
+        <div class="msg">No league news yet.</div>
       </div>`;
+    }
+    return `<div class="home-section">
+      <div class="section-label">League news</div>
+      <div class="home-news">
+        ${rows.map((n) => `
+          <article class="news-card is-compact">
+            <h3>${esc(n.title)}</h3>
+            <div class="meta">${esc(n.authorName || n.author || 'Staff')}${n.createdAt ? ` · ${esc(new Date(n.createdAt).toLocaleDateString())}` : ''}</div>
+            <p>${esc(String(n.body || '').slice(0, 220))}${String(n.body || '').length > 220 ? '…' : ''}</p>
+          </article>`).join('')}
+      </div>
+    </div>`;
   }
 
-  function matchupBoxHtml(box, fallbackMatchup, week) {
+  const DEFAULT_STARTER_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
+
+  function emptySlotRows(slots = DEFAULT_STARTER_SLOTS) {
+    return (slots || DEFAULT_STARTER_SLOTS).map((slot) => ({
+      slot,
+      name: null,
+      empty: true,
+      points: null,
+      weekPoints: null
+    }));
+  }
+
+  function slotRosterListHtml(players, { showPts = true } = {}) {
+    const list = (players && players.length) ? players : emptySlotRows();
+    return `<ul class="slot-roster" role="list">
+      ${list.map((p) => {
+        const empty = p.empty || !p.name;
+        const bad = !empty && injClass(p.injuryStatus) === 'bad';
+        return `<li class="slot-roster-row${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''}">
+          <span class="slot">${esc(p.slot || '—')}</span>
+          <span class="nm">${empty ? '—' : esc(p.name)}${!empty && p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}</span>
+          ${showPts ? `<span class="pts">${empty ? '' : fmtPts(p.points != null ? p.points : p.weekPoints)}</span>` : ''}
+        </li>`;
+      }).join('')}
+    </ul>`;
+  }
+
+  function matchupScoreboardHtml(box, fallbackMatchup, week) {
     if (!box?.away || !box?.home) {
       if (!fallbackMatchup) return `<div class="home-matchup"><div class="msg">No matchup loaded yet.</div></div>`;
       const st = matchupStatus(fallbackMatchup);
@@ -1095,7 +1310,6 @@
         ${gameRow(fallbackMatchup)}
       </div>`;
     }
-
     const away = box.away;
     const home = box.home;
     const winner = String(box.winner || 'UNDECIDED').toUpperCase();
@@ -1105,26 +1319,6 @@
     const statusCls = decided ? 'final' : inProgress ? 'live' : '';
     const awayWin = winner === 'AWAY';
     const homeWin = winner === 'HOME';
-
-    const starterRows = Math.max(away.lineup?.length || 0, home.lineup?.length || 0);
-    const starters = Array.from({ length: starterRows }, (_, i) => {
-      const a = away.lineup?.[i];
-      const h = home.lineup?.[i];
-      return `<div class="box-row">${boxPlayerCell(a, 'away')}<div class="box-mid">${esc(a?.slot || h?.slot || '')}</div>${boxPlayerCell(h, 'home')}</div>`;
-    }).join('');
-
-    const benchRows = Math.max(away.bench?.length || 0, home.bench?.length || 0);
-    const bench = benchRows
-      ? `<details class="box-bench" id="box-bench"${state.boxBenchOpen ? ' open' : ''}>
-          <summary>Bench</summary>
-          ${Array.from({ length: benchRows }, (_, i) => {
-            const a = away.bench?.[i];
-            const h = home.bench?.[i];
-            return `<div class="box-row is-bench">${boxPlayerCell(a, 'away')}<div class="box-mid"></div>${boxPlayerCell(h, 'home')}</div>`;
-          }).join('')}
-        </details>`
-      : '';
-
     return `
       <div class="home-matchup pulse-box">
         <div class="section-label">Your matchup · Week ${esc(String(box.week || week))} · <span class="game-status ${statusCls}">${status}</span></div>
@@ -1147,78 +1341,90 @@
             <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
           </div>
         </div>
-        <div class="box-lineups" aria-label="Starting lineups">
-          <div class="box-cols">
-            <span>${esc(away.name)}</span>
-            <span></span>
-            <span>${esc(home.name)}</span>
-          </div>
-          ${starters || '<div class="msg">Lineups loading…</div>'}
-        </div>
-        ${bench}
-        <button type="button" class="quick-chip" data-go="team">Open my team</button>
       </div>`;
+  }
+
+  function matchupRostersHtml(box, fallbackMatchup) {
+    const away = box?.away || fallbackMatchup?.away;
+    const home = box?.home || fallbackMatchup?.home;
+    if (!away || !home) return '';
+    const slots = (box?.lineupSlots || []).map((s) => s.slot).filter(Boolean);
+    const myLineup = (state.myTeam?.lineup || []).filter((p) => p.empty || isStarter(p.slot));
+    const myId = Number(state.myTeam?.team?.id);
+    let awayLine = (box?.away?.lineup?.length ? box.away.lineup : emptySlotRows(slots));
+    let homeLine = (box?.home?.lineup?.length ? box.home.lineup : emptySlotRows(slots));
+    // After draft, ESPN roster fills slots; prefer named lineup over empty placeholders.
+    if (myLineup.some((p) => p.name) && Number.isFinite(myId)) {
+      if (Number(away?.id) === myId && !awayLine.some((p) => p.name)) awayLine = myLineup;
+      if (Number(home?.id) === myId && !homeLine.some((p) => p.name)) homeLine = myLineup;
+    }
+    return `
+      <div class="home-section matchup-rosters">
+        <div class="section-label">Lineups</div>
+        <div class="roster-team-block">
+          <div class="roster-team-head">
+            <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
+            <strong>${esc(away.name || 'Away')}</strong>
+          </div>
+          ${slotRosterListHtml(awayLine)}
+        </div>
+        <hr class="roster-team-divider" />
+        <div class="roster-team-block">
+          <div class="roster-team-head">
+            <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
+            <strong>${esc(home.name || 'Home')}</strong>
+          </div>
+          ${slotRosterListHtml(homeLine)}
+        </div>
+      </div>`;
+  }
+
+  function matchupBoxHtml(box, fallbackMatchup, week) {
+    return `${matchupScoreboardHtml(box, fallbackMatchup, week)}${matchupRostersHtml(box, fallbackMatchup)}`;
   }
 
   function renderHome() {
     const mount = document.getElementById('home-mount');
     if (!mount) return;
     const scrollY = window.scrollY;
-    const who = state.authUser?.name || state.authUser?.loginName || 'Member';
+    const who = firstName(state.authUser);
     const t = state.myTeam?.team;
     const week = state.week || state.myTeam?.currentMatchupPeriod || '—';
-    const live = liveGameCount();
     const { matchup: m } = findMyMatchup();
     const box = state.myTeam?.matchupBox;
 
-    const matchup = matchupBoxHtml(box, m, week);
-
-    const liveSection = `<div class="home-section">
-        <div class="section-label">${live > 0 ? `Live now · ${live} game${live === 1 ? '' : 's'}` : 'This week’s scores'}</div>
-        ${live > 0 ? homeLiveGamesHtml(m) : homeWeekScoresHtml(m)}
-        <button type="button" class="quick-chip" data-go="scoreboard">Full scoreboard</button>
-      </div>`;
+    const matchup = matchupScoreboardHtml(box, m, week);
+    const lineups = matchupRostersHtml(box, m);
 
     mount.innerHTML = `
       <div class="home-hero">
-        <p class="home-greeting">Pulse · <span>${esc(who)}</span></p>
+        <p class="home-greeting">Welcome back <span>${esc(who)}</span></p>
         <div class="home-strip">
           <div class="home-tile"><span class="lbl">Week</span><span class="val">${esc(String(week))}</span></div>
-          <div class="home-tile"><span class="lbl">Live</span><span class="val">${live}</span></div>
           <div class="home-tile"><span class="lbl">Record</span><span class="val">${esc(record(t))}</span></div>
           <div class="home-tile"><span class="lbl">PF</span><span class="val">${t ? fmtPts(t.pointsFor) : '—'}</span></div>
         </div>
       </div>
+      ${homeNewsHtml()}
       ${matchup}
-      <div class="home-section">
-        <div class="section-label">Standings</div>
-        ${homeStandingsHtml()}
-      </div>
-      ${liveSection}
+      ${lineups}
       <div class="quick-row">
+        <button type="button" class="quick-chip" data-go="team">My team</button>
         <button type="button" class="quick-chip" data-go="scoreboard">Scores</button>
         <button type="button" class="quick-chip" data-go="lounge">Lounge</button>
-        <button type="button" class="quick-chip" data-go="more">More</button>
-        <a class="quick-chip" href="/inbox.html">Inbox</a>
+        <button type="button" class="quick-chip" data-go="more" data-more-jump="inbox">Inbox${state.unread ? ` · ${state.unread}` : ''}</button>
       </div>
       ${duesCardHtml()}
     `;
 
     mount.querySelectorAll('[data-go]').forEach((btn) => {
-      btn.addEventListener('click', () => showView(btn.dataset.go));
-    });
-    mount.querySelector('#box-bench')?.addEventListener('toggle', (e) => {
-      state.boxBenchOpen = Boolean(e.target.open);
-    });
-    mount.querySelectorAll('[data-home-conf]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        state.standingsConf = btn.dataset.homeConf;
-        state.standingsUserPicked = true;
-        document.querySelectorAll('#view-more [data-conf]').forEach((b) => {
-          b.classList.toggle('is-on', b.dataset.conf === state.standingsConf);
-        });
-        renderHome();
-        renderStandings();
+        const jump = btn.dataset.moreJump;
+        if (jump === 'inbox' || jump === 'playoffs') {
+          navigate('more', { push: true, jump });
+          return;
+        }
+        navigate(btn.dataset.go, { push: true });
       });
     });
     if (Math.abs(window.scrollY - scrollY) > 2) window.scrollTo(0, scrollY);
@@ -1227,16 +1433,7 @@
   function setHomeSync() {
     if (state.view !== 'home') return;
     const week = state.week || state.myTeam?.currentMatchupPeriod;
-    const live = liveGameCount();
-    const t = state.schedule?.generatedAt ? new Date(state.schedule.generatedAt) : new Date();
-    const clock = t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
-    if (live > 0) {
-      setSync(`Live · ${clock}`, 'live');
-      if (subtitle) subtitle.textContent = week ? `Week ${week} · ${live} live` : 'Pulse';
-    } else {
-      setSync(`Updated · ${clock}`, week && state.week === state.currentMatchupPeriod ? 'live' : '');
-      if (subtitle) subtitle.textContent = week ? `Week ${week}` : 'Pulse';
-    }
+    if (subtitle) subtitle.textContent = week ? `Week ${week}` : 'Pulse';
   }
 
   async function refreshHomeLive() {
@@ -1250,7 +1447,6 @@
         renderHome();
         setHomeSync();
       }
-      if (state.view === 'more') renderStandings();
     } catch {
       /* keep last good frame */
     }
@@ -1262,33 +1458,31 @@
       const tasks = [];
       tasks.push(loadMyTeam().catch(() => {}));
       tasks.push(loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: Boolean(state.schedule) }).catch(() => {}));
+      if (!state.news) {
+        tasks.push(apiGet('/api/news').then((d) => { state.news = d.news || []; }).catch(() => { state.news = state.news || []; }));
+      }
       if (!state.leagues) {
         tasks.push(apiGet('/api/leagues').then((d) => { state.leagues = d; }).catch(() => {}));
       }
-      if (!state.dues) {
-        tasks.push(loadDues().catch(() => {}));
-      }
+      tasks.push(loadDues().catch(() => {}));
       await Promise.all(tasks);
       updateTeamChip();
       renderHome();
       setHomeSync();
     } catch (err) {
-      if (mount) mount.innerHTML = `<div class="msg"><strong>Pulse unavailable</strong>${esc(err.message)}</div>`;
+      if (mount) mount.innerHTML = `<div class="msg"><strong>Home unavailable</strong>${esc(err.message)}</div>`;
     }
   }
 
   async function loadStandings() {
-    const mount = document.getElementById('standings-mount');
     try {
       state.leagues = await apiGet('/api/leagues');
-      renderStandings();
-      const t = new Date(state.leagues.generatedAt || Date.now());
-      if (state.view === 'more') {
-        setSync(`ESPN · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, 'live');
-      }
+      if (state.view === 'home') renderHome();
     } catch (err) {
-      if (mount) mount.innerHTML = `<div class="msg"><strong>Standings unavailable</strong>${esc(err.message)}</div>`;
-      setSync('Connection error', 'err');
+      if (state.view === 'home') {
+        const mount = document.getElementById('home-mount');
+        /* keep home; standings section handles missing data */
+      }
     }
   }
 
@@ -1309,18 +1503,14 @@
       }
       fillWeeks(state.week);
       renderScoreboard();
-      const t = new Date(state.schedule.generatedAt || Date.now());
-      const live = state.week === state.currentMatchupPeriod;
-      if (state.view === 'scoreboard') {
-        setSync(`${live ? 'Live' : 'ESPN'} · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`, live ? 'live' : '');
-        if (subtitle) subtitle.textContent = live ? `Week ${state.week} · live` : `Week ${state.week}`;
+      if (state.view === 'scoreboard' && subtitle) {
+        subtitle.textContent = state.week ? `Week ${state.week}` : 'Scores';
       }
       if (state.view === 'home') setHomeSync();
     } catch (err) {
       if (mount && state.view === 'scoreboard') {
         mount.innerHTML = `<div class="msg"><strong>Scoreboard unavailable</strong>${esc(err.message)}</div>`;
       }
-      setSync('Connection error', 'err');
     } finally {
       state.loadingScores = false;
       if (btn) btn.disabled = false;
@@ -1334,7 +1524,6 @@
       updateTeamChip();
       if (state.view === 'team') {
         renderMyTeam();
-        setSync('My Team', 'live');
       }
     } catch (err) {
       updateTeamChip();
@@ -1374,11 +1563,202 @@
         if (!state.transactions) {
           state.transactions = await apiGet('/api/transactions');
         }
+      } else if (state.feedTab === 'draft') {
+        const conf = state.standingsConf || 'detail';
+        state.draft = await apiGet(`/api/draft?conference=${encodeURIComponent(conf)}`);
       }
       renderFeed();
-      if (state.view === 'more') setSync('League board', '');
     } catch (err) {
       if (mount) mount.innerHTML = `<div class="msg"><strong>Feed unavailable</strong>${esc(err.message)}</div>`;
+    }
+  }
+
+  function setUnreadBadge(n) {
+    state.unread = Number(n) || 0;
+    const badge = document.getElementById('more-badge');
+    if (!badge) return;
+    if (state.unread > 0) {
+      badge.hidden = false;
+      badge.textContent = state.unread > 99 ? '99+' : String(state.unread);
+    } else {
+      badge.hidden = true;
+      badge.textContent = '0';
+    }
+  }
+
+  function inboxWhen(iso) {
+    try {
+      const d = new Date(iso);
+      const now = new Date();
+      if (d.toDateString() === now.toDateString()) {
+        return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      }
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    } catch {
+      return '';
+    }
+  }
+
+  function renderInbox() {
+    const mount = document.getElementById('inbox-mount');
+    const readAll = document.getElementById('inbox-read-all');
+    if (!mount) return;
+    const messages = Array.isArray(state.inbox) ? state.inbox : [];
+    if (readAll) readAll.hidden = !(state.unread > 0);
+    if (!messages.length) {
+      mount.innerHTML = `<div class="msg">Inbox is empty.</div>`;
+      return;
+    }
+    const selected = messages.find((m) => m.id === state.inboxSelectedId) || messages[0];
+    state.inboxSelectedId = selected?.id || null;
+    mount.innerHTML = `
+      <div class="inbox-app">
+        <div class="inbox-list" role="list">
+          ${messages.slice(0, 40).map((m) => {
+            const unread = Boolean(m.unread) || (!m.readAt && !m.read);
+            return `<button type="button" class="inbox-item${m.id === selected?.id ? ' is-on' : ''}${unread ? ' is-unread' : ''}" data-inbox-id="${esc(m.id)}" role="listitem">
+              <span class="from">${esc(m.fromName || m.from || 'GridIron 24')}</span>
+              <span class="subj">${esc(m.subject || m.title || 'Message')}</span>
+              <span class="when">${esc(inboxWhen(m.createdAt || m.sentAt))}</span>
+            </button>`;
+          }).join('')}
+        </div>
+        <article class="inbox-read">
+          <div class="eyebrow">${esc(selected?.type || 'Mail')}</div>
+          <h3>${esc(selected?.subject || selected?.title || 'Message')}</h3>
+          <div class="meta">${esc(selected?.fromName || selected?.from || 'GridIron 24')} · ${esc(inboxWhen(selected?.createdAt || selected?.sentAt))}</div>
+          <div class="body">${esc(selected?.body || selected?.text || '')}</div>
+        </article>
+      </div>
+    `;
+    mount.querySelectorAll('[data-inbox-id]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.inboxId;
+        state.inboxSelectedId = id;
+        const msg = (state.inbox || []).find((m) => m.id === id);
+        if (msg && !msg.readAt && !msg.read) {
+          try {
+            const data = await fetch(`/api/inbox/${encodeURIComponent(id)}/read`, { method: 'POST', credentials: 'same-origin' }).then((r) => r.json());
+            if (data?.ok) {
+              msg.readAt = new Date().toISOString();
+              msg.read = true;
+              setUnreadBadge(data.unread);
+            }
+          } catch { /* ignore */ }
+        }
+        renderInbox();
+      });
+    });
+  }
+
+  async function loadInbox() {
+    const mount = document.getElementById('inbox-mount');
+    try {
+      const data = await apiGet('/api/inbox');
+      state.inbox = Array.isArray(data.messages) ? data.messages : [];
+      setUnreadBadge(data.unread);
+      if (!state.inboxSelectedId && state.inbox[0]) state.inboxSelectedId = state.inbox[0].id;
+      renderInbox();
+    } catch (err) {
+      if (mount) mount.innerHTML = `<div class="msg"><strong>Inbox unavailable</strong>${esc(err.message)}</div>`;
+    }
+  }
+
+  function playoffSide(side, { showScore = false } = {}) {
+    if (!side) {
+      return `<div class="po-side is-empty">
+        <img src="${esc(PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" />
+        <span class="seed"></span>
+        <span class="nm">TBD</span>
+      </div>`;
+    }
+    const seed = side.seed != null ? `#${side.seed}` : '';
+    const pts = showScore && side.score != null ? `<span class="pts">${esc(fmtScore(side.score))}</span>` : '';
+    return `<div class="po-side">
+      <img src="${esc(side.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
+      <span class="seed">${esc(seed)}</span>
+      <span class="nm">${esc(side.name || 'Team')}</span>
+      ${pts}
+    </div>`;
+  }
+
+  function playoffGameHtml(game) {
+    if (!game) return '';
+    const status = game.status || 'upcoming';
+    const showScore = status === 'live' || status === 'final';
+    return `<article class="po-game is-${esc(status)}">
+      <div class="po-label">${esc(game.label || 'Game')}${status === 'live' ? ' · Live' : status === 'final' ? ' · Final' : ''}</div>
+      ${playoffSide(game.away, { showScore })}
+      ${playoffSide(game.home, { showScore })}
+    </article>`;
+  }
+
+  function renderPlayoffs() {
+    const mount = document.getElementById('playoffs-mount');
+    if (!mount) return;
+    const confs = state.playoffs?.conferences || [];
+    const conf = confs.find((c) => c.key === state.playoffConf) || confs[0];
+    if (!conf) {
+      mount.innerHTML = `<div class="msg">Playoff bracket unavailable.</div>`;
+      return;
+    }
+    const wc = conf.rounds?.wildCard || {};
+    const semis = conf.rounds?.semifinals?.games || [];
+    const finals = conf.rounds?.finals || {};
+    const bowl = state.playoffs?.bowl || state.bowl;
+    const cup = state.playoffs?.survival || state.survival;
+
+    mount.innerHTML = `
+      <div class="po-conf-head">
+        ${conf.logo ? `<img src="${esc(conf.logo)}" alt="" width="36" height="36" loading="lazy" referrerpolicy="no-referrer" />` : ''}
+        <div>
+          <strong>${esc(conf.shortName || conf.name || 'Conference')}</strong>
+          <span>Seeds &amp; rounds</span>
+        </div>
+      </div>
+      <div class="po-seeds">
+        ${(conf.seeds || []).map((s) => `
+          <div class="po-seed">
+            <span class="n">#${esc(String(s.seed))}</span>
+            <img src="${esc(s.logo || PLACEHOLDER)}" alt="" width="22" height="22" loading="lazy" referrerpolicy="no-referrer" />
+            <span class="nm">${esc(s.name)}</span>
+          </div>`).join('')}
+      </div>
+      <div class="section-label">Wild Card · Wk ${esc(String(wc.week || 14))}</div>
+      <div class="po-byes">
+        ${wc.bye1 ? `<div class="po-bye">Bye · ${playoffSide(wc.bye1)}</div>` : ''}
+        ${wc.bye2 ? `<div class="po-bye">Bye · ${playoffSide(wc.bye2)}</div>` : ''}
+      </div>
+      <div class="po-games">
+        ${playoffGameHtml(wc.game45)}
+        ${playoffGameHtml(wc.game36)}
+      </div>
+      <div class="section-label">Semifinals · Wk ${esc(String(conf.rounds?.semifinals?.week || 15))}</div>
+      <div class="po-games">
+        ${semis.map(playoffGameHtml).join('') || '<div class="msg">Semifinals TBD</div>'}
+      </div>
+      <div class="section-label">Conference final · Wk ${esc(String(finals.week || 16))}</div>
+      <div class="po-games">
+        ${playoffGameHtml(finals.title || finals.championship || finals.game) || '<div class="msg">Final TBD</div>'}
+      </div>
+      ${(bowl || cup) ? `
+        <div class="section-label">Week 17 finales</div>
+        <div class="po-finales">
+          ${bowl ? `<div class="quick-chip is-static">GridIron Bowl</div>` : ''}
+          ${cup ? `<div class="quick-chip is-static">${esc(cup.name || "Mayor's Cup")}</div>` : ''}
+        </div>` : ''}
+    `;
+  }
+
+  async function loadPlayoffs({ force = false } = {}) {
+    const mount = document.getElementById('playoffs-mount');
+    try {
+      if (!state.playoffs || force) {
+        state.playoffs = await apiGet('/api/playoffs');
+      }
+      renderPlayoffs();
+    } catch (err) {
+      if (mount) mount.innerHTML = `<div class="msg"><strong>Playoffs unavailable</strong>${esc(err.message)}</div>`;
     }
   }
 
@@ -1394,17 +1774,6 @@
       renderFinales();
     } catch (err) {
       if (mount) mount.innerHTML = `<div class="msg"><strong>Finales unavailable</strong>${esc(err.message)}</div>`;
-    }
-  }
-
-  async function loadInboxCount() {
-    const el = document.getElementById('inbox-count');
-    try {
-      const data = await apiGet('/api/inbox/unread');
-      const n = Number(data.unread || data.count || 0);
-      if (el) el.textContent = n > 0 ? `${n} unread` : 'Messages';
-    } catch {
-      if (el) el.textContent = 'Messages';
     }
   }
 
@@ -1431,7 +1800,6 @@
       }
       if (!quiet || state.view === 'lounge') renderChat();
       setChatLive(true);
-      if (state.view === 'lounge') setSync('Lounge', 'live');
     } catch {
       setChatLive(false);
     }
@@ -1531,19 +1899,92 @@
   }
 
   function wireUi() {
-    document.querySelectorAll('.app-tabs [data-tab]').forEach((btn) => {
-      btn.addEventListener('click', () => showView(btn.dataset.tab));
+    if (isStandalone()) document.documentElement.classList.add('is-standalone');
+
+    document.getElementById('brand-home')?.addEventListener('click', () => {
+      navigate('home', { push: true });
     });
 
-    document.querySelectorAll('#view-more [data-conf]').forEach((btn) => {
+    document.querySelectorAll('.app-tabs [data-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => navigate(btn.dataset.tab, { push: true }));
+    });
+
+    document.addEventListener('click', (e) => {
+      const feedBtn = e.target.closest?.('[data-app-feed]');
+      if (feedBtn) {
+        e.preventDefault();
+        openMoreFeed(feedBtn.getAttribute('data-app-feed'));
+        return;
+      }
+      const tabBtn = e.target.closest?.('[data-app-tab]');
+      if (tabBtn) {
+        e.preventDefault();
+        navigate(tabBtn.getAttribute('data-app-tab'), { push: true });
+        return;
+      }
+      const jumpBtn = e.target.closest?.('[data-app-jump]');
+      if (jumpBtn && jumpBtn.tagName !== 'A') {
+        e.preventDefault();
+        const jump = jumpBtn.getAttribute('data-app-jump');
+        if (jump === 'lounge') navigate('lounge', { push: true });
+        else if (jump === 'inbox' || jump === 'playoffs' || jump === 'dues') {
+          navigate('more', { push: true, jump });
+        }
+        return;
+      }
+
+      const a = e.target.closest?.('a[href]');
+      if (!a) return;
+      if (a.hasAttribute('download')) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      // Venmo / true off-site only
+      if (a.target === '_blank') {
+        try {
+          const u = new URL(a.href, location.origin);
+          if (u.origin === location.origin) {
+            e.preventDefault();
+            routeAppLink(a.getAttribute('href'), e);
+          }
+        } catch { /* ignore */ }
+        return;
+      }
+      const jump = a.getAttribute('data-app-jump');
+      if (jump === 'lounge') {
+        e.preventDefault();
+        navigate('lounge', { push: true });
+        return;
+      }
+      if (jump === 'inbox' || jump === 'playoffs' || jump === 'dues') {
+        e.preventDefault();
+        navigate('more', { push: true, jump });
+        return;
+      }
+      routeAppLink(a.getAttribute('href'), e);
+    });
+
+    window.addEventListener('popstate', (e) => {
+      const fromState = e.state?.view;
+      const jump = e.state?.jump || null;
+      const fromHash = resolveHashView(location.hash);
+      const view = fromState || fromHash || 'home';
+      showView(view);
+      scrollMainTop();
+      if (jump) jumpWithinMore(jump);
+      else if (['inbox', 'playoffs', 'dues'].includes(String(location.hash || '').replace('#', ''))) {
+        jumpWithinMore(String(location.hash).replace('#', ''));
+      }
+    });
+
+    document.querySelectorAll('#feed-conf-seg [data-conf]').forEach((btn) => {
       btn.addEventListener('click', () => {
         state.standingsConf = btn.dataset.conf;
         state.standingsUserPicked = true;
-        document.querySelectorAll('#view-more [data-conf]').forEach((b) => {
+        document.querySelectorAll('#feed-conf-seg [data-conf]').forEach((b) => {
           b.classList.toggle('is-on', b === btn);
         });
-        renderStandings();
-        if (state.feedTab === 'schedule') renderFeed();
+        if (state.feedTab === 'schedule' || state.feedTab === 'draft' || state.feedTab === 'rankings') {
+          loadFeed(state.feedTab);
+        }
       });
     });
 
@@ -1567,6 +2008,34 @@
       });
     });
 
+    document.querySelectorAll('#playoff-seg [data-playoff-conf]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.playoffConf = btn.dataset.playoffConf;
+        document.querySelectorAll('#playoff-seg [data-playoff-conf]').forEach((b) => {
+          b.classList.toggle('is-on', b === btn);
+        });
+        renderPlayoffs();
+      });
+    });
+
+    document.getElementById('playoffs-refresh')?.addEventListener('click', () => {
+      loadPlayoffs({ force: true });
+    });
+
+    document.getElementById('inbox-read-all')?.addEventListener('click', async () => {
+      try {
+        const data = await fetch('/api/inbox/read-all', { method: 'POST', credentials: 'same-origin' }).then((r) => r.json());
+        if (data?.ok) {
+          (state.inbox || []).forEach((m) => {
+            m.read = true;
+            m.readAt = m.readAt || new Date().toISOString();
+          });
+          setUnreadBadge(0);
+          renderInbox();
+        }
+      } catch { /* ignore */ }
+    });
+
     document.getElementById('week')?.addEventListener('change', (e) => {
       loadScoreboard(e.target.value);
       startPolling();
@@ -1585,6 +2054,12 @@
       } catch (err) {
         window.alert(err.message || 'Send failed');
       }
+    });
+
+    document.getElementById('chat-input')?.addEventListener('focus', () => {
+      setTimeout(() => {
+        document.getElementById('chat-input')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }, 350);
     });
 
     document.getElementById('sign-out')?.addEventListener('click', async () => {
@@ -1648,7 +2123,16 @@
 
   function registerSw() {
     if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js', { scope: '/app/' }).catch(() => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
+  function hideBootSplash() {
+    const splash = document.getElementById('boot-splash');
+    if (!splash) return;
+    splash.classList.add('is-done');
+    setTimeout(() => splash.remove(), 400);
   }
 
   async function boot() {
@@ -1658,17 +2142,11 @@
     await loadAuth();
     loadMyTeam().catch(() => {});
     const hash = (location.hash || '').replace('#', '');
-    const initial = ({
-      home: 'home',
-      scores: 'scoreboard',
-      scoreboard: 'scoreboard',
-      team: 'team',
-      lounge: 'lounge',
-      feed: 'more',
-      more: 'more',
-      standings: 'more'
-    })[hash] || 'home';
-    showView(initial);
+    const initial = resolveHashView(hash) || 'home';
+    const jump = ['inbox', 'playoffs', 'dues'].includes(hash) ? hash : null;
+    navigate(initial, { replace: true, jump, scrollTop: true });
+    loadInbox().catch(() => {});
+    hideBootSplash();
   }
 
   boot();

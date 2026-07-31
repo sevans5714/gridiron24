@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=99" />
+  <link rel="stylesheet" href="/css/site.css?v=106" />
   <style>
     .aaa-portal {
       display: inline-flex;
@@ -216,7 +216,7 @@
       min-width: 0;
     }
     .conf-head img {
-      width: 2.6rem;
+      width: clamp(4.75rem, 12vw, 6.5rem);
       height: auto;
       filter: none;
       box-shadow: var(--logo-lift);
@@ -801,7 +801,7 @@
   </header>
 
   <section class="hq-hero shell">
-    <img src="/assets/gridiron24-league.png?v=1" alt="GridIron 24" />
+    <img src="/assets/gridiron24-league.png?v=2" alt="GridIron 24" />
     <p class="tag">
       <span class="t">24 Teams</span><span class="sep">·</span><span class="d">Two Conferences</span><span class="sep">·</span><span class="c">One Champion</span>
     </p>
@@ -866,10 +866,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=70"></script>
+  <script src="/js/nav.js?v=73"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')

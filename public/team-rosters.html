@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=99" />
+  <link rel="stylesheet" href="/css/site.css?v=106" />
   <style>
     .roster-controls {
       display: flex;
@@ -116,17 +116,40 @@
       font-size: 0.72rem;
       margin-bottom: 0.25rem;
     }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 0.45rem 0.35rem; border-bottom: 1px solid var(--line); text-align: left; }
-    th {
-      color: var(--muted);
-      font-size: 0.72rem;
-      letter-spacing: 0.07em;
+    .slot { color: #8eb6ff; font-weight: 700; font-size: 0.82rem; }
+    .slot-roster { list-style: none; margin: 0; padding: 0; }
+    .slot-roster-row {
+      display: grid;
+      grid-template-columns: 3.25rem minmax(0, 1fr) auto auto;
+      gap: 0.65rem 0.85rem;
+      align-items: baseline;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .slot-roster-row:last-child { border-bottom: 0; }
+    .slot-roster-row .slot {
+      font-family: var(--display);
+      letter-spacing: 0.06em;
       text-transform: uppercase;
+    }
+    .slot-roster-row .nm { min-width: 0; font-weight: 600; }
+    .slot-roster-row .nm .pro {
+      display: block;
+      margin-top: 0.15rem;
+      font-weight: 500;
+    }
+    .slot-roster-row .nums {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
-    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .slot { color: #8eb6ff; font-weight: 700; font-size: 0.82rem; width: 3.5rem; }
+    .slot-roster-row .nums small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+    .slot-roster-row.is-empty .nm { color: var(--muted); font-weight: 500; }
+    .slot-roster-row.row-bad { background: rgba(196, 90, 48, 0.08); }
     .pro { color: var(--muted); font-size: 0.85rem; }
     .bye { color: var(--gold); font-weight: 700; }
     .inj {
@@ -138,7 +161,6 @@
     }
     .inj.bad { color: #e8a078; }
     .inj.ok { color: var(--muted); }
-    .row-bad td { background: rgba(196, 90, 48, 0.08); }
     .empty { color: var(--muted); padding: 0.5rem 0; }
     .open-link { color: #8eb6ff; text-decoration: none; font-weight: 600; }
     .open-link:hover { text-decoration: underline; }
@@ -165,10 +187,10 @@
     <div id="boards"><div class="msg">Loading rosters…</div></div>
   </main>
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=70"></script>
+  <script src="/js/nav.js?v=73"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     function record(t) {
@@ -263,35 +285,22 @@
                 ${esc(m.away?.name)} ${fmt(m.away?.score)} – ${fmt(m.home?.score)} ${esc(m.home?.name)}
                 <span style="color:var(--muted);"> · Proj ${fmt(m.away?.projected)} – ${fmt(m.home?.projected)}</span>
               </div>` : `<div class="empty">No matchup this week.</div>`}
-            ${roster.length ? `<div class="table-scroll"><table>
-              <thead>
-                <tr>
-                  <th>Slot</th>
-                  <th>Player</th>
-                  <th>NFL</th>
-                  <th>Bye</th>
-                  <th class="num">Pts</th>
-                  <th class="num">Proj</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${roster.map((p) => {
-                  const status = p.injuryStatus || '—';
-                  const bad = injClass(p.injuryStatus) === 'bad' && starterSlots(p.slot);
-                  const onBye = week && Number(p.byeWeek) === Number(week);
-                  return `<tr class="${bad ? 'row-bad' : ''}">
-                    <td class="slot">${esc(p.slot)}</td>
-                    <td>${esc(p.name)}</td>
-                    <td class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}</td>
-                    <td class="${onBye ? 'bye' : ''}">${p.byeWeek != null ? esc(String(p.byeWeek)) : '—'}</td>
-                    <td class="num">${fmt(p.weekPoints)}</td>
-                    <td class="num">${fmt(p.weekProjected)}</td>
-                    <td class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</td>
-                  </tr>`;
+            <ul class="slot-roster" role="list">
+                ${(roster || []).map((p) => {
+                  const empty = p.empty || !p.name;
+                  const status = empty ? '—' : (p.injuryStatus || '—');
+                  const bad = !empty && injClass(p.injuryStatus) === 'bad' && starterSlots(p.slot);
+                  const onBye = !empty && week && Number(p.byeWeek) === Number(week);
+                  return `<li class="slot-roster-row ${[empty ? 'is-empty' : '', bad ? 'row-bad' : ''].filter(Boolean).join(' ')}">
+                    <span class="slot">${esc(p.slot)}</span>
+                    <span class="nm">${empty ? '—' : esc(p.name)}
+                      ${empty ? '' : `<span class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}${onBye ? ` · Bye ${esc(String(p.byeWeek))}` : ''}</span>`}
+                    </span>
+                    <span class="nums">${empty ? '—' : fmt(p.weekPoints)}<small>${empty ? '' : `proj ${fmt(p.weekProjected)}`}</small></span>
+                    <span class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</span>
+                  </li>`;
                 }).join('')}
-              </tbody>
-            </table></div>` : `<div class="empty">No roster yet — opens after the draft.</div>`}
+              </ul>
           </div>
         </div>`;
 

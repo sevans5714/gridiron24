@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=99" />
+  <link rel="stylesheet" href="/css/site.css?v=106" />
   <style>
     .book {
       max-width: 52rem;
@@ -283,6 +283,21 @@
       font-weight: 700;
     }
     .prize-table tr.total td.amt { color: #efd782; }
+    .prize-award {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      min-width: 0;
+    }
+    .prize-award img {
+      width: 2.35rem;
+      height: 2.35rem;
+      object-fit: contain;
+      flex: 0 0 2.35rem;
+      background: transparent;
+      filter: none;
+      box-shadow: var(--logo-lift);
+    }
 
     .source-note {
       margin: 0.85rem 0 0;
@@ -529,10 +544,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /><span class="site-footer-brand">GridIron 24</span></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=70"></script>
+  <script src="/js/nav.js?v=73"></script>
   <script src="/js/conference-diff.js?v=4"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -675,6 +690,26 @@
       }
     }
 
+    function prizeLogo(label = '') {
+      const l = String(label).toLowerCase();
+      if (l.includes('mayor') || l.includes('relegation') || l.includes('toilet')) {
+        return '/assets/mayors-cup.png?v=4';
+      }
+      if ((l.includes('third') || l.includes('3rd')) && l.includes('overtime')) {
+        return '/assets/overtime-3rd-place.png';
+      }
+      if ((l.includes('third') || l.includes('3rd')) && l.includes('detail')) {
+        return '/assets/detail-3rd-place.png';
+      }
+      if (l.includes('third') || l.includes('3rd')) return '/assets/detail-3rd-place.png';
+      if (l.includes('winner') || l.includes('bowl') || (l.includes('gridiron') && !l.includes('conference'))) {
+        return '/assets/gridiron-bowl.png?v=3';
+      }
+      if (l.includes('overtime')) return '/assets/overtime-conference.png';
+      if (l.includes('detail')) return '/assets/detail-conference.png';
+      return '/assets/gridiron-bowl.png?v=3';
+    }
+
     async function loadPayouts() {
       const summary = document.getElementById('payout-summary');
       const table = document.getElementById('payout-table');
@@ -701,7 +736,12 @@
               <tbody>
                 ${prizes.map((prize) => `
                   <tr>
-                    <td>${esc(prize.label)}</td>
+                    <td>
+                      <div class="prize-award">
+                        <img src="${esc(prizeLogo(prize.label))}" alt="" width="38" height="38" loading="lazy" decoding="async" />
+                        <span>${esc(prize.label)}</span>
+                      </div>
+                    </td>
                     <td class="amt">${money(prize.amount, currency, 0)}</td>
                   </tr>`).join('') || '<tr><td colspan="2">No awards configured.</td></tr>'}
                 <tr class="total">

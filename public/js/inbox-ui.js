@@ -1,9 +1,10 @@
 /**
  * Shared inbox + rule-proposal rendering for profile and /inbox.html
- * Renders a mail-client layout: list pane + reading pane.
+ * Mail / DM layout: members read-only; admins + owner can send and reply.
  */
 (function (global) {
   const CREST = '/assets/gridiron24-brand.png?v=1';
+  const POWERDMS = '/assets/powerdms.png';
   const stateByMount = new WeakMap();
 
   const esc = (v = '') => String(v)
@@ -55,13 +56,23 @@
     return map[status] || status;
   }
 
+  function isRuleChange(msg) {
+    return Boolean(
+      msg?.meta?.ruleChange
+      || msg?.type === 'rule_proposal'
+      || msg?.type === 'rule_vote'
+      || msg?.type === 'rule_result'
+    );
+  }
+
   function typeEyebrow(type) {
     const map = {
       welcome: 'GridIron 24 HQ · Welcome',
       chat_mention: 'Members Lounge · Mention',
-      rule_proposal: 'Rule Book · Proposal',
-      rule_vote: 'Rule Book · League Vote',
-      rule_result: 'Rule Book · Result'
+      rule_proposal: 'RULE CHANGE',
+      rule_vote: 'RULE CHANGE',
+      rule_result: 'RULE CHANGE',
+      general: 'GridIron 24 HQ'
     };
     return map[type] || 'GridIron 24 HQ';
   }
@@ -70,9 +81,10 @@
     const map = {
       welcome: 'Welcome',
       chat_mention: 'Mention',
-      rule_proposal: 'Proposal',
-      rule_vote: 'Vote',
-      rule_result: 'Result'
+      rule_proposal: 'RULE CHANGE',
+      rule_vote: 'RULE CHANGE',
+      rule_result: 'RULE CHANGE',
+      general: 'HQ'
     };
     return map[type] || 'Mail';
   }
@@ -91,24 +103,49 @@
       .slice(0, 110);
   }
 
+  function voteBar(proposal) {
+    const yes = Number(proposal.yes || 0);
+    const no = Number(proposal.no || 0);
+    const total = Math.max(1, yes + no);
+    const yesPct = Math.round((yes / total) * 100);
+    const noPct = 100 - yesPct;
+    return `
+      <div class="inbox-vote-bar" aria-hidden="true">
+        <span class="is-yes" style="width:${yesPct}%"></span>
+        <span class="is-no" style="width:${noPct}%"></span>
+      </div>
+      <div class="inbox-vote-counts">
+        <span class="is-yes">Yes ${yes}</span>
+        <span class="is-no">No ${no}</span>
+      </div>`;
+  }
+
   function renderProposalActions(proposal, { isOwner = false } = {}) {
     if (!proposal) return '';
     const bits = [];
+    const proposer = proposal.authorName || 'Member';
+    bits.push(`<p class="inbox-proposer">Proposed by <strong>${esc(proposer)}</strong></p>`);
     bits.push(`<div class="inbox-vote-meta">Status: <strong>${esc(statusLabel(proposal.status))}</strong>`);
     if (proposal.status === 'voting' || proposal.status === 'passed' || proposal.status === 'failed') {
-      bits.push(` · Yes ${Number(proposal.yes || 0)} · No ${Number(proposal.no || 0)}`);
-      bits.push(` · Majority ${Number(proposal.majorityNeeded || 0)} of ${Number(proposal.eligibleCount || 0)}`);
+      bits.push(` · ${Number(proposal.totalVotes || 0)} of ${Number(proposal.eligibleCount || 0)} voted`);
+      if (proposal.status === 'voting' && Number(proposal.outstanding || 0) > 0) {
+        bits.push(` · ${Number(proposal.outstanding)} outstanding`);
+      }
     }
     bits.push('</div>');
+
+    if (proposal.status === 'voting' || proposal.status === 'passed' || proposal.status === 'failed') {
+      bits.push(voteBar(proposal));
+    }
 
     if (proposal.canVote) {
       bits.push(`
         <div class="btn-row inbox-vote-actions">
-          <button type="button" class="btn" data-rule-vote="${esc(proposal.id)}" data-choice="yes">Vote Yes</button>
-          <button type="button" class="btn btn-ghost" data-rule-vote="${esc(proposal.id)}" data-choice="no">Vote No</button>
+          <button type="button" class="btn inbox-vote-yes" data-rule-vote="${esc(proposal.id)}" data-choice="yes">Vote YES</button>
+          <button type="button" class="btn btn-ghost inbox-vote-no" data-rule-vote="${esc(proposal.id)}" data-choice="no">Vote NO</button>
         </div>`);
     } else if (proposal.myVote) {
-      bits.push(`<p class="inbox-note">You voted <strong>${esc(String(proposal.myVote).toUpperCase())}</strong>.</p>`);
+      bits.push(`<p class="inbox-note">You voted <strong>${esc(String(proposal.myVote).toUpperCase())}</strong>. Results thus far are shown above.</p>`);
     }
 
     if (isOwner && proposal.status === 'submitted') {
@@ -151,6 +188,9 @@
         continue;
       }
       flushList();
+      if (trimmed === 'RULE CHANGE') {
+        continue;
+      }
       if (isSectionHeading(trimmed)) {
         chunks.push(`<p class="inbox-section">${esc(trimmed)}</p>`);
       } else if (trimmed.startsWith('— ')) {
@@ -199,10 +239,15 @@
         messages: [],
         proposalsById: new Map(),
         isOwner: false,
+        isStaff: false,
+        canSend: false,
+        recipients: [],
         unread: 0,
         selectedId: null,
         filter: 'all',
-        reading: false
+        reading: false,
+        composeOpen: false,
+        replyToId: null
       };
       stateByMount.set(mount, st);
     }
@@ -214,12 +259,58 @@
     return st.messages;
   }
 
+  function renderCompose(st) {
+    if (!st.canSend) {
+      return `<p class="inbox-readonly-note">Inbox is receive-only. Admins and the owner can send messages.</p>`;
+    }
+    if (!st.composeOpen) {
+      return `
+        <div class="inbox-compose-bar">
+          <button type="button" class="btn" data-inbox-compose>New message</button>
+        </div>`;
+    }
+    const replyMsg = st.replyToId ? st.messages.find((m) => m.id === st.replyToId) : null;
+    const options = (st.recipients || []).map((r) =>
+      `<option value="${esc(r.id)}">${esc(r.name)}</option>`
+    ).join('');
+    return `
+      <form class="inbox-compose" data-inbox-send>
+        <div class="inbox-compose-head">
+          <strong>${replyMsg ? 'Reply' : 'New message'}</strong>
+          <button type="button" class="btn btn-ghost" data-inbox-compose-cancel>Cancel</button>
+        </div>
+        ${replyMsg
+          ? `<p class="inbox-compose-reply">Replying to <strong>${esc(replyMsg.fromName || 'member')}</strong> · ${esc(replyMsg.subject)}</p>
+             <input type="hidden" name="replyToId" value="${esc(replyMsg.id)}" />`
+          : `<label class="inbox-compose-label">To
+              <select name="toUserId" required>
+                <option value="">Select member…</option>
+                ${options}
+              </select>
+            </label>
+            <label class="inbox-compose-check">
+              <input type="checkbox" name="broadcast" value="1" />
+              Send to all members
+            </label>`}
+        ${replyMsg ? '' : `<label class="inbox-compose-label">Subject
+          <input type="text" name="subject" maxlength="180" placeholder="Subject" />
+        </label>`}
+        <label class="inbox-compose-label">Message
+          <textarea name="body" rows="4" required maxlength="8000" placeholder="Write a message…"></textarea>
+        </label>
+        <div class="btn-row">
+          <button type="submit" class="btn">Send</button>
+        </div>
+      </form>`;
+  }
+
   function renderRow(msg, selectedId) {
     const active = msg.id === selectedId ? ' is-active' : '';
     const unread = msg.unread ? ' is-unread' : '';
+    const rule = isRuleChange(msg) ? ' is-rule' : '';
     const preview = previewText(msg.body);
     return `
-      <button type="button" class="inbox-row${unread}${active}" data-open-msg="${esc(msg.id)}" aria-current="${msg.id === selectedId ? 'true' : 'false'}">
+      <button type="button" class="inbox-row${unread}${active}${rule}" data-open-msg="${esc(msg.id)}" aria-current="${msg.id === selectedId ? 'true' : 'false'}">
         <span class="inbox-row-dot" aria-hidden="true"></span>
         <span class="inbox-row-avatar" aria-hidden="true">${esc(initials(msg.fromName))}</span>
         <span class="inbox-row-main">
@@ -230,11 +321,11 @@
           <span class="inbox-row-subject">${esc(msg.subject)}</span>
           <span class="inbox-row-preview">${esc(preview)}</span>
         </span>
-        <span class="inbox-row-tag">${esc(typeTag(msg.type))}</span>
+        <span class="inbox-row-tag${isRuleChange(msg) ? ' is-rule' : ''}">${esc(typeTag(msg.type))}</span>
       </button>`;
   }
 
-  function renderMessageDetail(msg, { proposal = null, isOwner = false } = {}) {
+  function renderMessageDetail(msg, { proposal = null, isOwner = false, canSend = false } = {}) {
     if (!msg) {
       return `
         <div class="inbox-read-empty">
@@ -243,26 +334,33 @@
           <p class="inbox-read-empty-copy">Choose a note from your inbox to read it here.</p>
         </div>`;
     }
+    const rule = isRuleChange(msg);
+    const brandSrc = rule ? POWERDMS : CREST;
+    const brandAlt = rule ? 'PowerDMS' : 'GridIron 24';
+    const proposer = proposal?.authorName || msg.meta?.authorName || '';
     const related = proposal
       ? `<div class="inbox-proposal-box"><pre class="inbox-proposal-text">${esc(proposal.text)}</pre>${renderProposalActions(proposal, { isOwner })}</div>`
       : '';
+    const canReply = canSend && Boolean(msg.fromUserId);
     return `
-      <article class="inbox-letter${msg.unread ? ' is-unread' : ''}" data-msg-id="${esc(msg.id)}" data-type="${esc(msg.type || '')}">
+      <article class="inbox-letter${msg.unread ? ' is-unread' : ''}${rule ? ' is-rule-change' : ''}" data-msg-id="${esc(msg.id)}" data-type="${esc(msg.type || '')}">
         <div class="inbox-letter-toolbar">
           <button type="button" class="btn btn-ghost inbox-back" data-inbox-back>← Inbox</button>
           <div class="btn-row inbox-card-actions">
+            ${canReply ? `<button type="button" class="btn btn-ghost" data-inbox-reply="${esc(msg.id)}">Reply</button>` : ''}
             ${msg.unread
               ? `<button type="button" class="btn btn-ghost" data-mark-read="${esc(msg.id)}">${msg.type === 'welcome' ? 'Dismiss' : 'Mark read'}</button>`
               : `<span class="inbox-read-flag">Read</span>`}
             ${msg.type === 'welcome' ? '' : `<button type="button" class="btn btn-ghost" data-del-msg="${esc(msg.id)}">Delete</button>`}
           </div>
         </div>
-        <header class="inbox-letter-head">
-          <div class="inbox-letter-brand">
-            <img class="inbox-crest" src="${CREST}" alt="GridIron 24" width="96" height="96" decoding="async" />
-            <p class="inbox-eyebrow">${esc(typeEyebrow(msg.type))}</p>
+        <header class="inbox-letter-head${rule ? ' is-rule-change' : ''}">
+          <div class="inbox-letter-brand${rule ? ' is-rule-change' : ''}">
+            <img class="inbox-crest${rule ? ' is-powerdms' : ''}" src="${brandSrc}" alt="${esc(brandAlt)}" width="${rule ? 220 : 96}" height="${rule ? 48 : 96}" decoding="async" />
+            <p class="inbox-eyebrow${rule ? ' is-rule-change' : ''}">${esc(typeEyebrow(msg.type))}</p>
           </div>
           <h2 class="inbox-letter-subject">${esc(msg.subject)}</h2>
+          ${proposer && rule ? `<p class="inbox-proposer-line">Proposed by <strong>${esc(proposer)}</strong></p>` : ''}
           <div class="inbox-letter-meta">
             <span class="inbox-letter-avatar" aria-hidden="true">${esc(initials(msg.fromName))}</span>
             <div class="inbox-letter-from">
@@ -293,8 +391,9 @@
       : `<div class="inbox-empty">${st.filter === 'unread' ? 'No unread messages.' : 'No messages yet.'}</div>`;
 
     mount.innerHTML = `
-      <div class="inbox-mail${readingClass}">
+      <div class="inbox-mail inbox-dm${readingClass}">
         <aside class="inbox-pane-list" aria-label="Message list">
+          ${renderCompose(st)}
           <div class="inbox-filters" role="tablist" aria-label="Filter messages">
             <button type="button" class="inbox-filter${st.filter === 'all' ? ' is-on' : ''}" data-inbox-filter="all" role="tab" aria-selected="${st.filter === 'all'}">
               All <span class="inbox-filter-count">${st.messages.length}</span>
@@ -306,7 +405,7 @@
           <div class="inbox-rows" role="listbox" aria-label="Inbox">${rows}</div>
         </aside>
         <section class="inbox-pane-read" aria-live="polite" aria-label="Reading pane">
-          ${renderMessageDetail(selected, { proposal, isOwner: st.isOwner })}
+          ${renderMessageDetail(selected, { proposal, isOwner: st.isOwner, canSend: st.canSend })}
         </section>
       </div>`;
   }
@@ -337,6 +436,17 @@
     paint(mount);
   }
 
+  async function loadRecipients(st) {
+    if (!st.canSend || st.recipients.length) return;
+    try {
+      const res = await fetch('/api/inbox/recipients', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) st.recipients = data.recipients || [];
+    } catch {
+      /* ignore */
+    }
+  }
+
   async function fetchInboxBundle() {
     const [inboxRes, propRes] = await Promise.all([
       fetch('/api/inbox', { cache: 'no-store' }),
@@ -353,8 +463,9 @@
       messages: inboxData.messages || [],
       unread: inboxData.unread || 0,
       proposalsById: byId,
-      isOwner: Boolean(propData.isOwner),
-      isStaff: Boolean(propData.isStaff)
+      isOwner: Boolean(propData.isOwner || inboxData.isOwner),
+      isStaff: Boolean(propData.isStaff || inboxData.isStaff),
+      canSend: Boolean(inboxData.canSend)
     };
   }
 
@@ -367,7 +478,10 @@
       st.messages = data.messages;
       st.proposalsById = data.proposalsById;
       st.isOwner = data.isOwner;
+      st.isStaff = data.isStaff;
+      st.canSend = data.canSend;
       st.unread = data.unread;
+      await loadRecipients(st);
       if (st.selectedId && !st.messages.some((m) => m.id === st.selectedId)) {
         st.selectedId = null;
         st.reading = false;
@@ -375,7 +489,7 @@
       if (!st.selectedId && st.messages.length && window.matchMedia('(min-width: 860px)').matches) {
         st.selectedId = st.messages[0].id;
       }
-      if (!st.messages.length) {
+      if (!st.messages.length && !st.canSend) {
         mount.innerHTML = `<div class="empty inbox-empty">${esc(emptyText)}</div>`;
         return data;
       }
@@ -400,6 +514,9 @@
       const voteBtn = e.target?.closest?.('[data-rule-vote]');
       const openVoteId = e.target?.closest?.('[data-rule-open]')?.dataset?.ruleOpen;
       const dismissId = e.target?.closest?.('[data-rule-dismiss]')?.dataset?.ruleDismiss;
+      const compose = e.target?.closest?.('[data-inbox-compose]');
+      const composeCancel = e.target?.closest?.('[data-inbox-compose-cancel]');
+      const replyId = e.target?.closest?.('[data-inbox-reply]')?.dataset?.inboxReply;
 
       try {
         if (filter) {
@@ -413,6 +530,31 @@
             }
           }
           paint(mount);
+          return;
+        }
+        if (compose) {
+          const st = getState(mount);
+          st.composeOpen = true;
+          st.replyToId = null;
+          await loadRecipients(st);
+          paint(mount);
+          return;
+        }
+        if (composeCancel) {
+          const st = getState(mount);
+          st.composeOpen = false;
+          st.replyToId = null;
+          paint(mount);
+          return;
+        }
+        if (replyId) {
+          const st = getState(mount);
+          st.composeOpen = true;
+          st.replyToId = replyId;
+          st.reading = false;
+          await loadRecipients(st);
+          paint(mount);
+          mount.querySelector('.inbox-compose textarea')?.focus();
           return;
         }
         if (openId) {
@@ -459,7 +601,7 @@
           return;
         }
         if (openVoteId) {
-          if (!confirm('Send this proposal to a league-wide vote? Every approved member can vote. Majority wins.')) return;
+          if (!confirm('Send this RULE CHANGE to a league-wide vote? Every approved member must vote. Final results are delivered to everyone when all ballots are in.')) return;
           const res = await fetch(`/api/rule-proposals/${encodeURIComponent(openVoteId)}/open-vote`, {
             method: 'POST'
           });
@@ -481,6 +623,59 @@
         }
       } catch (err) {
         window.alert(err.message || 'Action failed');
+      }
+    });
+
+    mount.addEventListener('submit', async (e) => {
+      const form = e.target?.closest?.('[data-inbox-send]');
+      if (!form) return;
+      e.preventDefault();
+      const st = getState(mount);
+      if (!st.canSend) {
+        window.alert('Members cannot send or reply in Inbox.');
+        return;
+      }
+      const fd = new FormData(form);
+      const payload = {
+        body: String(fd.get('body') || '').trim(),
+        subject: String(fd.get('subject') || '').trim(),
+        toUserId: String(fd.get('toUserId') || '').trim() || null,
+        replyToId: String(fd.get('replyToId') || '').trim() || null,
+        broadcast: fd.get('broadcast') === '1'
+      };
+      if (!payload.body) {
+        window.alert('Write a message first.');
+        return;
+      }
+      if (!payload.replyToId && !payload.broadcast && !payload.toUserId) {
+        window.alert('Choose a recipient.');
+        return;
+      }
+      try {
+        const res = await fetch('/api/inbox', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not send');
+        st.composeOpen = false;
+        st.replyToId = null;
+        await renderInbox(mount);
+        onChange?.();
+        window.alert(payload.broadcast ? 'Message sent to all members.' : 'Message sent.');
+      } catch (err) {
+        window.alert(err.message || 'Could not send');
+      }
+    });
+
+    mount.addEventListener('change', (e) => {
+      const broadcast = e.target?.matches?.('input[name="broadcast"]') ? e.target : null;
+      if (!broadcast) return;
+      const select = broadcast.closest('form')?.querySelector('select[name="toUserId"]');
+      if (select) {
+        select.disabled = broadcast.checked;
+        select.required = !broadcast.checked;
       }
     });
   }
