@@ -1719,11 +1719,16 @@ html[data-theme="day"] .conf-mark::after {
   left: 0;
   top: 50%;
   width: 1px;
-  height: 1.05rem;
+  height: 1.25rem;
   transform: translateY(-50%);
-  background: color-mix(in srgb, var(--topbar-border) 55%, transparent);
-  opacity: 0.85;
+  background: rgba(142, 182, 255, 0.42);
+  opacity: 1;
   pointer-events: none;
+  box-shadow: 0 0 6px rgba(47, 109, 255, 0.25);
+}
+html[data-theme="day"] .nav > * + *::before {
+  background: rgba(31, 94, 240, 0.28);
+  box-shadow: none;
 }
 
 .nav a,
