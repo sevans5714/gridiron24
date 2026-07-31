@@ -250,7 +250,10 @@
   }
 
   function navigate(name, { push = false, replace = false, jump = null, scrollTop = true } = {}) {
-    const view = ['home', 'scoreboard', 'team', 'lounge', 'more'].includes(name) ? name : 'home';
+    let view = ['home', 'scoreboard', 'team', 'lounge', 'more'].includes(name) ? name : 'home';
+    if (view === 'lounge' && state.loungeAccess === false) {
+      view = 'home';
+    }
     const hash = jump && view === 'more' ? jump : view;
     const url = `#${hash}`;
     if (replace || (!push && !location.hash)) {
@@ -379,19 +382,38 @@
 
   function wireGameHtml(g) {
     const bucket = g.status?.bucket || 'upcoming';
-    const watch = (g.broadcasts || []).filter(Boolean)[0] || '';
+    const fantasy = Boolean(g.fantasy || g.league === 'gi24' || g.league === 'aaa');
+    const watch = fantasy ? '' : ((g.broadcasts || []).filter(Boolean)[0] || '');
     let when = kickShort(g.date);
-    if (bucket === 'live') when = g.status?.shortDetail || g.status?.detail || 'LIVE';
-    if (bucket === 'final') when = 'Final';
-    const showScore = bucket === 'live' || bucket === 'final';
+    if (fantasy) {
+      const week = g.week != null ? `Week ${g.week}` : (g.status?.shortDetail || 'Matchup');
+      const conf = g.confLabel ? ` · ${g.confLabel}` : '';
+      if (bucket === 'live') when = `${week}${conf} · Live`;
+      else if (bucket === 'final') when = `${week}${conf} · Final`;
+      else when = `${week}${conf}`;
+    } else {
+      if (bucket === 'live') when = g.status?.shortDetail || g.status?.detail || 'LIVE';
+      if (bucket === 'final') when = 'Final';
+    }
+    const fmtPts = (n) => {
+      const x = Number(n);
+      if (!Number.isFinite(x)) return '—';
+      return fantasy ? String(x.toFixed(1).replace(/\.0$/, '')) : String(x);
+    };
+    const showScore = bucket === 'live' || bucket === 'final' || fantasy;
     const side = (t, win) => {
       if (!t) return '';
       const logo = t.logo
         ? `<img src="${esc(t.logo)}" alt="" width="20" height="20" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`
         : `<span class="ph" aria-hidden="true"></span>`;
-      const pts = showScore && t.score != null
-        ? `<span class="pts">${esc(String(t.score))}</span>`
-        : `<span class="pts is-blank">—</span>`;
+      let pts;
+      if (fantasy && bucket === 'upcoming') {
+        pts = `<span class="pts is-blank" title="Projected">${esc(fmtPts(t.projected))}</span>`;
+      } else if (showScore && t.score != null) {
+        pts = `<span class="pts">${esc(fmtPts(t.score))}</span>`;
+      } else {
+        pts = `<span class="pts is-blank">—</span>`;
+      }
       return `<div class="wire-side${win ? ' is-winner' : ''}">${logo}<span class="abbr">${esc(t.abbreviation || t.shortName || '?')}</span>${pts}</div>`;
     };
     return `<article class="wire-game">
@@ -553,19 +575,30 @@
     log.innerHTML = slice.map((m) => {
       const mine = m.authorId && m.authorId === state.chatViewerId;
       const isBet = m.kind === 'bet';
+      const isMock = m.kind === 'mock';
       const meta = m.meta || {};
       const betHtml = isBet
-        ? `<div class="im-bet-card">
-            <div class="im-bet-kicker">Degenerate Gambler</div>
-            <div class="im-bet-type">${esc(meta.type === 'parlay' ? `Parlay · ${(meta.legs || []).length} legs` : 'Straight')} · ${esc(Number(meta.odds) > 0 ? `+${meta.odds}` : String(meta.odds ?? '—'))}</div>
+        ? `<div class="im-bet-card${meta.private ? ' is-private' : ''}">
+            <div class="im-bet-kicker">${meta.private ? 'Private bet' : "Casala's"}</div>
+            <div class="im-bet-type">${esc(meta.type === 'parlay' ? `Parlay · ${(meta.legs || []).length} legs` : (meta.type === 'future' ? 'Future' : 'Straight'))}${Array.isArray(meta.leagues) && meta.leagues.length ? ` · ${esc(meta.leagues.join(' / '))}` : ''} · ${esc(Number(meta.odds) > 0 ? `+${meta.odds}` : String(meta.odds ?? '—'))}</div>
             <div class="im-bet-legs">${(meta.legs || []).map((leg) => `<div class="im-bet-leg"><strong>${esc(leg.label || 'Pick')}</strong></div>`).join('') || esc(m.body || '')}</div>
-            <div class="im-bet-stake">${esc(meta.stake)}u to win ${esc(meta.toWin)}</div>
+            <div class="im-bet-stake">${meta.type === 'future' ? 'Record only' : `${esc(meta.stake)}u to win ${esc(meta.toWin)}`}${meta.private ? ' · locked' : ''}</div>
+            ${meta.private && meta.insult ? `<div class="im-bet-insult">${esc(meta.insult)}</div>` : ''}
           </div>`
         : '';
-      return `<article class="im-line${mine ? ' mine' : ''}${isBet ? ' is-bet' : ''}">
+      const mockHtml = isMock
+        ? `<div class="im-mock-card">
+            <div class="im-mock-kicker">Mock draft</div>
+            <div class="im-mock-title">${esc(m.authorName || 'Member')} is drafting</div>
+            <div class="im-mock-meta">${esc([meta.teams != null ? `${meta.teams} teams` : null, meta.rounds != null ? `${meta.rounds} rounds` : null, meta.order || 'snake'].filter(Boolean).join(' · '))}</div>
+            ${meta.firstPick ? `<div class="im-mock-meta">First pick · <strong>${esc(meta.firstPick)}</strong>${meta.firstPos ? ` (${esc(meta.firstPos)})` : ''}</div>` : ''}
+            <a class="im-mock-link" href="${esc(meta.link || '/members.html#mock-draft')}">${esc(meta.linkLabel || 'Open Mock Draft')}</a>
+          </div>`
+        : '';
+      return `<article class="im-line${mine ? ' mine' : ''}${isBet ? ' is-bet' : ''}${isMock ? ' is-mock' : ''}">
         <div class="im-bubble">
           <button type="button" class="im-who" data-mention-name="${esc(m.authorName || '')}" ${mine ? 'disabled' : ''}>${esc(m.authorName || 'Member')}</button>
-          ${betHtml || `<span class="im-text">${esc(m.body || '')}</span>`}
+          ${betHtml || mockHtml || `<span class="im-text">${esc(m.body || '')}</span>`}
           <div class="im-meta">${esc(fmtChatTime(m.createdAt))}</div>
         </div>
       </article>`;
@@ -2040,6 +2073,13 @@
       }
       const user = data.user || {};
       state.authUser = user;
+      state.loungeAccess = Boolean(data.loungeAccess || user.siteOwner);
+      state.loungeOpen = Boolean(data.loungeOpen);
+      const loungeTab = document.querySelector('.app-tabs [data-tab="lounge"]');
+      if (loungeTab) loungeTab.hidden = !state.loungeAccess;
+      document.querySelectorAll('[data-go="lounge"], [data-app-jump="lounge"], a[href="/members.html"], a[href^="/members.html"]').forEach((el) => {
+        if (!state.loungeAccess) el.hidden = true;
+      });
       const line = document.getElementById('user-line');
       if (line) {
         line.textContent = `${user.name || user.loginName || 'Member'}${user.role ? ` · ${String(user.role).replace(/_/g, ' ')}` : ''}`;
@@ -2221,6 +2261,37 @@
       } catch { /* ignore */ }
       window.location.replace('/enter?logout=1');
     });
+
+    function wireUiModeSwitch() {
+      const goDesktop = () => {
+        if (window.GridIronUiMode?.goDesktop) {
+          window.GridIronUiMode.goDesktop('/home.html');
+          return;
+        }
+        try { localStorage.setItem('gi-ui-mode', 'desktop'); } catch { /* ignore */ }
+        location.assign('/home.html');
+      };
+      const goMobile = () => {
+        if (window.GridIronUiMode?.goMobile) {
+          window.GridIronUiMode.goMobile();
+          return;
+        }
+        try { localStorage.setItem('gi-ui-mode', 'mobile'); } catch { /* ignore */ }
+        location.assign('/app/');
+      };
+      document.getElementById('ui-mode-desktop')?.addEventListener('click', goDesktop);
+      document.getElementById('ui-mode-top')?.addEventListener('click', goDesktop);
+      document.getElementById('ui-mode-mobile')?.addEventListener('click', goMobile);
+
+      const mode = window.GridIronUiMode?.get?.() || 'mobile';
+      const desktopBtn = document.getElementById('ui-mode-desktop');
+      const mobileBtn = document.getElementById('ui-mode-mobile');
+      const topBtn = document.getElementById('ui-mode-top');
+      if (desktopBtn) desktopBtn.hidden = mode === 'desktop';
+      if (mobileBtn) mobileBtn.hidden = mode !== 'desktop';
+      if (topBtn) topBtn.hidden = mode === 'desktop';
+    }
+    wireUiModeSwitch();
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible') return;

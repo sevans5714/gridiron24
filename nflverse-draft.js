@@ -1,7 +1,8 @@
 /**
  * Beta / lounge draft pool — current NFL fantasy players with:
- * roster + headshot (nflverse), 2025 fantasy points (nflverse stats),
- * 2026 projections (Sleeper), bye week (schedule), team logos (nflverse teams).
+ * roster + headshot (nflverse), prior-season fantasy + box stats (nflverse),
+ * projections + ADP (Sleeper), bye week (schedule), team logos (nflverse teams),
+ * overall / position ranks.
  */
 const fs = require('fs');
 const path = require('path');
@@ -209,9 +210,34 @@ function buildStats2025Map(statRows) {
     const std = toNum(row.fantasy_points);
     const pts = ppr != null ? ppr : std;
     if (pts == null) continue;
-    map.set(id, Math.round(pts * 10) / 10);
+    const games = toNum(row.games);
+    const rounded = Math.round(pts * 10) / 10;
+    const avg = games && games > 0 ? Math.round((rounded / games) * 10) / 10 : null;
+    map.set(id, {
+      fantasyPoints: rounded,
+      games: games != null ? Math.round(games) : null,
+      avgPpg: avg,
+      passYds: toNum(row.passing_yards),
+      passTd: toNum(row.passing_tds),
+      passInt: toNum(row.passing_interceptions),
+      rushYds: toNum(row.rushing_yards),
+      rushTd: toNum(row.rushing_tds),
+      targets: toNum(row.targets),
+      receptions: toNum(row.receptions),
+      recYds: toNum(row.receiving_yards),
+      recTd: toNum(row.receiving_tds),
+      fgMade: toNum(row.fg_made),
+      fgAtt: toNum(row.fg_att),
+      xpMade: toNum(row.pat_made ?? row.xp_made)
+    });
   }
   return map;
+}
+
+function cleanAdp(value) {
+  const n = toNum(value);
+  if (n == null || n <= 0 || n >= 900) return null;
+  return Math.round(n * 10) / 10;
 }
 
 function buildSleeperMaps(sleeperPlayers, projections) {
@@ -229,6 +255,15 @@ function buildSleeperMaps(sleeperPlayers, projections) {
     const payload = {
       sleeperId: String(sleeperId),
       projectedPoints2026: projected != null ? Math.round(projected * 10) / 10 : null,
+      adp: cleanAdp(projRow?.adp_ppr ?? projRow?.adp_half_ppr ?? projRow?.adp_std),
+      projPassYds: toNum(projRow?.pass_yd),
+      projPassTd: toNum(projRow?.pass_td),
+      projPassInt: toNum(projRow?.pass_int),
+      projRushYds: toNum(projRow?.rush_yd),
+      projRushTd: toNum(projRow?.rush_td),
+      projRec: toNum(projRow?.rec),
+      projRecYds: toNum(projRow?.rec_yd),
+      projRecTd: toNum(projRow?.rec_td),
       headshot: SLEEPER_HEADSHOT(sleeperId),
       team,
       position: pos,
@@ -256,7 +291,7 @@ async function loadRoster(season) {
 async function loadDraftPool({ season, activeOnly = true, force = false } = {}) {
   const year = Number(season) || new Date().getFullYear();
   const priorSeason = year - 1;
-  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v2`;
+  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v3`;
   if (!force && poolCache.players && poolCache.key === key && Date.now() - poolCache.at < POOL_CACHE_MS) {
     return {
       ok: true,
@@ -291,31 +326,77 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
     .filter(Boolean);
 
   const players = filterDraftPool(normalized, { activeOnly }).map((p) => {
-    const statsPts = p.gsisId ? statsMap.get(p.gsisId) : null;
+    const stats = (p.gsisId && statsMap.get(p.gsisId)) || null;
     const sleeperHit = (p.gsisId && sleeper.byGsis.get(p.gsisId))
       || sleeper.byKey.get(matchKey(p.name, p.team, p.position))
       || sleeper.byKey.get(matchKey(p.name, '', p.position))
       || null;
+    const fantasyPoints2025 = stats?.fantasyPoints ?? null;
+    const projectedPoints2026 = sleeperHit?.projectedPoints2026 ?? null;
+    const delta = (projectedPoints2026 != null && fantasyPoints2025 != null)
+      ? Math.round((projectedPoints2026 - fantasyPoints2025) * 10) / 10
+      : null;
 
     return {
       ...p,
       byeWeek: (p.team && byeMap.get(p.team)) || null,
       teamLogo: (p.team && logoMap.get(p.team)) || null,
-      fantasyPoints2025: statsPts != null ? statsPts : null,
-      projectedPoints2026: sleeperHit?.projectedPoints2026 ?? null,
+      fantasyPoints2025,
+      projectedPoints2026,
+      avgPpg: stats?.avgPpg ?? null,
+      games: stats?.games ?? null,
+      adp: sleeperHit?.adp ?? null,
+      delta,
+      stats: stats ? {
+        passYds: stats.passYds,
+        passTd: stats.passTd,
+        passInt: stats.passInt,
+        rushYds: stats.rushYds,
+        rushTd: stats.rushTd,
+        targets: stats.targets,
+        receptions: stats.receptions,
+        recYds: stats.recYds,
+        recTd: stats.recTd,
+        fgMade: stats.fgMade,
+        fgAtt: stats.fgAtt,
+        xpMade: stats.xpMade
+      } : null,
+      projStats: sleeperHit ? {
+        passYds: sleeperHit.projPassYds,
+        passTd: sleeperHit.projPassTd,
+        passInt: sleeperHit.projPassInt,
+        rushYds: sleeperHit.projRushYds,
+        rushTd: sleeperHit.projRushTd,
+        receptions: sleeperHit.projRec,
+        recYds: sleeperHit.projRecYds,
+        recTd: sleeperHit.projRecTd
+      } : null,
       sleeperId: sleeperHit?.sleeperId || null,
-      headshot: p.headshot || sleeperHit?.headshot || null
+      headshot: p.headshot || sleeperHit?.headshot || null,
+      overallRank: null,
+      posRank: null
     };
   }).sort((a, b) => {
     const pa = a.projectedPoints2026 != null ? a.projectedPoints2026 : -1;
     const pb = b.projectedPoints2026 != null ? b.projectedPoints2026 : -1;
     if (pb !== pa) return pb - pa;
+    const aa = a.adp != null ? a.adp : 9999;
+    const ab = b.adp != null ? b.adp : 9999;
+    if (aa !== ab) return aa - ab;
     const fa = a.fantasyPoints2025 != null ? a.fantasyPoints2025 : -1;
     const fb = b.fantasyPoints2025 != null ? b.fantasyPoints2025 : -1;
     if (fb !== fa) return fb - fa;
     const pos = a.position.localeCompare(b.position);
     if (pos) return pos;
     return a.name.localeCompare(b.name);
+  });
+
+  const posCounts = {};
+  players.forEach((p, i) => {
+    p.overallRank = i + 1;
+    const pos = p.position || '?';
+    posCounts[pos] = (posCounts[pos] || 0) + 1;
+    p.posRank = posCounts[pos];
   });
 
   const counts = { total: players.length };

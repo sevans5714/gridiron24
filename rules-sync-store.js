@@ -52,7 +52,8 @@ function saveCheck({
   diffs,
   detail,
   triggeredBy,
-  season
+  season,
+  aaaSync = null
 }) {
   const store = readStore();
   const checkedAt = new Date().toISOString();
@@ -67,6 +68,20 @@ function saveCheck({
       detail: d.detail,
       overtime: d.overtime
     })),
+    aaaSync: aaaSync
+      ? {
+          matched: Boolean(aaaSync.matched),
+          bothOk: Boolean(aaaSync.bothOk),
+          configured: aaaSync.configured !== false,
+          diffCount: Array.isArray(aaaSync.diffs) ? aaaSync.diffs.length : 0,
+          diffs: (aaaSync.diffs || []).slice(0, 40).map((d) => ({
+            kind: d.kind,
+            label: d.label,
+            detail: d.detail,
+            overtime: d.overtime
+          }))
+        }
+      : null,
     triggeredBy: triggeredBy || 'system',
     season: Number(season) || null
   };

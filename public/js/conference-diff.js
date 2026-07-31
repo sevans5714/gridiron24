@@ -127,7 +127,7 @@ window.GridIronDiff = (function () {
     });
   }
 
-  function findDiffs(detail, overtime) {
+  function findDiffs(detail, overtime, { includePlayoff = true } = {}) {
     const diffs = [];
     const settings = [
       ['Scoring type', 'playerRankType']
@@ -145,15 +145,17 @@ window.GridIronDiff = (function () {
       }
     }
 
-    for (const row of playoffRows(detail, overtime)) {
-      if (!row.matched) {
-        diffs.push({
-          kind: 'Playoff',
-          label: row.label,
-          detail: row.detail,
-          overtime: row.overtime,
-          target: row.target
-        });
+    if (includePlayoff) {
+      for (const row of playoffRows(detail, overtime)) {
+        if (!row.matched) {
+          diffs.push({
+            kind: 'Playoff',
+            label: row.label,
+            detail: row.detail,
+            overtime: row.overtime,
+            target: row.target
+          });
+        }
       }
     }
 
@@ -202,10 +204,19 @@ window.GridIronDiff = (function () {
     return diffs;
   }
 
-  function compare(detail, overtime) {
+  function byKind(diffs) {
+    return {
+      Setting: diffs.filter((d) => d.kind === 'Setting'),
+      Playoff: diffs.filter((d) => d.kind === 'Playoff'),
+      Scoring: diffs.filter((d) => d.kind === 'Scoring'),
+      Lineup: diffs.filter((d) => d.kind === 'Lineup')
+    };
+  }
+
+  function compare(detail, overtime, options = {}) {
     const bothOk = !!(detail?.ok && overtime?.ok);
-    const playoff = bothOk ? playoffRows(detail, overtime) : [];
-    const diffs = bothOk ? findDiffs(detail, overtime) : [];
+    const playoff = bothOk && options.includePlayoff !== false ? playoffRows(detail, overtime) : [];
+    const diffs = bothOk ? findDiffs(detail, overtime, options) : [];
     const playoffMatched = playoff.length > 0 && playoff.every((r) => r.matched);
     const playoffOnTarget = playoff.length > 0 && playoff.every((r) => r.meetsTarget);
     return {
@@ -216,14 +227,14 @@ window.GridIronDiff = (function () {
       playoff,
       playoffTarget: PLAYOFF_TARGET,
       diffs,
-      byKind: {
-        Setting: diffs.filter((d) => d.kind === 'Setting'),
-        Playoff: diffs.filter((d) => d.kind === 'Playoff'),
-        Scoring: diffs.filter((d) => d.kind === 'Scoring'),
-        Lineup: diffs.filter((d) => d.kind === 'Lineup')
-      }
+      byKind: byKind(diffs)
     };
   }
 
-  return { fmt, fmtItem, findDiffs, compare, playoffRows, PLAYOFF_TARGET };
+  /** Scoring type, categories, and lineup only — used for AAA vs GridIron 24. */
+  function compareScoring(primary, peer) {
+    return compare(primary, peer, { includePlayoff: false });
+  }
+
+  return { fmt, fmtItem, findDiffs, compare, compareScoring, playoffRows, PLAYOFF_TARGET };
 })();

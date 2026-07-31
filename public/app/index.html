@@ -12,30 +12,32 @@
   <meta name="format-detection" content="telephone=no" />
   <meta name="description" content="GridIron24 — standings, scores, roster, lounge, and playoffs." />
   <title>GridIron24</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=52" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=52" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=52" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=52" />
+  <link rel="manifest" href="/manifest.webmanifest?v=53" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=53" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=53" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=53" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/app/app.css?v=52" />
+  <link rel="stylesheet" href="/app/app.css?v=53" />
+  <script src="/js/theme-boot.js"></script>
 </head>
 <body class="app-shell">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
-    <img src="/assets/pwa/icon-192-transparent.png?v=52" alt="" width="96" height="96" />
+    <img src="/assets/pwa/icon-192-transparent.png?v=53" alt="" width="96" height="96" />
     <strong>GridIron24</strong>
   </div>
   <header class="app-top">
     <div class="app-top-row">
       <button type="button" class="brand" id="brand-home" aria-label="GridIron24 Home">
-        <img src="/assets/pwa/icon-192-transparent.png?v=52" alt="" width="192" height="192" />
+        <img src="/assets/pwa/icon-192-transparent.png?v=53" alt="" width="192" height="192" />
         <div class="brand-copy">
           <strong>GridIron24</strong>
           <span id="subtitle">Pulse</span>
         </div>
       </button>
       <div class="app-top-right">
+        <button type="button" class="ui-mode-btn" id="ui-mode-top" title="Switch to desktop site">Desktop</button>
         <div class="team-chip" id="team-chip" hidden></div>
       </div>
     </div>
@@ -108,7 +110,7 @@
       <a class="text-link" href="/members.html#record-book">Record Book on full lounge</a>
       <a class="text-link" href="/members.html#mock-draft">Mock Draft on full lounge</a>
       <a class="text-link" href="/members.html#survivor-pool">Survivor Pool on full lounge</a>
-      <a class="text-link" href="/members.html#degenerate-book">Degenerate Gambler on full lounge</a>
+      <a class="text-link" href="/members.html#gambler">Enter Sportsbook on full lounge</a>
       <a class="text-link" href="#lounge" data-app-jump="lounge">Back to chat</a>
     </section>
 
@@ -173,13 +175,21 @@
           <a href="/members.html#record-book">Record Book <span>Season leaders</span></a>
           <a href="/members.html#mock-draft">Mock Draft <span>Snake simulator</span></a>
           <a href="/members.html#survivor-pool">Survivor <span>Last team standing</span></a>
-          <a href="/members.html#degenerate-book">Degenerate Gambler <span>Paper sportsbook</span></a>
+          <a href="/members.html#gambler">Enter Sportsbook <span>Casala's Palace · pools</span></a>
           <button type="button" data-app-tab="team">My Team <span>Roster</span></button>
           <button type="button" data-app-tab="scoreboard">Scores <span>Matchups</span></button>
         </div>
       </div>
 
-      <p class="more-desktop-note">Record Book, Mock Draft, Survivor, and Degenerate Gambler open in the full Members Lounge. Rule book, history, payouts, and profile also stay on the full site.</p>
+      <div class="more-group">
+        <p class="more-group-label">Display</p>
+        <div class="more-links">
+          <button type="button" id="ui-mode-desktop">Desktop site <span>Full website layout</span></button>
+          <button type="button" id="ui-mode-mobile" hidden>Mobile app <span>Compact app layout</span></button>
+        </div>
+      </div>
+
+      <p class="more-desktop-note">Use Desktop site for Record Book, Mock Draft, Enter Sportsbook, rule book, history, payouts, and profile. Switch back anytime with Mobile app.</p>
 
       <div class="more-account">
         <div class="more-account-copy">
@@ -228,6 +238,6 @@
     </div>
   </div>
 
-  <script src="/app/app.js?v=52"></script>
+  <script src="/app/app.js?v=53"></script>
 </body>
 </html>

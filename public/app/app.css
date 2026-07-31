@@ -1033,6 +1033,30 @@ a {
   line-height: 1.4;
 }
 
+.ui-mode-btn {
+  appearance: none;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(126, 200, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(47, 123, 255, 0.16);
+  color: #9ec8ff;
+  font-family: var(--label);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ui-mode-btn:hover,
+.ui-mode-btn:focus-visible {
+  color: #fff;
+  border-color: rgba(126, 200, 255, 0.55);
+  background: rgba(47, 123, 255, 0.3);
+  outline: none;
+}
+
 .account-bar {
   display: none;
 }
@@ -2349,6 +2373,40 @@ a {
   padding-top: 0.35rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
+.im-line.is-mock .im-bubble {
+  border-color: rgba(47, 123, 255, 0.4);
+  background: linear-gradient(160deg, rgba(47, 123, 255, 0.16), rgba(255, 255, 255, 0.04));
+  max-width: min(96%, 24rem);
+}
+.im-mock-card { margin-top: 0.25rem; }
+.im-mock-kicker {
+  font-family: var(--label);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fd4ff;
+  margin-bottom: 0.2rem;
+}
+.im-mock-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+.im-mock-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+.im-mock-link {
+  display: inline-block;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #9fd4ff;
+  text-decoration: none;
+}
+.im-mock-link:hover { text-decoration: underline; }
 
 .im-text {
   display: block;

@@ -1,5 +1,5 @@
 /**
- * Lounge paper sportsbook — Degenerate Gambler desk.
+ * Lounge paper sportsbook — Casala's Palace desk.
  * Game slips use fun-money units; futures are record-only (no stake).
  * Standings are win–loss by last name.
  */
@@ -80,6 +80,9 @@ function ensureAccount(store, user) {
   } else {
     store.accounts[id].name = fullName;
     store.accounts[id].lastName = lastNameOf(fullName);
+    if (!Number.isFinite(Number(store.accounts[id].bankroll))) {
+      store.accounts[id].bankroll = STARTING_BANKROLL;
+    }
   }
   return store.accounts[id];
 }
@@ -338,6 +341,7 @@ function standingsRow(a) {
     wins: a.wins,
     losses: a.losses,
     pushes: a.pushes,
+    bankroll: Number(a.bankroll) || 0,
     record: publicRecord(a),
     winPct: Math.round(winPct(a) * 1000) / 1000
   };
@@ -467,6 +471,7 @@ function getBook(user, boards = []) {
     ok: true,
     startingBankroll: STARTING_BANKROLL,
     account: {
+      userId: account.userId,
       name: account.name,
       lastName: account.lastName || lastNameOf(account.name),
       bankroll: account.bankroll,
@@ -532,6 +537,7 @@ function placeFuture(user, body = {}, futuresBoard = null) {
     outcomeId: hit.outcome.id,
     odds: hit.outcome.odds,
     stake: 0,
+    private: Boolean(body.private),
     status: 'open',
     result: null,
     champion: null,
@@ -553,6 +559,7 @@ function placeFuture(user, body = {}, futuresBoard = null) {
       title: pick.title,
       selection: pick.selection,
       odds: pick.odds,
+      private: Boolean(pick.private),
       createdAt: pick.createdAt
     }
   };
@@ -612,6 +619,7 @@ function placeBet(user, body = {}, boards = []) {
   }
 
   account.bankroll = Math.round((account.bankroll - stake) * 100) / 100;
+  const isPrivate = Boolean(body.private);
   const slip = {
     id: crypto.randomUUID(),
     userId: user.id,
@@ -621,6 +629,7 @@ function placeBet(user, body = {}, boards = []) {
     odds,
     toWin: profit,
     legs,
+    private: isPrivate,
     status: 'open',
     payout: null,
     profit: null,
@@ -639,7 +648,9 @@ function placeBet(user, body = {}, boards = []) {
       stake: slip.stake,
       odds: slip.odds,
       toWin: slip.toWin,
+      private: Boolean(slip.private),
       legs: (slip.legs || []).map((l) => ({
+        eventId: l.eventId,
         label: l.label,
         matchup: l.matchup,
         leagueLabel: l.leagueLabel,
@@ -649,6 +660,31 @@ function placeBet(user, body = {}, boards = []) {
       createdAt: slip.createdAt
     }
   };
+}
+
+const PRIVATE_INSULTS = [
+  'hid this pick like a coward.',
+  'marked it private — soft as warm butter.',
+  "doesn't want the lounge roasting their steamers.",
+  'thinks secrecy will cover that dog of a bet.',
+  'locked it private. Bold of them to still announce it.',
+  'whispered this one into the void. Chicken.',
+  'went private. The board already knows they are cooked.',
+  'is ashamed of their own action. Correct instinct.',
+  'tucked this ticket under the mattress. Weak.',
+  'chose private mode — the hall of fame of yellow.',
+  'wants privacy for a paper bet. Peak soft.',
+  'marked private so nobody sees the steamer coming.'
+];
+
+function insultForSlip(id) {
+  const raw = String(id || '');
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    hash = ((hash << 5) - hash + raw.charCodeAt(i)) | 0;
+  }
+  const idx = Math.abs(hash) % PRIVATE_INSULTS.length;
+  return PRIVATE_INSULTS[idx];
 }
 
 function formatSlipChat(slip) {
@@ -664,9 +700,31 @@ function formatSlipChat(slip) {
     return v % 1 ? v.toFixed(2) : String(v);
   };
 
+  const isPrivate = Boolean(slip.private);
+  const insult = isPrivate ? insultForSlip(slip.id) : null;
+
   if (slip.type === 'future') {
+    if (isPrivate) {
+      return {
+        body: [`Private future · record only`, insult].filter(Boolean).join('\n'),
+        meta: {
+          slipId: slip.id,
+          type: 'future',
+          private: true,
+          insult,
+          stake: 0,
+          odds: slip.odds,
+          toWin: null,
+          legs: [{
+            label: 'Private pick',
+            matchup: null,
+            leagueLabel: slip.sport || 'Futures'
+          }]
+        }
+      };
+    }
     const body = [
-      `Degenerate future · ${slip.marketLabel || slip.title || 'Futures'}`,
+      `Casala's future · ${slip.marketLabel || slip.title || 'Futures'}`,
       `${slip.selection} (${fmtOdds(slip.odds)}) · record only`
     ].join('\n');
     return {
@@ -674,6 +732,7 @@ function formatSlipChat(slip) {
       meta: {
         slipId: slip.id,
         type: 'future',
+        private: false,
         stake: 0,
         odds: slip.odds,
         toWin: null,
@@ -689,17 +748,46 @@ function formatSlipChat(slip) {
   const typeLabel = slip.type === 'parlay'
     ? `Parlay (${(slip.legs || []).length} legs)`
     : 'Straight';
+  const leagues = [...new Set((slip.legs || []).map((l) => l.leagueLabel).filter(Boolean))];
+  const leagueBit = leagues.length ? ` · ${leagues.join(' / ')}` : '';
+
+  if (isPrivate) {
+    return {
+      body: [
+        `Private bet · ${typeLabel}${leagueBit} · ${fmtU(slip.stake)}u to win ${fmtU(slip.toWin)} (${fmtOdds(slip.odds)})`,
+        insult
+      ].filter(Boolean).join('\n'),
+      meta: {
+        slipId: slip.id,
+        type: slip.type,
+        private: true,
+        insult,
+        stake: slip.stake,
+        odds: slip.odds,
+        toWin: slip.toWin,
+        leagues,
+        legs: [{
+          label: 'Private pick — details locked',
+          matchup: null,
+          leagueLabel: leagues.join(' / ') || null
+        }]
+      }
+    };
+  }
+
   const legs = (slip.legs || []).map((l) => l.label || 'pick').join(' · ');
   const body = [
-    `Degenerate bet · ${typeLabel} · ${fmtU(slip.stake)}u to win ${fmtU(slip.toWin)} (${fmtOdds(slip.odds)})`,
+    `Casala's bet · ${typeLabel}${leagueBit} · ${fmtU(slip.stake)}u to win ${fmtU(slip.toWin)} (${fmtOdds(slip.odds)})`,
     legs
   ].filter(Boolean).join('\n');
   const meta = {
     slipId: slip.id,
     type: slip.type,
+    private: false,
     stake: slip.stake,
     odds: slip.odds,
     toWin: slip.toWin,
+    leagues,
     legs: (slip.legs || []).map((l) => ({
       label: l.label,
       matchup: l.matchup,

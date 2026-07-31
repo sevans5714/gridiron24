@@ -47,13 +47,17 @@ const inbox = require('./inbox-store');
 const welcomeMessage = require('./welcome-message');
 const presence = require('./presence-store');
 const ruleProposals = require('./rule-proposals-store');
+const featureRequests = require('./feature-requests-store');
 const leagues = require('./leagues-store');
-const { compareSettings } = require('./rules-diff');
+const { compareSettings, compareScoringSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
 const sportsScoreboard = require('./sports-scoreboard');
 const nflverseDraft = require('./nflverse-draft');
 const survivorPool = require('./survivor-pool-store');
 const paperBook = require('./paper-book-store');
+const deathPool = require('./death-pool-store');
+const deathPoolNews = require('./death-pool-news');
+const customPools = require('./custom-pool-store');
 const futuresMarkets = require('./futures-markets');
 const {
   sendPasswordResetEmail,
@@ -162,6 +166,7 @@ const PUBLIC_PATHS = new Set([
   '/api/cron/weekly-wrap',
   '/api/cron/rules-sync',
   '/api/cron/roster-violations',
+  '/api/cron/death-pool-news',
   '/manifest.webmanifest',
   '/sw.js'
 ]);
@@ -306,6 +311,56 @@ function requireAuth(req, res, pathname) {
   return false;
 }
 
+/** Paths social (lounge-only) accounts may use after sign-in — Members Lounge only. */
+function isLoungeOnlyAllowedPath(pathname) {
+  const exact = new Set([
+    '/members',
+    '/members.html',
+    '/restricted.html',
+    '/api/preferences',
+    '/api/presence',
+    '/api/survivor-pool',
+    '/api/death-pool',
+    '/api/custom-pools',
+    '/api/paper-book',
+    '/api/members-chat',
+    '/api/members',
+    '/api/sports-scores',
+    '/api/leagues',
+    '/api/beta/draft-pool',
+    '/api/beta/draft'
+  ]);
+  if (exact.has(pathname)) return true;
+  if (pathname.startsWith('/api/members-chat/')) return true;
+  return false;
+}
+
+/**
+ * Social accounts may only use the Members Lounge.
+ * Returns false when the response was already sent.
+ */
+function enforceLoungeOnlyAccess(req, res, pathname) {
+  const user = getSessionUser(req);
+  if (!user || !users.isLoungeOnly(user)) return true;
+  if (isPublicPath(pathname)) return true;
+  if (isLoungeOnlyAllowedPath(pathname)) return true;
+  if (pathname.startsWith('/api/')) {
+    sendJson(res, 403, {
+      ok: false,
+      error: 'Social accounts can only use the Members Lounge.',
+      code: 'lounge_only'
+    });
+    return false;
+  }
+  res.writeHead(302, {
+    Location: '/members.html',
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    Pragma: 'no-cache'
+  });
+  res.end();
+  return false;
+}
+
 function requireLoungeMember(req, res) {
   const user = getSessionUser(req);
   if (!user) {
@@ -315,8 +370,11 @@ function requireLoungeMember(req, res) {
   if (!users.hasLoungeAccess(user)) {
     sendJson(res, 403, {
       ok: false,
-      error: 'Members Lounge access requires a commissioner invite token.',
-      code: 'lounge_invite_required'
+      error: users.isLoungeOpenToMembers()
+        ? 'Members Lounge is restricted. You need an approved account with lounge access.'
+        : 'Members Lounge is not open yet.',
+      code: 'lounge_restricted',
+      redirect: '/restricted.html?area=lounge'
     });
     return null;
   }
@@ -1645,6 +1703,11 @@ async function buildPlayoffsPayload() {
       };
     };
 
+    const withSeed = (side) => {
+      if (!side) return null;
+      const seed = Number(byId.get(side.id)?.playoffSeed || 0) || null;
+      return { ...side, seed };
+    };
     const formatGame = (m, fallbackLabel) => {
       if (!m) {
         return {
@@ -1660,8 +1723,8 @@ async function buildPlayoffsPayload() {
         label: fallbackLabel,
         status: decided ? 'final' : (Number(m.home?.score || 0) + Number(m.away?.score || 0) > 0 ? 'live' : 'upcoming'),
         winner: m.winner || 'UNDECIDED',
-        home: m.home,
-        away: m.away,
+        home: withSeed(m.home),
+        away: withSeed(m.away),
         playoffTierType: m.playoffTierType || null
       };
     };
@@ -2405,22 +2468,91 @@ async function loadConferenceSettings() {
   );
 }
 
+async function loadAaaLeagueSettings() {
+  const affiliate = getAffiliatedLeague('aaa');
+  const espnId = Number(affiliate?.espnLeagueId);
+  if (!affiliate || !Number.isFinite(espnId) || espnId <= 0) {
+    return {
+      ok: false,
+      configured: false,
+      key: 'aaa',
+      name: affiliate?.name || 'AAA League',
+      shortName: affiliate?.shortName || 'AAA',
+      leagueId: null,
+      logo: affiliate?.logo || '/assets/aaa-league.png',
+      error: 'AAA League ESPN ID is not configured'
+    };
+  }
+  const conference = {
+    key: affiliate.key || 'aaa',
+    name: affiliate.name || 'AAA League',
+    shortName: affiliate.shortName || 'AAA',
+    espnLeagueId: espnId,
+    logo: affiliate.logo || '/assets/aaa-league.png'
+  };
+  try {
+    const raw = await fetchEspnRaw(conference, ['mSettings', 'mStatus'], 'aaa-settings');
+    return {
+      ok: true,
+      configured: true,
+      ...normalizeSettings(raw, conference)
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      configured: true,
+      key: conference.key,
+      name: conference.name,
+      shortName: conference.shortName,
+      leagueId: espnId,
+      logo: conference.logo,
+      error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
+    };
+  }
+}
+
+function espnSettingsUrl(leagueId, season) {
+  const id = Number(leagueId);
+  const yr = Number(season) || Number(config.season);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  return `https://fantasy.espn.com/football/league/settings?leagueId=${id}&seasonId=${yr}`;
+}
+
 async function runRulesSyncJob({
   triggeredBy = 'system',
   notify = true,
   notifyOnMatch = false
 } = {}) {
-  const conferences = await loadConferenceSettings();
+  const [conferences, aaa] = await Promise.all([
+    loadConferenceSettings(),
+    loadAaaLeagueSettings()
+  ]);
   const detail = conferences.find((c) => c.key === 'detail') || null;
   const overtime = conferences.find((c) => c.key === 'overtime') || null;
   const cmp = compareSettings(detail, overtime);
+  const aaaCmp = aaa.configured === false
+    ? {
+        matched: false,
+        bothOk: false,
+        configured: false,
+        diffCount: 0,
+        diffs: [],
+        byKind: { Setting: [], Playoff: [], Scoring: [], Lineup: [] }
+      }
+    : {
+        ...compareScoringSettings(detail, aaa),
+        configured: true
+      };
+  aaaCmp.diffCount = (aaaCmp.diffs || []).length;
+
   const store = rulesSyncStore.saveCheck({
     matched: cmp.matched,
     bothOk: cmp.bothOk,
     diffs: cmp.diffs,
     detail,
     triggeredBy,
-    season: config.season
+    season: config.season,
+    aaaSync: aaaCmp
   });
 
   const result = {
@@ -2429,13 +2561,28 @@ async function runRulesSyncJob({
     bothOk: cmp.bothOk,
     diffCount: cmp.diffs.length,
     diffs: cmp.diffs,
+    aaaSync: {
+      matched: aaaCmp.matched,
+      bothOk: aaaCmp.bothOk,
+      configured: aaaCmp.configured !== false,
+      diffCount: aaaCmp.diffCount,
+      diffs: aaaCmp.diffs,
+      leagueId: aaa.leagueId || null,
+      name: aaa.name || 'AAA League'
+    },
     officialUpdated: Boolean(cmp.matched && store.officialScoring),
     lastCheck: store.lastCheck,
     officialScoring: store.officialScoring,
     generatedAt: new Date().toISOString()
   };
 
-  const shouldMail = notify && ((cmp.bothOk && !cmp.matched) || (notifyOnMatch && cmp.matched));
+  const conferenceDrift = cmp.bothOk && !cmp.matched;
+  const aaaDrift = aaaCmp.configured !== false && aaaCmp.bothOk && !aaaCmp.matched;
+  const shouldMail = notify && (
+    conferenceDrift ||
+    aaaDrift ||
+    (notifyOnMatch && cmp.matched && (aaaCmp.configured === false || aaaCmp.matched))
+  );
   if (shouldMail) {
     const recipients = users.listUsers()
       .filter((u) => u.role === 'commissioner' && u.email)
@@ -2449,6 +2596,7 @@ async function runRulesSyncJob({
           to,
           matched: cmp.matched,
           diffs: cmp.diffs,
+          aaaSync: result.aaaSync,
           checkedAt: store.lastCheck?.checkedAt,
           baseUrl: process.env.APP_BASE_URL
         });
@@ -2460,13 +2608,22 @@ async function runRulesSyncJob({
     }
   }
 
-  console.log(`[rules-sync] matched=${cmp.matched} diffs=${cmp.diffs.length} by=${triggeredBy}`);
+  console.log(
+    `[rules-sync] matched=${cmp.matched} diffs=${cmp.diffs.length} aaaMatched=${aaaCmp.matched} aaaDiffs=${aaaCmp.diffCount} by=${triggeredBy}`
+  );
   return result;
 }
 
 async function apiSettings(res) {
-  const results = await loadConferenceSettings();
+  const [results, aaa] = await Promise.all([
+    loadConferenceSettings(),
+    loadAaaLeagueSettings()
+  ]);
   const sync = rulesSyncStore.getStatus();
+  const detail = results.find((c) => c.key === 'detail') || null;
+  const aaaCmp = aaa.configured === false
+    ? null
+    : compareScoringSettings(detail, aaa);
 
   sendJson(res, 200, {
     season: config.season,
@@ -2475,6 +2632,39 @@ async function apiSettings(res) {
     structure: config.structure || null,
     generatedAt: new Date().toISOString(),
     conferences: results,
+    aaa,
+    aaaSync: aaaCmp
+      ? {
+          ...aaaCmp,
+          configured: true,
+          diffCount: aaaCmp.diffs.length,
+          espn: {
+            detail: espnSettingsUrl(detail?.leagueId, config.season),
+            aaa: espnSettingsUrl(aaa.leagueId, config.season)
+          }
+        }
+      : {
+          matched: false,
+          bothOk: false,
+          configured: false,
+          diffCount: 0,
+          diffs: [],
+          espn: {
+            detail: espnSettingsUrl(detail?.leagueId, config.season),
+            aaa: null
+          }
+        },
+    espnLinks: {
+      detail: espnSettingsUrl(
+        results.find((c) => c.key === 'detail')?.leagueId,
+        config.season
+      ),
+      overtime: espnSettingsUrl(
+        results.find((c) => c.key === 'overtime')?.leagueId,
+        config.season
+      ),
+      aaa: espnSettingsUrl(aaa.leagueId, config.season)
+    },
     rulesSync: sync.lastCheck,
     officialScoring: sync.officialScoring
   });
@@ -2543,6 +2733,69 @@ async function scheduleForConference(conference, weekParam, cacheTag = 'matchup'
       error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message
     };
   }
+}
+
+/** Fantasy boards for the Members Lounge sports scoreboard (GI24 + AAA). */
+async function loadFantasySportsBoards() {
+  const boards = [];
+  try {
+    const confResults = await Promise.all(
+      (config.conferences || []).map((conference) => scheduleForConference(conference))
+    );
+    boards.push(sportsScoreboard.boardFromFantasyConferences({
+      id: 'gi24',
+      label: 'GridIron 24',
+      logo: '/assets/gridiron24-league.png?v=5'
+    }, confResults));
+  } catch (err) {
+    console.error('[sports-scores] GridIron 24 board failed', err.message || err);
+    boards.push({
+      ok: false,
+      id: 'gi24',
+      label: 'GridIron 24',
+      kind: 'team',
+      fantasy: true,
+      logo: '/assets/gridiron24-league.png?v=5',
+      error: err.message || 'Unavailable',
+      counts: { live: 0, final: 0, upcoming: 0 },
+      games: []
+    });
+  }
+
+  try {
+    const affiliate = getAffiliatedLeague('aaa');
+    const espnId = Number(affiliate?.espnLeagueId);
+    if (affiliate && Number.isFinite(espnId) && espnId > 0) {
+      const conference = {
+        key: affiliate.key || 'aaa',
+        name: affiliate.name || 'AAA League',
+        shortName: affiliate.shortName || 'AAA',
+        espnLeagueId: espnId,
+        logo: affiliate.logo || '/assets/aaa-league.png'
+      };
+      const aaa = await scheduleForConference(conference, null, 'aaa-matchup');
+      boards.push(sportsScoreboard.boardFromFantasyConferences({
+        id: 'aaa',
+        label: affiliate.shortName || 'AAA',
+        logo: '/assets/aaa-league.png?v=3'
+      }, [aaa]));
+    }
+  } catch (err) {
+    console.error('[sports-scores] AAA board failed', err.message || err);
+    boards.push({
+      ok: false,
+      id: 'aaa',
+      label: 'AAA',
+      kind: 'team',
+      fantasy: true,
+      logo: '/assets/aaa-league.png?v=3',
+      error: err.message || 'Unavailable',
+      counts: { live: 0, final: 0, upcoming: 0 },
+      games: []
+    });
+  }
+
+  return boards;
 }
 
 async function apiSchedule(res, weekParam, leagueScope = null) {
@@ -3015,6 +3268,11 @@ function isAffiliateLeagueKey(key) {
 /** Profile-based HQ landing. Site owner uses preferred-league cookie; others use claim/admin. */
 function homePathForUser(user, req = null) {
   if (!user) return '/home.html';
+  if (users.isLoungeOnly(user)) {
+    return users.hasLoungeAccess(user)
+      ? '/members.html'
+      : '/restricted.html?area=lounge';
+  }
   if (users.isSiteOwner(user)) {
     const preferred = getPreferredLeague(req) || 'gridiron';
     return preferred === 'aaa' ? '/aaa.html' : '/home.html';
@@ -3028,6 +3286,9 @@ function homePathForUser(user, req = null) {
   if (user.role === 'conference_admin' && isAffiliateLeagueKey(user.conference)) {
     return user.conference === 'aaa' ? '/aaa.html' : `/${user.conference}.html`;
   }
+  const membership = users.normalizeMembershipLeague(user.membershipLeague);
+  if (membership === 'aaa') return '/aaa.html';
+  if (membership === 'gridiron') return '/home.html';
   return '/home.html';
 }
 
@@ -3039,14 +3300,18 @@ function deliverWelcomeInboxIfNeeded(user) {
   if (!user?.id || user.approved === false) return null;
   if (!users.claimWelcomeInbox(user.id)) return null;
   try {
-    const msg = welcomeMessage.buildWelcome({ name: user.name || user.loginName });
+    const kind = users.membershipKindOf(user);
+    const msg = welcomeMessage.buildWelcome({
+      name: user.name || user.loginName,
+      kind
+    });
     return inbox.sendMessage({
       toUserId: user.id,
       from: { name: msg.fromName },
       subject: msg.subject,
       body: msg.body,
       type: msg.type || 'welcome',
-      meta: { kind: 'first_login_welcome' }
+      meta: { kind: 'first_login_welcome', membershipKind: kind }
     });
   } catch (err) {
     console.warn('[welcome-inbox] failed', err.message || err);
@@ -3317,16 +3582,15 @@ async function loadGridironOfficialScoringSummary() {
 
 function compareAaaScoringToGridiron(gridironScoring, aaaSettings) {
   if (!gridironScoring || !aaaSettings) return null;
-  const cmp = compareSettings(
+  const cmp = compareScoringSettings(
     { ...gridironScoring, ok: true },
     { ...aaaSettings, ok: true }
   );
-  const diffs = (cmp.diffs || []).filter((d) => d.kind === 'Scoring' || d.kind === 'Lineup' || d.kind === 'Setting');
   return {
-    matched: diffs.length === 0,
-    bothOk: true,
-    diffCount: diffs.length,
-    diffs: diffs.slice(0, 25)
+    matched: cmp.matched,
+    bothOk: cmp.bothOk,
+    diffCount: cmp.diffs.length,
+    diffs: cmp.diffs.slice(0, 25)
   };
 }
 
@@ -3726,6 +3990,20 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/cron/death-pool-news' && (req.method === 'POST' || req.method === 'GET')) {
+      if (!authorizeCron(req)) {
+        return sendJson(res, 401, { ok: false, error: 'Invalid cron secret' });
+      }
+      try {
+        const force = requestUrl.searchParams.get('force') === '1';
+        const result = await deathPoolNews.runDeathNewsScan({ force });
+        return sendJson(res, 200, result);
+      } catch (err) {
+        console.error('[death-pool-news] cron failed', err);
+        return sendJson(res, 500, { ok: false, error: err.message || 'Death pool news scan failed' });
+      }
+    }
+
     if (pathname === '/api/auth') {
       const user = getSessionUser(req);
       if (user) deliverWelcomeInboxIfNeeded(user);
@@ -3734,7 +4012,9 @@ const server = http.createServer(async (req, res) => {
         authConfigured: true,
         user,
         homePath: homePathForUser(user, req),
-        leagueScope: leagueScopeForUser(user, req)
+        leagueScope: leagueScopeForUser(user, req),
+        loungeOpen: users.isLoungeOpenToMembers(),
+        loungeAccess: users.hasLoungeAccess(user)
       });
     }
 
@@ -3818,13 +4098,19 @@ const server = http.createServer(async (req, res) => {
       try {
         const bootstrap = existingUsers.length === 0 && !inviteToken;
         const admittedByToken = Boolean(inviteToken);
+        let inviteRecord = null;
+        if (inviteToken) {
+          inviteRecord = invites.findByToken(inviteToken);
+        }
+        const socialInvite = Boolean(inviteRecord?.loungeOnly);
         const user = users.createUser({
           name: body.name,
           email: body.email,
           loginName: body.loginName,
           password: body.password,
           approved: bootstrap || admittedByToken,
-          loungeMember: bootstrap || admittedByToken
+          loungeMember: bootstrap || admittedByToken,
+          loungeOnly: socialInvite
         });
         if (inviteToken) {
           try { invites.acceptInvite(inviteToken, user.email); } catch { /* non-fatal */ }
@@ -3841,7 +4127,11 @@ const server = http.createServer(async (req, res) => {
         deliverWelcomeInboxIfNeeded(user);
         const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
         const token = signSession(user.id, expiresAt);
-        return sendJson(res, 201, { ok: true, user }, { 'Set-Cookie': sessionCookieHeader(token) });
+        return sendJson(res, 201, {
+          ok: true,
+          user,
+          homePath: homePathForUser(user, req)
+        }, { 'Set-Cookie': sessionCookieHeader(token) });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not create account' });
       }
@@ -4047,6 +4337,15 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/enter' || pathname === '/enter.html') {
+      const session = getSessionUser(req);
+      if (session) {
+        res.writeHead(302, {
+          Location: homePathForUser(session, req),
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache'
+        });
+        return res.end();
+      }
       return sendFile(res, path.join(PUBLIC_DIR, 'login.html'));
     }
     if (pathname === '/register' || pathname === '/register.html') {
@@ -4306,7 +4605,9 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         email: invite.email,
         invitedByName: invite.invitedByName || null,
-        expiresAt: invite.expiresAt
+        expiresAt: invite.expiresAt,
+        loungeOnly: Boolean(invite.loungeOnly),
+        accountType: invite.loungeOnly ? 'social' : 'member'
       });
     }
 
@@ -4318,6 +4619,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (!requireAuth(req, res, pathname)) return;
+    if (!enforceLoungeOnlyAccess(req, res, pathname)) return;
 
     if (pathname === '/app' || pathname === '/app/' || pathname === '/app/index.html') {
       return sendFile(res, path.join(PUBLIC_DIR, 'app', 'index.html'));
@@ -4354,7 +4656,9 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/sports-scores' && req.method === 'GET') {
       try {
         const leagues = requestUrl.searchParams.get('leagues');
-        const payload = await sportsScoreboard.getSportsScores({ leagues });
+        // Default lounge pull includes fantasy boards; explicit ?leagues=nfl (etc.) skips them.
+        const extraBoards = leagues ? [] : await loadFantasySportsBoards();
+        const payload = await sportsScoreboard.getSportsScores({ leagues, extraBoards });
         return sendJson(res, 200, payload);
       } catch (err) {
         return sendJson(res, err.status || 502, {
@@ -4424,6 +4728,135 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/death-pool' && req.method === 'GET') {
+      const viewer = requireLoungeMember(req, res);
+      if (!viewer) return;
+      try {
+        const poolId = requestUrl.searchParams.get('poolId');
+        const newsWatch = await deathPoolNews.getNewsWatch({
+          refreshIfStale: requestUrl.searchParams.get('skipNews') !== '1'
+        });
+        if (poolId) {
+          return sendJson(res, 200, {
+            ...deathPool.getPool(poolId, users.publicUser(viewer)),
+            newsWatch,
+            generatedAt: new Date().toISOString()
+          });
+        }
+        return sendJson(res, 200, {
+          ...deathPool.getOverview(users.publicUser(viewer)),
+          newsWatch,
+          generatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Death pool unavailable'
+        });
+      }
+    }
+
+    if (pathname === '/api/custom-pools' && req.method === 'GET') {
+      const viewer = requireLoungeMember(req, res);
+      if (!viewer) return;
+      try {
+        const poolId = requestUrl.searchParams.get('poolId');
+        if (poolId) {
+          return sendJson(res, 200, {
+            ...customPools.getPool(poolId, users.publicUser(viewer)),
+            generatedAt: new Date().toISOString()
+          });
+        }
+        return sendJson(res, 200, {
+          ...customPools.getOverview(users.publicUser(viewer)),
+          generatedAt: new Date().toISOString()
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Custom pools unavailable'
+        });
+      }
+    }
+
+    if (pathname === '/api/custom-pools' && req.method === 'POST') {
+      const user = requireLoungeMember(req, res);
+      if (!user) return;
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        return sendJson(res, 200, customPools.handleAction(users.publicUser(user), body));
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Pool action failed'
+        });
+      }
+    }
+
+    if (pathname === '/api/death-pool' && req.method === 'POST') {
+      const user = requireLoungeMember(req, res);
+      if (!user) return;
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const publicAuthor = users.publicUser(user);
+        const action = String(body.action || '').toLowerCase();
+        if (action === 'scan_news' || action === 'refresh_news') {
+          const result = await deathPoolNews.runDeathNewsScan({ force: true });
+          return sendJson(res, 200, {
+            ...deathPool.getOverview(publicAuthor),
+            ok: true,
+            skipped: result.skipped,
+            added: result.added,
+            poolHitCount: result.poolHitCount,
+            newsWatch: result.newsWatch
+          });
+        }
+        if (action === 'create') {
+          return sendJson(res, 200, deathPool.createPool(publicAuthor, body));
+        }
+        if (action === 'join') {
+          return sendJson(res, 200, deathPool.joinPool(publicAuthor, body.poolId));
+        }
+        if (action === 'nominate' || action === 'draft_pick' || action === 'pick') {
+          return sendJson(res, 200, deathPool.nominate(publicAuthor, body));
+        }
+        if (action === 'bid') {
+          return sendJson(res, 200, deathPool.placeBid(publicAuthor, body));
+        }
+        if (action === 'deceased' || action === 'mark_deceased') {
+          return sendJson(res, 200, deathPool.markDeceased(publicAuthor, body));
+        }
+        if (action === 'set_draft_order' || action === 'draft_order') {
+          return sendJson(res, 200, deathPool.setDraftOrder(publicAuthor, body));
+        }
+        if (action === 'start_draft') {
+          return sendJson(res, 200, deathPool.startDraft(publicAuthor, body));
+        }
+        if (action === 'end_draft') {
+          return sendJson(res, 200, deathPool.endDraft(publicAuthor, body));
+        }
+        if (action === 'update_settings' || action === 'settings') {
+          return sendJson(res, 200, deathPool.updatePoolSettings(publicAuthor, body));
+        }
+        return sendJson(res, 400, { ok: false, error: 'Unknown death pool action' });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Death pool action failed'
+        });
+      }
+    }
+
     if (pathname === '/api/paper-book' && req.method === 'GET') {
       const viewer = requireLoungeMember(req, res);
       if (!viewer) return;
@@ -4436,14 +4869,16 @@ const server = http.createServer(async (req, res) => {
           markets: [],
           errors: [{ error: 'Futures unavailable' }]
         }));
+        const PRIORITY_SPORTS = new Set(['nfl', 'ncaaf', 'nba', 'mlb', 'nhl', 'ncaab']);
         const ticketBoard = boards
-          .filter((b) => b.ok !== false && b.kind !== 'golf')
+          .filter((b) => b.ok !== false && b.kind !== 'golf' && PRIORITY_SPORTS.has(String(b.id || '').toLowerCase()))
           .map((b) => ({
             id: b.id,
             label: b.label,
             logo: b.logo || null,
             games: (b.games || [])
               .filter((g) => g.status?.bucket !== 'final' && g.odds)
+              .slice(0, 14)
               .map((g) => ({
                 id: g.id,
                 date: g.date,
@@ -4652,16 +5087,49 @@ const server = http.createServer(async (req, res) => {
       try {
         const publicAuthor = users.publicUser(user);
         presence.touch(publicAuthor);
-        const item = membersChat.addMessage({
-          body: body.body,
-          author: publicAuthor
-        });
+        const postType = String(body.type || body.kind || 'chat').toLowerCase();
+        let item;
+        if (postType === 'mock_start' || postType === 'mock') {
+          const teams = Math.max(2, Math.min(16, Number(body.teams) || 12));
+          const rounds = Math.max(1, Math.min(20, Number(body.rounds) || 15));
+          const firstPick = String(body.firstPick || '').trim().slice(0, 80);
+          const firstPos = String(body.firstPos || '').trim().slice(0, 8);
+          const seat = String(body.seatName || '').trim().slice(0, 60);
+          const bits = [`${teams} teams`, `${rounds} rounds`, 'snake'];
+          if (seat) bits.push(`seat ${seat}`);
+          item = membersChat.addMessage({
+            body: firstPick
+              ? `kicked off a mock draft — first pick ${firstPick}${firstPos ? ` (${firstPos})` : ''}`
+              : 'kicked off a mock draft',
+            author: publicAuthor,
+            kind: 'mock',
+            meta: {
+              type: 'mock_start',
+              teams,
+              rounds,
+              order: 'snake',
+              firstPick: firstPick || null,
+              firstPos: firstPos || null,
+              seat: seat || null,
+              link: '/members.html#mock-draft',
+              linkLabel: 'Open Mock Draft'
+            },
+            skipRateLimit: true
+          });
+        } else {
+          item = membersChat.addMessage({
+            body: body.body,
+            author: publicAuthor
+          });
+        }
         const directory = users.listLeagueMembers().members;
-        const mentioned = membersChat.resolveMentionedUsers(item.body, {
-          users: directory,
-          mentionIds: Array.isArray(body.mentions) ? body.mentions : [],
-          excludeUserId: publicAuthor.id
-        });
+        const mentioned = postType === 'mock_start' || postType === 'mock'
+          ? []
+          : membersChat.resolveMentionedUsers(item.body, {
+              users: directory,
+              mentionIds: Array.isArray(body.mentions) ? body.mentions : [],
+              excludeUserId: publicAuthor.id
+            });
         for (const target of mentioned) {
           try {
             inbox.sendMessage({
@@ -5044,6 +5512,120 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/lounge-only') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/lounge-only'.length);
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const updated = users.setLoungeOnly(userId, Boolean(body.loungeOnly), admin.id);
+        if (updated.loungeOnly) {
+          try { logos.unassignTeam(userId); } catch { /* may have no team */ }
+        }
+        return sendJson(res, 200, { ok: true, user: updated });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not update social access'
+        });
+      }
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/lounge-token') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/lounge-token'.length);
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const result = users.setLoungeToken(userId, body.granted !== false && body.loungeToken !== false, admin.id);
+        let inboxMessage = null;
+        if (result.changed && result.granted) {
+          try {
+            inboxMessage = inbox.sendMessage({
+              toUserId: result.user.id,
+              from: users.publicUser(admin),
+              subject: 'Members Lounge access granted',
+              body: [
+                `Hey ${result.user.name || result.user.loginName || 'there'},`,
+                '',
+                'You’ve been given a Members Lounge pass.',
+                'Head in for the sports board, Roll Call, paper games, and the dues desk.',
+                '',
+                'Open the lounge anytime from the site nav (or your home path if you’re a social account).'
+              ].join('\n'),
+              type: 'lounge_token',
+              meta: {
+                link: '/members.html',
+                linkLabel: 'Open Members Lounge',
+                loungeToken: true
+              }
+            });
+          } catch (err) {
+            console.error('[lounge-token] inbox notify failed', err);
+          }
+        }
+        return sendJson(res, 200, {
+          ok: true,
+          user: result.user,
+          granted: result.granted,
+          changed: result.changed,
+          notified: Boolean(inboxMessage),
+          inboxMessage
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not update lounge token'
+        });
+      }
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/membership') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/membership'.length);
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const kind = users.normalizeMembershipKind(body.membership || body.kind);
+        let updated;
+        if (kind === 'social') {
+          updated = users.setLoungeOnly(userId, true, admin.id);
+          try { logos.unassignTeam(userId); } catch { /* ignore */ }
+        } else {
+          users.setLoungeOnly(userId, false, admin.id);
+          updated = users.setLeagueMembership(userId, {
+            league: kind === 'aaa' ? 'aaa' : 'gridiron'
+          });
+        }
+        return sendJson(res, 200, {
+          ok: true,
+          user: updated,
+          membershipKind: users.membershipKindOf(updated),
+          membershipLabel: users.membershipKindLabel(users.membershipKindOf(updated))
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not update membership'
+        });
+      }
+    }
+
     if (pathname.startsWith('/api/users/') && pathname.endsWith('/approve') && req.method === 'POST') {
       const admin = requireCommissioner(req, res);
       if (!admin) return;
@@ -5057,16 +5639,29 @@ const server = http.createServer(async (req, res) => {
       try {
         const before = users.findById(userId);
         const newlyApproved = Boolean(before) && before.approved === false && body.approved !== false;
-        const updated = users.setUserApproved(userId, body.approved !== false, admin.id);
+        const membership = users.normalizeMembershipKind(
+          body.membership || body.kind || (before?.loungeOnly ? 'social' : before?.membershipLeague)
+        );
+        const updated = users.setUserApproved(userId, body.approved !== false, admin.id, {
+          membership
+        });
+        if (updated.loungeOnly) {
+          try { logos.unassignTeam(userId); } catch { /* ignore */ }
+        }
         let mail = { sent: false, method: 'none' };
         if (newlyApproved && updated.email) {
           try {
+            const kind = users.membershipKindOf(updated);
             mail = await sendAccountApprovedEmail({
               to: updated.email,
               name: updated.name || updated.loginName,
-              leagueName: config.brand.name,
-              baseUrl: requestOrigin(req)
+              leagueName: kind === 'aaa'
+                ? (getAffiliatedLeague('aaa')?.brand?.name || 'AAA League')
+                : config.brand.name,
+              baseUrl: requestOrigin(req),
+              membershipKind: kind
             });
+            deliverWelcomeInboxIfNeeded(updated);
           } catch (mailErr) {
             mail = {
               sent: false,
@@ -5078,6 +5673,8 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, {
           ok: true,
           user: updated,
+          membershipKind: users.membershipKindOf(updated),
+          membershipLabel: users.membershipKindLabel(users.membershipKindOf(updated)),
           mailSent: Boolean(mail.sent),
           mailMethod: mail.method || null,
           mailError: mail.error || null
@@ -5136,12 +5733,26 @@ const server = http.createServer(async (req, res) => {
       if (!user) return;
       const { buildAccountApprovedEmail } = require('./mail');
       const origin = requestOrigin(req);
+      const kind = users.normalizeMembershipKind(requestUrl.searchParams.get('kind') || 'gridiron');
       const content = buildAccountApprovedEmail({
         name: 'Alex Manager',
-        leagueName: config.brand.name,
+        leagueName: kind === 'aaa'
+          ? (getAffiliatedLeague('aaa')?.brand?.name || 'AAA League')
+          : config.brand.name,
         signInUrl: `${origin}/enter`,
-        baseUrl: origin
+        baseUrl: origin,
+        membershipKind: kind
       });
+      const format = String(requestUrl.searchParams.get('format') || 'html').toLowerCase();
+      if (format === 'json') {
+        return sendJson(res, 200, {
+          ok: true,
+          membershipKind: kind,
+          subject: content.subject,
+          text: content.text,
+          html: content.html
+        });
+      }
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-store'
@@ -5341,19 +5952,36 @@ const server = http.createServer(async (req, res) => {
       } catch {
         return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
       }
-      const emails = Array.isArray(body.emails)
+      const rawEmails = Array.isArray(body.emails)
         ? body.emails.map((e) => String(e || '').trim()).filter(Boolean)
         : String(body.email || body.emails || '')
           .split(/[,;\n]+/)
           .map((e) => e.trim())
           .filter(Boolean);
-      if (!emails.length) {
+      if (!rawEmails.length) {
         return sendJson(res, 400, { ok: false, error: 'Enter at least one email address' });
       }
+      const seen = new Set();
+      const emails = [];
+      for (const email of rawEmails) {
+        const key = String(email || '').trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        emails.push(email.trim());
+      }
+      const loungeOnly = Boolean(body.loungeOnly || body.social || body.accountType === 'social');
       const results = [];
       for (const email of emails) {
         try {
-          const created = invites.createInvite({ email, invitedBy: user });
+          if (users.findByEmail(email)) {
+            results.push({
+              ok: false,
+              email: String(email).trim().toLowerCase(),
+              error: 'That email already has an account'
+            });
+            continue;
+          }
+          const created = invites.createInvite({ email, invitedBy: user, loungeOnly });
           const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(created.token)}`;
           let mailResult = { sent: false, method: 'none' };
           try {
@@ -5362,7 +5990,8 @@ const server = http.createServer(async (req, res) => {
               inviteUrl,
               invitedByName: user.name || user.loginName,
               leagueName: config.brand.name,
-              baseUrl: requestOrigin(req)
+              baseUrl: requestOrigin(req),
+              loungeOnly
             });
           } catch (mailErr) {
             mailResult = {
@@ -5378,7 +6007,8 @@ const server = http.createServer(async (req, res) => {
             sent: Boolean(mailResult.sent),
             method: mailResult.method,
             mailError: mailResult.error || null,
-            inviteUrl
+            inviteUrl,
+            loungeOnly
           });
         } catch (err) {
           results.push({ ok: false, email, error: err.message || 'Could not invite' });
@@ -5386,18 +6016,24 @@ const server = http.createServer(async (req, res) => {
       }
       const sentCount = results.filter((r) => r.ok && r.sent).length;
       const okCount = results.filter((r) => r.ok).length;
+      const failCount = results.length - okCount;
       const mailReady = mailConfig().configured;
+      const failNote = failCount
+        ? ` Skipped ${failCount}: ${results.filter((r) => !r.ok).map((r) => `${r.email} (${r.error})`).join('; ')}.`
+        : '';
       let message;
       if (sentCount && sentCount === okCount) {
-        message = `Emailed ${sentCount} invite${sentCount === 1 ? '' : 's'}.`;
+        message = `Emailed ${sentCount} invite${sentCount === 1 ? '' : 's'}.${failNote}`;
       } else if (sentCount) {
-        message = `Emailed ${sentCount} of ${okCount}. Copy the remaining invite links below.`;
+        message = `Emailed ${sentCount} of ${okCount}. Copy the remaining invite links below.${failNote}`;
       } else if (okCount) {
-        message = mailReady
+        message = (mailReady
           ? 'Invites created, but email delivery failed. Copy the invite links below and share them manually.'
-          : 'Invites created. Email is not configured yet — copy the invite links below (or set RESEND_API_KEY + MAIL_FROM on the server).';
+          : 'Invites created. Email is not configured yet — copy the invite links below (or set RESEND_API_KEY + MAIL_FROM on the server).') + failNote;
       } else {
-        message = 'No invites were created.';
+        message = failCount
+          ? `No invites were created.${failNote}`
+          : 'No invites were created.';
       }
       return sendJson(res, 200, {
         ok: okCount > 0,
@@ -5416,24 +6052,25 @@ const server = http.createServer(async (req, res) => {
         const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(refreshed.token)}`;
         let mailResult = { sent: false, method: 'none' };
         try {
-          mailResult = await sendInviteEmail({
-            to: refreshed.invite.email,
+            mailResult = await sendInviteEmail({
+              to: refreshed.invite.email,
+              inviteUrl,
+              invitedByName: user.name || user.loginName,
+              leagueName: config.brand.name,
+              baseUrl: requestOrigin(req),
+              loungeOnly: Boolean(refreshed.invite.loungeOnly)
+            });
+          } catch (mailErr) {
+            mailResult = {
+              sent: false,
+              method: 'error',
+              error: mailErr.message || 'Email send failed'
+            };
+          }
+          return sendJson(res, 200, {
+            ok: true,
+            invite: refreshed.invite,
             inviteUrl,
-            invitedByName: user.name || user.loginName,
-            leagueName: config.brand.name,
-            baseUrl: requestOrigin(req)
-          });
-        } catch (mailErr) {
-          mailResult = {
-            sent: false,
-            method: 'error',
-            error: mailErr.message || 'Email send failed'
-          };
-        }
-        return sendJson(res, 200, {
-          ok: true,
-          invite: refreshed.invite,
-          inviteUrl,
           sent: Boolean(mailResult.sent),
           method: mailResult.method,
           mailError: mailResult.error || null,
@@ -5850,6 +6487,74 @@ const server = http.createServer(async (req, res) => {
         });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete message' });
+      }
+    }
+
+    if (pathname === '/api/feature-requests' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const item = featureRequests.createRequest({ text: body.text || body.request, author: user });
+        const staff = staffRecipients().filter((u) => u.id !== user.id);
+        const authorName = user.name || user.loginName || 'member';
+        const subject = `FEATURE REQUEST — from ${authorName}`;
+        const msgBody = [
+          'FEATURE REQUEST',
+          '',
+          `From: ${authorName}`,
+          '',
+          item.text
+        ].join('\n');
+        if (staff.length) {
+          inbox.sendToUsers({
+            toUserIds: staff.map((u) => u.id),
+            from: user,
+            subject,
+            body: msgBody,
+            type: 'feature_request',
+            relatedId: item.id,
+            meta: {
+              requestId: item.id,
+              authorName,
+              authorId: user.id,
+              featureRequest: true
+            }
+          });
+        }
+        inbox.sendMessage({
+          toUserId: user.id,
+          from: user,
+          subject: 'FEATURE REQUEST — submitted',
+          body: [
+            'FEATURE REQUEST',
+            '',
+            'Your feature request was sent to league staff:',
+            '',
+            item.text
+          ].join('\n'),
+          type: 'feature_request',
+          relatedId: item.id,
+          meta: {
+            requestId: item.id,
+            authorName,
+            featureRequest: true
+          }
+        });
+        return sendJson(res, 201, {
+          ok: true,
+          request: featureRequests.publicRequest(item)
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not submit feature request'
+        });
       }
     }
 
@@ -6825,7 +7530,7 @@ const server = http.createServer(async (req, res) => {
         return res.end();
       }
       if (!users.hasLoungeAccess(loungeUser)) {
-        res.writeHead(302, { Location: '/hq?lounge=invite-required' });
+        res.writeHead(302, { Location: '/restricted.html?area=lounge' });
         return res.end();
       }
     }

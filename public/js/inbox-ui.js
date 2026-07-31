@@ -65,13 +65,22 @@
     );
   }
 
+  function isFeatureRequest(msg) {
+    return Boolean(
+      msg?.meta?.featureRequest
+      || msg?.type === 'feature_request'
+    );
+  }
+
   function typeEyebrow(type) {
     const map = {
       welcome: 'GridIron 24 HQ · Welcome',
       chat_mention: 'Members Lounge · Mention',
+      lounge_token: 'Members Lounge · Access',
       rule_proposal: 'RULE CHANGE',
       rule_vote: 'RULE CHANGE',
       rule_result: 'RULE CHANGE',
+      feature_request: 'FEATURE REQUEST',
       general: 'GridIron 24 HQ'
     };
     return map[type] || 'GridIron 24 HQ';
@@ -81,9 +90,11 @@
     const map = {
       welcome: 'Welcome',
       chat_mention: 'Mention',
+      lounge_token: 'Lounge pass',
       rule_proposal: 'RULE CHANGE',
       rule_vote: 'RULE CHANGE',
       rule_result: 'RULE CHANGE',
+      feature_request: 'FEATURE REQUEST',
       general: 'HQ'
     };
     return map[type] || 'Mail';
@@ -188,7 +199,7 @@
         continue;
       }
       flushList();
-      if (trimmed === 'RULE CHANGE') {
+      if (trimmed === 'RULE CHANGE' || trimmed === 'FEATURE REQUEST') {
         continue;
       }
       if (isSectionHeading(trimmed)) {
@@ -216,6 +227,14 @@
       return `
         <div class="inbox-cta-row">
           <a class="btn inbox-cta" href="${esc(msg.meta.link)}">${esc(msg.meta.linkLabel || 'Open Roll Call Room')}</a>
+        </div>`;
+    }
+    if (msg.type === 'lounge_token') {
+      const href = msg.meta?.link || '/members.html';
+      const label = msg.meta?.linkLabel || 'Open Members Lounge';
+      return `
+        <div class="inbox-cta-row">
+          <a class="btn inbox-cta" href="${esc(href)}">${esc(label)}</a>
         </div>`;
     }
     return '';
@@ -308,9 +327,10 @@
     const active = msg.id === selectedId ? ' is-active' : '';
     const unread = msg.unread ? ' is-unread' : '';
     const rule = isRuleChange(msg) ? ' is-rule' : '';
+    const feature = isFeatureRequest(msg) ? ' is-feature' : '';
     const preview = previewText(msg.body);
     return `
-      <button type="button" class="inbox-row${unread}${active}${rule}" data-open-msg="${esc(msg.id)}" aria-current="${msg.id === selectedId ? 'true' : 'false'}">
+      <button type="button" class="inbox-row${unread}${active}${rule}${feature}" data-open-msg="${esc(msg.id)}" aria-current="${msg.id === selectedId ? 'true' : 'false'}">
         <span class="inbox-row-dot" aria-hidden="true"></span>
         <span class="inbox-row-avatar" aria-hidden="true">${esc(initials(msg.fromName))}</span>
         <span class="inbox-row-main">
@@ -321,7 +341,7 @@
           <span class="inbox-row-subject">${esc(msg.subject)}</span>
           <span class="inbox-row-preview">${esc(preview)}</span>
         </span>
-        <span class="inbox-row-tag${isRuleChange(msg) ? ' is-rule' : ''}">${esc(typeTag(msg.type))}</span>
+        <span class="inbox-row-tag${isRuleChange(msg) ? ' is-rule' : ''}${isFeatureRequest(msg) ? ' is-feature' : ''}">${esc(typeTag(msg.type))}</span>
       </button>`;
   }
 
@@ -335,6 +355,7 @@
         </div>`;
     }
     const rule = isRuleChange(msg);
+    const feature = isFeatureRequest(msg);
     const brandSrc = rule ? POWERDMS : CREST;
     const brandAlt = rule ? 'PowerDMS' : 'GridIron 24';
     const proposer = proposal?.authorName || msg.meta?.authorName || '';
@@ -343,7 +364,7 @@
       : '';
     const canReply = canSend && Boolean(msg.fromUserId);
     return `
-      <article class="inbox-letter${msg.unread ? ' is-unread' : ''}${rule ? ' is-rule-change' : ''}" data-msg-id="${esc(msg.id)}" data-type="${esc(msg.type || '')}">
+      <article class="inbox-letter${msg.unread ? ' is-unread' : ''}${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}" data-msg-id="${esc(msg.id)}" data-type="${esc(msg.type || '')}">
         <div class="inbox-letter-toolbar">
           <button type="button" class="btn btn-ghost inbox-back" data-inbox-back>← Inbox</button>
           <div class="btn-row inbox-card-actions">
@@ -354,13 +375,14 @@
             ${msg.type === 'welcome' ? '' : `<button type="button" class="btn btn-ghost" data-del-msg="${esc(msg.id)}">Delete</button>`}
           </div>
         </div>
-        <header class="inbox-letter-head${rule ? ' is-rule-change' : ''}">
+        <header class="inbox-letter-head${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}">
           <div class="inbox-letter-brand${rule ? ' is-rule-change' : ''}">
             <img class="inbox-crest${rule ? ' is-powerdms' : ''}" src="${brandSrc}" alt="${esc(brandAlt)}" width="${rule ? 220 : 96}" height="${rule ? 48 : 96}" decoding="async" />
-            <p class="inbox-eyebrow${rule ? ' is-rule-change' : ''}">${esc(typeEyebrow(msg.type))}</p>
+            <p class="inbox-eyebrow${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}">${esc(typeEyebrow(msg.type))}</p>
           </div>
           <h2 class="inbox-letter-subject">${esc(msg.subject)}</h2>
           ${proposer && rule ? `<p class="inbox-proposer-line">Proposed by <strong>${esc(proposer)}</strong></p>` : ''}
+          ${proposer && feature ? `<p class="inbox-proposer-line">Requested by <strong>${esc(proposer)}</strong></p>` : ''}
           <div class="inbox-letter-meta">
             <span class="inbox-letter-avatar" aria-hidden="true">${esc(initials(msg.fromName))}</span>
             <div class="inbox-letter-from">

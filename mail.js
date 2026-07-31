@@ -53,6 +53,8 @@ function brandedAssets(baseUrl) {
     crestUrl: crest,
     detailLogo: `${origin}/assets/detail-conference.png`,
     overtimeLogo: `${origin}/assets/overtime-conference.png`,
+    aaaLogo: `${origin}/assets/aaa-league.png?v=3`,
+    gridironLeagueLogo: `${origin}/assets/gridiron24-league-sm.png?v=5`,
     enterUrl: `${origin}/enter`
   };
 }
@@ -64,6 +66,7 @@ function brandedEmailHtml({
   headline,
   bodyHtml,
   showConferences = true,
+  membershipBadgeHtml = '',
   ctaLabel,
   ctaUrl,
   noteHtml = '',
@@ -90,7 +93,13 @@ function brandedEmailHtml({
               </table>
             </td>
           </tr>`
-    : '';
+    : (membershipBadgeHtml
+      ? `<tr>
+            <td align="center" style="padding:4px 28px 22px;">
+              ${membershipBadgeHtml}
+            </td>
+          </tr>`
+      : '');
   const cta = ctaLabel && ctaUrl
     ? `<tr>
             <td align="center" style="padding:6px 28px 10px;">
@@ -188,7 +197,8 @@ function buildInviteEmail({
   inviteUrl,
   invitedByName,
   leagueName,
-  baseUrl
+  baseUrl,
+  loungeOnly
 }) {
   const inviteCopy = require('./invite-email-message');
   const { enterUrl: homeUrl } = brandedAssets(baseUrl);
@@ -196,7 +206,8 @@ function buildInviteEmail({
     inviteUrl,
     invitedByName,
     leagueName,
-    homeUrl
+    homeUrl,
+    loungeOnly
   });
 
   const text =
@@ -208,14 +219,19 @@ function buildInviteEmail({
     `GridIron 24 HQ · Fantasy Football\n` +
     `${c.footerIgnore}\n`;
 
+  const bodyHtml = c.loungeOnly
+    ? `<strong style="color:#ffffff;">${escapeHtml(c.who)}</strong> invited you to a ` +
+      `<strong style="color:#efd782;">Members Lounge</strong> social account for ` +
+      `<strong style="color:#efd782;">${escapeHtml(c.league)}</strong> — lounge access only, no franchise.`
+    : `<strong style="color:#ffffff;">${escapeHtml(c.who)}</strong> invited you to create your account for ` +
+      `<strong style="color:#efd782;">${escapeHtml(c.league)}</strong>.`;
+
   const html = brandedEmailHtml({
     title: c.subject,
     preheader: c.preheader,
     eyebrow: c.eyebrow,
     headline: c.headline,
-    bodyHtml:
-      `<strong style="color:#ffffff;">${escapeHtml(c.who)}</strong> invited you to create your account for ` +
-      `<strong style="color:#efd782;">${escapeHtml(c.league)}</strong>.`,
+    bodyHtml,
     ctaLabel: c.ctaLabel,
     ctaUrl: inviteUrl,
     noteHtml:
@@ -291,14 +307,15 @@ async function sendPasswordResetEmail({ to, resetUrl, name, baseUrl, leagueName 
   return { sent: false, method: 'log', resetUrl, previewHtml: content.html };
 }
 
-async function sendInviteEmail({ to, inviteUrl, invitedByName, leagueName, baseUrl }) {
+async function sendInviteEmail({ to, inviteUrl, invitedByName, leagueName, baseUrl, loungeOnly }) {
   const { configured, from } = mailConfig();
   const apiKey = process.env.RESEND_API_KEY || '';
   const content = buildInviteEmail({
     inviteUrl,
     invitedByName,
     leagueName,
-    baseUrl
+    baseUrl,
+    loungeOnly
   });
 
   if (configured) {
@@ -316,41 +333,102 @@ async function sendInviteEmail({ to, inviteUrl, invitedByName, leagueName, baseU
   return { sent: false, method: 'log', inviteUrl, previewHtml: content.html };
 }
 
-function buildAccountApprovedEmail({ name, leagueName, signInUrl, baseUrl }) {
+function buildAccountApprovedEmail({ name, leagueName, signInUrl, baseUrl, membershipKind }) {
   const who = name || 'there';
-  const league = leagueName || 'GridIron 24';
-  const { enterUrl } = brandedAssets(baseUrl);
+  const kind = String(membershipKind || 'gridiron').toLowerCase();
+  const { enterUrl, aaaLogo, gridironLeagueLogo } = brandedAssets(baseUrl);
   const homeUrl = signInUrl || enterUrl;
+
+  const profiles = {
+    social: {
+      label: 'Social Membership',
+      eyebrow: 'Members Lounge · Social access',
+      headline: "You're in the Lounge",
+      subject: "You're approved · Social Membership",
+      preheader: 'Your social membership is approved. Sign in to the Members Lounge.',
+      textLine:
+        'Your Social Membership is approved. You have Members Lounge access — chat, games, and the social desk. This account does not include a fantasy franchise.',
+      bodyHtml:
+        `Hi <strong style="color:#ffffff;">${escapeHtml(who)}</strong> — your ` +
+        `<strong style="color:#f0a0b0;">Social Membership</strong> is approved. ` +
+        `You can hang in the <strong style="color:#efd782;">Members Lounge</strong>. ` +
+        `This account does not include a fantasy franchise (an owner can promote you later).`,
+      ctaLabel: 'Enter the Lounge',
+      ctaPath: '/members.html',
+      badge: `<img src="${escapeHtml(gridironLeagueLogo)}" width="72" height="72" alt="Social" style="display:block;width:72px;height:72px;object-fit:contain;border:0;margin:0 auto 8px;" />
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#f0a0b0;">Social Membership</div>`
+    },
+    aaa: {
+      label: 'AAA League',
+      eyebrow: 'AAA League · GridIron 24 family',
+      headline: "You're in AAA",
+      subject: "You're approved · AAA League",
+      preheader: 'Your AAA League account is approved. Sign in to get started.',
+      textLine:
+        'Your AAA League account is approved. You have AAA HQ access plus the Members Lounge.',
+      bodyHtml:
+        `Hi <strong style="color:#ffffff;">${escapeHtml(who)}</strong> — your ` +
+        `<strong style="color:#9dffc4;">AAA League</strong> account is approved. ` +
+        `You get AAA HQ and the shared <strong style="color:#efd782;">Members Lounge</strong>.`,
+      ctaLabel: 'Open AAA HQ',
+      ctaPath: '/aaa.html',
+      badge: `<img src="${escapeHtml(aaaLogo)}" width="72" height="72" alt="AAA" style="display:block;width:72px;height:72px;object-fit:contain;border:0;margin:0 auto 8px;" />
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#9dffc4;">AAA League</div>`
+    },
+    gridiron: {
+      label: leagueName || 'GridIron 24',
+      eyebrow: 'GridIron 24 · League membership',
+      headline: "You're in GridIron 24",
+      subject: `You're approved · ${leagueName || 'GridIron 24'}`,
+      preheader: `Your ${leagueName || 'GridIron 24'} account is approved. Sign in to get started.`,
+      textLine:
+        `Your ${leagueName || 'GridIron 24'} account is approved. You have league HQ access plus the Members Lounge.`,
+      bodyHtml:
+        `Hi <strong style="color:#ffffff;">${escapeHtml(who)}</strong> — your ` +
+        `<strong style="color:#efd782;">${escapeHtml(leagueName || 'GridIron 24')}</strong> account is approved. ` +
+        `You get league HQ and the shared <strong style="color:#9ec8ff;">Members Lounge</strong>.`,
+      ctaLabel: 'Open League HQ',
+      ctaPath: '/home.html',
+      badge: `<img src="${escapeHtml(gridironLeagueLogo)}" width="72" height="72" alt="GridIron 24" style="display:block;width:72px;height:72px;object-fit:contain;border:0;margin:0 auto 8px;" />
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#efd782;">GridIron 24</div>`
+    }
+  };
+  const profile = profiles[kind] || profiles.gridiron;
+  const { origin } = brandedAssets(baseUrl);
+  const ctaUrl = `${origin}${profile.ctaPath}`;
 
   const text =
     `Hi ${who},\n\n` +
-    `Your ${league} account has been approved. You can sign in now:\n${homeUrl}\n\n` +
-    `Welcome to the league — 24 teams, two conferences, one champion.\n\n` +
-    `GridIron 24 HQ · Fantasy Football\n`;
+    `${profile.textLine}\n\n` +
+    `Sign in: ${homeUrl}\n\n` +
+    `GridIron 24 HQ\n`;
 
   const html = brandedEmailHtml({
-    title: `You're approved · ${league}`,
-    preheader: `Your ${league} account is approved. Sign in to get started.`,
-    headline: "You're in",
-    bodyHtml:
-      `Hi <strong style="color:#ffffff;">${escapeHtml(who)}</strong> — a commissioner approved your ` +
-      `<strong style="color:#efd782;">${escapeHtml(league)}</strong> account. You can sign in now.`,
-    ctaLabel: 'Sign in',
-    ctaUrl: homeUrl,
+    title: profile.subject,
+    preheader: profile.preheader,
+    eyebrow: profile.eyebrow,
+    headline: profile.headline,
+    bodyHtml: profile.bodyHtml,
+    showConferences: false,
+    membershipBadgeHtml: profile.badge,
+    ctaLabel: profile.ctaLabel,
+    ctaUrl,
     noteHtml: 'Use the login name and password you created when you registered.',
-    linkFallbackUrl: homeUrl,
+    linkFallbackUrl: ctaUrl,
     footerExtra: '',
     baseUrl
   });
 
   return {
-    subject: `You're approved · ${league}`,
+    subject: profile.subject,
     text,
-    html
+    html,
+    membershipKind: kind,
+    membershipLabel: profile.label
   };
 }
 
-async function sendAccountApprovedEmail({ to, name, leagueName, baseUrl }) {
+async function sendAccountApprovedEmail({ to, name, leagueName, baseUrl, membershipKind }) {
   const { configured, from } = mailConfig();
   const apiKey = process.env.RESEND_API_KEY || '';
   const origin = siteBaseUrl(baseUrl);
@@ -358,7 +436,8 @@ async function sendAccountApprovedEmail({ to, name, leagueName, baseUrl }) {
     name,
     leagueName,
     signInUrl: `${origin}/enter`,
-    baseUrl: origin
+    baseUrl: origin,
+    membershipKind
   });
 
   if (configured) {
@@ -373,7 +452,7 @@ async function sendAccountApprovedEmail({ to, name, leagueName, baseUrl }) {
   }
 
   console.log(`[account-approved] ${to}: ${content.subject}`);
-  return { sent: false, method: 'log', previewHtml: content.html };
+  return { sent: false, method: 'log', previewHtml: content.html, membershipKind: content.membershipKind };
 }
 
 function conferenceEyebrow(conferenceKey, conferenceName) {
@@ -752,35 +831,69 @@ async function sendWeeklyWrapEmail({ to, week, season, title, body, stats, recip
   return { sent: false, method: 'log', previewHtml: content.html };
 }
 
-async function sendRulesSyncAlert({ to, matched, diffs, checkedAt, baseUrl }) {
+async function sendRulesSyncAlert({ to, matched, diffs, aaaSync, checkedAt, baseUrl }) {
   const cfg = mailConfig();
   const origin = siteBaseUrl(baseUrl);
   const toolsUrl = `${origin}/league-tools.html#rules-sync`;
+  const aaaToolsUrl = `${origin}/league-tools.html#aaa-rules-sync`;
   const when = checkedAt ? new Date(checkedAt).toLocaleString('en-US', { timeZone: 'America/New_York' }) : 'just now';
-  const subject = matched
-    ? 'GridIron 24 · Conferences synced'
-    : `GridIron 24 · Rules out of sync (${(diffs || []).length} differences)`;
+  const aaaConfigured = aaaSync && aaaSync.configured !== false;
+  const aaaMatched = !aaaConfigured || Boolean(aaaSync?.matched);
+  const aaaDiffs = aaaConfigured ? (aaaSync?.diffs || []) : [];
+  const conferenceMatched = Boolean(matched);
+  const allMatched = conferenceMatched && aaaMatched;
+
+  const subject = allMatched
+    ? 'GridIron 24 · Conferences & AAA scoring synced'
+    : !conferenceMatched
+      ? `GridIron 24 · Rules out of sync (${(diffs || []).length} differences)`
+      : `GridIron 24 · AAA scoring out of sync (${aaaDiffs.length} differences)`;
 
   const lines = (diffs || []).slice(0, 20).map((d) => (
-    `• [${d.kind}] ${d.label}: Detail=${d.detail} · Overtime=${d.overtime}`
+    `• [OT] [${d.kind}] ${d.label}: Detail=${d.detail} · Overtime=${d.overtime}`
   ));
-  const text = matched
-    ? `Detail and Overtime match.\n\nChecked: ${when}\nOfficial scoring on the Scoring page was refreshed.\n\n${toolsUrl}\n`
-    : `Detail and Overtime scoring/lineup/playoff settings differ.\n\nChecked: ${when}\nDifferences (${(diffs || []).length}):\n${lines.join('\n')}\n\nOpen League Tools to fix:\n${toolsUrl}\n`;
+  const aaaLines = aaaDiffs.slice(0, 20).map((d) => (
+    `• [AAA] [${d.kind}] ${d.label}: Detail=${d.detail} · AAA=${d.overtime}`
+  ));
 
-  const htmlDiffs = matched
-    ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#86efac;">Both conferences match. Official scoring was refreshed.</p>`
-    : `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#fca5a5;">${(diffs || []).length} difference(s) found.</p>
+  const textParts = [`Checked: ${when}`];
+  if (conferenceMatched) {
+    textParts.push('Detail and Overtime match.');
+  } else {
+    textParts.push(`Detail and Overtime differ (${(diffs || []).length}):`, lines.join('\n'));
+  }
+  if (!aaaConfigured) {
+    textParts.push('AAA League ESPN ID is not configured.');
+  } else if (aaaMatched) {
+    textParts.push('AAA scoring/lineup matches GridIron 24 (Detail).');
+  } else {
+    textParts.push(`AAA scoring/lineup differs (${aaaDiffs.length}):`, aaaLines.join('\n'));
+  }
+  textParts.push(`Open League Tools:\n${toolsUrl}`);
+  const text = `${textParts.join('\n\n')}\n`;
+
+  const htmlConference = conferenceMatched
+    ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#86efac;">Detail and Overtime match. Official scoring was refreshed when applicable.</p>`
+    : `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#fca5a5;">${(diffs || []).length} Detail ↔ Overtime difference(s).</p>
        <ul style="margin:0 0 14px;padding-left:1.2rem;color:#c8c8c8;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;text-align:left;">${lines.map((l) => `<li>${escapeHtml(l.replace(/^• /, ''))}</li>`).join('')}</ul>`;
+
+  const htmlAaa = !aaaConfigured
+    ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;color:#9a9a9a;">AAA League ESPN ID is not configured.</p>`
+    : aaaMatched
+      ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#86efac;">AAA scoring and lineup match Detail.</p>`
+      : `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#fca5a5;">${aaaDiffs.length} AAA scoring/lineup difference(s).</p>
+         <ul style="margin:0 0 14px;padding-left:1.2rem;color:#c8c8c8;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;text-align:left;">${aaaLines.map((l) => `<li>${escapeHtml(l.replace(/^• /, ''))}</li>`).join('')}</ul>
+         <p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:13px;"><a href="${escapeHtml(aaaToolsUrl)}" style="color:#fbbf24;">Fix AAA scoring in League Tools</a></p>`;
 
   const html = brandedEmailHtml({
     title: subject,
-    preheader: matched ? 'Detail and Overtime match.' : 'Conference rules differ — open League Tools.',
+    preheader: allMatched ? 'Conferences and AAA scoring match.' : 'Rules differ — open League Tools.',
     eyebrow: 'GridIron 24 · Rules Patrol',
-    headline: matched ? 'Conferences synced' : 'Rules out of sync',
+    headline: allMatched ? 'Scoring synced' : 'Rules out of sync',
     bodyHtml:
       `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#9a9a9a;">Checked ${escapeHtml(when)} (Eastern)</p>` +
-      htmlDiffs,
+      htmlConference +
+      htmlAaa,
     showConferences: true,
     ctaLabel: 'Open League Tools',
     ctaUrl: toolsUrl,

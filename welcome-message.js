@@ -2,24 +2,58 @@
  * First-login welcome inbox message.
  *
  * Sent automatically the first time an approved user signs in.
- * Edit `subject` / `bodyFor` anytime — the next first-time login gets the new copy.
- * Welcome messages dismiss (delete) when the member marks them read.
+ * Copy varies by membership: gridiron | aaa | social.
  */
-
-const subject = 'Welcome to GridIron 24';
 
 const fromName = 'GridIron 24 HQ';
 
-/**
- * Structured welcome — fun, clear, scannable.
- * Section headings (ALL CAPS) and bullets render with branded inbox chrome.
- */
-function bodyFor(name = 'Member') {
+function bodyFor(name = 'Member', { kind = 'gridiron' } = {}) {
   const who = String(name || 'Member').trim() || 'Member';
+  const membership = String(kind || 'gridiron').toLowerCase();
+
+  if (membership === 'social') {
+    return [
+      `Hey ${who} —`,
+      '',
+      'Welcome to the GridIron 24 Members Lounge. You’re in as a Social Member.',
+      '',
+      'WHAT YOU CAN DO',
+      '• Members Lounge — sports board, Roll Call, paper games, dues desk',
+      '• Hang with the league — this account is lounge access, not a fantasy franchise',
+      '',
+      'An owner can promote you to a full GridIron 24 or AAA membership later.',
+      '',
+      'See you in Roll Call.',
+      '',
+      '— GridIron 24 HQ'
+    ].join('\n');
+  }
+
+  if (membership === 'aaa') {
+    return [
+      `Hey ${who} —`,
+      '',
+      'You are in. Welcome to AAA League under the GridIron 24 roof.',
+      '',
+      'WHAT YOU CAN DO',
+      '• AAA HQ — standings, roster, schedule, and league desk',
+      '• Members Lounge — sports board, Roll Call, dues (shared with GridIron 24)',
+      '• Inbox — votes, mentions, and HQ messages',
+      '',
+      'PRO MOVES',
+      '• Claim or check your AAA franchise under the league tools / My Roster flow',
+      '• Set Day / Night theme from your profile',
+      '',
+      'Own the week.',
+      '',
+      '— GridIron 24 HQ'
+    ].join('\n');
+  }
+
   return [
     `Hey ${who} —`,
     '',
-    'You are in. Welcome to GridIron 24 HQ: home of GridIron 24, AAA, and every conference under this roof.',
+    'You are in. Welcome to GridIron 24 HQ.',
     '',
     'WHAT YOU CAN DO',
     '• Scoreboard — live fantasy matchups and the NFL slate',
@@ -40,18 +74,27 @@ function bodyFor(name = 'Member') {
   ].join('\n');
 }
 
-function buildWelcome({ name } = {}) {
+function subjectFor(kind = 'gridiron') {
+  const membership = String(kind || 'gridiron').toLowerCase();
+  if (membership === 'social') return 'Welcome to the Members Lounge';
+  if (membership === 'aaa') return 'Welcome to AAA League';
+  return 'Welcome to GridIron 24';
+}
+
+function buildWelcome({ name, kind } = {}) {
+  const membershipKind = String(kind || 'gridiron').toLowerCase();
   return {
-    subject,
+    subject: subjectFor(membershipKind),
     fromName,
-    body: bodyFor(name),
-    type: 'welcome'
+    body: bodyFor(name, { kind: membershipKind }),
+    type: 'welcome',
+    membershipKind
   };
 }
 
 module.exports = {
-  subject,
   fromName,
   bodyFor,
+  subjectFor,
   buildWelcome
 };

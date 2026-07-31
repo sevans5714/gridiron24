@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=120" />
+  <link rel="stylesheet" href="/css/site.css?v=122" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -336,6 +336,7 @@
     }
     .conf.detail .name { color: var(--detail); }
     .conf.overtime .name { color: var(--overtime); }
+    .conf.aaa .name { color: #c4a574; }
     .conf .meta {
       margin-top: 0.2rem;
       color: var(--muted);
@@ -869,7 +870,7 @@
       <div class="tools-overview" aria-label="Tool groups">
         <a href="#group-espn">
           <strong>Sync</strong>
-          <span>Rules, playoffs, roster patrol</span>
+          <span>Rules, AAA points, playoffs, roster patrol</span>
         </a>
         <a href="#group-people" id="overview-people" hidden>
           <strong>People</strong>
@@ -890,6 +891,8 @@
         <div class="comm-nav-group">
           <p class="comm-nav-label">Sync</p>
           <a href="#rules-sync">Rules</a>
+          <a href="#aaa-rules-sync">AAA Points</a>
+          <a id="nav-aaa-espn-settings" href="https://fantasy.espn.com/football/league/settings?leagueId=529121946&amp;seasonId=2026" target="_blank" rel="noopener">AAA League Settings</a>
           <a href="#playoff-sync">Playoffs</a>
           <a href="#roster-violations">Roster Violations</a>
         </div>
@@ -918,19 +921,27 @@
         <section class="comm-group" id="group-espn">
           <header>
             <h2>Sync</h2>
-            <p>Keep Detail and Overtime aligned on ESPN. Detail is the source of truth.</p>
+            <p>Keep Detail, Overtime, and AAA scoring aligned on ESPN. Detail is the source of truth.</p>
           </header>
           <div class="comm-group-body">
             <section class="comm-section" id="rules-sync">
               <div class="section-head">
                 <h3>Rules Sync</h3>
               </div>
-              <p class="help">Scoring, lineup, and playoff settings from ESPN. When synced, the public Scoring page follows Detail. Automatic checks run Mondays and Thursdays.</p>
+              <p class="help">Scoring, lineup, and playoff settings from ESPN. When synced, the public Scoring page follows Detail. Automatic checks run Mondays and Thursdays (includes AAA scoring).</p>
               <div class="sync-tools">
-                <span class="hint">Live pull from both leagues</span>
+                <span class="hint">Live pull from Detail, Overtime, and AAA</span>
                 <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
               </div>
               <div id="content"><div class="msg">Loading conference settings…</div></div>
+            </section>
+
+            <section class="comm-section" id="aaa-rules-sync">
+              <div class="section-head">
+                <h3>AAA Scoring Sync</h3>
+              </div>
+              <p class="help">AAA mirrors GridIron 24 scoring and lineup (Detail). Playoff bracket size can differ — only points and roster slots are compared.</p>
+              <div id="aaa-sync-content"><div class="msg">Loading AAA scoring…</div></div>
             </section>
 
             <section class="comm-section" id="playoff-sync">
@@ -967,7 +978,7 @@
               <div class="section-head">
                 <h3>Email Invites</h3>
               </div>
-              <p class="help">Send invite links by email. If mail is offline, copy the link after sending. Preview: <a href="/api/invites/preview-email" target="_blank" rel="noopener">HTML</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">JSON</a>.</p>
+              <p class="help">Send invite links by email. Full members get franchise HQ; social accounts can only use the Members Lounge. Duplicate emails are blocked — use Resend on a pending invite. If mail is offline, copy the link after sending. Preview: <a href="/api/invites/preview-email" target="_blank" rel="noopener">HTML</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">JSON</a>.</p>
               <div class="status-note" id="invites-mail-status" role="status"></div>
               <div class="status-note" id="invites-msg" role="status"></div>
               <div class="invite-compose">
@@ -983,6 +994,10 @@
                   spellcheck="false"
                   aria-describedby="invite-emails-hint"
                 ></textarea>
+                <label class="field-label" style="display:flex;align-items:center;gap:0.5rem;margin-top:0.65rem;cursor:pointer;">
+                  <input type="checkbox" id="invite-social" name="inviteSocial" />
+                  Social accounts — Members Lounge only (no franchise / HQ)
+                </label>
                 <div class="btn-row">
                   <button type="button" class="btn" id="invite-send">Send Invites</button>
                 </div>
@@ -995,7 +1010,7 @@
               <div class="section-head">
                 <h3>Member Access <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
-              <p class="help">Invite tokens admit members to the lounge. Use this desk to approve any leftover pending accounts, assign franchises, link prior-year teams, and set roles. One conference admin per conference — demote the current admin before appointing another. <a href="/api/mail/preview-approved" target="_blank" rel="noopener">Preview approval email</a></p>
+              <p class="help">Invite tokens admit members to the lounge. When you Approve, pick GridIron 24, AAA, or Social — that membership drives the welcome email and HQ access. Social stays lounge-only (toggle under Access / Membership). Use the <strong>Lounge</strong> checkbox to grant a soft-launch Members Lounge pass (inbox notice sent on grant). Preview emails: <a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
               <div class="status-note" id="members-msg" role="status"></div>
               <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
@@ -1201,8 +1216,8 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=77"></script>
-  <script src="/js/conference-diff.js?v=4"></script>
+  <script src="/js/nav.js?v=84"></script>
+  <script src="/js/conference-diff.js?v=5"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -1210,8 +1225,18 @@
 
     const ESPN = {
       detail: 'https://fantasy.espn.com/football/league/settings?leagueId=559054421&seasonId=2026',
-      overtime: 'https://fantasy.espn.com/football/league/settings?leagueId=236438046&seasonId=2026'
+      overtime: 'https://fantasy.espn.com/football/league/settings?leagueId=236438046&seasonId=2026',
+      aaa: 'https://fantasy.espn.com/football/league/settings?leagueId=529121946&seasonId=2026'
     };
+
+    function applyEspnLinks(links) {
+      if (!links) return;
+      if (links.detail) ESPN.detail = links.detail;
+      if (links.overtime) ESPN.overtime = links.overtime;
+      if (links.aaa) ESPN.aaa = links.aaa;
+      const aaaNav = document.getElementById('nav-aaa-espn-settings');
+      if (aaaNav && ESPN.aaa) aaaNav.href = ESPN.aaa;
+    }
 
     const ROLE_LABELS = {
       user: 'User',
@@ -1221,15 +1246,16 @@
 
     function confBlock(conf, side) {
       const logo = conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
-      const name = conf?.shortName || conf?.name || (side === 'detail' ? 'Detail' : 'Overtime');
+      const defaults = { detail: 'Detail', overtime: 'Overtime', aaa: 'AAA' };
+      const name = conf?.shortName || conf?.name || defaults[side] || side;
       const count = conf?.ok ? `${(conf.scoringItems || []).length} categories` : 'Unavailable';
-      const inner = side === 'overtime'
+      const inner = (side === 'overtime' || side === 'aaa')
         ? `<div><div class="name">${esc(name)}</div><div class="meta">${esc(count)}</div></div>${logo}`
         : `${logo}<div><div class="name">${esc(name)}</div><div class="meta">${esc(count)}</div></div>`;
-      return `<div class="conf ${side}${side === 'overtime' ? ' right' : ''}">${inner}</div>`;
+      return `<div class="conf ${side}${(side === 'overtime' || side === 'aaa') ? ' right' : ''}">${inner}</div>`;
     }
 
-    function diffTable(rows, { withAction = false } = {}) {
+    function diffTable(rows, { withAction = false, peerLabel = 'Overtime' } = {}) {
       if (!rows.length) return '';
       return `
         <table class="diff-table">
@@ -1237,8 +1263,8 @@
             <tr>
               <th>Setting</th>
               <th class="num">Detail</th>
-              <th class="num">Overtime</th>
-              ${withAction ? '<th class="action">Set Overtime to</th>' : ''}
+              <th class="num">${esc(peerLabel)}</th>
+              ${withAction ? `<th class="action">Set ${esc(peerLabel)} to</th>` : ''}
             </tr>
           </thead>
           <tbody>
@@ -1253,14 +1279,14 @@
         </table>`;
     }
 
-    function syncChecklist(scoringDiffs) {
+    function syncChecklist(scoringDiffs, { peerLabel = 'Overtime', peerUrl = ESPN.overtime } = {}) {
       if (!scoringDiffs.length) return '';
       return `
         <div class="sync-box">
-          <strong>Sync Overtime to Detail</strong>
-          <p>Open Overtime ESPN settings and match each value in the rightmost column. Numbers match ESPN’s scoring fields (e.g. <strong>0.4</strong> pass yards).</p>
+          <strong>Sync ${esc(peerLabel)} to Detail</strong>
+          <p>Open ${esc(peerLabel)} ESPN settings and match each value in the rightmost column. Numbers match ESPN’s scoring fields (e.g. <strong>0.4</strong> pass yards).</p>
           <ol>
-            <li>Open <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings</a> as commissioner</li>
+            <li>Open <a href="${esc(peerUrl)}" target="_blank" rel="noopener">${esc(peerLabel)} ESPN Settings</a> as commissioner</li>
             <li>Go to <strong>Scoring</strong> and apply the ${scoringDiffs.length} change${scoringDiffs.length === 1 ? '' : 's'} below</li>
             <li>Save on ESPN, then click <strong>Check Rules Sync</strong></li>
           </ol>
@@ -1337,6 +1363,7 @@
         <div class="links" style="margin-top:1rem;">
           <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
           <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
+          <a href="${ESPN.aaa}" target="_blank" rel="noopener">AAA League Settings →</a>
         </div>`;
     }
 
@@ -1348,6 +1375,7 @@
       if (!detail?.ok && !overtime?.ok) {
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load either conference from ESPN.</div>`;
         document.getElementById('playoff-content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load playoff settings.</div>`;
+        renderAaaSync(data, detail);
         return;
       }
 
@@ -1364,11 +1392,11 @@
           <strong>All Clear</strong>
           Overtime matches Detail Conference scoring, lineup, and playoff settings.
         </div>` : `
-        ${syncChecklist(cmp.byKind.Scoring)}
-        ${cmp.byKind.Playoff.length ? `<section class="diff-section"><h3>Playoffs (${cmp.byKind.Playoff.length})</h3>${diffTable(cmp.byKind.Playoff, { withAction: true })}</section>` : ''}
-        ${cmp.byKind.Setting.length ? `<section class="diff-section"><h3>League Settings (${cmp.byKind.Setting.length})</h3>${diffTable(cmp.byKind.Setting)}</section>` : ''}
-        ${cmp.byKind.Scoring.length ? `<section class="diff-section"><h3>Scoring (${cmp.byKind.Scoring.length})</h3>${diffTable(cmp.byKind.Scoring, { withAction: true })}</section>` : ''}
-        ${cmp.byKind.Lineup.length ? `<section class="diff-section"><h3>Lineup (${cmp.byKind.Lineup.length})</h3>${diffTable(cmp.byKind.Lineup, { withAction: true })}</section>` : ''}`;
+        ${syncChecklist(cmp.byKind.Scoring, { peerLabel: 'Overtime', peerUrl: ESPN.overtime })}
+        ${cmp.byKind.Playoff.length ? `<section class="diff-section"><h3>Playoffs (${cmp.byKind.Playoff.length})</h3>${diffTable(cmp.byKind.Playoff, { withAction: true, peerLabel: 'Overtime' })}</section>` : ''}
+        ${cmp.byKind.Setting.length ? `<section class="diff-section"><h3>League Settings (${cmp.byKind.Setting.length})</h3>${diffTable(cmp.byKind.Setting, { peerLabel: 'Overtime' })}</section>` : ''}
+        ${cmp.byKind.Scoring.length ? `<section class="diff-section"><h3>Scoring (${cmp.byKind.Scoring.length})</h3>${diffTable(cmp.byKind.Scoring, { withAction: true, peerLabel: 'Overtime' })}</section>` : ''}
+        ${cmp.byKind.Lineup.length ? `<section class="diff-section"><h3>Lineup (${cmp.byKind.Lineup.length})</h3>${diffTable(cmp.byKind.Lineup, { withAction: true, peerLabel: 'Overtime' })}</section>` : ''}`;
 
       document.getElementById('content').innerHTML = `
         <div class="status-bar">
@@ -1389,9 +1417,68 @@
         <div class="links">
           <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
           <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
+          <a href="${ESPN.aaa}" target="_blank" rel="noopener">AAA League Settings →</a>
         </div>`;
 
       renderPlayoffSync(cmp, detail, overtime);
+      renderAaaSync(data, detail);
+    }
+
+    function renderAaaSync(data, detail) {
+      const mount = document.getElementById('aaa-sync-content');
+      if (!mount) return;
+      const aaa = data.aaa || null;
+      const cmp = data.aaaSync
+        || (aaa && detail && window.GridIronDiff?.compareScoring
+          ? window.GridIronDiff.compareScoring(detail, aaa)
+          : null);
+
+      if (!aaa || aaa.configured === false) {
+        mount.innerHTML = `<div class="msg"><strong>Not configured</strong>Set the AAA ESPN league ID to compare scoring with GridIron 24.</div>`;
+        return;
+      }
+
+      if (!detail?.ok || !aaa.ok || !cmp) {
+        mount.innerHTML = `<div class="msg"><strong>Unavailable</strong>${esc(aaa.error || 'Could not load AAA or Detail scoring from ESPN.')}</div>`;
+        return;
+      }
+
+      const syncLabel = cmp.matched ? 'Points Synced' : 'Out of Sync';
+      const syncCls = cmp.matched ? 'ok' : 'warn';
+      const syncSub = cmp.matched
+        ? 'AAA scoring and lineup match Detail'
+        : `${cmp.diffs.length} difference${cmp.diffs.length === 1 ? '' : 's'} — match AAA to Detail`;
+
+      const diffSections = cmp.matched ? `
+        <div class="ok-line">
+          <strong>All Clear</strong>
+          AAA League scoring and lineup match GridIron 24 (Detail).
+        </div>` : `
+        ${syncChecklist(cmp.byKind.Scoring, { peerLabel: 'AAA', peerUrl: ESPN.aaa })}
+        ${cmp.byKind.Setting.length ? `<section class="diff-section"><h3>League Settings (${cmp.byKind.Setting.length})</h3>${diffTable(cmp.byKind.Setting, { peerLabel: 'AAA' })}</section>` : ''}
+        ${cmp.byKind.Scoring.length ? `<section class="diff-section"><h3>Scoring (${cmp.byKind.Scoring.length})</h3>${diffTable(cmp.byKind.Scoring, { withAction: true, peerLabel: 'AAA' })}</section>` : ''}
+        ${cmp.byKind.Lineup.length ? `<section class="diff-section"><h3>Lineup (${cmp.byKind.Lineup.length})</h3>${diffTable(cmp.byKind.Lineup, { withAction: true, peerLabel: 'AAA' })}</section>` : ''}`;
+
+      mount.innerHTML = `
+        <div class="status-bar">
+          ${confBlock(detail, 'detail')}
+          <div class="sync-badge">
+            <div class="label ${syncCls}">${esc(syncLabel)}</div>
+            <div class="sub">${esc(syncSub)}</div>
+          </div>
+          ${confBlock(aaa, 'aaa')}
+        </div>
+        <div class="summary">
+          <div class="stat"><span>Detail categories</span><strong class="detail">${(detail.scoringItems || []).length}</strong></div>
+          <div class="stat"><span>AAA categories</span><strong class="overtime">${(aaa.scoringItems || []).length}</strong></div>
+          <div class="stat"><span>Differences</span><strong>${cmp.diffs.length}</strong></div>
+        </div>
+        ${diffSections}
+        <div class="links">
+          <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
+          <a href="${ESPN.aaa}" target="_blank" rel="noopener">AAA League Settings →</a>
+          <a href="/aaa.html">AAA HQ →</a>
+        </div>`;
     }
 
     function adminAccessLabel(c) {
@@ -1569,6 +1656,9 @@
               <th>Status</th>
               <th>Franchise &amp; career</th>
               <th>Access</th>
+              <th>Membership</th>
+              <th>Lounge</th>
+              <th>Dues</th>
             </tr>
           </thead>
           <tbody>
@@ -1581,21 +1671,30 @@
                 <td>
                   ${u.approved === false
                     ? `<span class="role-pill" style="color:#f0d78c;">Pending</span>
-                       <div class="invite-row-actions" style="margin-top:0.45rem;">
-                         <button type="button" class="btn" data-approve="${esc(u.id)}">Approve</button>
-                         <button type="button" class="link-action" data-reject="${esc(u.id)}">Reject</button>
+                       <div class="invite-row-actions" style="margin-top:0.45rem;display:grid;gap:0.4rem;">
+                         <select class="field" data-approve-kind="${esc(u.id)}" aria-label="Approve as" style="max-width:12rem;">
+                           <option value="gridiron">GridIron 24</option>
+                           <option value="aaa">AAA League</option>
+                           <option value="social">Social Membership</option>
+                         </select>
+                         <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
+                           <button type="button" class="btn" data-approve="${esc(u.id)}">Approve</button>
+                           <button type="button" class="link-action" data-reject="${esc(u.id)}">Reject</button>
+                         </div>
                        </div>`
-                    : `<span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span>`}
+                    : `<span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span>
+                       ${u.loungeOnly ? '<span class="role-pill" style="margin-left:0.35rem;color:#f0a0b0;">Social</span>' : ''}`}
                 </td>
                 <td>
-                  <select class="team-select" data-user-id="${esc(u.id)}" aria-label="Assign franchise" ${u.approved === false ? 'disabled' : ''}>
+                  <select class="team-select" data-user-id="${esc(u.id)}" aria-label="Assign franchise" ${u.approved === false || u.loungeOnly ? 'disabled' : ''}>
                     ${teamOptionsHtml(conferences, u.claim)}
                   </select>
-                  ${u.claim ? `<button type="button" class="link-action" style="margin-top:0.4rem;" data-remove-team="${esc(u.id)}">Remove current team</button>` : ''}
-                  ${careerAssignHtml(u)}
+                  ${u.loungeOnly ? '<p class="muted-sm" style="margin:0.35rem 0 0;">Social accounts have no franchise.</p>' : ''}
+                  ${!u.loungeOnly && u.claim ? `<button type="button" class="link-action" style="margin-top:0.4rem;" data-remove-team="${esc(u.id)}">Remove current team</button>` : ''}
+                  ${u.loungeOnly ? '' : careerAssignHtml(u)}
                 </td>
                 <td>
-                  <select class="role-select" data-user-id="${esc(u.id)}" ${u.approved === false ? 'disabled' : ''}>
+                  <select class="role-select" data-user-id="${esc(u.id)}" ${u.approved === false || u.loungeOnly ? 'disabled' : ''}>
                     <option value="user" ${roleValue(u) === 'user' ? 'selected' : ''}>User</option>
                     ${conferences.map((c) => `
                       <option value="conference_admin:${esc(c.key)}" ${roleValue(u) === `conference_admin:${c.key}` ? 'selected' : ''}>
@@ -1603,6 +1702,34 @@
                       </option>`).join('')}
                     <option value="commissioner" ${roleValue(u) === 'commissioner' ? 'selected' : ''}>Overall Commissioner</option>
                   </select>
+                </td>
+                <td>
+                  ${u.approved === false || u.siteOwner
+                    ? `<span class="muted-sm">${u.siteOwner ? 'Owner' : '—'}</span>`
+                    : `<select class="field membership-select" data-membership="${esc(u.id)}" aria-label="Membership type" style="max-width:12rem;">
+                        <option value="gridiron" ${!u.loungeOnly && u.membershipLeague !== 'aaa' ? 'selected' : ''}>GridIron 24</option>
+                        <option value="aaa" ${!u.loungeOnly && u.membershipLeague === 'aaa' ? 'selected' : ''}>AAA League</option>
+                        <option value="social" ${u.loungeOnly ? 'selected' : ''}>Social Membership</option>
+                      </select>
+                      <p class="muted-sm" style="margin:0.35rem 0 0;">${u.loungeOnly ? 'Lounge only' : (u.membershipLeague === 'aaa' ? 'AAA HQ + Lounge' : 'GI24 HQ + Lounge')}</p>`}
+                </td>
+                <td>
+                  ${u.approved === false
+                    ? `<span class="muted-sm">—</span>`
+                    : u.siteOwner
+                      ? `<span class="muted-sm">Owner</span>`
+                      : `<label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;" title="Soft-launch Members Lounge pass">
+                          <input type="checkbox" data-lounge-token="${esc(u.id)}" ${u.loungeToken ? 'checked' : ''} />
+                          Pass
+                        </label>`}
+                </td>
+                <td>
+                  ${u.approved === false
+                    ? `<span class="muted-sm">—</span>`
+                    : `<label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+                        <input type="checkbox" data-dues-paid="${esc(u.id)}" ${u.duesPaid ? 'checked' : ''} />
+                        Paid
+                      </label>`}
                 </td>
               </tr>`).join('')}
           </tbody>
@@ -1634,6 +1761,121 @@
             await loadMembers();
           } finally {
             select.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-lounge-only]').forEach((box) => {
+        box.addEventListener('change', async () => {
+          const userId = box.getAttribute('data-lounge-only');
+          box.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/lounge-only`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ loungeOnly: box.checked })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
+            showMembersMsg(
+              data.user.loungeOnly
+                ? `${data.user.loginName} is now social (Members Lounge only).`
+                : `${data.user.loginName} is a full member again.`,
+              true
+            );
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            await loadMembers();
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-membership]').forEach((select) => {
+        select.addEventListener('change', async () => {
+          const userId = select.getAttribute('data-membership');
+          const membership = select.value;
+          select.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/membership`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ membership })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update membership');
+            showMembersMsg(
+              `${data.user?.name || data.user?.loginName || 'Member'} → ${data.membershipLabel || membership}.`,
+              true
+            );
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            await loadMembers();
+          } finally {
+            select.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-dues-paid]').forEach((box) => {
+        box.addEventListener('change', async () => {
+          const userId = box.getAttribute('data-dues-paid');
+          box.disabled = true;
+          try {
+            const res = await fetch(`/api/members/${encodeURIComponent(userId)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ duesPaid: box.checked })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) {
+              box.checked = !box.checked;
+              throw new Error(data.error || 'Could not update dues');
+            }
+            const name = data.user?.name || data.user?.loginName || 'Member';
+            showMembersMsg(
+              box.checked ? `${name} marked paid.` : `${name} marked unpaid.`,
+              true
+            );
+          } catch (err) {
+            showMembersMsg(err.message, false);
+          } finally {
+            box.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-lounge-token]').forEach((box) => {
+        box.addEventListener('change', async () => {
+          const userId = box.getAttribute('data-lounge-token');
+          box.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/lounge-token`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ granted: box.checked })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) {
+              box.checked = !box.checked;
+              throw new Error(data.error || 'Could not update lounge pass');
+            }
+            const name = data.user?.name || data.user?.loginName || 'Member';
+            if (box.checked) {
+              showMembersMsg(
+                data.notified
+                  ? `${name} lounge pass granted · inbox notified.`
+                  : `${name} lounge pass granted.`,
+                true
+              );
+            } else {
+              showMembersMsg(`${name} lounge pass revoked.`, true);
+            }
+          } catch (err) {
+            showMembersMsg(err.message, false);
+          } finally {
+            box.disabled = false;
           }
         });
       });
@@ -1755,19 +1997,22 @@
       document.getElementById('members-list').querySelectorAll('[data-approve]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const userId = btn.dataset.approve;
+          const kindSelect = document.querySelector(`select[data-approve-kind="${userId}"]`);
+          const membership = kindSelect?.value || 'gridiron';
           btn.disabled = true;
           try {
             const res = await fetch(`/api/users/${encodeURIComponent(userId)}/approve`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ approved: true })
+              body: JSON.stringify({ approved: true, membership })
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok || !data.ok) throw new Error(data.error || 'Could not approve');
+            const label = data.membershipLabel || membership;
             const mailNote = data.mailSent
-              ? ' Approval email sent.'
-              : (data.mailError ? ` Approval email failed: ${data.mailError}` : '');
-            showMembersMsg(`Approved ${data.user.loginName}. They can sign in now.${mailNote}`, true);
+              ? ` Welcome email sent (${label}).`
+              : (data.mailError ? ` Email failed: ${data.mailError}` : ` (${label})`);
+            showMembersMsg(`Approved ${data.user.loginName} as ${label}.${mailNote}`, true);
             await loadMembers();
           } catch (err) {
             showMembersMsg(err.message, false);
@@ -1828,12 +2073,20 @@
         const res = await fetch('/api/settings', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
+        applyEspnLinks(data.espnLinks);
         render(data);
         const t = new Date(data.generatedAt);
+        const aaa = checkData.aaaSync;
+        const aaaNote = !aaa || aaa.configured === false
+          ? ''
+          : aaa.matched
+            ? ' · AAA points synced'
+            : ` · AAA out of sync (${aaa.diffCount || 0})`;
+        const allOk = checkData.matched && (!aaa || aaa.configured === false || aaa.matched);
         const note = checkData.matched
-          ? `Synced · Scoring page updated · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
-          : `Out of sync (${checkData.diffCount || 0}) · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
-        window.GridIronNav?.setSync(note, checkData.matched);
+          ? `Synced · Scoring page updated${aaaNote} · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+          : `Out of sync (${checkData.diffCount || 0})${aaaNote} · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+        window.GridIronNav?.setSync(note, allOk);
       } catch (err) {
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
         window.GridIronNav?.setSync('Connection error', false);
@@ -2370,8 +2623,8 @@
           <tbody>
             ${rows.map((inv) => `
               <tr>
-                <td>${esc(inv.email)}</td>
-                <td>${esc(inv.status)}</td>
+                <td>${esc(inv.email)}${inv.loungeOnly ? ' <span class="muted-sm">(social)</span>' : ''}</td>
+                <td>${esc(inv.status)}${inv.loungeOnly ? ' · lounge only' : ''}</td>
                 <td>${esc((inv.createdAt || '').slice(0, 10))}</td>
                 <td class="invite-row-actions">
                   ${inv.status === 'pending' ? `
@@ -2398,17 +2651,27 @@
         }
         btn.disabled = true;
         try {
+          const social = Boolean(document.getElementById('invite-social')?.checked);
           const res = await fetch('/api/invites', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ emails })
+            body: JSON.stringify({ emails, loungeOnly: social })
           });
           const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data.ok) throw new Error(data.error || data.message || 'Could not send invites');
+          if (!res.ok) throw new Error(data.error || data.message || 'Could not send invites');
           setMailStatus(data.mail);
-          showInvitesMsg(data.message || 'Invites processed.', true);
-          renderInviteLinks(data.results || []);
-          input.value = '';
+          const results = data.results || [];
+          const okCount = results.filter((r) => r.ok).length;
+          const failCount = results.length - okCount;
+          if (!okCount) {
+            throw new Error(data.message || data.error || 'No invites were created.');
+          }
+          showInvitesMsg(
+            (data.message || 'Invites processed.') + (social ? ' (social / lounge only)' : ''),
+            failCount === 0
+          );
+          renderInviteLinks(results);
+          if (okCount) input.value = '';
           await loadInvitesAdmin();
         } catch (err) {
           showInvitesMsg(err.message || 'Could not send invites', false);

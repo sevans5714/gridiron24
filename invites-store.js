@@ -64,7 +64,9 @@ function publicInvite(invite) {
     createdAt: invite.createdAt,
     expiresAt: invite.expiresAt || null,
     acceptedAt: invite.acceptedAt || null,
-    invitedByName: invite.invitedByName || null
+    invitedByName: invite.invitedByName || null,
+    loungeOnly: Boolean(invite.loungeOnly),
+    accountType: invite.loungeOnly ? 'social' : 'member'
   };
 }
 
@@ -85,7 +87,7 @@ function listInvites() {
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
-function createInvite({ email, invitedBy }) {
+function createInvite({ email, invitedBy, loungeOnly }) {
   const emailKey = normalizeEmail(email);
   if (!emailKey || !emailKey.includes('@')) {
     const err = new Error('Enter a valid email address');
@@ -93,27 +95,25 @@ function createInvite({ email, invitedBy }) {
     throw err;
   }
 
+  const social = Boolean(loungeOnly);
   const store = readStore();
-  const existingIdx = store.invites.findIndex(
+  const existingOpen = store.invites.find(
     (i) => i.email === emailKey && (i.status === 'pending' || i.status === 'expired')
   );
-
-  if (existingIdx !== -1) {
-    const existing = store.invites[existingIdx];
-    existing.status = 'pending';
-    existing.expiresAt = null;
-    // Reuse the same token whenever we still have it so earlier emails stay live.
-    let token = existing.token || null;
-    if (!token) {
-      token = ensureInviteToken(existing);
-    } else if (!existing.tokenHash) {
-      existing.tokenHash = hashToken(token);
-    }
-    existing.invitedById = invitedBy?.id || existing.invitedById;
-    existing.invitedByName =
-      invitedBy?.name || invitedBy?.loginName || existing.invitedByName;
-    writeStore(store);
-    return { invite: publicInvite(existing), token, reused: true };
+  if (existingOpen) {
+    const err = new Error(
+      'An invite is already pending for that email. Use Resend if you need to send it again.'
+    );
+    err.status = 409;
+    throw err;
+  }
+  const alreadyAccepted = store.invites.find(
+    (i) => i.email === emailKey && i.status === 'accepted'
+  );
+  if (alreadyAccepted) {
+    const err = new Error('That email already accepted an invite.');
+    err.status = 409;
+    throw err;
   }
 
   const token = makeToken();
@@ -127,11 +127,12 @@ function createInvite({ email, invitedBy }) {
     expiresAt: null,
     acceptedAt: null,
     invitedById: invitedBy?.id || null,
-    invitedByName: invitedBy?.name || invitedBy?.loginName || null
+    invitedByName: invitedBy?.name || invitedBy?.loginName || null,
+    loungeOnly: social
   };
   store.invites.unshift(invite);
   writeStore(store);
-  return { invite: publicInvite(invite), token, reused: false };
+  return { invite: publicInvite(invite), token };
 }
 
 function findByToken(token) {

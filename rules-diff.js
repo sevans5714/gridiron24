@@ -1,5 +1,6 @@
 /**
- * Server-side Detail vs Overtime rules comparison (mirrors public/js/conference-diff.js).
+ * Server-side Detail vs Overtime / AAA rules comparison (mirrors public/js/conference-diff.js).
+ * Diff rows keep `detail` / `overtime` keys: `detail` is the source of truth, `overtime` is the peer.
  */
 function pointsNearlyEqual(a, b) {
   if (a == null && b == null) return true;
@@ -27,7 +28,7 @@ function fmtItem(item) {
   return Number.isInteger(x) ? String(x) : x.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
 }
 
-function findDiffs(detail, overtime) {
+function findDiffs(detail, overtime, { includePlayoff = true } = {}) {
   const diffs = [];
 
   if (detail.playerRankType !== overtime.playerRankType) {
@@ -39,24 +40,26 @@ function findDiffs(detail, overtime) {
     });
   }
 
-  const playoffFields = [
-    ['matchupPeriodCount', 'Regular-season weeks'],
-    ['playoffTeamCount', 'Playoff teams'],
-    ['playoffReseed', 'Playoff reseed'],
-    ['firstPlayoffWeek', 'First playoff week'],
-    ['playoffWeekCount', 'Playoff / Bowl weeks'],
-    ['finalScoringPeriod', 'Final scoring week'],
-    ['playoffMatchupPeriodLength', 'Playoff week length'],
-    ['playoffSeedingRule', 'Playoff seeding rule']
-  ];
-  for (const [key, label] of playoffFields) {
-    if (detail[key] !== overtime[key]) {
-      diffs.push({
-        kind: 'Playoff',
-        label,
-        detail: detail[key] == null ? '—' : String(detail[key]),
-        overtime: overtime[key] == null ? '—' : String(overtime[key])
-      });
+  if (includePlayoff) {
+    const playoffFields = [
+      ['matchupPeriodCount', 'Regular-season weeks'],
+      ['playoffTeamCount', 'Playoff teams'],
+      ['playoffReseed', 'Playoff reseed'],
+      ['firstPlayoffWeek', 'First playoff week'],
+      ['playoffWeekCount', 'Playoff / Bowl weeks'],
+      ['finalScoringPeriod', 'Final scoring week'],
+      ['playoffMatchupPeriodLength', 'Playoff week length'],
+      ['playoffSeedingRule', 'Playoff seeding rule']
+    ];
+    for (const [key, label] of playoffFields) {
+      if (detail[key] !== overtime[key]) {
+        diffs.push({
+          kind: 'Playoff',
+          label,
+          detail: detail[key] == null ? '—' : String(detail[key]),
+          overtime: overtime[key] == null ? '—' : String(overtime[key])
+        });
+      }
     }
   }
 
@@ -74,6 +77,7 @@ function findDiffs(detail, overtime) {
         label: (d || o).label || `Stat ${id}`,
         detail: dPts === 0 ? 'off' : fmtItem(d),
         overtime: oPts === 0 ? 'off' : fmtItem(o),
+        target: dPts === 0 ? 'off' : fmtItem(d),
         statId: id
       });
     }
@@ -92,7 +96,8 @@ function findDiffs(detail, overtime) {
         kind: 'Lineup',
         label: (d || o).label || `Slot ${id}`,
         detail: d ? String(dCount) : 'missing',
-        overtime: o ? String(oCount) : 'missing'
+        overtime: o ? String(oCount) : 'missing',
+        target: d ? String(dCount) : '0'
       });
     }
   }
@@ -100,24 +105,34 @@ function findDiffs(detail, overtime) {
   return diffs;
 }
 
-function compareSettings(detail, overtime) {
+function summarizeDiffs(diffs) {
+  return {
+    Setting: diffs.filter((d) => d.kind === 'Setting'),
+    Playoff: diffs.filter((d) => d.kind === 'Playoff'),
+    Scoring: diffs.filter((d) => d.kind === 'Scoring'),
+    Lineup: diffs.filter((d) => d.kind === 'Lineup')
+  };
+}
+
+function compareSettings(detail, overtime, options = {}) {
   const bothOk = !!(detail?.ok && overtime?.ok);
-  const diffs = bothOk ? findDiffs(detail, overtime) : [];
+  const diffs = bothOk ? findDiffs(detail, overtime, options) : [];
   return {
     bothOk,
     matched: bothOk && diffs.length === 0,
     diffs,
-    byKind: {
-      Setting: diffs.filter((d) => d.kind === 'Setting'),
-      Playoff: diffs.filter((d) => d.kind === 'Playoff'),
-      Scoring: diffs.filter((d) => d.kind === 'Scoring'),
-      Lineup: diffs.filter((d) => d.kind === 'Lineup')
-    }
+    byKind: summarizeDiffs(diffs)
   };
+}
+
+/** Scoring type, scoring categories, and lineup slots only (AAA feeder vs GridIron 24). */
+function compareScoringSettings(primary, peer) {
+  return compareSettings(primary, peer, { includePlayoff: false });
 }
 
 module.exports = {
   compareSettings,
+  compareScoringSettings,
   findDiffs,
   fmtItem
 };

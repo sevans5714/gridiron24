@@ -11,10 +11,7 @@ const FUTURES_PATHS = [
   { id: 'nba-chip', path: 'basketball/nba-futures', sport: 'NBA', label: 'NBA Champion' },
   { id: 'mlb-ws', path: 'baseball/mlb-futures', sport: 'MLB', label: 'World Series' },
   { id: 'nhl-cup', path: 'hockey/nhl-futures', sport: 'NHL', label: 'Stanley Cup' },
-  { id: 'ncaaf-chip', path: 'football/college-football-futures', sport: 'NCAAF', label: 'CFB National Champ' },
-  { id: 'ncaab-chip', path: 'basketball/college-basketball-futures', sport: 'NCAAB', label: 'March Madness' },
-  { id: 'wnba-chip', path: 'basketball/wnba-futures', sport: 'WNBA', label: 'WNBA Champion' },
-  { id: 'mls-cup', path: 'soccer/north-america/united-states/major-league-soccer-futures', sport: 'MLS', label: 'MLS Cup' }
+  { id: 'ncaaf-chip', path: 'football/college-football-futures', sport: 'NCAAF', label: 'CFB Champ' }
 ];
 
 async function fetchJson(url, { timeoutMs = 12000 } = {}) {

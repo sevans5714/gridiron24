@@ -1,22 +1,23 @@
 (function () {
-  // Home-screen / installed PWA must use the /app/ shell (bottom tabs), not website HQ.
-  try {
-    const standalone = window.matchMedia('(display-mode: standalone)').matches
-      || window.matchMedia('(display-mode: fullscreen)').matches
-      || window.matchMedia('(display-mode: minimal-ui)').matches
-      || navigator.standalone === true;
-    const path = String(location.pathname || '');
-    const authGate = path === '/enter' || path === '/enter.html'
-      || path === '/login.html' || path === '/register' || path === '/register.html'
-      || path === '/forgot' || path === '/forgot.html'
-      || path === '/reset' || path === '/reset.html'
-      || path === '/setup' || path === '/setup.html'
-      || path === '/register-league' || path === '/register-league.html';
-    if (standalone && !path.startsWith('/app') && !authGate) {
-      location.replace('/app/' + (location.hash || ''));
-      return;
+  // PWA shell redirect waits for auth — social accounts go to Members Lounge, not /app.
+  const isStandalonePwa = (function () {
+    try {
+      return window.GridIronUiMode?.isStandalone?.()
+        || window.matchMedia('(display-mode: standalone)').matches
+        || window.matchMedia('(display-mode: fullscreen)').matches
+        || window.matchMedia('(display-mode: minimal-ui)').matches
+        || navigator.standalone === true;
+    } catch {
+      return false;
     }
-  } catch { /* ignore */ }
+  })();
+
+  function preferAppShell() {
+    if (window.GridIronUiMode?.preferAppShell) {
+      return window.GridIronUiMode.preferAppShell();
+    }
+    return isStandalonePwa;
+  }
 
   const HOME_DEFAULT = '/home.html';
   let homePath = HOME_DEFAULT;
@@ -62,7 +63,10 @@
     { href: '/aaa-rulebook.html', label: 'Rule Book', key: 'rulebook' }
   ];
 
-  function linksForScope(scope) {
+  const SOCIAL_LINKS = [];
+
+  function linksForScope(scope, user = null) {
+    if (user?.loungeOnly) return SOCIAL_LINKS;
     return scope?.scope === 'aaa' ? AAA_LINKS : GRIDIRON_LINKS;
   }
 
@@ -179,6 +183,7 @@
   }
 
   let ruleProposalVisible = false;
+  let featureRequestVisible = false;
 
   function renderSubmenu(link) {
     const items = Array.isArray(link.menu) ? link.menu : [];
@@ -191,13 +196,25 @@
     return `<div class="nav-submenu" role="menu">${links}</div>`;
   }
 
-  function renderNav() {
+  function renderNav(user = null) {
     if (!nav) return;
-    const links = linksForScope(leagueScope).map((link) => ({
+    const u = user || authState?.user;
+    let links = linksForScope(leagueScope, u).map((link) => ({
       ...link,
       menu: link.menu ? link.menu.map((m) => ({ ...m })) : undefined
     }));
-    if (links[0]) links[0].href = homePath || links[0].href || HOME_DEFAULT;
+    const canLounge = Boolean(
+      authState?.loungeAccess
+      || u?.siteOwner
+      || u?.loungeToken
+      || (authState?.loungeOpen && u?.loungeMember)
+    );
+    if (!canLounge) {
+      links = links.filter((link) => link.key !== 'members');
+    }
+    if (links[0] && !u?.loungeOnly) {
+      links[0].href = homePath || links[0].href || HOME_DEFAULT;
+    }
     const navActive = navActiveKey();
     nav.innerHTML = links.map((link) => {
       const cls = link.key === navActive ? 'active' : '';
@@ -224,7 +241,7 @@
       });
     });
 
-    placeRuleProposalInNav();
+    placeProposalActionsInNav();
   }
 
   function ensureUserMenuMount() {
@@ -340,7 +357,7 @@
     } catch { /* ignore */ }
   }
 
-  function ensureRuleProposalMount() {
+  function ensureProposalActionsMount() {
     let slot = document.getElementById('rule-proposal-slot');
     if (slot) return slot;
     slot = document.createElement('div');
@@ -350,20 +367,29 @@
     return slot;
   }
 
-  function placeRuleProposalInNav() {
+  function placeProposalActionsInNav() {
     if (!nav) return;
-    const slot = ensureRuleProposalMount();
-    if (!ruleProposalVisible) {
+    const slot = ensureProposalActionsMount();
+    const showSlot = ruleProposalVisible || featureRequestVisible;
+    if (!showSlot) {
       slot.hidden = true;
       slot.innerHTML = '';
       slot.remove();
       return;
     }
-    if (!slot.querySelector('.rule-proposal-btn')) {
-      slot.innerHTML = `<button type="button" class="rule-proposal-btn" id="rule-proposal-btn">Rule Change Proposal</button>`;
-      slot.querySelector('#rule-proposal-btn')?.addEventListener('click', openRuleProposalModal);
+
+    const bits = [];
+    if (ruleProposalVisible) {
+      bits.push('<button type="button" class="rule-proposal-btn" id="rule-proposal-btn">Rule Change Proposal</button>');
     }
+    if (featureRequestVisible) {
+      bits.push('<button type="button" class="feature-request-btn" id="feature-request-btn">Feature Request</button>');
+    }
+    slot.innerHTML = bits.join('');
     slot.hidden = false;
+    slot.querySelector('#rule-proposal-btn')?.addEventListener('click', openRuleProposalModal);
+    slot.querySelector('#feature-request-btn')?.addEventListener('click', openFeatureRequestModal);
+
     const rulebook = [...nav.querySelectorAll('a.nav-link')].find((a) =>
       /rulebook/i.test(a.getAttribute('href') || '')
     );
@@ -374,6 +400,59 @@
 
   function closeRuleProposalModal() {
     document.getElementById('rule-proposal-modal')?.remove();
+  }
+
+  function closeFeatureRequestModal() {
+    document.getElementById('feature-request-modal')?.remove();
+  }
+
+  function openFeatureRequestModal() {
+    closeFeatureRequestModal();
+    const backdrop = document.createElement('div');
+    backdrop.id = 'feature-request-modal';
+    backdrop.className = 'gi-modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="gi-modal" role="dialog" aria-modal="true" aria-labelledby="feature-request-title">
+        <h2 id="feature-request-title">Feature Request</h2>
+        <p class="gi-modal-help">Tell us what you want on the platform. Requests go to league staff and the site owner.</p>
+        <div class="gi-modal-err" id="feature-request-err"></div>
+        <label class="field-label" for="feature-request-text">Your idea</label>
+        <textarea id="feature-request-text" maxlength="4000" placeholder="Describe the feature you want…"></textarea>
+        <div class="btn-row">
+          <button type="button" class="btn" id="feature-request-submit">Submit Request</button>
+          <button type="button" class="btn btn-ghost" id="feature-request-cancel">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const err = backdrop.querySelector('#feature-request-err');
+    const area = backdrop.querySelector('#feature-request-text');
+    area?.focus();
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeFeatureRequestModal();
+    });
+    backdrop.querySelector('#feature-request-cancel')?.addEventListener('click', closeFeatureRequestModal);
+    backdrop.querySelector('#feature-request-submit')?.addEventListener('click', async () => {
+      const btn = backdrop.querySelector('#feature-request-submit');
+      err.classList.remove('show');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/feature-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: area.value })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not submit request');
+        closeFeatureRequestModal();
+        await refreshInboxBadge();
+        window.alert('Feature request submitted. Staff will see it in their inbox.');
+      } catch (e) {
+        err.textContent = e.message || 'Could not submit';
+        err.classList.add('show');
+        btn.disabled = false;
+      }
+    });
   }
 
   function openRuleProposalModal() {
@@ -427,14 +506,21 @@
 
   function renderRuleProposalButton(show) {
     ruleProposalVisible = Boolean(show);
-    placeRuleProposalInNav();
+    placeProposalActionsInNav();
+  }
+
+  function renderFeatureRequestButton(show) {
+    featureRequestVisible = Boolean(show);
+    placeProposalActionsInNav();
   }
 
   async function refreshRuleProposalGate(user) {
-    if (!user) {
+    if (!user || user.loungeOnly) {
       renderRuleProposalButton(false);
+      renderFeatureRequestButton(false);
       return;
     }
+    renderFeatureRequestButton(true);
     try {
       const res = await fetch('/api/rule-proposals/status', { cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
@@ -461,12 +547,56 @@
 
   function roleLabel(role, conference, user = null) {
     if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner';
+    if (user?.loungeOnly) return 'Social';
     if (role === 'commissioner') return 'Commissioner';
     if (role === 'conference_admin') {
       if (conference === 'aaa') return 'AAA League Admin';
       return 'Conference Admin';
     }
     return 'Member';
+  }
+
+  function ensureUiModeMount() {
+    let el = document.getElementById('ui-mode-switch');
+    if (el) return el;
+    const topbarInner = document.querySelector('.topbar-inner');
+    if (!topbarInner) return null;
+    let right = topbarInner.querySelector('.topbar-right');
+    if (!right) {
+      right = document.createElement('div');
+      right.className = 'topbar-right';
+      topbarInner.appendChild(right);
+    }
+    el = document.createElement('button');
+    el.type = 'button';
+    el.id = 'ui-mode-switch';
+    el.className = 'ui-mode-switch';
+    el.hidden = true;
+    right.insertBefore(el, right.firstChild);
+    return el;
+  }
+
+  function renderUiModeSwitch() {
+    const el = ensureUiModeMount();
+    if (!el) return;
+    const standalone = window.GridIronUiMode?.isStandalone?.() || isStandalonePwa;
+    const desktop = window.GridIronUiMode?.get?.() === 'desktop';
+    if (!standalone || !desktop) {
+      el.hidden = true;
+      el.onclick = null;
+      return;
+    }
+    el.hidden = false;
+    el.textContent = 'Mobile app';
+    el.title = 'Switch back to the mobile app layout';
+    el.onclick = () => {
+      if (window.GridIronUiMode?.goMobile) {
+        window.GridIronUiMode.goMobile();
+      } else {
+        try { localStorage.setItem('gi-ui-mode', 'mobile'); } catch { /* ignore */ }
+        location.assign('/app/');
+      }
+    };
   }
 
   function renderUserMenu(user, myTeam = null) {
@@ -484,11 +614,25 @@
     mount.hidden = false;
     mount.onmouseenter = null;
     mount.onmouseleave = null;
-    const teamName = myTeam?.team?.name || myTeam?.claim?.teamName || 'Unassigned';
+    const teamName = user.loungeOnly
+      ? 'Members Lounge'
+      : (myTeam?.team?.name || myTeam?.claim?.teamName || 'Unassigned');
     const ownerName = user.name || 'Owner';
     const access = roleLabel(user.role, user.conference, user);
     const onProfile = active === 'profile';
-    const needsLogo = !hasChosenLogo(myTeam?.logo);
+    const needsLogo = !user.loungeOnly && !hasChosenLogo(myTeam?.logo);
+    if (user.loungeOnly) {
+      mount.innerHTML = `
+        <div class="user-chip" title="${esc(teamName)} · ${esc(ownerName)} · ${esc(access)}">
+          <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
+          <span class="user-chip-text">
+            <span class="user-chip-team">${esc(teamName)}</span>
+            <span class="user-chip-owner">${esc(ownerName)}</span>
+            <span class="user-chip-access">${esc(access)}</span>
+          </span>
+        </div>`;
+      return;
+    }
     const href = needsLogo ? '/profile.html#logo' : '/profile.html';
     mount.innerHTML = `
       <a class="user-chip${onProfile ? ' is-active' : ''}${needsLogo ? ' needs-logo' : ''}" href="${href}" title="${esc(teamName)} · ${esc(ownerName)} · ${esc(access)}">
@@ -566,7 +710,7 @@
     } else {
       el.title = 'Switch to AAA League';
       el.setAttribute('aria-label', 'Switch to AAA League');
-      el.innerHTML = `<img src="/assets/aaa-league.png?v=2" alt="" width="44" height="44" decoding="async" />`;
+      el.innerHTML = `<img src="/assets/aaa-league.png?v=3" alt="" width="44" height="44" decoding="async" />`;
       el.onclick = (e) => {
         e.preventDefault();
         switchLeague('aaa');
@@ -670,9 +814,52 @@
       const user = data.authenticated ? data.user : null;
       if (data.homePath) homePath = data.homePath;
       if (data.leagueScope) applyLeagueScope(data.leagueScope);
-      renderNav();
+      // Social accounts: Members Lounge only — bounce anything else, including /app.
+      if (user?.loungeOnly) {
+        document.body.classList.add('is-social');
+        const path = String(location.pathname || '');
+        const onLounge = path === '/members.html' || path === '/members';
+        const onRestricted = path === '/restricted.html';
+        const loungeOk = Boolean(data.loungeAccess || user.siteOwner);
+        const loungeHome = loungeOk ? '/members.html' : '/restricted.html?area=lounge';
+        if (!onLounge && !onRestricted) {
+          location.replace(loungeHome);
+          return { user, authenticated: true, myTeam: null, homePath: loungeHome, leagueScope };
+        }
+        if (onLounge && !loungeOk) {
+          location.replace('/restricted.html?area=lounge');
+          return { user, authenticated: true, myTeam: null, homePath: loungeHome, leagueScope };
+        }
+      } else {
+        document.body.classList.remove('is-social');
+        // Full members in installed PWA use the /app shell (unless desktop mode is on).
+        if (preferAppShell()) {
+          const path = String(location.pathname || '');
+          const authGate = path === '/enter' || path === '/enter.html'
+            || path === '/login.html' || path === '/register' || path === '/register.html'
+            || path === '/forgot' || path === '/forgot.html'
+            || path === '/reset' || path === '/reset.html'
+            || path === '/setup' || path === '/setup.html'
+            || path === '/register-league' || path === '/register-league.html';
+          if (user && !path.startsWith('/app') && !authGate) {
+            location.replace('/app/' + (location.hash || ''));
+            return { user, authenticated: true, myTeam: null, homePath, leagueScope };
+          }
+        }
+      }
+      if (data.homePath) homePath = data.homePath;
+      authState = {
+        user,
+        authenticated: Boolean(user),
+        myTeam: null,
+        homePath,
+        leagueScope,
+        loungeOpen: Boolean(data.loungeOpen),
+        loungeAccess: Boolean(data.loungeAccess)
+      };
+      renderNav(user);
       let myTeam = null;
-      if (user) {
+      if (user && !user.loungeOnly) {
         try {
           const res = await fetch('/api/my-team', { cache: 'no-store' });
           const body = await res.json();
@@ -680,19 +867,36 @@
             myTeam = body;
             if (body.homePath) homePath = body.homePath;
             if (body.leagueScope) applyLeagueScope(body.leagueScope);
-            renderNav();
+            renderNav(user);
           }
         } catch { /* ignore */ }
       }
-      authState = { user, authenticated: Boolean(user), myTeam, homePath, leagueScope };
+      authState = {
+        user,
+        authenticated: Boolean(user),
+        myTeam,
+        homePath,
+        leagueScope,
+        loungeOpen: Boolean(data.loungeOpen),
+        loungeAccess: Boolean(data.loungeAccess)
+      };
       syncThemeFromUser(user);
       renderUserMenu(user, myTeam);
       renderLeagueSwitcher(user, leagueScope);
-      if (user) {
+      renderUiModeSwitch();
+      if (user && !user.loungeOnly) {
         ensureInboxMount();
         refreshInboxBadge();
         heartbeatPresence();
         refreshRuleProposalGate(user);
+        loadTicker();
+      } else if (user?.loungeOnly) {
+        const inboxBtn = document.getElementById('inbox-btn');
+        if (inboxBtn) inboxBtn.hidden = true;
+        const ticker = document.getElementById('site-ticker');
+        if (ticker) ticker.hidden = true;
+        renderRuleProposalButton(false);
+        heartbeatPresence();
       } else {
         renderRuleProposalButton(false);
         const inboxBtn = document.getElementById('inbox-btn');
@@ -704,6 +908,7 @@
       authState = { user: null, authenticated: false, myTeam: null, homePath, leagueScope };
       renderUserMenu(null);
       renderLeagueSwitcher(null, leagueScope);
+      renderUiModeSwitch();
       renderRuleProposalButton(false);
       const inboxBtn = document.getElementById('inbox-btn');
       if (inboxBtn) inboxBtn.hidden = true;
@@ -746,7 +951,7 @@
   ensureUserMenuMount();
   const earlyInbox = ensureInboxMount();
   if (earlyInbox) earlyInbox.hidden = true;
-  ensureRuleProposalMount();
+  ensureProposalActionsMount();
   applyTheme(getTheme());
   watchConferenceLogos();
   ensureFooter('Build …');
@@ -754,13 +959,22 @@
   loadTicker();
   document.addEventListener('click', closeUserMenuOnOutside);
   setInterval(() => {
-    if (authState?.user) {
+    if (authState?.user && !authState.user.loungeOnly) {
       refreshInboxBadge();
+      heartbeatPresence();
+    } else if (authState?.user?.loungeOnly) {
       heartbeatPresence();
     }
   }, 30_000);
 
   const authReady = refreshAuth();
+
+  authReady.then((state) => {
+    if (state?.user?.loungeOnly) {
+      const ticker = document.getElementById('site-ticker');
+      if (ticker) ticker.remove();
+    }
+  }).catch(() => {});
 
   window.GridIronNav = {
     authReady,

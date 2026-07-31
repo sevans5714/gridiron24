@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Page Restricted · GridIron 24</title>
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=122" />
+  <style>
+    body[data-page="restricted"] .page-main {
+      max-width: 34rem;
+      margin: 0 auto;
+      padding: clamp(2.5rem, 8vw, 4.5rem) 1.25rem 3rem;
+      text-align: center;
+    }
+    .restricted-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 0 1.1rem;
+      padding: 0.35rem 0.75rem;
+      border: 1px solid rgba(255, 143, 143, 0.45);
+      background: rgba(180, 40, 40, 0.18);
+      color: #ff8f8f;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .restricted-card h1 {
+      margin: 0 0 0.65rem;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+      line-height: 1;
+    }
+    .restricted-card p {
+      margin: 0 0 0.85rem;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 1.02rem;
+    }
+    .restricted-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      justify-content: center;
+      margin-top: 1.35rem;
+    }
+    .restricted-actions a {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.5rem;
+      padding: 0.45rem 0.95rem;
+      border: 1px solid rgba(126, 200, 255, 0.35);
+      background: rgba(47, 123, 255, 0.16);
+      color: #9ec8ff;
+      text-decoration: none;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .restricted-actions a.is-primary {
+      border-color: rgba(239, 215, 130, 0.45);
+      background: rgba(239, 215, 130, 0.14);
+      color: #efd782;
+    }
+  </style>
+</head>
+<body data-page="restricted">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+    </div>
+  </header>
+  <main class="page-main">
+    <div class="restricted-card">
+      <div class="restricted-mark">Page restricted</div>
+      <h1 id="restricted-title">Access denied</h1>
+      <p id="restricted-copy">You do not have permission to open this area.</p>
+      <div class="restricted-actions">
+        <a class="is-primary" id="restricted-home" href="/home.html">Go to HQ</a>
+        <a href="/enter">Sign in</a>
+      </div>
+    </div>
+  </main>
+  <script src="/js/nav.js?v=84"></script>
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+      const area = String(params.get('area') || '').toLowerCase();
+      const title = document.getElementById('restricted-title');
+      const copy = document.getElementById('restricted-copy');
+      const home = document.getElementById('restricted-home');
+      if (area === 'lounge' || area === 'members') {
+        if (title) title.textContent = 'Members Lounge restricted';
+        if (copy) {
+          copy.textContent =
+            'Members Lounge is not open to the league yet. Check back when the owner unlocks it.';
+        }
+      }
+      fetch('/api/auth', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((data) => {
+          if (!data?.authenticated) return;
+          const user = data.user || {};
+          if (home) {
+            const loungeOk = Boolean(data.loungeAccess || user.siteOwner);
+            if (user.loungeOnly && !loungeOk) {
+              home.hidden = true;
+            } else {
+              home.href = data.homePath || (user.loungeOnly ? '/members.html' : '/home.html');
+              home.textContent = user.loungeOnly ? 'Open Lounge' : 'Go to HQ';
+            }
+          }
+        })
+        .catch(() => {});
+    })();
+  </script>
+</body>
+</html>

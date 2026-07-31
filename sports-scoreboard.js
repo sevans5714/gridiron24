@@ -20,7 +20,9 @@ const LEAGUES = {
     sport: 'football',
     league: 'nfl',
     kind: 'team',
-    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png'
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png',
+    // Preseason through Super Bowl
+    seasonMonths: [8, 9, 10, 11, 12, 1, 2]
   },
   ncaaf: {
     id: 'ncaaf',
@@ -29,7 +31,8 @@ const LEAGUES = {
     league: 'college-football',
     kind: 'team',
     logo: NCAA_LOGO,
-    lockLogo: true
+    lockLogo: true,
+    seasonMonths: [8, 9, 10, 11, 12, 1]
   },
   nba: {
     id: 'nba',
@@ -37,7 +40,8 @@ const LEAGUES = {
     sport: 'basketball',
     league: 'nba',
     kind: 'team',
-    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png'
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png',
+    seasonMonths: [10, 11, 12, 1, 2, 3, 4, 5, 6]
   },
   ncaam: {
     id: 'ncaam',
@@ -46,7 +50,8 @@ const LEAGUES = {
     league: 'mens-college-basketball',
     kind: 'team',
     logo: NCAA_LOGO,
-    lockLogo: true
+    lockLogo: true,
+    seasonMonths: [11, 12, 1, 2, 3, 4]
   },
   ncaaw: {
     id: 'ncaaw',
@@ -55,7 +60,8 @@ const LEAGUES = {
     league: 'womens-college-basketball',
     kind: 'team',
     logo: NCAA_LOGO,
-    lockLogo: true
+    lockLogo: true,
+    seasonMonths: [11, 12, 1, 2, 3, 4]
   },
   mlb: {
     id: 'mlb',
@@ -63,7 +69,8 @@ const LEAGUES = {
     sport: 'baseball',
     league: 'mlb',
     kind: 'team',
-    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png'
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png',
+    seasonMonths: [3, 4, 5, 6, 7, 8, 9, 10]
   },
   llws: {
     id: 'llws',
@@ -71,7 +78,8 @@ const LEAGUES = {
     sport: 'baseball',
     league: 'llb',
     kind: 'team',
-    logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-baseball.png'
+    logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-baseball.png',
+    seasonMonths: [8]
   },
   cbase: {
     id: 'cbase',
@@ -80,7 +88,8 @@ const LEAGUES = {
     league: 'college-baseball',
     kind: 'team',
     logo: NCAA_LOGO,
-    lockLogo: true
+    lockLogo: true,
+    seasonMonths: [2, 3, 4, 5, 6]
   },
   csoft: {
     id: 'csoft',
@@ -89,7 +98,8 @@ const LEAGUES = {
     league: 'college-softball',
     kind: 'team',
     logo: NCAA_LOGO,
-    lockLogo: true
+    lockLogo: true,
+    seasonMonths: [2, 3, 4, 5, 6]
   },
   nhl: {
     id: 'nhl',
@@ -97,7 +107,8 @@ const LEAGUES = {
     sport: 'hockey',
     league: 'nhl',
     kind: 'team',
-    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png'
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png',
+    seasonMonths: [10, 11, 12, 1, 2, 3, 4, 5, 6]
   },
   wnba: {
     id: 'wnba',
@@ -105,7 +116,8 @@ const LEAGUES = {
     sport: 'basketball',
     league: 'wnba',
     kind: 'team',
-    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/wnba.png'
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/wnba.png',
+    seasonMonths: [5, 6, 7, 8, 9, 10]
   },
   mls: {
     id: 'mls',
@@ -113,7 +125,8 @@ const LEAGUES = {
     sport: 'soccer',
     league: 'usa.1',
     kind: 'team',
-    logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/19.png'
+    logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/19.png',
+    seasonMonths: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
   },
   golf: {
     id: 'golf',
@@ -123,7 +136,8 @@ const LEAGUES = {
     kind: 'golf',
     // Golf uses a dedicated leaderboard endpoint (not …/scoreboard).
     url: 'https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard',
-    logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-golf.png'
+    logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-golf.png',
+    seasonMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
   }
 };
 
@@ -142,8 +156,41 @@ const DEFAULT_LEAGUES = [
   'mls',
   'golf'
 ];
+
+/** Fantasy boards injected by the server (GridIron 24 + AAA). */
+const FANTASY_LEAGUE_IDS = new Set(['gi24', 'aaa']);
+
 /** Cap only as a safety valve — ESPN can return a full field. */
 const GOLF_LEADER_LIMIT = 24;
+
+function isLeagueMonthInSeason(meta, now = new Date()) {
+  const months = meta?.seasonMonths;
+  if (!Array.isArray(months) || !months.length) return true;
+  return months.includes(now.getMonth() + 1);
+}
+
+function boardHasActiveGames(board) {
+  return (board?.games || []).some((g) => {
+    const bucket = g?.status?.bucket;
+    return bucket === 'live' || bucket === 'upcoming';
+  });
+}
+
+/** Keep calendar-in-season leagues, plus any offseason board that still has live/upcoming games. */
+function filterInSeasonBoards(boards, now = new Date()) {
+  return (boards || []).filter((board) => {
+    if (board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)) return true;
+    const meta = LEAGUES[board.id];
+    if (!meta) return Boolean(board?.games?.length);
+    if (isLeagueMonthInSeason(meta, now)) return true;
+    return boardHasActiveGames(board);
+  }).map((board) => ({
+    ...board,
+    inSeason: board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)
+      ? true
+      : isLeagueMonthInSeason(LEAGUES[board.id], now)
+  }));
+}
 
 function sitePathForMeta(meta) {
   if (meta.url) {
@@ -231,22 +278,31 @@ function golfPositionSort(a, b) {
   return (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0);
 }
 
-/** ESPN often puts an ISO tee time in displayValue between rounds — never show that raw. */
+  /** ESPN often puts an ISO tee time in displayValue between rounds — never show that raw. */
 function golfThruLabel(status = {}) {
-  if (status.displayThru) return String(status.displayThru);
+  if (status.displayThru) return compactGolfTee(String(status.displayThru));
   const thruN = Number(status.thru);
   if (Number.isFinite(thruN) && thruN > 0) return thruN >= 18 ? 'F' : String(thruN);
 
   const dv = String(status.displayValue || '').trim();
   if (/^\d{4}-\d{2}-\d{2}T/.test(dv)) {
     const tee = String(status.detail || '').trim();
-    return tee || '—';
+    return tee ? compactGolfTee(tee) : '—';
   }
-  if (dv && dv !== '-') return dv;
+  if (dv && dv !== '-') return compactGolfTee(dv);
 
   const detail = String(status.detail || '').trim();
-  if (detail && !/^scheduled$/i.test(detail)) return detail;
+  if (detail && !/^scheduled$/i.test(detail)) return compactGolfTee(detail);
   return '—';
+}
+
+/** "8:42 AM" → "8:42a" so lounge tee columns don't clip. */
+function compactGolfTee(value) {
+  const s = String(value || '').trim();
+  if (!s) return s;
+  const m = s.match(/^(\d{1,2}:\d{2})\s*([AaPp])\.?[Mm]\.?$/);
+  if (m) return `${m[1]}${m[2].toLowerCase()}`;
+  return s;
 }
 
 function normalizeGolfEvent(event) {
@@ -373,20 +429,188 @@ function boardFromGames(meta, games, { source, provider, from = 'fallback' } = {
     from,
     source: source || from,
     provider: provider || null,
+    fantasy: Boolean(meta.fantasy),
     counts,
     games: list,
-    season: null,
-    week: null
+    season: meta.season || null,
+    week: meta.week || null
   };
 }
 
-async function getSportsScores({ leagues } = {}) {
+function fantasyTeamAbbr(name) {
+  const s = String(name || '').trim();
+  if (!s) return '?';
+  const parts = s.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    const a = parts[0].replace(/[^A-Za-z0-9]/g, '');
+    const b = parts[parts.length - 1].replace(/[^A-Za-z0-9]/g, '');
+    if (a && b) return `${a[0]}${b.slice(0, 3)}`.toUpperCase();
+  }
+  return s.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || '?';
+}
+
+function fantasySide(team, winnerCode, sideCode) {
+  if (!team) return null;
+  const score = Number(team.score);
+  const projected = Number(team.projected);
+  return {
+    id: team.id ?? null,
+    abbreviation: fantasyTeamAbbr(team.name),
+    name: team.name || `Team ${team.id || ''}`,
+    shortName: team.name || `Team ${team.id || ''}`,
+    logo: team.logo || null,
+    score: Number.isFinite(score) ? score : null,
+    projected: Number.isFinite(projected) ? projected : null,
+    record: team.record || null,
+    winner: winnerCode === sideCode
+  };
+}
+
+/** Spread = projected point difference; O/U = combined projected points. */
+function fantasyOddsFromProjected(awayProj, homeProj) {
+  const a = Number(awayProj);
+  const h = Number(homeProj);
+  if (!Number.isFinite(a) || !Number.isFinite(h)) return null;
+  const round1 = (n) => Math.round(Number(n) * 10) / 10;
+  const total = round1(a + h);
+  // Favorite (higher projection) gets the negative line.
+  const awaySpread = round1(h - a);
+  const homeSpread = round1(a - h);
+  return {
+    details: `Proj ${round1(a).toFixed(1)}–${round1(h).toFixed(1)}`,
+    provider: 'Projected',
+    source: 'fantasy-proj',
+    overUnder: total,
+    away: {
+      favorite: a > h,
+      spread: awaySpread,
+      moneyline: null
+    },
+    home: {
+      favorite: h > a,
+      spread: homeSpread,
+      moneyline: null
+    }
+  };
+}
+
+/**
+ * Map an ESPN fantasy matchup into the sports scoreboard game shape.
+ * @param {object} matchup normalizeSchedule matchup
+ * @param {{ leagueId: string, confLabel?: string, week?: number }} opts
+ */
+function fantasyMatchupToGame(matchup, opts = {}) {
+  const leagueId = opts.leagueId || 'gi24';
+  const winner = String(matchup?.winner || 'UNDECIDED').toUpperCase();
+  const decided = winner === 'HOME' || winner === 'AWAY';
+  const homeScore = Number(matchup?.home?.score || 0);
+  const awayScore = Number(matchup?.away?.score || 0);
+  const scoringStarted = homeScore > 0 || awayScore > 0;
+  let bucket = 'upcoming';
+  let shortDetail = opts.confLabel ? `${opts.confLabel} · Upcoming` : 'Upcoming';
+  let state = 'pre';
+  if (decided) {
+    bucket = 'final';
+    shortDetail = opts.confLabel ? `${opts.confLabel} · Final` : 'Final';
+    state = 'post';
+  } else if (scoringStarted) {
+    bucket = 'live';
+    shortDetail = opts.confLabel ? `${opts.confLabel} · Live` : 'Live';
+    state = 'in';
+  } else if (opts.confLabel) {
+    shortDetail = `${opts.confLabel} · Upcoming`;
+  }
+
+  const week = opts.week != null ? Number(opts.week) : Number(matchup?.matchupPeriodId) || null;
+  const awayName = matchup?.away?.name || 'Away';
+  const homeName = matchup?.home?.name || 'Home';
+  const away = fantasySide(matchup?.away, winner, 'AWAY');
+  const home = fantasySide(matchup?.home, winner, 'HOME');
+
+  return {
+    id: `ffl-${leagueId}-${matchup?.id ?? `${awayName}-${homeName}`}`,
+    league: leagueId,
+    kind: 'team',
+    fantasy: true,
+    name: `${awayName} at ${homeName}`,
+    shortName: `${fantasyTeamAbbr(awayName)} @ ${fantasyTeamAbbr(homeName)}`,
+    date: null,
+    week,
+    confLabel: opts.confLabel || null,
+    status: {
+      bucket,
+      state,
+      completed: decided,
+      name: decided ? 'STATUS_FINAL' : (scoringStarted ? 'STATUS_IN_PROGRESS' : 'STATUS_SCHEDULED'),
+      description: shortDetail,
+      detail: week != null ? `Week ${week}` : shortDetail,
+      shortDetail: week != null ? `Week ${week}` : shortDetail,
+      clock: null,
+      period: 0
+    },
+    venue: null,
+    broadcasts: [],
+    away,
+    home,
+    odds: fantasyOddsFromProjected(away?.projected, home?.projected),
+    leaders: null
+  };
+}
+
+/**
+ * Build a fantasy league board from schedule conference payloads.
+ * @param {{ id: string, label: string, logo?: string }} meta
+ * @param {Array<object>} conferences scheduleForConference results
+ */
+function boardFromFantasyConferences(meta, conferences = []) {
+  const games = [];
+  let week = null;
+  let season = null;
+  for (const conf of conferences) {
+    if (!conf?.ok) continue;
+    if (week == null && conf.week != null) week = Number(conf.week);
+    for (const m of conf.matchups || []) {
+      games.push(fantasyMatchupToGame(m, {
+        leagueId: meta.id,
+        confLabel: conf.shortName || conf.name || null,
+        week: conf.week
+      }));
+    }
+  }
+  return boardFromGames(
+    {
+      id: meta.id,
+      label: meta.label,
+      kind: 'team',
+      logo: meta.logo || null,
+      fantasy: true,
+      week: week != null ? { number: week, text: `Week ${week}` } : null,
+      season
+    },
+    games,
+    { source: 'espn-fantasy', from: 'fantasy' }
+  );
+}
+
+async function getSportsScores({ leagues, extraBoards = [] } = {}) {
   const ids = parseLeagueList(leagues);
   const fetchedAt = new Date().toISOString();
   let usedFallback = false;
   const boards = await Promise.all(
     ids.map(async (id) => {
       const meta = LEAGUES[id];
+      if (!meta) {
+        return {
+          ok: false,
+          id,
+          label: String(id).toUpperCase(),
+          kind: 'team',
+          logo: null,
+          error: 'Unknown league',
+          counts: { live: 0, final: 0, upcoming: 0 },
+          games: []
+        };
+      }
       try {
         const { raw, from } = await fetchLeagueRaw(meta);
         const games = (raw.events || []).map((ev) =>
@@ -452,11 +676,26 @@ async function getSportsScores({ leagues } = {}) {
     })
   );
 
-  const enriched = await oddsEnrich.enrichBoards(boards);
+  const fantasyBoards = (Array.isArray(extraBoards) ? extraBoards : [])
+    .filter((b) => b && b.id);
+  const merged = [...fantasyBoards, ...boards];
+  const enriched = await oddsEnrich.enrichBoards(merged);
+  // Keep projected fantasy lines; don't let odds enrichers wipe them.
+  for (const board of enriched) {
+    if (!board?.fantasy && !FANTASY_LEAGUE_IDS.has(board?.id)) continue;
+    board.fantasy = true;
+    for (const g of board.games || []) {
+      g.fantasy = true;
+      if (!g.odds) {
+        g.odds = fantasyOddsFromProjected(g.away?.projected, g.home?.projected);
+      }
+    }
+  }
+  const visible = filterInSeasonBoards(enriched);
 
   const totals = { live: 0, final: 0, upcoming: 0, games: 0 };
   let oddsFilled = 0;
-  for (const b of enriched) {
+  for (const b of visible) {
     totals.live += b.counts?.live || 0;
     totals.final += b.counts?.final || 0;
     totals.upcoming += b.counts?.upcoming || 0;
@@ -475,12 +714,16 @@ async function getSportsScores({ leagues } = {}) {
     fetchedAt,
     cacheMs: CACHE_MS,
     totals,
-    leagues: enriched
+    leagues: visible
   };
 }
 
 module.exports = {
   LEAGUES,
   DEFAULT_LEAGUES,
-  getSportsScores
+  FANTASY_LEAGUE_IDS,
+  getSportsScores,
+  boardFromFantasyConferences,
+  fantasyMatchupToGame,
+  fantasyOddsFromProjected
 };

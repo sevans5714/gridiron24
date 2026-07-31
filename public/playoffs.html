@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=120" />
+  <link rel="stylesheet" href="/css/site.css?v=122" />
   <style>
     .tree {
       display: flex;
@@ -77,10 +77,10 @@
 
     .rounds {
       display: grid;
-      grid-template-columns: 1.1fr 1fr 0.9fr;
+      grid-template-columns: 1.15fr 1fr 0.95fr;
       gap: 0;
-      padding: 1.1rem 0.55rem 1.15rem;
-      min-height: 28rem;
+      padding: 1.35rem 0.55rem 1.2rem;
+      min-height: 30rem;
     }
 
     /* Mirror Overtime so it feeds the Bowl from the right */
@@ -95,7 +95,7 @@
       display: flex;
       flex-direction: column;
       justify-content: space-around;
-      gap: 0.75rem;
+      gap: 0.65rem;
       padding: 0 0.4rem;
       position: relative;
     }
@@ -110,14 +110,14 @@
 
     .round-label {
       position: absolute;
-      top: -0.15rem;
+      top: -0.2rem;
       left: 0.35rem;
       right: 0.35rem;
       text-align: center;
       font-family: var(--body);
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--muted);
       line-height: 1.25;
@@ -125,44 +125,84 @@
 
     .slot {
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, var(--panel-2), var(--panel));
-      padding: 0.65rem 0.7rem;
+      background:
+        linear-gradient(165deg, rgba(255,255,255,0.05), transparent 42%),
+        linear-gradient(180deg, var(--panel-2), var(--panel));
+      padding: 0.45rem 0.5rem;
       position: relative;
-      transition: border-color 0.2s ease, transform 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .slot:hover {
       border-color: var(--chip-border-active);
-      transform: translateX(2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
     }
-    .conf-tree.overtime .slot:hover { transform: translateX(-2px); }
+    .slot.is-live {
+      border-color: rgba(61, 220, 132, 0.4);
+      box-shadow: 0 0 0 1px rgba(61, 220, 132, 0.12), 0 0 22px rgba(61, 220, 132, 0.1);
+    }
+    .slot.is-final {
+      border-color: rgba(255, 255, 255, 0.16);
+    }
 
     .slot.bye {
       border-style: dashed;
-      opacity: 0.78;
-      background: transparent;
+      opacity: 0.88;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.02), transparent 60%),
+        transparent;
     }
 
-    .slot.title-slot {
+    .slot.title-slot,
+    .slot.third-slot {
       border: 0;
       background: transparent;
-      padding: 0.35rem 0.25rem;
+      padding: 0.25rem 0.15rem;
       text-align: center;
       box-shadow: none;
     }
-    .conf-tree.detail .slot.title-slot,
-    .conf-tree.overtime .slot.title-slot {
-      border-color: transparent;
+    .slot.title-slot:hover,
+    .slot.third-slot:hover {
       box-shadow: none;
+      border-color: transparent;
     }
-    .slot.title-slot img {
-      width: min(100%, 9.5rem);
+
+    .trophy-mark {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 0.55rem;
+      padding: 0.55rem 0.35rem 0.35rem;
+      width: 100%;
+      max-width: 11rem;
+      border-radius: 0.35rem;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(255,255,255,0.08), transparent 70%),
+        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(0,0,0,0.45), transparent 55%);
+    }
+    .slot.third-slot .trophy-mark {
+      max-width: 9.5rem;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(239,215,130,0.14), transparent 70%),
+        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(0,0,0,0.4), transparent 55%);
+    }
+    .conf-tree.detail .slot.title-slot .trophy-mark {
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(255,122,24,0.18), transparent 70%),
+        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(0,0,0,0.4), transparent 55%);
+    }
+    .conf-tree.overtime .slot.title-slot .trophy-mark {
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(226,35,42,0.18), transparent 70%),
+        radial-gradient(ellipse 90% 80% at 50% 100%, rgba(0,0,0,0.4), transparent 55%);
+    }
+    .trophy-mark img {
+      width: 100%;
       height: auto;
       display: block;
-      margin: 0 auto;
-      filter: none;
-
-      box-shadow: var(--logo-lift);
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
     }
+
     .slot.title-slot .sr-only,
     .slot.third-slot .sr-only {
       position: absolute;
@@ -175,46 +215,9 @@
       border: 0;
     }
 
-    .slot.third-slot {
-      border: 0;
-      background: transparent;
-      padding: 0.35rem 0.25rem;
-      text-align: center;
-      box-shadow: none;
-    }
-    .slot.third-slot img {
-      width: min(100%, 8.55rem);
-      height: auto;
-      display: block;
-      margin: 0 auto;
-      filter: none;
-
-      box-shadow: var(--logo-lift);
-    }
-
     .round-col.finale-col {
       justify-content: center;
-      gap: 1rem;
-    }
-
-    .slot .seed {
-      font-family: var(--display);
-      font-size: 0.9rem;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-      color: var(--text);
-      line-height: 1.25;
-    }
-
-    .slot .sub {
-      margin-top: 0.2rem;
-      color: var(--muted);
-      font-family: var(--body);
-      font-size: 0.72rem;
-      font-weight: 500;
-      letter-spacing: 0;
-      line-height: 1.3;
-      text-transform: none;
+      gap: 1.1rem;
     }
 
     .slot.winner-line::after {
@@ -231,228 +234,340 @@
       left: -0.55rem;
     }
 
+    /* Matchup rows inside bracket slots */
+    .mu {
+      display: grid;
+      gap: 0.2rem;
+    }
+    .mu-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+      margin-bottom: 0.15rem;
+      padding: 0 0.1rem;
+    }
+    .mu-label {
+      font-family: var(--body);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+    .mu-status {
+      font-family: var(--body);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1;
+    }
+    .mu-status.is-live {
+      color: #3ddc84;
+      text-shadow: 0 0 10px rgba(61, 220, 132, 0.35);
+    }
+    .mu-status.is-final { color: var(--text); opacity: 0.72; }
+
+    .mu-row {
+      display: grid;
+      grid-template-columns: 1.35rem 1.7rem minmax(0, 1fr) auto;
+      gap: 0.4rem;
+      align-items: center;
+      min-height: 2.05rem;
+      padding: 0.28rem 0.35rem;
+      border-radius: 0.2rem;
+      background: rgba(0, 0, 0, 0.18);
+    }
+    .mu-row.is-winner {
+      background: linear-gradient(90deg, rgba(61, 220, 132, 0.16), rgba(61, 220, 132, 0.04));
+      box-shadow: inset 2px 0 0 #3ddc84;
+    }
+    .mu-row.is-loser {
+      opacity: 0.48;
+    }
+    .mu-row.is-bye {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .mu-seed {
+      font-family: var(--display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1;
+    }
+    .mu-row.is-winner .mu-seed { color: var(--text); }
+
+    .mu-logo {
+      width: 1.7rem;
+      height: 1.7rem;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+    }
+
+    .mu-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--body);
+      font-size: 0.78rem;
+      font-weight: 650;
+      line-height: 1.2;
+      color: var(--text);
+    }
+
+    .mu-score {
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      line-height: 1;
+      min-width: 2.4rem;
+      text-align: right;
+    }
+    .mu-score.is-empty { color: var(--muted); font-size: 0.8rem; }
+
+    .mu-await {
+      padding: 0.55rem 0.4rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1.35;
+    }
+    .mu-await strong {
+      display: block;
+      margin-bottom: 0.15rem;
+      font-family: var(--display);
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
     .mid {
       display: flex;
       flex-direction: column;
       justify-content: center;
       width: 100%;
-      max-width: 48rem;
-      margin: 0 auto;
+      max-width: 52rem;
+      margin: 0.35rem auto 0;
+      gap: 1rem;
     }
 
     .bowl {
       position: relative;
-      border: 1px solid rgba(47, 109, 255, 0.45);
+      border: 1px solid rgba(47, 109, 255, 0.42);
       background:
-        radial-gradient(ellipse at 50% 40%, rgba(47,109,255,0.22), transparent 65%),
-        linear-gradient(180deg, var(--panel-2), var(--panel));
+        radial-gradient(ellipse 80% 55% at 50% 18%, rgba(47,109,255,0.28), transparent 58%),
+        radial-gradient(ellipse 60% 40% at 50% 100%, rgba(8, 20, 48, 0.55), transparent 60%),
+        linear-gradient(180deg, #0c1424 0%, var(--panel) 70%);
       text-align: center;
-      padding: 1.35rem 1.35rem 1.5rem;
+      padding: 1.25rem 1.15rem 1.35rem;
       min-height: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      overflow: visible;
+      overflow: hidden;
       animation: bowl-glow 3.5s ease-in-out infinite;
     }
 
     @keyframes bowl-glow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(47,109,255,0.15), inset 0 0 40px rgba(47,109,255,0.08); }
-      50% { box-shadow: 0 0 28px 0 rgba(47,109,255,0.28), inset 0 0 50px rgba(47,109,255,0.14); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(47,109,255,0.12), inset 0 0 40px rgba(47,109,255,0.08); }
+      50% { box-shadow: 0 0 32px 0 rgba(47,109,255,0.26), inset 0 0 55px rgba(47,109,255,0.14); }
     }
 
     .bowl .eyebrow {
       font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.08em;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.55rem;
+      color: #8eb6ff;
+      margin-bottom: 0.35rem;
     }
 
-    .bowl > img {
-      width: min(100%, 18rem);
+    .bowl-mark {
+      position: relative;
+      width: min(100%, 22rem);
+      margin: 0 auto;
+      padding: 0.4rem 0.5rem 0.15rem;
+      background:
+        radial-gradient(ellipse 55% 45% at 50% 48%, rgba(70, 130, 255, 0.35), transparent 68%),
+        radial-gradient(ellipse 90% 70% at 50% 100%, rgba(0, 0, 0, 0.5), transparent 55%);
+    }
+    .bowl-mark img {
+      width: 100%;
       height: auto;
+      max-height: 13.5rem;
+      object-fit: contain;
       display: block;
-      background: transparent;
-      filter: drop-shadow(0 10px 28px rgba(20, 80, 200, 0.35));
+      margin: 0 auto;
+      filter: drop-shadow(0 14px 32px rgba(20, 80, 200, 0.4));
     }
 
     .bowl-scoreboard {
       width: 100%;
-      margin-top: 1.15rem;
+      margin-top: 0.85rem;
+      padding: 0.85rem 0.65rem 0.75rem;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      gap: 1rem 1.5rem;
+      gap: 0.85rem 1.1rem;
       align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 70%);
     }
     .bowl-side {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.55rem;
+      gap: 0.4rem;
       min-width: 0;
-      padding: 0.25rem;
+      padding: 0.45rem 0.35rem;
+      border-radius: 0.25rem;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .bowl-side.is-lead {
+      background: rgba(47, 109, 255, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(47, 109, 255, 0.28);
+    }
+    .bowl-side .conf-chip {
+      font-family: var(--body);
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      line-height: 1;
+      padding: 0.22rem 0.45rem;
+      border: 1px solid transparent;
+    }
+    .bowl-side.detail .conf-chip {
+      color: var(--detail);
+      border-color: rgba(255, 122, 24, 0.35);
+      background: rgba(255, 122, 24, 0.1);
+    }
+    .bowl-side.overtime .conf-chip {
+      color: var(--overtime);
+      border-color: rgba(226, 35, 42, 0.35);
+      background: rgba(226, 35, 42, 0.1);
     }
     .bowl-side img,
     .bowl-side img.bowl-logo {
-      width: 5.25rem;
-      height: 5.25rem;
+      width: 4.75rem;
+      height: 4.75rem;
       object-fit: contain;
       flex: 0 0 auto;
-      filter: none;
-
-      box-shadow: var(--logo-lift);
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4));
     }
     .bowl-side .nm {
       font-family: var(--display);
-      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
-      font-weight: 600;
-      letter-spacing: 0.03em;
+      font-size: clamp(0.95rem, 1.7vw, 1.2rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      line-height: 1.25;
+      line-height: 1.2;
       color: var(--text);
       max-width: 100%;
       word-break: break-word;
       overflow-wrap: anywhere;
       display: block;
-      overflow: visible;
     }
     .bowl-side.detail .nm { color: var(--detail); }
     .bowl-side.overtime .nm { color: var(--overtime); }
     .bowl-side.is-lead .nm {
-      text-shadow: 0 0 12px rgba(47, 109, 255, 0.45);
+      text-shadow: 0 0 14px rgba(47, 109, 255, 0.4);
+    }
+    .bowl-side .pts {
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      line-height: 1;
+      min-height: 1.1em;
+    }
+    .bowl-side .pts:empty::before {
+      content: "—";
+      color: var(--muted);
+      font-size: 0.85em;
     }
     .bowl-mid {
       text-align: center;
       font-family: var(--display);
-      min-width: 5.5rem;
-      padding: 0 0.25rem;
+      min-width: 4.25rem;
+      padding: 0 0.15rem;
     }
     .bowl-mid .vs {
-      font-size: clamp(1.4rem, 2.4vw, 1.85rem);
+      font-size: clamp(1.15rem, 2vw, 1.45rem);
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: var(--text);
+      color: #8eb6ff;
       line-height: 1;
     }
     .bowl-mid .bowl-score {
-      margin-top: 0.45rem;
-      font-family: var(--display);
-      font-size: clamp(1.1rem, 2vw, 1.45rem);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: var(--text);
+      display: none;
     }
     .bowl.survival {
-      margin-top: 1rem;
-      border-color: rgba(80, 160, 255, 0.4);
+      border-color: rgba(120, 180, 255, 0.38);
       background:
-        radial-gradient(ellipse 70% 55% at 50% 42%, rgba(40, 120, 255, 0.28), transparent 62%),
-        radial-gradient(ellipse 110% 90% at 50% 100%, rgba(8, 24, 56, 0.55), transparent 55%),
-        linear-gradient(180deg, #0a1220 0%, var(--panel) 72%);
+        radial-gradient(ellipse 70% 50% at 50% 18%, rgba(60, 140, 255, 0.3), transparent 58%),
+        radial-gradient(ellipse 90% 55% at 50% 100%, rgba(8, 24, 56, 0.6), transparent 55%),
+        linear-gradient(180deg, #081018 0%, var(--panel) 72%);
       animation: survival-glow 3.5s ease-in-out infinite;
     }
     @keyframes survival-glow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(80, 160, 255, 0.12), inset 0 0 48px rgba(30, 90, 200, 0.08); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(80, 160, 255, 0.1), inset 0 0 48px rgba(30, 90, 200, 0.08); }
       50% { box-shadow: 0 0 28px 0 rgba(80, 160, 255, 0.22), inset 0 0 60px rgba(40, 120, 255, 0.14); }
     }
-    .bowl.survival > img {
-      width: min(100%, 18rem);
-      height: auto;
-      display: block;
-      background: transparent;
-      filter: drop-shadow(0 10px 28px rgba(20, 80, 200, 0.35));
+    .bowl.survival .eyebrow { color: #9ec4ff; }
+    .bowl.survival .bowl-mid .vs { color: #9ec4ff; }
+    .bowl.survival .bowl-side.is-lead {
+      background: rgba(80, 160, 255, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(80, 160, 255, 0.28);
     }
 
-    .third-place {
-      border: 1px solid rgba(239, 215, 130, 0.35);
+    html[data-theme="day"] .slot {
       background:
-        radial-gradient(ellipse at 50% 30%, rgba(239,215,130,0.12), transparent 70%),
-        linear-gradient(180deg, #14110a, #0a0906);
-      text-align: center;
-      padding: 0.95rem 0.75rem 1.05rem;
+        linear-gradient(165deg, rgba(255,255,255,0.65), transparent 42%),
+        linear-gradient(180deg, var(--panel-2), var(--panel));
     }
-    .third-place .eyebrow {
-      font-family: var(--body);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.45rem;
+    html[data-theme="day"] .mu-row {
+      background: rgba(20, 28, 40, 0.05);
     }
-    .third-place h3 {
-      margin: 0 0 0.55rem;
-      font-family: var(--display);
-      font-size: 1rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #efd782;
+    html[data-theme="day"] .mu-row.is-winner {
+      background: linear-gradient(90deg, rgba(22, 163, 74, 0.14), rgba(22, 163, 74, 0.03));
+      box-shadow: inset 2px 0 0 #16a34a;
     }
-    .third-place .vs {
-      font-family: var(--display);
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      line-height: 1.4;
-    }
-    .third-place .vs .d { color: var(--detail); }
-    .third-place .vs .o { color: var(--overtime); }
-    .third-place .vs .mid-vs {
-      display: block;
-      margin: 0.15rem 0;
-      color: var(--muted);
-      font-family: var(--body);
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .third-place .prize {
-      margin-top: 0.55rem;
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-weight: 500;
-      line-height: 1.35;
-    }
-    .third-place .prize strong { color: #efd782; font-weight: 700; }
-
-    .notes {
-      margin-top: 1.25rem;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.85rem;
-    }
-
-    .note {
-      border: 1px solid var(--line);
+    html[data-theme="day"] .mu-status.is-live { color: #15803d; text-shadow: none; }
+    html[data-theme="day"] .bowl,
+    html[data-theme="day"] .bowl.survival {
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 40%),
-        var(--panel);
-      padding: 1.1rem 1.15rem;
+        radial-gradient(ellipse 80% 55% at 50% 18%, rgba(47,109,255,0.14), transparent 58%),
+        linear-gradient(180deg, #eef3fb 0%, var(--panel) 70%);
     }
-
-    .note h3 {
-      margin: 0 0 0.45rem;
-      font-family: var(--display);
-      font-size: 0.95rem;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
+    html[data-theme="day"] .bowl .eyebrow,
+    html[data-theme="day"] .bowl.survival .eyebrow,
+    html[data-theme="day"] .bowl-mid .vs { color: #2f6dff; }
+    html[data-theme="day"] .bowl-scoreboard {
+      border-top-color: rgba(20, 28, 40, 0.1);
     }
-
-    .note p {
-      margin: 0;
-      color: var(--muted);
-      font-size: var(--fs-sm);
-      font-weight: 400;
-      line-height: 1.55;
+    html[data-theme="day"] .trophy-mark,
+    html[data-theme="day"] .bowl-mark {
+      background:
+        radial-gradient(ellipse 55% 45% at 50% 48%, rgba(47, 109, 255, 0.12), transparent 68%),
+        radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 28, 40, 0.08), transparent 55%);
     }
 
     @media (max-width: 1100px) {
@@ -471,19 +586,30 @@
       }
       .round-col:first-child { border-top: 0; }
       .slot.winner-line::after { display: none; }
-      .slot:hover, .conf-tree.overtime .slot:hover { transform: none; }
       .trees-row { grid-template-columns: 1fr; }
       .bowl-scoreboard {
         grid-template-columns: 1fr;
-        gap: 0.85rem;
+        gap: 0.65rem;
       }
-      .bowl-mid { order: 0; }
+      .bowl-mid { order: 0; padding: 0.15rem 0; }
       .bowl-side.detail { order: -1; }
       .bowl-side.overtime { order: 1; }
-    }
-
-    @media (max-width: 900px) {
-      .notes { grid-template-columns: 1fr; }
+      .bowl-side {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+          "chip chip chip"
+          "logo name pts";
+        align-items: center;
+        justify-items: start;
+        text-align: left;
+        gap: 0.25rem 0.75rem;
+        width: 100%;
+      }
+      .bowl-side .conf-chip { grid-area: chip; justify-self: start; }
+      .bowl-side img.bowl-logo { grid-area: logo; width: 3.5rem; height: 3.5rem; }
+      .bowl-side .nm { grid-area: name; text-align: left; }
+      .bowl-side .pts { grid-area: pts; justify-self: end; }
     }
   </style>
 </head>
@@ -509,7 +635,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=77"></script>
+  <script src="/js/nav.js?v=84"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -526,17 +652,97 @@
       return s.provisional ? `${s.name}` : s.name;
     }
 
+    function statusLabel(status) {
+      if (status === 'final') return 'Final';
+      if (status === 'live') return 'Live';
+      return 'Upcoming';
+    }
+
+    function teamRow(side, opts = {}) {
+      const winner = opts.winner;
+      const decided = winner === 'HOME' || winner === 'AWAY';
+      const isAway = opts.role === 'away';
+      const isWinner = decided && ((isAway && winner === 'AWAY') || (!isAway && winner === 'HOME'));
+      const isLoser = decided && !isWinner;
+      const seed = side?.seed || opts.seed || null;
+      const score = side?.score;
+      const hasScore = score != null && !(Number(score) === 0 && opts.status === 'upcoming');
+      const cls = [
+        'mu-row',
+        opts.bye ? 'is-bye' : '',
+        isWinner ? 'is-winner' : '',
+        isLoser ? 'is-loser' : ''
+      ].filter(Boolean).join(' ');
+      return `
+        <div class="${cls}">
+          <span class="mu-seed">${seed ? `#${esc(seed)}` : '·'}</span>
+          <img class="mu-logo" src="${esc(side?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
+          <span class="mu-name">${esc(side?.name || opts.fallbackName || 'TBD')}</span>
+          <span class="mu-score${hasScore ? '' : ' is-empty'}">${hasScore ? fmt(score) : '—'}</span>
+        </div>`;
+    }
+
     function gameSlot(game, fallback) {
       if (!game?.home && !game?.away) {
-        return `<div class="slot winner-line"><div class="seed">${esc(fallback)}</div><div class="sub">Awaiting matchup</div></div>`;
+        return `
+          <div class="slot winner-line">
+            <div class="mu">
+              <div class="mu-await"><strong>${esc(fallback)}</strong>Awaiting matchup</div>
+            </div>
+          </div>`;
       }
-      const status = game.status === 'final' ? 'Final' : game.status === 'live' ? 'Live' : 'Upcoming';
-      const line = `${esc(game.away?.name || 'TBD')} ${fmt(game.away?.score)} – ${fmt(game.home?.score)} ${esc(game.home?.name || 'TBD')}`;
-      return `<div class="slot winner-line"><div class="seed">${line}</div><div class="sub">${status}</div></div>`;
+      const status = game.status || 'upcoming';
+      const slotCls = [
+        'slot',
+        'winner-line',
+        status === 'live' ? 'is-live' : '',
+        status === 'final' ? 'is-final' : ''
+      ].filter(Boolean).join(' ');
+      return `
+        <div class="${slotCls}">
+          <div class="mu">
+            <div class="mu-head">
+              <span class="mu-label">${esc(game.label || fallback)}</span>
+              <span class="mu-status ${status === 'live' ? 'is-live' : status === 'final' ? 'is-final' : ''}">${esc(statusLabel(status))}</span>
+            </div>
+            ${teamRow(game.away, { role: 'away', winner: game.winner, status })}
+            ${teamRow(game.home, { role: 'home', winner: game.winner, status })}
+          </div>
+        </div>`;
     }
 
     function byeSlot(seed) {
-      return `<div class="slot bye"><div class="seed">${esc(seedName(seed))}</div><div class="sub">#${esc(seed?.seed || '—')} Bye</div></div>`;
+      return `
+        <div class="slot bye">
+          <div class="mu">
+            <div class="mu-head">
+              <span class="mu-label">Bye</span>
+              <span class="mu-status">Week 14</span>
+            </div>
+            ${teamRow(seed, { bye: true, seed: seed?.seed, fallbackName: seedName(seed), status: 'upcoming' })}
+          </div>
+        </div>`;
+    }
+
+    function trophyGame(game, imgSrc, alt, slotClass) {
+      const hasTeams = Boolean(game?.home || game?.away);
+      const status = game?.status || 'upcoming';
+      return `
+        <div class="slot ${slotClass}">
+          <div class="trophy-mark">
+            <img src="${esc(imgSrc)}" alt="${esc(alt)}" />
+          </div>
+          <span class="sr-only">${esc(alt)}</span>
+          ${hasTeams ? `
+            <div class="mu">
+              <div class="mu-head">
+                <span class="mu-label">${esc(game.label || alt)}</span>
+                <span class="mu-status ${status === 'live' ? 'is-live' : status === 'final' ? 'is-final' : ''}">${esc(statusLabel(status))}</span>
+              </div>
+              ${teamRow(game.away, { role: 'away', winner: game.winner, status })}
+              ${teamRow(game.home, { role: 'home', winner: game.winner, status })}
+            </div>` : ''}
+        </div>`;
     }
 
     function confTree(conf) {
@@ -568,14 +774,8 @@
             </div>
             <div class="round-col finale-col">
               <div class="round-label">Week 16 · Title + 3rd</div>
-              <div class="slot title-slot">
-                <img src="${titleImg}" alt="${esc(conf.shortName)} Championship" />
-                ${finals.title?.home ? `<div class="sub" style="margin-top:0.45rem;color:#ddd;">${esc(finals.title.away?.name||'')} ${fmt(finals.title.away?.score)} – ${fmt(finals.title.home?.score)} ${esc(finals.title.home?.name||'')}</div>` : ''}
-              </div>
-              <div class="slot third-slot">
-                <img src="${thirdImg}" alt="${esc(conf.shortName)} 3rd Place" />
-                ${finals.third?.home ? `<div class="sub" style="margin-top:0.45rem;color:#ddd;">${esc(finals.third.away?.name||'')} ${fmt(finals.third.away?.score)} – ${fmt(finals.third.home?.score)} ${esc(finals.third.home?.name||'')}</div>` : ''}
-              </div>
+              ${trophyGame(finals.title, titleImg, `${conf.shortName || conf.name} Championship`, 'title-slot')}
+              ${trophyGame(finals.third, thirdImg, `${conf.shortName || conf.name} 3rd Place`, 'third-slot')}
             </div>
           </div>
         </section>`;
@@ -585,34 +785,50 @@
       return `
         <div class="mid">
           <div class="bowl" id="bowl-card">
-            <div class="eyebrow">Week 17</div>
-            <img src="/assets/gridiron-bowl.png?v=3" alt="GridIron Bowl I" />
+            <div class="eyebrow">Week 17 · Championship</div>
+            <div class="bowl-mark">
+              <img src="/assets/gridiron-bowl.png?v=3" alt="GridIron Bowl I" width="1024" height="682" />
+            </div>
             <div class="bowl-scoreboard" id="bowl-scoreboard">
               <div class="bowl-side detail">
+                <span class="conf-chip">Detail</span>
+                <img class="bowl-logo" id="bowl-detail-logo" src="/assets/team-logo-placeholder.svg" alt="" />
                 <div class="nm" id="bowl-detail-name">Detail Champion</div>
+                <div class="pts" id="bowl-detail-pts"></div>
               </div>
               <div class="bowl-mid">
                 <div class="vs" id="bowl-vs">VS</div>
                 <div class="bowl-score" id="bowl-scoreline"></div>
               </div>
               <div class="bowl-side overtime">
+                <span class="conf-chip">Overtime</span>
+                <img class="bowl-logo" id="bowl-overtime-logo" src="/assets/team-logo-placeholder.svg" alt="" />
                 <div class="nm" id="bowl-overtime-name">Overtime Champion</div>
+                <div class="pts" id="bowl-overtime-pts"></div>
               </div>
             </div>
           </div>
           <div class="bowl survival" id="survival-card">
-            <div class="eyebrow" id="survival-week">Week 17</div>
-            <img src="/assets/mayors-cup.png?v=4" alt="Mayor's Cup" width="1024" height="768" />
+            <div class="eyebrow" id="survival-week">Week 17 · Mayor's Cup</div>
+            <div class="bowl-mark">
+              <img src="/assets/mayors-cup.png?v=4" alt="Mayor's Cup" width="1024" height="768" />
+            </div>
             <div class="bowl-scoreboard" id="survival-scoreboard">
               <div class="bowl-side detail">
+                <span class="conf-chip">Detail</span>
+                <img class="bowl-logo" id="survival-detail-logo" src="/assets/team-logo-placeholder.svg" alt="" />
                 <div class="nm" id="survival-detail-name">Detail Last Place</div>
+                <div class="pts" id="survival-detail-pts"></div>
               </div>
               <div class="bowl-mid">
                 <div class="vs" id="survival-vs">VS</div>
                 <div class="bowl-score" id="survival-scoreline"></div>
               </div>
               <div class="bowl-side overtime">
+                <span class="conf-chip">Overtime</span>
+                <img class="bowl-logo" id="survival-overtime-logo" src="/assets/team-logo-placeholder.svg" alt="" />
                 <div class="nm" id="survival-overtime-name">Overtime Last Place</div>
+                <div class="pts" id="survival-overtime-pts"></div>
               </div>
             </div>
           </div>
@@ -626,14 +842,10 @@
       wrap.classList.toggle('is-lead', Boolean(isLead));
       nameEl.textContent = side?.champion?.name
         || (prefix === 'detail' ? 'Detail Champion' : 'Overtime Champion');
-      let img = wrap.querySelector('img.bowl-logo');
-      if (!img) {
-        img = document.createElement('img');
-        img.className = 'bowl-logo';
-        img.alt = '';
-        wrap.insertBefore(img, nameEl);
-      }
-      img.src = side?.champion?.logo || PLACEHOLDER;
+      const img = document.getElementById(`bowl-${prefix}-logo`) || wrap.querySelector('img.bowl-logo');
+      if (img) img.src = side?.champion?.logo || PLACEHOLDER;
+      const pts = document.getElementById(`bowl-${prefix}-pts`);
+      if (pts) pts.textContent = side?.score != null ? fmt(side.score) : '';
     }
 
     function fillSurvivalSide(prefix, side, isLead) {
@@ -643,26 +855,16 @@
       wrap.classList.toggle('is-lead', Boolean(isLead));
       nameEl.textContent = side?.team?.name
         || (prefix === 'detail' ? 'Detail Last Place' : 'Overtime Last Place');
-      let img = wrap.querySelector('img.bowl-logo');
-      if (!img) {
-        img = document.createElement('img');
-        img.className = 'bowl-logo';
-        img.alt = '';
-        wrap.insertBefore(img, nameEl);
-      }
-      img.src = side?.team?.logo || PLACEHOLDER;
+      const img = document.getElementById(`survival-${prefix}-logo`) || wrap.querySelector('img.bowl-logo');
+      if (img) img.src = side?.team?.logo || PLACEHOLDER;
+      const pts = document.getElementById(`survival-${prefix}-pts`);
+      if (pts) pts.textContent = side?.score != null ? fmt(side.score) : '';
     }
 
     function applyBowl(data) {
       if (!data) return;
       fillChampSide('detail', data.detail, data.leader === 'detail' || data.leader === 'tie');
       fillChampSide('overtime', data.overtime, data.leader === 'overtime' || data.leader === 'tie');
-      const scoreEl = document.getElementById('bowl-scoreline');
-      if (scoreEl) {
-        const d = data.detail?.score;
-        const o = data.overtime?.score;
-        scoreEl.textContent = (d != null && o != null) ? `${fmt(d)} – ${fmt(o)}` : '';
-      }
     }
 
     function applySurvival(data) {
@@ -672,18 +874,12 @@
         return;
       }
       if (card) card.hidden = false;
-      const logo = card.querySelector('img');
+      const logo = card.querySelector('.bowl-mark img');
       if (logo && data.name) logo.alt = data.name;
       const week = document.getElementById('survival-week');
-      if (week) week.textContent = `Week ${data.week || 17}`;
+      if (week) week.textContent = `Week ${data.week || 17} · ${data.name || "Mayor's Cup"}`;
       fillSurvivalSide('detail', data.detail, data.leader === 'detail' || data.leader === 'tie');
       fillSurvivalSide('overtime', data.overtime, data.leader === 'overtime' || data.leader === 'tie');
-      const scoreEl = document.getElementById('survival-scoreline');
-      if (scoreEl) {
-        const d = data.detail?.score;
-        const o = data.overtime?.score;
-        scoreEl.textContent = (d != null && o != null) ? `${fmt(d)} – ${fmt(o)}` : '';
-      }
     }
 
     async function loadPlayoffs() {

@@ -89,7 +89,7 @@ function addMessage({ body, author, kind = 'chat', meta = null, skipRateLimit = 
     authorName: author.name || author.loginName || 'Member',
     authorLeague: author.membershipLeague || null,
     createdAt: new Date().toISOString(),
-    kind: kind === 'bet' ? 'bet' : 'chat',
+    kind: kind === 'bet' || kind === 'mock' ? kind : 'chat',
     meta: meta && typeof meta === 'object' ? meta : null
   };
   store.messages.push(item);

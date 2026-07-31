@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=120" />
+  <link rel="stylesheet" href="/css/site.css?v=122" />
 </head>
 <body class="auth-page">
   <form class="auth-card wide" id="login-form" autocomplete="on">
@@ -92,6 +92,12 @@
       || navigator.standalone === true;
 
     function resolveHomePath(data) {
+      if (data?.user?.loungeOnly) {
+        return data.homePath || '/restricted.html?area=lounge';
+      }
+      if (data?.homePath === '/members.html') {
+        return data.loungeAccess === false ? '/restricted.html?area=lounge' : '/members.html';
+      }
       if (nextParam && !isDefaultHomeNext(nextParam)) return nextParam;
       return data?.homePath || '/home.html';
     }
@@ -253,6 +259,13 @@
     }
 
     function postLoginUrl(data) {
+      // Social / lounge-gated accounts follow server homePath (may be restricted while closed).
+      if (data?.user?.loungeOnly) {
+        return data.homePath || '/restricted.html?area=lounge';
+      }
+      if (data?.homePath === '/members.html') {
+        return data.loungeAccess === false ? '/restricted.html?area=lounge' : '/members.html';
+      }
       const pending = localStorage.getItem(INSTALL_PENDING_KEY) === '1' || installIntent;
       if (pending) {
         markPending();

@@ -9,14 +9,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=120" />
+  <link rel="stylesheet" href="/css/site.css?v=122" />
 </head>
 <body class="auth-page">
   <form class="auth-card" id="form" autocomplete="on">
     <img class="auth-crest" src="/assets/gridiron24-crest.png?v=8" alt="GridIron 24" width="1024" height="1024" />
     <h1 class="auth-title">Create Account</h1>
     <div class="status-note err" id="err" role="alert"></div>
-    <p class="auth-help" id="invite-help" hidden>You're invited to GridIron 24. Create your account below — a commissioner must approve you before you can sign in.</p>
+    <p class="auth-help" id="invite-help" hidden>You're invited to GridIron 24. Create your account below to get in.</p>
 
     <label class="field-label" for="name">Full Name</label>
     <input class="field" id="name" name="name" type="text" required autofocus autocomplete="name" />
@@ -65,7 +65,15 @@
         submit.disabled = true;
         return;
       }
-      document.getElementById('invite-help').hidden = false;
+      const help = document.getElementById('invite-help');
+      help.hidden = false;
+      if (peek.loungeOnly || peek.accountType === 'social') {
+        help.textContent =
+          "You're invited to a social account for the Members Lounge — chat, games, and the social desk. This invite does not include a fantasy franchise.";
+        document.querySelector('.auth-title').textContent = 'Create Lounge Account';
+      } else {
+        help.textContent = "You're invited to GridIron 24. Create your account below to get in.";
+      }
       document.getElementById('email').value = peek.email || '';
       document.getElementById('email').readOnly = true;
     }
@@ -99,7 +107,7 @@
           form.querySelectorAll('input').forEach((el) => { el.disabled = true; });
           return;
         }
-        window.location.href = next;
+        window.location.href = data.homePath || (data.user?.loungeOnly ? '/members.html' : next);
       } catch (err) {
         errEl.textContent = err.message;
         errEl.classList.add('show');
