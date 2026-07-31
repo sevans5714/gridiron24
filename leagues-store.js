@@ -125,7 +125,7 @@ function defaultAffiliatedLeagues(seedList) {
       shortName: 'AAA',
       espnLeagueId: null,
       role: 'feeder',
-      logo: '/assets/aaa-league.png?v=6',
+      logo: '/assets/aaa-league.png?v=7',
       payouts: defaultAaaPayouts()
     }];
   }
@@ -135,7 +135,7 @@ function defaultAffiliatedLeagues(seedList) {
     shortName: String(row.shortName || 'AAA').trim() || 'AAA',
     espnLeagueId: Number(row.espnLeagueId) > 0 ? Number(row.espnLeagueId) : null,
     role: String(row.role || 'feeder').trim() || 'feeder',
-    logo: String(row.logo || '/assets/aaa-league.png?v=6').trim() || '/assets/aaa-league.png?v=6',
+    logo: String(row.logo || '/assets/aaa-league.png?v=7').trim() || '/assets/aaa-league.png?v=7',
     payouts: defaultAaaPayouts(row.payouts || {})
   }));
 }
@@ -437,11 +437,11 @@ function ensureSystemLeague(seed) {
             payouts: defaultAaaPayouts(match.payouts || row.payouts || {})
           };
         }
-        if (!row.logo) {
+        if (!row.logo || (match.logo && String(row.logo) !== String(match.logo))) {
           dirty = true;
           next = {
             ...next,
-            logo: match.logo || '/assets/aaa-league.png?v=6'
+            logo: match.logo || '/assets/aaa-league.png?v=7'
           };
         }
         const seedEspn = Number(match.espnLeagueId);

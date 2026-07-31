@@ -53,7 +53,7 @@ function brandedAssets(baseUrl) {
     crestUrl: crest,
     detailLogo: `${origin}/assets/detail-conference.png`,
     overtimeLogo: `${origin}/assets/overtime-conference.png`,
-    aaaLogo: `${origin}/assets/aaa-league.png?v=6`,
+    aaaLogo: `${origin}/assets/aaa-league.png?v=7`,
     gridironLeagueLogo: `${origin}/assets/gridiron24-league-sm.png?v=5`,
     enterUrl: `${origin}/enter`
   };

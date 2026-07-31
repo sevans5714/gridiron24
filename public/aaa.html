@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=131" />
+  <link rel="stylesheet" href="/css/site.css?v=132" />
   <style>
     body[data-page="aaa"] {
       background:
@@ -78,7 +78,7 @@
         transparent;
     }
     .hq-hero img {
-      width: min(14rem, 52vw);
+      width: min(18rem, 64vw);
       height: auto;
       display: block;
       margin: 0 auto;
@@ -88,6 +88,21 @@
     }
     html[data-theme="day"] .hq-hero img {
       filter: drop-shadow(0 12px 24px rgba(20, 24, 31, 0.2));
+    }
+    .hq-hero-title {
+      margin: 0.85rem 0 0;
+      font-family: var(--display);
+      font-size: clamp(2rem, 6vw, 3.15rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1.05;
+      color: #7ec8ff;
+      text-shadow: 0 0 28px rgba(47, 109, 255, 0.35);
+    }
+    html[data-theme="day"] .hq-hero-title {
+      color: #1f5ef0;
+      text-shadow: none;
     }
     .hq-hero .tag {
       margin: 1.25rem 0 0;
@@ -278,17 +293,17 @@
       min-width: 0;
     }
     .conf-head img {
-      width: clamp(3.25rem, 8vw, 4.5rem);
+      width: clamp(4.25rem, 10vw, 5.75rem);
       height: auto;
-      filter: none;
-      box-shadow: var(--logo-lift);
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+      box-shadow: none;
     }
     .conf-head h3 {
       margin: 0;
       font-family: var(--display);
-      font-size: 1.15rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-size: clamp(1.45rem, 3.4vw, 1.95rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       line-height: 1.1;
     }
@@ -307,11 +322,11 @@
       justify-content: flex-start;
     }
     .conf-head.is-compact img {
-      width: 2.35rem;
-      max-width: 2.35rem;
+      width: clamp(3rem, 8vw, 3.65rem);
+      max-width: 3.65rem;
     }
     .conf-head.is-compact h3 {
-      font-size: 0.98rem;
+      font-size: clamp(1.15rem, 2.8vw, 1.4rem);
       letter-spacing: 0.06em;
     }
     .conf-head.is-compact .conf-week {
@@ -884,7 +899,8 @@
       .motw-side img { width: 4.75rem; height: 4.75rem; }
       .hotnot-team img { width: 4rem; height: 4rem; }
       .hq-main { font-size: 1.12rem; }
-      .hq-hero img { width: min(11rem, 58vw); }
+      .hq-hero img { width: min(14rem, 68vw); }
+      .hq-hero-title { font-size: clamp(1.65rem, 7vw, 2.25rem); }
       .hq-hero .tag { font-size: clamp(1.2rem, 5.2vw, 1.55rem); }
     }
 
@@ -930,7 +946,8 @@
   </header>
 
   <section class="hq-hero shell">
-    <img id="aaa-hero-crest" src="/assets/aaa-league.png?v=6" alt="AAA League" width="520" height="520" decoding="async" />
+    <img id="aaa-hero-crest" src="/assets/aaa-league.png?v=7" alt="AAA League" width="520" height="520" decoding="async" />
+    <h1 class="hq-hero-title">AAA League</h1>
     <p class="tag">
       <span class="t">12 Teams</span><span class="sep">·</span><span class="c">One Promotion</span>
     </p>
@@ -992,7 +1009,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=94"></script>
+  <script src="/js/nav.js?v=95"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -1023,13 +1040,15 @@
     }
 
     function confHead(conf, { compact = false, showWeek = false } = {}) {
-      const title = conf?.shortName || conf?.name || 'AAA';
+      const title = conf?.name || conf?.shortName || 'AAA League';
+      const logoSrc = conf?.logo || '/assets/aaa-league.png?v=7';
       const week = showWeek && conf?.week != null
         ? `<div class="conf-week">Week ${esc(String(conf.week))}</div>`
         : '';
       return `
         <div class="conf-head aaa${compact ? ' is-compact' : ''}">
           <div class="conf-head-top">
+            <span class="conf-mark"><img src="${esc(logoSrc)}" alt="" width="92" height="92" decoding="async"></span>
             <div class="conf-title-wrap">
               <h3>${esc(title)}</h3>
               ${week}
@@ -1218,7 +1237,10 @@
         const res = await fetch('/api/aaa', { cache: 'no-store' });
         const data = await res.json();
         const crest = document.getElementById('aaa-hero-crest');
-        if (crest && data.logo) crest.src = data.logo;
+        if (crest) {
+          const nextLogo = data.logo || '/assets/aaa-league.png?v=7';
+          if (crest.getAttribute('src') !== nextLogo) crest.src = nextLogo;
+        }
         document.getElementById('standings').innerHTML = standingsBoard(data);
         document.getElementById('motw').innerHTML = motwBoard(data);
         document.getElementById('hotnot').innerHTML = hotNotBoard(data);

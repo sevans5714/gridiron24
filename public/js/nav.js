@@ -736,7 +736,7 @@
     } else {
       el.title = 'Switch to AAA League';
       el.setAttribute('aria-label', 'Switch to AAA League');
-      el.innerHTML = `<img src="/assets/aaa-league-sm.png?v=6" alt="" width="44" height="44" decoding="async" />`;
+      el.innerHTML = `<img src="/assets/aaa-league-sm.png?v=7" alt="" width="44" height="44" decoding="async" />`;
       el.onclick = (e) => {
         e.preventDefault();
         switchLeague('aaa');

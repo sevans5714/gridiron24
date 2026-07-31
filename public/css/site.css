@@ -2142,6 +2142,30 @@ body[data-page="payouts"] .page-hero::before {
   color: var(--blue);
 }
 
+.page-hero-crest {
+  display: block;
+  width: min(9.5rem, 42vw);
+  height: auto;
+  margin: 0 auto 0.75rem;
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.55));
+}
+html[data-theme="day"] .page-hero-crest {
+  filter: drop-shadow(0 10px 18px rgba(20, 24, 31, 0.18));
+}
+
+body[data-page="aaa-rulebook"] .page-hero .eyebrow,
+body[data-page="aaa-playoffs"] .page-hero .eyebrow {
+  font-family: var(--display);
+  font-size: clamp(1rem, 2.4vw, 1.25rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #7ec8ff;
+}
+body[data-page="aaa-rulebook"] .page-hero h1,
+body[data-page="aaa-playoffs"] .page-hero h1 {
+  font-size: clamp(2rem, 5.5vw, 3rem);
+}
+
 .page-hero h1 {
   margin: 0;
   font-family: var(--page-title);
@@ -2200,6 +2224,21 @@ body[data-page="payouts"] .page-hero::before {
   filter: none;
 
   box-shadow: var(--logo-lift);
+}
+
+.panel-title.aaa {
+  font-size: clamp(1.2rem, 2.8vw, 1.55rem);
+  font-weight: 700;
+  color: #7ec8ff;
+  border-bottom-color: rgba(126, 200, 255, 0.4);
+}
+.panel-title.aaa img {
+  width: clamp(2.75rem, 7vw, 3.5rem);
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4));
+  box-shadow: none;
+}
+.panel-title.aaa .conf-mark {
+  --champ-glow: rgba(126, 200, 255, 0.75);
 }
 
 .panel-title .meta {

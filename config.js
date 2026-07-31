@@ -69,7 +69,7 @@ module.exports = {
       shortName: 'AAA',
       espnLeagueId: 529121946,
       role: 'feeder',
-      logo: '/assets/aaa-league.png?v=6',
+      logo: '/assets/aaa-league.png?v=7',
       payouts: {
         seasonLabel: '2026 AAA Season',
         buyInPerTeam: 50,

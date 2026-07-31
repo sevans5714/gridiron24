@@ -1868,7 +1868,7 @@ async function loadTransactionsPayload(leagueScope = null) {
           key: 'aaa',
           name: affiliate?.name || 'AAA League',
           shortName: affiliate?.shortName || 'AAA',
-          logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
+          logo: affiliate?.logo || '/assets/aaa-league.png?v=7',
           error: 'AAA League ESPN ID is not configured yet',
           transactions: []
         }]
@@ -1879,7 +1879,7 @@ async function loadTransactionsPayload(leagueScope = null) {
       name: affiliate.name,
       shortName: affiliate.shortName || 'AAA',
       espnLeagueId: espnId,
-      logo: affiliate.logo || '/assets/aaa-league.png?v=6'
+      logo: affiliate.logo || '/assets/aaa-league.png?v=7'
     };
     let row;
     try {
@@ -2697,7 +2697,7 @@ async function apiFantasyLeaders(res, weekParam, leagueScope = null) {
       name: affiliate.name,
       shortName: affiliate.shortName || 'AAA',
       espnLeagueId: espnId,
-      logo: affiliate.logo || '/assets/aaa-league.png?v=6'
+      logo: affiliate.logo || '/assets/aaa-league.png?v=7'
     };
     results = [await fantasyLeadersForConference(conference, weekParam, 'aaa-leaders')];
   } else {
@@ -2763,7 +2763,7 @@ async function loadAaaLeagueSettings() {
       name: affiliate?.name || 'AAA League',
       shortName: affiliate?.shortName || 'AAA',
       leagueId: null,
-      logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
+      logo: affiliate?.logo || '/assets/aaa-league.png?v=7',
       error: 'AAA League ESPN ID is not configured'
     };
   }
@@ -2772,7 +2772,7 @@ async function loadAaaLeagueSettings() {
     name: affiliate.name || 'AAA League',
     shortName: affiliate.shortName || 'AAA',
     espnLeagueId: espnId,
-    logo: affiliate.logo || '/assets/aaa-league.png?v=6'
+    logo: affiliate.logo || '/assets/aaa-league.png?v=7'
   };
   try {
     const raw = await fetchEspnRaw(conference, ['mSettings', 'mStatus'], 'aaa-settings');
@@ -3055,13 +3055,13 @@ async function loadFantasySportsBoards() {
         name: affiliate.name || 'AAA League',
         shortName: affiliate.shortName || 'AAA',
         espnLeagueId: espnId,
-        logo: affiliate.logo || '/assets/aaa-league.png?v=6'
+        logo: affiliate.logo || '/assets/aaa-league.png?v=7'
       };
       const aaa = await scheduleForConference(conference, null, 'aaa-matchup');
       boards.push(sportsScoreboard.boardFromFantasyConferences({
         id: 'aaa',
         label: affiliate.shortName || 'AAA',
-        logo: '/assets/aaa-league.png?v=6'
+        logo: '/assets/aaa-league.png?v=7'
       }, [aaa]));
     }
   } catch (err) {
@@ -3072,7 +3072,7 @@ async function loadFantasySportsBoards() {
       label: 'AAA',
       kind: 'team',
       fantasy: true,
-      logo: '/assets/aaa-league.png?v=6',
+      logo: '/assets/aaa-league.png?v=7',
       error: err.message || 'Unavailable',
       counts: { live: 0, final: 0, upcoming: 0 },
       games: []
@@ -3098,7 +3098,7 @@ async function apiSchedule(res, weekParam, leagueScope = null) {
           key: 'aaa',
           name: affiliate?.name || 'AAA League',
           shortName: affiliate?.shortName || 'AAA',
-          logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
+          logo: affiliate?.logo || '/assets/aaa-league.png?v=7',
           error: 'AAA League ESPN ID is not configured yet'
         }]
       });
@@ -3108,7 +3108,7 @@ async function apiSchedule(res, weekParam, leagueScope = null) {
       name: affiliate.name,
       shortName: affiliate.shortName || 'AAA',
       espnLeagueId: espnId,
-      logo: affiliate.logo || '/assets/aaa-league.png?v=6'
+      logo: affiliate.logo || '/assets/aaa-league.png?v=7'
     };
     results = [await scheduleForConference(conference, weekParam, 'aaa-matchup')];
   } else {
@@ -3815,7 +3815,7 @@ function leagueScopeForUser(user, req = null) {
         homePath: '/aaa.html',
         scoreboardPath: '/aaa-scoreboard',
         label: affiliate?.name || 'AAA League',
-        logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
+        logo: affiliate?.logo || '/assets/aaa-league.png?v=7',
         canSwitchLeagues: true,
         preferredLeague: 'aaa'
       };
@@ -3848,7 +3848,7 @@ function leagueScopeForUser(user, req = null) {
       homePath: homePathForUser(user, req),
       scoreboardPath: '/aaa-scoreboard',
       label: affiliate?.name || (conferenceKey === 'aaa' ? 'AAA League' : conferenceKey),
-      logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
+      logo: affiliate?.logo || '/assets/aaa-league.png?v=7',
       canSwitchLeagues: false,
       preferredLeague: null
     };
@@ -3881,7 +3881,7 @@ function resolveLeagueScope(user, req, requestedLeague) {
       homePath: '/aaa.html',
       scoreboardPath: '/aaa-scoreboard',
       label: affiliate?.name || 'AAA League',
-      logo: affiliate?.logo || '/assets/aaa-league.png?v=6',
+      logo: affiliate?.logo || '/assets/aaa-league.png?v=7',
       canSwitchLeagues: personal.canSwitchLeagues,
       preferredLeague: personal.preferredLeague
     };
@@ -3948,7 +3948,7 @@ function aaaConferenceFromAffiliate(affiliate) {
     name: affiliate?.name || 'AAA League',
     shortName: affiliate?.shortName || 'AAA',
     espnLeagueId: Number.isFinite(espnId) && espnId > 0 ? espnId : null,
-    logo: affiliate?.logo || '/assets/aaa-league.png?v=6'
+    logo: affiliate?.logo || '/assets/aaa-league.png?v=7'
   };
 }
 
@@ -4131,7 +4131,7 @@ async function buildAaaPayload() {
     shortName: 'AAA',
     espnLeagueId: null,
     role: 'feeder',
-    logo: '/assets/aaa-league.png?v=6',
+    logo: '/assets/aaa-league.png?v=7',
     payouts: {
       buyInPerTeam: 50,
       teamCountMin: 10,
@@ -4153,7 +4153,7 @@ async function buildAaaPayload() {
     name: affiliate.name,
     shortName: affiliate.shortName,
     role: affiliate.role || 'feeder',
-    logo: affiliate.logo || '/assets/aaa-league.png?v=6',
+    logo: affiliate.logo || '/assets/aaa-league.png?v=7',
     season: config.season,
     payouts,
     scoring: officialPack.scoring,
@@ -4187,7 +4187,7 @@ async function buildAaaPayload() {
     name: affiliate.name,
     shortName: affiliate.shortName,
     espnLeagueId: espnId,
-    logo: affiliate.logo || null
+    logo: affiliate.logo || '/assets/aaa-league.png?v=7'
   };
 
   try {
@@ -4274,7 +4274,7 @@ async function buildAaaPlayoffsPayload() {
     name: 'AAA League',
     shortName: 'AAA',
     espnLeagueId: null,
-    logo: '/assets/aaa-league.png?v=6',
+    logo: '/assets/aaa-league.png?v=7',
     payouts: { teamCount: 12 }
   };
   const conference = aaaConferenceFromAffiliate(affiliate);

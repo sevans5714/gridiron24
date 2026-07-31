@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=131" />
+  <link rel="stylesheet" href="/css/site.css?v=132" />
   <style>
     :root,
     html[data-theme="night"] {
@@ -606,6 +606,21 @@
     .board.detail .board-top h2 { color: var(--detail); }
     .board.overtime .board-top h2 { color: var(--overtime); }
     .board.aaa .board-top h2 { color: #7ec8ff; }
+    body[data-league="aaa"] .board.aaa .board-top h2,
+    body[data-page="aaa-scoreboard"] .board.aaa .board-top h2 {
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    body[data-league="aaa"] .board-top img,
+    body[data-page="aaa-scoreboard"] .board-top img {
+      width: clamp(3.25rem, 8vw, 4.25rem);
+      height: auto;
+    }
+    body[data-league="aaa"] .sb-hero .brand-logo,
+    body[data-page="aaa-scoreboard"] .sb-hero .brand-logo {
+      width: min(16rem, 58vw);
+    }
     .board-top .week-chip {
       font-family: "Share Tech Mono", ui-monospace, monospace;
       font-size: 0.85rem;
@@ -845,14 +860,14 @@
       document.body.dataset.league = isAaa ? 'aaa' : 'gridiron';
     })();
   </script>
-  <script src="/js/nav.js?v=94"></script>
+  <script src="/js/nav.js?v=95"></script>
   <script>
     const REFRESH_MS = 30_000;
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const SCOREBOARD_LEAGUE = document.body.dataset.league === 'aaa' ? 'aaa' : 'gridiron';
     const LEAGUE_BRAND = SCOREBOARD_LEAGUE === 'aaa'
       ? {
-          logo: '/assets/aaa-league.png?v=6',
+          logo: '/assets/aaa-league.png?v=7',
           name: 'AAA League',
           title: 'AAA Scoreboard'
         }
@@ -1257,16 +1272,19 @@
             <div class="board-face"><div class="board-empty">${esc(conf.error || 'Unavailable')}</div></div>
           </section>`;
       }
-      const logo = conf.logo
-        ? `<span class="conf-mark"><img src="${esc(conf.logo)}" alt="" width="48" height="48"></span>`
+      const logo = (conf.logo || (tone === 'aaa' ? LEAGUE_BRAND.logo : ''))
+        ? `<span class="conf-mark"><img src="${esc(conf.logo || LEAGUE_BRAND.logo)}" alt="" width="64" height="64"></span>`
         : '';
       const games = (conf.matchups || []).map(gameRow).join('');
+      const boardTitle = tone === 'aaa'
+        ? (conf.name || conf.shortName || LEAGUE_BRAND.name)
+        : (conf.shortName || conf.name);
       return `
         <section class="board ${tone}">
           <div class="board-top">
             <div class="conf">
               ${logo}
-              <h2>${esc(conf.shortName || conf.name)}</h2>
+              <h2>${esc(boardTitle)}</h2>
             </div>
             <div class="week-chip">WK ${esc(conf.week)}</div>
           </div>

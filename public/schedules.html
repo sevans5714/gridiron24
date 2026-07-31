@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=131" />
+  <link rel="stylesheet" href="/css/site.css?v=132" />
   <style>
     .toolbar {
       display: flex;
@@ -360,7 +360,11 @@
         return `<div class="panel reveal reveal-delay-${idx + 1}"><div class="panel-title">${esc(conf.name || 'Conference')}</div><div class="msg"><strong>Unavailable</strong>${esc(conf.error || '')}</div></div>`;
       }
       const tone = conf.key === 'detail' ? 'detail' : (conf.key === 'overtime' ? 'overtime' : 'aaa');
-      const logoImg = conf.logo ? `<span class="conf-mark"><img src="${esc(conf.logo)}" alt=""></span>` : '';
+      const logoSrc = conf.logo || (tone === 'aaa' ? '/assets/aaa-league.png?v=7' : '');
+      const logoImg = logoSrc ? `<span class="conf-mark"><img src="${esc(logoSrc)}" alt=""></span>` : '';
+      const boardTitle = tone === 'aaa'
+        ? (conf.name || conf.shortName || 'AAA League')
+        : (conf.shortName || conf.name);
       const cards = (conf.matchups || []).map((m) => `
         <div class="matchup">
           ${side(m.away, 'away')}
@@ -376,7 +380,7 @@
         <div class="panel reveal reveal-delay-${idx + 1}">
           <div class="panel-title ${tone}">
             ${logoImg}
-            <span>${esc(conf.shortName || conf.name)}</span>
+            <span>${esc(boardTitle)}</span>
             <span class="meta">Week ${conf.week}</span>
           </div>
           <div class="matchups">${cards || '<div class="msg">No matchups scheduled for this week.</div>'}</div>
