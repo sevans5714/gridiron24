@@ -1429,6 +1429,30 @@
       align-self: stretch;
     }
 
+    .lounge-desk-jump {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.55rem 0.85rem;
+      margin: -0.15rem 0 0.15rem;
+      padding: 0.15rem 0 0.35rem;
+    }
+    .lounge-desk-jump a {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--mo-blue-hot);
+      padding: 0.35rem 0.7rem;
+      border: 1px solid rgba(126, 200, 255, 0.28);
+      background: rgba(47, 123, 255, 0.12);
+    }
+    .lounge-desk-jump a:hover {
+      background: rgba(47, 123, 255, 0.22);
+      color: #fff;
+    }
+
     /* —— Record Book —— */
     .lounge-section.is-records {
       border-color: rgba(232, 196, 90, 0.22);
@@ -1793,43 +1817,11 @@
         </div>
       </section>
 
-      <div class="lounge-mid">
-        <section class="lounge-section is-chat im-window" id="room" aria-label="Roll Call chat room">
-          <div class="im-titlebar">
-            <div class="im-titlebar-left">
-              <div class="im-title">
-                <p class="im-app">Chat Room</p>
-                <h2>Roll Call</h2>
-              </div>
-            </div>
-            <div class="chat-live is-idle" id="chat-live"><span class="dot" aria-hidden="true"></span><span id="chat-live-label">Connecting</span></div>
-          </div>
-          <div class="im-toolbar">
-            <span><strong>Members Lounge</strong> · click a name to @mention</span>
-          </div>
-          <div class="im-body">
-            <div class="im-main">
-              <div class="chat-log" id="chat-log" aria-live="polite"><div class="chat-empty">Signing on to the lounge…</div></div>
-              <div class="im-compose-wrap">
-                <div class="mention-bar" id="mention-bar" hidden></div>
-                <form class="chat-compose" id="chat-form">
-                  <label class="chat-compose-label" for="chat-input">Message</label>
-                  <div class="chat-compose-row">
-                    <textarea id="chat-input" maxlength="1000" rows="2" placeholder="Type a message…" autocomplete="off"></textarea>
-                    <button type="submit" id="chat-send">Send</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-            <aside class="im-buddies" id="presence-card" aria-label="Users in room">
-              <div class="im-buddies-head">Users in Room<small>Click a name to @mention</small></div>
-              <div class="presence-list" id="presence-list"><div class="presence-empty">No one else is here yet.</div></div>
-            </aside>
-          </div>
-        </section>
-
-        <aside class="lounge-section is-dues lounge-dues" id="pay-panel" aria-label="League dues"></aside>
-      </div>
+      <nav class="lounge-desk-jump" aria-label="Lounge desk tools">
+        <a href="#record-book">Record Book</a>
+        <a href="#mock-draft">Mock Draft</a>
+        <a href="#room">Roll Call</a>
+      </nav>
 
       <section class="lounge-section is-records" id="record-book" aria-label="Record book">
         <div class="lounge-section-label">
@@ -1901,6 +1893,44 @@
         <p class="mock-status" id="mock-status" role="status"></p>
       </section>
 
+      <div class="lounge-mid">
+        <section class="lounge-section is-chat im-window" id="room" aria-label="Roll Call chat room">
+          <div class="im-titlebar">
+            <div class="im-titlebar-left">
+              <div class="im-title">
+                <p class="im-app">Chat Room</p>
+                <h2>Roll Call</h2>
+              </div>
+            </div>
+            <div class="chat-live is-idle" id="chat-live"><span class="dot" aria-hidden="true"></span><span id="chat-live-label">Connecting</span></div>
+          </div>
+          <div class="im-toolbar">
+            <span><strong>Members Lounge</strong> · click a name to @mention</span>
+          </div>
+          <div class="im-body">
+            <div class="im-main">
+              <div class="chat-log" id="chat-log" aria-live="polite"><div class="chat-empty">Signing on to the lounge…</div></div>
+              <div class="im-compose-wrap">
+                <div class="mention-bar" id="mention-bar" hidden></div>
+                <form class="chat-compose" id="chat-form">
+                  <label class="chat-compose-label" for="chat-input">Message</label>
+                  <div class="chat-compose-row">
+                    <textarea id="chat-input" maxlength="1000" rows="2" placeholder="Type a message…" autocomplete="off"></textarea>
+                    <button type="submit" id="chat-send">Send</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <aside class="im-buddies" id="presence-card" aria-label="Users in room">
+              <div class="im-buddies-head">Users in Room<small>Click a name to @mention</small></div>
+              <div class="presence-list" id="presence-list"><div class="presence-empty">No one else is here yet.</div></div>
+            </aside>
+          </div>
+        </section>
+
+        <aside class="lounge-section is-dues lounge-dues" id="pay-panel" aria-label="League dues"></aside>
+      </div>
+
       <section class="lounge-section is-roll roll-section" aria-label="Membership roll">
         <div class="lounge-section-label">
           <div>
@@ -1917,7 +1947,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=77"></script>
-  <script src="/js/lounge-desk.js?v=1"></script>
+  <script src="/js/lounge-desk.js?v=2"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
