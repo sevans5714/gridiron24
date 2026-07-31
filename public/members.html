@@ -106,8 +106,13 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.07);
     }
     .lounge-section.is-chat {
-      overflow: visible;
-      border-color: rgba(126, 200, 255, 0.16);
+      overflow: hidden;
+      padding: 0;
+      border-color: rgba(90, 130, 190, 0.4);
+      background: #0b1220;
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
     .lounge-section.is-roll {
       border-color: rgba(220, 230, 245, 0.14);
@@ -680,7 +685,7 @@
       font-size: 0.82rem;
     }
 
-    /* —— Chat + dues —— */
+    /* —— Chat room (Yahoo Messenger–style window) —— */
     .lounge-mid {
       display: grid;
       grid-template-columns: minmax(0, 1.85fr) minmax(15rem, 0.75fr);
@@ -693,137 +698,166 @@
 
     .im-window {
       display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
       gap: 0;
       overflow: hidden;
+      min-height: 22rem;
     }
     .lounge-section.is-chat.im-window {
-      padding: clamp(0.85rem, 1.6vw, 1.15rem);
+      padding: 0;
     }
     .im-titlebar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
-      padding: 0 0 0.75rem;
-      background: transparent;
-      border-bottom: 1px solid rgba(126, 200, 255, 0.12);
+      gap: 0.75rem;
+      padding: 0.42rem 0.7rem;
+      background: linear-gradient(180deg, #4a7fe0 0%, #2f5fc0 48%, #244ea3 100%);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
     }
     .im-titlebar-left { min-width: 0; }
-    .im-title .eyebrow {
-      margin: 0 0 0.2rem;
-      font-family: "Oswald", sans-serif;
+    .im-title {
+      display: flex;
+      align-items: baseline;
+      gap: 0.45rem;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+    .im-title .im-app {
+      margin: 0;
+      font-family: Tahoma, "Segoe UI", "Source Sans 3", sans-serif;
       font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.16em;
+      font-weight: 700;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: var(--mo-muted);
+      color: rgba(255, 255, 255, 0.78);
+      white-space: nowrap;
     }
     .im-title h2 {
       margin: 0;
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: clamp(1.35rem, 2.4vw, 1.75rem);
-      font-weight: 400;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--mo-gold-soft);
+      font-family: Tahoma, "Segoe UI", "Source Sans 3", sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      text-transform: none;
+      color: #fff;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .im-title .sub {
-      display: block;
-      margin-top: 0.15rem;
-      font-size: 0.8rem;
-      color: var(--mo-muted);
-      letter-spacing: 0.03em;
+    .im-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.28rem 0.7rem;
+      background: linear-gradient(180deg, #1a2740, #141e32);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-family: Tahoma, "Segoe UI", "Source Sans 3", sans-serif;
+      font-size: 0.72rem;
+      color: #9eb0c8;
+    }
+    .im-toolbar strong {
+      color: #d7e2ef;
+      font-weight: 700;
     }
     .chat-live {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      font-family: "Oswald", sans-serif;
-      font-size: 0.75rem;
-      letter-spacing: 0.12em;
+      gap: 0.35rem;
+      padding: 0.12rem 0.45rem;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.18);
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: #9dffc4;
+      color: #c8ffd8;
       flex: 0 0 auto;
     }
     .chat-live .dot {
-      width: 0.42rem;
-      height: 0.42rem;
+      width: 0.4rem;
+      height: 0.4rem;
       border-radius: 50%;
-      background: var(--mo-good);
-      box-shadow: 0 0 8px var(--mo-good);
+      background: #3ddc84;
+      box-shadow: 0 0 6px #3ddc84;
       animation: mo-pulse 1.4s ease-in-out infinite;
     }
-    .chat-live.is-idle { color: var(--mo-muted); }
+    .chat-live.is-idle { color: rgba(255, 255, 255, 0.7); }
     .chat-live.is-idle .dot {
-      background: #64748b;
+      background: #94a3b8;
       box-shadow: none;
       animation: none;
     }
 
     .im-body {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(11rem, 14.5rem);
+      grid-template-columns: minmax(0, 1fr) minmax(10.5rem, 12.5rem);
       gap: 0;
       margin: 0;
       border: 0;
-      background: transparent;
+      background: #0b1220;
       overflow: hidden;
       min-height: 18rem;
     }
     .im-main {
       display: grid;
-      grid-template-rows: minmax(12rem, 1fr) auto auto;
+      grid-template-rows: minmax(11rem, 1fr) auto;
       gap: 0;
       min-width: 0;
       min-height: 18rem;
       padding: 0;
       border: 0;
-      border-right: 1px solid rgba(126, 200, 255, 0.1);
+      border-right: 1px solid rgba(0, 0, 0, 0.45);
+      background: #0b1220;
     }
     .chat-log {
       display: flex;
       flex-direction: column;
-      gap: 0.1rem;
-      min-height: 12rem;
-      max-height: min(46vh, 24rem);
-      padding: 0.65rem 0.15rem 0.65rem 0;
+      gap: 0.05rem;
+      min-height: 11rem;
+      max-height: min(44vh, 22rem);
+      padding: 0.55rem 0.65rem;
       overflow-x: hidden;
       overflow-y: auto;
-      background: transparent;
-      font-family: "Source Sans 3", system-ui, sans-serif;
-      font-size: 1.02rem;
-      color: var(--mo-text);
+      background: #eef2f7;
+      color: #1a2433;
+      font-family: Tahoma, "Segoe UI", "Source Sans 3", system-ui, sans-serif;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
       -webkit-overflow-scrolling: touch;
     }
     .chat-empty {
       margin: 0;
-      padding: 1.25rem 0.15rem;
-      color: var(--mo-muted);
-      font-family: "Oswald", sans-serif;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      font-size: 0.85rem;
+      padding: 1.1rem 0.25rem;
+      color: #64748b;
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+      text-transform: none;
+      font-size: 0.88rem;
+      text-align: center;
     }
     .im-line {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.5rem;
+      gap: 0.45rem;
       align-items: baseline;
-      padding: 0.4rem 0;
-      border-bottom: 1px solid rgba(126, 200, 255, 0.07);
-      line-height: 1.45;
+      padding: 0.18rem 0.1rem;
+      border-bottom: 0;
+      line-height: 1.4;
       background: transparent;
       box-shadow: none;
     }
     .im-line:hover,
     .im-line.mine {
-      background: transparent;
+      background: rgba(47, 109, 255, 0.06);
       box-shadow: none;
     }
-    .im-line.mine .im-who { color: var(--mo-blue-hot); }
     .im-line-main { min-width: 0; word-break: break-word; }
     .im-who {
       cursor: pointer;
@@ -831,29 +865,29 @@
       background: transparent;
       padding: 0;
       font: inherit;
-      font-weight: 800;
-      color: var(--mo-gold-soft);
+      font-weight: 700;
+      color: #1d4ed8;
     }
-    .im-who:hover { color: #fff; text-decoration: underline; }
+    .im-who:hover { text-decoration: underline; filter: brightness(0.9); }
     .im-who:disabled { cursor: default; text-decoration: none; }
-    .im-sep { color: var(--mo-muted); margin-right: 0.2rem; font-weight: 700; }
-    .im-text { white-space: pre-wrap; color: #d5e0f0; }
+    .im-sep { color: #475569; margin-right: 0.2rem; font-weight: 700; }
+    .im-text { white-space: pre-wrap; color: #1a2433; }
     .im-text .chat-mention,
     .chat-mention {
-      color: var(--mo-blue-hot);
+      color: #1d4ed8;
       font-weight: 700;
-      background: none;
-      padding: 0;
+      background: rgba(47, 109, 255, 0.12);
+      padding: 0 0.15rem;
+      border-radius: 0.15rem;
       text-shadow: none;
     }
     .im-meta {
       display: flex;
       align-items: center;
-      gap: 0.35rem;
-      font-size: 0.7rem;
-      color: var(--mo-muted);
-      opacity: 0;
-      transition: opacity 0.15s;
+      gap: 0.3rem;
+      font-size: 0.68rem;
+      color: #64748b;
+      opacity: 0.85;
     }
     .im-line:hover .im-meta,
     .im-line:focus-within .im-meta { opacity: 1; }
@@ -861,143 +895,168 @@
       appearance: none;
       border: 0;
       background: transparent;
-      color: #f87171;
+      color: #dc2626;
       font: inherit;
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       cursor: pointer;
       padding: 0;
     }
 
+    .im-compose-wrap {
+      display: grid;
+      gap: 0.35rem;
+      padding: 0.45rem 0.55rem 0.55rem;
+      background: linear-gradient(180deg, #d5dde8 0%, #c4cedc 100%);
+      border-top: 1px solid #8fa0b5;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
     .mention-bar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.45rem 0.65rem;
-      padding: 0.45rem 0 0;
+      gap: 0.35rem 0.5rem;
+      padding: 0;
     }
     .mention-bar[hidden] { display: none !important; }
     .mention-bar-label {
-      font-family: "Oswald", sans-serif;
-      font-size: 0.7rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--mo-muted);
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: none;
+      color: #475569;
     }
     .mention-chip {
       appearance: none;
       display: inline-flex;
       align-items: center;
-      gap: 0.3rem;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: var(--mo-blue-hot);
-      font-family: "Oswald", sans-serif;
-      font-size: 0.9rem;
+      gap: 0.25rem;
+      padding: 0.1rem 0.4rem;
+      border: 1px solid #7a90ab;
+      border-radius: 0.2rem;
+      background: #fff;
+      color: #1d4ed8;
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-size: 0.75rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0;
       cursor: pointer;
       box-shadow: none;
     }
-    .mention-chip:hover { color: #fff; text-decoration: underline; }
+    .mention-chip:hover { background: #eef4ff; text-decoration: none; }
     .mention-chip .x { opacity: 0.65; }
 
     .chat-compose {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.65rem;
-      align-items: end;
-      padding: 0.75rem 0 0.25rem;
-      border-top: 1px solid rgba(126, 200, 255, 0.12);
+      gap: 0.28rem;
+      padding: 0;
+      border: 0;
       background: transparent;
+    }
+    .chat-compose-label {
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #334155;
+    }
+    .chat-compose-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.45rem;
+      align-items: stretch;
     }
     .chat-compose textarea {
       width: 100%;
-      min-height: 2.85rem;
-      max-height: 7rem;
+      min-height: 2.35rem;
+      max-height: 5.5rem;
       resize: vertical;
-      padding: 0.55rem 0;
-      border: 0;
-      border-bottom: 1px solid rgba(126, 200, 255, 0.35);
-      border-radius: 0;
-      background: transparent;
-      color: var(--mo-text);
-      font: inherit;
-      font-size: 1.02rem;
-      line-height: 1.4;
-      box-shadow: none;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid #6b7f98;
+      border-radius: 0.2rem;
+      background: #fff;
+      color: #1a2433;
+      font-family: Tahoma, "Segoe UI", "Source Sans 3", sans-serif;
+      font-size: 0.9rem;
+      line-height: 1.35;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
     }
     .chat-compose textarea:focus {
       outline: none;
-      border-bottom-color: var(--mo-blue-hot);
-      box-shadow: none;
+      border-color: #2f6dff;
+      box-shadow: 0 0 0 2px rgba(47, 109, 255, 0.2);
     }
-    .chat-compose textarea::placeholder { color: rgba(143, 160, 184, 0.75); }
+    .chat-compose textarea::placeholder { color: #94a3b8; }
     .chat-compose button {
       appearance: none;
-      align-self: end;
-      min-height: 2.4rem;
-      min-width: 4.5rem;
-      padding: 0.35rem 0.85rem;
-      border: 0;
-      border-bottom: 2px solid var(--mo-blue);
-      border-radius: 0;
-      background: transparent;
-      color: var(--mo-blue-hot);
-      font-family: "Oswald", sans-serif;
-      font-size: 0.9rem;
+      align-self: stretch;
+      min-height: 2.35rem;
+      min-width: 4.25rem;
+      padding: 0.35rem 0.9rem;
+      border: 1px solid #4b5f78;
+      border-radius: 0.2rem;
+      background: linear-gradient(180deg, #f7f9fc 0%, #d5deea 55%, #b8c5d6 100%);
+      color: #1a2433;
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-size: 0.82rem;
       font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+      letter-spacing: 0;
+      text-transform: none;
       cursor: pointer;
-      box-shadow: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
     }
-    .chat-compose button:disabled { opacity: 0.45; cursor: default; }
+    .chat-compose button:disabled { opacity: 0.5; cursor: default; }
     .chat-compose button:hover:not(:disabled) {
-      color: #fff;
-      border-bottom-color: #fff;
+      color: #0f172a;
+      border-bottom-color: #4b5f78;
+      background: linear-gradient(180deg, #ffffff 0%, #e4ebf4 55%, #c5d0e0 100%);
     }
 
     .im-buddies {
       display: grid;
-      gap: 0.55rem;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 0.35rem;
       align-content: start;
-      padding: 0.35rem 0 0.25rem 1rem;
-      background: transparent;
-      border-left: 1px solid rgba(126, 200, 255, 0.1);
+      padding: 0.45rem 0.5rem 0.5rem;
+      background: #121a2b;
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
     }
     .im-buddies-head {
-      font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 1.15rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--mo-text);
-      line-height: 1.1;
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: none;
+      color: #d7e2ef;
+      line-height: 1.25;
+      padding: 0.15rem 0.2rem 0.35rem;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.14);
     }
     .im-buddies-head small {
       display: block;
-      margin-top: 0.2rem;
-      font-family: "Source Sans 3", system-ui, sans-serif;
-      font-size: 0.74rem;
-      letter-spacing: 0.02em;
+      margin-top: 0.15rem;
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0;
       text-transform: none;
-      color: var(--mo-muted);
+      color: #8494ab;
       font-weight: 500;
     }
     .presence-list {
       display: grid;
-      gap: 0.1rem;
+      gap: 0.05rem;
       max-height: min(42vh, 20rem);
       overflow-y: auto;
+      align-content: start;
     }
     .presence-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
+      gap: 0.4rem;
       width: 100%;
-      padding: 0.4rem 0;
+      padding: 0.28rem 0.3rem;
       border: 0;
+      border-radius: 0.2rem;
       background: transparent;
       color: inherit;
       font: inherit;
@@ -1005,7 +1064,7 @@
       cursor: pointer;
     }
     .presence-row:hover {
-      background: transparent;
+      background: rgba(47, 109, 255, 0.12);
       transform: none;
       border: 0;
     }
@@ -1013,10 +1072,11 @@
     .presence-row .nm {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      font-weight: 700;
-      font-size: 0.98rem;
-      color: var(--mo-silver);
+      gap: 0.4rem;
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: #c5d0de;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1027,30 +1087,25 @@
       width: 0.42rem;
       height: 0.42rem;
       border-radius: 50%;
-      background: var(--mo-good);
-      box-shadow: 0 0 8px rgba(77, 255, 154, 0.85);
+      background: #3ddc84;
+      box-shadow: 0 0 5px rgba(61, 220, 132, 0.55);
       flex: 0 0 auto;
     }
+    .presence-row.is-me .nm::before { background: #7ec8ff; box-shadow: none; }
     .presence-row .lg {
-      font-family: "Oswald", sans-serif;
-      font-size: 0.68rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--mo-blue-hot);
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #7ec8ff;
+      opacity: 0.85;
+    }
+    .presence-empty {
+      padding: 0.55rem 0.25rem;
+      color: #8494ab;
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      font-size: 0.78rem;
     }
     .presence-row.is-me { cursor: default; }
-    .presence-row.is-me .nm { color: var(--mo-gold-soft); }
-    .presence-row.is-me .nm::before {
-      background: var(--mo-gold);
-      box-shadow: 0 0 8px rgba(232, 196, 90, 0.7);
-    }
-    .presence-row.is-me .lg { color: var(--mo-gold); }
-    .presence-empty {
-      color: var(--mo-muted);
-      font-size: 0.9rem;
-      padding: 0.35rem 0;
-      line-height: 1.45;
-    }
 
     .lounge-dues {
       padding: clamp(0.95rem, 1.8vw, 1.25rem);
@@ -1312,14 +1367,16 @@
       }
       .im-main {
         border-right: 0;
-        border-bottom: 1px solid rgba(126, 200, 255, 0.1);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+        min-height: 16rem;
       }
       .im-buddies {
-        padding-left: 0;
+        padding: 0.45rem 0.55rem 0.65rem;
         border-left: 0;
-        border-top: 1px solid rgba(126, 200, 255, 0.1);
-        padding-top: 0.85rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
       }
+      .presence-list { max-height: 9rem; }
+      .chat-log { max-height: min(38vh, 18rem); }
     }
 
     @media (max-width: 520px) {
@@ -1386,29 +1443,36 @@
       </section>
 
       <div class="lounge-mid">
-        <section class="lounge-section is-chat im-window" id="room" aria-label="Roll Call Room">
+        <section class="lounge-section is-chat im-window" id="room" aria-label="Roll Call chat room">
           <div class="im-titlebar">
             <div class="im-titlebar-left">
               <div class="im-title">
-                <p class="eyebrow">Members chat</p>
-                <h2>Roll Call Room</h2>
-                <span class="sub">Click a name to @mention</span>
+                <p class="im-app">Chat Room</p>
+                <h2>Roll Call</h2>
               </div>
             </div>
             <div class="chat-live is-idle" id="chat-live"><span class="dot" aria-hidden="true"></span><span id="chat-live-label">Connecting</span></div>
           </div>
+          <div class="im-toolbar">
+            <span><strong>Members Lounge</strong> · click a name to @mention</span>
+          </div>
           <div class="im-body">
             <div class="im-main">
               <div class="chat-log" id="chat-log" aria-live="polite"><div class="chat-empty">Signing on to the lounge…</div></div>
-              <div class="mention-bar" id="mention-bar" hidden></div>
-              <form class="chat-compose" id="chat-form">
-                <textarea id="chat-input" maxlength="1000" rows="2" placeholder="Type a message… or click someone online to @mention" autocomplete="off"></textarea>
-                <button type="submit" id="chat-send">Send</button>
-              </form>
+              <div class="im-compose-wrap">
+                <div class="mention-bar" id="mention-bar" hidden></div>
+                <form class="chat-compose" id="chat-form">
+                  <label class="chat-compose-label" for="chat-input">Message</label>
+                  <div class="chat-compose-row">
+                    <textarea id="chat-input" maxlength="1000" rows="2" placeholder="Type a message…" autocomplete="off"></textarea>
+                    <button type="submit" id="chat-send">Send</button>
+                  </div>
+                </form>
+              </div>
             </div>
-            <aside class="im-buddies" id="presence-card" aria-label="Online members">
-              <div class="im-buddies-head">Online members<small>Click a name to @mention</small></div>
-              <div class="presence-list" id="presence-list"><div class="presence-empty">No members online right now.</div></div>
+            <aside class="im-buddies" id="presence-card" aria-label="Users in room">
+              <div class="im-buddies-head">Users in Room<small>Click a name to @mention</small></div>
+              <div class="presence-list" id="presence-list"><div class="presence-empty">No one else is here yet.</div></div>
             </aside>
           </div>
         </section>
@@ -1956,11 +2020,11 @@
         .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
       if (head) {
         head.innerHTML = people.length
-          ? `Online members (${people.length})<small>Click a name to @mention</small>`
-          : `Online members<small>Click a name to @mention</small>`;
+          ? `Users in Room (${people.length})<small>Click a name to @mention</small>`
+          : `Users in Room<small>Click a name to @mention</small>`;
       }
       if (!people.length) {
-        el.innerHTML = `<div class="presence-empty">No members online right now.</div>`;
+        el.innerHTML = `<div class="presence-empty">No one else is here yet.</div>`;
         return;
       }
       el.innerHTML = people.map((m) => {
