@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=107" />
+  <link rel="stylesheet" href="/css/site.css?v=108" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -1294,48 +1294,66 @@
     .board-head h2 { display: none; }
     .board-head .count {
       color: var(--mo-muted);
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       width: 100%;
       font-family: "Oswald", sans-serif;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
     .board-head .count strong {
       color: var(--mo-blue-hot);
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
     }
     .board-body {
-      padding: 0.35rem 0 0.15rem;
+      padding: 0.85rem 0 0.15rem;
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 0;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0.65rem 0.85rem;
+      align-items: start;
     }
     .roll-empty {
+      grid-column: 1 / -1;
       padding: 1.15rem 0 0.35rem;
       color: var(--mo-muted);
       font-size: 0.98rem;
       line-height: 1.5;
     }
     .member-row {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
       min-width: 0;
-      padding: 0.55rem 0;
+      padding: 0.2rem 0.1rem;
       border: 0;
-      border-bottom: 1px solid rgba(126, 200, 255, 0.1);
       background: transparent;
     }
-    .member-row:last-child {
-      border-bottom: 0;
+    .member-league {
+      width: 1.35rem;
+      height: 1.35rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    }
+    .member-league.is-blank {
+      width: 1.35rem;
+      height: 1.35rem;
+      flex: 0 0 auto;
+      border-radius: 0.15rem;
+      background: rgba(126, 200, 255, 0.08);
+      border: 1px solid rgba(126, 200, 255, 0.12);
     }
     .member-row .name {
       font-family: "Oswald", sans-serif;
       font-weight: 600;
-      font-size: 1.05rem;
+      font-size: 0.92rem;
       letter-spacing: 0.03em;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       color: var(--mo-text);
+      min-width: 0;
+      line-height: 1.2;
     }
     .member-row.is-you .name {
       color: var(--mo-blue-hot);
@@ -1389,6 +1407,10 @@
         grid-template-columns: 1fr;
         gap: 1.5rem;
       }
+      .board-body {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.55rem 0.65rem;
+      }
       .im-body {
         grid-template-columns: 1fr;
         gap: 0;
@@ -1422,6 +1444,9 @@
         grid-template-columns: 2.2rem minmax(0, 1fr) 2.75rem 4.25rem;
       }
       .sgame.is-golf { grid-column: auto; }
+      .board-body {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1516,7 +1541,7 @@
         <div class="lounge-section-label">
           <div>
             <p class="eyebrow">League desk</p>
-            <h2>The membership roll</h2>
+            <h2>Membership Roll</h2>
           </div>
         </div>
         <div class="boards" id="boards"><div class="msg">Loading the roll…</div></div>
@@ -2324,12 +2349,28 @@
         </div>`;
     }
 
+    function leagueLogoForMember(m) {
+      const key = String(m?.membershipLeague || '').toLowerCase();
+      if (key === 'aaa') {
+        return { src: '/assets/aaa-league.png?v=2', alt: 'AAA' };
+      }
+      if (key === 'gridiron') {
+        return { src: '/assets/gridiron24-league-sm.png?v=4', alt: 'GridIron 24' };
+      }
+      return null;
+    }
+
     function memberRow(m) {
       if (!m || m.open) return '';
       const isMe = state.viewer?.id === m.id;
+      const league = leagueLogoForMember(m);
+      const mark = league
+        ? `<img class="member-league" src="${esc(league.src)}" alt="${esc(league.alt)}" width="44" height="44" loading="lazy" decoding="async" />`
+        : `<span class="member-league is-blank" aria-hidden="true"></span>`;
       return `
-        <div class="member-row${isMe ? ' is-you' : ''}" data-user-id="${esc(m.id)}">
-          <div class="name" title="${esc(m.name)}">${esc(m.name)}</div>
+        <div class="member-row${isMe ? ' is-you' : ''}" data-user-id="${esc(m.id)}" title="${esc(m.name)}">
+          ${mark}
+          <div class="name">${esc(m.name)}</div>
         </div>`;
     }
 
@@ -2350,7 +2391,9 @@
         const prev = byName.get(key);
         if (!prev || rank(m) < rank(prev)) byName.set(key, m);
       }
-      return [...byName.values()].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+      return [...byName.values()].sort((a, b) =>
+        String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' })
+      );
     }
 
     function renderUnifiedRoll() {
@@ -2358,9 +2401,9 @@
       return `
         <section class="board united">
           <div class="board-head">
-            <h2>All members</h2>
+            <h2>Membership Roll</h2>
             <div class="count">
-              <strong>${members.length}</strong> member${members.length === 1 ? '' : 's'}
+              <strong>${members.length}</strong> member${members.length === 1 ? '' : 's'} · A–Z
             </div>
           </div>
           <div class="board-body">

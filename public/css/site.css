@@ -2117,7 +2117,7 @@ footer.site-footer::before {
 .site-footer-author {
   display: inline;
   font-family: "Bebas Neue", var(--display), Impact, sans-serif;
-  font-size: 1.26rem;
+  font-size: calc(1.26rem * 0.95);
   font-weight: 400;
   letter-spacing: 0.06em;
   text-transform: uppercase;
