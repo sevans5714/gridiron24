@@ -55,7 +55,10 @@
       color: var(--muted);
     }
     .comm-nav a {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.45rem;
       padding: 0.4rem 0.5rem;
       border-left: 2px solid transparent;
       font-family: var(--display);
@@ -859,7 +862,7 @@
 
     .tools-overview {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
       gap: 0.75rem;
       margin: 0 0 1.5rem;
     }
@@ -881,8 +884,15 @@
         linear-gradient(180deg, color-mix(in srgb, var(--blue) 8%, transparent), transparent 55%),
         var(--panel);
     }
+    .tools-overview a.is-alert {
+      border-left-color: var(--detail, #ff7a18);
+    }
     .tools-overview a[hidden] { display: none !important; }
     .tools-overview strong {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
       font-family: var(--display);
       font-size: 0.88rem;
       font-weight: 700;
@@ -894,6 +904,83 @@
       color: var(--muted);
       font-size: 0.84rem;
       line-height: 1.35;
+    }
+    .tools-badge,
+    .comm-nav .tools-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.35rem;
+      height: 1.2rem;
+      padding: 0 0.35rem;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--detail, #ff7a18) 85%, #000);
+      color: #fff;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+    .members-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 0.75rem;
+      align-items: center;
+      margin: 0 0 0.85rem;
+    }
+    .members-toolbar .field {
+      flex: 1 1 14rem;
+      min-width: 0;
+      max-width: 22rem;
+    }
+    .members-toolbar .members-count {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+    .members-pending-banner {
+      margin: 0 0 0.85rem;
+      padding: 0.7rem 0.85rem;
+      border: 1px solid color-mix(in srgb, var(--detail, #ff7a18) 45%, var(--line));
+      background: color-mix(in srgb, var(--detail, #ff7a18) 12%, var(--panel));
+      color: var(--text);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .members-pending-banner strong { font-weight: 700; }
+    tr.is-pending-member td {
+      background: color-mix(in srgb, var(--detail, #ff7a18) 8%, transparent);
+    }
+    .member-creds[hidden] { display: none !important; }
+    .member-creds {
+      display: grid;
+      gap: 0.35rem;
+      margin-top: 0.55rem;
+      max-width: 14rem;
+    }
+    .member-more {
+      margin-top: 0.4rem;
+    }
+    .member-more summary {
+      cursor: pointer;
+      color: var(--blue);
+      font-size: 0.82rem;
+      font-weight: 600;
+      list-style: none;
+    }
+    .member-more summary::-webkit-details-marker { display: none; }
+    .help-more {
+      margin: 0.35rem 0 0.85rem;
+    }
+    .help-more summary {
+      cursor: pointer;
+      color: var(--blue);
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+    .help-more .help {
+      margin: 0.45rem 0 0;
     }
 
     .access-tag {
@@ -946,13 +1033,17 @@
     <a class="tools-back" href="/profile.html">← Profile</a>
     <div id="league-tools">
       <div class="tools-overview" aria-label="Tool groups">
+        <a href="#group-league-requests" id="overview-league-requests" hidden>
+          <strong>Requests <span class="tools-badge" id="overview-league-requests-badge" hidden>0</span></strong>
+          <span>Independent leagues waiting for approval</span>
+        </a>
         <a href="#group-espn">
           <strong>Sync</strong>
           <span>Rules, AAA points, playoffs, roster patrol</span>
         </a>
         <a href="#group-people" id="overview-people" hidden>
-          <strong>People</strong>
-          <span>Invites, access, owner email</span>
+          <strong>People <span class="tools-badge" id="overview-people-badge" hidden>0</span></strong>
+          <span>Invites, member access, owner email</span>
         </a>
         <a href="#group-comms">
           <strong>Broadcast</strong>
@@ -960,7 +1051,7 @@
         </a>
         <a href="#group-season" id="overview-season" hidden>
           <strong>Season</strong>
-          <span>Calendar, rankings, archive</span>
+          <span>Calendar, rankings preview, archive</span>
         </a>
       </div>
 
@@ -968,7 +1059,7 @@
       <nav class="comm-nav" aria-label="Owner Tools sections" id="tools-side-nav">
         <div class="comm-nav-group" id="nav-league-requests" hidden>
           <p class="comm-nav-label">Leagues</p>
-          <a href="#league-requests" id="jump-league-requests">League Requests</a>
+          <a href="#league-requests" id="jump-league-requests">League Requests <span class="tools-badge" id="nav-league-requests-badge" hidden>0</span></a>
         </div>
         <div class="comm-nav-group">
           <p class="comm-nav-label">Sync</p>
@@ -981,7 +1072,7 @@
         <div class="comm-nav-group" id="nav-people" hidden>
           <p class="comm-nav-label">People</p>
           <a href="#invites-admin" id="jump-invites" hidden>Invites</a>
-          <a href="#members" id="jump-members" hidden>Member Access</a>
+          <a href="#members" id="jump-members" hidden>Member Access <span class="tools-badge" id="nav-members-badge" hidden>0</span></a>
           <a href="#conference-owners" id="jump-owners">Email Owners</a>
         </div>
         <div class="comm-nav-group" id="nav-comms">
@@ -994,7 +1085,7 @@
         <div class="comm-nav-group" id="nav-season" hidden>
           <p class="comm-nav-label">Season</p>
           <a href="#calendar-admin" id="jump-calendar" hidden>Calendar</a>
-          <a href="#rankings-admin" id="jump-rankings" hidden>Rankings</a>
+          <a href="#rankings-admin" id="jump-rankings" hidden>Rankings Preview</a>
           <a href="#history-admin" id="jump-history" hidden>Season Archive</a>
         </div>
       </nav>
@@ -1054,7 +1145,7 @@
               <div class="section-head">
                 <h3>Roster Violations</h3>
               </div>
-              <p class="help">Flags managers who start players listed as Out, Doubtful, or on Injured Reserve. Patrol runs daily mid-morning and again when any NFL game is in the 1st quarter. Warning emails re-send about once per day unless you force.</p>
+              <p class="help">Flags Out / Doubtful / IR starters. Patrol runs mid-morning and early in NFL games.</p>
               <div class="sync-tools">
                 <span class="hint" id="violations-hint">Loading…</span>
                 <button type="button" class="btn" id="violations-scan">Scan &amp; Warn</button>
@@ -1076,7 +1167,11 @@
               <div class="section-head">
                 <h3>Email Invites</h3>
               </div>
-              <p class="help">Send invite links by email. Full members get franchise HQ; social accounts can only use the Members Lounge. Duplicate emails are blocked — use Resend on a pending invite. If mail is offline, copy the link after sending. Preview: <a href="/api/invites/preview-email" target="_blank" rel="noopener">Member HTML</a> · <a href="/api/invites/preview-email?social=1" target="_blank" rel="noopener">Lounge HTML</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">JSON</a>.</p>
+              <p class="help">Send invite links by email. Full members get franchise HQ; social accounts are lounge-only.</p>
+              <details class="help-more">
+                <summary>Email previews</summary>
+                <p class="help"><a href="/api/invites/preview-email" target="_blank" rel="noopener">Member HTML</a> · <a href="/api/invites/preview-email?social=1" target="_blank" rel="noopener">Lounge HTML</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">JSON</a></p>
+              </details>
               <div class="status-note" id="invites-mail-status" role="status"></div>
               <div class="status-note" id="invites-msg" role="status"></div>
               <div class="invite-compose">
@@ -1108,8 +1203,20 @@
               <div class="section-head">
                 <h3>Member Access <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
-              <p class="help">Approve or deny join requests first. After approval, assign league membership (GridIron 24 / AAA / Social), franchise, access role, lounge pass, and dues. Welcome email sends when you set membership. Preview emails: <a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
+              <p class="help">Approve join requests, then assign membership, franchise, role, lounge pass, and dues. Credentials stay collapsed under each member.</p>
+              <details class="help-more">
+                <summary>Welcome email previews</summary>
+                <p class="help"><a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
+              </details>
               <div class="status-note" id="members-msg" role="status"></div>
+              <div class="members-toolbar" id="members-toolbar" hidden>
+                <input class="field" id="members-search" type="search" placeholder="Search name, login, or email…" autocomplete="off" />
+                <label class="check-row" for="members-pending-only" style="margin:0;">
+                  <input type="checkbox" id="members-pending-only" />
+                  <span>Pending only</span>
+                </label>
+                <p class="members-count" id="members-count"></p>
+              </div>
               <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
 
@@ -1250,7 +1357,7 @@
         <section class="comm-group" id="group-season" hidden>
           <header>
             <h2>Season <span class="access-tag">Owner / Commissioner</span></h2>
-            <p>Calendar, system power rankings preview, and ESPN history archive.</p>
+            <p>Calendar, rankings preview, and ESPN history archive.</p>
           </header>
           <div class="comm-group-body">
             <section class="admin-block" id="calendar-admin" hidden>
@@ -1275,11 +1382,10 @@
             </section>
 
             <section class="admin-block" id="rankings-admin" hidden>
-              <div class="section-head"><h3>Power Rankings</h3></div>
+              <div class="section-head"><h3>Rankings Preview</h3></div>
               <p class="help">
-                Power rankings are <strong>system-generated</strong> (not commissioner-published).
-                They appear on <a href="/rankings.html">Rankings</a> after the draft —
-                Week 1 projected points before the season, then record / scoring / differential once games start.
+                Read-only live preview of system power rankings (not commissioner-published).
+                Full page: <a href="/rankings.html">Rankings</a>.
               </p>
               <div class="status-note" id="rankings-msg" role="status"></div>
               <div class="list-gap" id="rankings-list"></div>
@@ -1287,12 +1393,15 @@
 
             <section class="admin-block" id="history-admin" hidden>
               <div class="section-head"><h3>Season Archive</h3></div>
-              <p class="help">
-                Powers <a href="/members.html#record-book">Members Lounge → Record Book</a> historical seasons and draft boards.
-                Use ESPN settings URLs (<code>leagueId</code> + <code>seasonId</code>).
-                Pre-split years can share one league ID.
-                Private seasons need <code>ESPN_SWID</code> / <code>ESPN_S2</code> on the server.
-              </p>
+              <p class="help">Pipe-delimited ESPN seasons for the Members Lounge Record Book.</p>
+              <details class="help-more">
+                <summary>How to format archive lines</summary>
+                <p class="help">
+                  Use ESPN settings URLs (<code>leagueId</code> + <code>seasonId</code>).
+                  Pre-split years can share one league ID.
+                  Private seasons need <code>ESPN_SWID</code> / <code>ESPN_S2</code> on the server.
+                </p>
+              </details>
               <div class="status-note" id="history-msg" role="status"></div>
               <p class="help" id="history-auth-note" hidden></p>
               <textarea class="field field-area" id="history-lines" style="min-height:9rem;" placeholder="yearNumber|season|espnLeagueId|optional label&#10;1|2023|1856396051|Year 1&#10;2|2024|1856396051|Year 2&#10;3|2025|1856396051|Year 3"></textarea>
@@ -1728,20 +1837,98 @@
       }
     }
 
+    function setToolsBadge(id, count) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const n = Number(count) || 0;
+      el.textContent = String(n);
+      el.hidden = n <= 0;
+    }
+
+    function revealLeagueRequests() {
+      const group = document.getElementById('group-league-requests');
+      const nav = document.getElementById('nav-league-requests');
+      const overview = document.getElementById('overview-league-requests');
+      if (group) group.hidden = false;
+      if (nav) nav.hidden = false;
+      if (overview) overview.hidden = false;
+    }
+
+    function memberSearchHaystack(u) {
+      return [u.name, u.loginName, u.email, u.claim?.teamName]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+    }
+
+    function filteredMembersList(list) {
+      const q = String(document.getElementById('members-search')?.value || '').trim().toLowerCase();
+      const pendingOnly = Boolean(document.getElementById('members-pending-only')?.checked);
+      return list.filter((u) => {
+        if (pendingOnly && u.approved !== false) return false;
+        if (!q) return true;
+        return memberSearchHaystack(u).includes(q);
+      });
+    }
+
+    function wireMembersToolbar() {
+      const toolbar = document.getElementById('members-toolbar');
+      if (!toolbar || toolbar.dataset.wired === '1') return;
+      toolbar.dataset.wired = '1';
+      document.getElementById('members-search')?.addEventListener('input', () => {
+        if (window.__giMembersPayload) renderMembers(window.__giMembersPayload);
+      });
+      document.getElementById('members-pending-only')?.addEventListener('change', () => {
+        if (window.__giMembersPayload) renderMembers(window.__giMembersPayload);
+      });
+    }
+
     function renderMembers(payload) {
+      window.__giMembersPayload = payload;
       const list = payload.users || [];
       const conferences = payload.conferences || [];
       window.__giClaims = payload.claims || list.map((u) => u.claim).filter(Boolean);
       window.__giAdminLeagues = conferences;
       window.__giArchiveSeasons = payload.archiveSeasons || [];
+      wireMembersToolbar();
+      const toolbar = document.getElementById('members-toolbar');
+      if (toolbar) toolbar.hidden = !list.length;
+
+      const pendingCount = list.filter((u) => u.approved === false).length;
+      setToolsBadge('nav-members-badge', pendingCount);
+      setToolsBadge('overview-people-badge', pendingCount);
+      const peopleOverview = document.getElementById('overview-people');
+      if (peopleOverview) peopleOverview.classList.toggle('is-alert', pendingCount > 0);
+
       if (!list.length) {
         document.getElementById('members-list').innerHTML = `<div class="msg">No member accounts yet.</div>`;
+        const countEl = document.getElementById('members-count');
+        if (countEl) countEl.textContent = '';
         return;
       }
-      const pending = list.filter((u) => u.approved === false);
-      const pendingBanner = pending.length
-        ? `<div class="msg" style="margin-bottom:0.85rem;"><strong>${pending.length} awaiting approval</strong> Approve or deny, then assign league, franchise, and lounge pass.</div>`
+
+      const visible = filteredMembersList(list).slice().sort((a, b) => {
+        const ap = a.approved === false ? 0 : 1;
+        const bp = b.approved === false ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        return String(a.name || a.loginName || '').localeCompare(String(b.name || b.loginName || ''), undefined, { sensitivity: 'base' });
+      });
+      const countEl = document.getElementById('members-count');
+      if (countEl) {
+        countEl.textContent = visible.length === list.length
+          ? `${list.length} member${list.length === 1 ? '' : 's'}`
+          : `Showing ${visible.length} of ${list.length}`;
+      }
+
+      const pendingBanner = pendingCount
+        ? `<div class="members-pending-banner"><strong>${pendingCount} awaiting approval</strong> — approve or deny, then assign membership and franchise.</div>`
         : '';
+
+      if (!visible.length) {
+        document.getElementById('members-list').innerHTML = pendingBanner + `<div class="msg">No members match this filter.</div>`;
+        return;
+      }
+
       document.getElementById('members-list').innerHTML = pendingBanner + `
         <table class="data-table">
           <thead>
@@ -1756,16 +1943,19 @@
             </tr>
           </thead>
           <tbody>
-            ${list.map((u) => `
-              <tr data-user-id="${esc(u.id)}">
+            ${visible.map((u) => `
+              <tr data-user-id="${esc(u.id)}" class="${u.approved === false ? 'is-pending-member' : ''}">
                 <td>
                   <strong>${esc(u.name)}</strong><br>
                   <span class="muted-sm">${esc(u.loginName)} · ${esc(u.email)}</span>
-                  <div class="member-creds" data-creds-user="${esc(u.id)}">
-                    <input class="field" type="text" data-cred-login="${esc(u.id)}" value="${esc(u.loginName)}" autocomplete="off" spellcheck="false" aria-label="Login name for ${esc(u.name)}" />
-                    <input class="field" type="password" data-cred-pass="${esc(u.id)}" value="" placeholder="New password" autocomplete="new-password" aria-label="New password for ${esc(u.name)}" />
-                    <button type="button" class="btn btn-secondary" data-save-creds="${esc(u.id)}">Save login</button>
-                  </div>
+                  <details class="member-more">
+                    <summary>Login / password</summary>
+                    <div class="member-creds" data-creds-user="${esc(u.id)}">
+                      <input class="field" type="text" data-cred-login="${esc(u.id)}" value="${esc(u.loginName)}" autocomplete="off" spellcheck="false" aria-label="Login name for ${esc(u.name)}" />
+                      <input class="field" type="password" data-cred-pass="${esc(u.id)}" value="" placeholder="New password" autocomplete="new-password" aria-label="New password for ${esc(u.name)}" />
+                      <button type="button" class="btn btn-secondary" data-save-creds="${esc(u.id)}">Save login</button>
+                    </div>
+                  </details>
                 </td>
                 <td>
                   ${u.approved === false
@@ -3318,7 +3508,7 @@
 
     function roleAccessScope(user) {
       if (user?.siteOwner || user?.canSwitchLeagues) {
-        return 'Full HQ access — Sync, People, Broadcast, Season, and league switcher.';
+        return 'Full HQ access — league requests, Sync, People, Broadcast, Season, and league switcher.';
       }
       if (user?.role === 'commissioner') {
         return 'Full HQ access — Sync, People, Broadcast, and Season.';
@@ -3350,13 +3540,6 @@
       if (overview) overview.hidden = false;
     }
 
-    function revealLeagueRequests() {
-      const group = document.getElementById('group-league-requests');
-      const nav = document.getElementById('nav-league-requests');
-      if (group) group.hidden = false;
-      if (nav) nav.hidden = false;
-    }
-
     function showLeagueRequestsMsg(msg, ok) {
       const el = document.getElementById('league-requests-msg');
       if (!el) return;
@@ -3373,6 +3556,10 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load league requests');
       const leagues = data.leagues || [];
+      setToolsBadge('nav-league-requests-badge', leagues.length);
+      setToolsBadge('overview-league-requests-badge', leagues.length);
+      const overview = document.getElementById('overview-league-requests');
+      if (overview) overview.classList.toggle('is-alert', leagues.length > 0);
       if (!leagues.length) {
         list.innerHTML = `<div class="msg">No independent leagues waiting for approval.</div>`;
         return;

@@ -791,7 +791,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || 'Registration failed');
-        window.location.href = '/league-tools.html';
+        window.location.href = '/my-league.html';
       } catch (err) {
         showErr(err.message || 'Registration failed');
         nextBtn.disabled = false;

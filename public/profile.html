@@ -687,6 +687,10 @@
         </div>
       </div>
       <div class="tools-menu" aria-label="Owner Tools sections" id="tools-card-menu">
+        <a href="/league-tools.html#group-league-requests" id="profile-tools-requests" hidden>
+          <strong>League Requests</strong>
+          <span>Approve independent leagues</span>
+        </a>
         <a href="/league-tools.html#group-espn">
           <strong>Sync</strong>
           <span>Rules, playoffs, roster patrol</span>
@@ -701,7 +705,7 @@
         </a>
         <a href="/league-tools.html#group-season" id="profile-tools-season" hidden>
           <strong>Season</strong>
-          <span>Calendar, rankings, archive</span>
+          <span>Calendar, rankings preview, archive</span>
         </a>
       </div>
       <div class="tools-actions">
@@ -914,6 +918,7 @@
       if (toolsCard) toolsCard.hidden = !staff;
       if (jumpTools) jumpTools.hidden = !staff;
       const seasonLink = document.getElementById('profile-tools-season');
+      const requestsLink = document.getElementById('profile-tools-requests');
       const blurb = document.getElementById('tools-card-blurb');
       const toolsTitle = document.getElementById('tools-card-title');
       const toolsOpen = document.getElementById('tools-card-open');
@@ -928,9 +933,10 @@
       if (toolsOpen) toolsOpen.textContent = `Open ${deskLabel}`;
       if (toolsMenu) toolsMenu.setAttribute('aria-label', `${deskLabel} sections`);
       if (seasonLink) seasonLink.hidden = !isOwnerOrComm;
+      if (requestsLink) requestsLink.hidden = !isOwner;
       if (blurb) {
         blurb.textContent = isOwner
-          ? 'Owner desk — Sync, People, Broadcast, Season, and league switcher.'
+          ? 'Owner desk — league requests, Sync, People, Broadcast, and Season.'
           : isOwnerOrComm
             ? 'Commissioner desk — Sync, People, Broadcast, and Season.'
             : 'Conference admin desk — Sync, invites, owner email, and Broadcast.';
