@@ -31,7 +31,7 @@ function writeStore(data) {
   fs.renameSync(tmp, FILE);
 }
 
-/** Rename legacy toilet-bowl titles and normalize Mayor's Cup notes. */
+/** Rename legacy toilet-bowl titles and normalize Mayor's Cup / dues notes. */
 function migrateLegacyEvents(store) {
   let dirty = false;
   for (const ev of store.events || []) {
@@ -48,6 +48,21 @@ function migrateLegacyEvents(store) {
     if (String(ev.type || '').toLowerCase() === 'survival' && /stay in league|toilet/i.test(title)) {
       ev.title = "Mayor's Cup";
       dirty = true;
+    }
+    const isDues =
+      String(ev.type || '').toLowerCase() === 'dues' ||
+      /^dues due$/i.test(title);
+    if (isDues) {
+      const nextNotes = 'GridIron 24 $100 · AAA League $50.';
+      const nextDate = '2026-09-01';
+      if (String(ev.notes || '') !== nextNotes || String(ev.date || '') !== nextDate || String(ev.title || '') !== 'Dues Due') {
+        ev.title = 'Dues Due';
+        ev.type = 'dues';
+        ev.date = nextDate;
+        ev.notes = nextNotes;
+        ev.updatedAt = new Date().toISOString();
+        dirty = true;
+      }
     }
   }
   return dirty;

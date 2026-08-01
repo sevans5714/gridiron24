@@ -223,7 +223,7 @@ function yyyymmddLocal(d = new Date()) {
   return `${y}${m}${day}`;
 }
 
-function sitePathForMeta(meta, { daysAhead = 0 } = {}) {
+function sitePathForMeta(meta, { daysAhead = 0, daysBehind = 0 } = {}) {
   if (meta.url) {
     try {
       const u = new URL(meta.url);
@@ -234,11 +234,13 @@ function sitePathForMeta(meta, { daysAhead = 0 } = {}) {
   }
   let path = `apis/site/v2/sports/${meta.sport}/${meta.league}/scoreboard`;
   const ahead = Math.max(0, Math.min(10, Number(daysAhead) || 0));
-  if (ahead > 0 && DAILY_RANGE_LEAGUES.has(meta.id)) {
+  const behind = Math.max(0, Math.min(10, Number(daysBehind) || 0));
+  if ((ahead > 0 || behind > 0) && DAILY_RANGE_LEAGUES.has(meta.id)) {
     const start = new Date();
+    start.setDate(start.getDate() - behind);
     const end = new Date();
     end.setDate(end.getDate() + ahead);
-    path += `?dates=${yyyymmddLocal(start)}-${yyyymmddLocal(end)}&limit=200`;
+    path += `?dates=${yyyymmddLocal(start)}-${yyyymmddLocal(end)}&limit=300`;
   }
   return path;
 }
@@ -538,8 +540,8 @@ async function fillRacingFields(games) {
   });
 }
 
-async function fetchLeagueRaw(meta, { daysAhead = 0 } = {}) {
-  const pathAndQuery = sitePathForMeta(meta, { daysAhead });
+async function fetchLeagueRaw(meta, { daysAhead = 0, daysBehind = 0 } = {}) {
+  const pathAndQuery = sitePathForMeta(meta, { daysAhead, daysBehind });
   if (!pathAndQuery) {
     throw Object.assign(new Error(`${meta.label} scoreboard URL invalid`), { status: 502 });
   }
@@ -779,7 +781,7 @@ function boardFromFantasyConferences(meta, conferences = []) {
   );
 }
 
-async function getSportsScores({ leagues, extraBoards = [], daysAhead = 0 } = {}) {
+async function getSportsScores({ leagues, extraBoards = [], daysAhead = 0, daysBehind = 0 } = {}) {
   const ids = parseLeagueList(leagues);
   const fetchedAt = new Date().toISOString();
   let usedFallback = false;
@@ -799,7 +801,7 @@ async function getSportsScores({ leagues, extraBoards = [], daysAhead = 0 } = {}
         };
       }
       try {
-        const { raw, from } = await fetchLeagueRaw(meta, { daysAhead });
+        const { raw, from } = await fetchLeagueRaw(meta, { daysAhead, daysBehind });
         let games = (raw.events || []).map((ev) => {
           if (meta.kind === 'golf') return normalizeGolfEvent(ev);
           if (meta.kind === 'racing') return normalizeRacingEvent(ev, meta.id);

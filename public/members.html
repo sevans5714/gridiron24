@@ -23,10 +23,12 @@
       --mo-upcoming: #f0d78c;
       --mo-results: #7ec8ff;
       --mo-due: #ff9b6a;
-      --mo-casino: #e8c45a;
-      --mo-casino-soft: #f3d98a;
-      --mo-casino-ink: #0d1410;
+      --mo-casino: #9fd4b8;
+      --mo-casino-soft: #c5e6d4;
+      --mo-casino-ink: #06140e;
       --mo-casino-felt: #3ecf8a;
+      --mo-casino-line: rgba(159, 212, 184, 0.24);
+      --mo-casino-fill: rgba(62, 207, 138, 0.14);
       --mo-line: rgba(126, 200, 255, 0.14);
       --mo-field: #02060f;
       --mo-card: rgba(0, 0, 0, 0.22);
@@ -46,9 +48,9 @@
         radial-gradient(ellipse 45% 40% at 0% 100%, rgba(232, 196, 90, 0.08), transparent 50%),
         linear-gradient(180deg, rgba(8, 14, 30, 0.97) 0%, rgba(4, 8, 18, 0.94) 100%);
       --mo-panel-degen:
-        radial-gradient(ellipse 70% 50% at 40% -12%, rgba(232, 196, 90, 0.14), transparent 55%),
-        radial-gradient(ellipse 55% 45% at 100% 90%, rgba(32, 110, 72, 0.28), transparent 55%),
-        linear-gradient(180deg, rgba(6, 18, 14, 0.98) 0%, rgba(3, 8, 10, 0.96) 100%);
+        radial-gradient(ellipse 70% 50% at 40% -12%, rgba(62, 207, 138, 0.1), transparent 55%),
+        radial-gradient(ellipse 55% 45% at 100% 90%, rgba(32, 110, 72, 0.3), transparent 55%),
+        linear-gradient(180deg, rgba(5, 16, 12, 0.98) 0%, rgba(3, 8, 10, 0.96) 100%);
       color: var(--mo-text);
       background-color: var(--mo-field);
       background-image:
@@ -71,10 +73,12 @@
       --mo-upcoming: #a16207;
       --mo-results: #1f5ef0;
       --mo-due: #c2410c;
-      --mo-casino: #a16207;
-      --mo-casino-soft: #92400e;
+      --mo-casino: #0f766e;
+      --mo-casino-soft: #115e59;
       --mo-casino-ink: #ffffff;
       --mo-casino-felt: #15803d;
+      --mo-casino-line: rgba(15, 118, 110, 0.22);
+      --mo-casino-fill: rgba(15, 118, 110, 0.1);
       --mo-line: rgba(20, 24, 31, 0.12);
       --mo-field: #e8ecf1;
       --mo-card: #ffffff;
@@ -90,7 +94,7 @@
       --mo-panel-mock:
         linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
       --mo-panel-degen:
-        linear-gradient(180deg, #f7fbf8 0%, #fffbeb 45%, #f8fafc 100%);
+        linear-gradient(180deg, #f4faf7 0%, #f7faf8 45%, #f8fafc 100%);
       color: var(--mo-text);
       background-color: var(--mo-field);
       background-image:
@@ -2263,7 +2267,7 @@
     .cpool-type {
       text-align: left;
       padding: 0.65rem 0.7rem;
-      border: 1px solid rgba(232, 196, 90, 0.22);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 22%, transparent);
       background: rgba(0, 0, 0, 0.28);
       color: rgba(244, 247, 255, 0.92);
       cursor: pointer;
@@ -2285,15 +2289,15 @@
       color: var(--mo-muted);
     }
     .cpool-type.is-on {
-      border-color: rgba(243, 217, 138, 0.55);
-      background: rgba(232, 196, 90, 0.16);
+      border-color: color-mix(in srgb, var(--mo-casino-soft) 55%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 16%, transparent);
     }
     .cpool-create {
       display: grid;
       gap: 0.55rem;
       margin: 0 0 1rem;
       padding: 0.75rem;
-      border: 1px solid rgba(232, 196, 90, 0.2);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 20%, transparent);
       background: rgba(0, 0, 0, 0.22);
     }
     .cpool-create .row {
@@ -2326,8 +2330,8 @@
       appearance: none;
       min-height: 2.2rem;
       padding: 0.4rem 0.9rem;
-      border: 1px solid rgba(243, 217, 138, 0.45);
-      background: rgba(232, 196, 90, 0.25);
+      border: 1px solid color-mix(in srgb, var(--mo-casino-soft) 45%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 25%, transparent);
       color: var(--mo-casino);
       font-family: "Oswald", sans-serif;
       font-weight: 700;
@@ -2488,7 +2492,7 @@
       color: var(--mo-live);
     }
     .cpool-squares button.is-taken:not(.is-mine) {
-      background: rgba(232, 196, 90, 0.18);
+      background: color-mix(in srgb, var(--mo-casino) 18%, transparent);
       color: var(--mo-casino);
     }
     .cpool-opt {
@@ -3239,9 +3243,13 @@
       45% { opacity: 1; }
       70%, 100% { left: 120%; opacity: 0; }
     }
+    .mock-start-btn-sub,
+    .mock-start-copy span {
+      display: none !important;
+    }
     .mock-start-copy {
       display: grid;
-      gap: 0.25rem;
+      gap: 0;
       min-width: 0;
     }
     .mock-start-copy strong {
@@ -3851,12 +3859,12 @@
       flex: 1 1 auto;
       min-height: 0;
       overflow: auto;
-      --mock-cols: 2rem 2.2rem 1.35rem minmax(11rem, 1.55fr) 2.4rem 2rem 2.4rem 2.6rem 1.9rem 3.1rem 2.1rem 2.2rem 2.9rem 2.5rem 3rem 2.5rem;
+      --mock-cols: 2rem 1.35rem 2.2rem minmax(11rem, 1.55fr) 2.4rem 2rem 2.4rem 2.6rem 1.9rem 3.1rem 2.1rem 2.2rem 2.9rem 2.5rem 3rem 2.5rem;
     }
     .mock-myteam,
     .mock-side {
-      max-height: 38rem;
-      overflow: hidden;
+      max-height: none;
+      overflow: visible;
       display: flex;
       flex-direction: column;
     }
@@ -3890,12 +3898,18 @@
       background: color-mix(in srgb, var(--mo-blue) 10%, transparent);
     }
     .mock-side-panel {
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-height: 0;
-      overflow: auto;
+      overflow: visible;
       display: none;
     }
     .mock-side-panel.is-on { display: block; }
+    .mock-side-panel[data-mock-side-panel="targets"].is-on,
+    .mock-side-panel[data-mock-side-panel="recent"].is-on {
+      max-height: min(32rem, 55vh);
+      overflow: auto;
+      scrollbar-width: thin;
+    }
     .mock-side-head { position: sticky; top: 0; }
     .mock-targets-drop {
       min-height: 12rem;
@@ -4165,6 +4179,11 @@
       white-space: nowrap;
     }
     .mock-pool-cols .c-blank { cursor: default; }
+    .mock-pool-cols .c-target {
+      text-align: center;
+      letter-spacing: 0.06em;
+      color: rgba(176, 198, 230, 0.45);
+    }
     .mock-pool-cols .c-player,
     .mock-pool-cols button.c-player {
       text-align: left;
@@ -4575,15 +4594,15 @@
 
     .mock-slot-row {
       display: grid;
-      grid-template-columns: 3.2rem minmax(0, 1fr) auto;
-      gap: 0.5rem;
+      grid-template-columns: 2.8rem minmax(0, 1fr) auto;
+      gap: 0.4rem;
       align-items: center;
-      margin: 0.35rem 0.65rem;
-      padding: 0.45rem 0.55rem;
-      border-radius: 0.65rem;
+      margin: 0.2rem 0.55rem;
+      padding: 0.32rem 0.45rem;
+      border-radius: 0.5rem;
       border: 1px solid rgba(126, 200, 255, 0.1);
       background: rgba(255, 255, 255, 0.03);
-      font-size: 0.86rem;
+      font-size: 0.82rem;
     }
     .mock-slot-row.is-bench {
       opacity: 0.88;
@@ -4652,13 +4671,34 @@
       text-transform: uppercase;
       color: var(--mo-muted);
     }
+    #mock-myteam-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.1rem 0.25rem;
+      padding: 0.15rem 0 0.45rem;
+      align-content: start;
+    }
+    #mock-myteam-list .mock-slot-divider,
+    #mock-myteam-list .records-empty {
+      grid-column: 1 / -1;
+    }
+    #mock-myteam-list .mock-slot-row {
+      margin: 0.12rem 0.35rem;
+    }
+    @media (max-width: 1100px) {
+      #mock-myteam-list {
+        grid-template-columns: 1fr;
+      }
+    }
 
     .mock-complete-dialog {
-      width: min(72rem, calc(100vw - 1.25rem));
-      max-width: calc(100vw - 1.25rem);
+      width: min(96rem, calc(100vw - 1rem));
+      max-width: calc(100vw - 1rem);
+      max-height: calc(100vh - 1rem);
       padding: 0;
       border: 0;
       background: transparent;
+      overflow: visible;
     }
     .mock-complete-dialog::backdrop {
       background:
@@ -4666,8 +4706,8 @@
         rgba(4, 10, 18, 0.84);
     }
     .mock-complete-sheet {
-      max-height: min(92vh, 56rem);
-      overflow: auto;
+      max-height: none;
+      overflow: visible;
       border: 1px solid color-mix(in srgb, var(--mo-gold) 35%, var(--mo-line));
       border-radius: 1.1rem;
       background:
@@ -4678,21 +4718,19 @@
       color: var(--mo-text);
     }
     .mock-complete-hero {
-      position: sticky;
-      top: 0;
+      position: static;
       z-index: 2;
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
-      gap: 0.85rem 1rem;
+      gap: 0.65rem 0.85rem;
       align-items: center;
-      padding: 1.1rem 1.2rem;
+      padding: 0.75rem 1rem;
       border-bottom: 1px solid var(--mo-line);
       background: color-mix(in srgb, var(--mo-surface) 92%, transparent);
-      backdrop-filter: blur(8px);
     }
     .mock-complete-logo {
-      width: 3.5rem;
-      height: 3.5rem;
+      width: 2.75rem;
+      height: 2.75rem;
       object-fit: contain;
       filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
     }
@@ -4723,8 +4761,8 @@
     .mock-complete-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.45rem 0.65rem;
-      padding: 0.85rem 1.2rem 0.15rem;
+      gap: 0.35rem 0.5rem;
+      padding: 0.55rem 1rem 0.1rem;
     }
     .mock-complete-chip {
       display: inline-flex;
@@ -4742,13 +4780,13 @@
     }
     .mock-complete-board {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
-      gap: 0.75rem;
-      padding: 0.85rem 1.2rem 1.15rem;
+      grid-template-columns: repeat(auto-fill, minmax(13.25rem, 1fr));
+      gap: 0.5rem;
+      padding: 0.5rem 1rem 0.75rem;
     }
     .mock-complete-team {
       border: 1px solid var(--mo-line);
-      border-radius: 0.85rem;
+      border-radius: 0.65rem;
       background: var(--mo-surface-2);
       overflow: hidden;
       min-width: 0;
@@ -4761,16 +4799,16 @@
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      gap: 0.5rem;
-      padding: 0.65rem 0.75rem 0.55rem;
+      gap: 0.35rem;
+      padding: 0.4rem 0.5rem;
       border-bottom: 1px solid var(--mo-line);
       background: color-mix(in srgb, var(--mo-blue) 8%, transparent);
     }
     .mock-complete-team-head strong {
       font-family: "Oswald", sans-serif;
-      font-size: 0.88rem;
+      font-size: 0.74rem;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -4778,24 +4816,30 @@
     }
     .mock-complete-team-head span {
       flex: 0 0 auto;
-      font-size: 0.7rem;
+      font-size: 0.64rem;
       color: var(--mo-muted);
       font-variant-numeric: tabular-nums;
     }
     .mock-complete-slots {
       display: grid;
-      gap: 0.28rem;
-      padding: 0.55rem 0.55rem 0.7rem;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.12rem 0.3rem;
+      padding: 0.35rem 0.35rem 0.45rem;
+      align-content: start;
+    }
+    .mock-complete-slots .mock-complete-divider {
+      grid-column: 1 / -1;
     }
     .mock-complete-row {
       display: grid;
-      grid-template-columns: 2.7rem minmax(0, 1fr) auto;
-      gap: 0.4rem;
+      grid-template-columns: 2.15rem minmax(0, 1fr);
+      gap: 0.22rem;
       align-items: center;
-      padding: 0.32rem 0.4rem;
-      border-radius: 0.45rem;
+      padding: 0.16rem 0.22rem;
+      border-radius: 0.28rem;
       border: 1px solid transparent;
       background: rgba(255, 255, 255, 0.02);
+      min-width: 0;
     }
     .mock-complete-row.is-bench {
       opacity: 0.88;
@@ -4809,11 +4853,11 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 1.4rem;
-      padding: 0.1rem 0.25rem;
-      border-radius: 0.3rem;
+      min-height: 1.1rem;
+      padding: 0.05rem 0.16rem;
+      border-radius: 0.22rem;
       font-family: "Oswald", sans-serif;
-      font-size: 0.68rem;
+      font-size: 0.56rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       color: #061018;
@@ -4833,43 +4877,37 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 0.82rem;
+      font-size: 0.68rem;
       font-weight: 600;
       color: var(--mo-text);
+      line-height: 1.15;
     }
     .mock-complete-row .nm em {
       font-style: normal;
       color: var(--mo-muted);
       font-weight: 500;
-      font-size: 0.7rem;
-      margin-left: 0.25rem;
+      font-size: 0.56rem;
+      margin-left: 0.18rem;
     }
     .mock-complete-row .bye {
-      font-family: "Oswald", sans-serif;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: var(--mo-muted);
-      font-variant-numeric: tabular-nums;
+      display: none;
     }
     .mock-complete-divider {
-      margin: 0.25rem 0.15rem 0.05rem;
+      margin: 0.18rem 0.05rem 0.02rem;
       font-family: "Oswald", sans-serif;
-      font-size: 0.62rem;
+      font-size: 0.56rem;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--mo-muted);
     }
     .mock-complete-foot {
-      position: sticky;
-      bottom: 0;
+      position: static;
       display: flex;
       justify-content: flex-end;
       gap: 0.65rem;
-      padding: 0.85rem 1.2rem 1.1rem;
+      padding: 0.55rem 1rem 0.75rem;
       border-top: 1px solid var(--mo-line);
-      background: color-mix(in srgb, var(--mo-surface) 94%, transparent);
-      backdrop-filter: blur(8px);
+      background: transparent;
     }
     .mock-complete-foot .mock-dialog-yes {
       min-width: 10rem;
@@ -4886,6 +4924,9 @@
         right: 0.55rem;
       }
       .mock-complete-board {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .mock-complete-slots {
         grid-template-columns: 1fr;
       }
     }
@@ -5220,20 +5261,29 @@
       appearance: none;
       display: grid;
       place-items: center;
-      width: 1.25rem;
-      height: 1.25rem;
-      margin: 0;
+      width: 1.35rem;
+      height: 1.35rem;
+      margin: 0 auto;
       padding: 0;
       border: 0;
-      border-radius: 0.2rem;
+      border-radius: 0.25rem;
       background: transparent;
       cursor: pointer;
-      opacity: 0.72;
-      transition: opacity 0.15s ease, transform 0.15s ease, filter 0.15s ease;
+      opacity: 0.78;
+      color: rgba(232, 232, 240, 0.85);
+      transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease, filter 0.15s ease;
     }
     .mock-target-btn:hover {
       opacity: 1;
       transform: scale(1.08);
+    }
+    .mock-target-btn.is-on {
+      opacity: 1;
+      color: #f0c24b;
+      filter: drop-shadow(0 0 6px rgba(240, 194, 75, 0.45));
+    }
+    .mock-target-btn.is-on:hover {
+      color: #ffd76a;
     }
     .mock-target-btn:disabled {
       opacity: 0.28;
@@ -5247,19 +5297,15 @@
       display: block;
       pointer-events: none;
     }
+    .mock-target-btn .mock-target-star {
+      font-size: 1.05rem;
+      line-height: 1;
+      pointer-events: none;
+      text-shadow: 0 0 8px rgba(240, 194, 75, 0.45);
+    }
     .mock-target-btn:empty {
       visibility: hidden;
       pointer-events: none;
-    }
-    .mock-target-star {
-      flex: 0 0 auto;
-      color: #f0c24b;
-      font-size: 0.82rem;
-      line-height: 1;
-      text-shadow: 0 0 8px rgba(240, 194, 75, 0.45);
-    }
-    .mock-player-line .mock-target-star {
-      margin-right: 0.15rem;
     }
     .mock-player.is-drafted {
       opacity: 0.78;
@@ -5565,7 +5611,7 @@
       font-weight: 700;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: var(--mo-gold);
+      color: var(--mo-casino);
     }
     .palace-label h2 {
       margin: 0;
@@ -5595,7 +5641,7 @@
       font-weight: 600;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--mo-gold);
+      color: var(--mo-casino);
     }
     .palace-stat strong {
       font-family: "Oswald", sans-serif;
@@ -5615,14 +5661,19 @@
     .palace-stat.is-record .l { color: #ff8f8f; }
     .palace-stat.is-record i {
       font-style: normal;
-      color: rgba(232, 196, 90, 0.45);
+      color: color-mix(in srgb, var(--mo-casino) 45%, transparent);
       font-weight: 500;
     }
     .palace-stat.is-funds strong { color: #b8ffd6; }
+    .palace-stat.is-earn strong { color: rgba(232, 232, 240, 0.9); }
+    .palace-stat.is-earn strong.is-up { color: #b8ffd6; }
+    .palace-stat.is-earn strong.is-down { color: #ff8f8f; }
     html[data-theme="day"] .palace-stat.is-record .w { color: #15803d; }
     html[data-theme="day"] .palace-stat.is-record .l { color: #b91c1c; }
-    html[data-theme="day"] .palace-stat.is-record i { color: rgba(161, 98, 7, 0.35); }
+    html[data-theme="day"] .palace-stat.is-record i { color: color-mix(in srgb, var(--mo-casino) 35%, transparent); }
     html[data-theme="day"] .palace-stat.is-funds strong { color: #15803d; }
+    html[data-theme="day"] .palace-stat.is-earn strong.is-up { color: #15803d; }
+    html[data-theme="day"] .palace-stat.is-earn strong.is-down { color: #b91c1c; }
 
     .degen-bank {
       display: none;
@@ -5630,7 +5681,7 @@
     .degen-stat {
       padding: 0.65rem 0.75rem;
       border-radius: 0.75rem;
-      border: 1px solid rgba(232, 196, 90, 0.22);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 22%, transparent);
       background: rgba(0, 0, 0, 0.28);
     }
     .degen-stat.is-cash {
@@ -5776,7 +5827,7 @@
       width: 100%;
       min-height: 2rem;
       padding: 0.35rem 0.6rem;
-      border: 1px solid rgba(232, 196, 90, 0.25);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 25%, transparent);
       background: rgba(0, 0, 0, 0.35);
       color: var(--mo-text);
       font: inherit;
@@ -5836,7 +5887,7 @@
     .degen-board { display: grid; gap: 0.55rem; }
     .degen-game {
       padding: 0.55rem 0.65rem 0.6rem;
-      border: 1px solid rgba(232, 196, 90, 0.18);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 18%, transparent);
       background:
         linear-gradient(180deg, rgba(10, 22, 16, 0.9) 0%, rgba(4, 10, 12, 0.88) 100%);
       margin: 0;
@@ -5874,8 +5925,8 @@
     }
     .degen-more-lines {
       appearance: none;
-      border: 1px solid rgba(232, 196, 90, 0.35);
-      background: rgba(232, 196, 90, 0.08);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 35%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 8%, transparent);
       color: var(--mo-casino);
       font-family: "Oswald", sans-serif;
       font-size: 0.68rem;
@@ -5886,19 +5937,19 @@
       cursor: pointer;
       border-radius: 0.2rem;
     }
-    .degen-more-lines:hover { background: rgba(232, 196, 90, 0.16); }
+    .degen-more-lines:hover { background: color-mix(in srgb, var(--mo-casino) 16%, transparent); }
     html[data-theme="day"] .degen-more-lines {
-      border-color: rgba(161, 98, 7, 0.28);
-      background: rgba(161, 98, 7, 0.06);
+      border-color: color-mix(in srgb, var(--mo-casino) 28%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 6%, transparent);
     }
     .degen-alts {
       margin-top: 0.55rem;
       padding-top: 0.55rem;
-      border-top: 1px solid rgba(232, 196, 90, 0.18);
+      border-top: 1px solid color-mix(in srgb, var(--mo-casino) 18%, transparent);
       display: grid;
       gap: 0.5rem;
     }
-    html[data-theme="day"] .degen-alts { border-top-color: rgba(161, 98, 7, 0.12); }
+    html[data-theme="day"] .degen-alts { border-top-color: color-mix(in srgb, var(--mo-casino) 12%, transparent); }
     .degen-alts-label {
       margin: 0 0 0.25rem;
       font-family: "Oswald", sans-serif;
@@ -5926,7 +5977,7 @@
     }
     .degen-stake-chip {
       appearance: none;
-      border: 1px solid rgba(232, 196, 90, 0.3);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 30%, transparent);
       background: rgba(0, 0, 0, 0.22);
       color: var(--mo-text);
       font-family: "Oswald", sans-serif;
@@ -5940,17 +5991,17 @@
     }
     .degen-stake-chip:hover,
     .degen-stake-chip.is-on {
-      border-color: rgba(232, 196, 90, 0.7);
-      background: rgba(232, 196, 90, 0.16);
+      border-color: color-mix(in srgb, var(--mo-casino) 70%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 16%, transparent);
       color: var(--mo-casino);
     }
     html[data-theme="day"] .degen-stake-chip {
-      border-color: rgba(161, 98, 7, 0.22);
+      border-color: color-mix(in srgb, var(--mo-casino) 22%, transparent);
       background: #fff;
     }
     html[data-theme="day"] .degen-stake-chip:hover,
     html[data-theme="day"] .degen-stake-chip.is-on {
-      background: rgba(161, 98, 7, 0.08);
+      background: color-mix(in srgb, var(--mo-casino) 8%, transparent);
       color: var(--mo-casino);
     }
     .degen-wager-bar {
@@ -5971,7 +6022,7 @@
     .degen-rebet {
       appearance: none;
       margin-top: 0.35rem;
-      border: 1px solid rgba(232, 196, 90, 0.28);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 28%, transparent);
       background: transparent;
       color: var(--mo-casino);
       font-family: "Oswald", sans-serif;
@@ -5983,8 +6034,8 @@
       cursor: pointer;
       border-radius: 0.2rem;
     }
-    .degen-rebet:hover { background: rgba(232, 196, 90, 0.12); }
-    html[data-theme="day"] .degen-rebet { border-color: rgba(161, 98, 7, 0.22); }
+    .degen-rebet:hover { background: color-mix(in srgb, var(--mo-casino) 12%, transparent); }
+    html[data-theme="day"] .degen-rebet { border-color: color-mix(in srgb, var(--mo-casino) 22%, transparent); }
     .degen-game-cols,
     .degen-game-row {
       display: grid;
@@ -6000,15 +6051,15 @@
       font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: rgba(243, 217, 138, 0.55);
+      color: color-mix(in srgb, var(--mo-casino-soft) 55%, transparent);
       text-align: center;
     }
     .degen-game-cols span:first-child { text-align: left; }
-    html[data-theme="day"] .degen-game-cols { color: rgba(161, 98, 7, 0.55); }
+    html[data-theme="day"] .degen-game-cols { color: color-mix(in srgb, var(--mo-casino) 55%, transparent); }
     .degen-game-row + .degen-game-row {
       margin-top: 0.3rem;
       padding-top: 0.3rem;
-      border-top: 1px solid rgba(232, 196, 90, 0.1);
+      border-top: 1px solid color-mix(in srgb, var(--mo-casino) 10%, transparent);
     }
     html[data-theme="day"] .degen-game-row + .degen-game-row {
       border-top-color: rgba(20, 24, 31, 0.08);
@@ -6067,7 +6118,7 @@
       justify-items: center;
       align-content: center;
       min-height: 2.55rem;
-      border: 1px solid rgba(232, 196, 90, 0.22);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 22%, transparent);
       border-radius: 0.2rem;
       background: rgba(0, 0, 0, 0.35);
       color: var(--mo-text);
@@ -6103,8 +6154,8 @@
     }
     .degen-cell.is-on,
     button.degen-cell:hover:not(.is-empty) {
-      border-color: rgba(243, 217, 138, 0.7);
-      background: rgba(232, 196, 90, 0.22);
+      border-color: color-mix(in srgb, var(--mo-casino-soft) 70%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 22%, transparent);
       color: #fff;
     }
     .degen-cell.is-on .degen-cell-sub,
@@ -6157,8 +6208,8 @@
     html[data-theme="day"] .degen-cell.is-on,
     html[data-theme="day"] button.degen-cell:hover:not(.is-empty) {
       color: var(--mo-text);
-      background: rgba(161, 98, 7, 0.12);
-      border-color: rgba(161, 98, 7, 0.45);
+      background: color-mix(in srgb, var(--mo-casino) 12%, transparent);
+      border-color: color-mix(in srgb, var(--mo-casino) 45%, transparent);
     }
     html[data-theme="day"] .degen-cell.is-on .degen-cell-sub,
     html[data-theme="day"] button.degen-cell:hover:not(.is-empty) .degen-cell-sub {
@@ -6169,19 +6220,19 @@
       top: 0.75rem;
       padding: 0;
       border-radius: 0.35rem;
-      border: 1px solid rgba(232, 196, 90, 0.4);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 40%, transparent);
       background:
         linear-gradient(180deg, rgba(12, 28, 20, 0.98) 0%, rgba(6, 12, 12, 0.97) 100%);
       box-shadow:
         0 14px 28px rgba(0, 0, 0, 0.35),
-        inset 0 1px 0 rgba(243, 217, 138, 0.12);
+        inset 0 1px 0 color-mix(in srgb, var(--mo-casino-soft) 12%, transparent);
       overflow: hidden;
     }
     html[data-theme="day"] .degen-ticket {
-      border-color: rgba(161, 98, 7, 0.28);
+      border-color: color-mix(in srgb, var(--mo-casino) 28%, transparent);
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(161, 98, 7, 0.08), transparent 55%),
-        linear-gradient(180deg, #fffef8 0%, #fffbeb 100%);
+        radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--mo-casino) 8%, transparent), transparent 55%),
+        linear-gradient(180deg, #f7fbf9 0%, #ffffff 100%);
       box-shadow: 0 12px 28px rgba(20, 24, 31, 0.08);
     }
     .degen-ticket-head {
@@ -6190,12 +6241,12 @@
       justify-content: space-between;
       gap: 0.65rem;
       padding: 0.8rem 0.9rem 0.7rem;
-      border-bottom: 1px solid rgba(232, 196, 90, 0.28);
-      background: rgba(232, 196, 90, 0.12);
+      border-bottom: 1px solid color-mix(in srgb, var(--mo-casino) 28%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 12%, transparent);
     }
     html[data-theme="day"] .degen-ticket-head {
-      border-bottom-color: rgba(161, 98, 7, 0.18);
-      background: rgba(161, 98, 7, 0.06);
+      border-bottom-color: color-mix(in srgb, var(--mo-casino) 18%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 6%, transparent);
     }
     .degen-ticket-kicker {
       margin: 0 0 0.2rem;
@@ -6204,7 +6255,7 @@
       font-weight: 600;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: rgba(243, 217, 138, 0.72);
+      color: color-mix(in srgb, var(--mo-casino-soft) 72%, transparent);
     }
     html[data-theme="day"] .degen-ticket-kicker { color: var(--mo-casino); }
     .degen-ticket h3 {
@@ -6227,7 +6278,7 @@
     .degen-slip-empty {
       padding: 1.15rem 0.5rem !important;
       text-align: center;
-      border: 1px dashed rgba(232, 196, 90, 0.28);
+      border: 1px dashed color-mix(in srgb, var(--mo-casino) 28%, transparent);
       margin: 0.5rem 0;
       border-radius: 0.4rem;
       font-size: 0.86rem;
@@ -6239,7 +6290,7 @@
       gap: 0.5rem;
       align-items: center;
       padding: 0.6rem 0.1rem;
-      border-bottom: 1px solid rgba(232, 196, 90, 0.14);
+      border-bottom: 1px solid color-mix(in srgb, var(--mo-casino) 14%, transparent);
       font-size: 0.86rem;
     }
     .degen-leg:last-child { border-bottom: 0; }
@@ -6291,13 +6342,13 @@
     }
     .degen-ticket-summary {
       padding: 0.75rem 0.9rem 0.9rem;
-      border-top: 1px solid rgba(232, 196, 90, 0.28);
+      border-top: 1px solid color-mix(in srgb, var(--mo-casino) 28%, transparent);
       background: rgba(0, 0, 0, 0.28);
       display: grid;
       gap: 0.55rem;
     }
     html[data-theme="day"] .degen-ticket-summary {
-      border-top-color: rgba(161, 98, 7, 0.16);
+      border-top-color: color-mix(in srgb, var(--mo-casino) 16%, transparent);
       background: rgba(255, 251, 235, 0.9);
     }
     .degen-slip-bar {
@@ -6323,7 +6374,7 @@
       width: 100%;
       max-width: none;
       border-radius: 0.4rem;
-      border-color: rgba(232, 196, 90, 0.35);
+      border-color: color-mix(in srgb, var(--mo-casino) 35%, transparent);
       font-family: "Oswald", sans-serif;
       font-size: 1.1rem;
       font-weight: 700;
@@ -6339,12 +6390,12 @@
       display: grid;
       gap: 0.15rem;
       padding: 0.5rem 0.55rem;
-      border: 1px solid rgba(232, 196, 90, 0.22);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 22%, transparent);
       border-radius: 0.4rem;
       background: rgba(0, 0, 0, 0.28);
     }
     html[data-theme="day"] .degen-payout-grid > div {
-      border-color: rgba(161, 98, 7, 0.14);
+      border-color: color-mix(in srgb, var(--mo-casino) 14%, transparent);
       background: #fff;
     }
     .degen-payout-grid .label {
@@ -6370,14 +6421,14 @@
     .lounge-section.is-degen .degen-btn-lock,
     .lounge-section.is-degen .degen-btn-ghost {
       border-radius: 0.4rem;
-      border: 1px solid rgba(232, 196, 90, 0.4);
-      background: rgba(232, 196, 90, 0.28);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 40%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 28%, transparent);
       color: var(--mo-casino-soft);
       letter-spacing: 0.08em;
     }
     .lounge-section.is-degen .degen-btn-ghost {
       background: transparent;
-      color: rgba(243, 217, 138, 0.9);
+      color: color-mix(in srgb, var(--mo-casino-soft) 90%, transparent);
       min-height: 2.35rem;
       padding: 0 0.85rem;
       flex: 0 0 auto;
@@ -6391,20 +6442,20 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      background: linear-gradient(180deg, #f3d98a 0%, #c9a227 100%);
-      border-color: rgba(243, 217, 138, 0.65);
+      background: linear-gradient(180deg, #4dff9a 0%, #1a9a58 100%);
+      border-color: color-mix(in srgb, var(--mo-casino-felt) 65%, transparent);
       color: var(--mo-casino-ink);
-      box-shadow: 0 10px 22px rgba(201, 162, 39, 0.28);
+      box-shadow: 0 10px 22px rgba(26, 154, 88, 0.28);
     }
     .lounge-section.is-degen .degen-slip-bar button:hover,
     .lounge-section.is-degen .degen-more:hover,
     .lounge-section.is-degen .degen-btn-lock:hover,
     .lounge-section.is-degen .degen-btn-ghost:hover {
-      background: rgba(232, 196, 90, 0.42);
+      background: color-mix(in srgb, var(--mo-casino) 42%, transparent);
       color: #fff;
     }
     .lounge-section.is-degen .degen-btn-lock:hover {
-      background: linear-gradient(180deg, #f7e4a4 0%, #d4af37 100%);
+      background: linear-gradient(180deg, #6affb0 0%, #22a862 100%);
       color: var(--mo-casino-ink);
     }
     .lounge-section.is-degen .degen-btn-lock:disabled {
@@ -6440,7 +6491,7 @@
       margin: 0 0 0.65rem;
       padding: 0.65rem 0.75rem;
       border-radius: 0.75rem;
-      border: 1px solid rgba(232, 196, 90, 0.22);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 22%, transparent);
       background: rgba(0, 0, 0, 0.28);
     }
     .degen-future-banner strong { color: var(--mo-casino); }
@@ -6453,7 +6504,7 @@
     .degen-future-pick {
       appearance: none;
       text-align: left;
-      border: 1px solid rgba(232, 196, 90, 0.2);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 20%, transparent);
       border-radius: 0.55rem;
       background: rgba(0, 0, 0, 0.28);
       color: var(--mo-text);
@@ -6471,8 +6522,8 @@
     }
     .degen-future-pick.is-on,
     .degen-future-pick:hover {
-      border-color: rgba(243, 217, 138, 0.55);
-      background: rgba(232, 196, 90, 0.22);
+      border-color: color-mix(in srgb, var(--mo-casino-soft) 55%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 22%, transparent);
     }
     .degen-more {
       margin-top: 0.65rem;
@@ -6495,7 +6546,7 @@
     }
     .degen-slip-row, .degen-lb-row {
       padding: 0.45rem 0;
-      border-bottom: 1px solid rgba(232, 196, 90, 0.1);
+      border-bottom: 1px solid color-mix(in srgb, var(--mo-casino) 10%, transparent);
       font-size: 0.86rem;
     }
     .degen-slip-row .top, .degen-lb-row {
@@ -6512,8 +6563,8 @@
       gap: 0.65rem;
       margin: 0 0 0.65rem;
       padding: 0.55rem 0.7rem;
-      border: 1px solid rgba(243, 217, 138, 0.35);
-      background: rgba(232, 196, 90, 0.12);
+      border: 1px solid color-mix(in srgb, var(--mo-casino-soft) 35%, transparent);
+      background: color-mix(in srgb, var(--mo-casino) 12%, transparent);
     }
     .degen-league-banner img {
       width: 2.1rem;
@@ -6527,7 +6578,7 @@
       font-size: 0.68rem;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: rgba(243, 217, 138, 0.75);
+      color: color-mix(in srgb, var(--mo-casino-soft) 75%, transparent);
     }
     .degen-league-banner .name {
       margin: 0.1rem 0 0;
@@ -6550,7 +6601,7 @@
       gap: 0.35rem;
       margin: 0;
       padding: 0.25rem 0.45rem;
-      border: 1px solid rgba(243, 217, 138, 0.28);
+      border: 1px solid color-mix(in srgb, var(--mo-casino-soft) 28%, transparent);
       border-radius: 0.25rem;
       background: rgba(0, 0, 0, 0.25);
       font-size: 0.72rem;
@@ -6559,7 +6610,7 @@
     }
     html[data-theme="day"] .degen-betting-league {
       background: rgba(255, 255, 255, 0.8);
-      border-color: rgba(161, 98, 7, 0.2);
+      border-color: color-mix(in srgb, var(--mo-casino) 20%, transparent);
     }
     .degen-betting-league img {
       width: 1.05rem;
@@ -6594,11 +6645,11 @@
     .degen-best-open {
       margin: 0;
       padding: 0.7rem 0.85rem 0.85rem;
-      border-top: 1px solid rgba(232, 196, 90, 0.2);
+      border-top: 1px solid color-mix(in srgb, var(--mo-casino) 20%, transparent);
       background: rgba(0, 0, 0, 0.15);
     }
     html[data-theme="day"] .degen-best-open {
-      border-top-color: rgba(161, 98, 7, 0.14);
+      border-top-color: color-mix(in srgb, var(--mo-casino) 14%, transparent);
       background: rgba(255, 255, 255, 0.45);
     }
     .degen-best-open h4 {
@@ -6637,30 +6688,30 @@
       border: 0;
       background: transparent;
       overflow: hidden;
-      max-width: 36rem;
+      max-width: 42rem;
     }
     .degen-standings-board {
       display: grid;
       border-radius: 0.35rem;
-      border: 1px solid rgba(232, 196, 90, 0.22);
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 22%, transparent);
       background:
-        linear-gradient(180deg, rgba(232, 196, 90, 0.06) 0%, transparent 4.5rem),
+        linear-gradient(180deg, color-mix(in srgb, var(--mo-casino) 6%, transparent) 0%, transparent 4.5rem),
         rgba(4, 12, 8, 0.55);
       overflow: hidden;
     }
     html[data-theme="day"] .degen-standings-board {
-      border-color: rgba(161, 98, 7, 0.2);
+      border-color: color-mix(in srgb, var(--mo-casino) 20%, transparent);
       background:
-        linear-gradient(180deg, rgba(161, 98, 7, 0.05) 0%, transparent 4.5rem),
+        linear-gradient(180deg, color-mix(in srgb, var(--mo-casino) 5%, transparent) 0%, transparent 4.5rem),
         #fff;
     }
     .degen-standings-row {
       display: grid;
-      grid-template-columns: 2rem minmax(0, 1fr) 3.4rem 3.6rem minmax(5.5rem, auto);
+      grid-template-columns: 2rem minmax(0, 1fr) 3.4rem 3.6rem minmax(5rem, auto) minmax(5.5rem, auto);
       gap: 0.45rem 0.65rem;
       align-items: center;
       padding: 0.72rem 0.95rem;
-      border-bottom: 1px solid rgba(232, 196, 90, 0.1);
+      border-bottom: 1px solid color-mix(in srgb, var(--mo-casino) 10%, transparent);
       font-size: 0.95rem;
     }
     .degen-standings-row:last-child { border-bottom: 0; }
@@ -6670,16 +6721,16 @@
       font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--mo-gold);
+      color: var(--mo-casino);
       background: rgba(0, 0, 0, 0.35);
-      border-bottom-color: rgba(232, 196, 90, 0.28);
+      border-bottom-color: color-mix(in srgb, var(--mo-casino) 28%, transparent);
       padding-top: 0.55rem;
       padding-bottom: 0.55rem;
     }
     html[data-theme="day"] .degen-standings-row.is-head {
-      color: #92610a;
-      background: rgba(161, 98, 7, 0.08);
-      border-bottom-color: rgba(161, 98, 7, 0.18);
+      color: var(--mo-casino-soft);
+      background: color-mix(in srgb, var(--mo-casino) 8%, transparent);
+      border-bottom-color: color-mix(in srgb, var(--mo-casino) 18%, transparent);
     }
     .degen-standings-row.is-me {
       background: rgba(77, 255, 154, 0.07);
@@ -6717,24 +6768,33 @@
     .degen-standings-row .num.is-l { color: #ff8f8f; }
     .degen-standings-row.is-head .num,
     .degen-standings-row.is-head .funds,
+    .degen-standings-row.is-head .earn,
     .degen-standings-row.is-head .name {
       color: inherit;
       font-size: inherit;
       font-weight: inherit;
       letter-spacing: inherit;
     }
+    .degen-standings-row .earn,
     .degen-standings-row .funds {
       text-align: right;
       font-family: "Oswald", sans-serif;
       font-size: 1.05rem;
       font-variant-numeric: tabular-nums;
-      color: #b8ffd6;
       font-weight: 600;
       letter-spacing: 0.02em;
     }
+    .degen-standings-row .funds {
+      color: #b8ffd6;
+    }
+    .degen-standings-row .earn { color: rgba(232, 232, 240, 0.85); }
+    .degen-standings-row .earn.is-up { color: #b8ffd6; }
+    .degen-standings-row .earn.is-down { color: #ff8f8f; }
     html[data-theme="day"] .degen-standings-row .num.is-w { color: #15803d; }
     html[data-theme="day"] .degen-standings-row .num.is-l { color: #b91c1c; }
     html[data-theme="day"] .degen-standings-row .funds { color: #15803d; }
+    html[data-theme="day"] .degen-standings-row .earn.is-up { color: #15803d; }
+    html[data-theme="day"] .degen-standings-row .earn.is-down { color: #b91c1c; }
 
     /* —— Death Pool —— */
     .lounge-section.is-death {
@@ -7091,10 +7151,12 @@
       .mock-layout {
         grid-template-columns: 1fr;
       }
-      .mock-pool,
+      .mock-pool {
+        max-height: 22rem;
+      }
       .mock-myteam,
       .mock-side {
-        max-height: 22rem;
+        max-height: none;
       }
       .mock-clock {
         grid-template-columns: 1fr;
@@ -7450,11 +7512,10 @@
             <span class="mock-start-btn-sheen" aria-hidden="true"></span>
             <span class="mock-start-btn-kicker">Mock Draft</span>
             <span class="mock-start-btn-label" id="mock-start-label">Start Draft</span>
-            <span class="mock-start-btn-sub" id="mock-start-sub">Drag your team · then Position set</span>
+            <span class="mock-start-btn-sub" id="mock-start-sub" hidden></span>
           </button>
           <div class="mock-start-copy" id="mock-start-copy">
             <strong>Claim your seat, then Start Draft</strong>
-            <span>Drag your team to set pick order. Opens a 1:00 join lobby.</span>
           </div>
           <div class="mock-live-timer" id="mock-live-timer" hidden>
             <span class="mock-live-timer-label">Your clock</span>
@@ -7560,8 +7621,8 @@
             <div class="mock-pool-scroll">
               <div class="mock-pool-cols" role="row">
                 <button type="button" data-sort="rank" data-label="Rk" title="Sort by overall rank">Rk</button>
+                <span class="c-blank c-target" title="Target">Tgt</span>
                 <span class="c-blank" aria-hidden="true"></span>
-                <span class="c-blank" title="Target" aria-hidden="true"></span>
                 <button type="button" class="c-player" data-sort="player" data-label="Player" title="Sort by name">Player</button>
                 <button type="button" data-sort="pos" data-label="Pos" title="Sort by position">Pos</button>
                 <button type="button" data-sort="bye" data-label="Bye" title="Sort by bye week">Bye</button>
@@ -7671,10 +7732,14 @@
             <p class="palace-kicker">Welcome to</p>
             <h2>Casala's Palace Sports Book and Casino</h2>
           </div>
-          <div class="palace-header-stats" id="palace-header-stats" aria-label="Your record and funds" hidden>
+          <div class="palace-header-stats" id="palace-header-stats" aria-label="Your record, earnings, and funds" hidden>
             <span class="palace-stat is-record" title="Wins–Losses">
               <em>Record</em>
               <strong><b class="w" id="palace-record-w">0</b><i>–</i><b class="l" id="palace-record-l">0</b></strong>
+            </span>
+            <span class="palace-stat is-earn" title="Net winnings and losses">
+              <em>Earnings</em>
+              <strong id="palace-earnings">$0.00</strong>
             </span>
             <span class="palace-stat is-funds" title="Available funds">
               <em>Funds</em>
@@ -7762,8 +7827,8 @@
   </footer>
   <script src="/js/nav.js?v=94"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=43"></script>
-  <script src="/js/lounge-games.js?v=32"></script>
+  <script src="/js/lounge-desk.js?v=45"></script>
+  <script src="/js/lounge-games.js?v=33"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')

@@ -49,7 +49,7 @@ module.exports = {
   historySeasons: [],
   calendarDefaults: [
     { title: 'Draft Day', type: 'draft', date: '2026-08-24', notes: 'Both conferences draft — confirm time with your commissioner. Single-player keeper rule begins after the 2026 season (Rule Book §3.03–§3.05).' },
-    { title: 'Dues Due', type: 'dues', date: '2026-09-01', notes: '$100 buy-in per franchise.' },
+    { title: 'Dues Due', type: 'dues', date: '2026-09-01', notes: 'GridIron 24 $100 · AAA League $50.' },
     { title: 'Trade Deadline', type: 'deadline', date: '2026-11-18', notes: 'No trades after this date.' },
     { title: 'Conference Playoffs Begin', type: 'event', date: '2026-12-08', notes: 'Week 14 Wild Card round.' },
     { title: 'GridIron Bowl I', type: 'bowl', date: '2026-12-29', notes: 'Week 17 — Detail champ vs Overtime champ.' },

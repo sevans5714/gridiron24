@@ -410,21 +410,66 @@ function settleSlip(slip, gameIndex) {
 }
 
 function applySettlementToAccount(account, slip) {
-  if (slip._applied) return;
+  if (!account || slip._applied) return false;
   if (slip.status === 'won') {
-    account.wins += 1;
-    account.bankroll = Math.round((account.bankroll + Number(slip.payout || 0)) * 100) / 100;
-    account.unitsWon = Math.round((account.unitsWon + Number(slip.profit || 0)) * 100) / 100;
+    account.wins = Number(account.wins || 0) + 1;
+    account.bankroll = Math.round((Number(account.bankroll || 0) + Number(slip.payout || 0)) * 100) / 100;
+    account.unitsWon = Math.round((Number(account.unitsWon || 0) + Number(slip.profit || 0)) * 100) / 100;
   } else if (slip.status === 'lost') {
-    account.losses += 1;
-    account.unitsWon = Math.round((account.unitsWon + Number(slip.profit || 0)) * 100) / 100;
+    account.losses = Number(account.losses || 0) + 1;
+    // Stake already left the bankroll when the ticket was placed.
+    account.unitsWon = Math.round((Number(account.unitsWon || 0) + Number(slip.profit || 0)) * 100) / 100;
   } else if (slip.status === 'push') {
-    account.pushes += 1;
+    account.pushes = Number(account.pushes || 0) + 1;
     if (Number(slip.stake) > 0) {
-      account.bankroll = Math.round((account.bankroll + Number(slip.stake)) * 100) / 100;
+      account.bankroll = Math.round((Number(account.bankroll || 0) + Number(slip.stake)) * 100) / 100;
     }
+  } else {
+    return false;
   }
   slip._applied = true;
+  return true;
+}
+
+/** Open stakes still sitting out of available funds. */
+function openStakeTotal(store, userId) {
+  let total = 0;
+  for (const s of store.slips || []) {
+    if (s.userId !== userId || s.status !== 'open') continue;
+    total += Math.max(0, Number(s.stake) || 0);
+  }
+  for (const f of store.futures || []) {
+    if (f.userId !== userId || f.status !== 'open') continue;
+    total += Math.max(0, Number(f.stake) || 0);
+  }
+  return Math.round(total * 100) / 100;
+}
+
+/**
+ * Bankroll must equal starting cash + net settled P/L − open stakes.
+ * Re-sync after settlements so wins/losses always show in Funds.
+ */
+function reconcileAccountBankroll(store, account) {
+  if (!account) return;
+  const open = openStakeTotal(store, account.userId);
+  const units = Number(account.unitsWon) || 0;
+  const next = Math.round((STARTING_BANKROLL + units - open) * 100) / 100;
+  account.bankroll = Math.max(0, next);
+}
+
+function applyPendingSettlements(store) {
+  let n = 0;
+  for (const slip of store.slips || []) {
+    if (slip.status === 'open' || slip._applied) continue;
+    const account = store.accounts[slip.userId];
+    if (applySettlementToAccount(account, slip)) n += 1;
+  }
+  for (const pick of store.futures || []) {
+    if (pick.status === 'open' || pick._applied) continue;
+    const account = store.accounts[pick.userId];
+    if (applySettlementToAccount(account, pick)) n += 1;
+  }
+  return n;
 }
 
 function winPct(a) {
@@ -447,6 +492,7 @@ function standingsRow(a) {
     losses: a.losses,
     pushes: a.pushes,
     bankroll: Number(a.bankroll) || 0,
+    unitsWon: Number(a.unitsWon) || 0,
     record: publicRecord(a),
     winPct: Math.round(winPct(a) * 1000) / 1000
   };
@@ -550,6 +596,7 @@ function settleOpenSlips(boards) {
       settled += 1;
     }
   }
+  settled += applyPendingSettlements(store);
   const closed = store.slips.filter((s) => s.status !== 'open');
   if (closed.length > MAX_HISTORY) {
     const keepOpen = store.slips.filter((s) => s.status === 'open');
@@ -560,6 +607,10 @@ function settleOpenSlips(boards) {
     store.slips = [...keepOpen, ...keepClosed];
   }
   settleFutures(store);
+  applyPendingSettlements(store);
+  for (const account of Object.values(store.accounts || {})) {
+    reconcileAccountBankroll(store, account);
+  }
   writeStore(store);
   return settled;
 }
@@ -568,7 +619,11 @@ function getBook(user, boards = []) {
   if (boards?.length) settleOpenSlips(boards);
   const store = readStore();
   settleFutures(store);
+  applyPendingSettlements(store);
   const account = ensureAccount(store, user);
+  for (const a of Object.values(store.accounts || {})) {
+    reconcileAccountBankroll(store, a);
+  }
   writeStore(store);
 
   const mine = store.slips
@@ -593,6 +648,7 @@ function getBook(user, boards = []) {
       losses: account.losses,
       pushes: account.pushes,
       unitsWon: account.unitsWon,
+      earnings: Number(account.unitsWon) || 0,
       record: publicRecord(account)
     },
     open: mine.filter((s) => s.status === 'open'),

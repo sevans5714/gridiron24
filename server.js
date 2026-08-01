@@ -5677,7 +5677,7 @@ const server = http.createServer(async (req, res) => {
       const viewer = requireLoungeMember(req, res);
       if (!viewer) return;
       try {
-        const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6 });
+        const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6, daysBehind: 7 });
         const boards = scores.leagues || [];
         const book = paperBook.getBook(users.publicUser(viewer), boards);
         const futuresBoard = await futuresMarkets.getFuturesBoard().catch(() => ({
@@ -5755,6 +5755,9 @@ const server = http.createServer(async (req, res) => {
         const action = String(body.action || 'bet').toLowerCase();
 
         if (action === 'future') {
+          const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6, daysBehind: 7 });
+          const boards = scores.leagues || [];
+          paperBook.settleOpenSlips(boards);
           const futuresBoard = await futuresMarkets.getFuturesBoard();
           const book = paperBook.placeFuture(publicAuthor, body, futuresBoard);
           if (book.placedFuture) {
@@ -5778,7 +5781,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (action === 'bet') {
-          const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6 });
+          const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6, daysBehind: 7 });
           const boards = scores.leagues || [];
           const book = paperBook.placeBet(publicAuthor, body, boards);
           if (book.placedSlip) {

@@ -233,7 +233,8 @@
   function fmtCash(n) {
     const v = Number(n);
     if (!Number.isFinite(v)) return '$0.00';
-    return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const abs = Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return v < 0 ? `-$${abs}` : `$${abs}`;
   }
 
   /* ——— Casala's Palace Sports Book ——— */
@@ -812,15 +813,22 @@
     </article>`;
   }
 
-  function paintPalaceHeader({ wins = 0, loses = 0, cash = 0 } = {}) {
+  function paintPalaceHeader({ wins = 0, loses = 0, cash = 0, earnings = 0 } = {}) {
     const wrap = document.getElementById('palace-header-stats');
     const wEl = document.getElementById('palace-record-w');
     const lEl = document.getElementById('palace-record-l');
     const fundsEl = document.getElementById('palace-funds');
+    const earnEl = document.getElementById('palace-earnings');
     if (!wrap || !wEl || !lEl || !fundsEl) return;
     wEl.textContent = String(wins);
     lEl.textContent = String(loses);
     fundsEl.textContent = fmtCash(cash);
+    if (earnEl) {
+      const e = Number(earnings) || 0;
+      earnEl.textContent = fmtCash(e);
+      earnEl.classList.toggle('is-up', e > 0);
+      earnEl.classList.toggle('is-down', e < 0);
+    }
     wrap.hidden = false;
   }
 
@@ -990,16 +998,22 @@
             <span class="name">Last name</span>
             <span class="num is-w">Wins</span>
             <span class="num is-l">Loses</span>
+            <span class="earn">Earnings</span>
             <span class="funds">Funds</span>
           </div>
-          ${standings.map((r, i) => `
+          ${standings.map((r, i) => {
+            const earn = Number(r.unitsWon ?? r.earnings ?? 0) || 0;
+            const earnCls = earn > 0 ? ' is-up' : earn < 0 ? ' is-down' : '';
+            return `
             <div class="degen-standings-row${myId && String(r.userId) === myId ? ' is-me' : ''}" role="row">
               <span class="rank">${i + 1}</span>
               <span class="name">${esc(r.lastName || r.name)}</span>
               <span class="num is-w">${esc(String(r.wins ?? 0))}</span>
               <span class="num is-l">${esc(String(r.losses ?? 0))}</span>
+              <span class="earn${earnCls}">${esc(fmtCash(earn))}</span>
               <span class="funds">${esc(fmtCash(r.bankroll))}</span>
-            </div>`).join('')}
+            </div>`;
+          }).join('')}
         </div>`
       : `<div class="degen-empty">No gambling record yet — place a pick.</div>`;
 
@@ -1136,7 +1150,8 @@
 
     const wins = Number(acct.wins || 0);
     const loses = Number(acct.losses || 0);
-    paintPalaceHeader({ wins, loses, cash });
+    const earnings = Number(acct.unitsWon ?? acct.earnings ?? 0) || 0;
+    paintPalaceHeader({ wins, loses, cash, earnings });
     root.innerHTML = `
       <div class="degen-tabs" role="tablist">
         <button type="button" role="tab" class="${tab === 'lines' ? 'is-on' : ''}" data-tab="lines">Games</button>

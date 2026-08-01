@@ -256,7 +256,6 @@
     const liveLabel = document.querySelector('#mock-live-timer .mock-live-timer-label');
     const clockSel = document.getElementById('mock-pick-seconds');
     const done = isDraftComplete();
-    const clockTxt = clockLabelText(pickSeconds || getPickSeconds());
     const waitingSeat = awaitingSeatClaim;
     const mine = canUserDraftNow();
     const inLobby = roomStatus === 'lobby';
@@ -269,81 +268,60 @@
     if (btn) {
       if (waitingSeat) {
         if (label) label.textContent = 'Choose a seat';
-        if (sub) sub.textContent = 'Open seats below';
         btn.disabled = true;
         btn.setAttribute('aria-label', 'Choose a seat');
       } else if (done) {
         if (label) label.textContent = 'Draft Complete';
-        if (sub) sub.textContent = 'Reset to run another mock';
         btn.disabled = true;
         btn.setAttribute('aria-label', 'Draft complete');
       } else if (inLobby) {
         if (!positionsLocked && roomIsHost) {
           if (label) label.textContent = 'Position set';
-          if (sub) sub.textContent = 'Lock the draft order';
           btn.disabled = false;
           btn.setAttribute('aria-label', 'Position set');
         } else if (!positionsLocked) {
           if (label) label.textContent = 'Set your position';
-          if (sub) sub.textContent = 'Drag your team on the board';
           btn.disabled = true;
           btn.setAttribute('aria-label', 'Waiting for host to lock positions');
         } else if (lobbyLeft > 0) {
           if (label) label.textContent = 'Join window';
-          if (sub) sub.textContent = 'Positions locked · others can still join open seats';
           btn.disabled = true;
           btn.setAttribute('aria-label', 'Waiting for join window');
         } else if (roomIsHost) {
           if (label) label.textContent = 'Start drafting';
-          if (sub) sub.textContent = 'Click when you’re ready';
           btn.disabled = false;
           btn.setAttribute('aria-label', 'Start drafting');
         } else {
           if (label) label.textContent = 'Ready';
-          if (sub) sub.textContent = 'Waiting for host to start';
           btn.disabled = true;
           btn.setAttribute('aria-label', 'Waiting for host');
         }
       } else if (draftLive) {
         if (label) label.textContent = 'Draft Live';
-        if (sub) {
-          sub.textContent = isMultiplayer()
-            ? 'CPU auto-picks empty seats'
-            : `${clockTxt} on the clock`;
-        }
         btn.disabled = true;
         btn.setAttribute('aria-label', 'Draft live');
       } else {
         if (label) label.textContent = 'Start Draft';
-        if (sub) sub.textContent = 'Drag your team · then Position set';
         btn.disabled = false;
         btn.setAttribute('aria-label', 'Start Draft');
       }
     }
     if (copy) {
-      if (waitingSeat) {
-        copy.innerHTML = `<strong>Join in progress</strong><span>Select an open seat on the board.</span>`;
-      } else if (done) {
-        copy.innerHTML = `<strong>Board is final</strong><span>Review rosters below, or reset for a fresh mock.</span>`;
-      } else if (inLobby && !positionsLocked) {
-        copy.innerHTML = roomIsHost
-          ? `<strong>Drag teams into order</strong><span>When the board looks right, click Position set to lock it.</span>`
-          : `<strong>Drag your team</strong><span>Drop it on a pick slot to set your draft position. Host locks when ready.</span>`;
-      } else if (inLobby && lobbyLeft > 0) {
-        copy.innerHTML = `<strong>Positions locked</strong><span>Others can still claim open seats until the join window ends.</span>`;
-      } else if (inLobby && roomIsHost) {
-        copy.innerHTML = `<strong>Ready when you are</strong><span>Click Start drafting to put the first pick on the clock.</span>`;
-      } else if (inLobby) {
-        copy.innerHTML = `<strong>Lobby ready</strong><span>Host will start the draft when they’re ready.</span>`;
-      } else if (draftLive && mine) {
-        copy.innerHTML = `<strong>ON THE CLOCK</strong><span>Double-click a player to draft — best available auto-selects if time expires.</span>`;
-      } else if (draftLive) {
-        copy.innerHTML = isMultiplayer()
-          ? `<strong>Live mock</strong><span>CPU clubs pick one seat at a time — names land on the board as they go.</span>`
-          : `<strong>Waiting your turn</strong><span>CPU clubs pick one at a time on the board — you’ll hear a cue when you’re up.</span>`;
-      } else {
-        copy.innerHTML = `<strong>Claim your seat, then Start Draft</strong><span>Drag your team to set pick order. Opens a 1:00 join lobby.</span>`;
-      }
+      let headline = 'Start Draft';
+      if (waitingSeat) headline = 'Join in progress';
+      else if (done) headline = 'Board is final';
+      else if (inLobby && !positionsLocked) headline = roomIsHost ? 'Drag teams into order' : 'Drag your team';
+      else if (inLobby && lobbyLeft > 0) headline = 'Positions locked';
+      else if (inLobby && roomIsHost) headline = 'Ready when you are';
+      else if (inLobby) headline = 'Lobby ready';
+      else if (draftLive && mine) headline = 'ON THE CLOCK';
+      else if (draftLive) headline = isMultiplayer() ? 'Live mock' : 'Waiting your turn';
+      else headline = 'Claim your seat, then Start Draft';
+      copy.innerHTML = `<strong>${headline}</strong>`;
+    }
+    if (sub) {
+      sub.hidden = true;
+      sub.textContent = '';
     }
     if (liveTimer) {
       const showTimer = (inLobby && lobbyLeft > 0) || (draftLive && !done);
@@ -2535,9 +2513,6 @@
       if (mockPoolFilter === 'NEED' && need.positions.length) {
         hint.hidden = false;
         hint.innerHTML = `Open starters <strong>${esc(need.slots.join(' · '))}</strong> · showing ${esc(need.positions.join(' · '))}`;
-      } else if (mockPoolFilter === 'BEST') {
-        hint.hidden = false;
-        hint.textContent = 'Best available across the board';
       } else {
         hint.hidden = true;
         hint.textContent = '';
@@ -2621,24 +2596,22 @@
         : '';
       const title = drafted
         ? `${p.name} — drafted by ${club} in round ${draftPick.round} (overall #${draftPick.overall}) · click for profile`
-        : `Click profile · double-click to draft${canPick ? '' : ' (when on the clock)'} · target icon to pin · drag to Targets`;
+        : `Click profile · double-click to draft${canPick ? '' : ' (when on the clock)'} · target to pin · click again to unpin · drag to Targets`;
       const targetBtn = drafted
         ? `<span class="mock-target-btn" aria-hidden="true"></span>`
-        : `<button type="button" class="mock-target-btn${targeted ? ' is-on' : ''}" data-target-id="${esc(p.id)}" title="${targeted ? 'Remove from targets' : 'Add to targets'}" aria-label="${targeted ? `Remove ${p.name} from targets` : `Target ${p.name}`}" aria-pressed="${targeted ? 'true' : 'false'}">
-            <img src="/assets/lounge/target-reticle.svg?v=1" alt="" width="18" height="18" decoding="async" />
-          </button>`;
-      const star = targeted && !drafted
-        ? '<span class="mock-target-star" title="On your board" aria-label="Targeted">★</span>'
-        : '';
+        : `<button type="button" class="mock-target-btn${targeted ? ' is-on' : ''}" data-target-id="${esc(p.id)}" title="${targeted ? 'Remove from targets' : 'Add to targets'}" aria-label="${targeted ? `Remove ${p.name} from targets` : `Target ${p.name}`}" aria-pressed="${targeted ? 'true' : 'false'}">${
+            targeted
+              ? '<span class="mock-target-star" aria-hidden="true">★</span>'
+              : '<img src="/assets/lounge/target-reticle.svg?v=1" alt="" width="18" height="18" decoding="async" />'
+          }</button>`;
       const st = posBoardStats(p);
       const ydsText = st.ydsText != null ? st.ydsText : fmtInt(st.yds);
       return `<div class="mock-player${targeted ? ' is-targeted' : ''}${injury ? ' has-injury' : ''}${drafted ? ' is-drafted' : ''}" role="button" tabindex="0" data-id="${esc(p.id)}"${drafted ? ' data-drafted="1"' : ' draggable="true"'} title="${esc(title)}">
         <span class="mock-rank" title="Overall rank">${esc(String(rk))}</span>
-        ${head}
         ${targetBtn}
+        ${head}
         <span class="mock-player-main">
           <span class="mock-player-line">
-            ${star}
             <strong class="mock-player-name">${esc(p.name)}</strong>
             ${injury}
           </span>
@@ -3078,9 +3051,8 @@
         return;
       }
       pickSeconds = getPickSeconds();
-      const sub = document.getElementById('mock-start-sub');
-      if (sub && !draftLive) sub.textContent = 'Drag your team · then Position set';
       paintSettingsSummary();
+      paintMockStartBar();
     });
     document.getElementById('mock-pool-list')?.addEventListener('click', (e) => {
       const targetBtn = e.target.closest('[data-target-id]');
