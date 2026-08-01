@@ -961,6 +961,70 @@ function changePassword(userId, currentPassword, newPassword) {
   return publicUser(store.users[idx]);
 }
 
+/** Commissioner: set login name and/or password without knowing the current password. */
+function adminSetCredentials(userId, { loginName, password } = {}) {
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Account not found'), { status: 404 });
+  }
+  const user = store.users[idx];
+  let changed = false;
+
+  if (loginName != null && String(loginName).trim() !== '') {
+    const loginKey = normalizeLoginName(loginName);
+    if (!loginKey || loginKey.length < 3) {
+      throw Object.assign(new Error('Login name must be at least 3 characters'), { status: 400 });
+    }
+    if (loginKey.length > 40) {
+      throw Object.assign(new Error('Login name is too long'), { status: 400 });
+    }
+    if (!/^[a-z0-9._-]+$/i.test(loginKey)) {
+      throw Object.assign(new Error('Login name may only use letters, numbers, . _ -'), { status: 400 });
+    }
+    const taken = store.users.some(
+      (u, i) => i !== idx && normalizeLoginName(u.loginName) === loginKey
+    );
+    if (taken) {
+      throw Object.assign(new Error('That login name is already taken'), { status: 409 });
+    }
+    if (normalizeLoginName(user.loginName) !== loginKey) {
+      user.loginName = loginKey;
+      changed = true;
+    }
+  }
+
+  if (password != null && String(password) !== '') {
+    if (String(password).length < 6) {
+      throw Object.assign(new Error('Password must be at least 6 characters'), { status: 400 });
+    }
+    const { salt, hash } = hashPassword(password);
+    user.passwordSalt = salt;
+    user.passwordHash = hash;
+    user.resetTokenHash = null;
+    user.resetTokenExpires = null;
+    changed = true;
+  }
+
+  if (!changed) {
+    throw Object.assign(new Error('Provide a new login name and/or password'), { status: 400 });
+  }
+  writeStore(store);
+  return publicUser(user);
+}
+
+function setUserLeagueOwner(userId, leagueId, isOwner = true) {
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Account not found'), { status: 404 });
+  }
+  store.users[idx].leagueId = leagueId || null;
+  store.users[idx].leagueOwner = Boolean(isOwner && leagueId);
+  writeStore(store);
+  return publicUser(store.users[idx]);
+}
+
 function updatePreferences(userId, prefs = {}) {
   const store = readStore();
   const idx = store.users.findIndex((u) => u.id === userId);
@@ -1004,7 +1068,9 @@ module.exports = {
   createResetToken,
   resetPasswordWithToken,
   changePassword,
+  adminSetCredentials,
   updatePreferences,
+  setUserLeagueOwner,
   claimWelcomeInbox,
   hasReceivedWelcomeInbox,
   findById,

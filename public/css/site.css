@@ -1478,6 +1478,7 @@ html[data-theme="day"] .league-switch img {
 
 .user-chip {
   appearance: none;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -1498,7 +1499,8 @@ html[data-theme="day"] .league-switch img {
 }
 
 .user-chip:hover,
-.user-chip.is-active {
+.user-chip.is-active,
+.user-menu.is-open .user-chip {
   border-left-color: var(--chip-border-active);
   background: transparent;
 }
@@ -1513,6 +1515,8 @@ html[data-theme="day"] .league-switch img {
   place-items: center;
   background: transparent;
   border: 0;
+  position: relative;
+  z-index: 1;
 }
 .user-chip-avatar:has(.user-avatar-fallback) {
   border-radius: 999px;
@@ -1528,11 +1532,63 @@ html[data-theme="day"] .league-switch img {
   flex: 1 1 auto;
   padding: 0.05rem 0.1rem 0.05rem 0.55rem;
   border-left: 1px solid var(--chip-border);
+  transition: opacity 0.12s ease;
 }
 
 .user-chip:hover .user-chip-text,
-.user-chip.is-active .user-chip-text {
+.user-chip.is-active .user-chip-text,
+.user-menu.is-open .user-chip-text {
   border-left-color: var(--chip-border-active);
+}
+
+.user-chip-logout {
+  appearance: none;
+  position: absolute;
+  left: calc(2rem + 0.55rem);
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  display: none;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0 0.65rem 0 0.55rem;
+  border: 0;
+  border-left: 1px solid var(--chip-border-active);
+  background: var(--blue, #2f6dff);
+  color: #fff;
+  font-family: var(--display), Bebas Neue, sans-serif;
+  font-size: clamp(0.85rem, 1.6vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  line-height: 1.1;
+}
+.user-menu:hover .user-chip-logout,
+.user-menu.is-open .user-chip-logout,
+.user-chip:hover .user-chip-logout {
+  display: flex;
+}
+.user-menu:hover .user-chip-text,
+.user-menu.is-open .user-chip-text,
+.user-chip:hover .user-chip-text {
+  opacity: 0;
+  pointer-events: none;
+}
+.user-chip-logout:hover,
+.user-chip-logout:focus-visible {
+  background: #4d82ff;
+  outline: none;
+}
+
+.user-chip-profile-hit {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
 }
 
 .user-chip-team {
@@ -1638,6 +1694,12 @@ a.user-chip {
   background: var(--panel);
   box-shadow: 0 16px 40px rgba(0,0,0,0.45);
   z-index: 50;
+  display: none;
+}
+.user-menu:hover .user-menu-panel,
+.user-menu:focus-within .user-menu-panel,
+.user-menu.is-open .user-menu-panel {
+  display: block;
 }
 .user-menu-panel[hidden] {
   display: none !important;
@@ -2761,11 +2823,71 @@ body.auth-page {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 1.75rem 1rem;
+  justify-content: flex-start;
+  padding: 1.25rem 1rem 1.75rem;
   background:
     radial-gradient(ellipse 70% 55% at 50% 0%, var(--body-wash), transparent 55%),
     var(--bg);
+  position: relative;
+}
+.auth-promo {
+  position: absolute;
+  top: max(0.85rem, env(safe-area-inset-top, 0px));
+  right: max(0.85rem, env(safe-area-inset-right, 0px));
+  z-index: 5;
+  width: auto;
+  max-width: calc(100% - 1.7rem);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  text-align: right;
+  white-space: nowrap;
+  animation: gi-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.auth-promo p {
+  margin: 0;
+  font-family: var(--body);
+  font-size: clamp(0.95rem, 2.2vw, 1.2rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.auth-promo-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--blue, #2f6dff);
+  background: var(--blue, #2f6dff);
+  color: #fff;
+  font-family: var(--display), Bebas Neue, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.auth-promo-btn:hover,
+.auth-promo-btn:focus-visible {
+  background: #4d82ff;
+  border-color: #4d82ff;
+  color: #fff;
+  text-decoration: none;
+  outline: none;
 }
 .auth-card {
   width: min(100%, 22rem);
@@ -3104,6 +3226,11 @@ body.has-install-sheet {
     width: 2rem;
     height: 2rem;
     flex-basis: 2rem;
+  }
+  .user-chip-logout {
+    left: 0;
+    padding-left: 0.55rem;
+    min-width: 5.5rem;
   }
 
   .ticker-label-text { display: none; }

@@ -740,6 +740,20 @@ html[data-theme="day"] .s-row .num.col-pf {
   text-transform: uppercase;
   color: var(--muted);
 }
+.mu-score-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.08rem;
+  min-width: 2.5rem;
+}
+.mu-side.is-away .mu-score-stack { align-items: flex-start; }
+.mu-score-stack .mu-score {
+  line-height: 1;
+}
+.mu-score-stack .mu-proj {
+  margin-top: 0;
+}
 .mu-score {
   font-family: var(--display);
   font-size: 1.35rem;
@@ -893,10 +907,11 @@ html[data-theme="day"] .s-row .num.col-pf {
   bottom: auto;
   z-index: 40;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0;
-  min-height: var(--tab-h);
-  padding: 0.4rem 0.25rem calc(0.4rem + var(--safe-bottom));
+  grid-template-columns: 1fr 1fr 1.35fr 1fr 1fr;
+  align-items: end;
+  gap: 0.15rem;
+  min-height: calc(var(--tab-h) + 0.55rem);
+  padding: 0.35rem 0.35rem calc(0.35rem + var(--safe-bottom));
   border-top: 1px solid var(--line-strong);
   background:
     linear-gradient(180deg, rgba(10, 16, 32, 0.98), rgba(2, 6, 15, 1));
@@ -912,15 +927,15 @@ html[data-theme="day"] .s-row .num.col-pf {
   background: transparent;
   color: var(--muted);
   display: grid;
-  gap: 0.22rem;
+  gap: 0.18rem;
   justify-items: center;
   align-content: center;
-  min-height: 3.2rem;
-  padding: 0.2rem 0.1rem;
+  min-height: 3rem;
+  padding: 0.15rem 0.05rem;
   font-family: var(--label);
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   cursor: pointer;
   transition: color 0.18s ease, transform 0.18s ease;
@@ -928,24 +943,15 @@ html[data-theme="day"] .s-row .num.col-pf {
 
 .app-tabs button.is-on {
   color: var(--blue-soft);
-  transform: translateY(-1px);
 }
 
 .app-tabs button.is-on::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 22%;
-  right: 22%;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, transparent, var(--blue), transparent);
-  box-shadow: 0 0 12px var(--blue-glow);
+  display: none;
 }
 
 .app-tabs button svg {
-  width: 1.3rem;
-  height: 1.3rem;
+  width: 1.2rem;
+  height: 1.2rem;
   stroke: currentColor;
   fill: none;
   stroke-width: 1.75;
@@ -956,6 +962,144 @@ html[data-theme="day"] .s-row .num.col-pf {
   fill: rgba(47, 109, 255, 0.18);
   stroke-width: 2;
   filter: drop-shadow(0 0 8px rgba(47, 109, 255, 0.35));
+}
+
+/* Center Home — larger orb */
+.app-tabs button.tab-home {
+  transform: translateY(-0.55rem);
+  min-height: 3.6rem;
+  font-size: 0.62rem;
+  color: var(--muted);
+  z-index: 2;
+}
+
+.app-tabs button.tab-home .tab-home-orb {
+  display: grid;
+  place-items: center;
+  width: 3.35rem;
+  height: 3.35rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(160deg, rgba(91, 155, 255, 0.95), rgba(31, 94, 240, 0.92));
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 8px 22px rgba(31, 94, 240, 0.45),
+    0 0 0 4px rgba(31, 94, 240, 0.12);
+}
+
+.app-tabs button.tab-home svg {
+  width: 1.45rem;
+  height: 1.45rem;
+  stroke: #fff;
+  fill: rgba(255, 255, 255, 0.12);
+  stroke-width: 2;
+  filter: none;
+}
+
+.app-tabs button.tab-home.is-on {
+  color: var(--blue-soft);
+  transform: translateY(-0.65rem);
+}
+
+.app-tabs button.tab-home.is-on .tab-home-orb {
+  box-shadow:
+    0 10px 28px rgba(31, 94, 240, 0.55),
+    0 0 0 5px rgba(142, 182, 255, 0.2);
+}
+
+.app-tabs button.tab-home.is-on svg {
+  fill: rgba(255, 255, 255, 0.2);
+  filter: none;
+}
+
+.app-tabs button[hidden] {
+  display: none;
+}
+
+.book-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: calc(100dvh - 7.5rem - var(--safe-top) - var(--safe-bottom));
+}
+
+.book-wire-wrap {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.book-wire-wrap .wire-board {
+  margin: 0;
+}
+
+.book-wire-wrap .wire-grid {
+  height: 10.75rem;
+}
+
+.book-front {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+.book-frame {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: calc(100dvh - 22rem - var(--safe-top) - var(--safe-bottom));
+  border: 0;
+  border-radius: var(--radius-md);
+  background: #060b16;
+}
+
+.book-locked {
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.book-locked h2 {
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+  margin: 0 0 0.5rem;
+}
+
+.home-block {
+  margin: 0 0 1.15rem;
+}
+
+.home-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.55rem;
+}
+
+.home-block-head h2 {
+  margin: 0;
+  font-family: var(--label);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.seg-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  margin-left: 0.25rem;
+  padding: 0 0.28rem;
+  border-radius: 999px;
+  background: var(--overtime);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
 }
 
 /* ── More / links ── */
@@ -1661,18 +1805,30 @@ html[data-theme="day"] .s-row .num.col-pf {
   -webkit-box-orient: vertical;
 }
 
+.box-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 0 0 auto;
+  min-width: 2.75rem;
+}
+
+.box-team:first-child .box-scores { align-items: flex-start; }
+.box-team:last-child .box-scores { align-items: flex-end; }
+
 .box-team .score {
   font-family: var(--display);
   font-size: 1.85rem;
   letter-spacing: 0.04em;
   line-height: 1;
-  margin-top: 0.15rem;
+  margin-top: 0;
 }
 
 .box-team .proj {
   color: var(--muted);
   font-size: 0.68rem;
-  margin-top: 0.15rem;
+  margin-top: 0;
+  line-height: 1.1;
 }
 
 .box-team.is-winner .score {
@@ -1763,13 +1919,38 @@ html[data-theme="day"] .s-row .num.col-pf {
 
 .box-mid {
   text-align: center;
-  color: #8eb6ff;
-  font-family: var(--label);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
+.box-mid .slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.35rem;
+  padding: 0.18rem 0.28rem;
+  border-radius: 0.35rem;
+  color: #0b1220;
+  font-family: var(--label);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  background: #64748b;
+}
+
+.box-mid .slot[data-pos="QB"] { background: #ff6b6b; }
+.box-mid .slot[data-pos="RB"] { background: #3dd68c; }
+.box-mid .slot[data-pos="WR"] { background: #5b9dff; }
+.box-mid .slot[data-pos="TE"] { background: #c084fc; }
+.box-mid .slot[data-pos="K"] { background: #f5b942; }
+.box-mid .slot[data-pos="D/ST"],
+.box-mid .slot[data-pos="DST"] { background: #94a3b8; color: #0b1220; }
+.box-mid .slot[data-pos="FLEX"] { background: #2dd4bf; }
+.box-mid .slot[data-pos="BN"],
+.box-mid .slot[data-pos="IR"] { background: #64748b; color: #e8eef8; }
 
 .box-player {
   display: grid;
@@ -1806,12 +1987,27 @@ html[data-theme="day"] .s-row .num.col-pf {
 
 .box-player .pts {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.05rem;
   font-family: var(--display);
   font-size: 1.02rem;
   letter-spacing: 0.03em;
   color: var(--text);
   text-align: right;
   min-width: 2.35rem;
+  line-height: 1;
+}
+
+.box-player.away .pts { align-items: flex-start; text-align: left; }
+
+.box-player .pts-proj {
+  font-family: var(--label);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
 
 .box-player.is-inj .nm {
@@ -2072,7 +2268,29 @@ html[data-theme="day"] .s-row .num.col-pf {
   margin-top: 0.25rem;
   font-family: var(--display);
   font-size: 1.15rem;
+  font-weight: 400;
   letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+
+.home-tile.is-league {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.55rem 0.35rem 0.45rem;
+}
+
+.home-tile.is-league .lbl {
+  margin: 0;
+}
+
+.home-league-logo {
+  display: block;
+  width: 2.65rem;
+  height: 2.65rem;
+  object-fit: contain;
 }
 
 .home-section {
@@ -2756,6 +2974,11 @@ html[data-theme="day"] .s-row .num.col-pf {
   color: var(--blue-soft);
   border-bottom-color: var(--blue);
   font-weight: 700;
+}
+.wire-tab.is-auto {
+  color: var(--gold);
+  border-bottom-color: transparent;
+  margin-left: 0.15rem;
 }
 .wire-face {
   padding: 0.45rem 0.25rem 0.15rem;

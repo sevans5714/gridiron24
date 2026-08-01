@@ -508,9 +508,13 @@
   }
 
   function sportsbookVisible() {
+    const embed = document.documentElement.classList.contains('is-embed-book');
     const desk = document.getElementById('gambler-desk');
     const panel = document.getElementById('degenerate-book');
-    if (!desk || desk.hidden) return false;
+    // Embed mode forces the sportsbook via CSS even while desk[hidden] is cleared asynchronously.
+    if (!embed) {
+      if (!desk || desk.hidden) return false;
+    }
     if (panel && panel.hidden) return false;
     if (typeof document.hidden === 'boolean' && document.hidden) return false;
     return Boolean(document.getElementById('degenerate-book-root'));

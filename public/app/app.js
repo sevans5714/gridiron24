@@ -1,11 +1,13 @@
 (() => {
   const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
-  const REFRESH_MS = 30000;
+  const REFRESH_MS = 15000;
   const CHAT_POLL_MS = 2500;
   const BENCH = new Set(['Bench', 'IR', 'IR/Covid', 'IR/COVID']);
   const esc = (v = '') => String(v)
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+  const APP_VIEWS = new Set(['home', 'roster', 'matchup', 'league', 'book', 'account']);
 
   const state = {
     view: 'home',
@@ -13,6 +15,7 @@
     standingsUserPicked: false,
     scoreConf: 'detail',
     feedTab: 'news',
+    leagueTab: 'calendar',
     week: null,
     currentMatchupPeriod: null,
     leagues: null,
@@ -46,7 +49,9 @@
     playoffs: null,
     playoffConf: 'detail',
     draft: null,
-    unread: 0
+    unread: 0,
+    loungeAccess: false,
+    loungeOpen: false
   };
 
   const SPORTS_SLOT = 4;
@@ -118,20 +123,44 @@
 
   function ensureViewData(name) {
     if (name === 'home') loadHome();
-    if (name === 'scoreboard' && !state.schedule) loadScoreboard();
-    if (name === 'team' && !state.myTeam) loadMyTeam();
-    if (name === 'lounge') {
-      loadChat();
-      loadSportsWire();
+    if (name === 'matchup') loadMatchup();
+    if (name === 'roster') loadRoster();
+    if (name === 'league') loadLeague();
+    if (name === 'book') renderBook();
+  }
+
+  function userConferenceKey() {
+    const { conference } = myTeamRef();
+    if (conference) return conference;
+    const scope = state.authUser?.preferredConference || state.authUser?.conference;
+    return scope || state.standingsConf || 'detail';
+  }
+
+  function conferenceLabel(key) {
+    const k = String(key || '').toLowerCase();
+    if (k === 'aaa') return 'AAA';
+    if (k === 'overtime') return 'Overtime';
+    if (k === 'detail') return 'Detail';
+    return key || 'League';
+  }
+
+  /** League brand (GridIron 24 / AAA), not conference (Detail / Overtime). */
+  function leagueBrandLabel() {
+    const membership = String(state.authUser?.membershipLeague || state.dues?.viewer?.membershipLeague || '').toLowerCase();
+    if (membership === 'aaa') return 'AAA';
+    if (membership === 'gridiron') return 'GridIron 24';
+    const conf = String(userConferenceKey() || '').toLowerCase();
+    if (conf === 'aaa') return 'AAA';
+    if (conf === 'detail' || conf === 'overtime') return 'GridIron 24';
+    return 'GridIron 24';
+  }
+
+  function leagueBrandLogo() {
+    const label = leagueBrandLabel();
+    if (label === 'AAA') {
+      return { src: '/assets/aaa-league.png?v=7', alt: 'AAA' };
     }
-    if (name === 'more') {
-      if (!state.leagues) loadStandings();
-      loadFeed(state.feedTab);
-      loadFinales();
-      loadDues();
-      loadInbox();
-      loadPlayoffs();
-    }
+    return { src: '/assets/gridiron24-league.png?v=6', alt: 'GridIron 24' };
   }
 
   function isStandalone() {
@@ -162,15 +191,15 @@
 
   function openMoreFeed(feed) {
     const tab = String(feed || 'news');
-    state.feedTab = tab;
-    document.querySelectorAll('#view-more [data-feed]').forEach((b) => {
-      b.classList.toggle('is-on', b.dataset.feed === tab);
-    });
-    navigate('more', { push: true, scrollTop: false });
-    loadFeed(tab);
-    requestAnimationFrame(() => {
-      document.getElementById('feed-mount')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    if (tab === 'news' || tab === 'calendar') {
+      navigate('league', { push: true, jump: tab });
+      return;
+    }
+    if (tab === 'schedule') {
+      navigate('home', { push: true });
+      return;
+    }
+    navigate('league', { push: true });
   }
 
   function scrollMainTop() {
@@ -194,16 +223,26 @@
     const hash = String(raw || '').replace(/^#/, '');
     return ({
       home: 'home',
-      scores: 'scoreboard',
-      scoreboard: 'scoreboard',
-      team: 'team',
-      lounge: 'lounge',
-      feed: 'more',
-      more: 'more',
-      standings: 'more',
-      inbox: 'more',
-      playoffs: 'more',
-      dues: 'more'
+      roster: 'roster',
+      team: 'roster',
+      matchup: 'matchup',
+      scores: 'matchup',
+      scoreboard: 'matchup',
+      league: 'league',
+      more: 'league',
+      feed: 'league',
+      standings: 'home',
+      inbox: 'league',
+      messages: 'league',
+      calendar: 'league',
+      news: 'league',
+      book: 'book',
+      sportsbook: 'book',
+      gambler: 'book',
+      lounge: 'book',
+      account: 'account',
+      playoffs: 'account',
+      dues: 'account'
     })[hash] || null;
   }
 
@@ -227,34 +266,38 @@
     });
     if (subtitle) {
       const week = state.week || state.myTeam?.currentMatchupPeriod;
+      const conf = conferenceLabel(userConferenceKey());
       const labels = {
-        home: week ? `Week ${week}` : 'HQ',
-        scoreboard: week ? `Week ${week}` : 'Scores',
-        team: 'My Team',
-        lounge: 'Members Lounge',
-        more: 'More'
+        home: week ? `${conf} · Wk ${week}` : conf,
+        roster: 'My Roster',
+        matchup: week ? `Week ${week}` : 'Matchup',
+        league: 'League',
+        book: 'Sportsbook',
+        account: 'Account'
       };
       subtitle.textContent = labels[name] || 'HQ';
     }
-    if (name === 'scoreboard' || name === 'home') startPolling();
+    if (name === 'home' || name === 'matchup') startPolling();
     else stopPolling();
-    if (name === 'lounge') {
-      startChatPoll();
-      scheduleSportsFlip();
-    } else {
-      stopChatPoll();
-      clearTimeout(state.sportsFlipTimer);
-      clearTimeout(state.sportsPollTimer);
-    }
+    stopChatPoll();
+    clearTimeout(state.sportsFlipTimer);
+    clearTimeout(state.sportsPollTimer);
     ensureViewData(name);
   }
 
   function navigate(name, { push = false, replace = false, jump = null, scrollTop = true } = {}) {
-    let view = ['home', 'scoreboard', 'team', 'lounge', 'more'].includes(name) ? name : 'home';
-    if (view === 'lounge' && state.loungeAccess === false) {
-      view = 'home';
+    let view = APP_VIEWS.has(name) ? name : 'home';
+    if (jump === 'messages' || jump === 'inbox') {
+      view = 'league';
+      state.leagueTab = 'messages';
+    } else if (jump === 'calendar') {
+      view = 'league';
+      state.leagueTab = 'calendar';
+    } else if (jump === 'news') {
+      view = 'league';
+      state.leagueTab = 'news';
     }
-    const hash = jump && view === 'more' ? jump : view;
+    const hash = jump && view === 'league' ? jump : view;
     const url = `#${hash}`;
     if (replace || (!push && !location.hash)) {
       history.replaceState({ view, jump }, '', url);
@@ -265,7 +308,11 @@
     }
     showView(view);
     if (scrollTop) scrollMainTop();
-    if (jump) jumpWithinMore(jump);
+    if (view === 'league') {
+      document.querySelectorAll('#league-seg [data-league-tab]').forEach((btn) => {
+        btn.classList.toggle('is-on', btn.dataset.leagueTab === state.leagueTab);
+      });
+    }
   }
 
   function routeAppLink(href, event) {
@@ -321,27 +368,27 @@
 
     if (path === '/my-roster.html') {
       event?.preventDefault();
-      navigate('team', { push: true });
+      navigate('roster', { push: true });
       return true;
     }
     if (path === '/draft.html') {
       event?.preventDefault();
-      openMoreFeed('draft');
+      navigate('league', { push: true });
       return true;
     }
     if (path === '/transactions.html') {
       event?.preventDefault();
-      openMoreFeed('moves');
+      navigate('league', { push: true });
       return true;
     }
     if (path === '/schedules.html') {
       event?.preventDefault();
-      openMoreFeed('schedule');
+      navigate('home', { push: true });
       return true;
     }
     if (path === '/scoreboard.html' || path === '/scoreboard') {
       event?.preventDefault();
-      navigate('scoreboard', { push: true });
+      navigate('matchup', { push: true });
       return true;
     }
 
@@ -368,13 +415,16 @@
 
   function sportsRotateIds() {
     const boards = Array.isArray(state.sports?.leagues) ? state.sports.leagues : [];
-    const withAction = boards.filter((b) =>
-      (b.games || []).some((g) => {
-        const bucket = g.status?.bucket;
-        return bucket === 'live' || bucket === 'upcoming';
-      })
+    const liveFirst = boards.filter((b) =>
+      (b.games || []).some((g) => g.status?.bucket === 'live')
     );
-    const pool = withAction.length ? withAction : boards.filter((b) => (b.games || []).length);
+    const withUpcoming = boards.filter((b) =>
+      !liveFirst.includes(b) &&
+      (b.games || []).some((g) => g.status?.bucket === 'upcoming')
+    );
+    const pool = liveFirst.length || withUpcoming.length
+      ? [...liveFirst, ...withUpcoming]
+      : boards.filter((b) => (b.games || []).length);
     return pool.map((b) => b.id).filter(Boolean);
   }
 
@@ -390,6 +440,32 @@
 
   function wireGameHtml(g) {
     const bucket = g.status?.bucket || 'upcoming';
+    if (g.kind === 'golf' || g.kind === 'racing') {
+      const leaders = (Array.isArray(g.leaders) ? g.leaders : []).slice(0, 3);
+      const when = bucket === 'live'
+        ? (g.status?.shortDetail || 'LIVE')
+        : bucket === 'final'
+          ? 'Final'
+          : kickShort(g.date);
+      const rows = leaders.length
+        ? leaders.map((p) => {
+          const tot = p.overall || p.score || '—';
+          const today = g.kind === 'golf' && p.today && p.today !== '—' ? ` · ${p.today}` : '';
+          return `<div class="wire-side">
+            <span class="ph" aria-hidden="true"></span>
+            <span class="namecell"><span class="abbr">${esc(p.position || '—')} ${esc(p.shortName || p.name || '—')}</span></span>
+            <span class="pts">${esc(String(tot))}${esc(today)}</span>
+          </div>`;
+        }).join('')
+        : `<div class="msg" style="padding:0.35rem 0;margin:0;">No field yet</div>`;
+      return `<article class="wire-game is-field">
+        <div class="wire-top">
+          <span class="when${bucket === 'live' ? ' is-live' : ''}">${esc(when)}</span>
+          <span class="watch">${esc(g.shortName || g.name || (g.kind === 'racing' ? 'Race' : 'Golf'))}</span>
+        </div>
+        ${rows}
+      </article>`;
+    }
     const fantasy = Boolean(g.fantasy || g.league === 'gi24' || g.league === 'aaa');
     const watch = fantasy ? '' : ((g.broadcasts || []).filter(Boolean)[0] || '');
     let when = kickShort(g.date);
@@ -403,7 +479,7 @@
       if (bucket === 'live') when = g.status?.shortDetail || g.status?.detail || 'LIVE';
       if (bucket === 'final') when = 'Final';
     }
-    const fmtPts = (n) => {
+    const fmtWirePts = (n) => {
       const x = Number(n);
       if (!Number.isFinite(x)) return '—';
       return fantasy ? String(x.toFixed(1).replace(/\.0$/, '')) : String(x);
@@ -416,9 +492,9 @@
         : `<span class="ph" aria-hidden="true"></span>`;
       let pts;
       if (fantasy && bucket === 'upcoming') {
-        pts = `<span class="pts is-blank" title="Projected">${esc(fmtPts(t.projected))}</span>`;
+        pts = `<span class="pts is-blank" title="Projected">${esc(fmtWirePts(t.projected))}</span>`;
       } else if (showScore && t.score != null) {
-        pts = `<span class="pts">${esc(fmtPts(t.score))}</span>`;
+        pts = `<span class="pts">${esc(fmtWirePts(t.score))}</span>`;
       } else {
         pts = `<span class="pts is-blank">—</span>`;
       }
@@ -434,11 +510,30 @@
     </article>`;
   }
 
-  function fillWireRail(el, games, empty) {
-    if (!el) return;
-    el.innerHTML = games.length
-      ? games.map((g) => wireGameHtml(g)).join('')
-      : `<div class="msg">${empty}</div>`;
+  function bookWireShellHtml() {
+    return `
+      <section class="wire-board book-wire" aria-label="Lounge scoreboard">
+        <header class="wire-head">
+          <div class="wire-league">
+            <img class="wire-logo" id="wire-logo" alt="" hidden width="28" height="28" />
+            <h3 id="wire-title">Scoreboard</h3>
+          </div>
+          <span class="wire-meta" id="wire-meta"></span>
+        </header>
+        <div class="wire-tabs" id="wire-tabs" role="tablist" aria-label="Sports"></div>
+        <div class="wire-face">
+          <div class="wire-cols">
+            <div>
+              <p class="wire-col-label is-live">Live</p>
+              <div class="wire-grid" id="wire-live"><div class="msg">Loading…</div></div>
+            </div>
+            <div>
+              <p class="wire-col-label">Upcoming</p>
+              <div class="wire-grid" id="wire-upcoming"><div class="msg">Loading…</div></div>
+            </div>
+          </div>
+        </div>
+      </section>`;
   }
 
   function renderSportsWire() {
@@ -452,7 +547,10 @@
     if (!liveEl || !upEl) return;
 
     if (board) state.sportsFilter = board.id;
-    if (title) title.textContent = board?.label || 'Sports wire';
+    if (title) {
+      title.textContent = board?.label || 'Scoreboard';
+      if (!state.sportsAuto) title.textContent += ' · Hold';
+    }
     if (logo) {
       if (board?.logo) {
         logo.hidden = false;
@@ -465,28 +563,35 @@
     }
     if (meta && state.sports?.fetchedAt) {
       const t = new Date(state.sports.fetchedAt);
-      meta.textContent = t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      meta.textContent = state.sportsAuto
+        ? t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        : 'Held';
     }
 
     if (tabs) {
       const boards = Array.isArray(state.sports?.leagues) ? state.sports.leagues : [];
       tabs.innerHTML = boards.map((b) => `
-        <button type="button" class="wire-tab${b.id === state.sportsFilter ? ' is-on' : ''}" data-wire="${esc(b.id)}">
+        <button type="button" class="wire-tab${b.id === state.sportsFilter ? ' is-on' : ''}" data-wire="${esc(b.id)}" role="tab" aria-selected="${b.id === state.sportsFilter ? 'true' : 'false'}">
           ${b.logo ? `<img src="${esc(b.logo)}" alt="" width="16" height="16" loading="lazy" decoding="async" referrerpolicy="no-referrer" />` : ''}
           ${esc(b.label)}
-        </button>`).join('');
+        </button>`).join('') + (
+        state.sportsAuto
+          ? ''
+          : `<button type="button" class="wire-tab is-auto" data-wire-auto="1" title="Resume auto-rotate">Auto</button>`
+      );
       tabs.querySelectorAll('[data-wire]').forEach((btn) => {
         btn.addEventListener('click', () => {
           state.sportsFilter = btn.dataset.wire;
           state.sportsPage = 0;
           state.sportsAuto = false;
           clearTimeout(state.sportsFlipTimer);
-          state.sportsFlipTimer = setTimeout(() => {
-            state.sportsAuto = true;
-            scheduleSportsFlip();
-          }, 20000);
           renderSportsWire();
         });
+      });
+      tabs.querySelector('[data-wire-auto]')?.addEventListener('click', () => {
+        state.sportsAuto = true;
+        renderSportsWire();
+        scheduleSportsFlip(1200);
       });
     }
 
@@ -511,7 +616,7 @@
 
   function scheduleSportsFlip(delay = SPORTS_FLIP_MS) {
     clearTimeout(state.sportsFlipTimer);
-    if (!state.sportsAuto || document.hidden || state.view !== 'lounge') return;
+    if (!state.sportsAuto || document.hidden || state.view !== 'book') return;
     state.sportsFlipTimer = setTimeout(() => {
       const { games } = sportsGamesForFilter();
       const live = games.filter((g) => g.status?.bucket === 'live');
@@ -552,16 +657,57 @@
     } catch (err) {
       const liveEl = document.getElementById('wire-live');
       const upEl = document.getElementById('wire-upcoming');
-      const msg = `<div class="msg">${esc(err.message || 'Wire unavailable')}</div>`;
+      const msg = `<div class="msg">${esc(err.message || 'Scoreboard unavailable')}</div>`;
       if (liveEl) liveEl.innerHTML = msg;
       if (upEl) upEl.innerHTML = msg;
     } finally {
       clearTimeout(state.sportsPollTimer);
       const live = Number(state.sports?.totals?.live || 0) > 0;
       state.sportsPollTimer = setTimeout(() => {
-        if (state.view === 'lounge') loadSportsWire();
+        if (state.view === 'book') loadSportsWire();
       }, live ? SPORTS_POLL_LIVE_MS : SPORTS_POLL_MS);
     }
+  }
+
+  function renderBook() {
+    const mount = document.getElementById('book-mount');
+    if (!mount) return;
+    if (!state.loungeAccess) {
+      clearTimeout(state.sportsFlipTimer);
+      clearTimeout(state.sportsPollTimer);
+      mount.innerHTML = `
+        <div class="book-locked">
+          <h2>Sportsbook locked</h2>
+          <p class="msg">Casala's Palace is available to Members Lounge accounts.</p>
+        </div>`;
+      return;
+    }
+    mount.innerHTML = `
+      <div class="book-stage">
+        <div class="book-wire-wrap">${bookWireShellHtml()}</div>
+        <div class="book-front">
+          <iframe class="book-frame" title="Casala's Palace Sportsbook" src="/members.html?embed=book#gambler"></iframe>
+        </div>
+      </div>`;
+    if (!state.sports) {
+      loadSportsWire();
+    } else {
+      renderSportsWire();
+      if (state.sportsAuto) scheduleSportsFlip();
+      else {
+        clearTimeout(state.sportsPollTimer);
+        state.sportsPollTimer = setTimeout(() => {
+          if (state.view === 'book') loadSportsWire();
+        }, SPORTS_POLL_MS);
+      }
+    }
+  }
+
+  function fillWireRail(el, games, empty) {
+    if (!el) return;
+    el.innerHTML = games.length
+      ? games.map((g) => wireGameHtml(g)).join('')
+      : `<div class="msg">${empty}</div>`;
   }
 
   function fmtChatTime(iso) {
@@ -726,18 +872,22 @@
           <img src="${esc(m.away?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
           <div class="mu-meta">
             <div class="mu-name">${esc(m.away?.name || 'TBD')}</div>
-            <div class="mu-proj">P ${fmtScore(m.away?.projected)}</div>
           </div>
-          <div class="mu-score">${fmtScore(m.away?.score)}</div>
+          <div class="mu-score-stack">
+            <div class="mu-score">${fmtScore(m.away?.score)}</div>
+            <div class="mu-proj">Proj ${fmtScore(m.away?.projected)}</div>
+          </div>
         </div>
         <div class="mu-mid">
           <span class="mu-status ${statusCls}">${status}</span>
         </div>
         <div class="mu-side is-home ${homeCls}">
-          <div class="mu-score">${fmtScore(m.home?.score)}</div>
+          <div class="mu-score-stack">
+            <div class="mu-score">${fmtScore(m.home?.score)}</div>
+            <div class="mu-proj">Proj ${fmtScore(m.home?.projected)}</div>
+          </div>
           <div class="mu-meta">
             <div class="mu-name">${esc(m.home?.name || 'TBD')}</div>
-            <div class="mu-proj">P ${fmtScore(m.home?.projected)}</div>
           </div>
           <img src="${esc(m.home?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
         </div>
@@ -816,26 +966,45 @@
 
   function homeStandingsHtml() {
     if (!state.leagues) return `<div class="msg">Loading standings…</div>`;
-    const confs = (state.leagues.conferences || []).filter((c) => c.key !== 'aaa');
-    const { id, conference } = myTeamRef();
-    let activeKey = state.standingsConf;
-    if (!state.standingsUserPicked && conference && confs.some((c) => c.key === conference)) {
-      activeKey = conference;
+    const confs = state.leagues.conferences || [];
+    const { id } = myTeamRef();
+    const key = userConferenceKey();
+    const conf = confs.find((c) => c.key === key)
+      || confs.find((c) => c.key === 'detail')
+      || confs[0];
+    if (!conf) return `<div class="msg">Standings unavailable.</div>`;
+    return standingsHtml(conf, { highlightId: id, compact: true });
+  }
+
+  function homeWeekScheduleHtml() {
+    if (!state.schedule) return `<div class="msg">Loading schedule…</div>`;
+    const key = userConferenceKey();
+    const confs = state.schedule.conferences || [];
+    const conf = confs.find((c) => c.key === key)
+      || confs.find((c) => c.key === 'detail')
+      || confs[0];
+    if (!conf?.ok) {
+      return `<div class="msg">${esc(conf?.error || 'Schedule unavailable.')}</div>`;
     }
-    const conf = confs.find((c) => c.key === activeKey) || confs[0];
-    activeKey = conf?.key || activeKey;
-    const seg = confs.length > 1
-      ? `<div class="seg" role="tablist" aria-label="Standings conference">
-          ${confs.map((c) => `
-            <button type="button" class="${c.key === activeKey ? 'is-on' : ''}" data-home-conf="${esc(c.key)}">
-              ${esc(c.shortName || c.name)}
-            </button>`).join('')}
-        </div>`
-      : '';
+    const games = conf.matchups || [];
+    if (!games.length) return `<div class="msg">No matchups this week.</div>`;
+    const ordered = [...games].sort((a, b) => {
+      const sa = matchupStatus(a);
+      const sb = matchupStatus(b);
+      const rank = (s) => (s.inProgress ? 0 : s.decided ? 2 : 1);
+      return rank(sa) - rank(sb);
+    });
+    const week = conf.week || state.week || '';
     return `
-      ${seg}
-      ${standingsHtml(conf, { highlightId: id, compact: true })}
-    `;
+      <div class="conf-block ${toneClass(conf.key)}">
+        <div class="conf-head">
+          ${conf.logo ? `<img src="${esc(conf.logo)}" alt="">` : ''}
+          <h2>${esc(conf.shortName || conf.name)} · Wk ${esc(String(week))}</h2>
+        </div>
+        <div class="mu-list">
+          ${ordered.map(gameRow).join('')}
+        </div>
+      </div>`;
   }
 
   function scoreboardHtml(conf) {
@@ -916,36 +1085,65 @@
     return s || '—';
   }
 
-  function renderMyTeam() {
-    const mount = document.getElementById('team-mount');
-    if (!mount || !state.myTeam) return;
-    const data = state.myTeam;
-    const t = data.team;
-    if (!t && !data.claim) {
-      mount.innerHTML = `<div class="msg"><strong>No franchise yet</strong>Claim a team on the full site under League → My Roster.</div>`;
-      return;
+  const DEFAULT_STARTER_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
+  const DEFAULT_BENCH_SLOTS = ['BN', 'BN', 'BN', 'BN', 'BN', 'BN'];
+
+  function emptySlotRows(slots = DEFAULT_STARTER_SLOTS) {
+    const list = (slots && slots.length) ? slots : DEFAULT_STARTER_SLOTS;
+    return list.map((slot) => ({
+      slot,
+      name: null,
+      empty: true,
+      points: null,
+      weekPoints: null
+    }));
+  }
+
+  function hasNamedPlayers(list) {
+    return (list || []).some((p) => p && !p.empty && p.name);
+  }
+
+  function starterSlotPlanFromTeam(data) {
+    const fromBox = (data?.matchupBox?.lineupSlots || [])
+      .map((s) => s.slot || s)
+      .filter(Boolean);
+    if (fromBox.length) return fromBox;
+    const fromLineup = (data?.lineup || [])
+      .filter((p) => p && (p.empty || isStarter(p.slot)))
+      .map((p) => p.slot)
+      .filter(Boolean);
+    if (fromLineup.length) return fromLineup;
+    return DEFAULT_STARTER_SLOTS.slice();
+  }
+
+  function resolveStarterRows(data) {
+    const plan = starterSlotPlanFromTeam(data);
+    const lineup = (data?.lineup || data?.roster || [])
+      .filter((p) => p && (p.empty || isStarter(p.slot)));
+    if (!hasNamedPlayers(lineup)) return emptySlotRows(plan);
+    return lineup;
+  }
+
+  function resolveBenchRows(data) {
+    const bench = (data?.bench || data?.roster || [])
+      .filter((p) => p && !p.empty && !isStarter(p.slot));
+    if (bench.length) return bench;
+    // Pre-draft / empty roster — still show colored BN skeleton.
+    if (!hasNamedPlayers(data?.lineup || data?.roster || [])) {
+      return emptySlotRows(DEFAULT_BENCH_SLOTS);
     }
+    return [];
+  }
+
+  function renderMyTeam() {
+    const mount = document.getElementById('roster-mount') || document.getElementById('team-mount');
+    if (!mount) return;
+    const data = state.myTeam || {};
+    const t = data.team;
+    const hasFranchise = Boolean(t || data.claim);
     const logo = t?.logo || data.logo?.url || PLACEHOLDER;
-    const m = data.currentMatchup;
-    const week = data.currentMatchupPeriod || state.week || '';
-    const lineup = (data.lineup || data.roster || []).filter((p) => p.empty || isStarter(p.slot));
-    const bench = (data.bench || data.roster || []).filter((p) => !p.empty && !isStarter(p.slot));
-
-    const matchupHtml = m
-      ? `<div class="matchup-card">
-          <div class="lbl">Week ${esc(String(m.week || week))} matchup</div>
-          ${gameRow(m)}
-        </div>`
-      : `<div class="matchup-card is-placeholder">
-          <div class="lbl">Week ${esc(String(week || '—'))} matchup</div>
-          ${gameRow({
-            away: { name: t?.name || 'Your team', logo: t?.logo || PLACEHOLDER, score: null, projected: null },
-            home: { name: 'Opponent', logo: PLACEHOLDER, score: null, projected: null },
-            winner: 'UNDECIDED'
-          })}
-        </div>`;
-
-    const starterRows = lineup.length ? lineup : emptySlotRows();
+    const starterRows = resolveStarterRows(data);
+    const benchRows = resolveBenchRows(data);
 
     mount.innerHTML = `
       <div class="team-hero">
@@ -953,24 +1151,156 @@
         <div>
           <h2>${esc(t?.name || data.claim?.teamName || 'Your team')}</h2>
           <div class="meta">
-            ${esc(t?.conferenceName || data.conference?.name || '')}
-            ${t ? ` · ${esc(record(t))} · PF ${fmtPts(t.pointsFor)}` : ''}
-            ${t?.playoffSeed ? ` · Seed #${esc(String(t.playoffSeed))}` : ''}
+            ${hasFranchise
+              ? `${esc(t?.conferenceName || data.conference?.name || '')}${t ? ` · ${esc(record(t))} · PF ${fmtPts(t.pointsFor)}` : ''}${t?.playoffSeed ? ` · Seed #${esc(String(t.playoffSeed))}` : ''}`
+              : 'Franchise not assigned yet — roster slots below'}
           </div>
         </div>
       </div>
-      <div class="stat-strip">
+      ${hasFranchise ? `<div class="stat-strip">
         <div class="stat-cell"><span class="lbl">Record</span><span class="val">${esc(record(t))}</span></div>
         <div class="stat-cell"><span class="lbl">PF</span><span class="val">${fmtPts(t?.pointsFor)}</span></div>
         <div class="stat-cell"><span class="lbl">Rank</span><span class="val">${t?.standingRank ? `#${t.standingRank}` : '—'}</span></div>
         <div class="stat-cell"><span class="lbl">Seed</span><span class="val">${t?.playoffSeed || '—'}</span></div>
-      </div>
-      ${matchupHtml}
+      </div>` : ''}
       <div class="section-label">Starters</div>
       ${slotRosterListHtml(starterRows, { showPts: true })}
-      ${bench.length ? `<div class="section-label">Bench / IR</div>${slotRosterListHtml(bench, { showPts: true })}` : ''}
+      <div class="section-label">Bench</div>
+      ${slotRosterListHtml(benchRows.length ? benchRows : emptySlotRows(DEFAULT_BENCH_SLOTS), { showPts: true })}
       ${data.keeper ? `<p class="msg" style="margin-top:1rem;">Keeper: <strong>${esc(data.keeper.playerName)}</strong> · Round ${esc(String(data.keeper.costRound))}</p>` : ''}
     `;
+  }
+
+  function renderMatchup() {
+    const mount = document.getElementById('matchup-mount');
+    if (!mount) return;
+    const week = state.myTeam?.displayMatchupPeriod
+      || state.myTeam?.matchupBox?.week
+      || state.week
+      || state.myTeam?.currentMatchupPeriod
+      || '—';
+    const { matchup: m } = findMyMatchup();
+    const box = state.myTeam?.matchupBox;
+    if (!state.myTeam && !m) {
+      mount.innerHTML = `<div class="msg">Loading matchup…</div>`;
+      return;
+    }
+    mount.innerHTML = `
+      <div class="home-block-head">
+        <h2>Week ${esc(String(week))} matchup</h2>
+        <span class="msg" style="padding:0;margin:0;">${esc(conferenceLabel(userConferenceKey()))}</span>
+      </div>
+      ${matchupBoxHtml(box, m, week)}
+    `;
+    mount.querySelectorAll('details.box-bench[data-bench-side]').forEach((el) => {
+      el.addEventListener('toggle', () => {
+        const side = el.getAttribute('data-bench-side');
+        if (!side) return;
+        if (!state.boxBenchOpen || typeof state.boxBenchOpen !== 'object') {
+          state.boxBenchOpen = { away: false, home: false };
+        }
+        state.boxBenchOpen[side] = el.open;
+      });
+    });
+  }
+
+  function renderHome() {
+    const mount = document.getElementById('home-mount');
+    if (!mount) return;
+    const who = firstName(state.authUser);
+    const t = state.myTeam?.team;
+    const week = state.week || state.myTeam?.currentMatchupPeriod || '—';
+    const leagueLogo = leagueBrandLogo();
+
+    mount.innerHTML = `
+      <div class="home-hero">
+        <p class="home-greeting">Welcome back <span>${esc(who)}</span></p>
+        <div class="home-strip">
+          <div class="home-tile is-league">
+            <span class="lbl">League</span>
+            <img class="home-league-logo" src="${esc(leagueLogo.src)}" alt="${esc(leagueLogo.alt)}" width="72" height="72" decoding="async" />
+          </div>
+          <div class="home-tile"><span class="lbl">Week</span><span class="val">${esc(String(week))}</span></div>
+          <div class="home-tile"><span class="lbl">Record</span><span class="val">${esc(record(t))}</span></div>
+        </div>
+      </div>
+      <section class="home-block">
+        <div class="home-block-head"><h2>Standings</h2></div>
+        ${homeStandingsHtml()}
+      </section>
+      <section class="home-block">
+        <div class="home-block-head"><h2>This week</h2></div>
+        ${homeWeekScheduleHtml()}
+      </section>
+      <div class="quick-row">
+        <button type="button" class="quick-chip" data-go="matchup">My matchup</button>
+        <button type="button" class="quick-chip" data-go="roster">My roster</button>
+        <button type="button" class="quick-chip" data-go="league" data-league-jump="messages">Messages${state.unread ? ` · ${state.unread}` : ''}</button>
+        <button type="button" class="quick-chip" data-go="account">Account</button>
+      </div>
+    `;
+
+    mount.querySelectorAll('[data-go]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const jump = btn.dataset.leagueJump;
+        navigate(btn.dataset.go, { push: true, jump: jump || null });
+      });
+    });
+  }
+
+  function renderLeague() {
+    const mount = document.getElementById('league-mount');
+    if (!mount) return;
+    document.querySelectorAll('#league-seg [data-league-tab]').forEach((btn) => {
+      btn.classList.toggle('is-on', btn.dataset.leagueTab === state.leagueTab);
+    });
+    const badge = document.getElementById('league-msg-badge');
+    const tabBadge = document.getElementById('league-badge');
+    if (badge) {
+      badge.hidden = !state.unread;
+      badge.textContent = state.unread > 99 ? '99+' : String(state.unread || '');
+    }
+    if (tabBadge) {
+      tabBadge.hidden = !state.unread;
+      tabBadge.textContent = state.unread > 99 ? '99+' : String(state.unread || '');
+    }
+
+    if (state.leagueTab === 'messages') {
+      mount.innerHTML = `<div id="inbox-mount"></div>
+        <p class="msg" style="margin-top:1rem;"><button type="button" class="text-btn" data-go="account">Account &amp; desktop</button></p>`;
+      const inboxMount = document.getElementById('inbox-mount');
+      if (inboxMount && typeof renderInbox === 'function') {
+        // renderInbox targets #inbox-mount
+        renderInbox();
+      }
+      mount.querySelector('[data-go="account"]')?.addEventListener('click', () => navigate('account', { push: true }));
+      return;
+    }
+
+    if (state.leagueTab === 'news') {
+      const rows = state.news || [];
+      mount.innerHTML = rows.length
+        ? `<div class="feed-list">${rows.slice(0, 40).map((n) => `
+            <article class="feed-card">
+              <h3>${esc(n.title || 'Update')}</h3>
+              <p>${esc(n.body || n.summary || '')}</p>
+              <div class="meta">${esc(n.when || n.date || '')}</div>
+            </article>`).join('')}</div>`
+        : `<div class="msg">No league news yet.</div>`;
+      return;
+    }
+
+    // calendar
+    const events = state.calendar?.events || state.calendar || [];
+    const list = Array.isArray(events) ? events : [];
+    mount.innerHTML = list.length
+      ? `<div class="feed-list">${list.slice(0, 50).map((ev) => `
+          <article class="feed-card">
+            <h3>${esc(ev.title || ev.name || 'Event')}</h3>
+            <p>${esc(ev.notes || ev.description || '')}</p>
+            <div class="meta">${esc(fmtDate(ev.date || ev.day || ev.startDate))}${ev.conference ? ` · ${esc(ev.conference)}` : ''}</div>
+          </article>`).join('')}</div>`
+      : `<div class="msg">No calendar events loaded.</div>`;
   }
 
   function fmtDate(d) {
@@ -1360,19 +1690,6 @@
     </div>`;
   }
 
-  const DEFAULT_STARTER_SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
-
-  function emptySlotRows(slots = DEFAULT_STARTER_SLOTS) {
-    const list = (slots && slots.length) ? slots : DEFAULT_STARTER_SLOTS;
-    return list.map((slot) => ({
-      slot,
-      name: null,
-      empty: true,
-      points: null,
-      weekPoints: null
-    }));
-  }
-
   function placeholderTeamSide(role = 'away') {
     const mine = state.myTeam?.team;
     if (role === 'home' || !mine) {
@@ -1448,16 +1765,20 @@
               <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
               <div class="meta">
                 <div class="nm">${esc(away.name)}</div>
+              </div>
+              <div class="box-scores">
                 <div class="score">${fmtScore(away.score)}</div>
                 <div class="proj">Proj ${fmtScore(away.projected)}</div>
               </div>
             </div>
             <div class="box-vs">VS</div>
             <div class="box-team ${homeWin ? 'is-winner' : decided ? 'is-loser' : ''}">
-              <div class="meta">
-                <div class="nm">${esc(home.name)}</div>
+              <div class="box-scores">
                 <div class="score">${fmtScore(home.score)}</div>
                 <div class="proj">Proj ${fmtScore(home.projected)}</div>
+              </div>
+              <div class="meta">
+                <div class="nm">${esc(home.name)}</div>
               </div>
               <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
             </div>
@@ -1482,16 +1803,20 @@
             <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
             <div class="meta">
               <div class="nm">${esc(away.name)}</div>
+            </div>
+            <div class="box-scores">
               <div class="score">—</div>
               <div class="proj">Proj —</div>
             </div>
           </div>
           <div class="box-vs">VS</div>
           <div class="box-team">
-            <div class="meta">
-              <div class="nm">${esc(home.name)}</div>
+            <div class="box-scores">
               <div class="score">—</div>
               <div class="proj">Proj —</div>
+            </div>
+            <div class="meta">
+              <div class="nm">${esc(home.name)}</div>
             </div>
             <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
           </div>
@@ -1535,12 +1860,17 @@
       const empty = p?.empty || !p?.name;
       const bad = !empty && injClass(p.injuryStatus) === 'bad';
       const pts = empty ? '—' : fmtPts(p.points != null ? p.points : p.weekPoints);
+      const projRaw = p?.projected != null ? p.projected : p?.weekProjected;
+      const proj = empty || projRaw == null ? null : fmtPts(projRaw);
       const name = empty
         ? `<span class="slot-open">${esc(p?.slot || 'Open')}</span>`
         : `${esc(p.name)}${p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}`;
       return `<div class="box-player ${side}${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''}">
         <span class="nm">${name}</span>
-        <span class="pts">${pts}</span>
+        <span class="pts">
+          <span class="pts-live">${pts}</span>
+          ${proj != null ? `<span class="pts-proj">${proj}</span>` : ''}
+        </span>
       </div>`;
     }
 
@@ -1573,13 +1903,15 @@
             <span></span>
             <span>Player · Score</span>
           </div>
-          ${rows.map((row) => `
+          ${rows.map((row) => {
+            const pos = slotPosLabel(row.slot);
+            return `
             <div class="box-row">
               ${playerCell(row.away, 'away')}
-              <div class="box-mid">${esc(row.slot)}</div>
+              <div class="box-mid"><span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span></div>
               ${playerCell(row.home, 'home')}
-            </div>
-          `).join('')}
+            </div>`;
+          }).join('')}
         </div>
         <div class="box-bench-row">
           ${benchBlock(awayBench, 'away')}
@@ -1592,69 +1924,15 @@
     return `${matchupScoreboardHtml(box, fallbackMatchup, week)}${matchupRostersHtml(box, fallbackMatchup)}`;
   }
 
-  function renderHome() {
-    const mount = document.getElementById('home-mount');
-    if (!mount) return;
-    const scrollY = window.scrollY;
-    const who = firstName(state.authUser);
-    const t = state.myTeam?.team;
-    const week = state.week || state.myTeam?.currentMatchupPeriod || '—';
-    const { matchup: m } = findMyMatchup();
-    const box = state.myTeam?.matchupBox;
-
-    const matchup = matchupScoreboardHtml(box, m, week);
-    const lineups = matchupRostersHtml(box, m);
-
-    mount.innerHTML = `
-      <div class="home-hero">
-        <p class="home-greeting">Welcome back <span>${esc(who)}</span></p>
-        <div class="home-strip">
-          <div class="home-tile"><span class="lbl">Week</span><span class="val">${esc(String(week))}</span></div>
-          <div class="home-tile"><span class="lbl">Record</span><span class="val">${esc(record(t))}</span></div>
-          <div class="home-tile"><span class="lbl">PF</span><span class="val">${t ? fmtPts(t.pointsFor) : '—'}</span></div>
-        </div>
-      </div>
-      ${homeNewsHtml()}
-      ${matchup}
-      ${lineups}
-      <div class="quick-row">
-        <button type="button" class="quick-chip" data-go="team">My team</button>
-        <button type="button" class="quick-chip" data-go="scoreboard">Scores</button>
-        <button type="button" class="quick-chip" data-go="more" data-more-jump="playoffs">Playoffs</button>
-        ${state.loungeAccess ? '<button type="button" class="quick-chip" data-go="lounge">Lounge</button>' : ''}
-        <button type="button" class="quick-chip" data-go="more" data-more-jump="inbox">Inbox${state.unread ? ` · ${state.unread}` : ''}</button>
-        ${state.loungeAccess ? '<a class="quick-chip" href="/members.html#gambler">Sportsbook</a>' : ''}
-      </div>
-      ${duesCardHtml()}
-    `;
-
-    mount.querySelectorAll('[data-go]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const jump = btn.dataset.moreJump;
-        if (jump === 'inbox' || jump === 'playoffs') {
-          navigate('more', { push: true, jump });
-          return;
-        }
-        navigate(btn.dataset.go, { push: true });
-      });
-    });
-    mount.querySelectorAll('details.box-bench[data-bench-side]').forEach((el) => {
-      el.addEventListener('toggle', () => {
-        const side = el.getAttribute('data-bench-side');
-        if (!side) return;
-        if (!state.boxBenchOpen || typeof state.boxBenchOpen !== 'object') {
-          state.boxBenchOpen = { away: false, home: false };
-        }
-        state.boxBenchOpen[side] = el.open;
-      });
-    });
-    if (Math.abs(window.scrollY - scrollY) > 2) window.scrollTo(0, scrollY);
-  }
-
   function setHomeSync() {
-    if (state.view !== 'home') return;
+    if (state.view !== 'home' && state.view !== 'matchup') return;
     const week = state.week || state.myTeam?.currentMatchupPeriod;
-    if (subtitle) subtitle.textContent = week ? `Week ${week}` : 'HQ';
+    const conf = conferenceLabel(userConferenceKey());
+    if (subtitle) {
+      subtitle.textContent = state.view === 'matchup'
+        ? (week ? `Week ${week}` : 'Matchup')
+        : (week ? `${conf} · Wk ${week}` : conf);
+    }
   }
 
   async function refreshHomeLive() {
@@ -1667,6 +1945,11 @@
       if (state.view === 'home') {
         renderHome();
         setHomeSync();
+      } else if (state.view === 'matchup') {
+        renderMatchup();
+        setHomeSync();
+      } else if (state.view === 'roster') {
+        renderMyTeam();
       }
     } catch {
       /* keep last good frame */
@@ -1679,19 +1962,58 @@
       const tasks = [];
       tasks.push(loadMyTeam().catch(() => {}));
       tasks.push(loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: Boolean(state.schedule) }).catch(() => {}));
-      if (!state.news) {
-        tasks.push(apiGet('/api/news').then((d) => { state.news = d.news || []; }).catch(() => { state.news = state.news || []; }));
-      }
       if (!state.leagues) {
         tasks.push(apiGet('/api/leagues').then((d) => { state.leagues = d; }).catch(() => {}));
       }
-      tasks.push(loadDues().catch(() => {}));
       await Promise.all(tasks);
       updateTeamChip();
       renderHome();
       setHomeSync();
     } catch (err) {
       if (mount) mount.innerHTML = `<div class="msg"><strong>Home unavailable</strong>${esc(err.message)}</div>`;
+    }
+  }
+
+  async function loadMatchup() {
+    const mount = document.getElementById('matchup-mount');
+    try {
+      await loadMyTeam().catch(() => {});
+      const displayWeek = state.myTeam?.displayMatchupPeriod
+        || state.myTeam?.matchupBox?.week
+        || undefined;
+      await loadScoreboard(displayWeek, { quiet: Boolean(state.schedule) }).catch(() => {});
+      if (displayWeek != null && Number.isFinite(Number(displayWeek))) {
+        state.week = Number(displayWeek);
+      }
+      renderMatchup();
+      setHomeSync();
+    } catch (err) {
+      if (mount) mount.innerHTML = `<div class="msg"><strong>Matchup unavailable</strong>${esc(err.message)}</div>`;
+    }
+  }
+
+  async function loadRoster() {
+    await loadMyTeam();
+    renderMyTeam();
+  }
+
+  async function loadLeague() {
+    try {
+      const tasks = [];
+      if (state.leagueTab === 'news' && !state.news) {
+        tasks.push(apiGet('/api/news').then((d) => { state.news = d.news || []; }).catch(() => { state.news = []; }));
+      }
+      if (state.leagueTab === 'calendar' && !state.calendar) {
+        tasks.push(apiGet('/api/calendar').then((d) => { state.calendar = d.events || []; }).catch(() => { state.calendar = []; }));
+      }
+      if (state.leagueTab === 'messages') {
+        tasks.push(loadInbox().catch(() => {}));
+      }
+      await Promise.all(tasks);
+      renderLeague();
+    } catch (err) {
+      const mount = document.getElementById('league-mount');
+      if (mount) mount.innerHTML = `<div class="msg"><strong>League desk unavailable</strong>${esc(err.message)}</div>`;
     }
   }
 
@@ -1723,11 +2045,17 @@
         state.currentMatchupPeriod = Number(livePeriod);
       }
       fillWeeks(state.week);
-      renderScoreboard();
-      if (state.view === 'scoreboard' && subtitle) {
-        subtitle.textContent = state.week ? `Week ${state.week}` : 'Scores';
+      if (typeof renderScoreboard === 'function' && document.getElementById('scoreboard-mount')) {
+        renderScoreboard();
       }
-      if (state.view === 'home') setHomeSync();
+      if (state.view === 'home') {
+        renderHome();
+        setHomeSync();
+      }
+      if (state.view === 'matchup') {
+        renderMatchup();
+        setHomeSync();
+      }
     } catch (err) {
       if (mount && state.view === 'scoreboard') {
         mount.innerHTML = `<div class="msg"><strong>Scoreboard unavailable</strong>${esc(err.message)}</div>`;
@@ -1739,17 +2067,23 @@
   }
 
   async function loadMyTeam() {
-    const mount = document.getElementById('team-mount');
+    const mount = document.getElementById('roster-mount');
     try {
       state.myTeam = await apiGet('/api/my-team');
       updateTeamChip();
-      if (state.view === 'team') {
+      if (state.view === 'roster') {
         renderMyTeam();
       }
     } catch (err) {
       updateTeamChip();
-      if (mount && state.view === 'team') {
-        mount.innerHTML = `<div class="msg"><strong>Team unavailable</strong>${esc(err.message)}</div>`;
+      if (mount && state.view === 'roster') {
+        // Still show colored empty slots even if ESPN/team lookup fails.
+        state.myTeam = state.myTeam || {};
+        renderMyTeam();
+        mount.insertAdjacentHTML(
+          'afterbegin',
+          `<div class="msg" style="margin-bottom:0.75rem;"><strong>Live roster unavailable</strong>${esc(err.message)} — showing slot outline.</div>`
+        );
       }
     }
   }
@@ -1801,14 +2135,19 @@
 
   function setUnreadBadge(n) {
     state.unread = Number(n) || 0;
-    const badge = document.getElementById('more-badge');
-    if (!badge) return;
-    if (state.unread > 0) {
-      badge.hidden = false;
-      badge.textContent = state.unread > 99 ? '99+' : String(state.unread);
-    } else {
-      badge.hidden = true;
-      badge.textContent = '0';
+    const badges = [
+      document.getElementById('league-badge'),
+      document.getElementById('league-msg-badge'),
+      document.getElementById('more-badge')
+    ].filter(Boolean);
+    for (const badge of badges) {
+      if (state.unread > 0) {
+        badge.hidden = false;
+        badge.textContent = state.unread > 99 ? '99+' : String(state.unread);
+      } else {
+        badge.hidden = true;
+        badge.textContent = '';
+      }
     }
   }
 
@@ -2088,13 +2427,8 @@
     stopPolling();
     state.pollTimer = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
-      if (state.view === 'home') {
+      if (state.view === 'home' || state.view === 'matchup' || state.view === 'roster') {
         refreshHomeLive();
-        return;
-      }
-      if (state.view === 'scoreboard') {
-        const week = document.getElementById('week')?.value || state.week;
-        loadScoreboard(week, { quiet: true });
       }
     }, REFRESH_MS);
   }
@@ -2125,11 +2459,6 @@
       state.authUser = user;
       state.loungeAccess = Boolean(data.loungeAccess || user.siteOwner);
       state.loungeOpen = Boolean(data.loungeOpen);
-      const loungeTab = document.querySelector('.app-tabs [data-tab="lounge"]');
-      if (loungeTab) loungeTab.hidden = !state.loungeAccess;
-      document.querySelectorAll('[data-go="lounge"], [data-app-jump="lounge"], a[href="/members.html"], a[href^="/members.html"]').forEach((el) => {
-        if (!state.loungeAccess) el.hidden = true;
-      });
       const line = document.getElementById('user-line');
       if (line) {
         line.textContent = `${user.name || user.loginName || 'Member'}${user.role ? ` · ${String(user.role).replace(/_/g, ' ')}` : ''}`;
@@ -2151,11 +2480,23 @@
       btn.addEventListener('click', () => navigate(btn.dataset.tab, { push: true }));
     });
 
+    document.getElementById('league-seg')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-league-tab]');
+      if (!btn) return;
+      state.leagueTab = btn.dataset.leagueTab;
+      document.querySelectorAll('#league-seg [data-league-tab]').forEach((b) => {
+        b.classList.toggle('is-on', b === btn);
+      });
+      loadLeague();
+    });
+
     document.addEventListener('click', (e) => {
       const feedBtn = e.target.closest?.('[data-app-feed]');
       if (feedBtn) {
         e.preventDefault();
-        openMoreFeed(feedBtn.getAttribute('data-app-feed'));
+        const feed = feedBtn.getAttribute('data-app-feed');
+        if (feed === 'news' || feed === 'calendar') navigate('league', { push: true, jump: feed });
+        else navigate('league', { push: true });
         return;
       }
       const tabBtn = e.target.closest?.('[data-app-tab]');
@@ -2168,10 +2509,9 @@
       if (jumpBtn && jumpBtn.tagName !== 'A') {
         e.preventDefault();
         const jump = jumpBtn.getAttribute('data-app-jump');
-        if (jump === 'lounge') navigate('lounge', { push: true });
-        else if (jump === 'inbox' || jump === 'playoffs' || jump === 'dues') {
-          navigate('more', { push: true, jump });
-        }
+        if (jump === 'lounge' || jump === 'book') navigate('book', { push: true });
+        else if (jump === 'inbox' || jump === 'messages') navigate('league', { push: true, jump: 'messages' });
+        else if (jump === 'account' || jump === 'playoffs' || jump === 'dues') navigate('account', { push: true });
         return;
       }
 
@@ -2191,14 +2531,14 @@
         return;
       }
       const jump = a.getAttribute('data-app-jump');
-      if (jump === 'lounge') {
+      if (jump === 'lounge' || jump === 'book') {
         e.preventDefault();
-        navigate('lounge', { push: true });
+        navigate('book', { push: true });
         return;
       }
-      if (jump === 'inbox' || jump === 'playoffs' || jump === 'dues') {
+      if (jump === 'inbox' || jump === 'messages') {
         e.preventDefault();
-        navigate('more', { push: true, jump });
+        navigate('league', { push: true, jump: 'messages' });
         return;
       }
       routeAppLink(a.getAttribute('href'), e);
@@ -2209,12 +2549,11 @@
       const jump = e.state?.jump || null;
       const fromHash = resolveHashView(location.hash);
       const view = fromState || fromHash || 'home';
+      if (jump === 'messages' || jump === 'inbox') state.leagueTab = 'messages';
+      if (jump === 'calendar') state.leagueTab = 'calendar';
+      if (jump === 'news') state.leagueTab = 'news';
       showView(view);
       scrollMainTop();
-      if (jump) jumpWithinMore(jump);
-      else if (['inbox', 'playoffs', 'dues'].includes(String(location.hash || '').replace('#', ''))) {
-        jumpWithinMore(String(location.hash).replace('#', ''));
-      }
     });
 
     document.querySelectorAll('#feed-conf-seg [data-conf]').forEach((btn) => {
@@ -2345,15 +2684,14 @@
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible') return;
-      if (state.view === 'scoreboard') {
-        loadScoreboard(document.getElementById('week')?.value || state.week, { quiet: true });
+      if (state.view === 'home' || state.view === 'matchup' || state.view === 'roster') {
+        refreshHomeLive();
       }
-      if (state.view === 'team') loadMyTeam();
-      if (state.view === 'lounge') {
-        loadChat({ quiet: true });
-        loadSportsWire();
+      if (state.view === 'league') loadLeague();
+      if (state.view === 'book' && state.loungeAccess) {
+        if (state.sportsAuto) scheduleSportsFlip(800);
+        else loadSportsWire();
       }
-      if (state.view === 'home') refreshHomeLive();
     });
   }
 
@@ -2445,7 +2783,9 @@
     loadMyTeam().catch(() => {});
     const hash = (location.hash || '').replace('#', '');
     const initial = resolveHashView(hash) || 'home';
-    const jump = ['inbox', 'playoffs', 'dues'].includes(hash) ? hash : null;
+    const jump = ['inbox', 'messages', 'calendar', 'news'].includes(hash)
+      ? (hash === 'inbox' ? 'messages' : hash)
+      : null;
     navigate(initial, { replace: true, jump, scrollTop: true });
     loadInbox().catch(() => {});
     hideBootSplash();

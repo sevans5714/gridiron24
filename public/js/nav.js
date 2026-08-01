@@ -630,11 +630,13 @@
     if (!user) {
       mount.innerHTML = '';
       mount.hidden = true;
+      mount.onmouseenter = null;
+      mount.onmouseleave = null;
+      mount.classList.remove('is-open');
       return;
     }
     mount.hidden = false;
-    mount.onmouseenter = null;
-    mount.onmouseleave = null;
+    mount.classList.remove('is-open');
     const teamName = user.loungeOnly
       ? 'Members Lounge'
       : (myTeam?.team?.name || myTeam?.claim?.teamName || 'Unassigned');
@@ -642,28 +644,55 @@
     const access = roleLabel(user.role, user.conference, user);
     const onProfile = active === 'profile';
     const needsLogo = !user.loungeOnly && !hasChosenLogo(myTeam?.logo);
-    if (user.loungeOnly) {
-      mount.innerHTML = `
-        <div class="user-chip" title="${esc(teamName)} · ${esc(ownerName)} · ${esc(access)}">
-          <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
-          <span class="user-chip-text">
-            <span class="user-chip-team">${esc(teamName)}</span>
-            <span class="user-chip-owner">${esc(ownerName)}</span>
-            <span class="user-chip-access">${esc(access)}</span>
-          </span>
-        </div>`;
-      return;
-    }
-    const href = needsLogo ? '/profile.html#logo' : '/profile.html';
+    const chipTitle = `${teamName} · ${ownerName} · ${access}`;
+    const profileHref = needsLogo ? '/profile.html#logo' : '/profile.html';
+    const chipClass = `user-chip${onProfile ? ' is-active' : ''}${needsLogo ? ' needs-logo' : ''}`;
+
     mount.innerHTML = `
-      <a class="user-chip${onProfile ? ' is-active' : ''}${needsLogo ? ' needs-logo' : ''}" href="${href}" title="${esc(teamName)} · ${esc(ownerName)} · ${esc(access)}">
+      <div class="${chipClass}" title="${esc(chipTitle)}">
         <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
         <span class="user-chip-text">
           <span class="user-chip-team">${esc(teamName)}</span>
           <span class="user-chip-owner">${esc(ownerName)}</span>
           <span class="user-chip-access">${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
         </span>
-      </a>`;
+        <button type="button" class="user-chip-logout" aria-label="Log out">LOG OUT</button>
+      </div>
+      ${user.loungeOnly ? '' : `<a class="user-chip-profile-hit" href="${profileHref}" tabindex="-1" aria-hidden="true"></a>`}`;
+
+    const logoutBtn = mount.querySelector('.user-chip-logout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        logoutBtn.disabled = true;
+        try {
+          await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+        } catch { /* ignore */ }
+        window.location.replace('/enter?logout=1');
+      });
+    }
+
+    // Ensure identity + logout sit at the far right of the header.
+    const right = mount.parentElement;
+    if (right?.classList?.contains('topbar-right') && right.lastElementChild !== mount) {
+      right.appendChild(mount);
+    }
+
+    // Touch: tap chip to reveal LOG OUT in the top-right header.
+    const chipEl = mount.querySelector('.user-chip');
+    if (chipEl) {
+      chipEl.addEventListener('click', (e) => {
+        if (e.target.closest('.user-chip-logout')) return;
+        const fineHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        if (fineHover) {
+          if (!user.loungeOnly) window.location.href = profileHref;
+          return;
+        }
+        e.preventDefault();
+        mount.classList.toggle('is-open');
+      });
+    }
   }
 
   function ensureLeagueSwitchMount() {
@@ -746,6 +775,10 @@
       item.classList.remove('is-open');
       item.querySelector('.nav-link')?.setAttribute('aria-expanded', 'false');
     });
+    const userMenu = document.getElementById('user-menu');
+    if (userMenu && !e.target.closest?.('#user-menu')) {
+      userMenu.classList.remove('is-open');
+    }
   }
 
   function ensureTickerMount() {
@@ -940,7 +973,7 @@
 
   function footerHtml(buildLabel) {
     const build = esc(buildLabel || 'Build …');
-    return `<span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
+    return `<span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=2" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
   }
 
   function ensureFooter(buildLabel) {

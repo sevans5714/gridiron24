@@ -10,27 +10,27 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="GI24" />
   <meta name="format-detection" content="telephone=no" />
-  <meta name="description" content="GridIron 24 HQ — Detail & Overtime scores, AAA feeder, Members Lounge, and Casala's Palace." />
+  <meta name="description" content="GridIron 24 — standings, matchups, roster, and league HQ." />
   <title>GridIron 24</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=60" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=60" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=60" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=60" />
+  <link rel="manifest" href="/manifest.webmanifest?v=71" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=71" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=71" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=71" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/app/app.css?v=60" />
+  <link rel="stylesheet" href="/app/app.css?v=71" />
   <script src="/js/theme-boot.js"></script>
 </head>
 <body class="app-shell">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
-    <img src="/assets/pwa/icon-192-transparent.png?v=60" alt="" width="96" height="96" />
+    <img src="/assets/pwa/icon-192-transparent.png?v=71" alt="" width="96" height="96" />
     <strong>GridIron 24</strong>
   </div>
   <header class="app-top">
     <div class="app-top-row">
       <button type="button" class="brand" id="brand-home" aria-label="GridIron 24 Home">
-        <img src="/assets/pwa/icon-192-transparent.png?v=60" alt="" width="192" height="192" />
+        <img src="/assets/pwa/icon-192-transparent.png?v=71" alt="" width="192" height="192" />
         <div class="brand-copy">
           <strong>GridIron 24</strong>
           <span id="subtitle">HQ</span>
@@ -44,212 +44,87 @@
   </header>
 
   <main class="app-main">
+    <!-- HOME: standings + this week's schedule (user conference only) -->
     <section class="view" id="view-home" data-view="home">
-      <div id="home-mount"><div class="msg">Loading pulse…</div></div>
+      <div id="home-mount"><div class="msg">Loading league…</div></div>
     </section>
 
-    <section class="view" id="view-scoreboard" data-view="scoreboard" hidden>
-      <div class="toolbar-row">
-        <div>
-          <label for="week">Week</label>
-          <select id="week" aria-label="Scoring week"></select>
-        </div>
-        <button type="button" class="refresh-btn" id="refresh-scores">Refresh</button>
-      </div>
-      <div class="seg" role="tablist" aria-label="Scoreboard conference" id="score-seg">
-        <button type="button" class="is-on" data-score-conf="detail">Detail</button>
-        <button type="button" data-score-conf="overtime">Overtime</button>
-      </div>
-      <div id="scoreboard-mount"><div class="msg">Loading scoreboard…</div></div>
+    <!-- ROSTER: your franchise only -->
+    <section class="view" id="view-roster" data-view="roster" hidden>
+      <div id="roster-mount"><div class="msg">Loading your roster…</div></div>
     </section>
 
-    <section class="view" id="view-team" data-view="team" hidden>
-      <div id="team-mount"><div class="msg">Loading your team…</div></div>
+    <!-- MATCHUP: you vs opponent, live scores -->
+    <section class="view" id="view-matchup" data-view="matchup" hidden>
+      <div id="matchup-mount"><div class="msg">Loading matchup…</div></div>
     </section>
 
-    <section class="view" id="view-lounge" data-view="lounge" hidden>
-      <div class="lounge-head">
-        <h2>Members Lounge</h2>
-        <div class="chat-live is-idle" id="chat-live"><span class="dot" aria-hidden="true"></span><span id="chat-live-label">Connecting</span></div>
+    <!-- LEAGUE: calendar · news · messages -->
+    <section class="view" id="view-league" data-view="league" hidden>
+      <div class="seg" role="tablist" aria-label="League desk" id="league-seg">
+        <button type="button" class="is-on" data-league-tab="calendar">Calendar</button>
+        <button type="button" data-league-tab="news">News</button>
+        <button type="button" data-league-tab="messages">Messages<span class="seg-badge" id="league-msg-badge" hidden></span></button>
       </div>
-      <p class="lounge-sub">Roll Call · live chat</p>
-      <div class="lounge-grid">
-        <div class="chat-log" id="chat-log" aria-live="polite"><div class="msg">Signing on…</div></div>
-        <aside class="online-panel">
-          <h3 id="online-head">Online</h3>
-          <div id="online-list"><div class="msg">…</div></div>
-        </aside>
-      </div>
-      <form class="chat-compose" id="chat-form">
-        <input id="chat-input" maxlength="1000" placeholder="Message Roll Call…" autocomplete="off" />
-        <button type="submit" id="chat-send">Send</button>
-      </form>
-
-      <section class="wire-board" aria-label="Sports wire">
-        <div class="wire-head">
-          <div class="wire-league">
-            <img id="wire-logo" class="wire-logo" alt="" width="48" height="48" hidden decoding="async" referrerpolicy="no-referrer" />
-            <h3 id="wire-title">Sports wire</h3>
-          </div>
-          <span class="wire-meta" id="wire-meta">Updating…</span>
-        </div>
-        <div class="wire-tabs" id="wire-tabs" role="tablist" aria-label="League filter"></div>
-        <div class="wire-face">
-          <div class="wire-cols">
-            <div>
-              <div class="wire-col-label is-live">Live</div>
-              <div class="wire-grid" id="wire-live"><div class="msg">Loading…</div></div>
-            </div>
-            <div>
-              <div class="wire-col-label">Upcoming</div>
-              <div class="wire-grid" id="wire-upcoming"><div class="msg">Loading…</div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div class="lounge-desk-links">
-        <p class="more-group-label">Full lounge desks</p>
-        <a class="text-link" href="/members.html#record-book">Record Book</a>
-        <a class="text-link" href="/members.html#mock-draft">Mock Draft</a>
-        <a class="text-link" href="/members.html#gambler">Casala's Palace Sportsbook</a>
-        <a class="text-link" href="/members.html#pools">Pools</a>
-      </div>
-      <a class="text-link" href="#lounge" data-app-jump="lounge">Back to chat</a>
+      <div id="league-mount"><div class="msg">Loading…</div></div>
     </section>
 
-    <section class="view" id="view-more" data-view="more" hidden>
-      <section class="app-panel" id="inbox-panel" aria-label="Inbox">
-        <div class="panel-head">
-          <h2>Inbox</h2>
-          <button type="button" class="text-btn" id="inbox-read-all" hidden>Mark all read</button>
-        </div>
-        <div id="inbox-mount"><div class="msg">Loading inbox…</div></div>
-      </section>
+    <!-- SPORTSBOOK: lounge-gated -->
+    <section class="view" id="view-book" data-view="book" hidden>
+      <div id="book-mount"><div class="msg">Loading sportsbook…</div></div>
+    </section>
 
-      <section class="app-panel" id="playoffs-panel" aria-label="Playoff Bracket">
-        <div class="panel-head">
-          <h2>Playoff Bracket</h2>
-          <button type="button" class="text-btn" id="playoffs-refresh">Refresh</button>
-        </div>
-        <div class="seg" role="tablist" aria-label="Playoff conference" id="playoff-seg">
-          <button type="button" class="is-on" data-playoff-conf="detail">Detail</button>
-          <button type="button" data-playoff-conf="overtime">Overtime</button>
-        </div>
-        <div id="playoffs-mount"><div class="msg">Loading bracket…</div></div>
-        <div class="po-full-links">
-          <a class="text-link" href="/playoffs.html">Full GridIron bracket · Bowl &amp; Mayor's Cup</a>
-          <a class="text-link" href="/aaa-playoffs.html">AAA Super Bowl bracket</a>
-        </div>
-      </section>
-
-      <div class="seg" role="tablist" aria-label="Feed conference" id="feed-conf-seg">
-        <button type="button" class="is-on" data-conf="detail">Detail</button>
-        <button type="button" data-conf="overtime">Overtime</button>
-      </div>
-      <div class="seg seg-wrap" role="tablist" aria-label="Feed">
-        <button type="button" class="is-on" data-feed="news">News</button>
-        <button type="button" data-feed="calendar">Calendar</button>
-        <button type="button" data-feed="rankings">Rankings</button>
-        <button type="button" data-feed="schedule">Schedule</button>
-        <button type="button" data-feed="moves">Moves</button>
-        <button type="button" data-feed="draft">Draft</button>
-      </div>
-      <div id="feed-mount"><div class="msg">Loading feed…</div></div>
-
-      <div id="more-pulse" class="more-block"><div class="msg">Loading finales…</div></div>
-
-      <div id="dues-mount" class="more-block"></div>
-
-      <div class="more-group">
-        <p class="more-group-label">GridIron 24</p>
-        <div class="more-links">
-          <button type="button" data-app-tab="scoreboard">Scores <span>Detail &amp; Overtime</span></button>
-          <button type="button" data-app-tab="team">My Team <span>Roster &amp; lineup</span></button>
-          <button type="button" data-app-jump="playoffs">Playoffs <span>Bracket · Bowl · Cup</span></button>
-          <button type="button" data-app-feed="schedule">Schedule <span>This season</span></button>
-          <button type="button" data-app-feed="rankings">Rankings <span>Power ranks</span></button>
-          <button type="button" data-app-feed="news">News <span>League updates</span></button>
-          <button type="button" data-app-feed="calendar">Calendar <span>League dates</span></button>
-          <button type="button" data-app-feed="draft">Draft <span>Pick feed</span></button>
-          <button type="button" data-app-feed="moves">Transactions <span>Waivers &amp; trades</span></button>
-          <button type="button" data-app-jump="dues">Dues <span>GI24 &amp; AAA fees</span></button>
-          <a href="/rulebook.html">Rule Book <span>Official rules</span></a>
-          <a href="/payouts.html">Payouts <span>Prize schedule</span></a>
-        </div>
-      </div>
-
-      <div class="more-group">
-        <p class="more-group-label">AAA League</p>
-        <div class="more-links">
-          <a href="/aaa.html">AAA HQ <span>Feeder league home</span></a>
-          <a href="/aaa-scoreboard">AAA Scores <span>Matchups</span></a>
-          <a href="/aaa-playoffs.html">AAA Playoffs <span>Super Bowl bracket</span></a>
-          <a href="/aaa-rulebook.html">AAA Rule Book <span>Ownership &amp; promotion</span></a>
-        </div>
-      </div>
-
-      <div class="more-group">
-        <p class="more-group-label">Members Lounge</p>
-        <div class="more-links">
-          <button type="button" data-app-jump="inbox">Inbox <span>Messages &amp; votes</span></button>
-          <button type="button" data-app-jump="lounge">Roll Call <span>Chat &amp; sports wire</span></button>
-          <a href="/members.html#record-book">Record Book <span>Streaks &amp; highs</span></a>
-          <a href="/members.html#mock-draft">Mock Draft <span>Snake simulator</span></a>
-          <a href="/members.html#gambler">Casala's Palace <span>Sportsbook</span></a>
-          <a href="/members.html#pools">Pools <span>Create &amp; join</span></a>
-        </div>
-      </div>
-
+    <!-- Account / desktop escape hatch (reachable from league) -->
+    <section class="view" id="view-account" data-view="account" hidden>
       <div class="more-group">
         <p class="more-group-label">Account</p>
         <div class="more-links">
-          <a href="/profile.html">Profile <span>Team logo &amp; settings</span></a>
-          <button type="button" id="ui-mode-desktop">Desktop site <span>Full website layout</span></button>
-          <button type="button" id="ui-mode-mobile" hidden>Mobile app <span>Compact app layout</span></button>
+          <a href="/profile.html">Profile <span>Logo &amp; team</span></a>
+          <a href="/rulebook.html">Rule Book <span>Official rules</span></a>
+          <a href="/payouts.html">Payouts <span>Prize schedule</span></a>
+          <button type="button" class="ui-mode-btn" id="ui-mode-more" data-force-desktop="1">Desktop site</button>
         </div>
       </div>
-
-      <p class="more-desktop-note">Desktop site unlocks the full desks — Mock Draft board, Casala’s Palace betting slip, Record Book tables, and profile tools. Switch back anytime with Mobile app.</p>
-
-      <div class="more-account">
-        <div class="more-account-copy">
-          <p class="more-account-label">Signed in</p>
-          <p class="user-line" id="user-line">Member</p>
+      <div class="more-group">
+        <p class="more-group-label">Session</p>
+        <div class="account-card">
+          <div id="user-line">Signed in</div>
+          <button type="button" class="logout-btn" id="sign-out">Log out</button>
         </div>
-        <button type="button" class="logout-btn" id="sign-out">Log out</button>
       </div>
     </section>
   </main>
 
   <nav class="app-tabs" aria-label="App">
-    <button type="button" class="is-on" data-tab="home" aria-current="page">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/></svg>
+    <button type="button" data-tab="roster">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l3 5h5l-4 4 2 6-6-3.5L6 19l2-6-4-4h5z"/></svg>
+      Roster
+    </button>
+    <button type="button" data-tab="matchup">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM8 7v10M16 7v10M4 12h16"/></svg>
+      Matchup
+    </button>
+    <button type="button" class="tab-home is-on" data-tab="home" aria-current="page">
+      <span class="tab-home-orb" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/></svg>
+      </span>
       Home
     </button>
-    <button type="button" data-tab="scoreboard">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM8 7v10M16 7v10M4 12h16"/></svg>
-      Scores
+    <button type="button" data-tab="league">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v4H5zM5 10h14v4H5zM5 16h14v4H5z"/></svg>
+      League
+      <span class="tab-badge" id="league-badge" hidden>0</span>
     </button>
-    <button type="button" data-tab="team">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l3 5h5l-4 4 2 6-6-3.5L6 19l2-6-4-4h5z"/></svg>
-      Team
-    </button>
-    <button type="button" data-tab="lounge">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14v9H8l-3 3z"/></svg>
-      Lounge
-    </button>
-    <button type="button" data-tab="more">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="18" r="1.2"/></svg>
-      More
-      <span class="tab-badge" id="more-badge" hidden>0</span>
+    <button type="button" data-tab="book" id="tab-book">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h9l3 3v13H6zM9 10h6M9 14h6"/></svg>
+      Book
     </button>
   </nav>
 
   <div class="install-sheet" id="install-sheet" hidden>
     <div class="install-sheet-card" role="dialog" aria-modal="true" aria-labelledby="install-sheet-title">
       <h3 id="install-sheet-title">Add GridIron 24</h3>
-      <p>Install the league HQ app for Scores, Team, Members Lounge, and playoffs.</p>
+      <p>Install for standings, your matchup, roster, and league updates.</p>
       <ol>
         <li>Tap <strong>Share</strong></li>
         <li>Tap <strong>Add to Home Screen</strong></li>
@@ -259,6 +134,6 @@
     </div>
   </div>
 
-  <script src="/app/app.js?v=60"></script>
+  <script src="/app/app.js?v=71"></script>
 </body>
 </html>

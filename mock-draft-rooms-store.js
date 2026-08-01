@@ -12,9 +12,9 @@ const FILE = path.join(DATA_DIR, 'mock-draft-rooms.json');
 
 const TEAM_COUNTS = new Set([10, 12, 14]);
 const ROUND_OPTIONS = new Set([8, 10, 12, 15, 16, 18]);
-const PICK_SECONDS_OPTIONS = new Set([60, 120, 180]);
+const PICK_SECONDS_OPTIONS = new Set([60, 120, 180, 240, 300]);
 const JOIN_LOBBY_SECONDS = 240; // 4:00 for others to join after positions lock
-const CPU_PICK_GAP_MS = 5000;
+const CPU_PICK_GAP_MS = 2500;
 const MAX_ROOMS = 12;
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -143,6 +143,7 @@ function publicRoom(room, viewerId = null) {
     lobbyEndsAt: room.lobbyEndsAt || null,
     positionsLocked: Boolean(room.positionsLocked),
     openSeatCount: room.seats.filter((s) => !s.userId).length,
+    messages: Array.isArray(room.messages) ? room.messages.slice(-80) : [],
     createdAt: room.createdAt,
     updatedAt: room.updatedAt
   };
@@ -289,7 +290,7 @@ function advanceRoom(room, pool) {
   return changed;
 }
 
-function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames }) {
+function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames, hostTeamName }) {
   if (!user?.id) throw err(401, 'Sign in required');
   const count = clampTeamCount(teamCount);
   const seat = Number(seatIndex);
@@ -306,6 +307,8 @@ function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames
     }
   }
   const names = padTeamNames(teamNames, count);
+  const hostLabel = String(hostTeamName || '').trim();
+  if (hostLabel) names[seat] = hostLabel;
   const seats = Array.from({ length: count }, (_, i) => ({
     index: i,
     userId: i === seat ? user.id : null,
@@ -324,6 +327,7 @@ function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames
     teamNames: names,
     seats,
     picks: [],
+    messages: [],
     pickDeadline: null,
     lobbyEndsAt: null,
     positionsLocked: false,
@@ -440,7 +444,7 @@ function saveRoom(room) {
   return room;
 }
 
-function joinSeat({ roomId, user, seatIndex }) {
+function joinSeat({ roomId, user, seatIndex, teamName }) {
   if (!user?.id) throw err(401, 'Sign in required');
   const room = getRoom(roomId);
   if (!room) throw err(404, 'Mock draft not found');
@@ -463,6 +467,10 @@ function joinSeat({ roomId, user, seatIndex }) {
   seat.userId = user.id;
   seat.userName = user.name || user.loginName || 'Member';
   seat.isCpu = false;
+  const label = String(teamName || '').trim();
+  if (label && Array.isArray(room.teamNames) && room.teamNames.length > idx) {
+    room.teamNames[idx] = label;
+  }
   room.updatedAt = new Date().toISOString();
   // If this seat is currently on the clock during a live draft, reset deadline for the new human
   if (room.status === 'live') {
@@ -474,12 +482,12 @@ function joinSeat({ roomId, user, seatIndex }) {
   return saveRoom(room);
 }
 
-function claimOpenSeat({ roomId, user }) {
+function claimOpenSeat({ roomId, user, teamName }) {
   const room = getRoom(roomId);
   if (!room) throw err(404, 'Mock draft not found');
   const open = room.seats.find((s) => !s.userId);
   if (!open) throw err(400, 'No open seats left');
-  return joinSeat({ roomId, user, seatIndex: open.index });
+  return joinSeat({ roomId, user, seatIndex: open.index, teamName });
 }
 
 function humanPick({ roomId, user, playerId, pool }) {
@@ -520,6 +528,35 @@ function listActiveRooms() {
   return store.rooms.filter((r) => r.status === 'live' || r.status === 'lobby');
 }
 
+function addChatMessage({ roomId, user, body }) {
+  if (!user?.id) throw err(401, 'Sign in required');
+  const text = String(body || '').trim().replace(/\s+/g, ' ');
+  if (!text) throw err(400, 'Message required');
+  if (text.length > 240) throw err(400, 'Keep messages under 240 characters');
+  const store = readStore();
+  const room = store.rooms.find((r) => r.id === roomId);
+  if (!room) throw err(404, 'Mock draft not found');
+  if (room.status !== 'lobby' && room.status !== 'live') {
+    throw err(400, 'Draft chat is closed');
+  }
+  const seated = (room.seats || []).some((s) => s.userId === user.id);
+  const isHost = room.hostId === user.id;
+  if (!seated && !isHost) throw err(403, 'Claim a seat to chat');
+  if (!Array.isArray(room.messages)) room.messages = [];
+  const msg = {
+    id: crypto.randomUUID(),
+    body: text,
+    authorId: user.id,
+    authorName: user.name || user.loginName || 'Member',
+    createdAt: new Date().toISOString()
+  };
+  room.messages.push(msg);
+  if (room.messages.length > 120) room.messages = room.messages.slice(-120);
+  room.updatedAt = msg.createdAt;
+  writeStore(store);
+  return { room, message: msg };
+}
+
 module.exports = {
   createRoom,
   startDraft,
@@ -534,6 +571,7 @@ module.exports = {
   advanceRoom,
   publicRoom,
   listActiveRooms,
+  addChatMessage,
   currentSlot,
   clampPickSeconds,
   PICK_SECONDS_OPTIONS,

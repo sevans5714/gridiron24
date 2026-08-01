@@ -354,6 +354,23 @@ function compactGolfTee(value) {
   return s;
 }
 
+/** Pull today's to-par from ESPN (without the "(thru)" suffix). */
+function golfTodayScore(row = {}, rowStatus = {}) {
+  const lines = Array.isArray(row.linescores) ? row.linescores : [];
+  const currentPeriod = Number(rowStatus.period) || 0;
+  const currentLine = lines.find((ls) => Number(ls.period) === currentPeriod && ls.displayValue != null)
+    || [...lines].reverse().find((ls) => ls.displayValue != null && ls.displayValue !== '');
+  if (currentLine?.displayValue != null && String(currentLine.displayValue).trim() !== '') {
+    return String(currentLine.displayValue).trim();
+  }
+  const raw = String(rowStatus.todayDetail || rowStatus.detail || '').trim();
+  if (!raw || /^scheduled$/i.test(raw)) return null;
+  // "-3(11)" / "E(3)" → "-3" / "E"
+  const m = raw.match(/^([+-]?\d+|E)\s*(?:\(\d+\))?$/i);
+  if (m) return m[1].toUpperCase() === 'E' ? 'E' : m[1];
+  return raw;
+}
+
 function normalizeGolfEvent(event) {
   const competition = event?.competitions?.[0] || {};
   const eventType = event?.status?.type || {};
@@ -377,9 +394,12 @@ function normalizeGolfEvent(event) {
       const athlete = row.athlete || {};
       const rowStatus = row.status || {};
       const scoreRaw = row.score?.displayValue ?? row.score;
-      const score = (scoreRaw == null || scoreRaw === '')
-        ? (rowStatus.todayDetail || '—')
+      const overall = (scoreRaw == null || scoreRaw === '')
+        ? null
         : String(scoreRaw);
+      const today = golfTodayScore(row, rowStatus);
+      // Prefer overall for `score` (back-compat); keep today separate for the board.
+      const score = overall || today || '—';
       const positionId = rowStatus.position?.id != null ? String(rowStatus.position.id) : null;
       const orderN = Number(positionId);
       return {
@@ -390,6 +410,8 @@ function normalizeGolfEvent(event) {
         positionId,
         order: Number.isFinite(orderN) ? orderN : null,
         score,
+        overall: overall || '—',
+        today: today || '—',
         thru: golfThruLabel(rowStatus),
         state: rowStatus.type?.state || state,
         winner: Boolean(row.winner)

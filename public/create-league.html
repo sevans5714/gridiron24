@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>Create a League</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=145" />
+  <style>
+    body.league-reg {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(239, 215, 130, 0.12), transparent 55%),
+        #070707;
+      color: var(--text);
+    }
+    .reg-shell { width: min(100% - 2rem, 44rem); margin: 0 auto; padding: 2rem 0 3.5rem; }
+    .reg-top { text-align: center; margin-bottom: 1.5rem; }
+    .reg-top .mark {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 3.25rem; height: 3.25rem; margin-bottom: 0.85rem;
+      border: 1px solid rgba(239, 215, 130, 0.35); background: var(--panel-2);
+      font-family: var(--page-title), Oswald, sans-serif; font-size: 1.05rem; font-weight: 700;
+      letter-spacing: 0.06em; color: #efd782;
+    }
+    .reg-top h1 {
+      margin: 0 0 0.4rem; font-family: var(--page-title), Oswald, sans-serif;
+      font-size: clamp(1.7rem, 4vw, 2.2rem); font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;
+    }
+    .reg-top p { margin: 0 auto; max-width: 36rem; color: var(--muted); font-size: 0.98rem; line-height: 1.5; }
+    .steps { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center; margin: 1.25rem 0 1.5rem; }
+    .steps button {
+      appearance: none; border: 1px solid rgba(255,255,255,0.1); background: var(--panel-2);
+      color: var(--muted); font-family: var(--display), Bebas Neue, sans-serif;
+      font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.4rem 0.65rem; cursor: pointer;
+    }
+    .steps button.on { border-color: rgba(239, 215, 130, 0.45); color: var(--text); background: rgba(239, 215, 130, 0.12); }
+    .steps button.done { color: #efd782; }
+    .panel { border: 1px solid rgba(255,255,255,0.1); background: var(--panel); padding: 1.25rem 1.35rem 1.4rem; }
+    .panel h2 { margin: 0 0 0.35rem; font-family: var(--page-title), Oswald, sans-serif; font-size: 1.35rem; font-weight: 700; text-transform: uppercase; }
+    .panel .lead { margin: 0 0 1.1rem; color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem; }
+    @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+    .field-label { display: block; margin: 0.65rem 0 0.3rem; color: var(--muted); font-size: 0.82rem; }
+    .field, .field-area, .field-file { width: 100%; box-sizing: border-box; }
+    .field-area {
+      min-height: 4.5rem; resize: vertical; padding: 0.65rem 0.75rem;
+      border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit;
+    }
+    .conf-card { margin-top: 1rem; padding: 1rem; border: 1px solid var(--line); background: var(--panel); }
+    .conf-card h3 {
+      margin: 0 0 0.75rem; font-family: var(--display), Bebas Neue, sans-serif;
+      font-size: 1rem; letter-spacing: 0.08em; text-transform: uppercase; color: #efd782;
+    }
+    .upload-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.55rem; }
+    .upload-row img { width: 3rem; height: 3rem; object-fit: contain; border: 1px solid rgba(255,255,255,0.1); background: #111; }
+    .meta { margin-top: 0.25rem; font-size: 0.75rem; color: var(--muted); }
+    .nav-row { display: flex; justify-content: space-between; gap: 0.75rem; margin-top: 1.25rem; }
+    .review { font-size: 0.92rem; line-height: 1.5; }
+    .review dt { margin-top: 0.65rem; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .review dd { margin: 0.15rem 0 0; }
+    .legal { margin: 1.5rem 0 0; text-align: center; font-size: 0.72rem; color: #6a6a6a; line-height: 1.45; }
+    .legal a { color: #8eb6ff; }
+    .slot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+    @media (max-width: 640px) { .slot-grid { grid-template-columns: repeat(2, 1fr); } }
+    .prize-row { display: grid; grid-template-columns: 3.5rem 1fr 5.5rem; gap: 0.4rem; margin-top: 0.4rem; }
+  </style>
+</head>
+<body class="league-reg">
+  <div class="reg-shell">
+    <div class="reg-top">
+      <div class="mark" aria-hidden="true">NEW</div>
+      <h1>Create a League</h1>
+      <p>Build a GridIron 24–style headquarters: two conferences, custom brands, roster size, and scoring — fully independent (no ESPN). You become the owner. After you submit, the site owner must approve before the league goes live.</p>
+    </div>
+
+    <div class="steps" id="stepper" role="tablist" aria-label="Create league steps"></div>
+    <div class="status-note err" id="err" role="alert"></div>
+
+    <form class="panel" id="form" novalidate>
+      <section class="step" data-step="0">
+        <h2>League owner</h2>
+        <p class="lead">This account owns the league — invites managers, assigns franchises, and runs tools once approved.</p>
+        <label class="field-label" for="ownerName">Full name</label>
+        <input class="field" id="ownerName" type="text" autocomplete="name" required />
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="ownerEmail">Email</label>
+            <input class="field" id="ownerEmail" type="email" autocomplete="email" required />
+          </div>
+          <div>
+            <label class="field-label" for="ownerLogin">Login name</label>
+            <input class="field" id="ownerLogin" type="text" autocomplete="username" required minlength="3" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="ownerPassword">Password</label>
+            <input class="field" id="ownerPassword" type="password" autocomplete="new-password" required minlength="6" />
+          </div>
+          <div>
+            <label class="field-label" for="ownerConfirm">Confirm password</label>
+            <input class="field" id="ownerConfirm" type="password" autocomplete="new-password" required minlength="6" />
+          </div>
+        </div>
+      </section>
+
+      <section class="step" data-step="1" hidden>
+        <h2>Brand</h2>
+        <p class="lead">League name and logos across your HQ. Starts from a GridIron 24–shaped outline you fully customize.</p>
+        <label class="field-label" for="brandName">League name</label>
+        <input class="field" id="brandName" type="text" required placeholder="e.g. Metro Fantasy League" />
+        <label class="field-label" for="brandTagline">Tagline</label>
+        <input class="field" id="brandTagline" type="text" value="24 Teams. Two Conferences. One Champion." />
+        <label class="field-label" for="brandSlug">URL slug (optional)</label>
+        <input class="field" id="brandSlug" type="text" placeholder="metro-ffl" />
+        <label class="field-label">Primary logo</label>
+        <div class="upload-row" data-asset="brandLogo">
+          <img alt="" hidden />
+          <div>
+            <input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+            <div class="meta">PNG, JPG, WEBP, or SVG · under 3MB</div>
+          </div>
+        </div>
+        <label class="field-label">Login crest (optional)</label>
+        <div class="upload-row" data-asset="brandCrest">
+          <img alt="" hidden />
+          <div>
+            <input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+            <div class="meta">Defaults to primary logo if skipped</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="step" data-step="2" hidden>
+        <h2>Conferences</h2>
+        <p class="lead">Two conferences — same structure as GridIron 24. Upload custom logos and colors. No ESPN IDs.</p>
+        <label class="field-label" for="season">Season year</label>
+        <input class="field" id="season" type="number" min="2018" max="2100" style="max-width:8rem;" />
+
+        <div class="conf-card" data-conf="0">
+          <h3>Conference A · rules source</h3>
+          <div class="grid-2">
+            <div>
+              <label class="field-label">Name</label>
+              <input class="field conf-name" type="text" value="East Conference" required />
+            </div>
+            <div>
+              <label class="field-label">Short name</label>
+              <input class="field conf-short" type="text" value="EAST" maxlength="16" />
+            </div>
+          </div>
+          <label class="field-label">Accent color</label>
+          <input class="field conf-color" type="color" value="#ff7a18" style="max-width:6rem;" />
+          <label class="field-label">Conference logo</label>
+          <div class="upload-row" data-asset="conferenceLogo0">
+            <img alt="" hidden />
+            <div><input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div>
+          </div>
+        </div>
+
+        <div class="conf-card" data-conf="1">
+          <h3>Conference B</h3>
+          <div class="grid-2">
+            <div>
+              <label class="field-label">Name</label>
+              <input class="field conf-name" type="text" value="West Conference" required />
+            </div>
+            <div>
+              <label class="field-label">Short name</label>
+              <input class="field conf-short" type="text" value="WEST" maxlength="16" />
+            </div>
+          </div>
+          <label class="field-label">Accent color</label>
+          <input class="field conf-color" type="color" value="#e2232a" style="max-width:6rem;" />
+          <label class="field-label">Conference logo</label>
+          <div class="upload-row" data-asset="conferenceLogo1">
+            <img alt="" hidden />
+            <div><input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="step" data-step="3" hidden>
+        <h2>Structure &amp; rules</h2>
+        <p class="lead">Team counts and a vanilla GridIron 24–style roster / scoring preset. Everything is local — not tied to ESPN.</p>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="teamsPerConf">Teams per conference</label>
+            <input class="field" id="teamsPerConf" type="number" min="4" max="20" value="12" />
+          </div>
+          <div>
+            <label class="field-label" for="playoffTeams">Playoff teams per conference</label>
+            <input class="field" id="playoffTeams" type="number" min="2" max="12" value="6" />
+          </div>
+        </div>
+        <label class="field-label" for="scoringPreset">Scoring preset</label>
+        <select class="field" id="scoringPreset" style="max-width:18rem;">
+          <option value="gridiron24-vanilla" selected>GridIron 24 vanilla (PPR, 4-pt pass TD)</option>
+          <option value="half-ppr">Half-PPR</option>
+          <option value="standard">Standard (non-PPR)</option>
+        </select>
+        <label class="field-label">Starter / bench slots</label>
+        <div class="slot-grid" id="slot-grid">
+          <div><label class="field-label" for="slotQB">QB</label><input class="field" id="slotQB" type="number" min="0" max="4" value="1" /></div>
+          <div><label class="field-label" for="slotRB">RB</label><input class="field" id="slotRB" type="number" min="0" max="6" value="2" /></div>
+          <div><label class="field-label" for="slotWR">WR</label><input class="field" id="slotWR" type="number" min="0" max="6" value="2" /></div>
+          <div><label class="field-label" for="slotTE">TE</label><input class="field" id="slotTE" type="number" min="0" max="4" value="1" /></div>
+          <div><label class="field-label" for="slotFLEX">FLEX</label><input class="field" id="slotFLEX" type="number" min="0" max="4" value="1" /></div>
+          <div><label class="field-label" for="slotDST">D/ST</label><input class="field" id="slotDST" type="number" min="0" max="3" value="1" /></div>
+          <div><label class="field-label" for="slotK">K</label><input class="field" id="slotK" type="number" min="0" max="3" value="1" /></div>
+          <div><label class="field-label" for="slotBN">BN</label><input class="field" id="slotBN" type="number" min="0" max="20" value="6" /></div>
+        </div>
+      </section>
+
+      <section class="step" data-step="4" hidden>
+        <h2>Championship</h2>
+        <p class="lead">Name your title game. Weeks mirror the GridIron 24 calendar outline.</p>
+        <label class="field-label" for="bowlName">Championship name</label>
+        <input class="field" id="bowlName" type="text" placeholder="e.g. Metro Cup" required />
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="titleWeek">Conference title week</label>
+            <input class="field" id="titleWeek" type="number" min="1" max="18" value="16" />
+          </div>
+          <div>
+            <label class="field-label" for="bowlWeek">Championship week</label>
+            <input class="field" id="bowlWeek" type="number" min="1" max="18" value="17" />
+          </div>
+        </div>
+        <label class="field-label">Championship logo</label>
+        <div class="upload-row" data-asset="championshipLogo">
+          <img alt="" hidden />
+          <div><input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div>
+        </div>
+      </section>
+
+      <section class="step" data-step="5" hidden>
+        <h2>Payouts</h2>
+        <p class="lead">Buy-in and prize labels for your HQ. Amounts are informational until you run dues.</p>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="buyIn">Buy-in per team ($)</label>
+            <input class="field" id="buyIn" type="number" min="0" step="1" value="100" />
+          </div>
+          <div>
+            <label class="field-label" for="seasonLabel">Season label</label>
+            <input class="field" id="seasonLabel" type="text" />
+          </div>
+        </div>
+        <label class="field-label" for="payoutNotes">Payout notes</label>
+        <textarea class="field-area" id="payoutNotes" placeholder="How the prize pool is split…"></textarea>
+        <label class="field-label">Prize rows</label>
+        <div id="prizes"></div>
+        <button type="button" class="btn btn-secondary" id="add-prize" style="margin-top:0.5rem;">Add prize</button>
+      </section>
+
+      <section class="step" data-step="6" hidden>
+        <h2>Review &amp; submit</h2>
+        <p class="lead">Submitting sends your league request to the site owner for approval. You will be signed in as owner and can open your league outline while waiting.</p>
+        <div class="review" id="review"></div>
+      </section>
+
+      <div class="nav-row">
+        <button type="button" class="btn btn-secondary" id="back" hidden>Back</button>
+        <button type="button" class="btn" id="next">Continue</button>
+      </div>
+    </form>
+
+    <p class="legal">
+      Independent fantasy football headquarters. Not affiliated with the NFL, ESPN, or GridIron 24’s live ESPN leagues.
+      You are responsible for rights to any logos you upload.
+      <a href="/enter">Sign in</a>
+    </p>
+  </div>
+
+  <script>
+    const STEPS = ['Owner', 'Brand', 'Conferences', 'Rules', 'Championship', 'Payouts', 'Review'];
+    let step = 0;
+    let draftId = null;
+    const assets = {};
+    const DEFAULT_PRIZES = [
+      { place: 1, label: 'League Champion', amount: 1000 },
+      { place: 2, label: 'Championship Runner-Up', amount: 500 },
+      { place: 3, label: 'East Conference 2nd Place', amount: 250 },
+      { place: 4, label: 'West Conference 2nd Place', amount: 250 },
+      { place: 5, label: 'East Third Place', amount: 100 },
+      { place: 6, label: 'West Third Place', amount: 100 },
+      { place: 7, label: 'East Most Points', amount: 100 },
+      { place: 8, label: 'West Most Points', amount: 100 }
+    ];
+
+    const errEl = document.getElementById('err');
+    const form = document.getElementById('form');
+    const backBtn = document.getElementById('back');
+    const nextBtn = document.getElementById('next');
+    const stepper = document.getElementById('stepper');
+    const prizesEl = document.getElementById('prizes');
+
+    document.getElementById('season').value = new Date().getFullYear();
+    document.getElementById('seasonLabel').value = `${new Date().getFullYear()} Season`;
+
+    function showErr(msg) {
+      errEl.textContent = msg || '';
+      errEl.classList.toggle('show', Boolean(msg));
+      if (msg) errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderStepper() {
+      stepper.innerHTML = STEPS.map((label, i) =>
+        `<button type="button" class="${i === step ? 'on' : ''} ${i < step ? 'done' : ''}" data-go="${i}">${i + 1}. ${label}</button>`
+      ).join('');
+    }
+
+    function showStep(n) {
+      step = n;
+      form.querySelectorAll('.step').forEach((el) => {
+        el.hidden = Number(el.dataset.step) !== step;
+      });
+      backBtn.hidden = step === 0;
+      nextBtn.textContent = step === STEPS.length - 1 ? 'Submit for approval' : 'Continue';
+      renderStepper();
+      showErr('');
+      if (step === STEPS.length - 1) fillReview();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function prizeRows() {
+      return [...prizesEl.querySelectorAll('.prize-row')].map((row, i) => ({
+        place: Number(row.querySelector('.prize-place').value) || i + 1,
+        label: row.querySelector('.prize-label').value.trim() || `Place ${i + 1}`,
+        amount: Number(row.querySelector('.prize-amount').value) || 0
+      }));
+    }
+
+    function addPrizeRow(seed = {}) {
+      const row = document.createElement('div');
+      row.className = 'prize-row';
+      row.innerHTML = `
+        <input class="field prize-place" type="number" min="1" value="${seed.place || prizesEl.children.length + 1}" aria-label="Place" />
+        <input class="field prize-label" type="text" value="${(seed.label || '').replace(/"/g, '&quot;')}" placeholder="Label" />
+        <input class="field prize-amount" type="number" min="0" value="${seed.amount ?? 0}" aria-label="Amount" />`;
+      prizesEl.appendChild(row);
+    }
+
+    DEFAULT_PRIZES.forEach(addPrizeRow);
+    document.getElementById('add-prize').addEventListener('click', () => addPrizeRow());
+
+    async function ensureDraft() {
+      if (draftId) return draftId;
+      const res = await fetch('/api/create-league/draft', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not start');
+      draftId = data.draftId;
+      return draftId;
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Could not read file'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadAsset(assetType, file) {
+      await ensureDraft();
+      const dataUrl = await fileToDataUrl(file);
+      const res = await fetch('/api/create-league/asset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftId, assetType, dataUrl })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+      assets[assetType] = data.url;
+      return data.url;
+    }
+
+    document.querySelectorAll('.upload-row').forEach((row) => {
+      const input = row.querySelector('.field-file');
+      const img = row.querySelector('img');
+      input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        showErr('');
+        try {
+          nextBtn.disabled = true;
+          const url = await uploadAsset(row.dataset.asset, file);
+          img.src = url;
+          img.hidden = false;
+        } catch (err) {
+          showErr(err.message || 'Upload failed');
+        } finally {
+          nextBtn.disabled = false;
+        }
+      });
+    });
+
+    function confData(index) {
+      const card = document.querySelector(`.conf-card[data-conf="${index}"]`);
+      return {
+        name: card.querySelector('.conf-name').value.trim(),
+        shortName: card.querySelector('.conf-short').value.trim(),
+        color: card.querySelector('.conf-color').value
+      };
+    }
+
+    function payload() {
+      const teams = Number(document.getElementById('teamsPerConf').value) || 12;
+      return {
+        draftId,
+        owner: {
+          name: document.getElementById('ownerName').value.trim(),
+          email: document.getElementById('ownerEmail').value.trim(),
+          loginName: document.getElementById('ownerLogin').value.trim(),
+          password: document.getElementById('ownerPassword').value,
+          confirmPassword: document.getElementById('ownerConfirm').value
+        },
+        season: Number(document.getElementById('season').value),
+        brand: {
+          name: document.getElementById('brandName').value.trim(),
+          tagline: document.getElementById('brandTagline').value.trim(),
+          slug: document.getElementById('brandSlug').value.trim()
+        },
+        conferences: [confData(0), confData(1)],
+        championship: {
+          name: document.getElementById('bowlName').value.trim(),
+          titleWeek: Number(document.getElementById('titleWeek').value) || 16,
+          bowlWeek: Number(document.getElementById('bowlWeek').value) || 17
+        },
+        structure: {
+          teamsPerConference: teams,
+          totalTeams: teams * 2,
+          playoffTeamCount: Number(document.getElementById('playoffTeams').value) || 6,
+          playoffWeeks: [14, 15, 16]
+        },
+        settings: {
+          scoringPreset: document.getElementById('scoringPreset').value,
+          rosterSlots: {
+            QB: Number(document.getElementById('slotQB').value),
+            RB: Number(document.getElementById('slotRB').value),
+            WR: Number(document.getElementById('slotWR').value),
+            TE: Number(document.getElementById('slotTE').value),
+            FLEX: Number(document.getElementById('slotFLEX').value),
+            DST: Number(document.getElementById('slotDST').value),
+            K: Number(document.getElementById('slotK').value),
+            BN: Number(document.getElementById('slotBN').value)
+          }
+        },
+        payouts: {
+          seasonLabel: document.getElementById('seasonLabel').value.trim(),
+          buyInPerTeam: Number(document.getElementById('buyIn').value) || 0,
+          notes: document.getElementById('payoutNotes').value.trim(),
+          prizes: prizeRows()
+        }
+      };
+    }
+
+    function validateStep(n) {
+      if (n === 0) {
+        const p = payload().owner;
+        if (!p.name || !p.email || !p.loginName) return 'Fill in owner name, email, and login.';
+        if (p.password.length < 6) return 'Password must be at least 6 characters.';
+        if (p.password !== p.confirmPassword) return 'Passwords do not match.';
+      }
+      if (n === 1 && !payload().brand.name) return 'League name is required.';
+      if (n === 2) {
+        const c = payload().conferences;
+        if (!c[0].name || !c[1].name) return 'Both conference names are required.';
+      }
+      if (n === 4 && !payload().championship.name) return 'Championship name is required.';
+      return '';
+    }
+
+    function fillReview() {
+      const p = payload();
+      const slots = p.settings.rosterSlots;
+      document.getElementById('review').innerHTML = `
+        <dl>
+          <dt>Owner</dt><dd>${esc(p.owner.name)} · ${esc(p.owner.loginName)} · ${esc(p.owner.email)}</dd>
+          <dt>League</dt><dd>${esc(p.brand.name)}${p.brand.tagline ? ` — ${esc(p.brand.tagline)}` : ''}</dd>
+          <dt>Season</dt><dd>${esc(String(p.season))}</dd>
+          <dt>Conferences</dt><dd>${esc(p.conferences[0].name)} · ${esc(p.conferences[1].name)}</dd>
+          <dt>Structure</dt><dd>${p.structure.totalTeams} teams (${p.structure.teamsPerConference}/conf) · ${p.structure.playoffTeamCount} playoff teams</dd>
+          <dt>Roster</dt><dd>QB${slots.QB} RB${slots.RB} WR${slots.WR} TE${slots.TE} FLEX${slots.FLEX} D/ST${slots.DST} K${slots.K} BN${slots.BN}</dd>
+          <dt>Scoring</dt><dd>${esc(p.settings.scoringPreset)}</dd>
+          <dt>Championship</dt><dd>${esc(p.championship.name)} · weeks ${p.championship.titleWeek} / ${p.championship.bowlWeek}</dd>
+          <dt>Buy-in</dt><dd>$${p.payouts.buyInPerTeam} · ${esc(p.payouts.seasonLabel || '')}</dd>
+        </dl>`;
+    }
+
+    function esc(s) {
+      return String(s || '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    stepper.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-go]');
+      if (!btn) return;
+      const go = Number(btn.dataset.go);
+      if (go < step) showStep(go);
+    });
+
+    backBtn.addEventListener('click', () => showStep(Math.max(0, step - 1)));
+
+    nextBtn.addEventListener('click', async () => {
+      const bad = validateStep(step);
+      if (bad) { showErr(bad); return; }
+      if (step < STEPS.length - 1) {
+        showStep(step + 1);
+        return;
+      }
+      showErr('');
+      nextBtn.disabled = true;
+      nextBtn.textContent = 'Submitting…';
+      try {
+        await ensureDraft();
+        const res = await fetch('/api/create-league', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload())
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not submit');
+        window.location.href = data.homePath || '/my-league.html';
+      } catch (err) {
+        showErr(err.message || 'Submit failed');
+        nextBtn.disabled = false;
+        nextBtn.textContent = 'Submit for approval';
+      }
+    });
+
+    showStep(0);
+  </script>
+</body>
+</html>

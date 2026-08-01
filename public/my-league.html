@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>My League</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=145" />
+  <style>
+    body.my-league {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse 70% 45% at 50% -5%, rgba(239, 215, 130, 0.1), transparent 50%),
+        var(--bg);
+      color: var(--text);
+    }
+    .ml-shell { width: min(100% - 2rem, 56rem); margin: 0 auto; padding: 1.5rem 0 3rem; }
+    .ml-hero {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.25rem;
+      margin-bottom: 1.25rem; padding-bottom: 1.1rem; border-bottom: 1px solid var(--line);
+    }
+    .ml-hero img {
+      width: 4.5rem; height: 4.5rem; object-fit: contain;
+      border: 1px solid var(--line); background: var(--panel-2);
+    }
+    .ml-hero h1 {
+      margin: 0; font-family: var(--page-title), Oswald, sans-serif;
+      font-size: clamp(1.6rem, 4vw, 2.1rem); text-transform: uppercase; letter-spacing: 0.02em;
+    }
+    .ml-hero .tag { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.95rem; }
+    .status-pill {
+      display: inline-block; margin-top: 0.45rem; padding: 0.2rem 0.55rem;
+      border: 1px solid var(--line); font-size: 0.75rem; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .status-pill.pending { border-color: rgba(239, 215, 130, 0.4); color: #efd782; }
+    .status-pill.approved { border-color: rgba(157, 255, 196, 0.4); color: #9dffc4; }
+    .status-pill.rejected { border-color: rgba(240, 160, 176, 0.45); color: #f0a0b0; }
+    .banner {
+      margin: 0 0 1.25rem; padding: 0.85rem 1rem;
+      border: 1px solid rgba(239, 215, 130, 0.3); background: rgba(239, 215, 130, 0.08);
+      font-size: 0.92rem; line-height: 1.45;
+    }
+    .banner.bad { border-color: rgba(240, 160, 176, 0.4); background: rgba(240, 160, 176, 0.08); }
+    .grid-conf {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    }
+    @media (max-width: 720px) { .grid-conf { grid-template-columns: 1fr; } }
+    .conf-panel {
+      border: 1px solid var(--line); background: var(--panel); padding: 1rem 1.05rem 1.1rem;
+    }
+    .conf-panel h2 {
+      margin: 0 0 0.75rem; display: flex; align-items: center; gap: 0.55rem;
+      font-family: var(--display), Bebas Neue, sans-serif; font-size: 1.15rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .conf-panel h2 img { width: 2rem; height: 2rem; object-fit: contain; }
+    .franchise-list { list-style: none; margin: 0; padding: 0; }
+    .franchise-list li {
+      display: flex; justify-content: space-between; gap: 0.5rem;
+      padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.9rem;
+    }
+    .franchise-list li:first-child { border-top: 0; }
+    .meta-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;
+    }
+    @media (max-width: 720px) { .meta-grid { grid-template-columns: 1fr; } }
+    .meta-card {
+      border: 1px solid var(--line); background: var(--panel); padding: 1rem 1.05rem;
+    }
+    .meta-card h3 {
+      margin: 0 0 0.45rem; font-family: var(--page-title), Oswald, sans-serif;
+      font-size: 1.05rem; text-transform: uppercase;
+    }
+    .meta-card p, .meta-card ul { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+    .meta-card ul { padding-left: 1.1rem; }
+    .top-links { margin: 0 0 1rem; font-size: 0.88rem; }
+    .top-links a { color: #8eb6ff; }
+  </style>
+</head>
+<body class="my-league">
+  <div class="ml-shell">
+    <p class="top-links"><a href="/enter">Sign in</a> · <a href="/members.html">Members Lounge</a> · <a href="/api/logout">Sign out</a></p>
+    <div id="root"><div class="msg">Loading your league…</div></div>
+  </div>
+  <script>
+    function esc(s) {
+      return String(s || '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    function statusClass(status) {
+      if (status === 'pending_approval') return 'pending';
+      if (status === 'approved' || status === 'active') return 'approved';
+      if (status === 'rejected') return 'rejected';
+      return '';
+    }
+
+    function statusLabel(status) {
+      if (status === 'pending_approval') return 'Awaiting site owner approval';
+      if (status === 'approved') return 'Approved';
+      if (status === 'active') return 'Active';
+      if (status === 'rejected') return 'Rejected';
+      return status || 'Unknown';
+    }
+
+    function render(league) {
+      const slots = league.settings?.rosterSlots || {};
+      const scoring = league.settings?.scoringPreset || 'custom';
+      const confs = league.conferences || [];
+      const franchises = league.franchises || [];
+      const logo = league.brand?.logo || league.brand?.crest || '';
+
+      let banner = '';
+      if (league.status === 'pending_approval') {
+        banner = `<div class="banner">Your league request is with the site owner. You can review this outline now — live scoring, invites, and manager tools unlock after approval.</div>`;
+      } else if (league.status === 'rejected') {
+        banner = `<div class="banner bad"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
+      } else if (league.status === 'approved') {
+        banner = `<div class="banner" style="border-color:rgba(157,255,196,0.35);background:rgba(157,255,196,0.08);">Approved. This is your independent HQ outline — separate from GridIron 24’s ESPN leagues. Invite tools and scoring come next as we expand the platform.</div>`;
+      }
+
+      const confHtml = confs.map((c) => {
+        const teams = franchises.filter((f) => f.conferenceKey === c.key);
+        return `
+          <section class="conf-panel" style="border-top: 3px solid ${esc(c.color || '#888')};">
+            <h2>${c.logo ? `<img src="${esc(c.logo)}" alt="" />` : ''}${esc(c.name)}</h2>
+            <ul class="franchise-list">
+              ${teams.map((t) => `<li><span>${esc(t.name)}</span><span class="muted-sm">#${esc(String(t.slot))}</span></li>`).join('') || '<li>No franchises yet</li>'}
+            </ul>
+          </section>`;
+      }).join('');
+
+      return `
+        ${banner}
+        <header class="ml-hero">
+          ${logo ? `<img src="${esc(logo)}" alt="" />` : ''}
+          <div>
+            <h1>${esc(league.brand?.name || 'My League')}</h1>
+            <p class="tag">${esc(league.brand?.tagline || '')}</p>
+            <span class="status-pill ${statusClass(league.status)}">${esc(statusLabel(league.status))}</span>
+          </div>
+        </header>
+        <div class="grid-conf">${confHtml}</div>
+        <div class="meta-grid">
+          <div class="meta-card">
+            <h3>Structure</h3>
+            <p>${esc(String(league.structure?.totalTeams || '—'))} teams · ${esc(String(league.structure?.teamsPerConference || '—'))} per conference<br/>
+            Playoffs: ${esc(String(league.structure?.playoffTeamCount || '—'))} teams · Weeks ${(league.structure?.playoffWeeks || []).join(', ') || '—'}<br/>
+            ${esc(league.championship?.name || 'Championship')} · weeks ${esc(String(league.championship?.titleWeek || '—'))} / ${esc(String(league.championship?.bowlWeek || '—'))}</p>
+          </div>
+          <div class="meta-card">
+            <h3>Roster &amp; scoring</h3>
+            <p>Preset: ${esc(scoring)}<br/>
+            QB${slots.QB ?? '—'} RB${slots.RB ?? '—'} WR${slots.WR ?? '—'} TE${slots.TE ?? '—'}
+            FLEX${slots.FLEX ?? '—'} D/ST${slots.DST ?? '—'} K${slots.K ?? '—'} BN${slots.BN ?? '—'}</p>
+          </div>
+          <div class="meta-card">
+            <h3>Payouts</h3>
+            <p>${esc(league.payouts?.seasonLabel || '')} · $${esc(String(league.payouts?.buyInPerTeam ?? 0))} buy-in</p>
+            <ul>${(league.payouts?.prizes || []).slice(0, 6).map((p) =>
+              `<li>${esc(p.label)} — $${esc(String(p.amount))}</li>`).join('')}</ul>
+          </div>
+          <div class="meta-card">
+            <h3>Platform</h3>
+            <p>Independent HQ · season ${esc(String(league.season))}<br/>
+            Slug: <code>${esc(league.slug)}</code><br/>
+            Not connected to ESPN, GridIron 24 Detail/Overtime, or AAA.</p>
+          </div>
+        </div>`;
+    }
+
+    async function load() {
+      const root = document.getElementById('root');
+      try {
+        const auth = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json());
+        if (!auth?.user) {
+          window.location.href = '/enter?next=' + encodeURIComponent('/my-league.html');
+          return;
+        }
+        const res = await fetch('/api/my-league', { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load league');
+        if (!data.league) {
+          root.innerHTML = `<div class="msg">No independent league on this account. <a href="/create-league">Create a League</a></div>`;
+          return;
+        }
+        document.title = `${data.league.brand?.name || 'My League'} · HQ`;
+        root.innerHTML = render(data.league);
+      } catch (err) {
+        root.innerHTML = `<div class="msg">${esc(err.message || 'Failed to load')}</div>`;
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

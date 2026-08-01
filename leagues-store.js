@@ -146,6 +146,7 @@ function publicLeague(league) {
     id: league.id,
     slug: league.slug,
     status: league.status,
+    platform: league.platform || (league.isSystem ? 'espn' : 'espn'),
     isSystem: Boolean(league.isSystem),
     season: league.season,
     brand: league.brand,
@@ -159,7 +160,15 @@ function publicLeague(league) {
     historySeasons: Array.isArray(league.historySeasons) ? league.historySeasons : [],
     payouts: league.payouts,
     calendarDefaults: league.calendarDefaults,
+    settings: league.settings || null,
+    franchises: Array.isArray(league.franchises) ? league.franchises : [],
     ownerUserId: league.ownerUserId || null,
+    ownerName: league.ownerName || null,
+    ownerEmail: league.ownerEmail || null,
+    rejectionReason: league.rejectionReason || null,
+    submittedAt: league.submittedAt || null,
+    approvedAt: league.approvedAt || null,
+    approvedBy: league.approvedBy || null,
     createdAt: league.createdAt,
     activatedAt: league.activatedAt || null
   };
@@ -275,15 +284,22 @@ function normalizePrize(row, index) {
   };
 }
 
-function normalizeConferenceInput(raw, index, uploadedLogos = {}) {
+function normalizeConferenceInput(raw, index, uploadedLogos = {}, { requireEspn = true } = {}) {
   const name = String(raw?.name || '').trim();
   if (!name) throw Object.assign(new Error(`Conference ${index + 1} name is required`), { status: 400 });
   const shortName = String(raw?.shortName || name).trim().toUpperCase().slice(0, 16);
   let key = slugify(raw?.key || name).replace(/-/g, '');
   if (!key) key = index === 0 ? 'conferencea' : 'conferenceb';
-  const espnLeagueId = Number(raw?.espnLeagueId);
-  if (!Number.isFinite(espnLeagueId) || espnLeagueId <= 0) {
-    throw Object.assign(new Error(`Valid ESPN league ID required for ${name}`), { status: 400 });
+  let espnLeagueId = null;
+  if (requireEspn) {
+    const id = Number(raw?.espnLeagueId);
+    if (!Number.isFinite(id) || id <= 0) {
+      throw Object.assign(new Error(`Valid ESPN league ID required for ${name}`), { status: 400 });
+    }
+    espnLeagueId = id;
+  } else if (raw?.espnLeagueId != null && String(raw.espnLeagueId).trim() !== '') {
+    const id = Number(raw.espnLeagueId);
+    espnLeagueId = Number.isFinite(id) && id > 0 ? id : null;
   }
   const color = String(raw?.color || (index === 0 ? '#ff7a18' : '#e2232a')).trim();
   const logoKey = `conferenceLogo${index}`;
@@ -295,6 +311,138 @@ function normalizeConferenceInput(raw, index, uploadedLogos = {}) {
     logo: uploadedLogos[logoKey] || raw?.logo || null,
     color: /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color) ? color : index === 0 ? '#ff7a18' : '#e2232a',
     isRulesPrimary: index === 0 || Boolean(raw?.isRulesPrimary)
+  };
+}
+
+/** Vanilla GridIron 24–shaped scoring / roster for independent leagues (no ESPN). */
+function defaultIndependentSettings(seed = {}) {
+  const preset = String(seed.scoringPreset || seed.preset || 'gridiron24-vanilla').trim() || 'gridiron24-vanilla';
+  const reception =
+    preset === 'standard' ? 0 : preset === 'half-ppr' ? 0.5 : 1;
+  const roster = seed.rosterSlots && typeof seed.rosterSlots === 'object'
+    ? seed.rosterSlots
+    : {};
+  return {
+    scoringPreset: preset,
+    rosterSlots: {
+      QB: Number(roster.QB) >= 0 ? Number(roster.QB) : 1,
+      RB: Number(roster.RB) >= 0 ? Number(roster.RB) : 2,
+      WR: Number(roster.WR) >= 0 ? Number(roster.WR) : 2,
+      TE: Number(roster.TE) >= 0 ? Number(roster.TE) : 1,
+      FLEX: Number(roster.FLEX) >= 0 ? Number(roster.FLEX) : 1,
+      DST: Number(roster.DST) >= 0 ? Number(roster.DST) : 1,
+      K: Number(roster.K) >= 0 ? Number(roster.K) : 1,
+      BN: Number(roster.BN) >= 0 ? Number(roster.BN) : 6
+    },
+    scoring: {
+      passingYardsPerPoint: 25,
+      passingTD: 4,
+      interception: -2,
+      rushingYardsPerPoint: 10,
+      rushingTD: 6,
+      receivingYardsPerPoint: 10,
+      receivingTD: 6,
+      reception,
+      fumbleLost: -2,
+      twoPointConversion: 2,
+      ...(seed.scoring && typeof seed.scoring === 'object' ? seed.scoring : {})
+    },
+    draftType: String(seed.draftType || 'snake').trim() || 'snake',
+    waiverType: String(seed.waiverType || 'FAAB').trim() || 'FAAB',
+    notes: String(seed.notes || '').trim()
+      || 'Independent league — scoring and rosters are local to this HQ (not ESPN).'
+  };
+}
+
+function buildPlaceholderFranchises(conferences, teamsPerConference, customList) {
+  if (Array.isArray(customList) && customList.length) {
+    return customList.map((row, index) => ({
+      id: String(row.id || `franchise-${index + 1}`),
+      conferenceKey: String(row.conferenceKey || conferences[0]?.key || 'conferencea'),
+      name: String(row.name || `Franchise ${index + 1}`).trim() || `Franchise ${index + 1}`,
+      abbrev: String(row.abbrev || '').trim().toUpperCase().slice(0, 4) || null,
+      slot: Number(row.slot) || index + 1
+    }));
+  }
+  const out = [];
+  const n = Math.max(4, Math.min(20, Number(teamsPerConference) || 12));
+  (conferences || []).forEach((conf, ci) => {
+    for (let i = 1; i <= n; i++) {
+      out.push({
+        id: `franchise-${conf.key}-${i}`,
+        conferenceKey: conf.key,
+        name: `${conf.shortName || conf.name} ${i}`,
+        abbrev: null,
+        slot: i
+      });
+    }
+  });
+  return out;
+}
+
+function vanillaIndependentTemplate() {
+  const year = new Date().getFullYear();
+  return {
+    platform: 'independent',
+    season: year,
+    brand: {
+      name: '',
+      tagline: '24 Teams. Two Conferences. One Champion.',
+      slug: ''
+    },
+    conferences: [
+      {
+        key: 'east',
+        name: 'East Conference',
+        shortName: 'EAST',
+        color: '#ff7a18',
+        espnLeagueId: null
+      },
+      {
+        key: 'west',
+        name: 'West Conference',
+        shortName: 'WEST',
+        color: '#e2232a',
+        espnLeagueId: null
+      }
+    ],
+    championship: {
+      name: 'League Championship',
+      titleWeek: 16,
+      bowlWeek: 17
+    },
+    structure: {
+      teamsPerConference: 12,
+      totalTeams: 24,
+      playoffTeamCount: 6,
+      playoffWeeks: [14, 15, 16]
+    },
+    settings: defaultIndependentSettings(),
+    survival: defaultSurvival({ enabled: true, week: 17, name: "Mayor's Cup" }),
+    payouts: {
+      seasonLabel: `${year} Season`,
+      buyInPerTeam: 100,
+      teamCount: 24,
+      currency: 'USD',
+      notes: 'Prize pool equals buy-in × total franchises. Edit prize labels to match your league.',
+      prizes: [
+        { place: 1, label: 'League Champion', amount: 1000 },
+        { place: 2, label: 'Championship Runner-Up', amount: 500 },
+        { place: 3, label: 'East Conference 2nd Place', amount: 250 },
+        { place: 4, label: 'West Conference 2nd Place', amount: 250 },
+        { place: 5, label: 'East Third Place', amount: 100 },
+        { place: 6, label: 'West Third Place', amount: 100 },
+        { place: 7, label: 'East Most Points', amount: 100 },
+        { place: 8, label: 'West Most Points', amount: 100 }
+      ]
+    },
+    calendarDefaults: [
+      { title: 'Draft Day', type: 'draft', date: '', notes: 'Both conferences draft.' },
+      { title: 'Dues Due', type: 'dues', date: '', notes: '' },
+      { title: 'Trade Deadline', type: 'deadline', date: '', notes: 'No trades after this date.' },
+      { title: 'Conference Playoffs Begin', type: 'event', date: '', notes: 'Week 14 Wild Card.' },
+      { title: 'Championship', type: 'bowl', date: '', notes: 'Week 17 — conference champs.' }
+    ]
   };
 }
 
@@ -325,7 +473,7 @@ function createLeague({
   if (confInputs.length !== 2) {
     throw Object.assign(new Error('Exactly two conferences are required'), { status: 400 });
   }
-  const normalizedConfs = confInputs.map((c, i) => normalizeConferenceInput(c, i, uploadedAssets));
+  const normalizedConfs = confInputs.map((c, i) => normalizeConferenceInput(c, i, uploadedAssets, { requireEspn: true }));
   if (normalizedConfs[0].key === normalizedConfs[1].key) {
     normalizedConfs[1].key = `${normalizedConfs[1].key}b`;
   }
@@ -349,6 +497,7 @@ function createLeague({
     id: leagueId,
     slug,
     status: activate ? 'active' : 'ready',
+    platform: 'espn',
     isSystem: false,
     season: year,
     brand: {
@@ -539,8 +688,8 @@ function ensureSystemLeague(seed) {
     brand: {
       name: seed.brand?.name || 'GridIron 24',
       tagline: seed.brand?.tagline || '',
-      logo: '/assets/gridiron24-crest.png?v=6',
-      crest: '/assets/gridiron24-crest.png?v=6'
+      logo: '/assets/gridiron24-crest.png?v=9',
+      crest: '/assets/gridiron24-crest.png?v=9'
     },
     conferences: confs,
     championship: {
@@ -607,6 +756,199 @@ function updateLeagueAssets(leagueId, assetMap) {
   return publicLeague(league);
 }
 
+function createIndependentLeague({
+  id: requestedId = null,
+  ownerUserId,
+  ownerName = null,
+  ownerEmail = null,
+  season,
+  brand,
+  conferences,
+  championship,
+  structure,
+  payouts,
+  calendarDefaults,
+  settings,
+  franchises,
+  survival,
+  uploadedAssets = {}
+}) {
+  const store = readStore();
+  const brandName = String(brand?.name || '').trim();
+  if (!brandName) throw Object.assign(new Error('League name is required'), { status: 400 });
+
+  let slug = slugify(brand?.slug || brandName);
+  if (!slug) slug = `league-${crypto.randomBytes(3).toString('hex')}`;
+  if (store.leagues.some((l) => l.slug === slug)) {
+    slug = `${slug}-${crypto.randomBytes(2).toString('hex')}`;
+  }
+
+  const confInputs = Array.isArray(conferences) ? conferences : [];
+  if (confInputs.length !== 2) {
+    throw Object.assign(new Error('Exactly two conferences are required (GridIron 24 outline)'), { status: 400 });
+  }
+  const normalizedConfs = confInputs.map((c, i) =>
+    normalizeConferenceInput(c, i, uploadedAssets, { requireEspn: false })
+  );
+  if (normalizedConfs[0].key === normalizedConfs[1].key) {
+    normalizedConfs[1].key = `${normalizedConfs[1].key}b`;
+  }
+  normalizedConfs[0].isRulesPrimary = true;
+  normalizedConfs[1].isRulesPrimary = false;
+
+  const year = Number(season) || new Date().getFullYear();
+  const teamsPerConference = Math.max(4, Math.min(20, Number(structure?.teamsPerConference) || 12));
+  const totalTeams = teamsPerConference * 2;
+  const buyIn = Number(payouts?.buyInPerTeam) || 0;
+  const champName = String(championship?.name || `${brandName} Championship`).trim();
+  const titleWeek = Number(championship?.titleWeek) || 16;
+  const bowlWeek = Number(championship?.bowlWeek) || 17;
+  const leagueSettings = defaultIndependentSettings(settings || {});
+  const franchiseList = buildPlaceholderFranchises(normalizedConfs, teamsPerConference, franchises);
+
+  const leagueId = requestedId && !store.leagues.some((l) => l.id === requestedId)
+    ? String(requestedId)
+    : crypto.randomUUID();
+
+  const now = new Date().toISOString();
+  const league = {
+    id: leagueId,
+    slug,
+    status: 'pending_approval',
+    platform: 'independent',
+    isSystem: false,
+    season: year,
+    brand: {
+      name: brandName,
+      tagline: String(brand?.tagline || '').trim(),
+      logo: uploadedAssets.brandLogo || brand?.logo || null,
+      crest: uploadedAssets.brandCrest || brand?.crest || uploadedAssets.brandLogo || brand?.logo || null
+    },
+    conferences: normalizedConfs.map((c, i) => ({
+      ...c,
+      espnLeagueId: null,
+      logo: c.logo || uploadedAssets[`conferenceLogo${i}`] || null
+    })),
+    championship: {
+      name: champName,
+      logo: uploadedAssets.championshipLogo || championship?.logo || null,
+      titleWeek,
+      bowlWeek,
+      confChampLogos: {
+        [normalizedConfs[0].key]: uploadedAssets.confChampLogo0 || championship?.confChampLogos?.[normalizedConfs[0].key] || null,
+        [normalizedConfs[1].key]: uploadedAssets.confChampLogo1 || championship?.confChampLogos?.[normalizedConfs[1].key] || null
+      },
+      thirdPlaceLogos: {
+        [normalizedConfs[0].key]: uploadedAssets.thirdPlaceLogo0 || championship?.thirdPlaceLogos?.[normalizedConfs[0].key] || null,
+        [normalizedConfs[1].key]: uploadedAssets.thirdPlaceLogo1 || championship?.thirdPlaceLogos?.[normalizedConfs[1].key] || null
+      }
+    },
+    structure: {
+      teamsPerConference,
+      totalTeams,
+      playoffTeamCount: Number(structure?.playoffTeamCount) || 6,
+      playoffWeeks: Array.isArray(structure?.playoffWeeks) && structure.playoffWeeks.length
+        ? structure.playoffWeeks.map(Number)
+        : [14, 15, 16]
+    },
+    settings: leagueSettings,
+    franchises: franchiseList,
+    payouts: {
+      seasonLabel: String(payouts?.seasonLabel || `${year} Season`).trim(),
+      buyInPerTeam: buyIn,
+      teamCount: totalTeams,
+      currency: String(payouts?.currency || 'USD').trim() || 'USD',
+      notes: String(payouts?.notes || '').trim(),
+      prizes: (Array.isArray(payouts?.prizes) ? payouts.prizes : []).map(normalizePrize)
+    },
+    calendarDefaults: Array.isArray(calendarDefaults) ? calendarDefaults : [],
+    survival: defaultSurvival(survival || {}),
+    affiliatedLeagues: [],
+    historySeasons: [],
+    ownerUserId: ownerUserId || null,
+    ownerName: ownerName ? String(ownerName).trim() : null,
+    ownerEmail: ownerEmail ? String(ownerEmail).trim().toLowerCase() : null,
+    rejectionReason: null,
+    submittedAt: now,
+    approvedAt: null,
+    approvedBy: null,
+    createdAt: now,
+    activatedAt: null
+  };
+
+  store.leagues.push(league);
+  writeStore(store);
+  return publicLeague(league);
+}
+
+function listPendingIndependentLeagues() {
+  return readStore().leagues
+    .filter((l) => l.platform === 'independent' && l.status === 'pending_approval')
+    .map(publicLeague)
+    .sort((a, b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')));
+}
+
+function listIndependentLeaguesForOwner(ownerUserId) {
+  if (!ownerUserId) return [];
+  return readStore().leagues
+    .filter((l) => l.platform === 'independent' && l.ownerUserId === ownerUserId)
+    .map(publicLeague);
+}
+
+function approveIndependentLeague(leagueId, actorUserId) {
+  const store = readStore();
+  const league = store.leagues.find((l) => l.id === leagueId);
+  if (!league) throw Object.assign(new Error('League not found'), { status: 404 });
+  if (league.platform !== 'independent') {
+    throw Object.assign(new Error('Only independent leagues use this approval flow'), { status: 400 });
+  }
+  if (league.status !== 'pending_approval') {
+    throw Object.assign(new Error(`League is already ${league.status}`), { status: 400 });
+  }
+  league.status = 'approved';
+  league.approvedAt = new Date().toISOString();
+  league.approvedBy = actorUserId || null;
+  league.rejectionReason = null;
+  // Independent leagues never replace the site-wide active ESPN HQ.
+  writeStore(store);
+  return publicLeague(league);
+}
+
+function rejectIndependentLeague(leagueId, reason, actorUserId) {
+  const store = readStore();
+  const league = store.leagues.find((l) => l.id === leagueId);
+  if (!league) throw Object.assign(new Error('League not found'), { status: 404 });
+  if (league.platform !== 'independent') {
+    throw Object.assign(new Error('Only independent leagues use this approval flow'), { status: 400 });
+  }
+  if (league.status !== 'pending_approval') {
+    throw Object.assign(new Error(`League is already ${league.status}`), { status: 400 });
+  }
+  league.status = 'rejected';
+  league.rejectionReason = String(reason || '').trim() || 'Rejected by site owner';
+  league.approvedAt = null;
+  league.approvedBy = actorUserId || null;
+  writeStore(store);
+  return publicLeague(league);
+}
+
+function updateIndependentFranchises(leagueId, franchises) {
+  const store = readStore();
+  const league = store.leagues.find((l) => l.id === leagueId);
+  if (!league) throw Object.assign(new Error('League not found'), { status: 404 });
+  if (league.platform !== 'independent') {
+    throw Object.assign(new Error('Not an independent league'), { status: 400 });
+  }
+  league.franchises = buildPlaceholderFranchises(
+    league.conferences,
+    league.structure?.teamsPerConference,
+    franchises
+  );
+  league.updatedAt = new Date().toISOString();
+  writeStore(store);
+  return publicLeague(league);
+}
+
 function attachOwner(leagueId, userId) {
   const store = readStore();
   const idx = store.leagues.findIndex((l) => l.id === leagueId);
@@ -652,6 +994,14 @@ module.exports = {
   getActiveLeagueId,
   setActiveLeague,
   createLeague,
+  createIndependentLeague,
+  listPendingIndependentLeagues,
+  listIndependentLeaguesForOwner,
+  approveIndependentLeague,
+  rejectIndependentLeague,
+  updateIndependentFranchises,
+  vanillaIndependentTemplate,
+  defaultIndependentSettings,
   ensureSystemLeague,
   saveAssetBuffer,
   listDraftAssets,

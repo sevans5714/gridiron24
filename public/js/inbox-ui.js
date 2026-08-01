@@ -3,7 +3,7 @@
  * Mail / DM layout: members read-only; admins + owner can send and reply.
  */
 (function (global) {
-  const CREST = '/assets/gridiron24-brand.png?v=1';
+  const CREST = '/assets/gridiron24-brand.png?v=2';
   const POWERDMS = '/assets/powerdms.png';
   const stateByMount = new WeakMap();
 

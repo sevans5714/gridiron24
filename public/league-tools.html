@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=137" />
+  <link rel="stylesheet" href="/css/site.css?v=145" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -536,6 +536,23 @@
     .role-pill.commissioner { color: var(--blue); }
     .role-pill.conference_admin { color: var(--blue); }
     .muted-sm { color: var(--muted); font-size: 0.78rem; }
+    .member-creds {
+      margin-top: 0.55rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      max-width: 14rem;
+    }
+    .member-creds .field {
+      width: 100%;
+      font-size: 0.82rem;
+      padding: 0.35rem 0.5rem;
+    }
+    .member-creds .btn {
+      align-self: flex-start;
+      font-size: 0.78rem;
+      padding: 0.3rem 0.65rem;
+    }
     .career-assign select {
       display: block;
       width: 100%;
@@ -573,18 +590,34 @@
     }
     .invite-link-row {
       display: grid;
-      gap: 0.4rem;
+      gap: 0.45rem;
       padding-top: 0.85rem;
       border-top: 1px solid var(--line);
     }
     .invite-link-row:first-of-type { border-top: 0; padding-top: 0; }
+    .invite-link-top {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      min-width: 0;
+    }
     .invite-link-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem 0.75rem;
+      gap: 0.35rem 0.75rem;
       align-items: baseline;
+      min-width: 0;
+      flex: 1 1 auto;
     }
-    .invite-link-meta strong { color: var(--text); }
+    .invite-link-meta strong {
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
     .invite-link-meta span { color: var(--muted); font-size: 0.88rem; }
     .invite-url {
       display: block;
@@ -596,6 +629,36 @@
       word-break: break-all;
       white-space: pre-wrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .invite-link-actions,
+    .invite-row-actions {
+      display: inline-flex;
+      flex-wrap: nowrap;
+      gap: 0.55rem 0.85rem;
+      align-items: center;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .invite-user-line {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      min-width: 0;
+    }
+    .invite-user-line .invite-user-meta {
+      min-width: 0;
+      overflow: hidden;
+    }
+    .invite-user-line .invite-user-meta strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .data-table td.invite-user-cell {
+      width: 100%;
     }
     .owners-toolbar {
       display: grid;
@@ -668,13 +731,6 @@
     .owners-table .tag.ok { color: var(--good); }
     .owners-compose { margin-top: 0.5rem; }
     .owners-compose .field-label { margin-top: 0.75rem; }
-    .invite-link-actions,
-    .invite-row-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.55rem 1rem;
-      align-items: center;
-    }
     .btn-secondary {
       background: transparent;
       color: var(--text);
@@ -910,6 +966,10 @@
 
       <div class="comm-layout">
       <nav class="comm-nav" aria-label="Owner Tools sections" id="tools-side-nav">
+        <div class="comm-nav-group" id="nav-league-requests" hidden>
+          <p class="comm-nav-label">Leagues</p>
+          <a href="#league-requests" id="jump-league-requests">League Requests</a>
+        </div>
         <div class="comm-nav-group">
           <p class="comm-nav-label">Sync</p>
           <a href="#rules-sync">Rules</a>
@@ -940,6 +1000,22 @@
       </nav>
 
       <div class="comm-groups">
+        <section class="comm-group" id="group-league-requests" hidden>
+          <header>
+            <h2>League Requests</h2>
+            <p>Independent leagues submitted from Create a League. Approve to unlock their outline HQ (separate from GridIron 24 / ESPN).</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="comm-section" id="league-requests">
+              <div class="section-head">
+                <h3>Pending approval</h3>
+              </div>
+              <div class="status-note" id="league-requests-msg" role="status"></div>
+              <div id="league-requests-list"><div class="msg">Loading…</div></div>
+            </section>
+          </div>
+        </section>
+
         <section class="comm-group" id="group-espn">
           <header>
             <h2>Sync</h2>
@@ -1233,10 +1309,10 @@
   </main>
 
   <footer class="shell site-footer">
-    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=2" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=96"></script>
+  <script src="/js/nav.js?v=98"></script>
   <script src="/js/conference-diff.js?v=5"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1558,9 +1634,7 @@
       if (user.approved === false) return '';
       const seasons = window.__giArchiveSeasons || [];
       const prior = seasons.filter((s) => !String(s.label || '').toLowerCase().includes('current'));
-      if (!prior.length) {
-        return `<p class="muted-sm" style="margin:0.45rem 0 0;">Add seasons in Season Archive first, then link past teams here.</p>`;
-      }
+      if (!prior.length) return '';
       return `
         <div class="career-assign" data-career-user="${esc(user.id)}">
           <label class="muted-sm" style="display:block;margin:0.55rem 0 0.25rem;">Prior season</label>
@@ -1654,13 +1728,6 @@
       }
     }
 
-    function membershipAccessHint(u) {
-      if (u.loungeOnly) return 'Social · lounge only';
-      if (!u.membershipLeague) return 'Assign a league or Social membership';
-      if (u.membershipLeague === 'aaa') return u.loungeToken ? 'AAA · lounge pass on' : 'AAA';
-      return u.loungeToken ? 'GridIron 24 · lounge pass on' : 'GridIron 24';
-    }
-
     function renderMembers(payload) {
       const list = payload.users || [];
       const conferences = payload.conferences || [];
@@ -1694,6 +1761,11 @@
                 <td>
                   <strong>${esc(u.name)}</strong><br>
                   <span class="muted-sm">${esc(u.loginName)} · ${esc(u.email)}</span>
+                  <div class="member-creds" data-creds-user="${esc(u.id)}">
+                    <input class="field" type="text" data-cred-login="${esc(u.id)}" value="${esc(u.loginName)}" autocomplete="off" spellcheck="false" aria-label="Login name for ${esc(u.name)}" />
+                    <input class="field" type="password" data-cred-pass="${esc(u.id)}" value="" placeholder="New password" autocomplete="new-password" aria-label="New password for ${esc(u.name)}" />
+                    <button type="button" class="btn btn-secondary" data-save-creds="${esc(u.id)}">Save login</button>
+                  </div>
                 </td>
                 <td>
                   ${u.approved === false
@@ -1709,7 +1781,6 @@
                   <select class="team-select" data-user-id="${esc(u.id)}" aria-label="Assign franchise" ${u.approved === false || u.loungeOnly ? 'disabled' : ''}>
                     ${teamOptionsHtml(conferences, u.claim)}
                   </select>
-                  ${u.loungeOnly ? '<p class="muted-sm" style="margin:0.35rem 0 0;">Social accounts have no franchise.</p>' : ''}
                   ${!u.loungeOnly && u.claim ? `<button type="button" class="link-action" style="margin-top:0.4rem;" data-remove-team="${esc(u.id)}">Remove current team</button>` : ''}
                   ${u.loungeOnly ? '' : careerAssignHtml(u)}
                 </td>
@@ -1731,8 +1802,7 @@
                         <option value="gridiron" ${!u.loungeOnly && u.membershipLeague === 'gridiron' ? 'selected' : ''}>GridIron 24</option>
                         <option value="aaa" ${!u.loungeOnly && u.membershipLeague === 'aaa' ? 'selected' : ''}>AAA League</option>
                         <option value="social" ${u.loungeOnly ? 'selected' : ''}>Social Membership</option>
-                      </select>
-                      <p class="muted-sm" style="margin:0.35rem 0 0;">${esc(membershipAccessHint(u))}</p>`}
+                      </select>`}
                 </td>
                 <td>
                   ${u.approved === false
@@ -1782,6 +1852,42 @@
             await loadMembers();
           } finally {
             select.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-save-creds]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const userId = btn.getAttribute('data-save-creds');
+          const wrap = btn.closest('[data-creds-user]');
+          const loginInput = wrap?.querySelector('[data-cred-login]');
+          const passInput = wrap?.querySelector('[data-cred-pass]');
+          const loginName = (loginInput?.value || '').trim();
+          const password = passInput?.value || '';
+          if (!loginName && !password) {
+            showMembersMsg('Enter a login name and/or new password.', false);
+            return;
+          }
+          btn.disabled = true;
+          try {
+            const body = {};
+            if (loginName) body.loginName = loginName;
+            if (password) body.password = password;
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/credentials`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update login');
+            const parts = [];
+            if (loginName) parts.push(`login → ${data.user.loginName}`);
+            if (password) parts.push('password updated');
+            showMembersMsg(`${data.user.name || data.user.loginName}: ${parts.join(', ')}.`, true);
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            btn.disabled = false;
           }
         });
       });
@@ -2602,15 +2708,17 @@
         <div class="invite-links-head">Invite links</div>
         ${rows.map((r) => `
           <div class="invite-link-row">
-            <div class="invite-link-meta">
-              <strong>${esc(r.email)}</strong>
-              <span>${r.sent ? 'Emailed' : (r.mailError ? `Email failed: ${esc(r.mailError)}` : 'Copy & share')}</span>
+            <div class="invite-link-top">
+              <div class="invite-link-meta">
+                <strong>${esc(r.email)}</strong>
+                <span>${r.sent ? 'Emailed' : (r.mailError ? `Email failed: ${esc(r.mailError)}` : 'Copy & share')}</span>
+              </div>
+              <div class="invite-link-actions">
+                <button type="button" class="btn btn-secondary" data-copy-invite="${esc(r.inviteUrl)}">Copy link</button>
+                <a class="btn btn-secondary" href="mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent('GridIron 24 invite')}&body=${encodeURIComponent(`You're invited to GridIron 24. Create your account here:\n${r.inviteUrl}`)}">Open mail app</a>
+              </div>
             </div>
             <code class="invite-url">${esc(r.inviteUrl)}</code>
-            <div class="invite-link-actions">
-              <button type="button" class="btn btn-secondary" data-copy-invite="${esc(r.inviteUrl)}">Copy link</button>
-              <a class="btn btn-secondary" href="mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent('GridIron 24 invite')}&body=${encodeURIComponent(`You're invited to GridIron 24. Create your account here:\n${r.inviteUrl}`)}">Open mail app</a>
-            </div>
           </div>
         `).join('')}`;
     }
@@ -2641,19 +2749,26 @@
       }
       list.innerHTML = `
         <table class="data-table">
-          <thead><tr><th>Email</th><th>Status</th><th>Sent</th><th></th></tr></thead>
+          <thead><tr><th>Invite</th><th>Status</th><th>Sent</th></tr></thead>
           <tbody>
             ${rows.map((inv) => `
               <tr>
-                <td>${esc(inv.email)}${inv.loungeOnly ? ' <span class="muted-sm">(social)</span>' : ''}</td>
+                <td class="invite-user-cell">
+                  <div class="invite-user-line">
+                    <div class="invite-user-meta">
+                      <strong>${esc(inv.email)}</strong>
+                      ${inv.loungeOnly ? '<span class="muted-sm">social</span>' : ''}
+                    </div>
+                    ${inv.status === 'pending' ? `
+                      <div class="invite-row-actions">
+                        <button type="button" data-resend-invite="${esc(inv.id)}" class="link-action">Resend / copy link</button>
+                        <button type="button" data-revoke-invite="${esc(inv.id)}" class="link-action">Revoke</button>
+                      </div>
+                    ` : ''}
+                  </div>
+                </td>
                 <td>${esc(inv.status)}${inv.loungeOnly ? ' · lounge only' : ''}</td>
                 <td>${esc((inv.createdAt || '').slice(0, 10))}</td>
-                <td class="invite-row-actions">
-                  ${inv.status === 'pending' ? `
-                    <button type="button" data-resend-invite="${esc(inv.id)}" class="link-action">Resend / copy link</button>
-                    <button type="button" data-revoke-invite="${esc(inv.id)}" class="link-action">Revoke</button>
-                  ` : ''}
-                </td>
               </tr>`).join('')}
           </tbody>
         </table>`;
@@ -3235,6 +3350,110 @@
       if (overview) overview.hidden = false;
     }
 
+    function revealLeagueRequests() {
+      const group = document.getElementById('group-league-requests');
+      const nav = document.getElementById('nav-league-requests');
+      if (group) group.hidden = false;
+      if (nav) nav.hidden = false;
+    }
+
+    function showLeagueRequestsMsg(msg, ok) {
+      const el = document.getElementById('league-requests-msg');
+      if (!el) return;
+      el.textContent = msg || '';
+      el.classList.toggle('show', Boolean(msg));
+      el.classList.toggle('ok', Boolean(ok));
+      el.classList.toggle('err', Boolean(msg) && !ok);
+    }
+
+    async function loadLeagueRequests() {
+      const list = document.getElementById('league-requests-list');
+      if (!list) return;
+      const res = await fetch('/api/leagues/pending', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load league requests');
+      const leagues = data.leagues || [];
+      if (!leagues.length) {
+        list.innerHTML = `<div class="msg">No independent leagues waiting for approval.</div>`;
+        return;
+      }
+      list.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>League</th>
+              <th>Owner</th>
+              <th>Structure</th>
+              <th>Submitted</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${leagues.map((l) => `
+              <tr data-league-id="${esc(l.id)}">
+                <td>
+                  <strong>${esc(l.brand?.name || l.slug)}</strong><br>
+                  <span class="muted-sm">${esc(l.brand?.tagline || '')}</span>
+                </td>
+                <td>
+                  ${esc(l.ownerName || '—')}<br>
+                  <span class="muted-sm">${esc(l.ownerEmail || '')}</span>
+                </td>
+                <td class="muted-sm">
+                  ${esc(String(l.structure?.totalTeams || '—'))} teams<br>
+                  ${(l.conferences || []).map((c) => esc(c.name)).join(' · ')}
+                </td>
+                <td class="muted-sm">${esc((l.submittedAt || '').slice(0, 10))}</td>
+                <td>
+                  <div class="invite-row-actions" style="display:flex;gap:0.45rem;flex-wrap:wrap;">
+                    <button type="button" class="btn" data-approve-league="${esc(l.id)}">Approve</button>
+                    <button type="button" class="link-action" data-reject-league="${esc(l.id)}">Reject</button>
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+
+      list.querySelectorAll('[data-approve-league]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-approve-league');
+          btn.disabled = true;
+          try {
+            const res2 = await fetch(`/api/leagues/${encodeURIComponent(id)}/approve`, { method: 'POST' });
+            const data2 = await res2.json().catch(() => ({}));
+            if (!res2.ok || !data2.ok) throw new Error(data2.error || 'Approve failed');
+            showLeagueRequestsMsg(`Approved ${data2.league?.brand?.name || 'league'}.`, true);
+            await loadLeagueRequests();
+          } catch (err) {
+            showLeagueRequestsMsg(err.message, false);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      list.querySelectorAll('[data-reject-league]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-reject-league');
+          const reason = window.prompt('Reason for rejection (shown to the owner):', '') || '';
+          btn.disabled = true;
+          try {
+            const res2 = await fetch(`/api/leagues/${encodeURIComponent(id)}/reject`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reason })
+            });
+            const data2 = await res2.json().catch(() => ({}));
+            if (!res2.ok || !data2.ok) throw new Error(data2.error || 'Reject failed');
+            showLeagueRequestsMsg(`Rejected ${data2.league?.brand?.name || 'league'}.`, true);
+            await loadLeagueRequests();
+          } catch (err) {
+            showLeagueRequestsMsg(err.message, false);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
     function toolsDeskLabel(user) {
       if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner Tools';
       if (user?.role === 'commissioner') return 'League Tools';
@@ -3299,6 +3518,14 @@
         document.getElementById('invites-admin').hidden = false;
         document.getElementById('jump-invites').hidden = false;
         document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
+
+      if (user?.siteOwner || user?.canSwitchLeagues) {
+        revealLeagueRequests();
+        try { await loadLeagueRequests(); } catch (err) {
+          const list = document.getElementById('league-requests-list');
+          if (list) list.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        }
       }
 
       if (isPlatformAdmin(user)) {
