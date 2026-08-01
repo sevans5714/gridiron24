@@ -54,7 +54,7 @@ function brandedAssets(baseUrl) {
     detailLogo: `${origin}/assets/detail-conference.png`,
     overtimeLogo: `${origin}/assets/overtime-conference.png`,
     aaaLogo: `${origin}/assets/aaa-league.png?v=7`,
-    gridironLeagueLogo: `${origin}/assets/gridiron24-league-sm.png?v=5`,
+    gridironLeagueLogo: `${origin}/assets/gridiron24-league-sm.png?v=7`,
     loungeHeroUrl: `${origin}/assets/members-lounge.jpg`,
     enterUrl: `${origin}/enter`
   };

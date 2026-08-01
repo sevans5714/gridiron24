@@ -3068,7 +3068,7 @@ async function loadFantasySportsBoards() {
     boards.push(sportsScoreboard.boardFromFantasyConferences({
       id: 'gi24',
       label: 'GridIron 24',
-      logo: '/assets/gridiron24-league.png?v=5'
+      logo: '/assets/gridiron24-league.png?v=7'
     }, confResults));
   } catch (err) {
     console.error('[sports-scores] GridIron 24 board failed', err.message || err);
@@ -3078,7 +3078,7 @@ async function loadFantasySportsBoards() {
       label: 'GridIron 24',
       kind: 'team',
       fantasy: true,
-      logo: '/assets/gridiron24-league.png?v=5',
+      logo: '/assets/gridiron24-league.png?v=7',
       error: err.message || 'Unavailable',
       counts: { live: 0, final: 0, upcoming: 0 },
       games: []
@@ -3901,7 +3901,7 @@ function leagueScopeForUser(user, req = null) {
       homePath: '/home.html',
       scoreboardPath: '/scoreboard',
       label: 'GridIron 24',
-      logo: '/assets/gridiron24-league.png?v=5',
+      logo: '/assets/gridiron24-league.png?v=7',
       canSwitchLeagues: false,
       preferredLeague: null
     };
@@ -3928,7 +3928,7 @@ function leagueScopeForUser(user, req = null) {
       homePath: '/home.html',
       scoreboardPath: '/scoreboard',
       label: 'GridIron 24',
-      logo: '/assets/gridiron24-league.png?v=5',
+      logo: '/assets/gridiron24-league.png?v=7',
       canSwitchLeagues: true,
       preferredLeague: 'gridiron'
     };
@@ -3961,7 +3961,7 @@ function leagueScopeForUser(user, req = null) {
     homePath: homePathForUser(user, req),
     scoreboardPath: '/scoreboard',
     label: 'GridIron 24',
-    logo: '/assets/gridiron24-league.png?v=5',
+    logo: '/assets/gridiron24-league.png?v=7',
     canSwitchLeagues: false,
     preferredLeague: null
   };
@@ -3994,7 +3994,7 @@ function resolveLeagueScope(user, req, requestedLeague) {
     homePath: '/home.html',
     scoreboardPath: '/scoreboard',
     label: 'GridIron 24',
-    logo: '/assets/gridiron24-league.png?v=5',
+    logo: '/assets/gridiron24-league.png?v=7',
     canSwitchLeagues: personal.canSwitchLeagues,
     preferredLeague: personal.preferredLeague
   };

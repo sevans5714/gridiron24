@@ -160,7 +160,7 @@
     if (label === 'AAA') {
       return { src: '/assets/aaa-league.png?v=7', alt: 'AAA' };
     }
-    return { src: '/assets/gridiron24-league.png?v=6', alt: 'GridIron 24' };
+    return { src: '/assets/gridiron24-league.png?v=7', alt: 'GridIron 24' };
   }
 
   function isStandalone() {
