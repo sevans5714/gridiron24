@@ -117,6 +117,14 @@ function deleteMessage(id, requester) {
   return true;
 }
 
+/** Wipe the lounge chat (all kinds: chat, bet, mock). Staff-only caller responsibility. */
+function clearAllMessages() {
+  const store = readStore();
+  const cleared = (store.messages || []).length;
+  writeStore({ messages: [] });
+  return { cleared };
+}
+
 /**
  * Resolve @mentions from explicit ids and/or @Name text matches.
  * Names match approved users (longest name first to avoid partial collisions).
@@ -153,6 +161,7 @@ module.exports = {
   listMessages,
   addMessage,
   deleteMessage,
+  clearAllMessages,
   resolveMentionedUsers,
   MAX_BODY
 };

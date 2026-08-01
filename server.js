@@ -6215,6 +6215,27 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/lounge/fresh-start' && req.method === 'POST') {
+      const cronOk = authorizeCron(req);
+      const admin = cronOk ? null : requireCommissioner(req, res);
+      if (!cronOk && !admin) return;
+      try {
+        const chat = membersChat.clearAllMessages();
+        const book = paperBook.resetBook();
+        return sendJson(res, 200, {
+          ok: true,
+          chat,
+          book,
+          message: 'Lounge chat and sportsbook reset'
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Could not reset lounge'
+        });
+      }
+    }
+
     if (pathname === '/api/members' && req.method === 'GET') {
       const viewer = requireLoungeMember(req, res);
       if (!viewer) return;

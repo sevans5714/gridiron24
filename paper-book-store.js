@@ -106,6 +106,18 @@ function grantLoungeBankroll(user) {
   return { account, funded: true, bankroll: account.bankroll };
 }
 
+/** Wipe all sportsbook accounts, slips, and futures. */
+function resetBook() {
+  const store = readStore();
+  const cleared = {
+    accounts: Object.keys(store.accounts || {}).length,
+    slips: (store.slips || []).length,
+    futures: (store.futures || []).length
+  };
+  writeStore({ accounts: {}, slips: [], futures: [], champions: {} });
+  return cleared;
+}
+
 function americanToDecimal(odds) {
   const o = Number(odds);
   if (!Number.isFinite(o) || o === 0) return null;
@@ -1003,6 +1015,7 @@ module.exports = {
   formatSlipChat,
   lastNameOf,
   grantLoungeBankroll,
+  resetBook,
   STARTING_BANKROLL,
   MIN_STAKE,
   MAX_STAKE,
