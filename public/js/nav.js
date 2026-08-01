@@ -1024,6 +1024,7 @@
 
   function footerHtml(buildLabel) {
     const build = esc(buildLabel || 'Build …');
+    // Platform brand footer — always GridIron 24 / S.Evans, even on independent league HQ pages.
     return `<span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
   }
 
@@ -1037,6 +1038,7 @@
       else document.body.appendChild(el);
     }
     el.classList.add('site-footer');
+    el.setAttribute('data-platform-footer', 'gridiron24');
     el.innerHTML = footerHtml(buildLabel);
     return el;
   }
