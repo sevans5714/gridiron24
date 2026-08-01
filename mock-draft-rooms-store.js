@@ -13,8 +13,8 @@ const FILE = path.join(DATA_DIR, 'mock-draft-rooms.json');
 const TEAM_COUNTS = new Set([10, 12, 14]);
 const ROUND_OPTIONS = new Set([8, 10, 12, 15, 16, 18]);
 const PICK_SECONDS_OPTIONS = new Set([60, 120, 180]);
-const JOIN_LOBBY_SECONDS = 60;
-const CPU_PICK_GAP_MS = 1000;
+const JOIN_LOBBY_SECONDS = 240; // 4:00 for others to join after positions lock
+const CPU_PICK_GAP_MS = 5000;
 const MAX_ROOMS = 12;
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -325,7 +325,7 @@ function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames
     seats,
     picks: [],
     pickDeadline: null,
-    lobbyEndsAt: new Date(Date.now() + JOIN_LOBBY_SECONDS * 1000).toISOString(),
+    lobbyEndsAt: null,
     positionsLocked: false,
     createdAt: now,
     updatedAt: now
@@ -368,6 +368,24 @@ function lockPositions({ roomId, user }) {
     throw err(403, 'Only the host can lock positions');
   }
   room.positionsLocked = true;
+  // Join window starts when the host locks — others get 4:00 to claim a seat.
+  room.lobbyEndsAt = new Date(Date.now() + JOIN_LOBBY_SECONDS * 1000).toISOString();
+  room.updatedAt = new Date().toISOString();
+  return saveRoom(room);
+}
+
+function skipJoinWindow({ roomId, user }) {
+  if (!user?.id) throw err(401, 'Sign in required');
+  const room = getRoom(roomId);
+  if (!room) throw err(404, 'Mock draft not found');
+  if (room.status !== 'lobby') throw err(409, 'Draft already started');
+  if (String(room.hostId) !== String(user.id)) {
+    throw err(403, 'Only the host can skip the join window');
+  }
+  if (!room.positionsLocked) {
+    throw err(409, 'Lock positions before skipping the join window');
+  }
+  room.lobbyEndsAt = new Date(Date.now() - 1000).toISOString();
   room.updatedAt = new Date().toISOString();
   return saveRoom(room);
 }
@@ -506,6 +524,7 @@ module.exports = {
   createRoom,
   startDraft,
   lockPositions,
+  skipJoinWindow,
   moveSeat,
   getRoom,
   saveRoom,

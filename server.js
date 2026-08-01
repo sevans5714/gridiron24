@@ -169,6 +169,7 @@ const PUBLIC_PATHS = new Set([
   '/api/cron/rules-sync',
   '/api/cron/roster-violations',
   '/api/cron/death-pool-news',
+  '/api/cron/paper-book-settle',
   '/api/lounge/fresh-start',
   '/manifest.webmanifest',
   '/sw.js'
@@ -4535,6 +4536,20 @@ function authorizeCron(req) {
   }
 }
 
+/**
+ * Grade open sportsbook slips against finals and credit/debit bankrolls.
+ * Stake leaves Funds on place; winners get payout (stake + profit) on settle.
+ */
+async function settlePaperBookFromScores() {
+  const openLegs = paperBook.listOpenUngradedLegs();
+  if (!openLegs.length && !paperBook.hasOpenTickets()) {
+    return { settled: 0, openLegs: 0 };
+  }
+  const boards = await sportsScoreboard.getSettlementBoards({ openLegs });
+  const settled = paperBook.settleOpenSlips(boards);
+  return { settled, openLegs: openLegs.length, boards: boards.length };
+}
+
 function wrapRecipients() {
   const mode = String(process.env.WRAP_EMAIL_MODE || 'all').trim().toLowerCase();
   const list = users.listUsers().filter((u) => u.email);
@@ -4787,6 +4802,19 @@ const server = http.createServer(async (req, res) => {
       } catch (err) {
         console.error('[death-pool-news] cron failed', err);
         return sendJson(res, 500, { ok: false, error: err.message || 'Death pool news scan failed' });
+      }
+    }
+
+    if (pathname === '/api/cron/paper-book-settle' && (req.method === 'POST' || req.method === 'GET')) {
+      if (!authorizeCron(req)) {
+        return sendJson(res, 401, { ok: false, error: 'Invalid cron secret' });
+      }
+      try {
+        const result = await settlePaperBookFromScores();
+        return sendJson(res, 200, { ok: true, ...result, triggeredBy: 'cron' });
+      } catch (err) {
+        console.error('[paper-book-settle] cron failed', err);
+        return sendJson(res, 500, { ok: false, error: err.message || 'Sportsbook settle failed' });
       }
     }
 
@@ -5678,8 +5706,8 @@ const server = http.createServer(async (req, res) => {
       const viewer = requireLoungeMember(req, res);
       if (!viewer) return;
       try {
-        const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6, daysBehind: 7 });
-        const boards = scores.leagues || [];
+        const openLegs = paperBook.listOpenUngradedLegs();
+        const boards = await sportsScoreboard.getSettlementBoards({ openLegs });
         const book = paperBook.getBook(users.publicUser(viewer), boards);
         const futuresBoard = await futuresMarkets.getFuturesBoard().catch(() => ({
           ok: false,
@@ -5723,7 +5751,9 @@ const server = http.createServer(async (req, res) => {
                 away: g.away,
                 home: g.home,
                 odds: g.odds,
-                leaders: Array.isArray(g.leaders) ? g.leaders.slice(0, 20) : undefined,
+                leaders: Array.isArray(g.leaders)
+                  ? g.leaders.slice(0, (b.kind === 'golf' || b.kind === 'racing' || g.kind === 'golf' || g.kind === 'racing') ? 40 : 20)
+                  : undefined,
                 broadcasts: g.broadcasts || []
               }))
           }))
@@ -5754,10 +5784,10 @@ const server = http.createServer(async (req, res) => {
       try {
         const publicAuthor = users.publicUser(user);
         const action = String(body.action || 'bet').toLowerCase();
+        const openLegs = paperBook.listOpenUngradedLegs();
+        const boards = await sportsScoreboard.getSettlementBoards({ openLegs });
 
         if (action === 'future') {
-          const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6, daysBehind: 7 });
-          const boards = scores.leagues || [];
           paperBook.settleOpenSlips(boards);
           const futuresBoard = await futuresMarkets.getFuturesBoard();
           const book = paperBook.placeFuture(publicAuthor, body, futuresBoard);
@@ -5782,8 +5812,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (action === 'bet') {
-          const scores = await sportsScoreboard.getSportsScores({ daysAhead: 6, daysBehind: 7 });
-          const boards = scores.leagues || [];
+          // placeBet deducts stake from Funds immediately, then settleOpenSlips grades any finals.
           const book = paperBook.placeBet(publicAuthor, body, boards);
           if (book.placedSlip) {
             try {
@@ -5926,6 +5955,14 @@ const server = http.createServer(async (req, res) => {
 
         if (action === 'lock-positions') {
           const room = mockDraftRooms.lockPositions({
+            roomId: body.roomId,
+            user: publicAuthor
+          });
+          return sendJson(res, 200, { ok: true, room: mockDraftRooms.publicRoom(room, user.id) });
+        }
+
+        if (action === 'skip-join-window') {
+          const room = mockDraftRooms.skipJoinWindow({
             roomId: body.roomId,
             user: publicAuthor
           });
@@ -8726,5 +8763,17 @@ server.listen(PORT, '0.0.0.0', () => {
   if (process.env.AAA_ADMIN_LOGIN) {
     console.log(`AAA league admin: ${process.env.AAA_ADMIN_LOGIN}`);
   }
+  // Background sportsbook settle — stake already deducted on place; finals credit Funds/Earnings.
+  const PAPER_BOOK_SETTLE_MS = 3 * 60 * 1000;
+  setTimeout(() => {
+    settlePaperBookFromScores().catch((err) => {
+      console.warn('[paper-book-settle] startup pass failed', err.message || err);
+    });
+  }, 20_000);
+  setInterval(() => {
+    settlePaperBookFromScores().catch((err) => {
+      console.warn('[paper-book-settle] interval failed', err.message || err);
+    });
+  }, PAPER_BOOK_SETTLE_MS);
   console.log('');
 });

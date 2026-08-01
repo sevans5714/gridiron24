@@ -165,17 +165,86 @@ function findGame(boards, eventId) {
 function winnerOddsByRank(rank0) {
   const ladder = [
     250, 400, 600, 800, 1000, 1200, 1500, 1800, 2000, 2500,
-    3000, 3500, 4000, 5000, 6000, 7500, 10000, 12500, 15000, 20000
+    3000, 3500, 4000, 5000, 6000, 7500, 10000, 12500, 15000, 20000,
+    25000, 30000, 40000, 50000, 60000, 75000, 100000, 125000, 150000, 200000,
+    250000, 300000, 400000, 500000, 600000, 750000, 1000000, 1000000, 1000000, 1000000
   ];
   const i = Math.max(0, Number(rank0) || 0);
   return ladder[Math.min(i, ladder.length - 1)];
+}
+
+/** Finish markets for golf / NASCAR (paper odds). */
+const FIELD_FINISH_MARKETS = {
+  winner: { place: 1, label: 'Winner', short: 'Win' },
+  top3: { place: 3, label: 'Top 3', short: 'T3' },
+  top5: { place: 5, label: 'Top 5', short: 'T5' },
+  top10: { place: 10, label: 'Top 10', short: 'T10' },
+  top20: { place: 20, label: 'Top 20', short: 'T20' }
+};
+
+function isFieldFinishMarket(market) {
+  const m = String(market || '').toLowerCase();
+  return m === 'outright' || Boolean(FIELD_FINISH_MARKETS[m]);
+}
+
+function fieldFinishPlace(market) {
+  const m = String(market || '').toLowerCase();
+  if (m === 'outright') return 1;
+  return FIELD_FINISH_MARKETS[m]?.place || null;
+}
+
+function americanToImplied(american) {
+  const o = Number(american);
+  if (!Number.isFinite(o) || o === 0) return 0.05;
+  if (o > 0) return 100 / (o + 100);
+  return Math.abs(o) / (Math.abs(o) + 100);
+}
+
+function impliedToAmerican(pRaw) {
+  const p = Math.min(0.92, Math.max(0.004, Number(pRaw) || 0.05));
+  if (p >= 0.5) {
+    return Math.round((-100 * p) / (1 - p));
+  }
+  return Math.round((100 * (1 - p)) / p);
+}
+
+/**
+ * Top-N prices shorten vs outright. Favorites get heavier favorite juice
+ * on Top 20; longshots still pay something to finish inside the cut line.
+ */
+function fieldFinishOdds(rank0, place) {
+  const win = winnerOddsByRank(rank0);
+  const n = Math.max(1, Number(place) || 1);
+  if (n <= 1) return win;
+  const winImp = americanToImplied(win);
+  const scale = ({ 3: 2.35, 5: 3.4, 10: 5.4, 20: 8.2 })[n] || Math.sqrt(n) * 1.6;
+  // Favorites get a bigger probability lift into the top N.
+  const favorBoost = 1 + Math.max(0, 8 - Number(rank0 || 0)) * 0.04;
+  const p = Math.min(0.88, Math.max(0.012, winImp * scale * favorBoost));
+  return impliedToAmerican(p);
 }
 
 function fieldEntries(game) {
   return Array.isArray(game?.leaders) ? game.leaders : [];
 }
 
-function buildWinnerLeg(game, leagueId, leagueLabel, athleteId) {
+function finishPositionOf(entry) {
+  if (!entry) return null;
+  const order = Number(entry.order);
+  if (Number.isFinite(order) && order > 0) return order;
+  const pid = Number(entry.positionId);
+  if (Number.isFinite(pid) && pid > 0) return pid;
+  const raw = String(entry.position || '').replace(/[^0-9]/g, '');
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function buildFieldFinishLeg(game, leagueId, leagueLabel, market, athleteId) {
+  const m = String(market || 'winner').toLowerCase();
+  const meta = FIELD_FINISH_MARKETS[m === 'outright' ? 'winner' : m];
+  if (!meta) {
+    throw Object.assign(new Error('Unknown finish market'), { status: 400 });
+  }
   const field = fieldEntries(game);
   if (!field.length) {
     throw Object.assign(new Error('Field not posted yet for that event'), { status: 400 });
@@ -185,18 +254,24 @@ function buildWinnerLeg(game, leagueId, leagueLabel, athleteId) {
     throw Object.assign(new Error('That pick is not on the posted field'), { status: 400 });
   }
   const pick = field[idx];
-  const odds = winnerOddsByRank(idx);
+  const marketKey = m === 'outright' ? 'winner' : m;
+  const odds = fieldFinishOdds(idx, meta.place);
   const eventName = game.shortName || game.name || (game.kind === 'racing' ? 'Race' : 'Tournament');
+  const name = pick.shortName || pick.name || 'Pick';
+  const label = meta.place === 1
+    ? `${name} to win`
+    : `${name} ${meta.label}`;
   return {
     eventId: String(game.id),
     leagueId,
     leagueLabel,
-    market: 'winner',
+    market: marketKey,
     side: String(pick.id),
-    line: null,
+    line: meta.place,
     odds,
-    label: `${pick.shortName || pick.name || 'Pick'} to win`,
+    label,
     matchup: eventName,
+    startsAt: game.date || null,
     status: 'open',
     result: null
   };
@@ -204,8 +279,8 @@ function buildWinnerLeg(game, leagueId, leagueLabel, athleteId) {
 
 function buildLegFromGame(game, leagueId, leagueLabel, market, side) {
   const m = String(market || 'spread').toLowerCase();
-  if (m === 'winner' || m === 'outright') {
-    return buildWinnerLeg(game, leagueId, leagueLabel, side);
+  if (isFieldFinishMarket(m)) {
+    return buildFieldFinishLeg(game, leagueId, leagueLabel, m, side);
   }
 
   const odds = game.odds || null;
@@ -236,6 +311,7 @@ function buildLegFromGame(game, leagueId, leagueLabel, market, side) {
       odds: ml || DEFAULT_JUICE,
       label: `${s === 'away' ? away : home} ${Number(line) > 0 ? '+' : ''}${line}`,
       matchup: labelBase,
+      startsAt: game.date || null,
       status: 'open',
       result: null
     };
@@ -259,6 +335,7 @@ function buildLegFromGame(game, leagueId, leagueLabel, market, side) {
       odds: DEFAULT_JUICE,
       label: `${s === 'over' ? 'Over' : 'Under'} ${total}`,
       matchup: labelBase,
+      startsAt: game.date || null,
       status: 'open',
       result: null
     };
@@ -282,6 +359,7 @@ function buildLegFromGame(game, leagueId, leagueLabel, market, side) {
       odds: ml,
       label: `${s === 'away' ? away : home} ML ${ml > 0 ? '+' : ''}${ml}`,
       matchup: labelBase,
+      startsAt: game.date || null,
       status: 'open',
       result: null
     };
@@ -329,16 +407,28 @@ function gradeLeg(leg, game) {
     return null;
   }
 
-  if (leg.market === 'winner') {
+  if (isFieldFinishMarket(leg.market)) {
+    const place = Number(leg.line) || fieldFinishPlace(leg.market) || 1;
     const field = fieldEntries(game);
     if (!field.length) return null;
-    const champ = field.find((p) => p.winner)
-      || field.find((p) => Number(p.order) === 1)
-      || field.find((p) => String(p.positionId || '') === '1')
-      || field.find((p) => String(p.position || '') === '1')
-      || null;
-    if (!champ?.id) return null;
-    return String(champ.id) === String(leg.side) ? 'win' : 'loss';
+    const pick = field.find((p) => String(p.id) === String(leg.side));
+    if (!pick) {
+      // Final board without this athlete → finished outside the posted cut / field.
+      return 'loss';
+    }
+    if (place <= 1) {
+      const champ = field.find((p) => p.winner)
+        || field.find((p) => Number(p.order) === 1)
+        || field.find((p) => String(p.positionId || '') === '1')
+        || field.find((p) => String(p.position || '') === '1')
+        || null;
+      if (champ?.id) {
+        return String(champ.id) === String(leg.side) ? 'win' : 'loss';
+      }
+    }
+    const pos = finishPositionOf(pick);
+    if (pos == null) return null;
+    return pos <= place ? 'win' : 'loss';
   }
 
   const awayScore = Number(game.away?.score);
@@ -594,6 +684,33 @@ function buildGameIndex(boards) {
   return map;
 }
 
+/** Open game legs that still need a final result (for scoreboard backfill). */
+function listOpenUngradedLegs() {
+  const store = readStore();
+  const out = [];
+  for (const slip of store.slips || []) {
+    if (slip.status !== 'open') continue;
+    for (const leg of slip.legs || []) {
+      if (leg.result) continue;
+      out.push({
+        eventId: String(leg.eventId || ''),
+        leagueId: String(leg.leagueId || '').toLowerCase()
+      });
+    }
+  }
+  return out;
+}
+
+function hasOpenTickets() {
+  const store = readStore();
+  if ((store.slips || []).some((s) => s.status === 'open')) return true;
+  if ((store.futures || []).some((f) => f.status === 'open')) return true;
+  // Also re-apply any closed-but-unapplied payouts.
+  if ((store.slips || []).some((s) => s.status !== 'open' && !s._applied)) return true;
+  if ((store.futures || []).some((f) => f.status !== 'open' && !f._applied)) return true;
+  return false;
+}
+
 function settleOpenSlips(boards) {
   const store = readStore();
   const index = buildGameIndex(boards);
@@ -801,10 +918,12 @@ function placeBet(user, body = {}, boards = []) {
     return applyQuotedPrice(built, leg, built.line);
   });
 
-  // Unique event+market only — same-game parlays (spread + total, etc.) are allowed.
+  // Team markets: one per event+market. Field finishes: one per athlete+market.
   const marketKeys = new Set();
   for (const leg of legs) {
-    const key = `${leg.eventId}|${leg.market}`;
+    const key = isFieldFinishMarket(leg.market)
+      ? `${leg.eventId}|${leg.market}|${leg.side}`
+      : `${leg.eventId}|${leg.market}`;
     if (marketKeys.has(key)) {
       throw Object.assign(new Error('That market is already on this slip for this game'), { status: 400 });
     }
@@ -864,7 +983,8 @@ function placeBet(user, body = {}, boards = []) {
         market: l.market,
         side: l.side,
         line: l.line,
-        odds: l.odds
+        odds: l.odds,
+        startsAt: l.startsAt || null
       })),
       createdAt: slip.createdAt
     }
@@ -1011,6 +1131,8 @@ module.exports = {
   placeBet,
   placeFuture,
   settleOpenSlips,
+  listOpenUngradedLegs,
+  hasOpenTickets,
   setChampion,
   formatSlipChat,
   lastNameOf,

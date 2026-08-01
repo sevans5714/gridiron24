@@ -1,5 +1,5 @@
 /**
- * Mock-draft CPU — VORP / ADP / roster-need AI for solo + multiplayer.
+ * Mock-draft CPU — smarter VORP / ADP / scarcity / roster-need AI.
  * Works in Node (require) and browser (window.MockDraftCpu).
  */
 (function (root, factory) {
@@ -13,6 +13,7 @@
   const FLEX_ELIGIBLE = new Set(['RB', 'WR', 'TE']);
   const CPU_STYLES = ['balanced', 'zeroRb', 'rbHeavy', 'qbEarly', 'tePremium', 'heroRb', 'robust'];
   const LATE_POS = new Set(['K', 'D/ST', 'DST']);
+  const SKILL_POS = new Set(['RB', 'WR', 'TE']);
 
   function normPos(pos) {
     const p = String(pos || '').toUpperCase();
@@ -32,8 +33,6 @@
 
   function picksUntilNextTurn(teamIndex, overallOneBased, teamCount, rounds) {
     const total = teamCount * rounds;
-    const start = Math.max(0, overallOneBased); // next pick index after current (0-based = overall)
-    // current overall is 1-based pick about to happen; search from this pick+1
     for (let i = overallOneBased; i < total; i += 1) {
       if (snakeTeamIndex(i, teamCount) === teamIndex) {
         return i - (overallOneBased - 1);
@@ -93,6 +92,7 @@
     }
     const byPos = {};
     const byeByPos = {};
+    const nflTeams = {};
     for (const p of picks) {
       const pos = normPos(p.position);
       byPos[pos] = (byPos[pos] || 0) + 1;
@@ -101,6 +101,8 @@
         if (!byeByPos[pos]) byeByPos[pos] = {};
         byeByPos[pos][bye] = (byeByPos[pos][bye] || 0) + 1;
       }
+      const nfl = String(p.nflTeam || p.team || '').toUpperCase();
+      if (nfl) nflTeams[nfl] = (nflTeams[nfl] || 0) + 1;
     }
     const openStarterPos = (pos) => {
       const p = normPos(pos);
@@ -116,13 +118,14 @@
       openBySlot,
       byPos,
       byeByPos,
+      nflTeams,
       openStarterPos,
       startersFilled: roster.starters.filter((r) => r.player).length,
       startersTotal: roster.starters.length
     };
   }
 
-  function recentPosRun(allPicks, pos, lookback = 6) {
+  function recentPosRun(allPicks, pos, lookback = 8) {
     const recent = (allPicks || []).slice(-lookback);
     if (!recent.length) return 0;
     const p = normPos(pos);
@@ -130,17 +133,40 @@
   }
 
   function playerValue(player) {
-    const vorp = num(player.vorp, NaN);
+    const vorp = num(player.vorp ?? player._vorp, NaN);
     if (Number.isFinite(vorp)) return vorp;
     const proj = num(player.projectedPoints2026, NaN);
-    if (Number.isFinite(proj)) return proj * 0.35;
+    if (Number.isFinite(proj)) return proj * 0.38;
     const prior = num(player.fantasyPoints2025, NaN);
-    if (Number.isFinite(prior)) return prior * 0.28;
+    if (Number.isFinite(prior)) return prior * 0.3;
     const rank = num(player.overallRank, 200);
-    return Math.max(0, 55 - rank * 0.45);
+    return Math.max(0, 58 - rank * 0.48);
   }
 
-  function countQualityAtPos(available, pos, minVorp, until) {
+  function injuryPenalty(player) {
+    const status = String(player.injuryStatus || '').trim().toUpperCase();
+    if (!status) return 0;
+    if (status.includes('OUT') || status === 'IR' || status.includes('PUP')) return 55;
+    if (status.includes('DOUBT')) return 28;
+    if (status.includes('QUEST')) return 12;
+    if (status.includes('PROB')) return 3;
+    return 6;
+  }
+
+  /** Live board: sort available players at a position by value. */
+  function availableAtPos(available, pos) {
+    const p = normPos(pos);
+    return available
+      .filter((pl) => normPos(pl.position) === p)
+      .slice()
+      .sort((a, b) => playerValue(b) - playerValue(a) || num(a.overallRank, 999) - num(b.overallRank, 999));
+  }
+
+  /**
+   * How many "startable" options remain before this team picks again.
+   * Uses a soft quality floor relative to the board, not a hard VORP cutoff.
+   */
+  function countQualityAtPos(available, pos, floorValue, untilOverall) {
     const p = normPos(pos);
     let n = 0;
     for (const pl of available) {
@@ -148,9 +174,30 @@
       const v = playerValue(pl);
       const rank = num(pl.overallRank, 999);
       const adp = num(pl.adp, 999);
-      if (v >= minVorp || rank <= until + 8 || adp <= until + 6) n += 1;
+      if (v >= floorValue || rank <= untilOverall + 6 || adp <= untilOverall + 4) n += 1;
     }
     return n;
+  }
+
+  /** Drop-off from the best available at pos to the Nth (tier cliff). */
+  function tierCliff(available, pos, depth = 2) {
+    const list = availableAtPos(available, pos);
+    if (list.length < 2) return list.length === 1 ? playerValue(list[0]) * 0.35 : 0;
+    const top = playerValue(list[0]);
+    const idx = Math.min(depth, list.length - 1);
+    const next = playerValue(list[idx]);
+    return Math.max(0, top - next);
+  }
+
+  function buildsStarter(state, pos) {
+    const p = normPos(pos);
+    if (state.openStarterPos(p) > 0) return true;
+    if (FLEX_ELIGIBLE.has(p) && (state.openBySlot.FLEX || 0) > 0) return true;
+    return false;
+  }
+
+  function roundsLeftAfter(slot, rounds) {
+    return Math.max(0, rounds - slot.round);
   }
 
   function scorePlayer(player, ctx) {
@@ -162,18 +209,21 @@
       rounds,
       allPicks,
       available,
-      rng
+      untilNext
     } = ctx;
     const pos = normPos(player.position);
     const overall = slot.overall;
     const round = slot.round;
-    const late = round >= Math.max(rounds - 1, 7);
-    const mid = round >= 4 && round <= Math.max(6, Math.floor(rounds * 0.55));
+    const late = round >= Math.max(rounds - 2, rounds - 1);
+    const mid = round >= 4 && round <= Math.max(7, Math.floor(rounds * 0.6));
     const early = round <= 3;
+    const veryEarly = round <= 2;
+    const left = roundsLeftAfter(slot, rounds);
+    const startersLeft = state.startersTotal - state.startersFilled;
 
-    // Kickers / DST only late
-    if (pos === 'K' && round < Math.max(rounds - 2, 12)) return -1e9;
-    if (pos === 'D/ST' && round < Math.max(rounds - 3, 11)) return -1e9;
+    // Kickers / DST only in the closing window
+    if (pos === 'K' && round < Math.max(rounds - 2, 13)) return -1e9;
+    if (pos === 'D/ST' && round < Math.max(rounds - 3, 12)) return -1e9;
 
     const vorp = playerValue(player);
     const proj = num(player.projectedPoints2026, NaN);
@@ -181,110 +231,180 @@
     const adp = num(player.adp, NaN);
     const rank = num(player.overallRank, 999);
     const posRank = num(player.posRank, 99);
-
-    let score = vorp * 3.4;
-    if (Number.isFinite(proj)) score += proj * 0.22;
-    else if (Number.isFinite(prior)) score += prior * 0.16;
-    score += Math.max(0, 36 - rank * 0.22);
-
-    // ADP value / reach
-    if (Number.isFinite(adp)) {
-      const gap = adp - overall;
-      if (gap <= -4) score += 42 + Math.min(30, Math.abs(gap) * 1.6); // steal
-      else if (gap <= 0) score += 28 + Math.abs(gap) * 1.2;
-      else if (gap <= teamCount * 0.5) score += 14 - gap * 0.35;
-      else if (gap <= teamCount * 1.15) score += 2 - gap * 0.2;
-      else score -= Math.min(70, (gap - teamCount * 0.5) * 1.35); // bad reach
-    }
-
     const owned = state.byPos[pos] || 0;
     const openPos = state.openStarterPos(pos);
     const openFlex = state.openBySlot.FLEX || 0;
-    const startersLeft = state.startersTotal - state.startersFilled;
-    const untilNext = picksUntilNextTurn(slot.teamIndex, overall, teamCount, rounds);
+    const fillsStarter = buildsStarter(state, pos);
 
-    // Roster need
-    if (openPos > 0) score += 40 + openPos * 12;
-    else if (FLEX_ELIGIBLE.has(pos) && openFlex > 0) score += 22;
-    else if (startersLeft > 0 && !LATE_POS.has(pos)) score -= 28;
+    // —— Base talent (BPA spine) ——
+    let score = vorp * 4.1;
+    if (Number.isFinite(proj)) score += proj * 0.28;
+    else if (Number.isFinite(prior)) score += prior * 0.18;
+    score += Math.max(0, 42 - rank * 0.28);
+    if (posRank <= 5) score += (6 - posRank) * 2.2;
 
-    // Depth rules
+    // —— Market (ADP): respect consensus early, hunt value later ——
+    if (Number.isFinite(adp)) {
+      const gap = adp - overall; // + = available later than ADP (value), - = reach
+      if (veryEarly) {
+        if (gap >= -1) score += 36 + Math.min(24, Math.max(0, gap) * 2.2);
+        else if (gap >= -teamCount * 0.35) score += 8 + gap * 1.5;
+        else score -= Math.min(90, Math.abs(gap) * 4.2); // hard punish early reaches
+      } else if (early) {
+        if (gap >= 0) score += 32 + Math.min(28, gap * 1.8);
+        else if (gap >= -teamCount * 0.45) score += 10 + gap * 0.9;
+        else score -= Math.min(75, Math.abs(gap) * 2.8);
+      } else {
+        if (gap >= 4) score += 38 + Math.min(35, gap * 1.5); // steal
+        else if (gap >= 0) score += 22 + gap * 1.1;
+        else if (gap >= -teamCount * 0.75) score += 6 + gap * 0.35;
+        else score -= Math.min(55, (Math.abs(gap) - teamCount * 0.4) * 1.5);
+      }
+    } else {
+      // No ADP — lean on rank more
+      score += Math.max(0, 28 - rank * 0.2);
+    }
+
+    // —— Starter construction (smart managers fill holes) ——
+    if (fillsStarter) {
+      score += 48 + openPos * 14;
+      if (startersLeft > 0 && left <= startersLeft + 1) score += 55; // running out of rounds
+      if (startersLeft > 0 && left <= startersLeft) score += 40;
+    } else if (startersLeft > 0 && !LATE_POS.has(pos)) {
+      // Bench luxury while starters remain — harsh early/mid
+      score -= early ? 55 : (mid ? 38 : 18);
+    }
+
+    // —— Position strategy ——
     if (pos === 'QB') {
-      if (owned >= 1) score -= round < 10 ? 95 : 35;
-      if (owned === 0 && posRank <= 4 && round >= 3 && round <= 8) score += 22;
-      if (owned === 0 && early && posRank > 2) score -= 40;
-      if (owned === 0 && mid && posRank <= 8) score += 10;
+      if (owned >= 2) score -= 120;
+      else if (owned >= 1) score -= round < 11 ? 110 : 45;
+      if (owned === 0) {
+        if (veryEarly && posRank > 1) score -= 55; // almost never QB1.5+ in R1
+        if (early && posRank > 3) score -= 42;
+        if (posRank <= 3 && round >= 3 && round <= 7) score += 38; // elite window
+        if (posRank <= 6 && round >= 4 && round <= 9) score += 18;
+        if (posRank <= 12 && round >= 8) score += 12; // mid QB fine later
+        if (round >= 10 && posRank > 14) score -= 8;
+      }
     }
+
     if (pos === 'TE') {
-      if (owned >= 2) score -= 40;
-      if (owned === 0 && posRank <= 3 && round <= 5) score += 32;
-      if (owned === 0 && posRank <= 6 && round <= 7) score += 14;
-      if (owned === 0 && early && posRank > 5) score -= 16;
+      if (owned >= 2) score -= 50;
+      if (owned === 0) {
+        if (posRank <= 2 && round <= 4) score += 48; // Kelce/Bowers tier
+        else if (posRank <= 4 && round <= 6) score += 34;
+        else if (posRank <= 8 && round <= 9) score += 16;
+        else if (early && posRank > 6) score -= 22; // don't reach on TE8
+        if (round >= 10 && posRank > 12) score += 6; // streamer ok late
+      }
     }
+
     if (pos === 'RB' || pos === 'WR') {
-      if (early) score += 16;
-      if (owned >= 4 && round < rounds - 2) score -= 18;
-      if (owned >= 5) score -= 24;
-      if (owned === 0 && round <= 4) score += 10;
+      if (veryEarly) score += 22;
+      else if (early) score += 14;
+      if (owned === 0 && round <= 4) score += 16;
+      if (owned === 1 && round <= 5) score += 8;
+      // Don't over-stack one skill pos while the other starter is empty
+      const other = pos === 'RB' ? 'WR' : 'RB';
+      const otherOwned = state.byPos[other] || 0;
+      const otherOpen = state.openStarterPos(other);
+      if (owned >= 2 && otherOwned === 0 && otherOpen > 0 && round <= 8) score -= 28;
+      if (owned >= 4 && round < rounds - 2) score -= 22;
+      if (owned >= 5) score -= 30;
+      // Late upside bench > third QB
+      if (round >= 9 && owned >= 2 && fillsStarter === false) score += 8;
     }
 
-    // Scarcity before next pick — take the cliff now
-    const qualityLeft = countQualityAtPos(available, pos, Math.max(2, vorp - 8), overall + untilNext);
-    if (openPos > 0 || (FLEX_ELIGIBLE.has(pos) && openFlex > 0) || owned === 0) {
-      if (qualityLeft <= 1 && vorp > 4) score += 26;
-      else if (qualityLeft <= 2 && vorp > 6) score += 16;
-      else if (qualityLeft <= 3 && early && (pos === 'RB' || pos === 'WR')) score += 8;
+    // —— Scarcity / cliffs before your next pick ——
+    const cliff = tierCliff(available, pos, 1);
+    const cliff2 = tierCliff(available, pos, 2);
+    const floor = Math.max(1.5, vorp - 6);
+    const qualityLeft = countQualityAtPos(available, pos, floor, overall + untilNext);
+    if (fillsStarter || owned === 0) {
+      if (qualityLeft <= 1 && vorp > 3) score += 42 + cliff * 1.8;
+      else if (qualityLeft <= 2 && vorp > 5) score += 26 + cliff * 1.1;
+      else if (qualityLeft <= 3 && early && SKILL_POS.has(pos)) score += 12;
+      if (cliff2 >= 8 && qualityLeft <= 3) score += 14; // steep drop after top tier
+    }
+    // Long wait until next pick → lean scarce positions you need
+    if (untilNext >= teamCount && fillsStarter && SKILL_POS.has(pos) && qualityLeft <= 3) {
+      score += 18;
+    }
+    // Quick turnaround (snake) → slightly prefer pure BPA / ADP value
+    if (untilNext <= 2 && Number.isFinite(adp) && adp - overall >= -1) {
+      score += 10;
     }
 
-    // Bye stacking
+    // —— Bye week stacking ——
     const bye = num(player.byeWeek, NaN);
     if (Number.isFinite(bye) && state.byeByPos[pos] && state.byeByPos[pos][bye] >= 1) {
-      score -= 10 + state.byeByPos[pos][bye] * 6;
+      score -= 14 + state.byeByPos[pos][bye] * 8;
     }
 
-    // Same NFL team clutter (light)
+    // —— NFL team clutter / handcuff ——
     const nfl = String(player.team || player.nflTeam || '').toUpperCase();
     if (nfl) {
-      const same = state.picks.filter((p) => String(p.nflTeam || p.team || '').toUpperCase() === nfl).length;
-      if (same >= 2) score -= 6;
-      if (same >= 3) score -= 10;
+      const same = state.nflTeams[nfl] || 0;
+      if (same >= 2) score -= 8;
+      if (same >= 3) score -= 14;
+      // Late RB handcuff if you already own that backfield
+      if (pos === 'RB' && round >= 9 && same >= 1) {
+        const hasRbMate = state.picks.some((p) =>
+          normPos(p.position) === 'RB' && String(p.nflTeam || p.team || '').toUpperCase() === nfl
+        );
+        if (hasRbMate) score += 16;
+      }
     }
 
-    // Positional run (mild herd on skill positions when you still need them)
+    // —— Positional runs ——
     const runShare = recentPosRun(allPicks, pos);
-    if (runShare >= 0.5 && (pos === 'RB' || pos === 'WR') && openPos > 0) score += 9;
-    if (runShare >= 0.66 && pos === 'QB' && owned === 0 && round >= 4) score += 7;
+    if (runShare >= 0.5 && (pos === 'RB' || pos === 'WR') && fillsStarter) score += 11;
+    if (runShare >= 0.62 && pos === 'QB' && owned === 0 && round >= 4 && posRank <= 10) score += 9;
+    if (runShare >= 0.55 && pos === 'TE' && owned === 0 && posRank <= 6) score += 8;
 
-    // Style personalities
+    // —— Injury ——
+    score -= injuryPenalty(player);
+
+    // —— Style personalities (mild — still smart) ——
     if (style === 'zeroRb') {
-      if (pos === 'WR' && round <= 5) score += 20;
-      if (pos === 'RB' && round <= 2) score -= 26;
-      if (pos === 'RB' && round >= 3 && round <= 7) score += 12;
+      if (pos === 'WR' && round <= 5) score += 16;
+      if (pos === 'RB' && round <= 2) score -= 18;
+      if (pos === 'RB' && round >= 3 && round <= 7 && fillsStarter) score += 14;
     } else if (style === 'rbHeavy' || style === 'heroRb') {
-      if (pos === 'RB' && round <= 6) score += style === 'heroRb' ? 22 : 16;
-      if (pos === 'WR' && round <= 2) score -= 10;
+      if (pos === 'RB' && round <= 6) score += style === 'heroRb' ? 18 : 12;
+      if (pos === 'WR' && round <= 2 && owned === 0) score -= 6;
     } else if (style === 'qbEarly') {
-      if (pos === 'QB' && owned === 0 && round >= 2 && round <= 6 && posRank <= 8) score += 30;
+      if (pos === 'QB' && owned === 0 && round >= 3 && round <= 6 && posRank <= 6) score += 24;
     } else if (style === 'tePremium') {
-      if (pos === 'TE' && owned === 0 && posRank <= 5 && round <= 6) score += 28;
+      if (pos === 'TE' && owned === 0 && posRank <= 4 && round <= 5) score += 22;
     } else if (style === 'robust') {
-      if ((pos === 'RB' || pos === 'WR') && owned < 3 && round <= 8) score += 10;
-      if (pos === 'QB' && round <= 5) score -= 12;
+      if ((pos === 'RB' || pos === 'WR') && owned < 3 && round <= 9) score += 9;
+      if (pos === 'QB' && round <= 5) score -= 10;
     }
 
-    // Late-round filler priorities
-    if (late && pos === 'K' && owned === 0) score += 70 + (Number.isFinite(proj) ? proj * 0.25 : 0);
-    if (round >= rounds - 1 && pos === 'D/ST' && owned === 0) score += 55;
-    if (round >= rounds - 2 && pos === 'K' && owned === 0) score += 35;
-
-    // Prefer starter-capable over pure bench early/mid
-    if (startersLeft > 0 && openPos <= 0 && !(FLEX_ELIGIBLE.has(pos) && openFlex > 0) && !LATE_POS.has(pos)) {
-      score -= mid || early ? 24 : 12;
+    // —— Late-round K / DST ——
+    if (pos === 'K' && owned === 0 && round >= rounds - 2) {
+      score += 85 + (Number.isFinite(proj) ? proj * 0.35 : 0);
+    }
+    if (pos === 'D/ST' && owned === 0 && round >= rounds - 3) {
+      score += 72 + (Number.isFinite(proj) ? proj * 0.2 : 0);
+    }
+    // Prefer DST before K one round earlier when both open
+    if (pos === 'D/ST' && owned === 0 && (state.byPos.K || 0) === 0 && round === rounds - 2) {
+      score += 12;
     }
 
-    const rand = typeof rng === 'function' ? rng() : Math.random();
-    score += (rand - 0.5) * 5.5;
     return score;
+  }
+
+  function earlyTopN(round, rounds, scoreGap) {
+    // Tighter board early = smarter, more consensus picks
+    if (round <= 2) return scoreGap < 6 ? 1 : 2;
+    if (round <= 4) return scoreGap < 8 ? 2 : 3;
+    if (round <= 7) return 3;
+    if (round >= rounds - 1) return 5;
+    return 4;
   }
 
   function chooseCpuPick(opts) {
@@ -299,6 +419,7 @@
     const style = opts.style || cpuStyleForTeam(slot.teamIndex);
     const state = teamDraftState(slot.teamIndex, allPicks, starters);
     const rng = opts.rng || Math.random;
+    const untilNext = picksUntilNextTurn(slot.teamIndex, slot.overall, teamCount, rounds);
 
     const scored = [];
     for (const p of available) {
@@ -310,7 +431,7 @@
         rounds,
         allPicks,
         available,
-        rng
+        untilNext
       });
       if (s < -1e8) continue;
       scored.push({ p, s });
@@ -322,13 +443,21 @@
         return ra - rb;
       })[0] || null;
     }
-    scored.sort((a, b) => b.s - a.s);
-    const topN = Math.min(scored.length, earlyTopN(slot.round, rounds));
+    scored.sort((a, b) => b.s - a.s || num(a.p.overallRank, 999) - num(b.p.overallRank, 999));
+
+    const best = scored[0];
+    const scoreGap = scored.length > 1 ? best.s - scored[1].s : 99;
+    // Clear favorite → just take it (feels like a sharp GM)
+    if (scoreGap >= 14 || (slot.round <= 3 && scoreGap >= 7)) {
+      return best.p;
+    }
+
+    const topN = Math.min(scored.length, earlyTopN(slot.round, rounds, scoreGap));
     const top = scored.slice(0, topN);
-    // Softmax-ish weights — best pick most often, but not always
+    // Softmax — heavily favor #1, light variance only among near-ties
     const weights = top.map((row, i) => {
-      const gap = top[0].s - row.s;
-      return Math.exp(Math.max(-4, 2.2 - i * 0.55 - gap * 0.08));
+      const gap = best.s - row.s;
+      return Math.exp(Math.max(-5, 3.4 - i * 0.85 - gap * 0.16));
     });
     const total = weights.reduce((a, b) => a + b, 0) || 1;
     let roll = rng() * total;
@@ -337,13 +466,6 @@
       if (roll <= 0) return top[i].p;
     }
     return top[0].p;
-  }
-
-  function earlyTopN(round, rounds) {
-    if (round <= 2) return 3;
-    if (round <= 5) return 4;
-    if (round >= rounds - 1) return 6;
-    return 5;
   }
 
   return {

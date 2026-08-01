@@ -185,7 +185,7 @@ const DEFAULT_LEAGUES = [
 const FANTASY_LEAGUE_IDS = new Set(['gi24', 'aaa']);
 
 /** Cap only as a safety valve — ESPN can return a full field. */
-const GOLF_LEADER_LIMIT = 24;
+const GOLF_LEADER_LIMIT = 40;
 
 function isLeagueMonthInSeason(meta, now = new Date()) {
   const months = meta?.seasonMonths;
@@ -223,7 +223,7 @@ function yyyymmddLocal(d = new Date()) {
   return `${y}${m}${day}`;
 }
 
-function sitePathForMeta(meta, { daysAhead = 0, daysBehind = 0 } = {}) {
+function sitePathForMeta(meta, { daysAhead = 0, daysBehind = 0, forceDateRange = false } = {}) {
   if (meta.url) {
     try {
       const u = new URL(meta.url);
@@ -233,9 +233,17 @@ function sitePathForMeta(meta, { daysAhead = 0, daysBehind = 0 } = {}) {
     }
   }
   let path = `apis/site/v2/sports/${meta.sport}/${meta.league}/scoreboard`;
-  const ahead = Math.max(0, Math.min(10, Number(daysAhead) || 0));
-  const behind = Math.max(0, Math.min(10, Number(daysBehind) || 0));
-  if ((ahead > 0 || behind > 0) && DAILY_RANGE_LEAGUES.has(meta.id)) {
+  const cap = forceDateRange ? 14 : 10;
+  const ahead = Math.max(0, Math.min(cap, Number(daysAhead) || 0));
+  const behind = Math.max(0, Math.min(cap, Number(daysBehind) || 0));
+  // Settlement pulls force a date window for week-based boards (NFL / CFB) so
+  // finished games still appear after ESPN rolls to the next week.
+  const useDates =
+    (ahead > 0 || behind > 0) &&
+    (forceDateRange || DAILY_RANGE_LEAGUES.has(meta.id)) &&
+    meta.kind !== 'golf' &&
+    meta.kind !== 'racing';
+  if (useDates) {
     const start = new Date();
     start.setDate(start.getDate() - behind);
     const end = new Date();
@@ -540,8 +548,8 @@ async function fillRacingFields(games) {
   });
 }
 
-async function fetchLeagueRaw(meta, { daysAhead = 0, daysBehind = 0 } = {}) {
-  const pathAndQuery = sitePathForMeta(meta, { daysAhead, daysBehind });
+async function fetchLeagueRaw(meta, { daysAhead = 0, daysBehind = 0, forceDateRange = false } = {}) {
+  const pathAndQuery = sitePathForMeta(meta, { daysAhead, daysBehind, forceDateRange });
   if (!pathAndQuery) {
     throw Object.assign(new Error(`${meta.label} scoreboard URL invalid`), { status: 502 });
   }
@@ -556,6 +564,43 @@ async function fetchLeagueRaw(meta, { daysAhead = 0, daysBehind = 0 } = {}) {
     lane: 'site'
   });
   return { raw: hit.data, source: hit.source, from: hit.from };
+}
+
+/** Single-game fetch for open tickets whose event dropped off the scoreboard. */
+async function fetchTeamEventById(leagueId, eventId) {
+  const meta = LEAGUES[leagueId];
+  const id = String(eventId || '').trim();
+  if (!meta || !id || meta.kind === 'golf' || meta.kind === 'racing') return null;
+  const pathAndQuery = `apis/site/v2/sports/${meta.sport}/${meta.league}/summary?event=${encodeURIComponent(id)}`;
+  try {
+    const hit = await espnResilient.fetchJsonResilient({
+      urls: espnResilient.siteApiUrls(pathAndQuery),
+      cacheKey: `site:event:${meta.id}:${id}`,
+      ttlMs: CACHE_MS,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'GridIron24-MembersLounge/1.0'
+      },
+      lane: 'site'
+    });
+    const raw = hit.data || {};
+    const header = raw.header || {};
+    const competition =
+      (Array.isArray(header.competitions) && header.competitions[0]) ||
+      (Array.isArray(raw.competitions) && raw.competitions[0]) ||
+      null;
+    if (!competition) return null;
+    const event = {
+      id: String(header.id || id),
+      name: header.name || '',
+      shortName: header.shortDetail || header.name || '',
+      date: competition.date || header.date || null,
+      competitions: [competition]
+    };
+    return normalizeTeamEvent(event, meta.id);
+  } catch {
+    return null;
+  }
 }
 
 function pickLeagueLogo(raw, fallback) {
@@ -781,7 +826,13 @@ function boardFromFantasyConferences(meta, conferences = []) {
   );
 }
 
-async function getSportsScores({ leagues, extraBoards = [], daysAhead = 0, daysBehind = 0 } = {}) {
+async function getSportsScores({
+  leagues,
+  extraBoards = [],
+  daysAhead = 0,
+  daysBehind = 0,
+  forceDateRange = false
+} = {}) {
   const ids = parseLeagueList(leagues);
   const fetchedAt = new Date().toISOString();
   let usedFallback = false;
@@ -801,7 +852,11 @@ async function getSportsScores({ leagues, extraBoards = [], daysAhead = 0, daysB
         };
       }
       try {
-        const { raw, from } = await fetchLeagueRaw(meta, { daysAhead, daysBehind });
+        const { raw, from } = await fetchLeagueRaw(meta, {
+          daysAhead,
+          daysBehind,
+          forceDateRange
+        });
         let games = (raw.events || []).map((ev) => {
           if (meta.kind === 'golf') return normalizeGolfEvent(ev);
           if (meta.kind === 'racing') return normalizeRacingEvent(ev, meta.id);
@@ -912,11 +967,73 @@ async function getSportsScores({ leagues, extraBoards = [], daysAhead = 0, daysB
   };
 }
 
+/**
+ * Scoreboards for grading open sportsbook tickets.
+ * Uses a wide date window (incl. NFL/CFB) and backfills missing events by id.
+ */
+async function getSettlementBoards({ openLegs = [] } = {}) {
+  const scores = await getSportsScores({
+    daysAhead: 6,
+    daysBehind: 14,
+    forceDateRange: true
+  });
+  const boards = (scores.leagues || []).map((b) => ({
+    ...b,
+    games: Array.isArray(b.games) ? b.games.slice() : []
+  }));
+  const byId = new Map();
+  for (const board of boards) {
+    for (const g of board.games || []) {
+      byId.set(String(g.id), true);
+    }
+  }
+
+  const missing = [];
+  const seen = new Set();
+  for (const leg of openLegs || []) {
+    const eventId = String(leg.eventId || '').trim();
+    const leagueId = String(leg.leagueId || '').trim().toLowerCase();
+    if (!eventId || byId.has(eventId)) continue;
+    const key = `${leagueId}|${eventId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    missing.push({ eventId, leagueId });
+  }
+
+  // Cap per settle pass so a huge backlog can't hammer ESPN.
+  for (const row of missing.slice(0, 40)) {
+    const game = await fetchTeamEventById(row.leagueId, row.eventId);
+    if (!game) continue;
+    byId.set(String(game.id), true);
+    let board = boards.find((b) => b.id === row.leagueId);
+    if (!board) {
+      const meta = LEAGUES[row.leagueId];
+      board = {
+        ok: true,
+        id: row.leagueId,
+        label: meta?.label || row.leagueId,
+        kind: meta?.kind || 'team',
+        logo: meta?.logo || null,
+        games: [],
+        counts: { live: 0, final: 0, upcoming: 0 }
+      };
+      boards.push(board);
+    }
+    board.games.push(game);
+    const bucket = game.status?.bucket || 'upcoming';
+    board.counts[bucket] = (board.counts[bucket] || 0) + 1;
+  }
+
+  return boards;
+}
+
 module.exports = {
   LEAGUES,
   DEFAULT_LEAGUES,
   FANTASY_LEAGUE_IDS,
   getSportsScores,
+  getSettlementBoards,
+  fetchTeamEventById,
   boardFromFantasyConferences,
   fantasyMatchupToGame,
   fantasyOddsFromProjected

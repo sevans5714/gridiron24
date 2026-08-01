@@ -24,6 +24,7 @@
   const DEFAULT_BENCH = 6;
   const PICK_SECONDS_OPTIONS = new Set([60, 120, 180]);
   const DEFAULT_PICK_SECONDS = 60;
+  const JOIN_LOBBY_SECONDS = 240; // 4:00 for others to join after positions lock
   const CpuAI = (typeof window !== 'undefined' && window.MockDraftCpu) ? window.MockDraftCpu : null;
 
   let draftLive = false;
@@ -38,6 +39,7 @@
   let lobbyEndsAt = null;
   let positionsLocked = false;
   let lobbyPaintId = null;
+  let welcomeAudioKey = null;
   let dragSeatIndex = null;
   let suppressSeatClick = false;
   let roomPollId = null;
@@ -53,12 +55,25 @@
   let profileClickTimer = null;
   let turnCueKey = null;
   let audioCtx = null;
+  let onClockAudio = null;
+  let welcomeAudio = null;
+  let completeAudio = null;
+  let countdownTickAudio = null;
+  let pickAudio = null;
   let lastCountdownBeep = null;
+  const ON_CLOCK_AUDIO_URL = '/assets/lounge/nfl-draft-on-clock.mp3?v=1';
+  const WELCOME_AUDIO_URL = '/assets/lounge/nfl-draft-welcome.mp3?v=2';
+  const COMPLETE_AUDIO_URL = '/assets/lounge/nfl-draft-complete.mp3?v=1';
+  const COUNTDOWN_TICK_AUDIO_URL = '/assets/lounge/nfl-draft-countdown-tick.mp3?v=1';
+  const PICK_AUDIO_URL = '/assets/lounge/nfl-draft-pick.wav?v=1';
   let cpuAnimRunning = false;
   let justPickedSeat = null;
   let justPickedTimer = null;
   let lastFocusSeat = null;
   let mockCompleteShown = false;
+  /** Staged CPU reveal: highlight first, then animate the name under the seat. */
+  let pickReveal = null; // { teamIndex, overall, phase: 'holding'|'show', timer }
+  let pickRevealTimer = null;
 
   function isMultiplayer() {
     return Boolean(roomId);
@@ -96,12 +111,14 @@
   function leaveRoomLocal() {
     stopRoomPoll();
     stopLobbyPaint();
+    stopWelcomeAudio();
     roomId = null;
     roomSeats = null;
     roomStatus = null;
     roomIsHost = false;
     lobbyEndsAt = null;
     positionsLocked = false;
+    welcomeAudioKey = null;
     pendingJoinRoomId = null;
     awaitingSeatClaim = false;
   }
@@ -161,6 +178,7 @@
       pickTimerId = null;
     }
     pickDeadline = null;
+    lastCountdownBeep = null;
     document.getElementById('mock-pick-timer')?.classList.remove('is-ok', 'is-warn', 'is-low', 'is-urgent');
   }
 
@@ -254,17 +272,44 @@
     const copy = document.getElementById('mock-start-copy');
     const liveTimer = document.getElementById('mock-live-timer');
     const liveLabel = document.querySelector('#mock-live-timer .mock-live-timer-label');
+    const joinWindow = document.getElementById('mock-join-window');
+    const joinCountdown = document.getElementById('mock-join-countdown');
+    const joinNote = document.getElementById('mock-join-note');
+    const skipBtn = document.getElementById('mock-skip-join');
     const clockSel = document.getElementById('mock-pick-seconds');
     const done = isDraftComplete();
     const waitingSeat = awaitingSeatClaim;
     const mine = canUserDraftNow();
     const inLobby = roomStatus === 'lobby';
     const lobbyLeft = lobbySecondsLeft();
+    const joinWait = inLobby && positionsLocked && lobbyLeft > 0;
     bar?.classList.toggle('is-live', draftLive && !done);
     bar?.classList.toggle('is-done', done);
     bar?.classList.toggle('is-my-clock', mine);
     bar?.classList.toggle('is-lobby', inLobby);
     if (clockSel) clockSel.disabled = draftLive || isMultiplayer();
+
+    if (joinWindow) {
+      joinWindow.hidden = !joinWait;
+      if (joinWait) {
+        if (joinCountdown) {
+          joinCountdown.textContent = formatPickClock(lobbyLeft);
+          applyClockColor(joinCountdown, lobbyLeft, JOIN_LOBBY_SECONDS);
+        }
+        if (joinNote) {
+          joinNote.textContent = roomIsHost
+            ? 'Positions are locked. Open seats fill with CPU when the clock hits zero — or skip the wait to start now.'
+            : 'Positions are locked. Claim an open seat before the clock hits zero, or open seats fill with CPU.';
+        }
+        if (skipBtn) {
+          skipBtn.hidden = !roomIsHost;
+          skipBtn.disabled = false;
+        }
+      } else if (skipBtn) {
+        skipBtn.hidden = true;
+      }
+    }
+
     if (btn) {
       if (waitingSeat) {
         if (label) label.textContent = 'Choose a seat';
@@ -324,14 +369,14 @@
       sub.textContent = '';
     }
     if (liveTimer) {
-      const showTimer = (inLobby && lobbyLeft > 0) || (draftLive && !done);
+      const showTimer = (inLobby && lobbyLeft > 0 && !joinWait) || (draftLive && !done);
       liveTimer.hidden = !showTimer;
-      if (inLobby && lobbyLeft > 0) {
-        if (liveLabel) liveLabel.textContent = positionsLocked ? 'Join window' : 'Join window';
+      if (inLobby && lobbyLeft > 0 && !joinWait) {
+        if (liveLabel) liveLabel.textContent = 'Join window';
         const timerEl = document.getElementById('mock-pick-timer');
         if (timerEl) {
           timerEl.textContent = formatPickClock(lobbyLeft);
-          applyClockColor(timerEl, lobbyLeft, 60);
+          applyClockColor(timerEl, lobbyLeft, JOIN_LOBBY_SECONDS);
           timerEl.classList.remove('is-mine');
         }
       } else if (draftLive && !done) {
@@ -572,6 +617,8 @@
     const board = document.getElementById('mock-complete-board');
     if (!dialog || !board) return;
     mockCompleteShown = true;
+    stopWelcomeAudio();
+    playDraftCompleteSound();
     const draftNum = nextMockDraftNumber();
     const totalSlots = rosterPlan.starters.length + rosterPlan.bench;
     if (title) title.textContent = `Mock Draft #${draftNum} is now complete`;
@@ -652,7 +699,31 @@
       throw new Error(data.error || 'Could not lock positions');
     }
     applyRoom(data.room);
-    setMockStatus('Positions locked', true);
+    setMockStatus('Positions locked — other users have 4:00 to join', true);
+  }
+
+  async function skipJoinWait() {
+    if (!roomId || !roomIsHost) return;
+    if (!positionsLocked || lobbySecondsLeft() <= 0) return;
+    const skipBtn = document.getElementById('mock-skip-join');
+    if (skipBtn) skipBtn.disabled = true;
+    try {
+      const res = await fetch('/api/mock-draft', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'skip-join-window', roomId })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok || !data.room) {
+        throw new Error(data.error || 'Could not skip join window');
+      }
+      applyRoom(data.room);
+      setMockStatus('Join window skipped — click Start drafting when ready', true);
+    } catch (err) {
+      setMockStatus(err.message || 'Could not skip join window', false);
+      if (skipBtn) skipBtn.disabled = false;
+    }
   }
 
   async function moveMySeat(toIndex) {
@@ -727,6 +798,12 @@
     pickSeconds = getPickSeconds();
     const clockTxt = clockLabelText(pickSeconds);
 
+    // Fresh celebrity GMs for every CPU seat before the lobby opens.
+    mock.teamNames = applyCelebrityCpuNames(
+      padTeamNames(teamNames.length ? teamNames : mock.teamNames, mock.teamNames.length),
+      mock.seatIndex
+    );
+
     // Multiplayer lobby (join window, then host starts)
     try {
       const res = await fetch('/api/mock-draft', {
@@ -793,6 +870,8 @@
   function applyRoom(room) {
     if (!room || !mock) return;
     const prevPickCount = mock.picks?.length || 0;
+    const prevPositionsLocked = positionsLocked;
+    const prevLobbyEndsAt = lobbyEndsAt;
     roomId = room.id;
     pendingJoinRoomId = null;
     roomStatus = room.status || null;
@@ -828,6 +907,18 @@
     } else {
       pickDeadline = null;
     }
+    const newPicks = mock.picks.length > prevPickCount
+      ? mock.picks.slice(prevPickCount)
+      : [];
+    const latestCpuPick = [...newPicks].reverse().find((p) => p && p.cpu);
+    if (latestCpuPick && Number.isFinite(Number(latestCpuPick.teamIndex))) {
+      // Suppress the name under the seat until after the highlight beat.
+      pickReveal = {
+        teamIndex: Number(latestCpuPick.teamIndex),
+        overall: Number(latestCpuPick.overall),
+        phase: 'holding'
+      };
+    }
     setDraftLive(draftLive);
     if (room.status === 'lobby') startLobbyPaint();
     else stopLobbyPaint();
@@ -836,17 +927,30 @@
     } else {
       stopPickTimer();
     }
+    // Every connected client plays the start sound when the host locks / opens the join window.
+    const joinWindowOpened = room.status === 'lobby'
+      && positionsLocked
+      && lobbyEndsAt
+      && lobbySecondsLeft() > 0
+      && (
+        !prevPositionsLocked
+        || prevLobbyEndsAt !== lobbyEndsAt
+      );
+    if (joinWindowOpened) {
+      playDraftStartSound({ key: `lobby:${room.id}:${lobbyEndsAt}` });
+    }
     renderMock();
-    if (mock.picks.length > prevPickCount) {
-      const last = mock.picks[mock.picks.length - 1];
+    if (latestCpuPick && Number.isFinite(Number(latestCpuPick.teamIndex))) {
+      const team = mock.teamNames[latestCpuPick.teamIndex] || `Team ${latestCpuPick.teamIndex + 1}`;
+      setMockStatus(`CPU · ${team} selected ${latestCpuPick.playerName}`, true);
+      lastFocusSeat = latestCpuPick.teamIndex;
+      beginCpuPickReveal(latestCpuPick);
+    } else if (newPicks.length) {
+      const last = newPicks[newPicks.length - 1];
       if (last && Number.isFinite(Number(last.teamIndex))) {
         scrollToSeat(last.teamIndex);
         flashSeatPick(last.teamIndex);
         lastFocusSeat = last.teamIndex;
-        if (last.cpu) {
-          const team = mock.teamNames[last.teamIndex] || `Team ${last.teamIndex + 1}`;
-          setMockStatus(`CPU · ${team} selected ${last.playerName}`, true);
-        }
       }
     }
     const onClock = currentSlot();
@@ -869,7 +973,7 @@
           true
         );
       } else if (left > 0) {
-        setMockStatus(`Positions locked — ${formatPickClock(left)} left to join`, true);
+        setMockStatus(`Other users have ${formatPickClock(left)} to join`, true);
       } else if (roomIsHost) {
         setMockStatus('Positions locked — click Start drafting when ready', true);
       } else {
@@ -933,6 +1037,7 @@
   async function claimSeat(seatIndex) {
     const id = roomId || pendingJoinRoomId;
     if (!id) return;
+    unlockDraftAudio();
     const res = await fetch('/api/mock-draft', {
       method: 'POST',
       credentials: 'same-origin',
@@ -1610,11 +1715,24 @@
   async function submitPendingPick() {
     const id = pendingPickPlayerId;
     if (id == null) return false;
+    if (!canUserDraftNow()) {
+      setMockStatus('Not your pick — wait for the clock', false);
+      return false;
+    }
+    const draftBtn = document.getElementById('mock-confirm-draft');
+    const cancelBtn = document.getElementById('mock-confirm-cancel');
+    const closeBtn = document.getElementById('mock-confirm-cancel-x');
+    if (draftBtn) draftBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
+    if (closeBtn) closeBtn.disabled = true;
+    unlockDraftAudio();
+    playUserDraftSound();
+    await animatePickModalToTeam();
     closePickModal();
-    return executeUserPick(id);
+    return executeUserPick(id, { skipSound: true });
   }
 
-  async function executeUserPick(playerId) {
+  async function executeUserPick(playerId, opts = {}) {
     if (!canUserDraftNow()) {
       setMockStatus('Not your pick — wait for the clock', false);
       updateDraftDropState();
@@ -1623,8 +1741,10 @@
     if (isMultiplayer()) {
       const ok = await makePickAsync(playerId);
       if (ok) {
+        if (!opts.skipSound) playUserDraftSound();
         removeTarget(playerId);
         setMockSideTab('roster');
+        flashSeatPick(mock.seatIndex);
       }
       return ok;
     }
@@ -1633,8 +1753,10 @@
       startPickTimer();
       return false;
     }
+    if (!opts.skipSound) playUserDraftSound();
     removeTarget(playerId);
     setMockSideTab('roster');
+    flashSeatPick(mock.seatIndex);
     const filled = await afterUserTurn();
     const clockTxt = clockLabelText(getPickSeconds());
     if (filled > 0) {
@@ -1865,6 +1987,130 @@
     return a;
   }
 
+  /** Funny GM names for CPU draft slots — every seat still gets a name. */
+  const CELEBRITY_DRAFT_NAMES = [
+    'Nicolas Cage',
+    'Danny DeVito',
+    'Flavor Flav',
+    'Post Malone',
+    'Pete Davidson',
+    'DJ Khaled',
+    'The Situation',
+    'Snooki',
+    'Honey Boo Boo',
+    'Steven Seagal',
+    'Jean-Claude Van Damme',
+    'Carrot Top',
+    'Pauly D',
+    'Machine Gun Kelly',
+    'Andrew Dice Clay',
+    'Gilbert Gottfried\'s Ghost',
+    'Skip Bayless',
+    'Stephen A. Smith',
+    'Shannon Sharpe',
+    'Pat McAfee',
+    'Charles Barkley',
+    'Shaquille O\'Neal',
+    'John Daly',
+    'Tony Romo\'s Mic',
+    'Bill Belichick\'s Hoodie',
+    'Johnny Manziel',
+    'Tebow Time',
+    'Odell\'s One-Hand',
+    'Baker Mayfield',
+    'Antonio Brown\'s Vibe',
+    'Mike Tyson',
+    'Conor McGregor',
+    'Logan Paul',
+    'Jake Paul',
+    'Dan Bilzerian',
+    'Bernie Madoff',
+    'Elizabeth Holmes',
+    'Anna Delvey',
+    'Sam Bankman-Fried',
+    'Billy McFarland',
+    'Jordan Belfort',
+    'Al Capone',
+    'Whitey Bulger',
+    'Pablo\'s Accountant',
+    'Stormy Daniels',
+    'Mia Khalifa',
+    'Jenna Jameson',
+    'Sasha Grey',
+    'Ron Jeremy',
+    'Lexi Belle',
+    'Riley Reid',
+    'Nikki Benz',
+    'Lisa Ann',
+    'Johnny Sins',
+    'The Rock\'s Stunt Double',
+    'Elon\'s Intern',
+    'Zuck\'s NPC',
+    'Bezos\' Laugh',
+    'Kanye\'s Group Chat',
+    'Dr. Phil',
+    'Judge Judy',
+    'Maury Povich',
+    'Jerry Springer',
+    'Steve Harvey\'s Suit',
+    'Joe Rogan\'s Elk Meat',
+    'Alex Jones\' Supplements',
+    'Tucker\'s Bow Tie',
+    'Ozzy Osbourne',
+    'Keith Richards',
+    'Tommy Lee',
+    'Kid Rock',
+    'Vanilla Ice',
+    'MC Hammer',
+    'Soulja Boy',
+    'Lil Pump',
+    '6ix9ine',
+    'Tekashi\'s Anklets',
+    'Birdman\'s Handshake',
+    'Diddy\'s Party Planner',
+    'Hulk Hogan',
+    'Ric Flair',
+    'The Undertaker',
+    'Stone Cold',
+    'John Cena\'s Invisible Car',
+    'Grumpy Cat\'s Estate',
+    'Chuck Norris',
+    'Mr. Bean',
+    'Borat Sagdiyev',
+    'Napoleon Dynamite',
+    'Tommy Wiseau',
+    'Billy Madison',
+    'Uncle Rico',
+    'Ron Burgundy',
+    'Anchorman\'s Dog',
+    'Craigslist Killer\'s Roommate',
+    'Fyre Festival DJ',
+    'WeWork\'s Adam Neumann',
+    'Theranos Intern',
+    'Crypto Bros Anonymous',
+    'OnlyFans Accountant',
+    'DraftKings Whale',
+    'Vegas Wedding Chaplain',
+    'Times Square Elmo',
+    'Hollywood Sign Guy',
+    'Super Bowl Halftime Fog'
+  ];
+
+  function applyCelebrityCpuNames(names, keepIndex = 0) {
+    const count = (names || []).length;
+    const celebs = shuffle(CELEBRITY_DRAFT_NAMES);
+    let c = 0;
+    const keep = Number.isFinite(Number(keepIndex)) ? Number(keepIndex) : 0;
+    return Array.from({ length: count }, (_, i) => {
+      if (i === keep) {
+        return String(names[i] || `Team ${i + 1}`);
+      }
+      const name = celebs[c % celebs.length];
+      c += 1;
+      return name;
+    });
+  }
+
   function ensureMock(names, rounds, teamCount) {
     clearPersistedMock();
     const count = normalizeTeamCount(teamCount || DEFAULT_TEAM_COUNT);
@@ -1872,7 +2118,7 @@
     const list = padTeamNames(sourceNames, count);
     const r = normalizeRounds(rounds || DEFAULT_ROUNDS);
     mock = {
-      teamNames: list,
+      teamNames: applyCelebrityCpuNames(list, 0),
       rounds: r,
       picks: [],
       seatIndex: 0,
@@ -1886,9 +2132,10 @@
   function applyTeamCount(count) {
     const n = normalizeTeamCount(count);
     const pool = teamNames.length ? teamNames : mock.teamNames;
-    mock.teamNames = padTeamNames(pool, n);
+    const list = padTeamNames(pool, n);
+    mock.teamNames = applyCelebrityCpuNames(list, mock.seatIndex || 0);
     mock.picks = [];
-    mock.seatIndex = 0;
+    mock.seatIndex = Math.min(mock.seatIndex || 0, n - 1);
   }
 
   function paintSettingsSummary() {
@@ -1944,17 +2191,204 @@
   function unlockDraftAudio() {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return null;
-      if (!audioCtx) audioCtx = new Ctx();
-      if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
-      return audioCtx;
+      if (Ctx) {
+        if (!audioCtx) audioCtx = new Ctx();
+        if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+      }
     } catch {
-      return null;
+      /* ignore */
+    }
+    try {
+      if (!onClockAudio) {
+        onClockAudio = new Audio(ON_CLOCK_AUDIO_URL);
+        onClockAudio.preload = 'auto';
+        onClockAudio.volume = 0.9;
+      }
+      // Warm under a user gesture (muted) so later on-the-clock cues can autoplay.
+      const wasMuted = onClockAudio.muted;
+      onClockAudio.muted = true;
+      const warm = onClockAudio.play();
+      if (warm && typeof warm.then === 'function') {
+        warm.then(() => {
+          onClockAudio.pause();
+          onClockAudio.currentTime = 0;
+          onClockAudio.muted = wasMuted;
+        }).catch(() => {
+          onClockAudio.muted = wasMuted;
+        });
+      } else {
+        onClockAudio.muted = wasMuted;
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      if (!welcomeAudio) {
+        welcomeAudio = new Audio(WELCOME_AUDIO_URL);
+        welcomeAudio.preload = 'auto';
+        welcomeAudio.volume = 0.9;
+      }
+      // Warm under a user gesture so the start sting can play for every client on draft start.
+      const wasMuted = welcomeAudio.muted;
+      welcomeAudio.muted = true;
+      const warmWelcome = welcomeAudio.play();
+      if (warmWelcome && typeof warmWelcome.then === 'function') {
+        warmWelcome.then(() => {
+          welcomeAudio.pause();
+          welcomeAudio.currentTime = 0;
+          welcomeAudio.muted = wasMuted;
+        }).catch(() => {
+          welcomeAudio.muted = wasMuted;
+        });
+      } else {
+        welcomeAudio.muted = wasMuted;
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      if (!completeAudio) {
+        completeAudio = new Audio(COMPLETE_AUDIO_URL);
+        completeAudio.preload = 'auto';
+        completeAudio.volume = 0.9;
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      if (!countdownTickAudio) {
+        countdownTickAudio = new Audio(COUNTDOWN_TICK_AUDIO_URL);
+        countdownTickAudio.preload = 'auto';
+        countdownTickAudio.volume = 0.85;
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      if (!pickAudio) {
+        pickAudio = new Audio(PICK_AUDIO_URL);
+        pickAudio.preload = 'auto';
+        pickAudio.volume = 0.95;
+      }
+    } catch {
+      /* ignore */
+    }
+    return audioCtx;
+  }
+
+  function stopWelcomeAudio() {
+    welcomeAudioKey = null;
+    if (!welcomeAudio) return;
+    try {
+      welcomeAudio.pause();
+      welcomeAudio.currentTime = 0;
+    } catch {
+      /* ignore */
     }
   }
 
+  function playDraftStartSound({ key = null } = {}) {
+    const playKey = key || (lobbyEndsAt ? `lobby:${roomId}:${lobbyEndsAt}` : `start:${roomId || 'local'}`);
+    if (welcomeAudioKey === playKey) return;
+    welcomeAudioKey = playKey;
+    try {
+      if (!welcomeAudio) {
+        welcomeAudio = new Audio(WELCOME_AUDIO_URL);
+        welcomeAudio.preload = 'auto';
+        welcomeAudio.volume = 0.9;
+      }
+      welcomeAudio.pause();
+      welcomeAudio.currentTime = 0;
+      const play = welcomeAudio.play();
+      if (play && typeof play.catch === 'function') play.catch(() => {});
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function playUserDraftSound() {
+    try {
+      if (!pickAudio) {
+        pickAudio = new Audio(PICK_AUDIO_URL);
+        pickAudio.preload = 'auto';
+        pickAudio.volume = 0.95;
+      }
+      pickAudio.pause();
+      pickAudio.currentTime = 0;
+      const play = pickAudio.play();
+      if (play && typeof play.catch === 'function') play.catch(() => {});
+    } catch {
+      playTone({ freq: 523.25, duration: 0.12, type: 'triangle', gain: 0.08, when: 0 });
+      playTone({ freq: 659.25, duration: 0.14, type: 'triangle', gain: 0.08, when: 0.1 });
+      playTone({ freq: 783.99, duration: 0.2, type: 'triangle', gain: 0.09, when: 0.22 });
+    }
+  }
+
+  function animatePickModalToTeam() {
+    const dialog = document.getElementById('mock-confirm-dialog');
+    const card = dialog?.querySelector('.mock-pick-card');
+    if (!card) return Promise.resolve();
+
+    const seat = Number.isFinite(Number(mock?.seatIndex))
+      ? document.querySelector(`#mock-order [data-seat="${mock.seatIndex}"]`)
+      : null;
+
+    card.classList.remove('is-draft-fly');
+    card.style.removeProperty('--pick-fly-x');
+    card.style.removeProperty('--pick-fly-y');
+    // Force reflow so glow → fly sequence restarts cleanly.
+    void card.offsetWidth;
+    card.classList.add('is-draft-glow');
+
+    const cardRect = card.getBoundingClientRect();
+    let dx = 0;
+    let dy = -120;
+    if (seat) {
+      const seatRect = seat.getBoundingClientRect();
+      dx = (seatRect.left + seatRect.width / 2) - (cardRect.left + cardRect.width / 2);
+      dy = (seatRect.top + seatRect.height / 2) - (cardRect.top + cardRect.height / 2);
+      scrollToSeat(mock.seatIndex);
+    }
+    card.style.setProperty('--pick-fly-x', `${Math.round(dx)}px`);
+    card.style.setProperty('--pick-fly-y', `${Math.round(dy)}px`);
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        card.removeEventListener('animationend', onEnd);
+        card.classList.remove('is-draft-glow', 'is-draft-fly');
+        card.style.removeProperty('--pick-fly-x');
+        card.style.removeProperty('--pick-fly-y');
+        resolve();
+      };
+      const onEnd = (e) => {
+        if (e.target !== card) return;
+        if (e.animationName !== 'mock-pick-fly-to-team') return;
+        finish();
+      };
+      // Glow beat, then fly toward the user's team chip.
+      window.setTimeout(() => {
+        card.classList.add('is-draft-fly');
+      }, 180);
+      card.addEventListener('animationend', onEnd);
+      window.setTimeout(finish, 900);
+    });
+  }
+
   function playTone({ freq = 440, duration = 0.15, type = 'sine', gain = 0.08, when = 0 } = {}) {
-    const ctx = unlockDraftAudio();
+    const ctx = (() => {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return null;
+        if (!audioCtx) audioCtx = new Ctx();
+        if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+        return audioCtx;
+      } catch {
+        return null;
+      }
+    })();
     if (!ctx) return;
     const t0 = ctx.currentTime + when;
     const osc = ctx.createOscillator();
@@ -1977,10 +2411,78 @@
   }
 
   function playOnClockSound() {
-    // Sharper three-beep “you’re up”
-    playTone({ freq: 880, duration: 0.1, type: 'square', gain: 0.05, when: 0 });
-    playTone({ freq: 880, duration: 0.1, type: 'square', gain: 0.05, when: 0.14 });
-    playTone({ freq: 1174.7, duration: 0.18, type: 'square', gain: 0.06, when: 0.28 });
+    try {
+      if (!onClockAudio) {
+        onClockAudio = new Audio(ON_CLOCK_AUDIO_URL);
+        onClockAudio.preload = 'auto';
+        onClockAudio.volume = 0.9;
+      }
+      onClockAudio.pause();
+      onClockAudio.currentTime = 0;
+      const play = onClockAudio.play();
+      if (play && typeof play.catch === 'function') play.catch(() => {});
+    } catch {
+      // Fallback beeps if the MP3 can't play (autoplay block, missing file, etc.)
+      playTone({ freq: 880, duration: 0.1, type: 'square', gain: 0.05, when: 0 });
+      playTone({ freq: 880, duration: 0.1, type: 'square', gain: 0.05, when: 0.14 });
+      playTone({ freq: 1174.7, duration: 0.18, type: 'square', gain: 0.06, when: 0.28 });
+    }
+  }
+
+  function playDraftCompleteSound() {
+    try {
+      if (!completeAudio) {
+        completeAudio = new Audio(COMPLETE_AUDIO_URL);
+        completeAudio.preload = 'auto';
+        completeAudio.volume = 0.9;
+      }
+      completeAudio.pause();
+      completeAudio.currentTime = 0;
+      const play = completeAudio.play();
+      if (play && typeof play.catch === 'function') play.catch(() => {});
+    } catch {
+      playTone({ freq: 523.25, duration: 0.16, type: 'triangle', gain: 0.07, when: 0 });
+      playTone({ freq: 659.25, duration: 0.18, type: 'triangle', gain: 0.07, when: 0.14 });
+      playTone({ freq: 783.99, duration: 0.28, type: 'triangle', gain: 0.08, when: 0.3 });
+    }
+  }
+
+  function playCountdownTick(secondsLeft) {
+    try {
+      if (!countdownTickAudio) {
+        countdownTickAudio = new Audio(COUNTDOWN_TICK_AUDIO_URL);
+        countdownTickAudio.preload = 'auto';
+      }
+      // Slightly louder in the final three seconds so it feels like a clock winding down.
+      countdownTickAudio.volume = secondsLeft <= 3 ? 1 : secondsLeft <= 6 ? 0.9 : 0.8;
+      countdownTickAudio.pause();
+      countdownTickAudio.currentTime = 0;
+      const play = countdownTickAudio.play();
+      if (play && typeof play.catch === 'function') play.catch(() => {});
+    } catch {
+      playTone({
+        freq: secondsLeft <= 3 ? 990 : 780,
+        duration: 0.07,
+        type: 'square',
+        gain: secondsLeft <= 3 ? 0.08 : 0.055
+      });
+    }
+  }
+
+  function maybePlayCountdownBeeps() {
+    // Tick once per second from 10 → 1 while you're on the clock.
+    if (!draftLive || !canUserDraftNow()) {
+      lastCountdownBeep = null;
+      return;
+    }
+    const left = secondsLeftOnClock();
+    if (left == null || left > 10 || left < 1) {
+      if (left == null || left > 10) lastCountdownBeep = null;
+      return;
+    }
+    if (lastCountdownBeep === left) return;
+    lastCountdownBeep = left;
+    playCountdownTick(left);
   }
 
   function sleep(ms) {
@@ -2007,40 +2509,56 @@
     }, 1100);
   }
 
-  function playCountdownBeep(secondsLeft) {
-    if (secondsLeft <= 0) {
-      // Final horn at zero
-      playTone({ freq: 220, duration: 0.22, type: 'sawtooth', gain: 0.1, when: 0 });
-      playTone({ freq: 165, duration: 0.35, type: 'sawtooth', gain: 0.11, when: 0.12 });
-      return;
+  function clearPickReveal() {
+    if (pickRevealTimer) {
+      clearTimeout(pickRevealTimer);
+      pickRevealTimer = null;
     }
-    // Rising tick each second from 10 → 1
-    const step = 11 - secondsLeft;
-    const freq = 660 + step * 48;
-    const gain = secondsLeft <= 3 ? 0.12 : 0.085;
-    const duration = secondsLeft <= 3 ? 0.13 : 0.09;
-    playTone({
-      freq,
-      duration,
-      type: secondsLeft <= 3 ? 'square' : 'triangle',
-      gain
-    });
+    pickReveal = null;
   }
 
-  function maybePlayCountdownBeeps() {
-    // Audible countdown only while you're on the clock, once per second from 10 → 0.
-    if (!draftLive || !canUserDraftNow()) {
-      lastCountdownBeep = null;
-      return;
+  /**
+   * CPU picks: keep the seat highlighted with "Selecting…" first,
+   * then swap in the player name under that team.
+   */
+  function beginCpuPickReveal(pick, { holdMs = 700 } = {}) {
+    if (!pick || !Number.isFinite(Number(pick.teamIndex))) return;
+    clearPickReveal();
+    pickReveal = {
+      teamIndex: Number(pick.teamIndex),
+      overall: Number(pick.overall),
+      phase: 'holding'
+    };
+    flashSeatPick(pick.teamIndex);
+    scrollToSeat(pick.teamIndex);
+    renderOrder();
+    renderOtherTeams();
+    pickRevealTimer = setTimeout(() => {
+      if (!pickReveal || Number(pickReveal.overall) !== Number(pick.overall)) return;
+      pickReveal.phase = 'show';
+      renderOrder();
+      renderOtherTeams();
+      const chip = document.querySelector(`#mock-order [data-seat="${pick.teamIndex}"] .last`);
+      chip?.classList.add('is-name-in');
+      pickRevealTimer = setTimeout(() => {
+        if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
+          pickReveal = null;
+        }
+        pickRevealTimer = null;
+      }, 1400);
+    }, holdMs);
+  }
+
+  function seatSelecting(teamIndex) {
+    const next = currentSlot();
+    if (draftLive && next && next.teamIndex === teamIndex && !seatIsHuman(teamIndex)) {
+      return true;
     }
-    const left = secondsLeftOnClock();
-    if (left == null || left > 10) {
-      lastCountdownBeep = null;
-      return;
-    }
-    if (lastCountdownBeep === left) return;
-    lastCountdownBeep = left;
-    playCountdownBeep(left);
+    return Boolean(
+      pickReveal
+      && pickReveal.teamIndex === teamIndex
+      && pickReveal.phase === 'holding'
+    );
   }
 
   function maybePlayTurnCues() {
@@ -2053,22 +2571,36 @@
       turnCueKey = null;
       return;
     }
-    const onClock = next.teamIndex === mock.seatIndex;
+    const humanOnClock = seatIsHuman(next.teamIndex);
+    const onClockYou = next.teamIndex === mock.seatIndex;
     const following = pickSlot(mock.teamNames.length, mock.rounds, 'snake', mock.picks.length + 1);
-    const upNext = !onClock && following && following.teamIndex === mock.seatIndex;
-    const key = onClock
-      ? `clock:${next.overall}:${mock.seatIndex}`
-      : (upNext ? `next:${next.overall}:${mock.seatIndex}` : `idle:${next.overall}`);
+    const upNext = !onClockYou && following && seatIsHuman(mock.seatIndex)
+      && following.teamIndex === mock.seatIndex;
+    // NFL sting only when a human seat goes on the clock (you or another member) — never for CPU.
+    const pickKey = humanOnClock ? `human:${next.overall}` : `cpu:${next.overall}`;
+    const personalKey = onClockYou
+      ? `you:${next.overall}`
+      : (upNext ? `next:${next.overall}` : `idle:${next.overall}`);
+    const key = `${pickKey}|${personalKey}`;
     if (key === turnCueKey) return;
     const prev = turnCueKey;
+    const prevPick = prev ? String(prev).split('|')[0] : '';
     turnCueKey = key;
-    if (onClock) {
+    if (humanOnClock && pickKey !== prevPick) {
       playOnClockSound();
-      return;
     }
-    if (upNext && (!prev || !String(prev).startsWith('next:'))) {
+    if (upNext && (!prev || !String(prev).includes('|next:'))) {
       playUpNextSound();
     }
+  }
+
+  function seatIsHuman(teamIndex) {
+    if (!mock) return false;
+    if (isMultiplayer()) {
+      const seat = roomSeats?.[teamIndex];
+      return Boolean(seat?.userId && seat.isCpu !== true);
+    }
+    return Number(teamIndex) === Number(mock.seatIndex);
   }
 
   function updateDraftDropState() {
@@ -2081,6 +2613,22 @@
       if (mock.picks[i].teamIndex === teamIndex) return mock.picks[i];
     }
     return null;
+  }
+
+  /** Visible last-pick line — hides a brand-new CPU name until the reveal fires. */
+  function visibleLastPickForTeam(teamIndex) {
+    if (seatSelecting(teamIndex)) return null;
+    const last = lastPickForTeam(teamIndex);
+    if (
+      last
+      && pickReveal
+      && pickReveal.phase === 'holding'
+      && pickReveal.teamIndex === teamIndex
+      && Number(last.overall) === Number(pickReveal.overall)
+    ) {
+      return null;
+    }
+    return last;
   }
 
   function renderOrder() {
@@ -2104,19 +2652,23 @@
           : 'Draft order — click an open seat to join')
     );
     el.innerHTML = mock.teamNames.map((name, i) => {
-      const onClock = next && next.teamIndex === i;
+      const selecting = seatSelecting(i);
+      const onClock = (next && next.teamIndex === i) || selecting;
       const upNext = !onClock && following && following.teamIndex === i;
       const seat = roomSeats?.[i];
       const you = !awaitingSeatClaim && i === mock.seatIndex;
       const open = awaitingSeatClaim && seat && !seat.userId;
       const human = seat && seat.userId && !seat.isCpu;
-      const last = phase === 'setup' ? null : lastPickForTeam(i);
+      const last = phase === 'setup' ? null : visibleLastPickForTeam(i);
       const draggable = canDrag && you;
       const dropTarget = canDrag && !you;
+      const revealing = pickReveal && pickReveal.teamIndex === i && pickReveal.phase === 'show';
       const cls = [
         'mock-seat-chip',
         you ? 'is-you' : '',
         onClock ? 'is-clock' : '',
+        selecting ? 'is-selecting' : '',
+        revealing ? 'is-name-reveal' : '',
         upNext ? 'is-next' : '',
         open ? 'is-open' : '',
         human && !you ? 'is-human' : '',
@@ -2126,7 +2678,9 @@
         positionsLocked && !draftLive ? 'is-locked' : '',
         justPickedSeat === i ? 'is-just-picked' : ''
       ].filter(Boolean).join(' ');
-      const sub = human ? (seat.userName || 'Member') : (seat && seat.isCpu !== false && isMultiplayer() ? 'CPU' : name);
+      const sub = human
+        ? (seat.userName || 'Member')
+        : name;
       const canClick = open || (phase === 'setup' && !isMultiplayer() && !awaitingSeatClaim);
       const title = open
         ? `Claim seat ${i + 1}`
@@ -2134,21 +2688,27 @@
           ? `Drag to set your draft position (pick #${i + 1})`
           : dropTarget
             ? `Drop here for pick #${i + 1}`
-            : `Draft position ${i + 1}: ${name}${human ? ` · ${seat.userName}` : ''}`;
-      const status = onClock
-        ? 'ON THE CLOCK'
-        : (upNext
-          ? 'UP NEXT'
-          : (you && (phase === 'setup' || roomStatus === 'lobby')
-            ? (canDrag ? 'DRAG TO MOVE' : 'YOUR SEAT')
-            : ''));
+            : `Draft position ${i + 1}: ${name}${human ? ` · ${seat.userName}` : (isMultiplayer() && seat && !human ? ' · CPU' : '')}`;
+      const status = selecting
+        ? 'SELECTING'
+        : (onClock
+          ? 'ON THE CLOCK'
+          : (upNext
+            ? 'UP NEXT'
+            : (you && (phase === 'setup' || roomStatus === 'lobby')
+              ? (canDrag ? 'DRAG TO MOVE' : 'YOUR SEAT')
+              : '')));
+      const lastHtml = selecting
+        ? '<span class="last is-selecting">Selecting…</span>'
+        : `<span class="last${last ? '' : ' is-empty'}${revealing ? ' is-name-in' : ''}">${last
+          ? `${esc(last.position || '')} ${esc(last.playerName)}`
+          : '—'}</span>`;
+      const label = open ? name : (you ? name : (human ? sub : name));
       return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} title="${esc(title)}">
         <span class="n">${i + 1}</span>
-        <span class="nm">${esc(open ? name : (you ? name : sub))}</span>
+        <span class="nm">${esc(label)}</span>
         ${status ? `<span class="st">${status}</span>` : ''}
-        <span class="last${last ? '' : ' is-empty'}">${last
-          ? `${esc(last.position || '')} ${esc(last.playerName)}`
-          : '—'}</span>
+        ${lastHtml}
       </button>`;
     }).join('');
   }
@@ -2756,16 +3316,34 @@
       return;
     }
     list.innerHTML = others.map((t) => {
-      const onClock = next && next.teamIndex === t.i;
+      const selecting = seatSelecting(t.i);
+      const onClock = (next && next.teamIndex === t.i) || selecting;
+      const holdOverall = (
+        pickReveal
+        && pickReveal.phase === 'holding'
+        && pickReveal.teamIndex === t.i
+      ) ? Number(pickReveal.overall) : null;
       const chips = t.picks.length
-        ? t.picks.map((p) => `<span><em>${esc(p.position || '')}</em>${esc(p.playerName)}</span>`).join('')
-        : `<div class="ot-empty">Waiting…</div>`;
-      return `<div class="mock-other-team${onClock ? ' is-clock' : ''}">
+        ? t.picks
+          .filter((p) => holdOverall == null || Number(p.overall) !== holdOverall)
+          .map((p) => {
+            const fresh = pickReveal
+              && pickReveal.phase === 'show'
+              && pickReveal.teamIndex === t.i
+              && Number(p.overall) === Number(pickReveal.overall);
+            return `<span class="${fresh ? 'is-name-in' : ''}"><em>${esc(p.position || '')}</em>${esc(p.playerName)}</span>`;
+          })
+          .join('')
+        : '';
+      const body = selecting
+        ? `${chips}<div class="ot-empty is-selecting">Selecting…</div>`
+        : (chips || `<div class="ot-empty">Waiting…</div>`);
+      return `<div class="mock-other-team${onClock ? ' is-clock' : ''}${selecting ? ' is-selecting' : ''}">
         <div class="ot-name">
           <span>${esc(t.i + 1)}. ${esc(t.name)}</span>
-          ${onClock ? '<span class="tag">Clock</span>' : `<span class="tag">${t.picks.length}</span>`}
+          ${onClock ? `<span class="tag">${selecting ? 'Selecting' : 'On the clock'}</span>` : `<span class="tag">${t.picks.length}</span>`}
         </div>
-        <div class="ot-picks">${chips}</div>
+        <div class="ot-picks">${body}</div>
       </div>`;
     }).join('');
   }
@@ -2974,18 +3552,23 @@
         scrollToSeat(slot.teamIndex);
         renderMock();
         setMockStatus(`On the clock · ${teamName}`, true);
-        await sleep(380);
+        // Hold highlighted CPU seat before the pick lands.
+        await sleep(5000);
+        if (!draftLive && !opts.allowPrestart) break;
+        const still = currentSlot();
+        if (!still || still.overall !== slot.overall) break;
         const before = mock.picks.length;
         if (!autoPickOne({ silent: true })) break;
         n += 1;
         const pick = mock.picks[mock.picks.length - 1];
-        renderMock();
-        scrollToSeat(slot.teamIndex);
-        flashSeatPick(slot.teamIndex);
         if (pick && mock.picks.length > before) {
           setMockStatus(`CPU · ${teamName} selected ${pick.playerName}`, true);
+          beginCpuPickReveal(pick, { holdMs: 750 });
+          await sleep(1500);
+        } else {
+          renderMock();
+          await sleep(500);
         }
-        await sleep(1000);
       }
       if (n > 0 || opts.forceRender) renderMock();
       const next = currentSlot();
@@ -3044,6 +3627,9 @@
     paintAdvancedTools();
     document.getElementById('mock-start')?.addEventListener('click', () => {
       startDraftSession();
+    });
+    document.getElementById('mock-skip-join')?.addEventListener('click', () => {
+      skipJoinWait();
     });
     document.getElementById('mock-pick-seconds')?.addEventListener('change', (e) => {
       if (draftLive || isMultiplayer()) {
@@ -3249,9 +3835,17 @@
       await submitPendingPick();
     });
     document.getElementById('mock-confirm-dialog')?.addEventListener('click', (e) => {
-      if (e.target === e.currentTarget) closePickModal();
+      if (e.target !== e.currentTarget) return;
+      const card = e.currentTarget.querySelector('.mock-pick-card');
+      if (card?.classList.contains('is-draft-glow') || card?.classList.contains('is-draft-fly')) return;
+      closePickModal();
     });
-    document.getElementById('mock-confirm-dialog')?.addEventListener('cancel', () => {
+    document.getElementById('mock-confirm-dialog')?.addEventListener('cancel', (e) => {
+      const card = e.currentTarget.querySelector('.mock-pick-card');
+      if (card?.classList.contains('is-draft-glow') || card?.classList.contains('is-draft-fly')) {
+        e.preventDefault();
+        return;
+      }
       pendingPickPlayerId = null;
     });
     document.getElementById('mock-profile-target')?.addEventListener('click', () => {
@@ -3273,7 +3867,9 @@
         setMockStatus('Not your pick — wait for the clock', false);
         return;
       }
+      unlockDraftAudio();
       await executeUserPick(id);
+    });
     });
 
     document.getElementById('mock-order')?.addEventListener('click', async (e) => {
@@ -3409,6 +4005,10 @@
         return;
       }
       mock.seatIndex = Number.isFinite(idx) ? idx : 0;
+      mock.teamNames = applyCelebrityCpuNames(
+        padTeamNames(teamNames.length ? teamNames : mock.teamNames, mock.teamNames.length),
+        mock.seatIndex
+      );
       renderMock();
       setMockStatus(`You’re pick #${mock.seatIndex + 1} · ${mock.teamNames[mock.seatIndex]}`, true);
     });
@@ -3471,11 +4071,11 @@
       endDraftSession();
       const count = mock.teamNames.length;
       const pool = teamNames.length ? teamNames : mock.teamNames;
-      mock.teamNames = padTeamNames(shuffle(pool), count);
+      mock.teamNames = applyCelebrityCpuNames(padTeamNames(shuffle(pool), count), mock.seatIndex);
       mock.picks = [];
       mock.seatIndex = Math.min(mock.seatIndex, count - 1);
       renderMock();
-      setMockStatus('Draft order shuffled — set your pick #, then Start Draft', true);
+      setMockStatus('Draft order shuffled — celebrity GMs reassigned', true);
     });
     document.getElementById('mock-undo')?.addEventListener('click', async () => {
       if (isMultiplayer()) {
