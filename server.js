@@ -169,6 +169,7 @@ const PUBLIC_PATHS = new Set([
   '/api/cron/rules-sync',
   '/api/cron/roster-violations',
   '/api/cron/death-pool-news',
+  '/api/lounge/fresh-start',
   '/manifest.webmanifest',
   '/sw.js'
 ]);
