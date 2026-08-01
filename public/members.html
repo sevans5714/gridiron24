@@ -3552,6 +3552,23 @@
     .mock-settings-card {
       width: min(28rem, 100%);
       position: relative;
+      background:
+        linear-gradient(180deg, rgba(47, 123, 255, 0.16), transparent 44%),
+        #0b1322;
+      border-color: rgba(126, 200, 255, 0.22);
+      box-shadow:
+        0 28px 64px rgba(0, 0, 0, 0.72),
+        0 0 0 1px rgba(0, 0, 0, 0.45);
+      isolation: isolate;
+    }
+    html[data-theme="day"] .mock-settings-card {
+      background:
+        linear-gradient(180deg, rgba(31, 94, 240, 0.08), transparent 44%),
+        #ffffff;
+      border-color: rgba(20, 24, 31, 0.12);
+      box-shadow:
+        0 24px 48px rgba(20, 24, 31, 0.18),
+        0 0 0 1px rgba(20, 24, 31, 0.06);
     }
     .mock-settings-lead {
       margin: 0.15rem 0 1rem;
@@ -4527,7 +4544,7 @@
     .mock-injury-dialog,
     .mock-profile-dialog,
     .mock-pick-dialog {
-      width: min(28rem, calc(100vw - 1.25rem));
+      width: min(32rem, calc(100vw - 1.25rem));
       max-width: calc(100vw - 1.25rem);
       border: 0;
       padding: 0;
@@ -4536,17 +4553,72 @@
     }
     .mock-dialog-card.mock-injury-card,
     .mock-dialog-card.mock-profile-card {
-      width: min(28rem, 100%);
+      width: min(32rem, 100%);
       position: relative;
-      display: block;
+      display: flex;
+      flex-direction: column;
       flex: none;
       grid-template-columns: none;
       gap: 0;
       align-items: stretch;
-      max-height: min(88vh, 42rem);
+      max-height: min(90vh, 46rem);
+      overflow: hidden;
+      padding: 0;
+      box-sizing: border-box;
+      /* Solid panel — lounge --mo-surface is translucent and bleeds the board through. */
+      background:
+        linear-gradient(180deg, rgba(47, 123, 255, 0.16), transparent 44%),
+        #0b1322;
+      border-color: rgba(126, 200, 255, 0.22);
+      box-shadow:
+        0 28px 64px rgba(0, 0, 0, 0.72),
+        0 0 0 1px rgba(0, 0, 0, 0.45);
+      isolation: isolate;
+    }
+    .mock-dialog-card.mock-injury-card {
+      display: block;
       overflow: auto;
       padding: 1.25rem 1.2rem 1.2rem;
-      box-sizing: border-box;
+    }
+    .mock-dialog-card.mock-profile-card > .mock-dialog-close {
+      z-index: 3;
+    }
+    #mock-profile-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      padding: 1.2rem 1.2rem 0.85rem;
+    }
+    .mock-dialog-card.mock-profile-card > .mock-dialog-actions {
+      flex: 0 0 auto;
+      margin: 0;
+      padding: 0.85rem 1.15rem 1.15rem;
+      border-top: 1px solid rgba(126, 200, 255, 0.12);
+      background: rgba(6, 10, 18, 0.55);
+    }
+    html[data-theme="day"] .mock-dialog-card.mock-injury-card,
+    html[data-theme="day"] .mock-dialog-card.mock-profile-card {
+      background:
+        linear-gradient(180deg, rgba(31, 94, 240, 0.08), transparent 44%),
+        #ffffff;
+      border-color: rgba(20, 24, 31, 0.12);
+      box-shadow:
+        0 24px 48px rgba(20, 24, 31, 0.18),
+        0 0 0 1px rgba(20, 24, 31, 0.06);
+    }
+    html[data-theme="day"] .mock-dialog-card.mock-profile-card > .mock-dialog-actions {
+      border-top-color: rgba(20, 24, 31, 0.1);
+      background: rgba(243, 245, 248, 0.92);
+    }
+    #mock-profile-dialog::backdrop,
+    #mock-injury-dialog::backdrop,
+    #mock-confirm-dialog::backdrop {
+      background: rgba(2, 6, 14, 0.82);
+    }
+    html[data-theme="day"] #mock-profile-dialog::backdrop,
+    html[data-theme="day"] #mock-injury-dialog::backdrop,
+    html[data-theme="day"] #mock-confirm-dialog::backdrop {
+      background: rgba(15, 20, 30, 0.45);
     }
     .mock-dialog-card.mock-injury-card h3,
     .mock-dialog-card.mock-profile-card h3 {
@@ -4623,15 +4695,24 @@
     .mock-news-box,
     .mock-news-injury {
       display: block;
-      margin: 0 0 0.85rem;
+      margin: 0 0 0.65rem;
       padding: 0.7rem 0.75rem;
-      border: 1px solid var(--mo-line);
-      border-radius: 0.65rem;
-      background: var(--mo-surface-2);
+      border: 1px solid rgba(126, 200, 255, 0.14);
+      border-radius: 0.55rem;
+      background: #121c30;
       min-width: 0;
+    }
+    html[data-theme="day"] .mock-news-box,
+    html[data-theme="day"] .mock-news-injury {
+      border-color: rgba(20, 24, 31, 0.1);
+      background: #f3f5f8;
     }
     .mock-news-injury {
       border-left: 3px solid #ef4444;
+    }
+    #mock-profile-news .mock-news-box:last-child,
+    #mock-profile-news .mock-news-injury:last-child {
+      margin-bottom: 0;
     }
     .mock-news-label {
       display: block;
@@ -4833,23 +4914,13 @@
       color: var(--mo-muted);
     }
     #mock-myteam-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.1rem 0.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
       padding: 0.15rem 0 0.45rem;
-      align-content: start;
-    }
-    #mock-myteam-list .mock-slot-divider,
-    #mock-myteam-list .records-empty {
-      grid-column: 1 / -1;
     }
     #mock-myteam-list .mock-slot-row {
-      margin: 0.12rem 0.35rem;
-    }
-    @media (max-width: 1100px) {
-      #mock-myteam-list {
-        grid-template-columns: 1fr;
-      }
+      margin: 0.08rem 0.45rem;
     }
 
     .mock-complete-dialog {
@@ -5118,28 +5189,58 @@
       box-sizing: border-box;
     }
     .mock-profile-card {
-      width: min(28rem, 100%);
+      width: min(32rem, 100%);
       position: relative;
+    }
+    .mock-profile-section {
+      margin: 0 0 0.95rem;
+    }
+    .mock-profile-section:last-child {
+      margin-bottom: 0.35rem;
+    }
+    .mock-profile-section-label {
+      margin: 0 0 0.4rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
     }
     .mock-profile-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 0.4rem;
-      margin: 0 0 1rem;
+      margin: 0;
+    }
+    .mock-profile-grid.is-season {
+      grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
     }
     .mock-profile-stat {
       display: block;
-      padding: 0.55rem 0.45rem;
-      border: 1px solid var(--mo-line);
-      border-radius: 0.55rem;
-      background: var(--mo-surface-2);
+      padding: 0.55rem 0.4rem;
+      border: 1px solid rgba(126, 200, 255, 0.14);
+      border-radius: 0.5rem;
+      background: #121c30;
       text-align: center;
       min-width: 0;
+    }
+    .mock-profile-stat.is-accent {
+      border-color: rgba(47, 123, 255, 0.35);
+      background: rgba(47, 123, 255, 0.14);
+    }
+    html[data-theme="day"] .mock-profile-stat {
+      border-color: rgba(20, 24, 31, 0.1);
+      background: #f3f5f8;
+    }
+    html[data-theme="day"] .mock-profile-stat.is-accent {
+      border-color: rgba(31, 94, 240, 0.28);
+      background: rgba(31, 94, 240, 0.08);
     }
     .mock-profile-stat span {
       display: block;
       font-family: "Oswald", sans-serif;
-      font-size: 0.62rem;
+      font-size: 0.58rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--mo-muted);
@@ -5148,13 +5249,36 @@
       display: block;
       margin-top: 0.22rem;
       font-family: "Oswald", sans-serif;
-      font-size: 1.02rem;
+      font-size: 1.05rem;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       line-height: 1.1;
+      color: var(--mo-text);
+    }
+    .mock-profile-footnote {
+      margin: 0.4rem 0 0;
+      color: var(--mo-muted);
+      font-size: 0.74rem;
+      line-height: 1.35;
+    }
+    .mock-profile-banner {
+      margin: 0 0 0.75rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: 0.4rem;
+      border: 1px solid rgba(239, 215, 130, 0.35);
+      background: rgba(239, 215, 130, 0.1);
+      color: var(--mo-upcoming);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-align: center;
     }
     @media (max-width: 420px) {
-      .mock-profile-grid {
+      .mock-profile-grid,
+      .mock-profile-grid.is-value,
+      .mock-profile-grid.is-fp {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
@@ -5199,6 +5323,23 @@
       will-change: transform, opacity, box-shadow;
       transform-origin: center center;
       transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      background:
+        linear-gradient(180deg, rgba(47, 123, 255, 0.16), transparent 44%),
+        #0b1322;
+      border-color: rgba(126, 200, 255, 0.22);
+      box-shadow:
+        0 28px 64px rgba(0, 0, 0, 0.72),
+        0 0 0 1px rgba(0, 0, 0, 0.45);
+      isolation: isolate;
+    }
+    html[data-theme="day"] .mock-dialog-card.mock-pick-card {
+      background:
+        linear-gradient(180deg, rgba(31, 94, 240, 0.08), transparent 44%),
+        #ffffff;
+      border-color: rgba(20, 24, 31, 0.12);
+      box-shadow:
+        0 24px 48px rgba(20, 24, 31, 0.18),
+        0 0 0 1px rgba(20, 24, 31, 0.06);
     }
     .mock-dialog-card.mock-pick-card.is-draft-glow {
       border-color: color-mix(in srgb, var(--mo-good) 72%, var(--mo-line));
@@ -5430,28 +5571,66 @@
     }
     .mock-profile-hero {
       display: grid;
-      grid-template-columns: 4.5rem minmax(0, 1fr);
-      gap: 0.85rem;
-      align-items: center;
-      margin: 0 0 0.95rem;
-      padding-right: 1.5rem;
+      grid-template-columns: 5rem minmax(0, 1fr);
+      gap: 0.9rem;
+      align-items: start;
+      margin: 0 0 1.1rem;
+      padding: 0 1.6rem 0.95rem 0;
+      border-bottom: 1px solid rgba(126, 200, 255, 0.12);
+    }
+    html[data-theme="day"] .mock-profile-hero {
+      border-bottom-color: rgba(20, 24, 31, 0.1);
     }
     .mock-profile-hero img,
     .mock-profile-hero .ph {
-      width: 4.5rem;
-      height: 4.5rem;
-      border-radius: 0.7rem;
+      width: 5rem;
+      height: 5rem;
+      border-radius: 0.65rem;
       object-fit: cover;
       background: #111;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
     }
     .mock-profile-hero .ph {
       display: grid;
       place-items: center;
       color: var(--mo-muted);
     }
+    .mock-profile-hero-copy {
+      min-width: 0;
+    }
     .mock-profile-hero h3 {
-      margin: 0 0 0.25rem;
-      font-size: 1.35rem;
+      margin: 0 0 0.45rem;
+      font-size: clamp(1.2rem, 3.5vw, 1.45rem);
+      line-height: 1.15;
+    }
+    .mock-profile-chips {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .mock-profile-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+      padding: 0.18rem 0.45rem;
+      border-radius: 0.35rem;
+      border: 1px solid rgba(126, 200, 255, 0.16);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--mo-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .mock-profile-chip.is-injury {
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #ffd28a;
+      background: rgba(245, 158, 11, 0.12);
+    }
+    html[data-theme="day"] .mock-profile-chip {
+      border-color: rgba(20, 24, 31, 0.1);
+      background: #f3f5f8;
+      color: var(--mo-muted);
     }
     .mock-profile-meta {
       color: var(--mo-muted);
@@ -5472,19 +5651,63 @@
     .mock-profile-bio,
     .mock-pick-bio {
       display: block;
-      margin: 0.25rem 0 0;
+      margin: 0.45rem 0 0;
       color: var(--mo-muted);
-      font-size: 0.8rem;
-      line-height: 1.35;
+      font-size: 0.78rem;
+      line-height: 1.4;
     }
     .mock-adp-meta { font-size: 0.78rem !important; }
-    .mock-scout-block { margin: 0 0 0.65rem; }
+    .mock-scout-block {
+      display: grid;
+      gap: 0.45rem;
+      margin: 0;
+    }
+    .mock-scout-row {
+      display: grid;
+      gap: 0.15rem;
+      padding: 0.55rem 0.65rem;
+      border-radius: 0.45rem;
+      border: 1px solid rgba(126, 200, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .mock-scout-row.is-proj {
+      border-color: rgba(47, 123, 255, 0.28);
+      background: rgba(47, 123, 255, 0.08);
+    }
+    .mock-scout-row span {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .mock-scout-row.is-proj span { color: var(--mo-blue-hot); }
+    .mock-scout-row p {
+      margin: 0;
+      color: var(--mo-text);
+      font-size: 0.84rem;
+      line-height: 1.4;
+    }
+    html[data-theme="day"] .mock-scout-row {
+      border-color: rgba(20, 24, 31, 0.1);
+      background: #f3f5f8;
+    }
+    html[data-theme="day"] .mock-scout-row.is-proj {
+      border-color: rgba(31, 94, 240, 0.22);
+      background: rgba(31, 94, 240, 0.06);
+    }
     .mock-sources {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 0.35rem;
-      margin: 0.75rem 0 0;
+      margin: 0.15rem 0 0.35rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid rgba(126, 200, 255, 0.1);
+    }
+    html[data-theme="day"] .mock-sources {
+      border-top-color: rgba(20, 24, 31, 0.08);
     }
     .mock-sources-label {
       font-family: "Oswald", sans-serif;
@@ -8202,7 +8425,6 @@
             <button type="button" class="mock-dialog-close" id="mock-settings-close" aria-label="Cancel">×</button>
             <p class="mock-dialog-kicker">Mock Draft</p>
             <h3 id="mock-settings-title">Start Draft</h3>
-            <p class="mock-settings-lead">Choose teams, rounds, your seat, and the pick clock — then press OK to start the draft.</p>
             <form class="mock-settings-form" id="mock-settings-form">
               <div class="row">
                 <label>Teams
@@ -8235,13 +8457,6 @@
                   </select>
                 </label>
               </div>
-              <label class="mock-settings-check" for="mock-show-tools">
-                <span>
-                  <input type="checkbox" id="mock-show-tools" />
-                  Show advanced draft tools
-                </span>
-                <span class="hint">CPU pick, run to my pick, fill rest, undo, and reset — for solo practice.</span>
-              </label>
               <div class="mock-settings-actions">
                 <button type="button" class="ghost" id="mock-settings-cancel">Cancel</button>
                 <button type="button" class="ghost" id="mock-shuffle">Shuffle order</button>
@@ -8492,7 +8707,7 @@
   </footer>
   <script src="/js/nav.js?v=96"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=48"></script>
+  <script src="/js/lounge-desk.js?v=51"></script>
   <script src="/js/lounge-games.js?v=34"></script>
   <script>
     const esc = (v = '') => String(v)
