@@ -349,6 +349,7 @@ function rankDraftPool(players) {
 
 function buildSleeperMaps(sleeperPlayers, projections) {
   const byGsis = new Map();
+  const byEspn = new Map();
   const byKey = new Map();
   for (const [sleeperId, row] of Object.entries(sleeperPlayers || {})) {
     if (!row || typeof row !== 'object') continue;
@@ -361,6 +362,7 @@ function buildSleeperMaps(sleeperPlayers, projections) {
     const projected = toNum(projRow?.pts_ppr ?? projRow?.pts_half_ppr ?? projRow?.pts_std);
     const payload = {
       sleeperId: String(sleeperId),
+      espnId: String(row.espn_id || '').trim() || null,
       projectedPoints2026: projected != null ? Math.round(projected * 10) / 10 : null,
       adp: cleanAdp(projRow?.adp_ppr ?? projRow?.adp_half_ppr ?? projRow?.adp_std),
       projPassYds: toNum(projRow?.pass_yd),
@@ -383,10 +385,11 @@ function buildSleeperMaps(sleeperPlayers, projections) {
     };
     const gsis = String(row.gsis_id || '').trim();
     if (gsis) byGsis.set(gsis, payload);
+    if (payload.espnId) byEspn.set(payload.espnId, payload);
     byKey.set(matchKey(name, team, pos), payload);
     byKey.set(matchKey(name, '', pos), payload);
   }
-  return { byGsis, byKey };
+  return { byGsis, byEspn, byKey };
 }
 
 async function loadRoster(season) {
@@ -403,7 +406,7 @@ async function loadRoster(season) {
 async function loadDraftPool({ season, activeOnly = true, force = false } = {}) {
   const year = Number(season) || new Date().getFullYear();
   const priorSeason = year - 1;
-  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v5`;
+  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v6`;
   if (!force && poolCache.players && poolCache.key === key && Date.now() - poolCache.at < POOL_CACHE_MS) {
     return {
       ok: true,
@@ -441,9 +444,11 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
     .filter(Boolean);
 
   let ffcHits = 0;
+  let blendedHits = 0;
   const players = filterDraftPool(normalized, { activeOnly }).map((p) => {
     const stats = (p.gsisId && statsMap.get(p.gsisId)) || null;
     const sleeperHit = (p.gsisId && sleeper.byGsis.get(p.gsisId))
+      || (p.espnId && sleeper.byEspn.get(p.espnId))
       || sleeper.byKey.get(matchKey(p.name, p.team, p.position))
       || sleeper.byKey.get(matchKey(p.name, '', p.position))
       || null;
@@ -456,7 +461,38 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
     const delta = (projectedPoints2026 != null && fantasyPoints2025 != null)
       ? Math.round((projectedPoints2026 - fantasyPoints2025) * 10) / 10
       : null;
-    const adp = ffcHit?.adp ?? sleeperHit?.adp ?? null;
+
+    let adp = null;
+    let adpSource = null;
+    let adpStdev = null;
+    let adpSample = null;
+    if (ffcHit?.adp != null && sleeperHit?.adp != null) {
+      const stdev = ffcHit.stdev;
+      // High-variance FFC ADPs get a light Sleeper blend; otherwise trust FFC mocks.
+      if (stdev != null && stdev >= 9) {
+        adp = Math.round((ffcHit.adp * 0.72 + sleeperHit.adp * 0.28) * 10) / 10;
+        adpSource = 'ffc+sleeper';
+        blendedHits += 1;
+      } else {
+        adp = ffcHit.adp;
+        adpSource = 'ffc';
+      }
+      adpStdev = stdev ?? null;
+      adpSample = ffcHit.timesDrafted ?? null;
+    } else if (ffcHit?.adp != null) {
+      adp = ffcHit.adp;
+      adpSource = 'ffc';
+      adpStdev = ffcHit.stdev ?? null;
+      adpSample = ffcHit.timesDrafted ?? null;
+    } else if (sleeperHit?.adp != null) {
+      adp = sleeperHit.adp;
+      adpSource = 'sleeper';
+    }
+
+    const sources = ['nflverse'];
+    if (stats) sources.push('nflverse-stats');
+    if (sleeperHit) sources.push('sleeper');
+    if (ffcHit) sources.push('ffc');
 
     return {
       ...p,
@@ -467,7 +503,9 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
       avgPpg: stats?.avgPpg ?? null,
       games: stats?.games ?? null,
       adp,
-      adpSource: ffcHit ? 'ffc' : (sleeperHit?.adp != null ? 'sleeper' : null),
+      adpSource,
+      adpStdev,
+      adpSample,
       delta,
       injuryStatus: sleeperHit?.injuryStatus || null,
       injuryBodyPart: sleeperHit?.injuryBodyPart || null,
@@ -500,6 +538,7 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
       } : null,
       sleeperId: sleeperHit?.sleeperId || null,
       headshot: p.headshot || sleeperHit?.headshot || null,
+      sources,
       overallRank: null,
       posRank: null
     };
@@ -507,7 +546,7 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
 
   rankDraftPool(players);
 
-  const counts = { total: players.length, ffcAdpMatched: ffcHits };
+  const counts = { total: players.length, ffcAdpMatched: ffcHits, adpBlended: blendedHits };
   for (const p of players) counts[p.position] = (counts[p.position] || 0) + 1;
 
   const sourceParts = ['nflverse', 'sleeper'];

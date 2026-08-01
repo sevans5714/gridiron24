@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=136" />
+  <link rel="stylesheet" href="/css/site.css?v=137" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -223,8 +223,8 @@
         0 0 0 1px rgba(31, 94, 240, 0.06);
     }
     .sports-hero-title {
-      margin: 0 0 0.85rem;
-      padding: 0.55rem 0.5rem 0.7rem;
+      margin: 0 0 0.55rem;
+      padding: 0.4rem 0.4rem 0.5rem;
       text-align: center;
       border-bottom: 1px solid rgba(47, 109, 255, 0.22);
       background:
@@ -234,7 +234,7 @@
     .sports-hero-title h2 {
       margin: 0;
       font-family: "Oswald", "Bebas Neue", Impact, sans-serif;
-      font-size: clamp(1.85rem, 5vw, 2.85rem);
+      font-size: clamp(1.55rem, 4.2vw, 2.35rem);
       font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
@@ -360,9 +360,9 @@
 
     .lounge-controls {
       display: grid;
-      gap: 0.4rem;
+      gap: 0.3rem;
       justify-items: stretch;
-      padding: 0 0 0.65rem;
+      padding: 0 0 0.45rem;
       border-bottom: 1px solid rgba(126, 200, 255, 0.12);
       margin-bottom: 0;
     }
@@ -371,19 +371,19 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.75rem;
+      gap: 0.55rem 0.85rem;
       flex-wrap: wrap;
-      margin: 0 0 0.35rem;
+      margin: 0;
     }
     .sports-league-mark {
       display: inline-flex;
       align-items: center;
-      gap: 0.65rem;
+      gap: 0.5rem;
       min-width: 0;
     }
     .sports-league-logo {
-      width: 3.75rem;
-      height: 3.75rem;
+      width: 2.85rem;
+      height: 2.85rem;
       object-fit: contain;
       flex: 0 0 auto;
       filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.5));
@@ -397,10 +397,17 @@
       to { opacity: 1; transform: none; }
     }
     .sports-league-logo[hidden] { display: none !important; }
+    .sports-league-heading {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem 0.55rem;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
     .sports-league-title {
       margin: 0;
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: clamp(1.55rem, 3.2vw, 2.15rem);
+      font-size: clamp(1.35rem, 2.8vw, 1.85rem);
       font-weight: 400;
       letter-spacing: 0.12em;
       text-transform: uppercase;
@@ -418,18 +425,18 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 0.75rem;
+      gap: 0.55rem;
       flex-wrap: wrap;
       font-family: "Oswald", sans-serif;
-      font-size: 0.72rem;
-      letter-spacing: 0.14em;
+      font-size: 0.64rem;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--mo-muted);
     }
     .sports-live-pill {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.35rem;
       color: var(--mo-live);
       font-weight: 600;
       background: none;
@@ -441,11 +448,17 @@
     .sports-slate-pill {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.25rem;
+      flex: 0 0 auto;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.62rem;
       font-weight: 700;
-      letter-spacing: 0.12em;
-      padding: 0.2rem 0.55rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      line-height: 1;
+      padding: 0.28rem 0.5rem;
       border: 1px solid transparent;
+      border-radius: 0.2rem;
     }
     .sports-slate-pill[hidden] { display: none; }
     .sports-slate-pill.is-live {
@@ -485,22 +498,22 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-start;
-      gap: 0.1rem 0.2rem;
+      gap: 0 0.05rem;
     }
     .sports-tab {
       appearance: none;
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.3rem;
       border: 0;
       border-bottom: 2px solid transparent;
       background: transparent;
       color: var(--mo-muted);
       font-family: "Oswald", sans-serif;
-      font-size: 0.72rem;
-      letter-spacing: 0.12em;
+      font-size: 0.66rem;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding: 0.28rem 0.5rem;
+      padding: 0.22rem 0.4rem;
       cursor: pointer;
     }
     .sports-tab img {
@@ -523,8 +536,8 @@
 
     /* —— Scores board face —— */
     .sports-face {
-      margin-top: 0.55rem;
-      padding: 0.75rem 0.15rem 0.35rem;
+      margin-top: 0.35rem;
+      padding: 0.5rem 0.1rem 0.2rem;
       border: 0;
       border-top: 1px solid rgba(126, 200, 255, 0.12);
       background: transparent;
@@ -534,7 +547,7 @@
     .lounge-scores {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.65rem clamp(0.85rem, 2vw, 1.35rem);
+      gap: 0.5rem clamp(0.7rem, 1.8vw, 1.1rem);
       padding: 0;
     }
     .lounge-scores[hidden],
@@ -574,12 +587,12 @@
 
     /* Fixed full board — denser columns so more games fit */
     .sports-grid {
-      --sports-board-h: clamp(20.5rem, 40vh, 26rem);
+      --sports-board-h: clamp(19.5rem, 38vh, 24.5rem);
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       grid-template-rows: repeat(3, minmax(0, 1fr));
       align-content: stretch;
-      gap: 0.55rem 0.65rem;
+      gap: 0.4rem 0.5rem;
       height: var(--sports-board-h);
       min-height: var(--sports-board-h);
       max-height: var(--sports-board-h);
@@ -606,20 +619,20 @@
       font-size: 0.78rem;
     }
     .sports-page-meta {
-      margin: 0.45rem 0 0;
+      margin: 0.35rem 0 0;
       color: var(--mo-muted);
       font-family: "Oswald", sans-serif;
-      font-size: 0.64rem;
-      letter-spacing: 0.14em;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       text-align: center;
     }
 
     .sgame {
       min-width: 0;
-      padding: 0.4rem 0.45rem 0.45rem;
+      padding: 0.32rem 0.38rem 0.36rem;
       border: 1px solid rgba(126, 200, 255, 0.1);
-      border-radius: 0.4rem;
+      border-radius: 0.32rem;
       background: var(--mo-card);
       box-shadow: none;
       transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
@@ -3612,6 +3625,14 @@
       cursor: pointer;
       margin-left: auto;
     }
+    .mock-settings-actions #mock-settings-ok {
+      background: linear-gradient(180deg, #4aad6c 0%, #1f6b3a 100%);
+      color: #f4fff8;
+      box-shadow: 0 4px 12px rgba(31, 107, 58, 0.28);
+    }
+    .mock-settings-actions #mock-settings-ok:hover {
+      filter: brightness(1.06);
+    }
     @media (max-width: 560px) {
       .mock-settings-form .row { grid-template-columns: 1fr; }
     }
@@ -5437,10 +5458,70 @@
       font-size: 0.88rem;
     }
     .mock-profile-note {
-      margin: 0 0 1rem;
+      margin: 0 0 0.55rem;
       color: var(--mo-muted);
-      font-size: 0.82rem;
+      font-size: 0.86rem;
       line-height: 1.4;
+    }
+    .mock-profile-note.is-proj { color: color-mix(in srgb, var(--mo-blue-hot) 70%, var(--mo-muted)); }
+    .mock-profile-note strong {
+      color: var(--mo-text);
+      font-weight: 700;
+      margin-right: 0.25rem;
+    }
+    .mock-profile-bio,
+    .mock-pick-bio {
+      display: block;
+      margin: 0.25rem 0 0;
+      color: var(--mo-muted);
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+    .mock-adp-meta { font-size: 0.78rem !important; }
+    .mock-scout-block { margin: 0 0 0.65rem; }
+    .mock-sources {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+      margin: 0.75rem 0 0;
+    }
+    .mock-sources-label {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+      margin-right: 0.15rem;
+    }
+    .mock-source-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.18rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid var(--mo-line);
+      background: color-mix(in srgb, var(--mo-surface-2) 88%, transparent);
+      color: var(--mo-muted);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .mock-source-inline {
+      margin-top: 0.35rem !important;
+      font-size: 0.72rem !important;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+    .mock-pick-injury { margin: 0.55rem 0 0; }
+    .mock-news-label {
+      margin: 0 0 0.4rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mo-gold);
     }
     .mock-player.is-targeted {
       box-shadow: inset 3px 0 0 var(--mo-gold);
@@ -6591,22 +6672,31 @@
       top: 0.75rem;
       padding: 0;
       border-radius: 0.15rem 0.55rem 0.55rem 0.15rem;
-      border: 1px solid rgba(60, 45, 30, 0.35);
+      border: 1px solid rgba(60, 45, 30, 0.42);
       border-left: 0;
       color: var(--slip-ink);
       background:
+        linear-gradient(105deg, rgba(255, 255, 255, 0.22) 0%, transparent 42%),
         repeating-linear-gradient(
           90deg,
           transparent 0 10px,
-          rgba(0, 0, 0, 0.015) 10px 11px
+          rgba(0, 0, 0, 0.018) 10px 11px
         ),
-        linear-gradient(180deg, var(--slip-paper) 0%, var(--slip-paper-2) 100%);
+        linear-gradient(180deg, #f8f0dc 0%, var(--slip-paper) 28%, var(--slip-paper-2) 100%);
       box-shadow:
-        0 16px 32px rgba(0, 0, 0, 0.4),
-        4px 0 0 rgba(139, 30, 30, 0.85),
-        inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        0 1px 0 rgba(255, 255, 255, 0.55),
+        0 2px 0 rgba(90, 70, 40, 0.12),
+        0 8px 16px rgba(0, 0, 0, 0.28),
+        0 22px 44px rgba(0, 0, 0, 0.42),
+        0 36px 64px rgba(0, 0, 0, 0.22),
+        5px 0 0 #6e1515,
+        6px 0 0 rgba(40, 20, 10, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7),
+        inset 0 -10px 24px rgba(90, 60, 30, 0.08),
+        inset 1px 0 0 rgba(255, 255, 255, 0.35);
       overflow: hidden;
       isolation: isolate;
+      transform: translateZ(0);
     }
     .degen-ticket::before {
       content: "";
@@ -6619,26 +6709,51 @@
         radial-gradient(circle at 0 0.55rem, transparent 0.32rem, var(--slip-paper) 0.34rem) 0 0 / 100% 1.1rem repeat-y;
       pointer-events: none;
       z-index: 1;
+      filter: drop-shadow(1px 0 0 rgba(0, 0, 0, 0.08));
+    }
+    .degen-ticket::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+        inset -10px 0 18px rgba(80, 55, 25, 0.06),
+        inset 0 -14px 28px rgba(70, 45, 20, 0.07);
     }
     html[data-theme="day"] .degen-ticket {
       --slip-paper: #f7f0e0;
       --slip-paper-2: #efe4cf;
-      border-color: rgba(60, 45, 30, 0.22);
+      border-color: rgba(60, 45, 30, 0.28);
       box-shadow:
-        0 12px 28px rgba(40, 30, 20, 0.12),
-        4px 0 0 rgba(139, 30, 30, 0.75),
-        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+        0 1px 0 rgba(255, 255, 255, 0.85),
+        0 2px 0 rgba(90, 70, 40, 0.1),
+        0 6px 14px rgba(40, 30, 20, 0.1),
+        0 18px 36px rgba(40, 30, 20, 0.16),
+        0 28px 52px rgba(40, 30, 20, 0.1),
+        5px 0 0 #7a1818,
+        6px 0 0 rgba(60, 30, 15, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85),
+        inset 0 -10px 22px rgba(90, 60, 30, 0.06),
+        inset 1px 0 0 rgba(255, 255, 255, 0.45);
     }
     .degen-ticket-head {
+      position: relative;
+      z-index: 1;
       display: grid;
       gap: 0.55rem;
       padding: 0.85rem 0.95rem 0.7rem 1.15rem;
       border-bottom: 0;
       background:
-        linear-gradient(180deg, rgba(139, 30, 30, 0.1) 0%, transparent 100%);
+        linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, transparent 55%),
+        linear-gradient(180deg, rgba(139, 30, 30, 0.12) 0%, transparent 100%);
     }
     html[data-theme="day"] .degen-ticket-head {
-      background: linear-gradient(180deg, rgba(139, 30, 30, 0.08) 0%, transparent 100%);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 55%),
+        linear-gradient(180deg, rgba(139, 30, 30, 0.08) 0%, transparent 100%);
     }
     .degen-ticket-brand { min-width: 0; }
     .degen-ticket-kicker {
@@ -6695,6 +6810,8 @@
       border-top: 1px dashed rgba(40, 32, 24, 0.28);
     }
     .degen-ticket-legs {
+      position: relative;
+      z-index: 1;
       padding: 0.2rem 0.9rem 0.45rem 1.1rem;
       min-height: 3.25rem;
       max-height: min(40vh, 18rem);
@@ -6773,16 +6890,21 @@
       color: #5c1010;
     }
     .degen-ticket-summary {
-      padding: 0.75rem 0.9rem 0.95rem 1.1rem;
+      position: relative;
+      z-index: 1;
+      padding: 0.75rem 0.9rem 1.35rem 1.1rem;
       border-top: 1px dashed rgba(40, 32, 24, 0.28);
-      background: rgba(255, 255, 255, 0.28);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.18) 100%);
+      box-shadow: inset 0 8px 16px rgba(255, 255, 255, 0.2);
       display: grid;
       gap: 0.55rem;
       color: var(--slip-ink);
     }
     html[data-theme="day"] .degen-ticket-summary {
       border-top-color: rgba(40, 32, 24, 0.22);
-      background: rgba(255, 255, 255, 0.4);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.28) 100%);
     }
     .degen-slip-bar {
       display: flex;
@@ -6840,10 +6962,14 @@
     .degen-ticket .degen-slip-status.is-ok { color: var(--slip-good, #1f6b3a); }
     .degen-ticket .degen-slip-status.is-err { color: var(--slip-accent, #8b1e1e); }
     .degen-ticket .degen-best-open {
+      position: relative;
+      z-index: 1;
       margin: 0;
-      padding: 0.7rem 0.9rem 0.85rem 1.1rem;
+      padding: 0.85rem 0.9rem 1.25rem 1.1rem;
       border-top: 1px dashed rgba(40, 32, 24, 0.28);
-      background: rgba(40, 32, 24, 0.05);
+      background:
+        linear-gradient(180deg, rgba(40, 32, 24, 0.04) 0%, rgba(40, 32, 24, 0.09) 100%);
+      box-shadow: inset 0 6px 12px rgba(40, 32, 24, 0.04);
     }
     .degen-ticket .degen-best-open h4 {
       color: var(--slip-ink, #1a1a1a);
@@ -6868,14 +6994,23 @@
       color: var(--slip-mute, #5c5348);
     }
     .lounge-section.is-degen .degen-ticket .degen-btn-lock {
-      border-color: rgba(139, 30, 30, 0.55);
-      background: linear-gradient(180deg, #a32626 0%, #8b1e1e 100%);
-      color: #f7efe4;
-      box-shadow: 0 6px 14px rgba(139, 30, 30, 0.28);
+      margin-top: 0.15rem;
+      margin-bottom: 0.2rem;
+      border-color: rgba(20, 80, 40, 0.5);
+      background: linear-gradient(180deg, #4aad6c 0%, #1f6b3a 55%, #175530 100%);
+      color: #f4fff8;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.35) inset,
+        0 6px 14px rgba(31, 107, 58, 0.35),
+        0 2px 0 rgba(20, 70, 35, 0.35);
     }
     .lounge-section.is-degen .degen-ticket .degen-btn-lock:hover {
-      background: linear-gradient(180deg, #b52d2d 0%, #9a2222 100%);
+      background: linear-gradient(180deg, #58bc78 0%, #267a44 55%, #1a6038 100%);
       color: #fff;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 8px 18px rgba(31, 107, 58, 0.42),
+        0 2px 0 rgba(20, 70, 35, 0.4);
     }
     .lounge-section.is-degen .degen-ticket .degen-btn-lock:disabled {
       opacity: 0.45;
@@ -7646,10 +7781,16 @@
       .sports-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         grid-template-rows: repeat(4, minmax(0, 1fr));
-        gap: 0.45rem 0.5rem;
-        --sports-board-h: clamp(21rem, 46vh, 28rem);
+        gap: 0.35rem 0.4rem;
+        --sports-board-h: clamp(20rem, 44vh, 26rem);
       }
-      .sports-face { padding: 0.35rem 0 0.15rem; }
+      .sports-face { padding: 0.3rem 0 0.1rem; }
+      .sports-league-logo { width: 2.35rem; height: 2.35rem; }
+      .sports-league-title { font-size: clamp(1.15rem, 5vw, 1.55rem); }
+      .sports-slate-pill {
+        font-size: 0.56rem;
+        padding: 0.22rem 0.4rem;
+      }
       .lounge-mid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
@@ -7779,6 +7920,11 @@
     html[data-theme="day"] .sports-slate-pill.is-results {
       border-color: rgba(31, 94, 240, 0.35);
       background: rgba(31, 94, 240, 0.1);
+    }
+    html[data-theme="day"] .sports-slate-pill.is-mixed {
+      color: var(--mo-text);
+      border-color: rgba(20, 24, 31, 0.2);
+      background: rgba(20, 24, 31, 0.05);
     }
     html[data-theme="day"] .sports-tab.is-active {
       color: var(--mo-blue);
@@ -7960,10 +8106,12 @@
           <div class="sports-board-head">
             <div class="sports-league-mark">
               <img class="sports-league-logo" id="sports-league-logo" alt="" width="64" height="64" hidden decoding="async" referrerpolicy="no-referrer" />
-              <h3 class="sports-league-title" id="sports-league-title">League</h3>
+              <div class="sports-league-heading">
+                <h3 class="sports-league-title" id="sports-league-title">League</h3>
+                <span class="sports-slate-pill" id="sports-slate-pill" hidden>Upcoming</span>
+              </div>
             </div>
             <div class="sports-meta">
-              <span class="sports-slate-pill" id="sports-slate-pill" hidden>Upcoming</span>
               <span class="sports-live-pill" id="sports-live-pill" hidden><span class="pulse" aria-hidden="true"></span><span id="sports-live-count">0 live</span></span>
               <span id="sports-updated">Updating…</span>
             </div>
@@ -8003,19 +8151,6 @@
       <section class="lounge-section is-mock lounge-desk-panel" id="mock-draft" data-desk-panel="mock" aria-label="Mock draft generator" role="tabpanel" hidden>
         <div class="lounge-section-label mock-section-label">
           <h2>Mock Draft</h2>
-          <button
-            type="button"
-            class="mock-settings-btn"
-            id="mock-settings-open"
-            aria-label="Draft settings"
-            aria-haspopup="dialog"
-            aria-controls="mock-settings-dialog"
-            title="Draft settings"
-          >
-            <svg class="mock-settings-gear" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-              <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54A.5.5 0 0 0 14.4 2h-4.8a.5.5 0 0 0-.49.42l-.36 2.54c-.59.24-1.13.55-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.22 8.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.34 14.1a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.43.34.68.22l2.39-.96c.49.39 1.03.7 1.62.94l.36 2.54c.05.24.25.42.49.42h4.8c.24 0 .44-.18.49-.42l.36-2.54c.59-.24 1.13-.55 1.62-.94l2.39.96c.25.12.54.02.68-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/>
-            </svg>
-          </button>
         </div>
         <div class="mock-start-bar" id="mock-start-bar">
           <button type="button" class="mock-start-btn" id="mock-start" aria-label="Start Draft">
@@ -8026,7 +8161,7 @@
             <span class="mock-start-btn-sub" id="mock-start-sub" hidden></span>
           </button>
           <div class="mock-start-copy" id="mock-start-copy">
-            <strong>Claim your seat, then Start Draft</strong>
+            <strong>Start Draft to choose settings</strong>
           </div>
           <div class="mock-live-timer" id="mock-live-timer" hidden>
             <span class="mock-live-timer-label">Your clock</span>
@@ -8064,10 +8199,10 @@
 
         <dialog class="mock-dialog mock-settings-dialog" id="mock-settings-dialog" aria-labelledby="mock-settings-title">
           <div class="mock-dialog-card mock-settings-card">
-            <button type="button" class="mock-dialog-close" id="mock-settings-close" aria-label="Close">×</button>
+            <button type="button" class="mock-dialog-close" id="mock-settings-close" aria-label="Cancel">×</button>
             <p class="mock-dialog-kicker">Mock Draft</p>
-            <h3 id="mock-settings-title">Draft settings</h3>
-            <p class="mock-settings-lead">Set the board size, your seat, and the pick clock before you go live.</p>
+            <h3 id="mock-settings-title">Start Draft</h3>
+            <p class="mock-settings-lead">Choose teams, rounds, your seat, and the pick clock — then press OK to start the draft.</p>
             <form class="mock-settings-form" id="mock-settings-form">
               <div class="row">
                 <label>Teams
@@ -8089,7 +8224,7 @@
                 </label>
               </div>
               <div class="row">
-                <label>Your pick #
+                <label>Your seat
                   <select id="mock-seat" aria-label="Your draft position"></select>
                 </label>
                 <label>Pick clock
@@ -8108,9 +8243,9 @@
                 <span class="hint">CPU pick, run to my pick, fill rest, undo, and reset — for solo practice.</span>
               </label>
               <div class="mock-settings-actions">
+                <button type="button" class="ghost" id="mock-settings-cancel">Cancel</button>
                 <button type="button" class="ghost" id="mock-shuffle">Shuffle order</button>
-                <button type="button" class="mock-settings-danger" id="mock-settings-reset">Reset draft</button>
-                <button type="button" class="primary" id="mock-settings-done">Done</button>
+                <button type="submit" class="primary" id="mock-settings-ok">OK</button>
               </div>
             </form>
           </div>
@@ -8355,10 +8490,10 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=1" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=94"></script>
+  <script src="/js/nav.js?v=96"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=45"></script>
-  <script src="/js/lounge-games.js?v=33"></script>
+  <script src="/js/lounge-desk.js?v=48"></script>
+  <script src="/js/lounge-games.js?v=34"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -8727,7 +8862,7 @@
         return { key: 'live', label: 'Live' };
       }
       if (live) {
-        return { key: 'live', label: 'Live now' };
+        return { key: 'live', label: 'Live' };
       }
       if (final && !upcoming) {
         return { key: 'results', label: 'Results' };
@@ -8735,7 +8870,7 @@
       if (upcoming && !final) {
         return { key: 'upcoming', label: 'Upcoming' };
       }
-      return { key: 'mixed', label: 'Results · Upcoming' };
+      return { key: 'mixed', label: 'Mixed' };
     }
 
     function sportsOrderedGames(games) {
@@ -8932,7 +9067,7 @@
       if (sportsPage >= pages) sportsPage = 0;
       const fieldOnly = games.length > 0 && games.every((g) => isFieldSportKind(g.kind));
       const page = sportsPageSlice(games, sportsPage, fieldOnly ? SPORTS_GOLF_SLOT : SPORTS_SLOT);
-      const mode = sportsPageMode(page);
+      const mode = sportsPageMode(games);
 
       if (slatePill) {
         slatePill.classList.remove('is-live', 'is-upcoming', 'is-results', 'is-mixed');
@@ -8952,13 +9087,9 @@
       fillSportsRail(grid, page, 'No games on this slate.');
 
       if (pageMeta) {
-        const modeBit = mode.label ? ` · ${mode.label}` : '';
         if (pages > 1) {
           pageMeta.hidden = false;
-          pageMeta.textContent = `${league.label}${modeBit} · ${sportsPage + 1} / ${pages}`;
-        } else if (mode.label) {
-          pageMeta.hidden = false;
-          pageMeta.textContent = `${league.label}${modeBit}`;
+          pageMeta.textContent = `${league.label} · ${sportsPage + 1} / ${pages}`;
         } else {
           pageMeta.hidden = true;
           pageMeta.textContent = '';

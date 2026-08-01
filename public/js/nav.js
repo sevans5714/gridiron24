@@ -585,20 +585,12 @@
   function ensureUiModeMount() {
     let el = document.getElementById('ui-mode-switch');
     if (el) return el;
-    const topbarInner = document.querySelector('.topbar-inner');
-    if (!topbarInner) return null;
-    let right = topbarInner.querySelector('.topbar-right');
-    if (!right) {
-      right = document.createElement('div');
-      right.className = 'topbar-right';
-      topbarInner.appendChild(right);
-    }
     el = document.createElement('button');
     el.type = 'button';
     el.id = 'ui-mode-switch';
     el.className = 'ui-mode-switch';
     el.hidden = true;
-    right.insertBefore(el, right.firstChild);
+    document.body.appendChild(el);
     return el;
   }
 
@@ -613,8 +605,11 @@
       return;
     }
     el.hidden = false;
-    el.textContent = 'Mobile app';
+    el.setAttribute('aria-label', 'Switch to mobile app');
     el.title = 'Switch back to the mobile app layout';
+    el.innerHTML = `<svg class="ui-mode-phone" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+      <path fill="currentColor" d="M15.5 1h-7A2.5 2.5 0 0 0 6 3.5v17A2.5 2.5 0 0 0 8.5 23h7a2.5 2.5 0 0 0 2.5-2.5v-17A2.5 2.5 0 0 0 15.5 1zm-3.5 20.25a1.1 1.1 0 1 1 0-2.2 1.1 1.1 0 0 1 0 2.2zM16 18H8V4h8v14z"/>
+    </svg>`;
     el.onclick = () => {
       if (window.GridIronUiMode?.goMobile) {
         window.GridIronUiMode.goMobile();

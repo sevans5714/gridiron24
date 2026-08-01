@@ -248,7 +248,7 @@
     setMockSideTab('roster');
     renderMock();
     if (!silent) {
-      setMockStatus('Fresh mock — set your pick #, then Start Draft', true);
+      setMockStatus('Fresh mock — Start Draft to choose settings', true);
     }
     return true;
   }
@@ -361,7 +361,7 @@
       else if (inLobby) headline = 'Lobby ready';
       else if (draftLive && mine) headline = 'ON THE CLOCK';
       else if (draftLive) headline = isMultiplayer() ? 'Live mock' : 'Waiting your turn';
-      else headline = 'Claim your seat, then Start Draft';
+      else headline = 'Start Draft to choose settings';
       copy.innerHTML = `<strong>${headline}</strong>`;
     }
     if (sub) {
@@ -577,7 +577,7 @@
   function finishCompletedMock() {
     closeMockCompleteScreen();
     resetMockDraft({ confirm: false });
-    setMockStatus('Mock complete — board reset. Set your pick #, then Start Draft', true);
+    setMockStatus('Mock complete — board reset. Start Draft to choose settings', true);
   }
 
   function nextMockDraftNumber() {
@@ -768,7 +768,7 @@
     await beginLiveDraft(data.room, data.chatItem);
   }
 
-  async function startDraftSession() {
+  async function startDraftSession({ fromSettings = false } = {}) {
     if (!mock) return;
     unlockDraftAudio();
     if (awaitingSeatClaim) {
@@ -829,6 +829,12 @@
       }
       startRoomPoll();
       startLobbyPaint();
+      history.replaceState(null, '', `#mock-draft?room=${encodeURIComponent(roomId)}`);
+      // OK starts the draft: lock positions so the join countdown + start sound begin.
+      if (fromSettings && roomIsHost && !positionsLocked) {
+        await lockHostPositions();
+        return;
+      }
       const openSeats = Array.isArray(data.room.seats)
         ? data.room.seats.filter((s) => !s.userId).length
         : (Number(data.room.openSeatCount) || 0);
@@ -836,7 +842,6 @@
         `Lobby open — drag your team to set position · ${openSeats} open seat${openSeats === 1 ? '' : 's'}`,
         true
       );
-      history.replaceState(null, '', `#mock-draft?room=${encodeURIComponent(roomId)}`);
       return;
     } catch (err) {
       // Fall back to solo local draft if room create fails
@@ -845,6 +850,7 @@
 
     draftLive = true;
     setDraftLive(true);
+    playDraftStartSound({ key: `local:${Date.now()}` });
     const filled = await runCpuUntilUserPick();
     const slot = currentSlot();
     if (!slot) {
@@ -1625,6 +1631,7 @@
       ? `<img class="mock-pick-team-logo" src="${esc(player.teamLogo)}" alt="" width="16" height="16" loading="lazy" referrerpolicy="no-referrer" />`
       : '';
     const posRk = player.posRank != null ? `${esc(player.position)}${player.posRank}` : '—';
+    const bio = playerBioLine(player);
     body.innerHTML = `
       <div class="mock-pick-hero">
         ${head}
@@ -1636,18 +1643,22 @@
             ${player.byeWeek != null ? `<span class="mock-pick-bye">Bye ${esc(String(player.byeWeek))}</span>` : ''}
             ${injury ? `<span class="mock-pick-inj">${esc(injuryAbbrev(injury))}</span>` : ''}
           </span>
+          ${bio ? `<span class="mock-pick-bio">${esc(bio)}</span>` : ''}
         </div>
       </div>
       <div class="mock-pick-stats" aria-label="Player stats">
         ${pickModalStat('Overall', esc(String(player.overallRank ?? '—')))}
         ${pickModalStat('Pos rk', posRk)}
         ${pickModalStat('ADP', esc(fmtAdp(player.adp)))}
-        ${pickModalStat('’25 FP', esc(fmtPts(player.fantasyPoints2025)))}
-        ${pickModalStat('Proj', esc(fmtPts(player.projectedPoints2026)), { accent: true })}
+        ${pickModalStat('VORP', player.vorp != null ? esc(fmtPts(player.vorp)) : '—')}
+        ${pickModalStat(priorFpLabel(), esc(fmtPts(player.fantasyPoints2025)))}
+        ${pickModalStat(projFpLabel(), esc(fmtPts(player.projectedPoints2026)), { accent: true })}
         ${pickModalStat('PPG', esc(fmtPts(player.avgPpg)))}
         ${pickModalStat('Δ', esc(fmtDelta(player.delta)))}
-        ${pickModalStat('Bye', player.byeWeek != null ? esc(String(player.byeWeek)) : '—')}
       </div>
+      ${scoutingBlockHtml(player)}
+      ${injury ? `<div class="mock-news-injury mock-pick-injury">${injuryDetailHtml(player)}</div>` : ''}
+      ${playerSourcesHtml(player)}
     `;
     if (draftBtn) {
       draftBtn.disabled = !canUserDraftNow();
@@ -1823,6 +1834,7 @@
     if (player.practiceDescription || player.practiceStatus) {
       bits.push(`<p class="sub">Practice: ${esc(player.practiceDescription || player.practiceStatus)}</p>`);
     }
+    bits.push(`<p class="sub mock-source-inline">Injury report · Sleeper</p>`);
     return bits.join('');
   }
 
@@ -1857,14 +1869,17 @@
     const title = document.getElementById('mock-injury-title');
     const body = document.getElementById('mock-injury-body');
     if (!player || !dialog || !body) return;
-    if (title) title.textContent = `${shortPlayerName(player.name)} · Injury news`;
-    const meta = [player.position, player.team || 'FA'].filter(Boolean).join(' · ');
+    if (title) title.textContent = `${shortPlayerName(player.name)} · Injury`;
+    const meta = [player.position, player.team || 'FA', player.byeWeek != null ? `Bye ${player.byeWeek}` : '']
+      .filter(Boolean)
+      .join(' · ');
     body.innerHTML = `
       <p class="mock-injury-meta">${esc(meta)}</p>
       <div class="mock-news-injury">${injuryDetailHtml(player)}</div>
       <div class="mock-injury-news" data-injury-news>
-        <p class="mock-profile-note">Loading injury news…</p>
+        <p class="mock-profile-note">Loading ESPN headlines…</p>
       </div>
+      ${playerSourcesHtml(player, { news: true })}
     `;
     try {
       dialog.showModal();
@@ -1875,12 +1890,12 @@
       if (!newsMount.isConnected) return;
       if (!items.length) {
         newsMount.innerHTML = injuryLabel(player)
-          ? `<p class="mock-profile-note">No recent headlines — status above is the latest injury report.</p>`
+          ? `<p class="mock-profile-note">No recent ESPN headlines — Sleeper status above is the latest injury report.</p>`
           : `<p class="mock-profile-note">No recent injury headlines.</p>`;
         return;
       }
       newsMount.innerHTML = `
-        <p class="mock-news-label">Player news</p>
+        <p class="mock-news-label">ESPN player news</p>
         ${injuryNewsItemsHtml(items)}
       `;
     } catch (err) {
@@ -1907,7 +1922,7 @@
       mount.innerHTML = `
         ${injuryBlock}
         <div class="mock-news-box">
-          <p class="mock-news-label">Player news</p>
+          <p class="mock-news-label">ESPN player news</p>
           ${injuryNewsItemsHtml(items)}
         </div>
       `;
@@ -1930,29 +1945,35 @@
       : `<span class="ph" aria-hidden="true">FP</span>`;
     const taken = takenIds().has(player.id) || takenIds().has(Number(player.id));
     const injury = injuryLabel(player);
+    const bio = playerBioLine(player);
+    const logo = player.teamLogo
+      ? `<img class="mock-pick-team-logo" src="${esc(player.teamLogo)}" alt="" width="16" height="16" loading="lazy" referrerpolicy="no-referrer" />`
+      : '';
     body.innerHTML = `
       <div class="mock-profile-hero">
         ${head}
         <div>
           <h3 id="mock-profile-title"><span>${esc(player.name)}</span>${injury ? injuryBadgeHtml(player) : ''}</h3>
-          <p class="mock-profile-meta">${esc(player.position || '')} · ${esc(player.team || 'FA')}${player.byeWeek != null ? ` · Bye ${esc(String(player.byeWeek))}` : ''}${player.jersey ? ` · #${esc(String(player.jersey))}` : ''}${injury ? ` · ${esc(injury)}` : ''}</p>
+          <p class="mock-profile-meta">${posBadge(player.position)} <span class="mock-pick-team">${logo}<em>${esc(player.team || 'FA')}</em></span>${player.byeWeek != null ? ` · Bye ${esc(String(player.byeWeek))}` : ''}${player.jersey ? ` · #${esc(String(player.jersey))}` : ''}${injury ? ` · ${esc(injury)}` : ''}</p>
+          ${bio ? `<p class="mock-profile-bio">${esc(bio)}</p>` : ''}
         </div>
       </div>
       <div class="mock-profile-grid">
         <div class="mock-profile-stat"><span>Rank</span><strong>${esc(String(player.overallRank ?? '—'))}</strong></div>
         <div class="mock-profile-stat"><span>Pos rk</span><strong>${player.posRank != null ? esc(`${player.position}${player.posRank}`) : '—'}</strong></div>
-        <div class="mock-profile-stat"><span>ADP</span><strong>${esc(fmtAdp(player.adp))}</strong></div>
-        <div class="mock-profile-stat"><span>Bye</span><strong>${player.byeWeek != null ? esc(String(player.byeWeek)) : '—'}</strong></div>
-        <div class="mock-profile-stat"><span>’25 FP</span><strong>${esc(fmtPts(player.fantasyPoints2025))}</strong></div>
-        <div class="mock-profile-stat"><span>Proj</span><strong>${esc(fmtPts(player.projectedPoints2026))}</strong></div>
+        <div class="mock-profile-stat" title="${esc(adpTooltip(player))}"><span>ADP</span><strong>${esc(fmtAdp(player.adp))}</strong></div>
+        <div class="mock-profile-stat"><span>VORP</span><strong>${player.vorp != null ? esc(fmtPts(player.vorp)) : '—'}</strong></div>
+        <div class="mock-profile-stat"><span>${esc(priorFpLabel())}</span><strong>${esc(fmtPts(player.fantasyPoints2025))}</strong></div>
+        <div class="mock-profile-stat"><span>${esc(projFpLabel())}</span><strong>${esc(fmtPts(player.projectedPoints2026))}</strong></div>
         <div class="mock-profile-stat"><span>PPG</span><strong>${esc(fmtPts(player.avgPpg))}</strong></div>
         <div class="mock-profile-stat"><span>Δ</span><strong>${esc(fmtDelta(player.delta))}</strong></div>
         ${profilePosStatsHtml(player)}
       </div>
-      ${scoutingLine(player) ? `<p class="mock-profile-note">${esc(scoutingLine(player))}</p>` : ''}
-      <div id="mock-profile-news"><p class="mock-profile-note">Loading player news…</p></div>
+      ${player.adp != null ? `<p class="mock-profile-note mock-adp-meta">${esc(adpTooltip(player))}</p>` : ''}
+      ${scoutingBlockHtml(player)}
+      <div id="mock-profile-news"><p class="mock-profile-note">Loading ESPN headlines…</p></div>
       ${taken ? '<p class="mock-profile-note">Already drafted.</p>' : ''}
-      ${player.college ? `<p class="mock-profile-note">${esc(player.college)}</p>` : ''}
+      ${playerSourcesHtml(player, { news: true })}
     `;
     const targetBtn = document.getElementById('mock-profile-target');
     const draftBtn = document.getElementById('mock-profile-draft');
@@ -2148,6 +2169,14 @@
     fillSeatSelect();
     paintAdvancedTools();
     paintSettingsSummary();
+    syncMockActionButtons();
+    const title = document.getElementById('mock-settings-title');
+    if (title) title.textContent = 'Start Draft';
+    const okBtn = document.getElementById('mock-settings-ok');
+    if (okBtn) {
+      okBtn.disabled = false;
+      okBtn.textContent = 'OK';
+    }
     try {
       dialog.showModal();
     } catch { /* ignore */ }
@@ -2157,6 +2186,65 @@
     const dialog = document.getElementById('mock-settings-dialog');
     if (dialog?.open) dialog.close();
     paintSettingsSummary();
+  }
+
+  function readSettingsFromForm() {
+    if (!mock) return;
+    const teamsEl = document.getElementById('mock-teams');
+    const roundsEl = document.getElementById('mock-rounds');
+    const seatEl = document.getElementById('mock-seat');
+    const clockEl = document.getElementById('mock-pick-seconds');
+    const toolsEl = document.getElementById('mock-show-tools');
+
+    const count = normalizeTeamCount(teamsEl?.value);
+    if (count !== mock.teamNames.length) applyTeamCount(count);
+
+    const rounds = Number(roundsEl?.value);
+    if (Number.isFinite(rounds) && rounds > 0) mock.rounds = rounds;
+
+    const seat = Number(seatEl?.value);
+    if (Number.isFinite(seat) && seat >= 0 && seat < mock.teamNames.length) {
+      mock.seatIndex = seat;
+      mock.teamNames = applyCelebrityCpuNames(
+        padTeamNames(teamNames.length ? teamNames : mock.teamNames, mock.teamNames.length),
+        mock.seatIndex
+      );
+    }
+
+    pickSeconds = getPickSeconds();
+    if (clockEl && PICK_SECONDS_OPTIONS.has(pickSeconds)) {
+      clockEl.value = String(pickSeconds);
+    }
+    if (toolsEl) setShowAdvancedTools(Boolean(toolsEl.checked));
+  }
+
+  async function confirmMockSettingsAndStart() {
+    if (!mock) return;
+    if (draftLive || isMultiplayer() || awaitingSeatClaim) {
+      closeMockSettings();
+      return;
+    }
+    if (!poolAll.length) {
+      setMockStatus('Player pool still loading…', false);
+      return;
+    }
+    const okBtn = document.getElementById('mock-settings-ok');
+    if (okBtn) {
+      okBtn.disabled = true;
+      okBtn.textContent = 'Starting…';
+    }
+    unlockDraftAudio();
+    readSettingsFromForm();
+    closeMockSettings();
+    try {
+      // OK starts the draft with the settings chosen above (sound + join countdown).
+      await startDraftSession({ fromSettings: true });
+    } finally {
+      if (okBtn) {
+        okBtn.disabled = false;
+        okBtn.textContent = 'OK';
+      }
+    }
   }
 
   function fillSeatSelect() {
@@ -2756,6 +2844,86 @@
     return '0.0';
   }
 
+  function seasonYy(year, fallback = '') {
+    const y = Number(year);
+    if (!Number.isFinite(y) || y < 1990) return fallback;
+    return `’${String(y).slice(-2)}`;
+  }
+
+  function priorFpLabel() {
+    return `${seasonYy(mock?.statsSeason, '’25')} FP`;
+  }
+
+  function projFpLabel() {
+    return `${seasonYy(mock?.projectionSeason, '’26')} Proj`;
+  }
+
+  function adpSourceLabel(source) {
+    const s = String(source || '').toLowerCase();
+    if (s === 'ffc') return 'Fantasy Football Calculator';
+    if (s === 'sleeper') return 'Sleeper';
+    if (s === 'ffc+sleeper') return 'FFC + Sleeper';
+    return source || 'ADP';
+  }
+
+  function adpTooltip(player) {
+    if (player?.adp == null || !Number.isFinite(Number(player.adp))) {
+      return 'Average draft position unavailable';
+    }
+    const bits = [`ADP ${fmtAdp(player.adp)} · ${adpSourceLabel(player.adpSource)}`];
+    if (player.adpStdev != null && Number.isFinite(Number(player.adpStdev))) {
+      bits.push(`σ ${Number(player.adpStdev).toFixed(1)}`);
+    }
+    if (player.adpSample != null && Number.isFinite(Number(player.adpSample))) {
+      bits.push(`${Math.round(Number(player.adpSample))} mocks`);
+    }
+    return bits.join(' · ');
+  }
+
+  function playerSourcesHtml(player, { news = false } = {}) {
+    const chips = [];
+    const src = new Set(Array.isArray(player?.sources) ? player.sources : []);
+    if (src.has('nflverse') || src.has('nflverse-stats')) {
+      chips.push('<span class="mock-source-chip" title="Roster, bye, prior-season stats">nflverse</span>');
+    }
+    if (src.has('sleeper') || player?.projectedPoints2026 != null || injuryLabel(player)) {
+      chips.push('<span class="mock-source-chip" title="Projections, injuries, practice report">Sleeper</span>');
+    }
+    if (src.has('ffc') || String(player?.adpSource || '').includes('ffc')) {
+      chips.push('<span class="mock-source-chip" title="Consensus mock ADP">FFC ADP</span>');
+    }
+    if (news) {
+      chips.push('<span class="mock-source-chip" title="Athlete headlines">ESPN</span>');
+    }
+    if (!chips.length) return '';
+    return `<p class="mock-sources" aria-label="Data sources"><span class="mock-sources-label">Sources</span>${chips.join('')}</p>`;
+  }
+
+  function playerBioLine(player) {
+    const bits = [];
+    if (player.yearsExp != null && Number.isFinite(Number(player.yearsExp))) {
+      const y = Number(player.yearsExp);
+      bits.push(y <= 0 ? 'Rookie' : `${y} yr exp`);
+    }
+    if (player.draftClub || player.draftNumber) {
+      bits.push(`Draft ${[player.draftClub, player.draftNumber ? `#${player.draftNumber}` : ''].filter(Boolean).join(' ')}`);
+    }
+    if (player.college) bits.push(player.college);
+    return bits.join(' · ');
+  }
+
+  function scoutingBlockHtml(player) {
+    const prior = scoutingLine(player, 'prior');
+    const proj = scoutingLine(player, 'proj');
+    if (!prior && !proj) return '';
+    const priorLabel = seasonYy(mock?.statsSeason, 'Prior');
+    const projLabel = seasonYy(mock?.projectionSeason, 'Proj');
+    return `<div class="mock-scout-block">
+      ${prior ? `<p class="mock-profile-note"><strong>${esc(priorLabel)}</strong> ${esc(prior)}</p>` : ''}
+      ${proj ? `<p class="mock-profile-note is-proj"><strong>${esc(projLabel)} proj</strong> ${esc(proj)}</p>` : ''}
+    </div>`;
+  }
+
   function playerStatBag(p) {
     return p?.stats || {};
   }
@@ -2868,9 +3036,53 @@
     return cells.join('');
   }
 
-  function scoutingLine(p) {
-    const s = p.stats || {};
+  function scoutingLine(p, mode = 'auto') {
+    const s = mode === 'proj' ? (p.projStats || {}) : (p.stats || {});
     const pr = p.projStats || {};
+    const use = mode === 'auto'
+      ? {
+          passYds: s.passYds ?? pr.passYds,
+          passTd: s.passTd ?? pr.passTd,
+          passInt: s.passInt ?? pr.passInt,
+          rushYds: s.rushYds ?? pr.rushYds,
+          rushTd: s.rushTd ?? pr.rushTd,
+          receptions: s.receptions ?? pr.receptions,
+          targets: s.targets,
+          recYds: s.recYds ?? pr.recYds,
+          recTd: s.recTd ?? pr.recTd,
+          fgMade: s.fgMade,
+          fgAtt: s.fgAtt,
+          xpMade: s.xpMade
+        }
+      : mode === 'proj'
+        ? {
+            passYds: pr.passYds,
+            passTd: pr.passTd,
+            passInt: pr.passInt,
+            rushYds: pr.rushYds,
+            rushTd: pr.rushTd,
+            receptions: pr.receptions,
+            targets: null,
+            recYds: pr.recYds,
+            recTd: pr.recTd,
+            fgMade: null,
+            fgAtt: null,
+            xpMade: null
+          }
+        : {
+            passYds: s.passYds,
+            passTd: s.passTd,
+            passInt: s.passInt,
+            rushYds: s.rushYds,
+            rushTd: s.rushTd,
+            receptions: s.receptions,
+            targets: s.targets,
+            recYds: s.recYds,
+            recTd: s.recTd,
+            fgMade: s.fgMade,
+            fgAtt: s.fgAtt,
+            xpMade: s.xpMade
+          };
     const bits = [];
     const add = (label, value, opts = {}) => {
       if (value == null || !Number.isFinite(Number(value))) return;
@@ -2879,25 +3091,25 @@
     };
     const pos = String(p.position || '').toUpperCase();
     if (pos === 'QB') {
-      add('Pass Yds', s.passYds ?? pr.passYds);
-      add('TD', s.passTd ?? pr.passTd);
-      add('INT', s.passInt ?? pr.passInt);
+      add('Pass Yds', use.passYds);
+      add('TD', use.passTd);
+      add('INT', use.passInt);
     } else if (pos === 'RB') {
-      add('Rush Yds', s.rushYds ?? pr.rushYds);
-      add('Rush TD', s.rushTd ?? pr.rushTd);
-      add('Rec', s.receptions ?? pr.receptions, { skipZero: true });
-      add('Rec Yds', s.recYds ?? pr.recYds, { skipZero: true });
-      add('Rec TD', s.recTd ?? pr.recTd, { skipZero: true });
+      add('Rush Yds', use.rushYds);
+      add('Rush TD', use.rushTd);
+      add('Rec', use.receptions, { skipZero: true });
+      add('Rec Yds', use.recYds, { skipZero: true });
+      add('Rec TD', use.recTd, { skipZero: true });
     } else if (pos === 'WR' || pos === 'TE') {
-      add('Rec', s.receptions ?? pr.receptions);
-      add('Tgt', s.targets, { skipZero: true });
-      add('Rec Yds', s.recYds ?? pr.recYds);
-      add('TD', s.recTd ?? pr.recTd);
+      add('Rec', use.receptions);
+      add('Tgt', use.targets, { skipZero: true });
+      add('Rec Yds', use.recYds);
+      add('TD', use.recTd);
     } else if (pos === 'K') {
-      if (s.fgMade != null || s.fgAtt != null) {
-        bits.push(`FG ${fmtInt(s.fgMade)}/${fmtInt(s.fgAtt)}`);
+      if (use.fgMade != null || use.fgAtt != null) {
+        bits.push(`FG ${fmtInt(use.fgMade)}/${fmtInt(use.fgAtt)}`);
       }
-      add('XP', s.xpMade, { skipZero: true });
+      add('XP', use.xpMade, { skipZero: true });
     }
     return bits.join(' · ');
   }
@@ -3180,15 +3392,15 @@
         </span>
         ${posBadge(p.position)}
         <span class="mock-cell num" title="Bye week">${p.byeWeek != null ? esc(String(p.byeWeek)) : '—'}</span>
-        <span class="mock-cell num" title="Average draft position">${esc(fmtAdp(p.adp))}</span>
+        <span class="mock-cell num" title="${esc(adpTooltip(p))}">${esc(fmtAdp(p.adp))}</span>
         <span class="mock-cell num mock-posrk" title="Position rank">${posRk}</span>
-        <span class="mock-cell num" title="Games played">${esc(fmtInt(p.games))}</span>
+        <span class="mock-cell num" title="Games played (${esc(seasonYy(mock?.statsSeason, 'prior'))})">${esc(fmtInt(p.games))}</span>
         <span class="mock-cell num" title="${esc(st.ydsLabel)}">${esc(ydsText)}</span>
         <span class="mock-cell num" title="${esc(st.tdLabel)}">${esc(fmtInt(st.td))}</span>
         <span class="mock-cell num" title="${esc(st.thirdLabel)}">${esc(fmtInt(st.third))}</span>
-        <span class="mock-cell num" title="Prior season fantasy points">${esc(fmtPts(p.fantasyPoints2025))}</span>
+        <span class="mock-cell num" title="${esc(priorFpLabel())} · nflverse">${esc(fmtPts(p.fantasyPoints2025))}</span>
         <span class="mock-cell num" title="Points per game">${esc(fmtPts(p.avgPpg))}</span>
-        <span class="mock-cell num is-proj" title="Projected season points">${esc(fmtPts(p.projectedPoints2026))}</span>
+        <span class="mock-cell num is-proj" title="${esc(projFpLabel())} · Sleeper">${esc(fmtPts(p.projectedPoints2026))}</span>
         <span class="mock-cell num mock-delta${deltaCls}" title="Proj vs prior season">${esc(fmtDelta(p.delta))}</span>
       </div>`;
     }).join('');
@@ -3605,7 +3817,34 @@
       mock.statsSeason = data.statsSeason || null;
       mock.projectionSeason = data.projectionSeason || null;
     }
+    paintPoolSeasonHeaders(data);
     return data;
+  }
+
+  function paintPoolSeasonHeaders(data) {
+    const statsY = data?.statsSeason || mock?.statsSeason;
+    const projY = data?.projectionSeason || mock?.projectionSeason;
+    const fpBtn = document.querySelector('.mock-pool-cols [data-sort="fp"]');
+    const projBtn = document.querySelector('.mock-pool-cols [data-sort="proj"]');
+    const adpBtn = document.querySelector('.mock-pool-cols [data-sort="adp"]');
+    if (fpBtn) {
+      const label = seasonYy(statsY, '’25');
+      fpBtn.setAttribute('data-label', label);
+      fpBtn.title = `Sort by ${label} fantasy points (nflverse)`;
+    }
+    if (projBtn) {
+      const label = seasonYy(projY, 'Proj');
+      projBtn.setAttribute('data-label', label === 'Proj' ? 'Proj' : label);
+      projBtn.title = `Sort by ${seasonYy(projY, '')} projected points (Sleeper)`.replace(/\s+/g, ' ').trim();
+    }
+    if (adpBtn) {
+      const src = data?.adpSource === 'fantasyfootballcalculator'
+        ? 'Fantasy Football Calculator mocks'
+        : (data?.adpSource || 'consensus ADP');
+      const drafts = data?.ffcDrafts ? ` · ${data.ffcDrafts} drafts` : '';
+      adpBtn.title = `Sort by average draft position (${src}${drafts})`;
+    }
+    markPoolSortHeaders();
   }
 
   async function loadTeamNames() {
@@ -3626,6 +3865,11 @@
   function wireMock() {
     paintAdvancedTools();
     document.getElementById('mock-start')?.addEventListener('click', () => {
+      // Fresh board → settings modal. Lobby / live continue uses the existing start path.
+      if (!draftLive && !isMultiplayer() && !awaitingSeatClaim && !isDraftComplete()) {
+        openMockSettings();
+        return;
+      }
       startDraftSession();
     });
     document.getElementById('mock-skip-join')?.addEventListener('click', () => {
@@ -3815,13 +4059,16 @@
       e.preventDefault();
       finishCompletedMock();
     });
-    document.getElementById('mock-settings-open')?.addEventListener('click', openMockSettings);
     document.getElementById('mock-settings-close')?.addEventListener('click', closeMockSettings);
-    document.getElementById('mock-settings-done')?.addEventListener('click', closeMockSettings);
+    document.getElementById('mock-settings-cancel')?.addEventListener('click', closeMockSettings);
     document.getElementById('mock-settings-dialog')?.addEventListener('click', (e) => {
       if (e.target === e.currentTarget) closeMockSettings();
     });
     document.getElementById('mock-settings-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      confirmMockSettingsAndStart();
+    });
+    document.getElementById('mock-settings-dialog')?.addEventListener('cancel', (e) => {
       e.preventDefault();
       closeMockSettings();
     });
@@ -3869,7 +4116,6 @@
       }
       unlockDraftAudio();
       await executeUserPick(id);
-    });
     });
 
     document.getElementById('mock-order')?.addEventListener('click', async (e) => {
@@ -4099,9 +4345,6 @@
     document.getElementById('mock-reset')?.addEventListener('click', () => {
       resetMockDraft();
     });
-    document.getElementById('mock-settings-reset')?.addEventListener('click', () => {
-      if (resetMockDraft()) closeMockSettings();
-    });
     document.getElementById('mock-show-tools')?.addEventListener('change', (e) => {
       setShowAdvancedTools(Boolean(e.target.checked));
     });
@@ -4245,7 +4488,7 @@
       await loadPool().then(async (data) => {
         renderMock();
         setMockStatus(
-          `Pool ready · claim your seat · Start Draft · ${poolAll.length} players · ${mock.teamNames.length}×${mock.rounds}${mock.season ? ` · roster ${mock.season}` : ''}${data.statsSeason ? ` · ’${String(data.statsSeason).slice(-2)} FP` : ''}${data.projectionSeason ? ` · ’${String(data.projectionSeason).slice(-2)} proj` : ''}`,
+          `Pool ready · Start Draft to choose settings · ${poolAll.length} players · ${mock.teamNames.length}×${mock.rounds}${mock.season ? ` · roster ${mock.season}` : ''}${data.statsSeason ? ` · ’${String(data.statsSeason).slice(-2)} FP` : ''}${data.projectionSeason ? ` · ’${String(data.projectionSeason).slice(-2)} proj` : ''}`,
           true
         );
       });

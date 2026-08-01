@@ -1310,30 +1310,56 @@ html[data-theme="day"] .inbox-vote-counts .is-no { color: #b91c1c; }
 }
 .ui-mode-switch {
   appearance: none;
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  margin: 0 0.35rem 0 0;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid rgba(126, 200, 255, 0.35);
-  background: rgba(47, 123, 255, 0.14);
-  color: #9ec8ff;
-  font-family: "Oswald", sans-serif;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  position: fixed;
+  z-index: 60;
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  display: inline-grid;
+  place-items: center;
+  width: 2.85rem;
+  height: 2.85rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(126, 200, 255, 0.42);
+  border-radius: 0.85rem;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.16), transparent 45%),
+    linear-gradient(180deg, rgba(47, 123, 255, 0.42), rgba(20, 48, 110, 0.92));
+  color: #dbe9ff;
   cursor: pointer;
-  line-height: 1.1;
+  line-height: 0;
+  box-shadow:
+    0 0 0 1px rgba(47, 109, 255, 0.28),
+    0 10px 28px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.ui-mode-switch .ui-mode-phone {
+  display: block;
 }
 .ui-mode-switch:hover,
 .ui-mode-switch:focus-visible {
   color: #fff;
-  border-color: rgba(126, 200, 255, 0.55);
-  background: rgba(47, 123, 255, 0.28);
+  border-color: rgba(126, 200, 255, 0.7);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.22), transparent 45%),
+    linear-gradient(180deg, rgba(70, 140, 255, 0.55), rgba(28, 64, 140, 0.95));
   outline: none;
+  transform: translateY(-2px);
 }
 .ui-mode-switch[hidden] { display: none !important; }
+html[data-theme="day"] .ui-mode-switch {
+  border-color: rgba(31, 94, 240, 0.35);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.7), transparent 50%),
+    linear-gradient(180deg, #edf3ff, #d7e4ff);
+  color: #1f4fb8;
+  box-shadow: 0 8px 22px rgba(20, 24, 31, 0.14);
+}
+html[data-theme="day"] .ui-mode-switch:hover,
+html[data-theme="day"] .ui-mode-switch:focus-visible {
+  color: #163a8f;
+  border-color: rgba(31, 94, 240, 0.55);
+}
 .league-switch:hover,
 .league-switch:focus-visible {
   opacity: 1;

@@ -1148,7 +1148,7 @@
         <header class="degen-ticket-head">
           <div class="degen-ticket-brand">
             <p class="degen-ticket-kicker">Casala's Palace</p>
-            <h3>Your slip</h3>
+            <h3>Bet Slip</h3>
           </div>
           <div class="degen-ticket-meta">
             <span class="degen-ticket-type">${esc(slipType)}</span>
