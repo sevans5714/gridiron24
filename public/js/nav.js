@@ -973,7 +973,7 @@
 
   function footerHtml(buildLabel) {
     const build = esc(buildLabel || 'Build …');
-    return `<span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=2" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
+    return `<span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span><span class="site-footer-build" id="site-build">${build}</span>`;
   }
 
   function ensureFooter(buildLabel) {
