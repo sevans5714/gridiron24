@@ -75,6 +75,54 @@ function slugify(value) {
     .slice(0, 48);
 }
 
+/** Basenames that must never become an independent league homepage slug. */
+const RESERVED_LEAGUE_SLUGS = new Set([
+  'aaa', 'aaa-playoffs', 'aaa-rulebook', 'app', 'assets', 'beta-draft', 'beta-scoring',
+  'calendar', 'commissioner', 'create-league', 'css', 'draft', 'enter', 'forgot',
+  'history', 'home', 'hq', 'inbox', 'index', 'invite-email-preview', 'invite-lounge-preview',
+  'js', 'league-hq', 'league-tools', 'login', 'members', 'my-league', 'my-roster',
+  'payouts', 'playoffs', 'profile', 'rankings', 'register', 'register-league', 'reset',
+  'restricted', 'rulebook', 'schedules', 'scoreboard', 'scoring', 'setup', 'standings',
+  'team', 'team-logo', 'team-rosters', 'teams', 'transactions', 'uploads', 'api',
+  'gridiron24', 'gridiron', 'www', 'favicon', 'robots', 'sitemap', 'sw', 'manifest'
+]);
+
+function isReservedLeagueSlug(slug) {
+  return RESERVED_LEAGUE_SLUGS.has(slugify(slug));
+}
+
+/** Public homepage path for an independent league: /{slug}.html */
+function independentHomePath(league) {
+  const slug = slugify(league?.slug || league?.brand?.name);
+  if (!slug || isReservedLeagueSlug(slug)) return '/my-league.html';
+  return `/${slug}.html`;
+}
+
+function independentSectionPath(league, section) {
+  const home = independentHomePath(league);
+  if (home === '/my-league.html') return home;
+  const slug = slugify(league?.slug);
+  const page = String(section || '').trim().toLowerCase();
+  if (!page || page === 'home') return home;
+  return `/${slug}/${page}.html`;
+}
+
+function allocateLeagueSlug(brandSlugOrName, existingLeagues = []) {
+  let slug = slugify(brandSlugOrName);
+  if (!slug || isReservedLeagueSlug(slug)) {
+    slug = `league-${crypto.randomBytes(3).toString('hex')}`;
+  }
+  const taken = new Set(
+    (existingLeagues || []).map((l) => slugify(l.slug)).filter(Boolean)
+  );
+  if (!taken.has(slug) && !isReservedLeagueSlug(slug)) return slug;
+  let attempt = `${slug}-${crypto.randomBytes(2).toString('hex')}`;
+  while (taken.has(attempt) || isReservedLeagueSlug(attempt)) {
+    attempt = `${slug}-${crypto.randomBytes(2).toString('hex')}`;
+  }
+  return attempt;
+}
+
 function conferenceKeyFromName(name, fallback) {
   const key = slugify(name).replace(/-/g, '').slice(0, 24);
   return key || fallback;
@@ -142,7 +190,7 @@ function defaultAffiliatedLeagues(seedList) {
 
 function publicLeague(league) {
   if (!league) return null;
-  return {
+  const pub = {
     id: league.id,
     slug: league.slug,
     status: league.status,
@@ -172,6 +220,11 @@ function publicLeague(league) {
     createdAt: league.createdAt,
     activatedAt: league.activatedAt || null
   };
+  if (pub.platform === 'independent') {
+    pub.homePath = independentHomePath(league);
+    pub.affiliatedLeagues = []; // never tied to GridIron 24 / AAA
+  }
+  return pub;
 }
 
 function normalizeHistorySeasons(list) {
@@ -777,15 +830,11 @@ function createIndependentLeague({
   const brandName = String(brand?.name || '').trim();
   if (!brandName) throw Object.assign(new Error('League name is required'), { status: 400 });
 
-  let slug = slugify(brand?.slug || brandName);
-  if (!slug) slug = `league-${crypto.randomBytes(3).toString('hex')}`;
-  if (store.leagues.some((l) => l.slug === slug)) {
-    slug = `${slug}-${crypto.randomBytes(2).toString('hex')}`;
-  }
+  const slug = allocateLeagueSlug(brand?.slug || brandName, store.leagues);
 
   const confInputs = Array.isArray(conferences) ? conferences : [];
   if (confInputs.length !== 2) {
-    throw Object.assign(new Error('Exactly two conferences are required (GridIron 24 outline)'), { status: 400 });
+    throw Object.assign(new Error('Exactly two conferences are required'), { status: 400 });
   }
   const normalizedConfs = confInputs.map((c, i) =>
     normalizeConferenceInput(c, i, uploadedAssets, { requireEspn: false })
@@ -997,6 +1046,11 @@ module.exports = {
   createIndependentLeague,
   listPendingIndependentLeagues,
   listIndependentLeaguesForOwner,
+  independentHomePath,
+  independentSectionPath,
+  isReservedLeagueSlug,
+  allocateLeagueSlug,
+  RESERVED_LEAGUE_SLUGS,
   approveIndependentLeague,
   rejectIndependentLeague,
   updateIndependentFranchises,

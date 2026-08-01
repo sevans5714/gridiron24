@@ -3624,7 +3624,7 @@ function homePathForUser(user, req = null) {
     try {
       const owned = leagues.findById(user.leagueId);
       if (owned?.platform === 'independent') {
-        return '/my-league.html';
+        return leagues.independentHomePath(owned);
       }
     } catch { /* ignore */ }
   }
@@ -3645,6 +3645,60 @@ function homePathForUser(user, req = null) {
   if (membership === 'aaa') return '/aaa.html';
   if (membership === 'gridiron') return '/home.html';
   return '/home.html';
+}
+
+const INDEPENDENT_HQ_SECTIONS = new Set([
+  'standings', 'schedules', 'my-roster', 'team-rosters', 'rankings', 'draft',
+  'transactions', 'playoffs', 'calendar', 'rulebook', 'scoreboard', 'payouts'
+]);
+
+function parseIndependentHqPath(pathname) {
+  const raw = String(pathname || '');
+  let m = raw.match(/^\/([a-z0-9-]+)\.html$/i);
+  if (m) {
+    const slug = leagues.slugify(m[1]);
+    if (!slug || leagues.isReservedLeagueSlug(slug)) return null;
+    return { slug, section: 'home' };
+  }
+  m = raw.match(/^\/([a-z0-9-]+)\/([a-z0-9-]+)\.html$/i);
+  if (m) {
+    const slug = leagues.slugify(m[1]);
+    const section = String(m[2] || '').toLowerCase();
+    if (!slug || leagues.isReservedLeagueSlug(slug)) return null;
+    if (!INDEPENDENT_HQ_SECTIONS.has(section)) return null;
+    return { slug, section };
+  }
+  return null;
+}
+
+function canViewIndependentLeague(user, league) {
+  if (!league || league.platform !== 'independent') return false;
+  if (!user) return false;
+  if (users.isSiteOwner(user)) return true;
+  if (league.ownerUserId && league.ownerUserId === user.id) return true;
+  if (user.leagueId && user.leagueId === league.id) return true;
+  // Approved leagues: allow any authenticated non-lounge-only member of this league only.
+  // Pending/rejected: owner + site owner only (already covered).
+  return false;
+}
+
+function independentLeagueScope(league) {
+  const homePath = leagues.independentHomePath(league);
+  const slug = league.slug;
+  return {
+    scope: 'independent',
+    conferenceKey: null,
+    leagueId: league.id,
+    slug,
+    homePath,
+    scoreboardPath: leagues.independentSectionPath(league, 'scoreboard'),
+    label: league.brand?.name || slug,
+    logo: league.brand?.logo || league.brand?.crest || null,
+    canSwitchLeagues: false,
+    preferredLeague: null,
+    platform: 'independent',
+    status: league.status
+  };
 }
 
 /**
@@ -3959,6 +4013,15 @@ function leagueScopeForUser(user, req = null) {
       canSwitchLeagues: false,
       preferredLeague: null
     };
+  }
+
+  if (user.leagueOwner && user.leagueId && !canSwitch) {
+    try {
+      const owned = leagues.findById(user.leagueId);
+      if (owned?.platform === 'independent') {
+        return independentLeagueScope(owned);
+      }
+    } catch { /* ignore */ }
   }
 
   if (canSwitch) {
@@ -5332,13 +5395,50 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/my-league' || pathname === '/my-league.html') {
-      const sessionUser = getSessionUser(req);
-      if (!sessionUser) {
+      const user = getSessionUser(req);
+      if (!user) {
         res.writeHead(302, { Location: '/enter?next=' + encodeURIComponent('/my-league.html') });
-        res.end();
-        return;
+        return res.end();
       }
+      try {
+        const owned = leagues.listIndependentLeaguesForOwner(user.id);
+        const league = owned[0] || (user.leagueId ? leagues.findById(user.leagueId) : null);
+        if (league?.platform === 'independent' && league.slug) {
+          res.writeHead(302, {
+            Location: leagues.independentHomePath(league),
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            Pragma: 'no-cache'
+          });
+          return res.end();
+        }
+      } catch { /* fall through */ }
       return sendFile(res, path.join(PUBLIC_DIR, 'my-league.html'));
+    }
+
+    // Independent league HQ: /{slug}.html and /{slug}/{section}.html
+    {
+      const il = parseIndependentHqPath(pathname);
+      if (il) {
+        const league = leagues.findBySlug(il.slug);
+        if (league?.platform === 'independent') {
+          const user = getSessionUser(req);
+          if (!user) {
+            res.writeHead(302, {
+              Location: '/enter?next=' + encodeURIComponent(pathname)
+            });
+            return res.end();
+          }
+          if (!canViewIndependentLeague(user, league)) {
+            res.writeHead(302, {
+              Location: '/restricted.html?area=league',
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              Pragma: 'no-cache'
+            });
+            return res.end();
+          }
+          return sendFile(res, path.join(PUBLIC_DIR, 'league-hq.html'));
+        }
+      }
     }
 
     if (pathname === '/api/league' && req.method === 'GET') {
@@ -5687,8 +5787,8 @@ const server = http.createServer(async (req, res) => {
             ok: true,
             league,
             user: users.publicUser(users.findById(user.id)),
-            homePath: '/my-league.html',
-            message: 'League submitted for site owner approval. You are signed in as league owner.'
+            homePath: leagues.independentHomePath(league),
+            message: 'League submitted for site owner approval. Your HQ homepage is ready at this league’s URL.'
           },
           { 'Set-Cookie': sessionCookieHeader(token) }
         );
@@ -5705,6 +5805,47 @@ const server = http.createServer(async (req, res) => {
       const league = owned[0]
         || (byId?.platform === 'independent' ? leagues.publicLeague(byId) : null);
       return sendJson(res, 200, { ok: true, league: league || null, leagues: owned });
+    }
+
+    if (pathname === '/api/independent-hq' && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const slug = leagues.slugify(requestUrl.searchParams.get('slug') || '');
+      if (!slug) return sendJson(res, 400, { ok: false, error: 'League slug required' });
+      const league = leagues.findBySlug(slug);
+      if (!league || league.platform !== 'independent') {
+        return sendJson(res, 404, { ok: false, error: 'League not found' });
+      }
+      if (!canViewIndependentLeague(user, league)) {
+        return sendJson(res, 403, { ok: false, error: 'You do not have access to this league HQ' });
+      }
+      const pub = leagues.publicLeague(league);
+      const section = String(requestUrl.searchParams.get('section') || 'home').toLowerCase();
+      return sendJson(res, 200, {
+        ok: true,
+        league: pub,
+        section: INDEPENDENT_HQ_SECTIONS.has(section) ? section : 'home',
+        leagueScope: independentLeagueScope(league),
+        viewer: {
+          isOwner: Boolean(league.ownerUserId && league.ownerUserId === user.id),
+          isSiteOwner: users.isSiteOwner(user)
+        },
+        pages: {
+          home: leagues.independentHomePath(league),
+          standings: leagues.independentSectionPath(league, 'standings'),
+          schedules: leagues.independentSectionPath(league, 'schedules'),
+          myRoster: leagues.independentSectionPath(league, 'my-roster'),
+          teamRosters: leagues.independentSectionPath(league, 'team-rosters'),
+          rankings: leagues.independentSectionPath(league, 'rankings'),
+          draft: leagues.independentSectionPath(league, 'draft'),
+          transactions: leagues.independentSectionPath(league, 'transactions'),
+          playoffs: leagues.independentSectionPath(league, 'playoffs'),
+          calendar: leagues.independentSectionPath(league, 'calendar'),
+          rulebook: leagues.independentSectionPath(league, 'rulebook'),
+          scoreboard: leagues.independentSectionPath(league, 'scoreboard'),
+          payouts: leagues.independentSectionPath(league, 'payouts')
+        }
+      });
     }
 
     if (pathname === '/api/leagues/pending' && req.method === 'GET') {
@@ -5730,12 +5871,12 @@ const server = http.createServer(async (req, res) => {
               body: [
                 `Your independent league “${league.brand?.name || league.slug}” was approved.`,
                 '',
-                'Open your league outline to continue setup.',
+                `Open your league HQ: ${leagues.independentHomePath(league)}`,
                 '',
-                'This league runs separately from GridIron 24’s ESPN conferences.'
+                'This league is fully separate from GridIron 24 and AAA.'
               ].join('\n'),
               type: 'league_approved',
-              meta: { href: '/my-league.html', leagueId: league.id }
+              meta: { href: leagues.independentHomePath(league), leagueId: league.id }
             });
           }
         } catch { /* ignore */ }
@@ -5769,7 +5910,7 @@ const server = http.createServer(async (req, res) => {
                 league.rejectionReason || 'No reason provided.'
               ].join('\n'),
               type: 'league_rejected',
-              meta: { href: '/my-league.html', leagueId: league.id }
+              meta: { href: '/create-league', leagueId: league.id }
             });
           }
         } catch { /* ignore */ }

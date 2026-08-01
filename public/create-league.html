@@ -77,7 +77,7 @@
     <div class="reg-top">
       <div class="mark" aria-hidden="true">NEW</div>
       <h1>Create a League</h1>
-      <p>Build a GridIron 24–style headquarters: two conferences, custom brands, roster size, and scoring — fully independent (no ESPN). You become the owner. After you submit, the site owner must approve before the league goes live.</p>
+      <p>Build a full headquarters with the same options as GridIron 24 — Home, Scoreboard, League menu, Playoffs, Calendar, Rule Book — as a brand-new league. Not affiliated with GridIron 24 or AAA (no ESPN). Your league name becomes the homepage URL (<code>/your-league.html</code>). You become the owner; the site owner must approve before members join.</p>
     </div>
 
     <div class="steps" id="stepper" role="tablist" aria-label="Create league steps"></div>
@@ -118,8 +118,9 @@
         <input class="field" id="brandName" type="text" required placeholder="e.g. Metro Fantasy League" />
         <label class="field-label" for="brandTagline">Tagline</label>
         <input class="field" id="brandTagline" type="text" value="24 Teams. Two Conferences. One Champion." />
-        <label class="field-label" for="brandSlug">URL slug (optional)</label>
+        <label class="field-label" for="brandSlug">Homepage URL slug (optional)</label>
         <input class="field" id="brandSlug" type="text" placeholder="metro-ffl" />
+        <p class="field-hint" style="margin:0.35rem 0 0.75rem;color:var(--muted);font-size:0.86rem;">Becomes <code>/metro-ffl.html</code>. Defaults from the league name.</p>
         <label class="field-label">Primary logo</label>
         <div class="upload-row" data-asset="brandLogo">
           <img alt="" hidden />

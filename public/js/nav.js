@@ -50,6 +50,41 @@
     calendar: { href: '/calendar.html', label: 'Calendar', key: 'calendar' }
   };
 
+  function independentMenu(scope) {
+    const slug = String(scope?.slug || '').trim();
+    if (!slug) return LEAGUE_MENU;
+    const base = `/${slug}`;
+    return [
+      { href: `${base}/my-roster.html`, label: 'My Team' },
+      { href: `${base}/standings.html`, label: 'Standings' },
+      { href: `${base}/schedules.html`, label: 'Schedules' },
+      { href: `${base}/team-rosters.html`, label: 'Team Rosters' },
+      { href: `${base}/rankings.html`, label: 'Rankings' },
+      { href: `${base}/draft.html`, label: 'Draft Results' },
+      { href: `${base}/transactions.html`, label: 'Transactions' }
+    ];
+  }
+
+  function independentLinks(scope) {
+    const slug = String(scope?.slug || '').trim();
+    const home = scope?.homePath || (slug ? `/${slug}.html` : HOME_DEFAULT);
+    const scoreboard = scope?.scoreboardPath || (slug ? `/${slug}/scoreboard.html` : '/scoreboard');
+    return [
+      { href: home, label: 'Home', key: 'home' },
+      SHARED_TOP.members,
+      { href: scoreboard, label: 'Scoreboard', key: 'scoreboard' },
+      {
+        href: slug ? `/${slug}/standings.html` : '/standings.html',
+        label: 'League',
+        key: 'league',
+        menu: independentMenu(scope)
+      },
+      { href: slug ? `/${slug}/playoffs.html` : '/playoffs.html', label: 'Playoff Bracket', key: 'playoffs' },
+      { href: slug ? `/${slug}/calendar.html` : '/calendar.html', label: 'Calendar', key: 'calendar' },
+      { href: slug ? `/${slug}/rulebook.html` : '/rulebook.html', label: 'Rule Book', key: 'rulebook' }
+    ];
+  }
+
   const GRIDIRON_LINKS = [
     { href: HOME_DEFAULT, label: 'Home', key: 'home' },
     SHARED_TOP.members,
@@ -84,6 +119,7 @@
 
   function linksForScope(scope, user = null) {
     if (user?.loungeOnly) return SOCIAL_LINKS;
+    if (scope?.scope === 'independent') return independentLinks(scope);
     return scope?.scope === 'aaa' ? AAA_LINKS : GRIDIRON_LINKS;
   }
 
@@ -104,6 +140,9 @@
     }
     if (active === 'aaa-playoffs') {
       return 'playoffs';
+    }
+    if (active === 'league-hq') {
+      return 'home';
     }
     if (active === 'members') {
       return 'members';
@@ -853,13 +892,25 @@
 
   function applyLeagueScope(next) {
     if (!next || typeof next !== 'object') return;
+    const scope = next.scope === 'aaa'
+      ? 'aaa'
+      : (next.scope === 'independent' ? 'independent' : 'gridiron');
     leagueScope = {
-      scope: next.scope === 'aaa' ? 'aaa' : 'gridiron',
+      scope,
       conferenceKey: next.conferenceKey || null,
       homePath: next.homePath || homePath,
-      label: next.label || (next.scope === 'aaa' ? 'AAA League' : 'GridIron 24')
+      scoreboardPath: next.scoreboardPath || null,
+      label: next.label || (scope === 'aaa' ? 'AAA League' : scope === 'independent' ? (next.label || 'League') : 'GridIron 24'),
+      logo: next.logo || null,
+      slug: next.slug || null,
+      leagueId: next.leagueId || null,
+      platform: next.platform || null,
+      status: next.status || null,
+      canSwitchLeagues: Boolean(next.canSwitchLeagues),
+      preferredLeague: next.preferredLeague || null
     };
     if (leagueScope.homePath) homePath = leagueScope.homePath;
+    renderNav(authState?.user || null);
   }
 
   async function refreshAuth() {
@@ -1035,6 +1086,7 @@
     refresh: refreshAuth,
     reloadTicker: loadTicker,
     refreshInboxBadge,
+    applyLeagueScope,
     setSync() {
       /* Top-right header shows identity (team / owner / access), not sync text. */
     },

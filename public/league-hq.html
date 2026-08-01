@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>League HQ · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=146" />
+  <style>
+    body[data-page="league-hq"] .page-hero {
+      padding-top: 1.35rem;
+      padding-bottom: 1rem;
+    }
+    body[data-page="league-hq"] .page-hero::before,
+    body[data-page="league-hq"] .page-hero::after { display: none; }
+    .il-hero {
+      display: grid;
+      justify-items: center;
+      gap: 0.75rem;
+      text-align: center;
+      margin: 0 0 1.35rem;
+    }
+    .il-hero img {
+      width: min(11rem, 52vw);
+      height: auto;
+      filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
+    }
+    .il-hero .tag {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(1.05rem, 3.5vw, 1.35rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .il-banner {
+      margin: 0 0 1.15rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .il-banner.is-pending {
+      border-color: color-mix(in srgb, var(--detail, #ff7a18) 45%, var(--line));
+      background: color-mix(in srgb, var(--detail, #ff7a18) 10%, var(--panel));
+    }
+    .il-banner.is-ok {
+      border-color: color-mix(in srgb, var(--good, #3dcf8a) 40%, var(--line));
+      background: color-mix(in srgb, var(--good, #3dcf8a) 10%, var(--panel));
+    }
+    .il-grid {
+      display: grid;
+      gap: 1.15rem;
+    }
+    .il-panel {
+      margin: 0;
+      padding: 1.05rem 1.1rem 1.2rem;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--blue) 6%, transparent), transparent 42%),
+        var(--panel);
+    }
+    .il-panel h2 {
+      margin: 0 0 0.65rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--display);
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .il-split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    @media (max-width: 800px) {
+      .il-split { grid-template-columns: 1fr; }
+    }
+    .il-meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .il-meta strong { color: var(--text); }
+    .il-empty {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .il-team-list {
+      display: grid;
+      gap: 0.35rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .il-team-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+      font-size: 0.92rem;
+    }
+    .il-team-list li:last-child { border-bottom: 0; }
+    .il-url {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+      color: var(--blue);
+    }
+  </style>
+</head>
+<body data-page="league-hq">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">League HQ</div>
+    </div>
+  </header>
+
+  <main class="page-main shell" id="il-root">
+    <div class="msg">Loading league HQ…</div>
+  </main>
+
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+
+  <script src="/js/nav.js?v=99"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    function parsePath() {
+      const path = String(location.pathname || '');
+      let m = path.match(/^\/([a-z0-9-]+)\.html$/i);
+      if (m) return { slug: m[1].toLowerCase(), section: 'home' };
+      m = path.match(/^\/([a-z0-9-]+)\/([a-z0-9-]+)\.html$/i);
+      if (m) return { slug: m[1].toLowerCase(), section: m[2].toLowerCase() };
+      return { slug: '', section: 'home' };
+    }
+
+    function statusBanner(league) {
+      if (league.status === 'pending_approval') {
+        return `<div class="il-banner is-pending"><strong>Pending approval.</strong> Your league HQ is live at this URL for you — members unlock after the site owner approves. Fully separate from GridIron 24 and AAA.</div>`;
+      }
+      if (league.status === 'rejected') {
+        return `<div class="il-banner"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
+      }
+      return `<div class="il-banner is-ok"><strong>Independent league HQ.</strong> Not affiliated with GridIron 24 or AAA. Homepage: <span class="il-url">${esc(league.homePath || location.pathname)}</span></div>`;
+    }
+
+    function franchisesByConf(league) {
+      const map = new Map();
+      for (const c of (league.conferences || [])) map.set(c.key, { conf: c, teams: [] });
+      for (const f of (league.franchises || [])) {
+        const key = f.conferenceKey || f.conference || '';
+        if (!map.has(key)) map.set(key, { conf: { key, name: key }, teams: [] });
+        map.get(key).teams.push(f);
+      }
+      return [...map.values()];
+    }
+
+    function standingsHtml(league) {
+      const groups = franchisesByConf(league);
+      if (!groups.length) return `<p class="il-empty">No franchises yet.</p>`;
+      return `<div class="il-split">${groups.map(({ conf, teams }) => `
+        <section class="il-panel">
+          <h2>${esc(conf.name || conf.key)} Standings</h2>
+          <ul class="il-team-list">
+            ${teams.map((t, i) => `
+              <li>
+                <span>${i + 1}. ${esc(t.name || t.teamName || `Team ${i + 1}`)}</span>
+                <span class="il-meta">${esc(t.ownerName || 'Unclaimed')} · 0-0</span>
+              </li>`).join('') || '<li class="il-empty">No teams</li>'}
+          </ul>
+        </section>`).join('')}</div>`;
+    }
+
+    function rulebookHtml(league) {
+      const s = league.settings || {};
+      const roster = s.roster || {};
+      const scoring = s.scoring || {};
+      return `
+        <section class="il-panel">
+          <h2>Rule Book</h2>
+          <p class="il-meta">Independent rules for <strong>${esc(league.brand?.name || league.slug)}</strong> — not GridIron 24 / AAA.</p>
+          <p class="il-meta" style="margin-top:0.75rem;">
+            <strong>Roster</strong><br/>
+            Size ${esc(roster.size ?? '—')} · Starters ${esc(roster.starters ?? '—')} · Bench ${esc(roster.bench ?? '—')} · IR ${esc(roster.ir ?? '—')}
+          </p>
+          <p class="il-meta" style="margin-top:0.75rem;">
+            <strong>Scoring preset</strong><br/>
+            ${esc(scoring.preset || scoring.label || 'Custom / configured at create')}
+          </p>
+          <p class="il-meta" style="margin-top:0.75rem;">
+            <strong>Championship</strong><br/>
+            ${esc(league.championship?.name || '—')} · Title week ${esc(league.championship?.titleWeek ?? '—')} · Final week ${esc(league.championship?.bowlWeek ?? '—')}
+          </p>
+        </section>`;
+    }
+
+    function sectionHtml(section, league, pages) {
+      const name = league.brand?.name || league.slug;
+      if (section === 'home') {
+        return `
+          <div class="il-hero">
+            ${league.brand?.logo || league.brand?.crest
+              ? `<img src="${esc(league.brand.logo || league.brand.crest)}" alt="${esc(name)}" width="320" height="320" decoding="async" />`
+              : ''}
+            <h1 class="page-title" style="margin:0;">${esc(name)}</h1>
+            <p class="tag">${esc(league.brand?.tagline || `${league.structure?.totalTeams || '—'} teams · Two conferences · One champion`)}</p>
+          </div>
+          ${statusBanner(league)}
+          <div class="il-grid">
+            ${standingsHtml(league)}
+            <section class="il-panel">
+              <h2>League overview</h2>
+              <p class="il-meta">
+                Season <strong>${esc(league.season)}</strong><br/>
+                ${esc(league.structure?.totalTeams || '—')} teams
+                (${esc(league.structure?.teamsPerConference || '—')} per conference)<br/>
+                Playoffs: ${esc((league.structure?.playoffWeeks || []).join(', ') || '—')}<br/>
+                Buy-in: ${esc(league.payouts?.buyInPerTeam != null ? `$${league.payouts.buyInPerTeam}` : '—')}
+              </p>
+            </section>
+          </div>`;
+      }
+
+      const titles = {
+        standings: 'Standings',
+        schedules: 'Schedules',
+        'my-roster': 'My Team',
+        'team-rosters': 'Team Rosters',
+        rankings: 'Rankings',
+        draft: 'Draft Results',
+        transactions: 'Transactions',
+        playoffs: 'Playoff Bracket',
+        calendar: 'Calendar',
+        rulebook: 'Rule Book',
+        scoreboard: 'Scoreboard',
+        payouts: 'Payouts'
+      };
+      const title = titles[section] || section;
+
+      if (section === 'standings' || section === 'team-rosters') {
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${standingsHtml(league)}`;
+      }
+      if (section === 'rulebook') {
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${rulebookHtml(league)}`;
+      }
+      if (section === 'payouts') {
+        const prizes = (league.payouts?.prizes || []).map((p) => `<li>${esc(p.label || p.name || 'Prize')}: ${esc(p.amount != null ? `$${p.amount}` : '—')}</li>`).join('');
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+          <section class="il-panel">
+            <h2>Payouts</h2>
+            <p class="il-meta">Buy-in ${esc(league.payouts?.buyInPerTeam != null ? `$${league.payouts.buyInPerTeam}` : '—')} · ${esc(league.payouts?.seasonLabel || '')}</p>
+            <ul class="il-team-list">${prizes || '<li class="il-empty">No prizes configured yet.</li>'}</ul>
+            ${league.payouts?.notes ? `<p class="il-meta" style="margin-top:0.75rem;">${esc(league.payouts.notes)}</p>` : ''}
+          </section>`;
+      }
+      if (section === 'calendar') {
+        const rows = (league.calendarDefaults || []).map((e) => `<li><span>${esc(e.title || e.label || 'Event')}</span><span class="il-meta">${esc(e.date || e.type || '')}</span></li>`).join('');
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+          <section class="il-panel"><h2>League calendar</h2>
+          <ul class="il-team-list">${rows || '<li class="il-empty">No calendar events yet — add them as the season takes shape.</li>'}</ul>
+          </section>`;
+      }
+      if (section === 'playoffs') {
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+          <section class="il-panel">
+            <h2>${esc(league.championship?.name || 'Championship')}</h2>
+            <p class="il-meta">
+              ${esc(league.structure?.playoffTeamCount || 6)} teams · Weeks ${(league.structure?.playoffWeeks || []).map(esc).join(', ') || '—'}<br/>
+              Title week ${esc(league.championship?.titleWeek ?? '—')} · Final week ${esc(league.championship?.bowlWeek ?? '—')}
+            </p>
+            <p class="il-empty" style="margin-top:0.85rem;">Bracket board fills in when the season reaches the playoffs.</p>
+          </section>`;
+      }
+
+      return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+        <section class="il-panel">
+          <h2>${esc(title)}</h2>
+          <p class="il-empty">
+            This ${esc(name)} HQ includes the same league options as GridIron 24
+            (standings, schedules, rosters, rankings, draft, transactions, playoffs, calendar, rule book, scoreboard).
+            Live ${esc(title.toLowerCase())} data unlocks as your independent season is set up — it never pulls from GridIron 24 or AAA.
+          </p>
+          <p class="il-meta" style="margin-top:0.85rem;">Home: <a class="il-url" href="${esc(pages.home)}">${esc(pages.home)}</a></p>
+        </section>`;
+    }
+
+    async function boot() {
+      const root = document.getElementById('il-root');
+      const { slug, section } = parsePath();
+      if (!slug) {
+        root.innerHTML = `<div class="msg">League not found.</div>`;
+        return;
+      }
+      try {
+        const res = await fetch(`/api/independent-hq?slug=${encodeURIComponent(slug)}&section=${encodeURIComponent(section)}`, { cache: 'no-store' });
+        if (res.status === 401) {
+          window.location.replace('/enter?next=' + encodeURIComponent(location.pathname));
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load league HQ');
+        const league = data.league;
+        document.title = `${league.brand?.name || league.slug} · League HQ`;
+        document.body.dataset.page = section === 'home' ? 'league-hq' : section;
+        if (data.leagueScope && window.GridIronNav?.applyLeagueScope) {
+          window.GridIronNav.applyLeagueScope(data.leagueScope);
+        }
+        root.innerHTML = sectionHtml(section === 'home' ? 'home' : section, league, data.pages || {});
+        window.GridIronNav?.setSync(league.brand?.name || 'League HQ', true);
+      } catch (err) {
+        root.innerHTML = `<div class="msg"><strong>Error</strong> ${esc(err.message)}</div>`;
+      }
+    }
+
+    window.GridIronNav?.authReady?.then(boot).catch(boot);
+  </script>
+</body>
+</html>
