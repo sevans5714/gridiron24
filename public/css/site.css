@@ -2626,6 +2626,54 @@ html[data-theme="day"] .site-footer-build::after {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.password-field {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.password-field .field {
+  width: 100%;
+  padding-right: 2.65rem;
+  margin-bottom: 0;
+}
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  appearance: none;
+}
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--text);
+  outline: none;
+  background: color-mix(in srgb, var(--blue) 12%, transparent);
+}
+.password-toggle.is-on {
+  color: var(--blue);
+}
+.password-toggle svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
+}
+.auth-card .password-field {
+  margin-bottom: 0.95rem;
+}
+.password-form .password-field {
+  margin: 0;
+}
 .field-label {
   display: block;
   margin: 0 0 0.35rem;

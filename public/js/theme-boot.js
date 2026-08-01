@@ -68,4 +68,20 @@
       location.replace('/app/' + (location.hash || ''));
     }
   } catch (e) { /* ignore */ }
+
+  // Password show/hide eye toggle (login, profile, register, etc.)
+  function loadPasswordToggle() {
+    try {
+      if (window.GridIronPasswordToggle) return;
+      var s = document.createElement('script');
+      s.src = '/js/password-toggle.js?v=1';
+      s.defer = true;
+      (document.head || document.documentElement).appendChild(s);
+    } catch (e) { /* ignore */ }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadPasswordToggle);
+  } else {
+    loadPasswordToggle();
+  }
 })();
