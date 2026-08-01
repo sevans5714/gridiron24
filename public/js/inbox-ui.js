@@ -99,6 +99,8 @@
       feature_request: 'FEATURE REQUEST',
       pending_approvals: 'Pending',
       roster_violations: 'Roster',
+      account_created: 'New account',
+      league_request: 'League request',
       general: 'HQ'
     };
     return map[type] || 'Mail';

@@ -3674,6 +3674,60 @@ function deliverWelcomeInboxIfNeeded(user) {
   }
 }
 
+/** Alert site owner inbox when someone creates an account. */
+function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
+  if (!user?.id) return;
+  if (users.isSiteOwner(user)) return;
+  try {
+    const owners = users.listUsers().filter(
+      (u) => users.isSiteOwner(u) && u.approved !== false && u.id !== user.id
+    );
+    if (!owners.length) return;
+
+    const kind = user.loungeOnly
+      ? 'Social (Members Lounge only)'
+      : user.leagueOwner
+        ? 'League owner'
+        : user.loungeMember
+          ? 'Member'
+          : 'Pending approval';
+    const subject = `New account: ${user.name || user.loginName}`;
+    const body = [
+      'NEW ACCOUNT CREATED',
+      '',
+      `Name: ${user.name || '—'}`,
+      `Login: ${user.loginName}`,
+      `Email: ${user.email || '—'}`,
+      `Type: ${kind}`,
+      `Source: ${source}`,
+      '',
+      user.loungeMember
+        ? 'They can sign in now.'
+        : 'Waiting for lounge access / approval.',
+      '',
+      'Open League Tools → Member Access to manage accounts.'
+    ].join('\n');
+
+    for (const ownerUser of owners) {
+      inbox.sendMessage({
+        toUserId: ownerUser.id,
+        from: { name: 'League HQ' },
+        subject,
+        body,
+        type: 'account_created',
+        relatedId: user.id,
+        meta: {
+          href: '/league-tools.html#members',
+          userId: user.id,
+          source
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('[account-created] owner notify failed', err.message || err);
+  }
+}
+
 const pendingInboxSyncAt = new Map();
 
 /**
@@ -5023,6 +5077,9 @@ const server = http.createServer(async (req, res) => {
         if (inviteToken) {
           try { invites.acceptInvite(inviteToken, user.email); } catch { /* non-fatal */ }
         }
+        notifySiteOwnersOfNewAccount(user, {
+          source: socialInvite ? 'lounge_invite' : (inviteToken ? 'invite' : 'bootstrap')
+        });
         // Invite token admits to the Members Lounge — no separate commissioner approval step.
         if (!user.loungeMember) {
           for (const staffUser of users.listUsers()) {
@@ -5439,6 +5496,7 @@ const server = http.createServer(async (req, res) => {
           loungeMember: true,
           leagueOwner: true
         });
+        notifySiteOwnersOfNewAccount(user, { source: 'league_registration' });
 
         const activate = body.activate !== false;
         const league = leagues.createLeague({
@@ -5572,6 +5630,7 @@ const server = http.createServer(async (req, res) => {
           loungeMember: true,
           leagueOwner: true
         });
+        notifySiteOwnersOfNewAccount(user, { source: 'create_league' });
 
         const league = leagues.createIndependentLeague({
           id: draftId,
