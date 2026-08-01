@@ -35,10 +35,11 @@ function readStore() {
       accounts: data.accounts && typeof data.accounts === 'object' ? data.accounts : {},
       slips: Array.isArray(data.slips) ? data.slips : [],
       futures: Array.isArray(data.futures) ? data.futures : [],
-      champions: data.champions && typeof data.champions === 'object' ? data.champions : {}
+      champions: data.champions && typeof data.champions === 'object' ? data.champions : {},
+      drafts: data.drafts && typeof data.drafts === 'object' ? data.drafts : {}
     };
   } catch {
-    return { accounts: {}, slips: [], futures: [], champions: {} };
+    return { accounts: {}, slips: [], futures: [], champions: {}, drafts: {} };
   }
 }
 
@@ -114,7 +115,7 @@ function resetBook() {
     slips: (store.slips || []).length,
     futures: (store.futures || []).length
   };
-  writeStore({ accounts: {}, slips: [], futures: [], champions: {} });
+  writeStore({ accounts: {}, slips: [], futures: [], champions: {}, drafts: {} });
   return cleared;
 }
 
@@ -764,6 +765,7 @@ function getBook(user, boards = []) {
     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
   const standings = buildStandings(store);
+  const draft = publicDraft(store.drafts?.[user.id]);
 
   return {
     ok: true,
@@ -780,6 +782,7 @@ function getBook(user, boards = []) {
       earnings: Number(account.unitsWon) || 0,
       record: publicRecord(account)
     },
+    draft,
     open: mine.filter((s) => s.status === 'open'),
     recent: mine.filter((s) => s.status !== 'open').slice(0, 25),
     openFutures: myFutures.filter((f) => f.status === 'open'),
@@ -787,6 +790,96 @@ function getBook(user, boards = []) {
     standings,
     leaderboard: standings,
     champions: store.champions || {}
+  };
+}
+
+function publicDraft(draft) {
+  if (!draft || typeof draft !== 'object') {
+    return { legs: [], stake: 25, privateBet: false, updatedAt: null };
+  }
+  const legs = Array.isArray(draft.legs) ? draft.legs.slice(0, MAX_PARLAY_LEGS) : [];
+  const stake = Number(draft.stake);
+  return {
+    legs,
+    stake: Number.isFinite(stake) ? Math.min(MAX_STAKE, Math.max(MIN_STAKE, stake)) : 25,
+    privateBet: Boolean(draft.privateBet ?? draft.private),
+    updatedAt: draft.updatedAt || null
+  };
+}
+
+function sanitizeDraftLeg(leg) {
+  if (!leg || typeof leg !== 'object') return null;
+  const eventId = String(leg.eventId || '').trim();
+  const market = String(leg.market || '').trim();
+  const side = String(leg.side || '').trim();
+  if (!eventId || !market || !side) return null;
+  const out = {
+    eventId,
+    market,
+    side,
+    odds: Number.isFinite(Number(leg.odds)) ? Number(leg.odds) : null,
+    line: leg.line == null || leg.line === '' ? null : Number(leg.line),
+    label: leg.label ? String(leg.label).slice(0, 120) : undefined,
+    matchup: leg.matchup ? String(leg.matchup).slice(0, 120) : undefined,
+    leagueLabel: leg.leagueLabel ? String(leg.leagueLabel).slice(0, 80) : undefined,
+    alt: Boolean(leg.alt) || undefined,
+    startsAt: leg.startsAt || undefined
+  };
+  if (market === 'future') {
+    out.marketId = String(leg.marketId || '').trim() || undefined;
+    out.outcomeId = String(leg.outcomeId || side).trim() || undefined;
+  }
+  if (!Number.isFinite(out.line)) out.line = null;
+  return out;
+}
+
+/** Shared open slip across web + PWA — not locked until placeBet. */
+function saveDraft(user, body = {}) {
+  if (!user?.id) {
+    throw Object.assign(new Error('Sign in required'), { status: 401 });
+  }
+  const store = readStore();
+  if (!store.drafts || typeof store.drafts !== 'object') store.drafts = {};
+  const legs = (Array.isArray(body.legs) ? body.legs : [])
+    .map(sanitizeDraftLeg)
+    .filter(Boolean)
+    .slice(0, MAX_PARLAY_LEGS);
+  const stakeRaw = Number(body.stake);
+  const stake = Number.isFinite(stakeRaw)
+    ? Math.min(MAX_STAKE, Math.max(MIN_STAKE, Math.round(stakeRaw * 100) / 100))
+    : 25;
+  const updatedAt = String(body.updatedAt || new Date().toISOString());
+  const prev = store.drafts[user.id];
+  if (prev?.updatedAt && updatedAt < String(prev.updatedAt)) {
+    // Stale write — keep newer draft, still return book snapshot.
+    return {
+      ...getBook(user, []),
+      draft: publicDraft(prev),
+      stale: true
+    };
+  }
+  store.drafts[user.id] = {
+    userId: user.id,
+    legs,
+    stake,
+    privateBet: Boolean(body.private ?? body.privateBet),
+    updatedAt
+  };
+  writeStore(store);
+  return {
+    ok: true,
+    draft: publicDraft(store.drafts[user.id])
+  };
+}
+
+function clearDraft(store, userId, updatedAt = null) {
+  if (!store.drafts || typeof store.drafts !== 'object') store.drafts = {};
+  store.drafts[userId] = {
+    userId,
+    legs: [],
+    stake: 25,
+    privateBet: false,
+    updatedAt: updatedAt || new Date().toISOString()
   };
 }
 
@@ -866,6 +959,7 @@ function placeFuture(user, body = {}, futuresBoard = null) {
     _applied: false
   };
   store.futures.unshift(pick);
+  clearDraft(store, user.id);
   writeStore(store);
 
   const book = getBook(user, []);
@@ -964,6 +1058,7 @@ function placeBet(user, body = {}, boards = []) {
     _applied: false
   };
   store.slips.unshift(slip);
+  clearDraft(store, user.id);
   writeStore(store);
   const book = getBook(user, boards);
   return {
@@ -1130,6 +1225,7 @@ module.exports = {
   getBook,
   placeBet,
   placeFuture,
+  saveDraft,
   settleOpenSlips,
   listOpenUngradedLegs,
   hasOpenTickets,

@@ -325,7 +325,14 @@
     dayFilter: 'all',
     teamQuery: '',
     expandedGameId: null,
-    fieldMarket: 'winner' // winner | top3 | top5 | top10 | top20
+    fieldMarket: 'winner', // winner | top3 | top5 | top10 | top20
+    embedBridge: false,
+    instanceId: `bk-${Math.random().toString(36).slice(2, 10)}`,
+    draftUpdatedAt: null,
+    draftTimer: null,
+    draftSaving: false,
+    syncChannel: null,
+    applyingRemote: false
   };
 
   const DEGEN_SPORT_ORDER = [
@@ -490,11 +497,17 @@
       panel.hidden = true;
       panel.classList.remove('is-ok', 'is-err');
     }
-    if (!el) return;
-    el.textContent = msg || '';
-    el.hidden = !msg;
-    el.classList.toggle('is-ok', ok === true);
-    el.classList.toggle('is-err', ok === false);
+    if (el) {
+      el.textContent = msg || '';
+      el.hidden = !msg;
+      el.classList.toggle('is-ok', ok === true);
+      el.classList.toggle('is-err', ok === false);
+    }
+    if (isEmbedBook()) emitSlipToParent();
+  }
+
+  function isEmbedBook() {
+    return document.documentElement.classList.contains('is-embed-book');
   }
 
   function captureSlipForm() {
@@ -508,7 +521,7 @@
   }
 
   function sportsbookVisible() {
-    const embed = document.documentElement.classList.contains('is-embed-book');
+    const embed = isEmbedBook();
     const desk = document.getElementById('gambler-desk');
     const panel = document.getElementById('degenerate-book');
     // Embed mode forces the sportsbook via CSS even while desk[hidden] is cleared asynchronously.
@@ -518,6 +531,249 @@
     if (panel && panel.hidden) return false;
     if (typeof document.hidden === 'boolean' && document.hidden) return false;
     return Boolean(document.getElementById('degenerate-book-root'));
+  }
+
+  function enrichSlipLegs() {
+    return book.slip.map((leg) => {
+      if (isFutureLeg(leg)) return leg;
+      if (leg.odds != null && (leg.line != null || leg.market === 'moneyline' || isFieldFinishMarket(leg.market))) {
+        if (leg.label && leg.matchup) return leg;
+      }
+      const meta = findBoardLegOdds(leg.eventId, leg.market, leg.side) || {};
+      return { ...meta, ...leg };
+    });
+  }
+
+  function slipSnapshot() {
+    const d = book.data;
+    const acct = d?.account || {};
+    const cash = Number.isFinite(Number(acct.bankroll))
+      ? Number(acct.bankroll)
+      : Number(d?.startingBankroll || 1000);
+    const enriched = enrichSlipLegs();
+    const gameLegs = enriched.filter((l) => !isFutureLeg(l));
+    const futureLegs = enriched.filter(isFutureLeg);
+    const odds = gameLegs.length
+      ? combineOdds(gameLegs)
+      : (futureLegs.length === 1 ? Number(futureLegs[0].odds) : combineOdds(futureLegs));
+    const eventCounts = new Map();
+    for (const l of gameLegs) {
+      eventCounts.set(String(l.eventId), (eventCounts.get(String(l.eventId)) || 0) + 1);
+    }
+    const isSgp = [...eventCounts.values()].some((n) => n > 1);
+    const stake = Number.isFinite(Number(book.stake)) ? Number(book.stake) : 25;
+    const toWin = americanToWin(stake, odds);
+    const payout = Math.round((stake + toWin) * 100) / 100;
+    const slipType = !enriched.length
+      ? 'Empty'
+      : !gameLegs.length
+        ? 'Futures'
+        : gameLegs.length > 1
+          ? (isSgp && eventCounts.size === 1 ? 'Same game parlay' : isSgp ? 'Parlay · SGP' : 'Parlay')
+          : futureLegs.length
+            ? 'Straight + futures'
+            : 'Straight';
+    return {
+      type: 'gi-book-slip',
+      legs: enriched.map((leg) => ({
+        key: slipKey(leg),
+        label: leg.label || `${leg.market} ${leg.side}`,
+        meta: [
+          leg.leagueLabel || '',
+          leg.matchup || '',
+          isFutureLeg(leg) ? 'future' : '',
+          leg.alt ? 'alt' : '',
+          !isFutureLeg(leg) && (eventCounts.get(String(leg.eventId)) || 0) > 1 ? 'sgp' : ''
+        ].filter(Boolean).join(' · '),
+        odds: leg.odds,
+        future: isFutureLeg(leg),
+        alt: Boolean(leg.alt),
+        sgp: !isFutureLeg(leg) && (eventCounts.get(String(leg.eventId)) || 0) > 1
+      })),
+      slipType,
+      odds,
+      stake,
+      toWin,
+      payout,
+      privateBet: Boolean(book.privateBet),
+      cash,
+      busy: Boolean(book.busy),
+      status: book.lastStatus,
+      openCount: (d?.open || []).length + (d?.openFutures || []).length,
+      open: [
+        ...(d?.open || []).slice(0, 4).map((s) => ({
+          pick: (s.legs || []).map((l) => l.label).filter(Boolean).join(' · ') || s.type,
+          meta: `${s.type || 'Ticket'}${s.private ? ' · private' : ''} · ${fmtCash(s.stake)} → ${fmtCash(s.toWin)}`
+        })),
+        ...(d?.openFutures || []).slice(0, 3).map((f) => ({
+          pick: f.selection || 'Future',
+          meta: [
+            f.marketLabel || f.sport || 'Future',
+            f.private ? 'private' : '',
+            `${fmtCash(f.stake)} → ${fmtCash(f.toWin)}`
+          ].filter(Boolean).join(' · ')
+        }))
+      ],
+      notes: {
+        sgp: Boolean(isSgp && gameLegs.length > 1),
+        futureMix: Boolean(futureLegs.length && gameLegs.length)
+      }
+    };
+  }
+
+  function emitSlipToParent() {
+    if (!isEmbedBook() || window.parent === window) return;
+    try {
+      window.parent.postMessage(slipSnapshot(), location.origin);
+    } catch { /* ignore */ }
+  }
+
+  function wireEmbedBridge() {
+    if (!isEmbedBook() || book.embedBridge) return;
+    book.embedBridge = true;
+    window.addEventListener('message', (ev) => {
+      if (ev.origin !== location.origin) return;
+      const msg = ev.data;
+      if (!msg || typeof msg !== 'object') return;
+      if (msg.type === 'gi-book-ping') {
+        emitSlipToParent();
+        return;
+      }
+      if (msg.type === 'gi-book-remove') {
+        removeLeg(String(msg.key || ''));
+        return;
+      }
+      if (msg.type === 'gi-book-clear') {
+        book.slip = [];
+        queueDraftSync();
+        renderBook();
+        return;
+      }
+      if (msg.type === 'gi-book-stake') {
+        const cash = Number(book.data?.account?.bankroll);
+        book.stake = clampStake(msg.stake, Number.isFinite(cash) ? cash : 1000);
+        queueDraftSync();
+        emitSlipToParent();
+        return;
+      }
+      if (msg.type === 'gi-book-private') {
+        book.privateBet = Boolean(msg.private);
+        queueDraftSync();
+        emitSlipToParent();
+        return;
+      }
+      if (msg.type === 'gi-book-place') {
+        if (msg.stake != null) {
+          const cash = Number(book.data?.account?.bankroll);
+          book.stake = clampStake(msg.stake, Number.isFinite(cash) ? cash : 1000);
+        }
+        if (msg.private != null) book.privateBet = Boolean(msg.private);
+        placeBet();
+      }
+    });
+  }
+
+  function draftPayload() {
+    return {
+      legs: book.slip.map((leg) => ({ ...leg })),
+      stake: Number.isFinite(Number(book.stake)) ? Number(book.stake) : 25,
+      private: Boolean(book.privateBet),
+      privateBet: Boolean(book.privateBet),
+      updatedAt: book.draftUpdatedAt || new Date().toISOString()
+    };
+  }
+
+  function applyDraftState(draft, { render = true } = {}) {
+    if (!draft || typeof draft !== 'object') return false;
+    const remoteAt = draft.updatedAt ? String(draft.updatedAt) : '';
+    // Ignore drafts without a clock (placeholder empty payload from GET).
+    if (!remoteAt) return false;
+    if (book.draftUpdatedAt && remoteAt <= String(book.draftUpdatedAt)) return false;
+    book.applyingRemote = true;
+    try {
+      book.slip = Array.isArray(draft.legs) ? draft.legs.map((l) => ({ ...l })) : [];
+      if (Number.isFinite(Number(draft.stake))) book.stake = Number(draft.stake);
+      book.privateBet = Boolean(draft.privateBet ?? draft.private);
+      book.draftUpdatedAt = remoteAt;
+    } finally {
+      book.applyingRemote = false;
+    }
+    if (render) {
+      renderBook();
+    } else {
+      emitSlipToParent();
+    }
+    return true;
+  }
+
+  function getSyncChannel() {
+    if (book.syncChannel) return book.syncChannel;
+    if (typeof BroadcastChannel === 'undefined') return null;
+    try {
+      book.syncChannel = new BroadcastChannel('gi-paper-book');
+      book.syncChannel.addEventListener('message', (ev) => {
+        const msg = ev.data;
+        if (!msg || typeof msg !== 'object') return;
+        if (msg.source && msg.source === book.instanceId) return;
+        if (msg.type === 'gi-book-draft') {
+          if (applyDraftState(msg)) return;
+        }
+        if (msg.type === 'gi-book-reload') {
+          loadBook({ quiet: true });
+        }
+      });
+      return book.syncChannel;
+    } catch {
+      book.syncChannel = null;
+      return null;
+    }
+  }
+
+  function broadcastBook(msg) {
+    const ch = getSyncChannel();
+    if (!ch) return;
+    try {
+      ch.postMessage({ ...msg, source: book.instanceId });
+    } catch { /* ignore */ }
+  }
+
+  function queueDraftSync() {
+    if (book.applyingRemote || book.busy) return;
+    book.draftUpdatedAt = new Date().toISOString();
+    const payload = draftPayload();
+    broadcastBook({ type: 'gi-book-draft', ...payload });
+    clearTimeout(book.draftTimer);
+    book.draftTimer = setTimeout(() => {
+      persistDraft(payload).catch(() => {});
+    }, 280);
+  }
+
+  async function persistDraft(payload) {
+    if (book.draftSaving) {
+      clearTimeout(book.draftTimer);
+      book.draftTimer = setTimeout(() => {
+        persistDraft(draftPayload()).catch(() => {});
+      }, 320);
+      return;
+    }
+    book.draftSaving = true;
+    try {
+      const body = payload || draftPayload();
+      const res = await fetch('/api/paper-book', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'draft', ...body })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.draft?.updatedAt && data.stale) {
+        applyDraftState(data.draft);
+      } else if (res.ok && data?.draft?.updatedAt) {
+        book.draftUpdatedAt = String(data.draft.updatedAt);
+      }
+    } finally {
+      book.draftSaving = false;
+    }
   }
 
   function stopBookPoll() {
@@ -548,6 +804,7 @@
     const idx = book.slip.findIndex((l) => slipKey(l) === key);
     if (idx >= 0) {
       book.slip.splice(idx, 1);
+      queueDraftSync();
       renderBook();
       return;
     }
@@ -571,11 +828,13 @@
       return;
     }
     book.slip.push(leg);
+    queueDraftSync();
     renderBook();
   }
 
   function removeLeg(key) {
     book.slip = book.slip.filter((l) => slipKey(l) !== key);
+    queueDraftSync();
     renderBook();
   }
 
@@ -787,11 +1046,8 @@
     const totalCell = (side, line, payload, key) => {
       if (!payload) return `<span class="degen-cell is-empty">—</span>`;
       const letter = side === 'over' ? 'O' : 'U';
-      return `<button type="button" class="degen-cell degen-total${selected.has(key) ? ' is-on' : ''}" data-leg="${attrJson(payload)}">
-        <span class="degen-ou">
-          <span class="degen-ou-side" aria-hidden="true">${letter}</span>
-          <span class="degen-ou-line">${esc(String(line))}</span>
-        </span>
+      return `<button type="button" class="degen-cell${selected.has(key) ? ' is-on' : ''}" data-leg="${attrJson(payload)}">
+        <span class="degen-cell-main">${letter} ${esc(String(line))}</span>
         <span class="degen-cell-sub">−110</span>
       </button>`;
     };
@@ -1059,14 +1315,8 @@
     }
 
     // Keep the quoted line frozen on the slip until lock; board lines keep moving.
-    const enriched = book.slip.map((leg) => {
-      if (isFutureLeg(leg)) return leg;
-      if (leg.odds != null && (leg.line != null || leg.market === 'moneyline' || isFieldFinishMarket(leg.market))) {
-        if (leg.label && leg.matchup) return leg;
-      }
-      const meta = findBoardLegOdds(leg.eventId, leg.market, leg.side) || {};
-      return { ...meta, ...leg };
-    });
+    const embed = isEmbedBook();
+    const enriched = enrichSlipLegs();
     const gameLegs = enriched.filter((l) => !isFutureLeg(l));
     const futureLegs = enriched.filter(isFutureLeg);
     const odds = gameLegs.length
@@ -1219,7 +1469,11 @@
         }
       })()
       : '';
-    const tab = book.tab;
+    let tab = book.tab;
+    if (embed && tab !== 'lines' && tab !== 'futures') {
+      tab = 'lines';
+      book.tab = 'lines';
+    }
     let screen = '';
     if (tab === 'lines') {
       screen = `
@@ -1250,17 +1504,17 @@
     const wins = Number(acct.wins || 0);
     const loses = Number(acct.losses || 0);
     const earnings = Number(acct.unitsWon ?? acct.earnings ?? 0) || 0;
-    paintPalaceHeader({ wins, loses, cash, earnings });
+    if (!embed) paintPalaceHeader({ wins, loses, cash, earnings });
     root.innerHTML = `
       <div class="degen-tabs" role="tablist">
         <button type="button" role="tab" class="${tab === 'lines' ? 'is-on' : ''}" data-tab="lines">Games</button>
         <button type="button" role="tab" class="${tab === 'futures' ? 'is-on' : ''}" data-tab="futures">Futures</button>
-        <button type="button" role="tab" class="${tab === 'tickets' ? 'is-on' : ''}" data-tab="tickets">My bets</button>
-        <button type="button" role="tab" class="${tab === 'standings' ? 'is-on' : ''}" data-tab="standings">Standings</button>
+        ${embed ? '' : `<button type="button" role="tab" class="${tab === 'tickets' ? 'is-on' : ''}" data-tab="tickets">My bets</button>`}
+        ${embed ? '' : `<button type="button" role="tab" class="${tab === 'standings' ? 'is-on' : ''}" data-tab="standings">Standings</button>`}
       </div>
-      <div class="degen-layout">
+      <div class="degen-layout${embed ? ' is-embed' : ''}">
         <div class="degen-screen">${screen}</div>
-        ${ticketAside}
+        ${embed ? '' : ticketAside}
       </div>
     `;
 
@@ -1358,6 +1612,7 @@
     });
     document.getElementById('degen-clear')?.addEventListener('click', () => {
       book.slip = [];
+      queueDraftSync();
       renderBook();
     });
     const stakeInput = document.getElementById('degen-stake');
@@ -1376,6 +1631,7 @@
       root.querySelectorAll('[data-stake-chip]').forEach((chip) => {
         chip.classList.toggle('is-on', chip.getAttribute('data-stake-chip') === String(Number(stakeInput.value)));
       });
+      queueDraftSync();
     });
     toWinInput?.addEventListener('input', () => {
       const nextStake = clampStake(stakeFromToWin(toWinInput.value, odds), cash);
@@ -1384,6 +1640,7 @@
       if (payoutEl) {
         payoutEl.textContent = fmtCash(Math.round((nextStake + Number(toWinInput.value || 0)) * 100) / 100);
       }
+      queueDraftSync();
     });
     root.querySelectorAll('[data-stake-chip]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1398,7 +1655,12 @@
           const v = chip.getAttribute('data-stake-chip');
           chip.classList.toggle('is-on', v === 'max' ? next >= Math.min(500, cash) : Number(v) === next);
         });
+        queueDraftSync();
       });
+    });
+    document.getElementById('degen-private')?.addEventListener('change', (e) => {
+      book.privateBet = Boolean(e.target.checked);
+      queueDraftSync();
     });
     root.querySelectorAll('[data-rebet]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1409,6 +1671,7 @@
           book.slip = legs.slice(0, 8);
           if (Number.isFinite(Number(payload.stake))) book.stake = clampStake(payload.stake, cash);
           book.tab = 'lines';
+          queueDraftSync();
           setDegenStatus('Legs loaded onto your slip — adjust stake and lock in.', true);
           renderBook();
         } catch {
@@ -1417,9 +1680,17 @@
       });
     });
     document.getElementById('degen-place')?.addEventListener('click', placeBet);
-    if (book.lastStatus?.msg) {
-      setDegenStatus(book.lastStatus.msg, book.lastStatus.ok);
+    if (!embed && book.lastStatus?.msg) {
+      const el = document.getElementById('degen-slip-status')
+        || document.getElementById('degen-status');
+      if (el) {
+        el.textContent = book.lastStatus.msg;
+        el.hidden = false;
+        el.classList.toggle('is-ok', book.lastStatus.ok === true);
+        el.classList.toggle('is-err', book.lastStatus.ok === false);
+      }
     }
+    emitSlipToParent();
   }
 
   async function loadBook({ quiet = false } = {}) {
@@ -1431,7 +1702,9 @@
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load sportsbook');
       book.data = data;
-      renderBook();
+      if (!applyDraftState(data.draft, { render: true })) {
+        renderBook();
+      }
       startBookPoll();
     } catch (err) {
       if (!quiet) {
@@ -1463,8 +1736,10 @@
     captureSlipForm();
     const gameLegs = book.slip.filter((l) => !isFutureLeg(l));
     const futureLegs = book.slip.filter(isFutureLeg);
-    const stake = Number(document.getElementById('degen-stake')?.value);
-    const isPrivate = Boolean(document.getElementById('degen-private')?.checked);
+    const stakeEl = document.getElementById('degen-stake');
+    const privEl = document.getElementById('degen-private');
+    const stake = Number(stakeEl ? stakeEl.value : book.stake);
+    const isPrivate = privEl ? Boolean(privEl.checked) : Boolean(book.privateBet);
     book.busy = true;
     setDegenStatus('Submitting ticket…');
     try {
@@ -1511,6 +1786,16 @@
 
       book.slip = [];
       book.privateBet = false;
+      book.draftUpdatedAt = new Date().toISOString();
+      broadcastBook({
+        type: 'gi-book-draft',
+        legs: [],
+        stake: book.stake,
+        private: false,
+        privateBet: false,
+        updatedAt: book.draftUpdatedAt
+      });
+      broadcastBook({ type: 'gi-book-reload' });
       await loadBook();
       const parts = [];
       if (lastSlip) parts.push(isPrivate ? 'private ticket' : 'ticket');
@@ -2872,6 +3157,8 @@
 
   function boot() {
     if (document.getElementById('degenerate-book-root')) {
+      getSyncChannel();
+      wireEmbedBridge();
       loadBook();
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden && sportsbookVisible()) loadBook({ quiet: true });

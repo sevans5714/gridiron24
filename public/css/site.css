@@ -1471,9 +1471,9 @@ html[data-theme="day"] .league-switch img {
 
 .user-menu {
   position: relative;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
-  max-width: 100%;
+  max-width: min(16rem, 42vw);
 }
 
 .user-chip {
@@ -1481,11 +1481,11 @@ html[data-theme="day"] .league-switch img {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.45rem;
   width: 100%;
   max-width: 100%;
   min-height: 2.55rem;
-  padding: 0.1rem 0.1rem 0.1rem 0.55rem;
+  padding: 0.1rem 0.35rem 0.1rem 0.45rem;
   border: 0;
   border-left: 1px solid var(--chip-border);
   border-radius: 0;
@@ -1530,9 +1530,8 @@ html[data-theme="day"] .league-switch img {
   gap: 0.04rem;
   min-width: 0;
   flex: 1 1 auto;
-  padding: 0.05rem 0.1rem 0.05rem 0.55rem;
+  padding: 0.05rem 0.1rem 0.05rem 0.45rem;
   border-left: 1px solid var(--chip-border);
-  transition: opacity 0.12s ease;
 }
 
 .user-chip:hover .user-chip-text,
@@ -1541,46 +1540,24 @@ html[data-theme="day"] .league-switch img {
   border-left-color: var(--chip-border-active);
 }
 
-.user-chip-logout {
-  appearance: none;
-  position: absolute;
-  left: calc(2rem + 0.55rem);
-  right: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 2;
-  display: none;
-  align-items: center;
-  justify-content: flex-start;
-  margin: 0;
-  padding: 0 0.65rem 0 0.55rem;
-  border: 0;
-  border-left: 1px solid var(--chip-border-active);
-  background: var(--blue, #2f6dff);
-  color: #fff;
-  font-family: var(--display), Bebas Neue, sans-serif;
-  font-size: clamp(0.85rem, 1.6vw, 1rem);
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  cursor: pointer;
-  line-height: 1.1;
+.user-chip-caret {
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin: 0 0.15rem 0 0.1rem;
+  border-right: 1.5px solid var(--muted-2, var(--muted));
+  border-bottom: 1.5px solid var(--muted-2, var(--muted));
+  transform: rotate(45deg) translateY(-0.12rem);
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
-.user-menu:hover .user-chip-logout,
-.user-menu.is-open .user-chip-logout,
-.user-chip:hover .user-chip-logout {
-  display: flex;
+
+.user-chip:hover .user-chip-caret,
+.user-menu.is-open .user-chip-caret {
+  border-color: var(--text);
 }
-.user-menu:hover .user-chip-text,
-.user-menu.is-open .user-chip-text,
-.user-chip:hover .user-chip-text {
-  opacity: 0;
-  pointer-events: none;
-}
-.user-chip-logout:hover,
-.user-chip-logout:focus-visible {
-  background: #4d82ff;
-  outline: none;
+
+.user-menu.is-open .user-chip-caret {
+  transform: rotate(225deg) translateY(-0.05rem);
 }
 
 .user-chip-profile-hit {
@@ -1696,23 +1673,11 @@ a.user-chip {
   z-index: 50;
   display: none;
 }
-.user-menu:hover .user-menu-panel,
-.user-menu:focus-within .user-menu-panel,
 .user-menu.is-open .user-menu-panel {
   display: block;
 }
 .user-menu-panel[hidden] {
   display: none !important;
-}
-/* Keep hover bridge so menu doesn't flicker when moving to panel */
-.user-menu::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  top: 100%;
-  width: 100%;
-  min-width: 2.5rem;
-  height: 0.45rem;
 }
 
 .user-menu-head {
@@ -1741,6 +1706,7 @@ a.user-chip {
 }
 
 .user-menu-name {
+  display: block;
   font-family: var(--display);
   font-size: 0.95rem;
   font-weight: 700;
@@ -1751,6 +1717,7 @@ a.user-chip {
 }
 
 .user-menu-role {
+  display: block;
   margin-top: 0.12rem;
   font-size: 0.8rem;
   font-weight: 600;
@@ -1820,6 +1787,15 @@ a.user-chip {
   margin-top: 0.55rem;
   background: transparent;
   color: var(--text);
+  border-color: var(--line);
+}
+
+.user-menu-logout:hover,
+.user-menu-logout:focus-visible {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border-color: var(--btn-border);
+  outline: none;
 }
 
 .user-menu-link {
@@ -3258,6 +3234,7 @@ body.has-install-sheet {
 
   .user-menu {
     flex: 0 0 auto;
+    max-width: none;
   }
 
   .user-chip {
@@ -3265,7 +3242,7 @@ body.has-install-sheet {
     max-width: none;
     min-height: 2.5rem;
     padding-left: 0.55rem;
-    gap: 0;
+    gap: 0.35rem;
   }
   .user-chip-text {
     display: none;
@@ -3275,10 +3252,8 @@ body.has-install-sheet {
     height: 2rem;
     flex-basis: 2rem;
   }
-  .user-chip-logout {
-    left: 0;
-    padding-left: 0.55rem;
-    min-width: 5.5rem;
+  .user-chip-caret {
+    margin-right: 0.2rem;
   }
 
   .ticker-label-text { display: none; }

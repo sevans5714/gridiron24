@@ -51,7 +51,10 @@
     draft: null,
     unread: 0,
     loungeAccess: false,
-    loungeOpen: false
+    loungeOpen: false,
+    bookPanel: 'book',
+    bookSlip: null,
+    bookBridgeWired: false
   };
 
   const SPORTS_SLOT = 4;
@@ -616,7 +619,7 @@
 
   function scheduleSportsFlip(delay = SPORTS_FLIP_MS) {
     clearTimeout(state.sportsFlipTimer);
-    if (!state.sportsAuto || document.hidden || state.view !== 'book') return;
+    if (!state.sportsAuto || document.hidden || state.view !== 'book' || state.bookPanel !== 'scores') return;
     state.sportsFlipTimer = setTimeout(() => {
       const { games } = sportsGamesForFilter();
       const live = games.filter((g) => g.status?.bucket === 'live');
@@ -652,8 +655,10 @@
       if (ids.length && (!state.sportsFilter || !ids.includes(state.sportsFilter))) {
         state.sportsFilter = ids[0];
       }
-      renderSportsWire();
-      if (state.sportsAuto) scheduleSportsFlip();
+      if (state.view === 'book' && state.bookPanel === 'scores') {
+        renderSportsWire();
+        if (state.sportsAuto) scheduleSportsFlip();
+      }
     } catch (err) {
       const liveEl = document.getElementById('wire-live');
       const upEl = document.getElementById('wire-upcoming');
@@ -669,12 +674,222 @@
     }
   }
 
+  function bookFmtOdds(o) {
+    const n = Number(o);
+    if (!Number.isFinite(n)) return '—';
+    return n > 0 ? `+${n}` : String(n);
+  }
+
+  function bookFmtCash(n) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return '$0.00';
+    const abs = Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return v < 0 ? `-$${abs}` : `$${abs}`;
+  }
+
+  function bookFrame() {
+    return document.querySelector('#book-mount iframe.book-frame');
+  }
+
+  function postBook(msg) {
+    const frame = bookFrame();
+    if (!frame?.contentWindow) return;
+    try {
+      frame.contentWindow.postMessage(msg, location.origin);
+    } catch { /* ignore */ }
+  }
+
+  function ensureBookBridge() {
+    if (state.bookBridgeWired) return;
+    state.bookBridgeWired = true;
+    window.addEventListener('message', (ev) => {
+      if (ev.origin !== location.origin) return;
+      const msg = ev.data;
+      if (!msg || typeof msg !== 'object' || msg.type !== 'gi-book-slip') return;
+      state.bookSlip = msg;
+      const mount = document.getElementById('book-mount');
+      if (!mount?.querySelector('.book-stage')) return;
+      updateBookTabBadge(mount);
+      if (state.bookPanel === 'slip') renderBookSlip(mount);
+    });
+  }
+
+  function updateBookTabBadge(mount) {
+    const badge = mount?.querySelector('[data-book-badge]');
+    if (!badge) return;
+    const n = Array.isArray(state.bookSlip?.legs) ? state.bookSlip.legs.length : 0;
+    badge.hidden = n < 1;
+    badge.textContent = String(n);
+  }
+
+  function applyBookPanel(mount) {
+    const panel = state.bookPanel || 'book';
+    mount.querySelectorAll('[data-book-panel]').forEach((el) => {
+      el.hidden = el.getAttribute('data-book-panel') !== panel;
+    });
+    mount.querySelectorAll('[data-book-tab]').forEach((btn) => {
+      const on = btn.getAttribute('data-book-tab') === panel;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  }
+
+  function renderBookSlip(mount) {
+    const root = mount?.querySelector('[data-book-panel="slip"]');
+    if (!root) return;
+    const slip = state.bookSlip;
+    const legs = Array.isArray(slip?.legs) ? slip.legs : [];
+    const stake = Number.isFinite(Number(slip?.stake)) ? Number(slip.stake) : 25;
+    const chips = [5, 10, 25, 50, 100];
+    const status = slip?.status;
+    const open = Array.isArray(slip?.open) ? slip.open : [];
+
+    const legsHtml = legs.length
+      ? legs.map((leg) => `
+          <div class="pwa-slip-leg">
+            <div class="pwa-slip-leg-body">
+              <div class="pwa-slip-pick">${esc(leg.label || 'Pick')}${leg.future ? ' <em>future</em>' : ''}${leg.alt ? ' <em>alt</em>' : ''}${leg.sgp ? ' <em>sgp</em>' : ''}</div>
+              <div class="pwa-slip-meta">${esc(leg.meta || '')}</div>
+            </div>
+            <div class="pwa-slip-odds">${esc(bookFmtOdds(leg.odds))}</div>
+            <button type="button" class="pwa-slip-remove" data-slip-remove="${esc(leg.key)}" aria-label="Remove leg">✕</button>
+          </div>`).join('')
+      : `<div class="pwa-slip-empty">Tap lines in the Book tab to build a slip. Tap again to remove.</div>`;
+
+    root.innerHTML = `
+      <section class="pwa-slip" aria-label="Bet slip">
+        <header class="pwa-slip-head">
+          <div>
+            <p class="pwa-slip-kicker">Casala's Palace</p>
+            <h2>Bet Slip</h2>
+          </div>
+          <div class="pwa-slip-head-meta">
+            <span>${esc(slip?.slipType || 'Empty')}</span>
+            <span>${legs.length} leg${legs.length === 1 ? '' : 's'}</span>
+            <span>Funds ${esc(bookFmtCash(slip?.cash))}</span>
+          </div>
+        </header>
+        <div class="pwa-slip-legs">${legsHtml}</div>
+        <div class="pwa-slip-summary">
+          <div class="pwa-slip-payout">
+            <div><span class="label">Odds</span><strong>${esc(bookFmtOdds(slip?.odds))}</strong></div>
+            <div><span class="label">Payout</span><strong>${esc(bookFmtCash(slip?.payout))}</strong></div>
+          </div>
+          <div class="pwa-slip-chips" role="group" aria-label="Quick stakes">
+            ${chips.map((n) => `
+              <button type="button" class="pwa-slip-chip${Number(stake) === n ? ' is-on' : ''}" data-slip-chip="${n}">$${n}</button>
+            `).join('')}
+            <button type="button" class="pwa-slip-chip" data-slip-chip="max">Max</button>
+          </div>
+          <div class="pwa-slip-wager">
+            <label>Wager
+              <input type="number" id="pwa-slip-stake" min="5" max="500" step="1" value="${stake}" ${legs.length ? '' : 'disabled'} />
+            </label>
+            <label>To win
+              <input type="number" id="pwa-slip-towin" min="0" step="1" value="${Number(slip?.toWin) || 0}" disabled />
+            </label>
+          </div>
+          <div class="pwa-slip-actions">
+            <button type="button" class="pwa-slip-clear" data-slip-clear ${legs.length ? '' : 'disabled'}>Clear</button>
+            ${legs.length
+              ? `<label class="pwa-slip-private"><input type="checkbox" id="pwa-slip-private"${slip?.privateBet ? ' checked' : ''} /><span>Private</span></label>`
+              : ''}
+          </div>
+          ${slip?.notes?.futureMix
+            ? `<p class="pwa-slip-note">Each future stakes the same wager as your game ticket.</p>`
+            : ''}
+          ${slip?.notes?.sgp
+            ? `<p class="pwa-slip-note">Same-game legs are combined into one parlay.</p>`
+            : ''}
+          <p class="pwa-slip-status${status ? (status.ok ? ' is-ok' : ' is-err') : ''}" role="status"${status?.msg ? '' : ' hidden'}>${esc(status?.msg || '')}</p>
+          <button type="button" class="pwa-slip-lock" data-slip-lock ${legs.length && !slip?.busy ? '' : 'disabled'}>
+            ${slip?.busy ? 'Locking…' : 'Lock it in'}
+          </button>
+        </div>
+        <div class="pwa-slip-open">
+          <h3>Your open bets <span>${Number(slip?.openCount) || 0}</span></h3>
+          ${open.length
+            ? open.map((row) => `
+                <div class="pwa-slip-open-row">
+                  <div class="pick">${esc(row.pick || '')}</div>
+                  <div class="meta">${esc(row.meta || '')}</div>
+                </div>`).join('')
+            : `<div class="pwa-slip-empty">No locked tickets yet.</div>`}
+        </div>
+      </section>`;
+
+    root.querySelectorAll('[data-slip-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        postBook({ type: 'gi-book-remove', key: btn.getAttribute('data-slip-remove') });
+      });
+    });
+    root.querySelector('[data-slip-clear]')?.addEventListener('click', () => {
+      postBook({ type: 'gi-book-clear' });
+    });
+    root.querySelectorAll('[data-slip-chip]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const raw = btn.getAttribute('data-slip-chip');
+        const cash = Number(slip?.cash);
+        const max = Math.min(500, Math.max(5, Number.isFinite(cash) ? cash : 500));
+        const next = raw === 'max' ? max : Number(raw);
+        postBook({ type: 'gi-book-stake', stake: next });
+      });
+    });
+    const stakeInput = root.querySelector('#pwa-slip-stake');
+    stakeInput?.addEventListener('change', () => {
+      postBook({ type: 'gi-book-stake', stake: Number(stakeInput.value) });
+    });
+    root.querySelector('#pwa-slip-private')?.addEventListener('change', (e) => {
+      postBook({ type: 'gi-book-private', private: Boolean(e.target.checked) });
+    });
+    root.querySelector('[data-slip-lock]')?.addEventListener('click', () => {
+      const stakeNow = Number(root.querySelector('#pwa-slip-stake')?.value);
+      const priv = Boolean(root.querySelector('#pwa-slip-private')?.checked);
+      postBook({
+        type: 'gi-book-place',
+        stake: Number.isFinite(stakeNow) ? stakeNow : stake,
+        private: priv
+      });
+    });
+  }
+
+  function wireBookShell(mount) {
+    mount.querySelectorAll('[data-book-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.bookPanel = btn.getAttribute('data-book-tab') || 'book';
+        applyBookPanel(mount);
+        if (state.bookPanel === 'scores') {
+          if (!state.sports) loadSportsWire();
+          else {
+            renderSportsWire();
+            if (state.sportsAuto) scheduleSportsFlip();
+          }
+        } else {
+          clearTimeout(state.sportsFlipTimer);
+        }
+        if (state.bookPanel === 'slip') {
+          renderBookSlip(mount);
+          postBook({ type: 'gi-book-ping' });
+        }
+        if (state.bookPanel === 'book') {
+          postBook({ type: 'gi-book-ping' });
+        }
+      });
+    });
+    const frame = mount.querySelector('iframe.book-frame');
+    frame?.addEventListener('load', () => {
+      postBook({ type: 'gi-book-ping' });
+    });
+  }
+
   function renderBook() {
     const mount = document.getElementById('book-mount');
     if (!mount) return;
+    ensureBookBridge();
     if (!state.loungeAccess) {
       clearTimeout(state.sportsFlipTimer);
       clearTimeout(state.sportsPollTimer);
+      state.bookSlip = null;
       mount.innerHTML = `
         <div class="book-locked">
           <h2>Sportsbook locked</h2>
@@ -682,24 +897,57 @@
         </div>`;
       return;
     }
-    mount.innerHTML = `
-      <div class="book-stage">
-        <div class="book-wire-wrap">${bookWireShellHtml()}</div>
-        <div class="book-front">
-          <iframe class="book-frame" title="Casala's Palace Sportsbook" src="/members.html?embed=book#gambler"></iframe>
-        </div>
-      </div>`;
-    if (!state.sports) {
-      loadSportsWire();
-    } else {
-      renderSportsWire();
-      if (state.sportsAuto) scheduleSportsFlip();
-      else {
-        clearTimeout(state.sportsPollTimer);
-        state.sportsPollTimer = setTimeout(() => {
-          if (state.view === 'book') loadSportsWire();
-        }, SPORTS_POLL_MS);
+
+    let stage = mount.querySelector('.book-stage');
+    if (!stage) {
+      const n = Array.isArray(state.bookSlip?.legs) ? state.bookSlip.legs.length : 0;
+      mount.innerHTML = `
+        <div class="book-stage">
+          <div class="book-subtabs" role="tablist" aria-label="Book sections">
+            <button type="button" role="tab" data-book-tab="scores">Scoreboard</button>
+            <button type="button" role="tab" data-book-tab="book" class="is-on" aria-selected="true">Book</button>
+            <button type="button" role="tab" data-book-tab="slip">
+              Bet slip
+              <span class="book-slip-badge" data-book-badge ${n ? '' : 'hidden'}>${n || ''}</span>
+            </button>
+          </div>
+          <div class="book-panel" data-book-panel="scores" hidden>
+            <div class="book-wire-wrap">${bookWireShellHtml()}</div>
+          </div>
+          <div class="book-panel is-book" data-book-panel="book">
+            <iframe class="book-frame" title="Casala's Palace Sportsbook" src="/members.html?embed=book#gambler"></iframe>
+          </div>
+          <div class="book-panel" data-book-panel="slip" hidden></div>
+        </div>`;
+      stage = mount.querySelector('.book-stage');
+      wireBookShell(mount);
+      state.bookPanel = state.bookPanel || 'book';
+    }
+
+    applyBookPanel(mount);
+    updateBookTabBadge(mount);
+    if (state.bookPanel === 'slip') renderBookSlip(mount);
+
+    if (state.bookPanel === 'scores') {
+      if (!state.sports) {
+        loadSportsWire();
+      } else {
+        renderSportsWire();
+        if (state.sportsAuto) scheduleSportsFlip();
+        else {
+          clearTimeout(state.sportsPollTimer);
+          state.sportsPollTimer = setTimeout(() => {
+            if (state.view === 'book' && state.bookPanel === 'scores') loadSportsWire();
+          }, SPORTS_POLL_MS);
+        }
       }
+    } else {
+      clearTimeout(state.sportsFlipTimer);
+      // Keep scores fresh in the background while browsing book/slip.
+      clearTimeout(state.sportsPollTimer);
+      state.sportsPollTimer = setTimeout(() => {
+        if (state.view === 'book') loadSportsWire();
+      }, SPORTS_POLL_MS);
     }
   }
 
@@ -2689,8 +2937,9 @@
       }
       if (state.view === 'league') loadLeague();
       if (state.view === 'book' && state.loungeAccess) {
-        if (state.sportsAuto) scheduleSportsFlip(800);
-        else loadSportsWire();
+        if (state.bookPanel === 'scores' && state.sportsAuto) scheduleSportsFlip(800);
+        else if (state.bookPanel === 'scores') loadSportsWire();
+        else postBook({ type: 'gi-book-ping' });
       }
     });
   }

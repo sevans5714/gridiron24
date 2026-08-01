@@ -59,6 +59,7 @@ const paperBook = require('./paper-book-store');
 const deathPool = require('./death-pool-store');
 const deathPoolNews = require('./death-pool-news');
 const mockDraftRooms = require('./mock-draft-rooms-store');
+const independentDraft = require('./independent-draft-store');
 const customPools = require('./custom-pool-store');
 const futuresMarkets = require('./futures-markets');
 const matchupDisplayWeek = require('./matchup-display-week');
@@ -3649,7 +3650,7 @@ function homePathForUser(user, req = null) {
 
 const INDEPENDENT_HQ_SECTIONS = new Set([
   'standings', 'schedules', 'my-roster', 'team-rosters', 'rankings', 'draft',
-  'transactions', 'playoffs', 'calendar', 'rulebook', 'scoreboard', 'payouts'
+  'transactions', 'playoffs', 'calendar', 'rulebook', 'scoreboard', 'payouts', 'settings'
 ]);
 
 function parseIndependentHqPath(pathname) {
@@ -3677,8 +3678,9 @@ function canViewIndependentLeague(user, league) {
   if (users.isSiteOwner(user)) return true;
   if (league.ownerUserId && league.ownerUserId === user.id) return true;
   if (user.leagueId && user.leagueId === league.id) return true;
-  // Approved leagues: allow any authenticated non-lounge-only member of this league only.
-  // Pending/rejected: owner + site owner only (already covered).
+  if ((league.franchises || []).some((f) => f.managerUserId && f.managerUserId === user.id)) {
+    return true;
+  }
   return false;
 }
 
@@ -5827,6 +5829,7 @@ const server = http.createServer(async (req, res) => {
         section: INDEPENDENT_HQ_SECTIONS.has(section) ? section : 'home',
         leagueScope: independentLeagueScope(league),
         viewer: {
+          id: user.id,
           isOwner: Boolean(league.ownerUserId && league.ownerUserId === user.id),
           isSiteOwner: users.isSiteOwner(user)
         },
@@ -5843,9 +5846,170 @@ const server = http.createServer(async (req, res) => {
           calendar: leagues.independentSectionPath(league, 'calendar'),
           rulebook: leagues.independentSectionPath(league, 'rulebook'),
           scoreboard: leagues.independentSectionPath(league, 'scoreboard'),
-          payouts: leagues.independentSectionPath(league, 'payouts')
+          payouts: leagues.independentSectionPath(league, 'payouts'),
+          settings: leagues.independentSectionPath(league, 'settings')
         }
       });
+    }
+
+    if (pathname.startsWith('/api/independent-leagues/') && req.method === 'PATCH') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const parts = pathname.split('/').filter(Boolean);
+      // independent-leagues/:id/settings
+      if (parts.length !== 3 || parts[2] !== 'settings') {
+        return sendJson(res, 404, { ok: false, error: 'Not found' });
+      }
+      const leagueId = parts[1];
+      const league = leagues.findById(leagueId);
+      if (!league || league.platform !== 'independent') {
+        return sendJson(res, 404, { ok: false, error: 'League not found' });
+      }
+      if (!leagues.canManageIndependentLeague(user, league) && !users.isSiteOwner(user)) {
+        return sendJson(res, 403, { ok: false, error: 'Only the league owner can change settings' });
+      }
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const actor = { ...users.publicUser(user), siteOwner: users.isSiteOwner(user) };
+        const updated = leagues.updateIndependentSettings(leagueId, body, actor);
+        return sendJson(res, 200, { ok: true, league: updated });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save settings' });
+      }
+    }
+
+    if (pathname.startsWith('/api/independent-leagues/') && pathname.includes('/draft') && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const parts = pathname.split('/').filter(Boolean);
+      // independent-leagues/:id/draft
+      if (parts.length !== 3 || parts[2] !== 'draft') {
+        return sendJson(res, 404, { ok: false, error: 'Not found' });
+      }
+      const leagueId = parts[1];
+      const league = leagues.findById(leagueId);
+      if (!league || league.platform !== 'independent') {
+        return sendJson(res, 404, { ok: false, error: 'League not found' });
+      }
+      if (!canViewIndependentLeague(user, league)) {
+        return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+      }
+      try {
+        const poolPayload = await nflverseDraft.loadDraftPool({ activeOnly: true });
+        const pool = poolPayload.players || [];
+        const tick = independentDraft.tickLeague(leagueId, pool, user.id) || {
+          league: leagues.publicLeague(league),
+          rooms: []
+        };
+        const taken = new Set(
+          (tick.rooms || []).flatMap((r) => (r.picks || []).map((p) => String(p.playerId)))
+        );
+        const available = pool
+          .filter((p) => p?.id && !taken.has(String(p.id)))
+          .slice(0, 250)
+          .map((p) => ({
+            id: p.id,
+            name: p.name || p.fullName,
+            position: p.position,
+            team: p.team || p.nflTeam,
+            headshot: p.headshot || null,
+            adp: p.adp ?? null,
+            overallRank: p.overallRank ?? null
+          }));
+        return sendJson(res, 200, {
+          ok: true,
+          league: tick.league,
+          rooms: tick.rooms || [],
+          available,
+          viewer: {
+            id: user.id,
+            isOwner: Boolean(league.ownerUserId && league.ownerUserId === user.id),
+            isSiteOwner: users.isSiteOwner(user)
+          },
+          now: new Date().toISOString()
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Draft unavailable' });
+      }
+    }
+
+    if (pathname.startsWith('/api/independent-leagues/') && pathname.includes('/draft') && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const parts = pathname.split('/').filter(Boolean);
+      // independent-leagues/:id/draft
+      if (parts.length !== 3 || parts[2] !== 'draft') {
+        return sendJson(res, 404, { ok: false, error: 'Not found' });
+      }
+      const leagueId = parts[1];
+      const league = leagues.findById(leagueId);
+      if (!league || league.platform !== 'independent') {
+        return sendJson(res, 404, { ok: false, error: 'League not found' });
+      }
+      if (!canViewIndependentLeague(user, league)) {
+        return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+      }
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      const action = String(body.action || 'tick').toLowerCase();
+      try {
+        const poolPayload = await nflverseDraft.loadDraftPool({ activeOnly: true });
+        const pool = poolPayload.players || [];
+        const actor = { ...users.publicUser(user), siteOwner: users.isSiteOwner(user) };
+
+        if (action === 'claim') {
+          const updated = independentDraft.claimSeat(leagueId, body.franchiseId, actor);
+          return sendJson(res, 200, { ok: true, league: updated });
+        }
+        if (action === 'start') {
+          if (!leagues.canManageIndependentLeague(actor, league) && !users.isSiteOwner(user)) {
+            return sendJson(res, 403, { ok: false, error: 'Only the league owner can force-start' });
+          }
+          const started = independentDraft.startOfficialDraft(leagueId, { force: Boolean(body.force) });
+          const tick = independentDraft.tickLeague(leagueId, pool, user.id);
+          return sendJson(res, 200, {
+            ok: true,
+            league: tick?.league || started.league,
+            rooms: (tick?.rooms || started.rooms || []).map((r) =>
+              r.picks ? r : independentDraft.publicRoom(r, user.id)
+            )
+          });
+        }
+        if (action === 'pick') {
+          const room = independentDraft.humanPick(
+            leagueId,
+            body.roomId,
+            actor,
+            body.playerId,
+            pool
+          );
+          const tick = independentDraft.tickLeague(leagueId, pool, user.id);
+          return sendJson(res, 200, {
+            ok: true,
+            room,
+            league: tick?.league || leagues.publicLeague(leagues.findById(leagueId)),
+            rooms: tick?.rooms || [room]
+          });
+        }
+        // tick (default)
+        const tick = independentDraft.tickLeague(leagueId, pool, user.id);
+        return sendJson(res, 200, {
+          ok: true,
+          league: tick?.league || leagues.publicLeague(league),
+          rooms: tick?.rooms || []
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Draft action failed' });
+      }
     }
 
     if (pathname === '/api/leagues/pending' && req.method === 'GET') {
@@ -6324,6 +6488,11 @@ const server = http.createServer(async (req, res) => {
         const action = String(body.action || 'bet').toLowerCase();
         const openLegs = paperBook.listOpenUngradedLegs();
         const boards = await sportsScoreboard.getSettlementBoards({ openLegs });
+
+        if (action === 'draft' || action === 'slip') {
+          const book = paperBook.saveDraft(publicAuthor, body);
+          return sendJson(res, 200, book);
+        }
 
         if (action === 'future') {
           paperBook.settleOpenSlips(boards);
@@ -6842,6 +7011,49 @@ const server = http.createServer(async (req, res) => {
           note: config.treasurer?.note || 'League dues — GridIron 24 HQ'
         };
         const canManage = users.isCommissioner(viewer) || users.isSiteOwner(viewer);
+        const claimByUser = new Map(logos.listClaims().map((c) => [c.userId, c]));
+        const confMeta = new Map(
+          listAdminLeagues().map((l) => [String(l.key).toLowerCase(), {
+            key: l.key,
+            name: l.shortName || l.name,
+            logo: l.logo || null
+          }])
+        );
+        const decorateMember = (m) => {
+          if (!m) return m;
+          const claim = claimByUser.get(m.id);
+          const membership = String(m.membershipLeague || '').toLowerCase();
+          let conferenceKey = null;
+          let conferenceLogo = null;
+          let conferenceLabel = null;
+          if (m.siteOwner) {
+            conferenceKey = 'brand';
+            conferenceLogo = '/assets/gridiron24-brand.png?v=3';
+            conferenceLabel = 'GridIron 24';
+          } else if (claim?.conferenceKey) {
+            const conf = confMeta.get(String(claim.conferenceKey).toLowerCase());
+            conferenceKey = String(claim.conferenceKey).toLowerCase();
+            conferenceLogo = conf?.logo || null;
+            conferenceLabel = conf?.name || claim.conferenceKey;
+          } else if (membership === 'aaa') {
+            const conf = confMeta.get('aaa');
+            conferenceKey = 'aaa';
+            conferenceLogo = conf?.logo || '/assets/aaa-league.png?v=7';
+            conferenceLabel = conf?.name || 'AAA';
+          } else if (membership === 'gridiron') {
+            conferenceKey = 'gridiron';
+            conferenceLogo = '/assets/gridiron24-league-sm.png?v=8';
+            conferenceLabel = 'GridIron 24';
+          }
+          return {
+            ...m,
+            conferenceKey,
+            conferenceLogo,
+            conferenceLabel,
+            teamName: claim?.teamName || null
+          };
+        };
+        const decorateList = (list) => (Array.isArray(list) ? list.map(decorateMember) : []);
         return sendJson(res, 200, {
           ok: true,
           canManage,
@@ -6853,10 +7065,10 @@ const server = http.createServer(async (req, res) => {
             currency: 'USD'
           },
           caps: roster.caps,
-          gridiron: roster.gridiron,
-          aaa: roster.aaa,
-          members: roster.members || [],
-          unassigned: canManage ? roster.unassigned : [],
+          gridiron: decorateList(roster.gridiron),
+          aaa: decorateList(roster.aaa),
+          members: decorateList(roster.members || []),
+          unassigned: canManage ? decorateList(roster.unassigned) : [],
           generatedAt: new Date().toISOString()
         });
       } catch (err) {
@@ -9363,5 +9575,15 @@ server.listen(PORT, '0.0.0.0', () => {
       console.warn('[paper-book-settle] interval failed', err.message || err);
     });
   }, PAPER_BOOK_SETTLE_MS);
+  const INDEPENDENT_DRAFT_TICK_MS = 4_000;
+  setInterval(() => {
+    nflverseDraft.loadDraftPool({ activeOnly: true })
+      .then((payload) => {
+        independentDraft.tickAll(payload.players || []);
+      })
+      .catch((err) => {
+        console.warn('[independent-draft] tick failed', err.message || err);
+      });
+  }, INDEPENDENT_DRAFT_TICK_MS);
   console.log('');
 });

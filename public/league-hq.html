@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=146" />
+  <link rel="stylesheet" href="/css/site.css?v=147" />
   <style>
     body[data-page="league-hq"] .page-hero {
       padding-top: 1.35rem;
@@ -114,6 +114,247 @@
       font-size: 0.82rem;
       color: var(--blue);
     }
+    .il-form {
+      display: grid;
+      gap: 0.85rem;
+      max-width: 36rem;
+    }
+    .il-form label {
+      display: grid;
+      gap: 0.3rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .il-form input,
+    .il-form select {
+      font: inherit;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text);
+      background: var(--field-bg, var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: 0.35rem;
+      padding: 0.55rem 0.65rem;
+    }
+    .il-form textarea,
+    .il-rule-editor input,
+    .il-rule-editor textarea {
+      font: inherit;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text);
+      background: var(--field-bg, var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: 0.35rem;
+      padding: 0.55rem 0.65rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .il-form textarea,
+    .il-rule-editor textarea {
+      min-height: 7rem;
+      resize: vertical;
+      line-height: 1.45;
+    }
+    .il-rule-article {
+      margin: 0 0 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    }
+    .il-rule-article:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+    .il-rule-article h3 {
+      margin: 0 0 0.45rem;
+      font-size: 1.05rem;
+    }
+    .il-rule-article .body {
+      margin: 0;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    .il-form.is-wide,
+    .il-rule-editor {
+      max-width: 44rem;
+    }
+    .il-rule-editor {
+      display: grid;
+      gap: 0.35rem;
+    }
+    .il-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem 0.85rem;
+    }
+    @media (max-width: 640px) {
+      .il-form-grid { grid-template-columns: 1fr; }
+    }
+    .il-form-grid.is-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    @media (max-width: 720px) {
+      .il-form-grid.is-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .il-slot-grid {
+      --mock-qb: #ff6b6b;
+      --mock-rb: #3dd68c;
+      --mock-wr: #5b9dff;
+      --mock-te: #c084fc;
+      --mock-k: #f5b942;
+      --mock-dst: #94a3b8;
+      --mock-flex: #2dd4bf;
+      --mock-bn: #64748b;
+      --mock-ir: #fb7185;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+    @media (max-width: 720px) {
+      .il-slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .il-slot-field {
+      border: 1px solid color-mix(in srgb, var(--slot-color, var(--line)) 50%, transparent);
+      border-left: 4px solid var(--slot-color, var(--line));
+      background: color-mix(in srgb, var(--slot-color, transparent) 14%, var(--panel-2, var(--panel)));
+      padding: 0.45rem 0.55rem 0.55rem;
+      border-radius: 0.35rem;
+    }
+    .il-slot-field[data-pos="QB"] { --slot-color: var(--mock-qb); }
+    .il-slot-field[data-pos="RB"] { --slot-color: var(--mock-rb); }
+    .il-slot-field[data-pos="WR"] { --slot-color: var(--mock-wr); }
+    .il-slot-field[data-pos="TE"] { --slot-color: var(--mock-te); }
+    .il-slot-field[data-pos="FLEX"] { --slot-color: var(--mock-flex); }
+    .il-slot-field[data-pos="DST"] { --slot-color: var(--mock-dst); }
+    .il-slot-field[data-pos="K"] { --slot-color: var(--mock-k); }
+    .il-slot-field[data-pos="BN"] { --slot-color: var(--mock-bn); }
+    .il-slot-field[data-pos="IR"] { --slot-color: var(--mock-ir); }
+    .il-slot-field label {
+      color: var(--text);
+      font-weight: 700;
+    }
+    .il-form h3,
+    .il-scoring-block h3 {
+      margin: 0.35rem 0 0;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .il-rule-editor label {
+      display: grid;
+      gap: 0.3rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .il-rule-editor .il-rule-block {
+      display: grid;
+      gap: 0.55rem;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    }
+    .il-rule-editor .il-rule-block:last-of-type { border-bottom: 0; }
+    .il-form .il-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: center;
+    }
+    .il-btn {
+      appearance: none;
+      border: 1px solid var(--btn-border, var(--text));
+      background: var(--btn-bg, var(--text));
+      color: var(--btn-text, var(--bg));
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.55rem 0.9rem;
+      cursor: pointer;
+    }
+    .il-btn.is-ghost {
+      background: transparent;
+      color: var(--text);
+    }
+    .il-btn:disabled { opacity: 0.45; cursor: default; }
+    .il-status {
+      min-height: 1.2rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .il-status.is-ok { color: var(--good, #3dcf8a); }
+    .il-status.is-err { color: var(--bad, #f87171); }
+    .il-draft-clock {
+      font-family: var(--display);
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      letter-spacing: 0.04em;
+      margin: 0.35rem 0 0.75rem;
+    }
+    .il-pick-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 1rem;
+    }
+    @media (max-width: 900px) {
+      .il-pick-grid { grid-template-columns: 1fr; }
+    }
+    .il-pool {
+      display: grid;
+      gap: 0.35rem;
+      max-height: 28rem;
+      overflow: auto;
+    }
+    .il-pool button {
+      appearance: none;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0.45rem 0.55rem;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.88rem;
+    }
+    .il-pool button:hover { border-color: var(--blue); }
+    .il-pool button:disabled { opacity: 0.4; cursor: default; }
+    .il-picks {
+      display: grid;
+      gap: 0.25rem;
+      max-height: 28rem;
+      overflow: auto;
+      font-size: 0.88rem;
+    }
+    .il-picks .row {
+      display: grid;
+      grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+      gap: 0.45rem;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    }
+    .il-roster-list {
+      display: grid;
+      gap: 0.35rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .il-roster-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+      font-size: 0.92rem;
+    }
   </style>
 </head>
 <body data-page="league-hq">
@@ -133,7 +374,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=100"></script>
+  <script src="/js/nav.js?v=101"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -179,38 +420,484 @@
             ${teams.map((t, i) => `
               <li>
                 <span>${i + 1}. ${esc(t.name || t.teamName || `Team ${i + 1}`)}</span>
-                <span class="il-meta">${esc(t.ownerName || 'Unclaimed')} · 0-0</span>
+                <span class="il-meta">${esc(t.managerName || t.ownerName || 'Unclaimed')} · 0-0</span>
               </li>`).join('') || '<li class="il-empty">No teams</li>'}
           </ul>
         </section>`).join('')}</div>`;
     }
 
-    function rulebookHtml(league) {
-      const s = league.settings || {};
-      const roster = s.roster || {};
-      const scoring = s.scoring || {};
+    function formatRuleBody(text) {
+      const raw = String(text || '').trim();
+      if (!raw) return '<p class="il-empty">No text yet.</p>';
+      return `<p class="body">${esc(raw)}</p>`;
+    }
+
+    function rulebookHtml(league, viewer = {}) {
+      const rb = league.rulebook || {};
+      const sections = Array.isArray(rb.sections) && rb.sections.length
+        ? rb.sections
+        : (Array.isArray(rb.articles) ? rb.articles : []);
+      const ownerArticles = sections.filter((a) => a.source === 'owner');
+      const settingsArticles = sections.filter((a) => a.source !== 'owner');
+      const canEdit = Boolean(viewer?.isOwner || viewer?.isSiteOwner);
+
+      const settingsBlock = `
+        <section class="il-panel">
+          <h2>From settings</h2>
+          <p class="il-meta">These articles update automatically when you change draft, roster, scoring, structure, or payouts in Settings.</p>
+          <div style="margin-top:1rem;">
+            ${settingsArticles.map((a) => `
+              <article class="il-rule-article">
+                <h3>${esc(a.title || 'Article')} <span class="il-meta">· settings</span></h3>
+                ${formatRuleBody(a.body)}
+              </article>`).join('') || '<p class="il-empty">No settings-derived rules yet.</p>'}
+          </div>
+        </section>`;
+
+      if (canEdit) {
+        return `
+          ${settingsBlock}
+          <section class="il-panel" style="margin-top:1rem;">
+            <h2>House rules</h2>
+            <p class="il-meta">You write these. Managers see them on the Rule Book with the settings articles above. Not GridIron 24 / AAA.</p>
+            <form class="il-rule-editor" id="il-rulebook-form" style="margin-top:0.85rem;">
+              ${ownerArticles.map((a, i) => `
+                <div class="il-rule-block">
+                  <label>Title
+                    <input type="text" name="title-${i}" maxlength="120" value="${esc(a.title || '')}" required />
+                  </label>
+                  <label>Body
+                    <textarea name="body-${i}" maxlength="12000" rows="5">${esc(a.body || '')}</textarea>
+                  </label>
+                  <input type="hidden" name="id-${i}" value="${esc(a.id || `owner-${i + 1}`)}" />
+                </div>`).join('') || '<p class="il-empty">No house-rule slots.</p>'}
+              <input type="hidden" name="articleCount" value="${ownerArticles.length}" />
+              <div class="il-actions">
+                <button type="submit" class="il-btn">Save house rules</button>
+                <span class="il-status" id="il-rulebook-status" role="status"></span>
+              </div>
+              ${rb.updatedAt ? `<p class="il-meta">Last saved ${esc(new Date(rb.updatedAt).toLocaleString())}${rb.updatedByName ? ` by ${esc(rb.updatedByName)}` : ''}</p>` : ''}
+            </form>
+          </section>`;
+      }
+
       return `
         <section class="il-panel">
           <h2>Rule Book</h2>
-          <p class="il-meta">Independent rules for <strong>${esc(league.brand?.name || league.slug)}</strong> — not GridIron 24 / AAA.</p>
-          <p class="il-meta" style="margin-top:0.75rem;">
-            <strong>Roster</strong><br/>
-            Size ${esc(roster.size ?? '—')} · Starters ${esc(roster.starters ?? '—')} · Bench ${esc(roster.bench ?? '—')} · IR ${esc(roster.ir ?? '—')}
-          </p>
-          <p class="il-meta" style="margin-top:0.75rem;">
-            <strong>Scoring preset</strong><br/>
-            ${esc(scoring.preset || scoring.label || 'Custom / configured at create')}
-          </p>
-          <p class="il-meta" style="margin-top:0.75rem;">
-            <strong>Championship</strong><br/>
-            ${esc(league.championship?.name || '—')} · Title week ${esc(league.championship?.titleWeek ?? '—')} · Final week ${esc(league.championship?.bowlWeek ?? '—')}
-          </p>
+          <p class="il-meta">Independent rules for <strong>${esc(league.brand?.name || league.slug)}</strong>. Some articles come from league settings; house rules are written by the owner.</p>
+          ${rb.updatedAt ? `<p class="il-meta" style="margin-top:0.35rem;">House rules updated ${esc(new Date(rb.updatedAt).toLocaleString())}${rb.updatedByName ? ` · ${esc(rb.updatedByName)}` : ''}</p>` : ''}
+          <div style="margin-top:1rem;">
+            ${sections.map((a) => `
+              <article class="il-rule-article">
+                <h3>${esc(a.title || 'Article')}${a.source === 'settings' ? ' <span class="il-meta">· settings</span>' : ''}</h3>
+                ${formatRuleBody(a.body)}
+              </article>`).join('') || '<p class="il-empty">No rules published yet.</p>'}
+          </div>
         </section>`;
     }
 
-    function sectionHtml(section, league, pages) {
+    function toLocalInputValue(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (!Number.isFinite(d.getTime())) return '';
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function settingsHtml(league, viewer) {
+      const s = league.settings || {};
+      const st = league.structure || {};
+      const ch = league.championship || {};
+      const locked = ['live', 'complete'].includes(String(league.draft?.status || ''));
+      if (!viewer?.isOwner && !viewer?.isSiteOwner) {
+        return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+          <section class="il-panel"><h2>League settings</h2>
+          <p class="il-empty">Only the league owner can edit settings.</p>
+          <p class="il-meta" style="margin-top:0.75rem;">Open the <strong>Rule Book</strong> page to read league rules.</p>
+          </section>`;
+      }
+      return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+        <section class="il-panel">
+          <h2>Official draft</h2>
+          <p class="il-meta">GridIron 24 stays on ESPN. This draft is local to your league and starts automatically at the time you set. Managers who are on the board make their own pick; if the clock hits zero, CPU autopicks for them.</p>
+          <p class="il-meta" style="margin-top:0.55rem;">Everything here is owner-controlled. Structure, roster, scoring, draft, and playoffs feed the Rule Book. House rules live on the <a href="${esc((hqState.pages && hqState.pages.rulebook) || '#')}">Rule Book</a> page.</p>
+          <form class="il-form" id="il-settings-form" style="margin-top:0.85rem;">
+            <label>Draft date &amp; time
+              <input type="datetime-local" name="draftAt" value="${esc(toLocalInputValue(s.draftAt))}" ${locked ? 'disabled' : ''} />
+            </label>
+            <label>Draft scope
+              <select name="draftScope" ${locked ? 'disabled' : ''}>
+                <option value="conference" ${s.draftScope !== 'league' ? 'selected' : ''}>Separate draft per conference (independent boards)</option>
+                <option value="league" ${s.draftScope === 'league' ? 'selected' : ''}>One snake — whole league</option>
+              </select>
+            </label>
+            <p class="il-meta">With separate drafts, each conference fills its own roster pool; they still meet in the Super Bowl.</p>
+            <label>Rounds
+              <input type="number" name="draftRounds" min="5" max="25" value="${esc(s.draftRounds || 15)}" ${locked ? 'disabled' : ''} />
+            </label>
+            <label>Seconds per pick
+              <select name="draftSecondsPerPick" ${locked ? 'disabled' : ''}>
+                ${[30, 45, 60, 90, 120, 180, 240, 300].map((n) =>
+                  `<option value="${n}" ${Number(s.draftSecondsPerPick) === n ? 'selected' : ''}>${n}s</option>`
+                ).join('')}
+              </select>
+            </label>
+            <label>Empty franchise seats
+              <select name="draftFillEmptySeats" ${locked ? 'disabled' : ''}>
+                <option value="cpu" ${s.draftFillEmptySeats !== 'hold' ? 'selected' : ''}>Fill with CPU</option>
+                <option value="hold" ${s.draftFillEmptySeats === 'hold' ? 'selected' : ''}>Hold until every franchise has a manager</option>
+              </select>
+            </label>
+            <div class="il-actions">
+              <button type="submit" class="il-btn" ${locked ? 'disabled' : ''}>Save draft settings</button>
+              <span class="il-status" id="il-settings-status" role="status"></span>
+            </div>
+            ${locked ? `<p class="il-meta">Draft settings are locked while the draft is ${esc(league.draft?.status)}.</p>` : ''}
+          </form>
+        </section>
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>Conferences &amp; playoffs</h2>
+          <p class="il-meta">1 or 2 conferences, any team count (10 / 12 / 14 / …). You set the playoff shape — Rule Book and Playoff Bracket follow these settings.</p>
+          <form class="il-form is-wide" id="il-playoff-form" style="margin-top:0.85rem;">
+            <label>Conferences
+              <select name="conferenceCount">
+                <option value="1" ${Number(st.conferenceCount) === 1 ? 'selected' : ''}>1 conference</option>
+                <option value="2" ${Number(st.conferenceCount) !== 1 ? 'selected' : ''}>2 conferences</option>
+              </select>
+            </label>
+            <div class="il-form-grid">
+              <label>Conference 1 name
+                <input type="text" name="conf0Name" maxlength="48" value="${esc(league.conferences?.[0]?.name || '')}" required />
+              </label>
+              <label>Conference 1 short
+                <input type="text" name="conf0Short" maxlength="12" value="${esc(league.conferences?.[0]?.shortName || '')}" />
+              </label>
+              <label>Conference 2 name
+                <input type="text" name="conf1Name" maxlength="48" value="${esc(league.conferences?.[1]?.name || '')}" ${Number(st.conferenceCount) === 1 ? 'disabled' : ''} />
+              </label>
+              <label>Conference 2 short
+                <input type="text" name="conf1Short" maxlength="12" value="${esc(league.conferences?.[1]?.shortName || '')}" ${Number(st.conferenceCount) === 1 ? 'disabled' : ''} />
+              </label>
+            </div>
+            <div class="il-form-grid">
+              <label>${Number(st.conferenceCount) === 1 ? 'Total teams' : 'Teams per conference'}
+                <input type="number" name="teamsPerConference" min="2" max="20" value="${esc(st.teamsPerConference || '')}" placeholder="10, 12, 14…" />
+              </label>
+              <label>${Number(st.conferenceCount) === 1 ? 'Playoff teams' : 'Playoff teams per conference'}
+                <input type="number" name="playoffTeamsPerConference" min="0" max="20" value="${esc(st.playoffTeamsPerConference || '')}" />
+              </label>
+            </div>
+            <label>Playoff format
+              <select name="playoffFormat">
+                <option value="conference-brackets" ${st.playoffFormat !== 'league-bracket' ? 'selected' : ''}>Conference brackets → title game</option>
+                <option value="league-bracket" ${st.playoffFormat === 'league-bracket' ? 'selected' : ''}>One league-wide bracket</option>
+              </select>
+            </label>
+            <div class="il-form-grid">
+              <label>Regular season ends (week)
+                <input type="number" name="regularSeasonEndWeek" min="0" max="18" value="${esc(st.regularSeasonEndWeek || '')}" />
+              </label>
+              <label>Playoff weeks (comma-separated)
+                <input type="text" name="playoffWeeks" value="${esc((st.playoffWeeks || []).join(', '))}" placeholder="14, 15, 16" />
+              </label>
+            </div>
+            <label>Super Bowl / championship name
+              <input type="text" name="championshipName" maxlength="80" value="${esc(ch.name || '')}" />
+            </label>
+            <div class="il-form-grid">
+              <label>Conference title week
+                <input type="number" name="titleWeek" min="1" max="18" value="${esc(ch.titleWeek ?? 16)}" />
+              </label>
+              <label>Super Bowl week
+                <input type="number" name="bowlWeek" min="1" max="18" value="${esc(ch.bowlWeek ?? 17)}" />
+              </label>
+            </div>
+            <label style="margin-top:0.35rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
+              <input type="checkbox" name="survivalEnabled" value="1" ${league.survival?.enabled !== false ? 'checked' : ''} />
+              Mayor's Cup–style survival (last place each conference)
+            </label>
+            <div class="il-form-grid">
+              <label>Survival name
+                <input type="text" name="survivalName" maxlength="80" value="${esc(league.survival?.name || "Mayor's Cup")}" />
+              </label>
+              <label>Survival week
+                <input type="number" name="survivalWeek" min="1" max="18" value="${esc(league.survival?.week ?? 17)}" />
+              </label>
+            </div>
+            <div class="il-actions">
+              <button type="submit" class="il-btn">Save conferences &amp; playoffs</button>
+              <span class="il-status" id="il-playoff-status" role="status"></span>
+            </div>
+          </form>
+        </section>
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>Roster slots</h2>
+          <p class="il-meta">Owner-defined — e.g. 2 QB, 3 RB, 5 WR, 2 FLEX, multiple IR. Colors match the draft / roster position badges.</p>
+          <form class="il-form is-wide" id="il-roster-form" style="margin-top:0.85rem;">
+            <div class="il-slot-grid">
+              ${[['QB',8],['RB',12],['WR',12],['TE',8],['FLEX',8],['DST',4],['K',4],['BN',30],['IR',10]].map(([pos, max]) => `
+                <div class="il-slot-field" data-pos="${pos}">
+                  <label>${esc(pos)}
+                    <input type="number" name="slot-${pos}" min="0" max="${max}" step="1" value="${esc(s.rosterSlots?.[pos] ?? 0)}" />
+                  </label>
+                </div>`).join('')}
+            </div>
+            <div class="il-form-grid" style="margin-top:0.75rem;">
+              <label>Keepers per team
+                <input type="number" name="keeperCount" min="0" max="5" value="${esc(s.keeperCount ?? 1)}" />
+              </label>
+              <label>Max keeper seasons
+                <input type="number" name="keeperMaxSeasons" min="1" max="5" value="${esc(s.keeperMaxSeasons ?? 3)}" />
+              </label>
+            </div>
+            <label style="margin-top:0.55rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
+              <input type="checkbox" name="keepersEnabled" value="1" ${s.keepersEnabled !== false ? 'checked' : ''} />
+              Keepers enabled (GridIron 24–style)
+            </label>
+            <div class="il-actions">
+              <button type="submit" class="il-btn">Save roster slots</button>
+              <span class="il-status" id="il-roster-status" role="status"></span>
+            </div>
+          </form>
+        </section>
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>Scoring</h2>
+          <p class="il-meta">Set the preset, then tune individual position scoring. Changes publish to the Rule Book.</p>
+          <form class="il-form is-wide" id="il-scoring-form" style="margin-top:0.85rem;">
+            <label>Scoring preset
+              <select name="scoringPreset">
+                <option value="custom" ${!s.scoringPreset || s.scoringPreset === 'custom' ? 'selected' : ''}>Custom</option>
+                <option value="gridiron24-vanilla" ${s.scoringPreset === 'gridiron24-vanilla' ? 'selected' : ''}>Full PPR (4-pt pass TD)</option>
+                <option value="half-ppr" ${s.scoringPreset === 'half-ppr' ? 'selected' : ''}>Half PPR</option>
+                <option value="standard" ${s.scoringPreset === 'standard' ? 'selected' : ''}>Standard (no PPR)</option>
+              </select>
+            </label>
+            ${scoringFieldsHtml(s.scoring || {})}
+            <div class="il-actions">
+              <button type="submit" class="il-btn">Save scoring</button>
+              <span class="il-status" id="il-scoring-status" role="status"></span>
+            </div>
+          </form>
+        </section>
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>Franchises</h2>
+          <p class="il-meta">Managers claim a franchise before draft day. CPU fills empty seats if you allow it above.</p>
+          <ul class="il-team-list" id="il-franchise-claim">
+            ${(league.franchises || []).map((f) => `
+              <li>
+                <span>${esc(f.name)} <span class="il-meta">· ${esc(f.managerName || 'Open')}</span></span>
+                <button type="button" class="il-btn is-ghost" data-claim="${esc(f.id)}" ${f.managerUserId && f.managerUserId !== viewer?.id ? 'disabled' : ''}>
+                  ${f.managerUserId === viewer?.id ? 'Your team' : (f.managerUserId ? 'Taken' : 'Claim')}
+                </button>
+              </li>`).join('') || '<li class="il-empty">No franchises</li>'}
+          </ul>
+        </section>`;
+    }
+
+    function scoringFieldsHtml(scoring) {
+      const num = (key, label, step = '1') => `
+        <label>${esc(label)}
+          <input type="number" name="score-${key}" step="${step}" value="${esc(scoring[key] ?? '')}" />
+        </label>`;
+      return `
+        <div class="il-scoring-block">
+          <h3>Passing (QB)</h3>
+          <div class="il-form-grid">
+            ${num('passingYardsPerPoint', 'Yards per point')}
+            ${num('passingTD', 'Pass TD')}
+            ${num('interception', 'Interception')}
+          </div>
+          <h3>Rushing</h3>
+          <div class="il-form-grid">
+            ${num('rushingYardsPerPoint', 'Yards per point')}
+            ${num('rushingTD', 'Rush TD')}
+          </div>
+          <h3>Receiving (WR / TE / RB)</h3>
+          <div class="il-form-grid">
+            ${num('receivingYardsPerPoint', 'Yards per point')}
+            ${num('receivingTD', 'Receiving TD')}
+            ${num('reception', 'Reception (PPR)', '0.5')}
+          </div>
+          <h3>Misc</h3>
+          <div class="il-form-grid">
+            ${num('fumbleLost', 'Fumble lost')}
+            ${num('twoPointConversion', '2-pt conversion')}
+          </div>
+          <h3>Kicker (K)</h3>
+          <div class="il-form-grid">
+            ${num('patMade', 'PAT made')}
+            ${num('fg0to39', 'FG 0–39')}
+            ${num('fg40to49', 'FG 40–49')}
+            ${num('fg50plus', 'FG 50+')}
+            ${num('fgMissed', 'FG missed')}
+          </div>
+          <h3>Defense / ST (DST)</h3>
+          <div class="il-form-grid">
+            ${num('dstSack', 'Sack')}
+            ${num('dstInterception', 'Interception')}
+            ${num('dstFumbleRecovery', 'Fumble recovery')}
+            ${num('dstTouchdown', 'Defensive TD')}
+            ${num('dstSafety', 'Safety')}
+            ${num('dstBlockKick', 'Blocked kick')}
+          </div>
+          <h3>DST points allowed</h3>
+          <div class="il-form-grid is-3">
+            ${num('dstPointsAllowed0', '0 pts')}
+            ${num('dstPointsAllowed1to6', '1–6')}
+            ${num('dstPointsAllowed7to13', '7–13')}
+            ${num('dstPointsAllowed14to20', '14–20')}
+            ${num('dstPointsAllowed21to27', '21–27')}
+            ${num('dstPointsAllowed28to34', '28–34')}
+            ${num('dstPointsAllowed35plus', '35+')}
+          </div>
+        </div>`;
+    }
+
+    function rosterPanel(franchise) {
+      const roster = Array.isArray(franchise?.roster) ? franchise.roster : [];
+      if (!roster.length) return `<p class="il-empty">No drafted players yet.</p>`;
+      return `<ul class="il-roster-list">${roster.map((p) => `
+        <li>
+          <span><strong>${esc(p.position || '')}</strong> ${esc(p.name || p.playerName || 'Player')}</span>
+          <span class="il-meta">Rd ${esc(p.round ?? '—')} · #${esc(p.draftOverall ?? '—')}</span>
+        </li>`).join('')}</ul>`;
+    }
+
+    function teamRostersHtml(league) {
+      const groups = franchisesByConf(league);
+      return `<div class="il-split">${groups.map(({ conf, teams }) => `
+        <section class="il-panel">
+          <h2>${esc(conf.name || conf.key)}</h2>
+          ${teams.map((t) => `
+            <div style="margin:0 0 1rem;">
+              <p class="il-meta" style="margin:0 0 0.35rem;"><strong>${esc(t.name)}</strong> · ${esc(t.managerName || 'Open')}</p>
+              ${rosterPanel(t)}
+            </div>`).join('') || '<p class="il-empty">No teams</p>'}
+        </section>`).join('')}</div>`;
+    }
+
+    function myRosterHtml(league, viewerId) {
+      const mine = (league.franchises || []).find((f) => f.managerUserId && f.managerUserId === viewerId);
+      if (!mine) {
+        return `<section class="il-panel"><h2>My Team</h2>
+          <p class="il-empty">Claim a franchise in Settings to see your roster here.</p></section>`;
+      }
+      return `<section class="il-panel">
+        <h2>${esc(mine.name)}</h2>
+        <p class="il-meta" style="margin:0 0 0.75rem;">${esc(mine.managerName || 'You')}</p>
+        ${rosterPanel(mine)}
+      </section>`;
+    }
+
+    function draftResultsHtml(league) {
+      const picks = Array.isArray(league.draft?.picks) ? league.draft.picks : [];
+      if (!picks.length) return `<p class="il-empty">No picks yet.</p>`;
+      return `<div class="il-picks">${picks.slice().sort((a, b) => (a.draftOverall || 0) - (b.draftOverall || 0)).map((p) => `
+        <div class="row">
+          <span>${esc(p.draftOverall ?? p.overall ?? '')}</span>
+          <span><strong>${esc(p.name || p.playerName || '')}</strong> · ${esc(p.teamName || p.franchiseId || '')}</span>
+          <span class="il-meta">${esc(p.position || '')}</span>
+        </div>`).join('')}</div>`;
+    }
+
+    function draftRoomBoard(room, available) {
+      if (!room) return '';
+      const onClock = room.onClock;
+      const confLabel = room.conferenceKey ? ` · ${room.conferenceKey}` : '';
+      const secs = room.secondsRemaining;
+      const clockLabel = onClock?.awaitsHuman
+        ? (secs != null
+          ? `${secs}s left · pick now or CPU autopicks`
+          : 'On the clock · pick now or CPU autopicks when time is up')
+        : (room.status === 'done' ? 'Board complete' : 'CPU picking…');
+      const heading = onClock?.isMe
+        ? 'You are on the clock — make your pick'
+        : (onClock?.awaitsHuman ? 'Waiting on manager' : 'On the clock');
+      return `
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>${esc(heading)}${esc(confLabel)}</h2>
+          <p class="il-draft-clock">${esc(onClock?.teamName || '—')} · Round ${esc(onClock?.round || '—')} · Pick ${esc(onClock?.overall || '—')}</p>
+          <p class="il-meta" data-deadline="${esc(room.pickDeadline || '')}">${esc(clockLabel)}</p>
+        </section>
+        <div class="il-pick-grid" style="margin-top:1rem;" data-room-board="${esc(room.id)}">
+          <section class="il-panel">
+            <h2>Available${esc(confLabel)}</h2>
+            <div class="il-pool">
+              ${available.slice(0, 120).map((p) => `
+                <button type="button" data-pick="${esc(p.id)}" data-room="${esc(room.id)}" ${onClock?.isMe && room.status === 'live' ? '' : 'disabled'}>
+                  <strong>${esc(p.position || '')}</strong> ${esc(p.name || '')}
+                  <span class="il-meta"> · ${esc(p.team || '')}${p.adp != null ? ` · ADP ${esc(p.adp)}` : ''}</span>
+                </button>`).join('') || '<p class="il-empty">Pool loading…</p>'}
+            </div>
+          </section>
+          <section class="il-panel">
+            <h2>Picks${esc(confLabel)}</h2>
+            <div class="il-picks">
+              ${(room.picks || []).slice().reverse().slice(0, 40).map((p) => `
+                <div class="row">
+                  <span>${esc(p.overall)}</span>
+                  <span><strong>${esc(p.playerName)}</strong> · ${esc(p.teamName)}${p.timeout ? ' · auto' : (p.cpu ? ' · CPU' : '')}</span>
+                  <span class="il-meta">${esc(p.position || '')}</span>
+                </div>`).join('') || '<p class="il-empty">No picks yet.</p>'}
+            </div>
+          </section>
+        </div>`;
+    }
+
+    function draftLiveHtml(payload) {
+      const league = payload.league || {};
+      const rooms = Array.isArray(payload.rooms) ? payload.rooms : [];
+      const available = Array.isArray(payload.available) ? payload.available : [];
+      const status = league.draft?.status || 'scheduled';
+      const settings = league.settings || {};
+      const liveRooms = rooms.filter((r) => r && r.status !== 'done');
+      const room = liveRooms[0] || rooms[0] || null;
+
+      if (status === 'complete') {
+        return `<h1 class="page-title">Draft</h1>${statusBanner(league)}
+          <section class="il-panel"><h2>Draft complete</h2>${draftResultsHtml(league)}</section>`;
+      }
+
+      if (status === 'scheduled' || !room) {
+        const at = settings.draftAt ? new Date(settings.draftAt) : null;
+        const label = at && Number.isFinite(at.getTime()) ? at.toLocaleString() : 'Not scheduled';
+        return `<h1 class="page-title">Draft</h1>${statusBanner(league)}
+          <section class="il-panel">
+            <h2>Scheduled</h2>
+            <p class="il-meta">Starts automatically at the time set in Settings.</p>
+            <p class="il-draft-clock" id="il-countdown">${esc(label)}</p>
+            <p class="il-meta">
+              ${esc(settings.draftScope || 'league')} · ${esc(settings.draftRounds || '—')} rounds
+              · ${esc(settings.draftSecondsPerPick || '—')}s · empty seats: ${esc(settings.draftFillEmptySeats || 'cpu')}
+            </p>
+            <div class="il-actions" style="margin-top:0.85rem;">
+              <button type="button" class="il-btn is-ghost" id="il-draft-refresh">Refresh</button>
+              ${payload.viewer?.isOwner || payload.viewer?.isSiteOwner
+                ? `<button type="button" class="il-btn" id="il-draft-force">Start now</button>`
+                : ''}
+              <span class="il-status" id="il-draft-status" role="status"></span>
+            </div>
+          </section>`;
+      }
+
+      return `<h1 class="page-title">Draft · Live</h1>${statusBanner(league)}
+        <div class="il-actions" style="margin-bottom:0.75rem;">
+          <button type="button" class="il-btn is-ghost" id="il-draft-refresh">Refresh</button>
+          <span class="il-status" id="il-draft-status" role="status"></span>
+        </div>
+        ${rooms.map((r) => draftRoomBoard(r, available)).join('')}`;
+    }
+
+    let draftPollTimer = null;
+    let draftClockTimer = null;
+    let hqState = { league: null, viewer: null, pages: {}, slug: '' };
+
+    function sectionHtml(section, league, pages, viewer = {}) {
       const name = league.brand?.name || league.slug;
       if (section === 'home') {
+        const draftAt = league.settings?.draftAt
+          ? new Date(league.settings.draftAt).toLocaleString()
+          : 'Not scheduled';
         return `
           <div class="il-hero">
             ${league.brand?.logo || league.brand?.crest
@@ -228,8 +915,14 @@
                 Season <strong>${esc(league.season)}</strong><br/>
                 ${esc(league.structure?.totalTeams || '—')} teams
                 (${esc(league.structure?.teamsPerConference || '—')} per conference)<br/>
-                Playoffs: ${esc((league.structure?.playoffWeeks || []).join(', ') || '—')}<br/>
-                Buy-in: ${esc(league.payouts?.buyInPerTeam != null ? `$${league.payouts.buyInPerTeam}` : '—')}
+                Playoffs: ${esc((league.structure?.playoffWeeks || []).join(', ') || '—')}
+                · ${esc(league.championship?.name || 'Super Bowl')} week ${esc(league.championship?.bowlWeek ?? '—')}<br/>
+                Buy-in: ${esc(league.payouts?.buyInPerTeam != null ? `$${league.payouts.buyInPerTeam}` : '—')}<br/>
+                Draft: <strong>${esc(league.draft?.status || 'scheduled')}</strong> · ${esc(draftAt)}
+              </p>
+              <p class="il-meta" style="margin-top:0.75rem;">
+                <a href="${esc(pages.settings || '#')}">League settings</a>
+                · <a href="${esc(pages.draft || '#')}">Draft board</a>
               </p>
             </section>
           </div>`;
@@ -241,7 +934,8 @@
         'my-roster': 'My Team',
         'team-rosters': 'Team Rosters',
         rankings: 'Rankings',
-        draft: 'Draft Results',
+        draft: 'Draft',
+        settings: 'Settings',
         transactions: 'Transactions',
         playoffs: 'Playoff Bracket',
         calendar: 'Calendar',
@@ -251,11 +945,20 @@
       };
       const title = titles[section] || section;
 
-      if (section === 'standings' || section === 'team-rosters') {
+      if (section === 'standings') {
         return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${standingsHtml(league)}`;
       }
+      if (section === 'team-rosters') {
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${teamRostersHtml(league)}`;
+      }
+      if (section === 'my-roster') {
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${myRosterHtml(league, viewer.id)}`;
+      }
+      if (section === 'settings') {
+        return settingsHtml(league, viewer);
+      }
       if (section === 'rulebook') {
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${rulebookHtml(league)}`;
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${rulebookHtml(league, viewer)}`;
       }
       if (section === 'payouts') {
         const prizes = (league.payouts?.prizes || []).map((p) => `<li>${esc(p.label || p.name || 'Prize')}: ${esc(p.amount != null ? `$${p.amount}` : '—')}</li>`).join('');
@@ -275,14 +978,36 @@
           </section>`;
       }
       if (section === 'playoffs') {
+        const st = league.structure || {};
+        const ch = league.championship || {};
+        const confs = league.conferences || [];
+        const per = st.playoffTeamsPerConference || Math.ceil((st.playoffTeamCount || 6) / 2);
         return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
           <section class="il-panel">
-            <h2>${esc(league.championship?.name || 'Championship')}</h2>
+            <h2>${esc(ch.name || 'Super Bowl')}</h2>
             <p class="il-meta">
-              ${esc(league.structure?.playoffTeamCount || 6)} teams · Weeks ${(league.structure?.playoffWeeks || []).map(esc).join(', ') || '—'}<br/>
-              Title week ${esc(league.championship?.titleWeek ?? '—')} · Final week ${esc(league.championship?.bowlWeek ?? '—')}
+              ${st.playoffFormat === 'league-bracket'
+                ? `League-wide bracket · ${esc(st.playoffTeamCount || '—')} teams`
+                : `Conference brackets · ${esc(per)} teams each (${esc(st.playoffTeamCount || per * 2)} total)`}<br/>
+              Playoff weeks ${(st.playoffWeeks || []).map(esc).join(', ') || '—'}
+              · Regular season through week ${esc(st.regularSeasonEndWeek ?? '—')}<br/>
+              Conference titles week ${esc(ch.titleWeek ?? '—')} · ${esc(ch.name || 'Super Bowl')} week ${esc(ch.bowlWeek ?? '—')}
             </p>
-            <p class="il-empty" style="margin-top:0.85rem;">Bracket board fills in when the season reaches the playoffs.</p>
+            ${st.playoffFormat !== 'league-bracket' ? `
+              <div class="il-split" style="margin-top:1rem;">
+                ${confs.slice(0, 2).map((c) => `
+                  <div>
+                    <h3 style="margin:0 0 0.35rem;font-size:1rem;">${esc(c.name || c.key)}</h3>
+                    <p class="il-meta">${esc(per)} playoff teams → conference champion</p>
+                  </div>`).join('')}
+              </div>
+              <p class="il-meta" style="margin-top:1rem;">
+                <strong>${esc(confs[0]?.shortName || confs[0]?.name || 'Conf 1')}</strong> champion
+                vs
+                <strong>${esc(confs[1]?.shortName || confs[1]?.name || 'Conf 2')}</strong> champion
+                in the <strong>${esc(ch.name || 'Super Bowl')}</strong>.
+              </p>` : ''}
+            <p class="il-empty" style="margin-top:0.85rem;">Bracket board fills in when the season reaches the playoffs. Owner sets this structure in Settings.</p>
           </section>`;
       }
 
@@ -290,12 +1015,326 @@
         <section class="il-panel">
           <h2>${esc(title)}</h2>
           <p class="il-empty">
-            This ${esc(name)} HQ includes the same league options as GridIron 24
-            (standings, schedules, rosters, rankings, draft, transactions, playoffs, calendar, rule book, scoreboard).
-            Live ${esc(title.toLowerCase())} data unlocks as your independent season is set up — it never pulls from GridIron 24 or AAA.
+            Live ${esc(title.toLowerCase())} for ${esc(name)} unlocks as your independent season is set up —
+            it never pulls from GridIron 24 or AAA.
           </p>
           <p class="il-meta" style="margin-top:0.85rem;">Home: <a class="il-url" href="${esc(pages.home)}">${esc(pages.home)}</a></p>
         </section>`;
+    }
+
+    async function loadDraftBoard() {
+      const league = hqState.league;
+      if (!league?.id) return;
+      const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/draft`, { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load draft');
+      hqState.league = data.league;
+      const root = document.getElementById('il-root');
+      root.innerHTML = draftLiveHtml({ ...data, viewer: { ...hqState.viewer, ...data.viewer } });
+      wireDraftUi();
+    }
+
+    function wireDraftUi() {
+      clearInterval(draftPollTimer);
+      clearInterval(draftClockTimer);
+      const league = hqState.league;
+      document.getElementById('il-draft-refresh')?.addEventListener('click', () => {
+        loadDraftBoard().catch((err) => {
+          const el = document.getElementById('il-draft-status');
+          if (el) {
+            el.textContent = err.message;
+            el.className = 'il-status is-err';
+          }
+        });
+      });
+      document.getElementById('il-draft-force')?.addEventListener('click', async () => {
+        const el = document.getElementById('il-draft-status');
+        try {
+          const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/draft`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'start', force: true })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not start');
+          await loadDraftBoard();
+        } catch (err) {
+          if (el) {
+            el.textContent = err.message;
+            el.className = 'il-status is-err';
+          }
+        }
+      });
+      document.querySelectorAll('[data-pick]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/draft`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'pick',
+                roomId: btn.getAttribute('data-room'),
+                playerId: btn.getAttribute('data-pick')
+              })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Pick failed');
+            await loadDraftBoard();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+
+      // Live countdown: managers pick while connected; at 0 the server CPU-autopicks.
+      const deadlineEls = document.querySelectorAll('[data-deadline]');
+      if (deadlineEls.length) {
+        draftClockTimer = setInterval(() => {
+          deadlineEls.forEach((el) => {
+            const raw = el.getAttribute('data-deadline');
+            if (!raw) return;
+            const ms = Date.parse(raw) - Date.now();
+            if (!Number.isFinite(ms)) return;
+            const secs = Math.max(0, Math.ceil(ms / 1000));
+            el.textContent = secs > 0
+              ? `${secs}s left · pick now or CPU autopicks`
+              : 'Time up · CPU autopicking…';
+          });
+        }, 250);
+      }
+
+      const status = league?.draft?.status;
+      if (status === 'live' || status === 'scheduled') {
+        draftPollTimer = setInterval(() => {
+          loadDraftBoard().catch(() => {});
+        }, status === 'live' ? 2500 : 8000);
+      }
+    }
+
+    function wireRulebookUi() {
+      const form = document.getElementById('il-rulebook-form');
+      const league = hqState.league;
+      form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-rulebook-status');
+        const fd = new FormData(form);
+        const count = Number(fd.get('articleCount')) || 0;
+        const articles = [];
+        for (let i = 0; i < count; i += 1) {
+          articles.push({
+            id: String(fd.get(`id-${i}`) || `article-${i + 1}`),
+            title: String(fd.get(`title-${i}`) || '').trim(),
+            body: String(fd.get(`body-${i}`) || '').trim()
+          });
+        }
+        try {
+          const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/settings`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rulebook: { articles } })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
+          hqState.league = data.league;
+          document.getElementById('il-root').innerHTML =
+            `<h1 class="page-title">Rule Book</h1>${statusBanner(data.league)}${rulebookHtml(data.league, hqState.viewer)}`;
+          wireRulebookUi();
+          const ok = document.getElementById('il-rulebook-status');
+          if (ok) {
+            ok.textContent = 'Saved.';
+            ok.className = 'il-status is-ok';
+          }
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+    }
+
+    function wireSettingsUi() {
+      const league = hqState.league;
+
+      async function patchSettings(body, statusEl) {
+        const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/settings`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
+        hqState.league = data.league;
+        if (statusEl) {
+          statusEl.textContent = 'Saved.';
+          statusEl.className = 'il-status is-ok';
+        }
+        return data.league;
+      }
+
+      document.getElementById('il-settings-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-settings-status');
+        const fd = new FormData(e.target);
+        const draftAtRaw = String(fd.get('draftAt') || '').trim();
+        let draftAt = null;
+        if (draftAtRaw) {
+          const t = Date.parse(draftAtRaw);
+          if (!Number.isFinite(t)) {
+            if (status) {
+              status.textContent = 'Invalid draft date/time';
+              status.className = 'il-status is-err';
+            }
+            return;
+          }
+          draftAt = new Date(t).toISOString();
+        }
+        try {
+          await patchSettings({
+            draftAt,
+            draftScope: fd.get('draftScope'),
+            draftRounds: Number(fd.get('draftRounds')),
+            draftSecondsPerPick: Number(fd.get('draftSecondsPerPick')),
+            draftFillEmptySeats: fd.get('draftFillEmptySeats')
+          }, status);
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+
+      document.getElementById('il-playoff-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-playoff-status');
+        const fd = new FormData(e.target);
+        const weeksRaw = String(fd.get('playoffWeeks') || '');
+        const playoffWeeks = weeksRaw.split(/[,\s]+/).map(Number).filter((n) => Number.isFinite(n) && n >= 1 && n <= 18);
+        const confCount = Number(fd.get('conferenceCount')) === 1 ? 1 : 2;
+        const confs = [{ name: fd.get('conf0Name'), shortName: fd.get('conf0Short') }];
+        if (confCount === 2) confs.push({ name: fd.get('conf1Name'), shortName: fd.get('conf1Short') });
+        const teams = Number(fd.get('teamsPerConference')) || 0;
+        const playoffPer = Number(fd.get('playoffTeamsPerConference')) || 0;
+        try {
+          const updated = await patchSettings({
+            conferences: confs,
+            structure: {
+              conferenceCount: confCount,
+              teamsPerConference: teams,
+              totalTeams: confCount === 1 ? teams : teams * 2,
+              playoffFormat: confCount === 1 ? 'league-bracket' : fd.get('playoffFormat'),
+              playoffTeamsPerConference: playoffPer,
+              playoffTeamCount: confCount === 1 ? playoffPer : playoffPer * 2,
+              regularSeasonEndWeek: Number(fd.get('regularSeasonEndWeek')) || 0,
+              playoffWeeks
+            },
+            championship: {
+              name: fd.get('championshipName'),
+              titleWeek: fd.get('titleWeek') === '' ? null : Number(fd.get('titleWeek')),
+              bowlWeek: fd.get('bowlWeek') === '' ? null : Number(fd.get('bowlWeek')),
+              format: confCount === 1 || fd.get('playoffFormat') === 'league-bracket' ? 'single-bracket' : 'super-bowl'
+            },
+            survival: {
+              enabled: fd.get('survivalEnabled') === '1',
+              name: fd.get('survivalName'),
+              week: Number(fd.get('survivalWeek')) || null
+            }
+          }, status);
+          document.getElementById('il-root').innerHTML = settingsHtml(updated, hqState.viewer);
+          wireSettingsUi();
+          const ok = document.getElementById('il-playoff-status');
+          if (ok) {
+            ok.textContent = 'Saved.';
+            ok.className = 'il-status is-ok';
+          }
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+
+      document.getElementById('il-roster-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-roster-status');
+        const fd = new FormData(e.target);
+        const rosterSlots = {};
+        for (const pos of ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K', 'BN', 'IR']) {
+          rosterSlots[pos] = Number(fd.get(`slot-${pos}`));
+        }
+        try {
+          const updated = await patchSettings({
+            rosterSlots,
+            keepersEnabled: fd.get('keepersEnabled') === '1',
+            keeperCount: Number(fd.get('keeperCount')),
+            keeperMaxSeasons: Number(fd.get('keeperMaxSeasons'))
+          }, status);
+          document.getElementById('il-root').innerHTML = settingsHtml(updated, hqState.viewer);
+          wireSettingsUi();
+          const ok = document.getElementById('il-roster-status');
+          if (ok) {
+            ok.textContent = 'Saved.';
+            ok.className = 'il-status is-ok';
+          }
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+
+      document.getElementById('il-scoring-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-scoring-status');
+        const fd = new FormData(e.target);
+        const scoring = {};
+        for (const [key, val] of fd.entries()) {
+          if (!String(key).startsWith('score-')) continue;
+          const field = String(key).slice('score-'.length);
+          const n = Number(val);
+          if (Number.isFinite(n)) scoring[field] = n;
+        }
+        try {
+          const updated = await patchSettings({
+            scoringPreset: fd.get('scoringPreset'),
+            scoring
+          }, status);
+          document.getElementById('il-root').innerHTML = settingsHtml(updated, hqState.viewer);
+          wireSettingsUi();
+          const ok = document.getElementById('il-scoring-status');
+          if (ok) {
+            ok.textContent = 'Saved.';
+            ok.className = 'il-status is-ok';
+          }
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+
+      document.querySelectorAll('[data-claim]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/draft`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'claim', franchiseId: btn.getAttribute('data-claim') })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Claim failed');
+            hqState.league = data.league;
+            document.getElementById('il-root').innerHTML = settingsHtml(data.league, hqState.viewer);
+            wireSettingsUi();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
     }
 
     async function boot() {
@@ -314,12 +1353,34 @@
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load league HQ');
         const league = data.league;
+        hqState = {
+          league,
+          viewer: {
+            ...(data.viewer || {}),
+            id: data.viewer?.id || null
+          },
+          pages: data.pages || {},
+          slug
+        };
+        // Resolve viewer id from auth if needed for my-roster claims
+        try {
+          const auth = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json());
+          if (auth?.user?.id) hqState.viewer.id = auth.user.id;
+        } catch { /* ignore */ }
+
         document.title = `${league.brand?.name || league.slug} · League HQ`;
         document.body.dataset.page = section === 'home' ? 'league-hq' : section;
         if (data.leagueScope && window.GridIronNav?.applyLeagueScope) {
           window.GridIronNav.applyLeagueScope(data.leagueScope);
         }
-        root.innerHTML = sectionHtml(section === 'home' ? 'home' : section, league, data.pages || {});
+
+        if (section === 'draft') {
+          await loadDraftBoard();
+        } else {
+          root.innerHTML = sectionHtml(section === 'home' ? 'home' : section, league, data.pages || {}, hqState.viewer);
+          if (section === 'settings') wireSettingsUi();
+          if (section === 'rulebook') wireRulebookUi();
+        }
         window.GridIronNav?.setSync(league.brand?.name || 'League HQ', true);
       } catch (err) {
         root.innerHTML = `<div class="msg"><strong>Error</strong> ${esc(err.message)}</div>`;

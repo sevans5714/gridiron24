@@ -60,7 +60,8 @@
       { href: `${base}/schedules.html`, label: 'Schedules' },
       { href: `${base}/team-rosters.html`, label: 'Team Rosters' },
       { href: `${base}/rankings.html`, label: 'Rankings' },
-      { href: `${base}/draft.html`, label: 'Draft Results' },
+      { href: `${base}/draft.html`, label: 'Draft' },
+      { href: `${base}/settings.html`, label: 'Settings' },
       { href: `${base}/transactions.html`, label: 'Transactions' }
     ];
   }
@@ -688,18 +689,49 @@
     const chipClass = `user-chip${onProfile ? ' is-active' : ''}${needsLogo ? ' needs-logo' : ''}`;
 
     mount.innerHTML = `
-      <div class="${chipClass}" title="${esc(chipTitle)}">
+      <button type="button" class="${chipClass}" title="${esc(chipTitle)}" aria-haspopup="menu" aria-expanded="false" id="user-menu-toggle">
         <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
         <span class="user-chip-text">
           <span class="user-chip-team">${esc(teamName)}</span>
           <span class="user-chip-owner">${esc(ownerName)}</span>
           <span class="user-chip-access">${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
         </span>
-        <button type="button" class="user-chip-logout" aria-label="Log out">LOG OUT</button>
-      </div>
-      ${user.loungeOnly ? '' : `<a class="user-chip-profile-hit" href="${profileHref}" tabindex="-1" aria-hidden="true"></a>`}`;
+        <span class="user-chip-caret" aria-hidden="true"></span>
+      </button>
+      <div class="user-menu-panel" role="menu" hidden>
+        ${user.loungeOnly
+          ? `<div class="user-menu-head" tabindex="-1">
+              <span class="user-menu-preview">${avatarHtml(myTeam, user)}</span>
+              <span>
+                <span class="user-menu-name">${esc(ownerName)}</span>
+                <span class="user-menu-role">${esc(access)}</span>
+              </span>
+            </div>`
+          : `<a class="user-menu-head${needsLogo ? ' needs-logo' : ''}" href="${profileHref}" role="menuitem">
+              <span class="user-menu-preview">${avatarHtml(myTeam, user)}</span>
+              <span>
+                <span class="user-menu-name">${esc(ownerName)}</span>
+                <span class="user-menu-role">${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
+              </span>
+            </a>`}
+        <button type="button" class="user-menu-logout" role="menuitem">Log out</button>
+      </div>`;
 
-    const logoutBtn = mount.querySelector('.user-chip-logout');
+    const toggle = mount.querySelector('#user-menu-toggle');
+    const panel = mount.querySelector('.user-menu-panel');
+    const setOpen = (open) => {
+      mount.classList.toggle('is-open', open);
+      if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (panel) panel.hidden = !open;
+    };
+
+    toggle?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(!mount.classList.contains('is-open'));
+    });
+
+    const logoutBtn = mount.querySelector('.user-menu-logout');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -712,24 +744,28 @@
       });
     }
 
-    // Ensure identity + logout sit at the far right of the header.
+    // Ensure identity sits at the far right of the header.
     const right = mount.parentElement;
     if (right?.classList?.contains('topbar-right') && right.lastElementChild !== mount) {
       right.appendChild(mount);
     }
 
-    // Touch: tap chip to reveal LOG OUT in the top-right header.
-    const chipEl = mount.querySelector('.user-chip');
-    if (chipEl) {
-      chipEl.addEventListener('click', (e) => {
-        if (e.target.closest('.user-chip-logout')) return;
-        const fineHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-        if (fineHover) {
-          if (!user.loungeOnly) window.location.href = profileHref;
-          return;
-        }
-        e.preventDefault();
-        mount.classList.toggle('is-open');
+    if (!mount.dataset.menuDismissWired) {
+      mount.dataset.menuDismissWired = '1';
+      document.addEventListener('click', (e) => {
+        if (!mount.classList.contains('is-open')) return;
+        if (mount.contains(e.target)) return;
+        mount.classList.remove('is-open');
+        mount.querySelector('#user-menu-toggle')?.setAttribute('aria-expanded', 'false');
+        const p = mount.querySelector('.user-menu-panel');
+        if (p) p.hidden = true;
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || !mount.classList.contains('is-open')) return;
+        mount.classList.remove('is-open');
+        mount.querySelector('#user-menu-toggle')?.setAttribute('aria-expanded', 'false');
+        const p = mount.querySelector('.user-menu-panel');
+        if (p) p.hidden = true;
       });
     }
   }
@@ -994,7 +1030,9 @@
         refreshInboxBadge();
         heartbeatPresence();
         refreshRuleProposalGate(user);
-        loadTicker();
+        if (!document.documentElement.classList.contains('is-embed-book')) {
+          loadTicker();
+        }
       } else if (user?.loungeOnly) {
         const inboxBtn = document.getElementById('inbox-btn');
         if (inboxBtn) inboxBtn.hidden = true;

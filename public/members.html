@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=146" />
+  <link rel="stylesheet" href="/css/site.css?v=147" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -2066,10 +2066,16 @@
     .board-body {
       padding: 0.85rem 0 0.15rem;
       display: grid;
-      grid-template-columns: minmax(0, 22rem);
-      gap: 0.35rem;
+      grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+      gap: 0.85rem 1.35rem;
       align-items: start;
       justify-content: start;
+    }
+    .roll-col {
+      display: grid;
+      gap: 0.32rem;
+      align-content: start;
+      min-width: 0;
     }
     .roll-empty {
       grid-column: 1 / -1;
@@ -2081,22 +2087,22 @@
     .member-row {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
       min-width: 0;
-      padding: 0.2rem 0.1rem;
+      padding: 0.18rem 0.05rem;
       border: 0;
       background: transparent;
     }
     .member-league {
-      width: 1.35rem;
-      height: 1.35rem;
+      width: 1.45rem;
+      height: 1.45rem;
       object-fit: contain;
       flex: 0 0 auto;
       filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
     }
     .member-league.is-blank {
-      width: 1.35rem;
-      height: 1.35rem;
+      width: 1.45rem;
+      height: 1.45rem;
       flex: 0 0 auto;
       border-radius: 0.15rem;
       background: rgba(126, 200, 255, 0.08);
@@ -6979,39 +6985,6 @@
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
-    .degen-ou {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 0.28rem;
-      line-height: 1;
-    }
-    .degen-ou-side {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1rem;
-      height: 1rem;
-      border-radius: 0.15rem;
-      background: color-mix(in srgb, var(--mo-casino) 28%, transparent);
-      color: var(--mo-casino-soft);
-      font-family: "Oswald", sans-serif;
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      line-height: 1;
-    }
-    .degen-ou-line {
-      font-family: "Oswald", sans-serif;
-      font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      font-variant-numeric: tabular-nums;
-    }
-    .degen-cell.is-on .degen-ou-side,
-    button.degen-cell:hover:not(.is-empty) .degen-ou-side {
-      background: rgba(255, 255, 255, 0.22);
-      color: #fff;
-    }
     .degen-cell.is-empty {
       color: rgba(176, 198, 230, 0.28);
       border-style: dashed;
@@ -8232,8 +8205,6 @@
         padding: 0.28rem 0.12rem;
       }
       .degen-cell-main { font-size: 0.84rem; }
-      .degen-ou-line { font-size: 0.86rem; }
-      .degen-ou-side { width: 0.9rem; height: 0.9rem; font-size: 0.58rem; }
     }
 
     @media (max-width: 900px) {
@@ -8287,8 +8258,8 @@
       }
       .mock-draft-drop { min-width: 0; }
       .board-body {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0.3rem;
+        grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+        gap: 0.65rem 1rem;
       }
       .im-body {
         grid-template-columns: 1fr;
@@ -8582,6 +8553,7 @@
     html.is-embed-book .topbar,
     html.is-embed-book .page-hero,
     html.is-embed-book .site-footer,
+    html.is-embed-book #site-ticker,
     html.is-embed-book .lounge-hero,
     html.is-embed-book .lounge-section.is-scoreboard,
     html.is-embed-book #lounge-desk-tabs,
@@ -8593,14 +8565,16 @@
     html.is-embed-book #flash,
     html.is-embed-book #gambler-subtabs,
     html.is-embed-book [data-gambler-panel="pools"],
-    html.is-embed-book #cpool-create-dialog {
+    html.is-embed-book #cpool-create-dialog,
+    html.is-embed-book .palace-label,
+    html.is-embed-book .degen-ticket {
       display: none !important;
     }
     html.is-embed-book .page-main.shell {
       max-width: none;
       width: 100%;
       margin: 0;
-      padding: 0.55rem 0.55rem 0.85rem;
+      padding: 0.45rem 0.45rem 0.65rem;
     }
     html.is-embed-book .lounge {
       margin: 0;
@@ -8611,19 +8585,18 @@
       display: block !important;
       margin: 0;
       border-radius: 0.85rem;
-      min-height: calc(100dvh - 1.2rem);
-    }
-    html.is-embed-book .palace-label {
-      padding: 0.65rem 0.75rem 0.35rem;
-    }
-    html.is-embed-book .palace-label h2 {
-      font-size: clamp(1.15rem, 4vw, 1.55rem);
+      min-height: calc(100dvh - 1rem);
     }
     html.is-embed-book #degenerate-book {
       border: 0;
       box-shadow: none;
       background: transparent;
-      min-height: calc(100dvh - 5.5rem);
+      min-height: calc(100dvh - 1rem);
+    }
+    html.is-embed-book .degen-layout,
+    html.is-embed-book .degen-layout.is-embed {
+      grid-template-columns: 1fr;
+      gap: 0;
     }
   </style>
   <script>
@@ -9073,10 +9046,10 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=98"></script>
+  <script src="/js/nav.js?v=99"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
   <script src="/js/lounge-desk.js?v=66"></script>
-  <script src="/js/lounge-games.js?v=35"></script>
+  <script src="/js/lounge-games.js?v=38"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -10308,9 +10281,35 @@
     }
 
     function leagueLogoForMember(m) {
-      const key = String(m?.membershipLeague || '').toLowerCase();
+      const nameKey = String(m?.name || '').trim().toLowerCase();
+      const loginKey = String(m?.loginName || '').trim().toLowerCase();
+      // Site owner (Steve Evans / sevans) → platform brand crest.
+      if (
+        m?.siteOwner
+        || nameKey === 'steve evans'
+        || loginKey === 'sevans'
+        || m?.conferenceKey === 'brand'
+      ) {
+        return {
+          src: '/assets/gridiron24-brand.png?v=3',
+          alt: 'GridIron 24'
+        };
+      }
+      if (m?.conferenceLogo) {
+        return {
+          src: m.conferenceLogo,
+          alt: m.conferenceLabel || m.conferenceKey || 'League'
+        };
+      }
+      const key = String(m?.membershipLeague || m?.conferenceKey || '').toLowerCase();
       if (key === 'aaa') {
         return { src: '/assets/aaa-league.png?v=7', alt: 'AAA' };
+      }
+      if (key === 'detail') {
+        return { src: '/assets/detail-conference.png', alt: 'Detail' };
+      }
+      if (key === 'overtime') {
+        return { src: '/assets/overtime-conference.png', alt: 'Overtime' };
       }
       if (key === 'gridiron') {
         return { src: '/assets/gridiron24-league-sm.png?v=8', alt: 'GridIron 24' };
@@ -10323,10 +10322,11 @@
       const isMe = state.viewer?.id === m.id;
       const league = leagueLogoForMember(m);
       const mark = league
-        ? `<img class="member-league" src="${esc(league.src)}" alt="${esc(league.alt)}" width="44" height="44" loading="lazy" decoding="async" />`
+        ? `<img class="member-league" src="${esc(league.src)}" alt="${esc(league.alt)}" title="${esc(league.alt)}" width="44" height="44" loading="lazy" decoding="async" />`
         : `<span class="member-league is-blank" aria-hidden="true"></span>`;
+      const title = [m.name, m.teamName, league?.alt].filter(Boolean).join(' · ');
       return `
-        <div class="member-row${isMe ? ' is-you' : ''}" data-user-id="${esc(m.id)}" title="${esc(m.name)}">
+        <div class="member-row${isMe ? ' is-you' : ''}" data-user-id="${esc(m.id)}" title="${esc(title)}">
           ${mark}
           <div class="name">${esc(m.name)}</div>
         </div>`;
@@ -10357,8 +10357,15 @@
       );
     }
 
+    function chunkMembers(list, size = 10) {
+      const out = [];
+      for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+      return out;
+    }
+
     function renderUnifiedRoll() {
       const members = allMembers().filter((m) => m && !m.open && m.name);
+      const columns = chunkMembers(members, 10);
       return `
         <section class="board united">
           <div class="board-head">
@@ -10369,7 +10376,10 @@
           </div>
           <div class="board-body">
             ${members.length
-              ? members.map((m) => memberRow(m)).join('')
+              ? columns.map((col) => `
+                  <div class="roll-col">
+                    ${col.map((m) => memberRow(m)).join('')}
+                  </div>`).join('')
               : `<div class="roll-empty">No members yet.</div>`}
           </div>
         </section>`;
