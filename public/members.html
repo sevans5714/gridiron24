@@ -9386,7 +9386,7 @@
 
       return `<article class="sgame is-${esc(bucket)}${fantasy ? ' is-fantasy' : ''}${hasLines || fantasy ? '' : ' is-nolines'}${wagered ? ' is-wagered' : ''}" data-event-id="${esc(String(g.id || ''))}" title="${esc(g.name || '')}${wagered ? ' · Your Casala\'s bet' : ''}">
         <div class="sgame-top">
-          <span class="sgame-when${meta.live ? ' sgame-status is-live' : ''}">${esc(meta.when)}</span>
+          <span class="sgame-when${meta.live ? ' sgame-status is-live' : ''}">${esc(meta.when)}${g.series ? ` · ${esc(g.series)}` : ''}</span>
           <span class="sgame-top-right">
             ${ouHtml}
             ${watchHtml}

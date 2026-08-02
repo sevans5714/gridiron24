@@ -91,9 +91,14 @@ const LEAGUES = {
     label: 'LLWS',
     sport: 'baseball',
     league: 'llb',
+    // Softball World Series uses a separate ESPN league (lls). Merge into one LLWS tab.
+    extraLeagues: [
+      { sport: 'baseball', league: 'lls', series: 'Softball' }
+    ],
     kind: 'team',
     logo: 'https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-baseball.png',
-    seasonMonths: [8]
+    // Softball regionals/WS in July–Aug; baseball WS in August
+    seasonMonths: [7, 8]
   },
   cbase: {
     id: 'cbase',
@@ -282,7 +287,7 @@ function pickOdds(competition) {
   return oddsEnrich.hasUsableOdds(normalized) ? normalized : null;
 }
 
-function normalizeTeamEvent(event, leagueId) {
+function normalizeTeamEvent(event, leagueId, { series = null } = {}) {
   const competition = event?.competitions?.[0] || {};
   const status = competition.status || {};
   const type = status.type || {};
@@ -297,6 +302,7 @@ function normalizeTeamEvent(event, leagueId) {
     id: event.id,
     league: leagueId,
     kind: 'team',
+    series: series || null,
     name: event.name || '',
     shortName: event.shortName || '',
     date: event.date || competition.date || null,
@@ -588,41 +594,74 @@ async function fetchLeagueRaw(meta, { daysAhead = 0, daysBehind = 0, forceDateRa
   return { raw: hit.data, source: hit.source, from: hit.from };
 }
 
+/** Extra ESPN league slugs folded into one board (e.g. LLWS baseball + softball). */
+async function fetchExtraLeagueGames(meta, boardId, { daysAhead = 0, daysBehind = 0, forceDateRange = false } = {}) {
+  const extras = Array.isArray(meta?.extraLeagues) ? meta.extraLeagues : [];
+  if (!extras.length) return [];
+  const chunks = await Promise.all(extras.map(async (extra) => {
+    const subMeta = {
+      id: `${meta.id}:${extra.league}`,
+      label: meta.label,
+      sport: extra.sport || meta.sport,
+      league: extra.league,
+      kind: meta.kind
+    };
+    try {
+      const { raw } = await fetchLeagueRaw(subMeta, { daysAhead, daysBehind, forceDateRange });
+      const series = extra.series || null;
+      return (raw.events || []).map((ev) => normalizeTeamEvent(ev, boardId, { series }));
+    } catch {
+      return [];
+    }
+  }));
+  return chunks.flat();
+}
+
 /** Single-game fetch for open tickets whose event dropped off the scoreboard. */
 async function fetchTeamEventById(leagueId, eventId) {
   const meta = LEAGUES[leagueId];
   const id = String(eventId || '').trim();
   if (!meta || !id || meta.kind === 'golf' || meta.kind === 'racing') return null;
-  const pathAndQuery = `apis/site/v2/sports/${meta.sport}/${meta.league}/summary?event=${encodeURIComponent(id)}`;
-  try {
-    const hit = await espnResilient.fetchJsonResilient({
-      urls: espnResilient.siteApiUrls(pathAndQuery),
-      cacheKey: `site:event:${meta.id}:${id}`,
-      ttlMs: CACHE_MS,
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'GridIron24-MembersLounge/1.0'
-      },
-      lane: 'site'
-    });
-    const raw = hit.data || {};
-    const header = raw.header || {};
-    const competition =
-      (Array.isArray(header.competitions) && header.competitions[0]) ||
-      (Array.isArray(raw.competitions) && raw.competitions[0]) ||
-      null;
-    if (!competition) return null;
-    const event = {
-      id: String(header.id || id),
-      name: header.name || '',
-      shortName: header.shortDetail || header.name || '',
-      date: competition.date || header.date || null,
-      competitions: [competition]
-    };
-    return normalizeTeamEvent(event, meta.id);
-  } catch {
-    return null;
+  const leagueSlugs = [
+    meta.league,
+    ...((meta.extraLeagues || []).map((e) => e.league).filter(Boolean))
+  ];
+  for (const slug of leagueSlugs) {
+    const pathAndQuery = `apis/site/v2/sports/${meta.sport}/${slug}/summary?event=${encodeURIComponent(id)}`;
+    try {
+      const hit = await espnResilient.fetchJsonResilient({
+        urls: espnResilient.siteApiUrls(pathAndQuery),
+        cacheKey: `site:event:${meta.id}:${slug}:${id}`,
+        ttlMs: CACHE_MS,
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'GridIron24-MembersLounge/1.0'
+        },
+        lane: 'site'
+      });
+      const raw = hit.data || {};
+      const header = raw.header || {};
+      const competition =
+        (Array.isArray(header.competitions) && header.competitions[0]) ||
+        (Array.isArray(raw.competitions) && raw.competitions[0]) ||
+        null;
+      if (!competition) continue;
+      const event = {
+        id: String(header.id || id),
+        name: header.name || '',
+        shortName: header.shortDetail || header.name || '',
+        date: competition.date || header.date || null,
+        competitions: [competition]
+      };
+      const seriesHit = (meta.extraLeagues || []).find((e) => e.league === slug);
+      return normalizeTeamEvent(event, meta.id, {
+        series: seriesHit?.series || (slug === meta.league && meta.extraLeagues?.length ? 'Baseball' : null)
+      });
+    } catch {
+      /* try next slug */
+    }
   }
+  return null;
 }
 
 function pickLeagueLogo(raw, fallback) {
@@ -882,8 +921,24 @@ async function getSportsScores({
         let games = (raw.events || []).map((ev) => {
           if (meta.kind === 'golf') return normalizeGolfEvent(ev);
           if (meta.kind === 'racing') return normalizeRacingEvent(ev, meta.id);
-          return normalizeTeamEvent(ev, id);
+          const series = meta.extraLeagues?.length ? 'Baseball' : null;
+          return normalizeTeamEvent(ev, id, { series });
         });
+        if (meta.extraLeagues?.length && meta.kind === 'team') {
+          const extras = await fetchExtraLeagueGames(meta, id, {
+            daysAhead,
+            daysBehind,
+            forceDateRange
+          });
+          if (extras.length) {
+            const seen = new Set(games.map((g) => String(g.id)));
+            for (const g of extras) {
+              if (seen.has(String(g.id))) continue;
+              seen.add(String(g.id));
+              games.push(g);
+            }
+          }
+        }
         if (meta.kind === 'racing') {
           games = await fillRacingFields(games);
         }
