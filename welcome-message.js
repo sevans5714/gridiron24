@@ -7,9 +7,22 @@
 
 const fromName = 'GridIron 24 HQ';
 
-function bodyFor(name = 'Member', { kind = 'gridiron' } = {}) {
+function bodyFor(name = 'Member', opts = {}) {
   const who = String(name || 'Member').trim() || 'Member';
-  const membership = String(kind || 'gridiron').toLowerCase();
+  const membership = String(opts.kind || 'gridiron').toLowerCase();
+
+  let overrideBody = '';
+  if (opts.allowOverride !== false) {
+    try {
+      const copy = require('./comms-settings-store').getCopy('inbox.welcome', { variant: membership });
+      if (copy?.body) {
+        overrideBody = String(copy.body).replace(/\{\{who\}\}/g, who);
+      }
+    } catch {
+      /* defaults below */
+    }
+  }
+  if (overrideBody.trim()) return overrideBody;
 
   if (membership === 'social') {
     return [
@@ -80,8 +93,16 @@ function bodyFor(name = 'Member', { kind = 'gridiron' } = {}) {
   ].join('\n');
 }
 
-function subjectFor(kind = 'gridiron') {
+function subjectFor(kind = 'gridiron', { allowOverride = true } = {}) {
   const membership = String(kind || 'gridiron').toLowerCase();
+  if (allowOverride) {
+    try {
+      const copy = require('./comms-settings-store').getCopy('inbox.welcome', { variant: membership });
+      if (copy?.subject?.trim()) return String(copy.subject).trim();
+    } catch {
+      /* defaults */
+    }
+  }
   if (membership === 'social') return 'Welcome to the Members Lounge';
   if (membership === 'aaa') return 'Welcome to AAA League';
   return 'Welcome to GridIron 24';

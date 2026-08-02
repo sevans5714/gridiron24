@@ -55,7 +55,7 @@ Members create personal accounts, then sign in with their own login name and pas
 Access levels:
 - **User** — default member access to HQ pages
 - **Conference / League Admin** — Detail, Overtime, or AAA admin; can open League Tools for their scope
-- **Commissioner** — overall GridIron 24 admin; can assign roles under League Tools → Member Access
+- **Commissioner** — overall GridIron 24 admin; can assign roles under League Tools → Members
 
 Owner bootstrap accounts (recreated on deploy if missing):
 - **GridIron 24 commissioner** — `COMMISSIONER_LOGIN` (default `sevans`)

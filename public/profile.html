@@ -691,6 +691,10 @@
           <strong>Requests</strong>
           <span>Approve accounts and independent leagues</span>
         </a>
+        <a href="/league-tools.html#group-communications" id="profile-tools-comms" hidden>
+          <strong>Communications</strong>
+          <span>Auto emails, digests, brand look</span>
+        </a>
         <a href="/league-tools.html#group-espn">
           <strong>Sync</strong>
           <span>Rules, playoffs, roster patrol</span>
@@ -919,6 +923,7 @@
       if (jumpTools) jumpTools.hidden = !staff;
       const seasonLink = document.getElementById('profile-tools-season');
       const requestsLink = document.getElementById('profile-tools-requests');
+      const commsLink = document.getElementById('profile-tools-comms');
       const blurb = document.getElementById('tools-card-blurb');
       const toolsTitle = document.getElementById('tools-card-title');
       const toolsOpen = document.getElementById('tools-card-open');
@@ -934,9 +939,10 @@
       if (toolsMenu) toolsMenu.setAttribute('aria-label', `${deskLabel} sections`);
       if (seasonLink) seasonLink.hidden = !isOwnerOrComm;
       if (requestsLink) requestsLink.hidden = !isOwnerOrComm;
+      if (commsLink) commsLink.hidden = !isOwner;
       if (blurb) {
         blurb.textContent = isOwner
-          ? 'Owner desk — Requests, Sync, People, Broadcast, and Season.'
+          ? 'Owner desk — Requests, Communications, Sync, People, Broadcast, and Season.'
           : isOwnerOrComm
             ? 'Commissioner desk — Requests, Sync, People, Broadcast, and Season.'
             : 'Conference admin desk — Sync, invites, owner email, and Broadcast.';

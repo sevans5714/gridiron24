@@ -1045,6 +1045,10 @@
           <strong>People <span class="tools-badge" id="overview-people-badge" hidden>0</span></strong>
           <span>Invites, member access, owner email</span>
         </a>
+        <a href="#group-communications" id="overview-communications" hidden>
+          <strong>Communications</strong>
+          <span>Auto emails, inbox digests, brand look</span>
+        </a>
         <a href="#group-comms">
           <strong>Broadcast</strong>
           <span>News, polls, ticker, wrap-up</span>
@@ -1072,9 +1076,13 @@
         </div>
         <div class="comm-nav-group" id="nav-people" hidden>
           <p class="comm-nav-label">People</p>
-          <a href="#invites-admin" id="jump-invites" hidden>Invites</a>
-          <a href="#members" id="jump-members" hidden>Member Access <span class="tools-badge" id="nav-members-badge" hidden>0</span></a>
+          <a href="#members" id="jump-members" hidden>Members <span class="tools-badge" id="nav-members-badge" hidden>0</span></a>
           <a href="#conference-owners" id="jump-owners">Email Owners</a>
+        </div>
+        <div class="comm-nav-group" id="nav-communications" hidden>
+          <p class="comm-nav-label">Communications</p>
+          <a href="#comms-brand">Email brand</a>
+          <a href="#comms-catalog">Auto messages</a>
         </div>
         <div class="comm-nav-group" id="nav-comms">
           <p class="comm-nav-label">Broadcast</p>
@@ -1170,23 +1178,25 @@
         <section class="comm-group" id="group-people" hidden>
           <header>
             <h2>People</h2>
-            <p>Invite managers, assign franchises, and email team owners.</p>
+            <p>Invite managers, manage member access, and email team owners.</p>
           </header>
           <div class="comm-group-body">
-            <section class="admin-block" id="invites-admin" hidden>
+            <section class="admin-block" id="members" hidden>
               <div class="section-head">
-                <h3>Email Invites</h3>
+                <h3>Members <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
-              <p class="help">Send invite links by email. Full members get franchise HQ; social accounts are lounge-only.</p>
+              <p class="help">Invite by email, then assign franchise, role, membership, lounge pass, and dues. New self-signups land in <a href="#account-requests">Requests → Account Requests</a>.</p>
               <details class="help-more">
                 <summary>Email previews</summary>
-                <p class="help"><a href="/api/invites/preview-email" target="_blank" rel="noopener">Member HTML</a> · <a href="/api/invites/preview-email?social=1" target="_blank" rel="noopener">Lounge HTML</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">JSON</a></p>
+                <p class="help">Invites: <a href="/api/invites/preview-email" target="_blank" rel="noopener">Member</a> · <a href="/api/invites/preview-email?social=1" target="_blank" rel="noopener">Lounge</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">JSON</a></p>
+                <p class="help">Welcome: <a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
               </details>
+
               <div class="status-note" id="invites-mail-status" role="status"></div>
               <div class="status-note" id="invites-msg" role="status"></div>
-              <div class="invite-compose">
-                <label class="field-label" for="invite-emails">Email addresses</label>
-                <p class="field-hint" id="invite-emails-hint">One or more addresses — commas or new lines.</p>
+              <div class="invite-compose" id="invites-admin">
+                <label class="field-label" for="invite-emails">Invite by email</label>
+                <p class="field-hint" id="invite-emails-hint">One or more addresses — commas or new lines. Full members get franchise HQ; check Social for lounge-only.</p>
                 <textarea
                   class="field field-area field-box"
                   id="invite-emails"
@@ -1207,34 +1217,25 @@
               </div>
               <div id="invite-links" class="invite-links" hidden></div>
               <div class="list-gap" id="invites-list"><div class="msg">Loading invites…</div></div>
-            </section>
 
-            <section class="admin-block" id="members" hidden>
-              <div class="section-head">
-                <h3>Member Access <span class="access-tag">Owner / Commissioner</span></h3>
+              <div id="members-access-block" hidden>
+                <div class="section-head" style="margin-top:1.35rem;">
+                  <h3>Access</h3>
+                </div>
+                <div class="status-note" id="members-msg" role="status"></div>
+                <div class="members-toolbar" id="members-toolbar" hidden>
+                  <input class="field" id="members-search" type="search" placeholder="Search name, login, or email…" autocomplete="off" />
+                  <p class="members-count" id="members-count"></p>
+                </div>
+                <div id="members-list"><div class="msg">Loading members…</div></div>
               </div>
-              <p class="help">Assign membership, franchise, role, lounge pass, and dues for approved members. New join requests are approved under <a href="#account-requests">Requests → Account Requests</a>.</p>
-              <details class="help-more">
-                <summary>Welcome email previews</summary>
-                <p class="help"><a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
-              </details>
-              <div class="status-note" id="members-msg" role="status"></div>
-              <div class="members-toolbar" id="members-toolbar" hidden>
-                <input class="field" id="members-search" type="search" placeholder="Search name, login, or email…" autocomplete="off" />
-                <label class="check-row" for="members-pending-only" style="margin:0;">
-                  <input type="checkbox" id="members-pending-only" />
-                  <span>Pending only</span>
-                </label>
-                <p class="members-count" id="members-count"></p>
-              </div>
-              <div id="members-list"><div class="msg">Loading members…</div></div>
             </section>
 
             <section class="admin-block" id="conference-owners">
               <div class="section-head">
                 <h3>Email Owners</h3>
               </div>
-              <p class="help">Select claimed franchises and send a branded mass email. Unclaimed teams need a Member Access assignment first.</p>
+              <p class="help">Select claimed franchises and send a branded mass email. Unclaimed teams need a Members → Access assignment first.</p>
               <div class="status-note" id="owners-mail-status" role="status"></div>
               <div class="status-note" id="owners-msg" role="status"></div>
               <div class="owners-toolbar" id="owners-conf-picker" hidden>
@@ -1262,6 +1263,63 @@
                   <button type="button" class="btn btn-secondary" id="owners-preview">Preview branded email</button>
                   <button type="button" class="btn btn-send" id="owners-send">Send to selected</button>
                 </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="comm-group" id="group-communications" hidden>
+          <header>
+            <h2>Communications</h2>
+            <p>Every auto email and inbox message — when it fires, what it says, and whether it’s on.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="admin-block" id="comms-brand">
+              <div class="section-head">
+                <h3>Sitewide email brand</h3>
+              </div>
+              <p class="help">Applies to all branded GridIron emails (eyebrow under the crest, conference logos, footer line).</p>
+              <div class="status-note" id="comms-brand-msg" role="status"></div>
+              <div class="stack-form">
+                <div>
+                  <label class="field-label" for="comms-eyebrow">Eyebrow</label>
+                  <input class="field field-box" id="comms-eyebrow" type="text" maxlength="120" />
+                </div>
+                <div>
+                  <label class="field-label" for="comms-footer">Footer HTML</label>
+                  <textarea class="field field-area field-box" id="comms-footer" rows="3" maxlength="500"></textarea>
+                </div>
+                <label class="check-row" for="comms-show-conferences" style="margin:0;">
+                  <input type="checkbox" id="comms-show-conferences" />
+                  <span>Show Detail vs Overtime logos on emails</span>
+                </label>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-send" id="comms-brand-save">Save brand</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="admin-block" id="comms-catalog">
+              <div class="section-head">
+                <h3>Auto messages</h3>
+              </div>
+              <p class="help">Toggle what goes out. Edit copy where supported. Preview opens the live template.</p>
+              <div class="status-note" id="comms-catalog-msg" role="status"></div>
+              <div id="comms-catalog-list"><div class="msg">Loading…</div></div>
+            </section>
+
+            <section class="admin-block" id="comms-editor" hidden>
+              <div class="section-head">
+                <h3 id="comms-editor-title">Edit message</h3>
+              </div>
+              <p class="help" id="comms-editor-help"></p>
+              <div class="status-note" id="comms-editor-msg" role="status"></div>
+              <div class="stack-form" id="comms-editor-fields"></div>
+              <div class="btn-row">
+                <button type="button" class="btn btn-send" id="comms-editor-save">Save copy</button>
+                <button type="button" class="btn btn-secondary" id="comms-editor-reset">Reset to default</button>
+                <button type="button" class="btn btn-ghost" id="comms-editor-cancel">Close</button>
+                <a class="btn btn-ghost" id="comms-editor-preview" href="#" target="_blank" rel="noopener" hidden>Preview</a>
               </div>
             </section>
           </div>
@@ -1889,9 +1947,9 @@
 
     function filteredMembersList(list) {
       const q = String(document.getElementById('members-search')?.value || '').trim().toLowerCase();
-      const pendingOnly = Boolean(document.getElementById('members-pending-only')?.checked);
       return list.filter((u) => {
-        if (pendingOnly && u.approved !== false) return false;
+        // Pending join requests live under Requests → Account Requests.
+        if (u.approved === false) return false;
         if (!q) return true;
         return memberSearchHaystack(u).includes(q);
       });
@@ -1902,9 +1960,6 @@
       if (!toolbar || toolbar.dataset.wired === '1') return;
       toolbar.dataset.wired = '1';
       document.getElementById('members-search')?.addEventListener('input', () => {
-        if (window.__giMembersPayload) renderMembers(window.__giMembersPayload);
-      });
-      document.getElementById('members-pending-only')?.addEventListener('change', () => {
         if (window.__giMembersPayload) renderMembers(window.__giMembersPayload);
       });
     }
@@ -1938,25 +1993,23 @@
         return;
       }
 
-      const visible = filteredMembersList(list).slice().sort((a, b) => {
-        const ap = a.approved === false ? 0 : 1;
-        const bp = b.approved === false ? 0 : 1;
-        if (ap !== bp) return ap - bp;
-        return String(a.name || a.loginName || '').localeCompare(String(b.name || b.loginName || ''), undefined, { sensitivity: 'base' });
-      });
+      const visible = filteredMembersList(list).slice().sort((a, b) =>
+        String(a.name || a.loginName || '').localeCompare(String(b.name || b.loginName || ''), undefined, { sensitivity: 'base' })
+      );
       const countEl = document.getElementById('members-count');
       if (countEl) {
-        countEl.textContent = visible.length === list.length
-          ? `${list.length} member${list.length === 1 ? '' : 's'}`
-          : `Showing ${visible.length} of ${list.length}`;
+        const approvedN = list.filter((u) => u.approved !== false).length;
+        countEl.textContent = visible.length === approvedN
+          ? `${approvedN} member${approvedN === 1 ? '' : 's'}`
+          : `Showing ${visible.length} of ${approvedN}`;
       }
 
       const pendingBanner = pendingCount
-        ? `<div class="members-pending-banner"><strong>${pendingCount} awaiting approval</strong> — review them in <a href="#account-requests">Requests → Account Requests</a>, then assign franchise here.</div>`
+        ? `<div class="members-pending-banner"><strong>${pendingCount} awaiting approval</strong> — review in <a href="#account-requests">Requests → Account Requests</a>.</div>`
         : '';
 
       if (!visible.length) {
-        document.getElementById('members-list').innerHTML = pendingBanner + `<div class="msg">No members match this filter.</div>`;
+        document.getElementById('members-list').innerHTML = pendingBanner + `<div class="msg">${pendingCount ? 'No approved members yet.' : 'No members match this filter.'}</div>`;
         return;
       }
 
@@ -1975,7 +2028,7 @@
           </thead>
           <tbody>
             ${visible.map((u) => `
-              <tr data-user-id="${esc(u.id)}" class="${u.approved === false ? 'is-pending-member' : ''}">
+              <tr data-user-id="${esc(u.id)}">
                 <td>
                   <strong>${esc(u.name)}</strong><br>
                   <span class="muted-sm">${esc(u.loginName)} · ${esc(u.email)}</span>
@@ -1989,24 +2042,18 @@
                   </details>
                 </td>
                 <td>
-                  ${u.approved === false
-                    ? `<span class="role-pill commissioner">Pending</span>
-                       <div class="invite-row-actions" style="margin-top:0.45rem;display:flex;gap:0.45rem;flex-wrap:wrap;">
-                         <button type="button" class="btn" data-approve="${esc(u.id)}">Approve</button>
-                         <button type="button" class="link-action" data-reject="${esc(u.id)}">Deny</button>
-                       </div>`
-                    : `<span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span>
-                       ${u.loungeOnly ? '<span class="role-pill" style="margin-left:0.35rem;color:#f0a0b0;">Social</span>' : ''}`}
+                  <span class="role-pill ${esc(u.role)}">${esc(ROLE_LABELS[u.role] || u.role)}${u.conference ? ` · ${esc(u.conference)}` : ''}</span>
+                  ${u.loungeOnly ? '<span class="role-pill" style="margin-left:0.35rem;color:#f0a0b0;">Social</span>' : ''}
                 </td>
                 <td>
-                  <select class="team-select" data-user-id="${esc(u.id)}" aria-label="Assign franchise" ${u.approved === false || u.loungeOnly ? 'disabled' : ''}>
+                  <select class="team-select" data-user-id="${esc(u.id)}" aria-label="Assign franchise" ${u.loungeOnly ? 'disabled' : ''}>
                     ${teamOptionsHtml(conferences, u.claim)}
                   </select>
                   ${!u.loungeOnly && u.claim ? `<button type="button" class="link-action" style="margin-top:0.4rem;" data-remove-team="${esc(u.id)}">Remove current team</button>` : ''}
                   ${u.loungeOnly ? '' : careerAssignHtml(u)}
                 </td>
                 <td>
-                  <select class="role-select" data-user-id="${esc(u.id)}" ${u.approved === false || u.loungeOnly ? 'disabled' : ''}>
+                  <select class="role-select" data-user-id="${esc(u.id)}" ${u.loungeOnly ? 'disabled' : ''}>
                     <option value="user" ${roleValue(u) === 'user' ? 'selected' : ''}>User</option>
                     ${conferences.map((c) => `
                       <option value="conference_admin:${esc(c.key)}" ${roleValue(u) === `conference_admin:${c.key}` ? 'selected' : ''}>
@@ -2016,8 +2063,8 @@
                   </select>
                 </td>
                 <td>
-                  ${u.approved === false || u.siteOwner
-                    ? `<span class="muted-sm">${u.siteOwner ? 'Owner' : 'Approve first'}</span>`
+                  ${u.siteOwner
+                    ? `<span class="muted-sm">Owner</span>`
                     : `<select class="field membership-select" data-membership="${esc(u.id)}" aria-label="Membership type" style="max-width:12rem;">
                         <option value="" ${!u.loungeOnly && !u.membershipLeague ? 'selected' : ''} disabled hidden>Assign…</option>
                         <option value="gridiron" ${!u.loungeOnly && u.membershipLeague === 'gridiron' ? 'selected' : ''}>GridIron 24</option>
@@ -2026,22 +2073,18 @@
                       </select>`}
                 </td>
                 <td>
-                  ${u.approved === false
-                    ? `<span class="muted-sm">—</span>`
-                    : u.siteOwner
-                      ? `<span class="muted-sm">Owner</span>`
-                      : `<label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;" title="Members Lounge pass">
+                  ${u.siteOwner
+                    ? `<span class="muted-sm">Owner</span>`
+                    : `<label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;" title="Members Lounge pass">
                           <input type="checkbox" data-lounge-token="${esc(u.id)}" ${u.loungeToken ? 'checked' : ''} />
                           Pass
                         </label>`}
                 </td>
                 <td>
-                  ${u.approved === false
-                    ? `<span class="muted-sm">—</span>`
-                    : `<label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
-                        <input type="checkbox" data-dues-paid="${esc(u.id)}" ${u.duesPaid ? 'checked' : ''} />
-                        Paid
-                      </label>`}
+                  <label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+                    <input type="checkbox" data-dues-paid="${esc(u.id)}" ${u.duesPaid ? 'checked' : ''} />
+                    Paid
+                  </label>
                 </td>
               </tr>`).join('')}
           </tbody>
@@ -2345,54 +2388,13 @@
           }
         });
       });
-
-      document.getElementById('members-list').querySelectorAll('[data-approve]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const userId = btn.dataset.approve;
-          btn.disabled = true;
-          try {
-            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/approve`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ approved: true })
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not approve');
-            showMembersMsg(
-              `Approved ${data.user.loginName}. Assign membership, franchise, and lounge pass next.`,
-              true
-            );
-            await loadMembers();
-          } catch (err) {
-            showMembersMsg(err.message, false);
-            btn.disabled = false;
-          }
-        });
-      });
-
-      document.getElementById('members-list').querySelectorAll('[data-reject]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const userId = btn.dataset.reject;
-          if (!confirm('Deny and delete this join request?')) return;
-          btn.disabled = true;
-          try {
-            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/reject`, { method: 'POST' });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not reject');
-            showMembersMsg(`Denied ${data.user?.loginName || 'account'}.`, true);
-            await loadMembers();
-          } catch (err) {
-            showMembersMsg(err.message, false);
-            btn.disabled = false;
-          }
-        });
-      });
     }
 
     async function loadMembers() {
       const res = await fetch('/api/users', { cache: 'no-store' });
       if (res.status === 403) {
-        document.getElementById('members').hidden = true;
+        const block = document.getElementById('members-access-block');
+        if (block) block.hidden = true;
         const ar = document.getElementById('account-requests-list');
         if (ar) ar.innerHTML = `<div class="msg">You don’t have permission to review account requests.</div>`;
         return;
@@ -2402,6 +2404,8 @@
       revealPeopleTools();
       document.getElementById('members').hidden = false;
       document.getElementById('jump-members').hidden = false;
+      const block = document.getElementById('members-access-block');
+      if (block) block.hidden = false;
       renderMembers(data);
     }
 
@@ -2899,6 +2903,265 @@
       });
     }
 
+    function revealCommunications() {
+      const group = document.getElementById('group-communications');
+      const nav = document.getElementById('nav-communications');
+      const overview = document.getElementById('overview-communications');
+      if (group) group.hidden = false;
+      if (nav) nav.hidden = false;
+      if (overview) overview.hidden = false;
+    }
+
+    function showCommsMsg(id, text, ok) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.toggle('show', Boolean(text));
+      el.classList.toggle('ok', Boolean(ok));
+      el.classList.toggle('err', Boolean(text) && !ok);
+    }
+
+    let __giCommsPayload = null;
+    let __giCommsEditId = null;
+    let __giCommsVariant = null;
+
+    async function loadCommsAdmin() {
+      revealCommunications();
+      const res = await fetch('/api/comms', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load communications');
+      __giCommsPayload = data;
+      const brand = data.brand || {};
+      const eyebrow = document.getElementById('comms-eyebrow');
+      const footer = document.getElementById('comms-footer');
+      const showConf = document.getElementById('comms-show-conferences');
+      if (eyebrow) eyebrow.value = brand.eyebrow || '';
+      if (footer) footer.value = brand.footerExtra || '';
+      if (showConf) showConf.checked = brand.showConferences !== false;
+      renderCommsCatalog(data.items || []);
+    }
+
+    function renderCommsCatalog(items) {
+      const list = document.getElementById('comms-catalog-list');
+      if (!list) return;
+      if (!items.length) {
+        list.innerHTML = `<div class="msg">No auto messages registered.</div>`;
+        return;
+      }
+      const groups = {};
+      for (const item of items) {
+        const g = item.group || 'Other';
+        if (!groups[g]) groups[g] = [];
+        groups[g].push(item);
+      }
+      list.innerHTML = Object.keys(groups).sort().map((group) => `
+        <div class="list-gap" style="margin-bottom:1.1rem;">
+          <p class="muted-sm" style="margin:0 0 0.45rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">${esc(group)}</p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Message</th>
+                <th>When</th>
+                <th>On</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${groups[group].map((item) => `
+                <tr data-comms-id="${esc(item.id)}">
+                  <td>
+                    <strong>${esc(item.name)}</strong><br>
+                    <span class="muted-sm">${esc(item.channel)}${item.hasCustomCopy ? ' · custom copy' : ''}${item.schedule ? ` · ${esc(item.schedule)}` : ''}</span>
+                  </td>
+                  <td class="muted-sm">${esc(item.when || '—')}</td>
+                  <td>
+                    <label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+                      <input type="checkbox" data-comms-enabled="${esc(item.id)}" ${item.enabled !== false ? 'checked' : ''} />
+                      ${item.enabled !== false ? 'On' : 'Off'}
+                    </label>
+                  </td>
+                  <td>
+                    <div class="invite-row-actions" style="display:flex;gap:0.45rem;flex-wrap:wrap;">
+                      ${(item.editable || []).length
+                        ? `<button type="button" class="link-action" data-comms-edit="${esc(item.id)}">Edit</button>`
+                        : ''}
+                      ${item.preview
+                        ? `<a class="link-action" href="${esc(item.preview)}" target="_blank" rel="noopener">Preview</a>`
+                        : ''}
+                    </div>
+                  </td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`).join('');
+    }
+
+    async function openCommsEditor(id) {
+      const item = (__giCommsPayload?.items || []).find((x) => x.id === id);
+      if (!item) return;
+      __giCommsEditId = id;
+      __giCommsVariant = (item.variantKeys && item.variantKeys.length) ? item.variantKeys[0] : null;
+      const editor = document.getElementById('comms-editor');
+      editor.hidden = false;
+      document.getElementById('comms-editor-title').textContent = `Edit · ${item.name}`;
+      document.getElementById('comms-editor-help').textContent =
+        (item.placeholders || []).length
+          ? `Placeholders: ${(item.placeholders || []).map((p) => `{{${p}}}`).join(' ')}. Leave a field blank to keep the default.`
+          : 'Leave a field blank to keep the default.';
+      const preview = document.getElementById('comms-editor-preview');
+      if (item.preview) {
+        preview.hidden = false;
+        preview.href = item.preview;
+      } else {
+        preview.hidden = true;
+      }
+
+      const qs = __giCommsVariant ? `?variant=${encodeURIComponent(__giCommsVariant)}` : '';
+      const defRes = await fetch(`/api/comms/${encodeURIComponent(id)}/defaults${qs}`, { cache: 'no-store' });
+      const defData = await defRes.json().catch(() => ({}));
+      const defaults = defData.defaults || {};
+      const saved = __giCommsVariant
+        ? (item.variantCopy?.[__giCommsVariant] || {})
+        : (item.copy || {});
+
+      const fields = document.getElementById('comms-editor-fields');
+      const editable = item.editable || [];
+      const variantSelect = (item.variantKeys || []).length
+        ? `<div>
+            <label class="field-label" for="comms-variant">Membership variant</label>
+            <select class="field" id="comms-variant">
+              ${item.variantKeys.map((v) => `<option value="${esc(v)}" ${v === __giCommsVariant ? 'selected' : ''}>${esc(v)}</option>`).join('')}
+            </select>
+          </div>`
+        : '';
+      fields.innerHTML = variantSelect + editable.map((key) => {
+        const val = saved[key] != null ? saved[key] : (defaults[key] || '');
+        const isLong = key === 'body' || key === 'bodyLead' || key === 'note' || key === 'textLine' || key === 'footerExtra';
+        return `<div>
+          <label class="field-label" for="comms-field-${esc(key)}">${esc(key)}</label>
+          ${isLong
+            ? `<textarea class="field field-area field-box" id="comms-field-${esc(key)}" data-comms-field="${esc(key)}" rows="6">${esc(val)}</textarea>`
+            : `<input class="field field-box" id="comms-field-${esc(key)}" data-comms-field="${esc(key)}" type="text" value="${esc(val)}" />`}
+        </div>`;
+      }).join('');
+
+      document.getElementById('comms-variant')?.addEventListener('change', async (e) => {
+        __giCommsVariant = e.target.value;
+        await openCommsEditor(id);
+      });
+      editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function wireCommsAdmin() {
+      const brandSave = document.getElementById('comms-brand-save');
+      if (!brandSave || brandSave.dataset.wired === '1') return;
+      brandSave.dataset.wired = '1';
+
+      brandSave.addEventListener('click', async () => {
+        brandSave.disabled = true;
+        try {
+          const res = await fetch('/api/comms/brand', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              eyebrow: document.getElementById('comms-eyebrow')?.value || '',
+              footerExtra: document.getElementById('comms-footer')?.value || '',
+              showConferences: Boolean(document.getElementById('comms-show-conferences')?.checked)
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
+          showCommsMsg('comms-brand-msg', 'Brand saved. New emails use this look.', true);
+          await loadCommsAdmin();
+        } catch (err) {
+          showCommsMsg('comms-brand-msg', err.message, false);
+        } finally {
+          brandSave.disabled = false;
+        }
+      });
+
+      document.getElementById('comms-catalog-list')?.addEventListener('change', async (e) => {
+        const box = e.target?.closest?.('[data-comms-enabled]');
+        if (!box) return;
+        const id = box.getAttribute('data-comms-enabled');
+        box.disabled = true;
+        try {
+          const res = await fetch(`/api/comms/${encodeURIComponent(id)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: box.checked })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update');
+          showCommsMsg('comms-catalog-msg', `${id} is now ${box.checked ? 'on' : 'off'}.`, true);
+          await loadCommsAdmin();
+        } catch (err) {
+          showCommsMsg('comms-catalog-msg', err.message, false);
+          box.checked = !box.checked;
+        } finally {
+          box.disabled = false;
+        }
+      });
+
+      document.getElementById('comms-catalog-list')?.addEventListener('click', async (e) => {
+        const edit = e.target?.closest?.('[data-comms-edit]');
+        if (!edit) return;
+        try {
+          await openCommsEditor(edit.getAttribute('data-comms-edit'));
+        } catch (err) {
+          showCommsMsg('comms-catalog-msg', err.message, false);
+        }
+      });
+
+      document.getElementById('comms-editor-cancel')?.addEventListener('click', () => {
+        document.getElementById('comms-editor').hidden = true;
+        __giCommsEditId = null;
+      });
+
+      document.getElementById('comms-editor-save')?.addEventListener('click', async () => {
+        if (!__giCommsEditId) return;
+        const fields = [...document.querySelectorAll('[data-comms-field]')];
+        const copy = {};
+        for (const el of fields) copy[el.getAttribute('data-comms-field')] = el.value;
+        const btn = document.getElementById('comms-editor-save');
+        btn.disabled = true;
+        try {
+          const body = __giCommsVariant
+            ? { variant: __giCommsVariant, variantCopy: copy }
+            : { copy };
+          const res = await fetch(`/api/comms/${encodeURIComponent(__giCommsEditId)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save');
+          showCommsMsg('comms-editor-msg', 'Copy saved.', true);
+          await loadCommsAdmin();
+          await openCommsEditor(__giCommsEditId);
+        } catch (err) {
+          showCommsMsg('comms-editor-msg', err.message, false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('comms-editor-reset')?.addEventListener('click', async () => {
+        if (!__giCommsEditId) return;
+        if (!confirm('Reset this message to the built-in default copy and leave it enabled?')) return;
+        try {
+          const res = await fetch(`/api/comms/${encodeURIComponent(__giCommsEditId)}/reset`, { method: 'POST' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not reset');
+          showCommsMsg('comms-editor-msg', 'Reset to defaults.', true);
+          await loadCommsAdmin();
+          await openCommsEditor(__giCommsEditId);
+        } catch (err) {
+          showCommsMsg('comms-editor-msg', err.message, false);
+        }
+      });
+    }
+
     function showInvitesMsg(text, ok) {
       const el = document.getElementById('invites-msg');
       el.textContent = text;
@@ -2957,22 +3220,22 @@
 
     async function loadInvitesAdmin() {
       revealPeopleTools();
-      const wrap = document.getElementById('invites-admin');
-      wrap.hidden = false;
-      document.getElementById('jump-invites').hidden = false;
+      const members = document.getElementById('members');
+      if (members) members.hidden = false;
+      document.getElementById('jump-members').hidden = false;
       const res = await fetch('/api/invites', { cache: 'no-store' });
       if (!res.ok) throw new Error(`Could not load invites (${res.status})`);
       const data = await res.json();
       setMailStatus(data.mail);
       const list = document.getElementById('invites-list');
-      const rows = data.invites || [];
+      const rows = (data.invites || []).filter((inv) => inv.status === 'pending');
       if (!rows.length) {
-        list.innerHTML = `<div class="msg">No invites yet.</div>`;
+        list.innerHTML = `<div class="msg">No open invites.</div>`;
         return;
       }
       list.innerHTML = `
         <table class="data-table">
-          <thead><tr><th>Invite</th><th>Status</th><th>Sent</th></tr></thead>
+          <thead><tr><th>Open invites</th><th>Type</th><th>Sent</th></tr></thead>
           <tbody>
             ${rows.map((inv) => `
               <tr>
@@ -2980,18 +3243,15 @@
                   <div class="invite-user-line">
                     <div class="invite-user-meta">
                       <strong>${esc(inv.email)}</strong>
-                      ${inv.loungeOnly ? '<span class="muted-sm">social</span>' : ''}
                     </div>
-                    ${inv.status === 'pending' ? `
-                      <div class="invite-row-actions">
-                        <button type="button" data-resend-invite="${esc(inv.id)}" class="link-action">Resend / copy link</button>
-                        <button type="button" data-revoke-invite="${esc(inv.id)}" class="link-action">Revoke</button>
-                      </div>
-                    ` : ''}
+                    <div class="invite-row-actions">
+                      <button type="button" data-resend-invite="${esc(inv.id)}" class="link-action">Resend / copy link</button>
+                      <button type="button" data-revoke-invite="${esc(inv.id)}" class="link-action">Revoke</button>
+                    </div>
                   </div>
                 </td>
-                <td>${esc(inv.status)}${inv.loungeOnly ? ' · lounge only' : ''}</td>
-                <td>${esc((inv.createdAt || '').slice(0, 10))}</td>
+                <td class="muted-sm">${inv.loungeOnly ? 'Social / lounge' : 'Full member'}</td>
+                <td class="muted-sm">${esc((inv.createdAt || '').slice(0, 10))}</td>
               </tr>`).join('')}
           </tbody>
         </table>`;
@@ -3850,8 +4110,8 @@
       wireInvitesAdmin();
       try { await loadInvitesAdmin(); } catch (err) {
         revealPeopleTools();
-        document.getElementById('invites-admin').hidden = false;
-        document.getElementById('jump-invites').hidden = false;
+        document.getElementById('members').hidden = false;
+        document.getElementById('jump-members').hidden = false;
         document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
 
@@ -3866,6 +4126,12 @@
       }
 
       if (user?.siteOwner || user?.canSwitchLeagues) {
+        revealCommunications();
+        wireCommsAdmin();
+        try { await loadCommsAdmin(); } catch (err) {
+          const list = document.getElementById('comms-catalog-list');
+          if (list) list.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        }
         try { await loadLeagueRequests(); } catch (err) {
           const list = document.getElementById('league-requests-list');
           if (list) list.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
@@ -3889,6 +4155,8 @@
         } catch (err) {
           document.getElementById('members').hidden = false;
           document.getElementById('jump-members').hidden = false;
+          const block = document.getElementById('members-access-block');
+          if (block) block.hidden = false;
           document.getElementById('members-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
           const ar = document.getElementById('account-requests-list');
           if (ar) ar.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
@@ -3910,7 +4178,8 @@
           const aliases = {
             '#group-league-requests': '#group-requests',
             '#league-requests': '#league-requests',
-            '#members': '#account-requests'
+            '#invites-admin': '#members',
+            '#members': '#members'
           };
           const target = aliases[hash] || hash;
           const el = document.querySelector(target);

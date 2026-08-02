@@ -46,6 +46,7 @@ const recordsLib = require('./records');
 const polls = require('./polls-store');
 const inbox = require('./inbox-store');
 const welcomeMessage = require('./welcome-message');
+const commsSettings = require('./comms-settings-store');
 const presence = require('./presence-store');
 const ruleProposals = require('./rule-proposals-store');
 const featureRequests = require('./feature-requests-store');
@@ -3711,6 +3712,9 @@ function independentLeagueScope(league) {
  */
 function deliverWelcomeInboxIfNeeded(user) {
   if (!user?.id || user.approved === false) return null;
+  try {
+    if (!commsSettings.isEnabled('inbox.welcome')) return null;
+  } catch { /* continue */ }
   if (!users.claimWelcomeInbox(user.id)) return null;
   try {
     const kind = users.membershipKindOf(user);
@@ -3766,6 +3770,8 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
       'Open League Tools → Requests → Account Requests to approve or deny.'
     ].join('\n');
 
+    if (!commsSettings.isEnabled('inbox.account_created')) return;
+
     for (const ownerUser of owners) {
       inbox.sendMessage({
         toUserId: ownerUser.id,
@@ -3810,15 +3816,16 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
     const pendingNames = pendingUsers
       .map((u) => `• ${u.name || u.loginName} (${u.loginName}) — ${u.email || 'no email'}`)
       .join('\n');
+    const showPendingUsers = pendingUsers.length && commsSettings.isEnabled('digest.pending_users');
     inbox.upsertDigest({
       toUserId: user.id,
       digestKey: 'digest:pending-users',
       type: 'pending_approvals',
       fingerprint: pendingUsers.map((u) => u.id).sort().join(',') || 'none',
-      subject: pendingUsers.length
+      subject: showPendingUsers
         ? `${pendingUsers.length} account${pendingUsers.length === 1 ? '' : 's'} awaiting approval`
         : null,
-      body: pendingUsers.length
+      body: showPendingUsers
         ? [
           'PENDING APPROVALS',
           '',
@@ -3841,15 +3848,16 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
       const leagueLines = pendingLeagues
         .map((l) => `• ${l.brand?.name || l.slug} — ${l.ownerName || l.ownerEmail || 'owner'} (${l.structure?.totalTeams || '?'} teams)`)
         .join('\n');
+      const showPendingLeagues = pendingLeagues.length && commsSettings.isEnabled('digest.pending_leagues');
       inbox.upsertDigest({
         toUserId: user.id,
         digestKey: 'digest:pending-leagues',
         type: 'pending_league_approvals',
         fingerprint: pendingLeagues.map((l) => l.id).sort().join(',') || 'none',
-        subject: pendingLeagues.length
+        subject: showPendingLeagues
           ? `${pendingLeagues.length} league${pendingLeagues.length === 1 ? '' : 's'} awaiting approval`
           : null,
-        body: pendingLeagues.length
+        body: showPendingLeagues
           ? [
             'PENDING LEAGUE REQUESTS',
             '',
@@ -3873,15 +3881,16 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
       .slice(0, 12)
       .map((v) => `• ${v.teamName || 'Team'} — ${v.playerName || 'player'} (${v.conferenceKey || 'league'})`)
       .join('\n');
+    const showViolations = openViolations.length && commsSettings.isEnabled('digest.roster_violations');
     inbox.upsertDigest({
       toUserId: user.id,
       digestKey: 'digest:roster-violations',
       type: 'roster_violations',
       fingerprint: openViolations.map((v) => v.id).sort().join(',') || 'none',
-      subject: openViolations.length
+      subject: showViolations
         ? `${openViolations.length} open roster violation${openViolations.length === 1 ? '' : 's'}`
         : null,
-      body: openViolations.length
+      body: showViolations
         ? [
           'ROSTER PATROL',
           '',
@@ -3932,10 +3941,10 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
       digestKey: 'digest:rule-proposals',
       type: 'pending_approvals',
       fingerprint: waitingRules.map((p) => p.id).sort().join(',') || 'none',
-      subject: waitingRules.length
+      subject: waitingRules.length && commsSettings.isEnabled('digest.rule_proposals')
         ? `${waitingRules.length} rule proposal${waitingRules.length === 1 ? '' : 's'} awaiting you`
         : null,
-      body: waitingRules.length
+      body: waitingRules.length && commsSettings.isEnabled('digest.rule_proposals')
         ? [
           'RULE PROPOSALS AWAITING OWNER',
           '',
@@ -3979,10 +3988,10 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
       digestKey: 'digest:feature-requests',
       type: 'pending_approvals',
       fingerprint: openFeatures.map((f) => f.id).sort().join(',') || 'none',
-      subject: openFeatures.length
+      subject: openFeatures.length && commsSettings.isEnabled('digest.feature_requests')
         ? `${openFeatures.length} feature request${openFeatures.length === 1 ? '' : 's'} open`
         : null,
-      body: openFeatures.length
+      body: openFeatures.length && commsSettings.isEnabled('digest.feature_requests')
         ? [
           'OPEN FEATURE REQUESTS',
           '',
@@ -7982,7 +7991,7 @@ const server = http.createServer(async (req, res) => {
           try { logos.unassignTeam(userId); } catch { /* ignore */ }
         }
         let mail = { sent: false, method: 'none' };
-        // Welcome email goes out when membership is assigned (Member Access → Membership).
+        // Welcome email goes out when membership is assigned (Members → Access → Membership).
         if (newlyApproved && hasMembership && updated.email) {
           try {
             const kind = users.membershipKindOf(updated);
@@ -8034,6 +8043,74 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true, user: removed });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not reject account' });
+      }
+    }
+
+    if (pathname === '/api/comms' && req.method === 'GET') {
+      if (!requireSiteOwner(req, res)) return;
+      return sendJson(res, 200, { ok: true, ...commsSettings.publicSnapshot() });
+    }
+
+    if (pathname === '/api/comms/brand' && req.method === 'POST') {
+      if (!requireSiteOwner(req, res)) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const brand = commsSettings.updateBrand(body || {});
+        return sendJson(res, 200, { ok: true, brand });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save brand' });
+      }
+    }
+
+    if (pathname.startsWith('/api/comms/') && pathname.endsWith('/reset') && req.method === 'POST') {
+      if (!requireSiteOwner(req, res)) return;
+      const id = pathname.slice('/api/comms/'.length, -'/reset'.length);
+      try {
+        const item = commsSettings.resetItem(id);
+        return sendJson(res, 200, { ok: true, id, item });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not reset' });
+      }
+    }
+
+    if (pathname.startsWith('/api/comms/') && pathname.endsWith('/defaults') && req.method === 'GET') {
+      if (!requireSiteOwner(req, res)) return;
+      const id = pathname.slice('/api/comms/'.length, -'/defaults'.length);
+      const meta = require('./comms-catalog').getCatalogItem(id);
+      if (!meta) return sendJson(res, 404, { ok: false, error: 'Unknown communication' });
+      const defaults = {};
+      if (id === 'email.invite') Object.assign(defaults, require('./invite-email-message').copy);
+      if (id === 'email.invite_social') Object.assign(defaults, require('./invite-email-message').socialCopy);
+      if (id === 'inbox.welcome') {
+        const variant = String(requestUrl.searchParams.get('variant') || 'gridiron').toLowerCase();
+        defaults.subject = welcomeMessage.subjectFor(variant, { allowOverride: false });
+        defaults.body = welcomeMessage.bodyFor('{{who}}', { kind: variant, allowOverride: false });
+      }
+      return sendJson(res, 200, { ok: true, id, defaults, editable: meta.editable || [], placeholders: meta.placeholders || [] });
+    }
+
+    if (pathname.startsWith('/api/comms/') && req.method === 'POST') {
+      if (!requireSiteOwner(req, res)) return;
+      const id = pathname.slice('/api/comms/'.length);
+      if (!id || id.includes('/')) {
+        return sendJson(res, 404, { ok: false, error: 'Unknown communication' });
+      }
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const item = commsSettings.updateItem(id, body || {});
+        return sendJson(res, 200, { ok: true, id, item });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save' });
       }
     }
 

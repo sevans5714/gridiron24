@@ -112,7 +112,15 @@ function buildInviteCopy({
     homeUrl: enter,
     homeHost
   };
-  const src = loungeOnly ? socialCopy : copy;
+  const base = loungeOnly ? socialCopy : copy;
+  let overrides = {};
+  try {
+    const comms = require('./comms-settings-store');
+    overrides = comms.getCopy(loungeOnly ? 'email.invite_social' : 'email.invite') || {};
+  } catch {
+    overrides = {};
+  }
+  const src = { ...base, ...overrides };
 
   return {
     subject: fill(src.subject, vars),

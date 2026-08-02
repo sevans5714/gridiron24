@@ -63,21 +63,37 @@ function brandedAssets(baseUrl) {
 function brandedEmailHtml({
   title,
   preheader,
-  eyebrow = '24 Teams · Two Conferences · One Champion',
+  eyebrow,
   headline,
   bodyHtml,
   midHtml = '',
-  showConferences = true,
+  showConferences,
   membershipBadgeHtml = '',
   ctaLabel,
   ctaUrl,
   noteHtml = '',
   linkFallbackUrl = '',
-  footerExtra = 'If you weren’t expecting this email, ignore it.<br />GridIron 24 created by S.Evans',
+  footerExtra,
   baseUrl
 }) {
+  let brand = null;
+  try {
+    brand = require('./comms-settings-store').getBrand();
+  } catch {
+    brand = null;
+  }
+  const resolvedEyebrow = eyebrow != null && String(eyebrow).trim() !== ''
+    ? eyebrow
+    : (brand?.eyebrow || '24 Teams · Two Conferences · One Champion');
+  const resolvedFooter = footerExtra != null
+    ? footerExtra
+    : (brand?.footerExtra ?? "If you weren't expecting this email, ignore it.<br />GridIron 24 created by S.Evans");
+  const resolvedShowConferences = showConferences != null
+    ? Boolean(showConferences)
+    : (brand ? brand.showConferences !== false : true);
+
   const { origin, logoUrl, detailLogo, overtimeLogo } = brandedAssets(baseUrl);
-  const conferences = showConferences
+  const conferences = resolvedShowConferences
     ? `<tr>
             <td align="center" style="padding:4px 28px 22px;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
@@ -139,8 +155,8 @@ function brandedEmailHtml({
             </td>
           </tr>`
     : '';
-  const footerLine = footerExtra
-    ? `GridIron 24 HQ · Fantasy Football<br />${footerExtra}`
+  const footerLine = resolvedFooter
+    ? `GridIron 24 HQ · Fantasy Football<br />${resolvedFooter}`
     : 'GridIron 24 HQ · Fantasy Football';
 
   return `<!DOCTYPE html>
@@ -169,7 +185,7 @@ function brandedEmailHtml({
           </tr>
           <tr>
             <td align="center" style="padding:8px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#9b9b9b;">
-              ${escapeHtml(eyebrow)}
+              ${escapeHtml(resolvedEyebrow)}
             </td>
           </tr>
           <tr>
@@ -366,6 +382,11 @@ function buildPasswordResetEmail({ resetUrl, name, leagueName, baseUrl }) {
 }
 
 async function sendPasswordResetEmail({ to, resetUrl, name, baseUrl, leagueName }) {
+  try {
+    if (!require('./comms-settings-store').isEnabled('email.password_reset')) {
+      return { sent: false, method: 'disabled', skipped: true };
+    }
+  } catch { /* continue */ }
   const { configured, from } = mailConfig();
   const apiKey = process.env.RESEND_API_KEY || '';
   const content = buildPasswordResetEmail({
@@ -391,6 +412,12 @@ async function sendPasswordResetEmail({ to, resetUrl, name, baseUrl, leagueName 
 }
 
 async function sendInviteEmail({ to, inviteUrl, invitedByName, leagueName, baseUrl, loungeOnly }) {
+  try {
+    const id = loungeOnly ? 'email.invite_social' : 'email.invite';
+    if (!require('./comms-settings-store').isEnabled(id)) {
+      return { sent: false, method: 'disabled', skipped: true, inviteUrl };
+    }
+  } catch { /* continue */ }
   const { configured, from } = mailConfig();
   const apiKey = process.env.RESEND_API_KEY || '';
   const content = buildInviteEmail({
@@ -512,6 +539,11 @@ function buildAccountApprovedEmail({ name, leagueName, signInUrl, baseUrl, membe
 }
 
 async function sendAccountApprovedEmail({ to, name, leagueName, baseUrl, membershipKind }) {
+  try {
+    if (!require('./comms-settings-store').isEnabled('email.account_approved')) {
+      return { sent: false, method: 'disabled', skipped: true };
+    }
+  } catch { /* continue */ }
   const { configured, from } = mailConfig();
   const apiKey = process.env.RESEND_API_KEY || '';
   const origin = siteBaseUrl(baseUrl);
@@ -887,6 +919,11 @@ function buildWeeklyWrapEmail({
 }
 
 async function sendWeeklyWrapEmail({ to, week, season, title, body, stats, recipientName, baseUrl }) {
+  try {
+    if (!require('./comms-settings-store').isEnabled('email.weekly_wrap')) {
+      return { sent: false, method: 'disabled', skipped: true };
+    }
+  } catch { /* continue */ }
   const { configured, from } = mailConfig();
   const apiKey = process.env.RESEND_API_KEY || '';
   const content = buildWeeklyWrapEmail({
@@ -915,6 +952,11 @@ async function sendWeeklyWrapEmail({ to, week, season, title, body, stats, recip
 }
 
 async function sendRulesSyncAlert({ to, matched, diffs, aaaSync, checkedAt, baseUrl }) {
+  try {
+    if (!require('./comms-settings-store').isEnabled('email.rules_sync')) {
+      return { sent: false, method: 'disabled', skipped: true };
+    }
+  } catch { /* continue */ }
   const cfg = mailConfig();
   const origin = siteBaseUrl(baseUrl);
   const toolsUrl = `${origin}/league-tools.html#rules-sync`;
@@ -1072,6 +1114,11 @@ function buildRosterViolationEmail({
 }
 
 async function sendRosterViolationEmail(opts) {
+  try {
+    if (!require('./comms-settings-store').isEnabled('email.roster_violation')) {
+      return { sent: false, method: 'disabled', skipped: true };
+    }
+  } catch { /* continue */ }
   const content = buildRosterViolationEmail(opts);
   const to = String(opts.to || '').trim();
   if (!to) return { sent: false, method: 'skip', error: 'missing_email' };
