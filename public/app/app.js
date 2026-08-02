@@ -275,7 +275,7 @@
         roster: 'My Roster',
         matchup: week ? `Week ${week}` : 'Matchup',
         league: 'League',
-        book: 'Sportsbook',
+        book: 'Casino',
         account: 'Account'
       };
       subtitle.textContent = labels[name] || 'HQ';
@@ -754,7 +754,7 @@
             <div class="pwa-slip-odds">${esc(bookFmtOdds(leg.odds))}</div>
             <button type="button" class="pwa-slip-remove" data-slip-remove="${esc(leg.key)}" aria-label="Remove leg">✕</button>
           </div>`).join('')
-      : `<div class="pwa-slip-empty">Tap lines in the Book tab to build a slip. Tap again to remove.</div>`;
+      : `<div class="pwa-slip-empty">Tap lines in the Casino tab to build a slip. Tap again to remove.</div>`;
 
     root.innerHTML = `
       <section class="pwa-slip" aria-label="Bet slip">
@@ -885,69 +885,78 @@
   function renderBook() {
     const mount = document.getElementById('book-mount');
     if (!mount) return;
-    ensureBookBridge();
-    if (!state.loungeAccess) {
-      clearTimeout(state.sportsFlipTimer);
-      clearTimeout(state.sportsPollTimer);
-      state.bookSlip = null;
+    try {
+      ensureBookBridge();
+      if (!state.loungeAccess) {
+        clearTimeout(state.sportsFlipTimer);
+        clearTimeout(state.sportsPollTimer);
+        state.bookSlip = null;
+        mount.innerHTML = `
+          <div class="book-locked">
+            <h2>Casino locked</h2>
+            <p class="msg">Casala's Palace is available to Members Lounge accounts.</p>
+          </div>`;
+        return;
+      }
+
+      let stage = mount.querySelector('.book-stage');
+      if (!stage) {
+        const n = Array.isArray(state.bookSlip?.legs) ? state.bookSlip.legs.length : 0;
+        mount.innerHTML = `
+          <div class="book-stage">
+            <div class="book-subtabs" role="tablist" aria-label="Casino sections">
+              <button type="button" role="tab" data-book-tab="scores">Scoreboard</button>
+              <button type="button" role="tab" data-book-tab="book" class="is-on" aria-selected="true">Casino</button>
+              <button type="button" role="tab" data-book-tab="slip">
+                Bet slip
+                <span class="book-slip-badge" data-book-badge ${n ? '' : 'hidden'}>${n || ''}</span>
+              </button>
+            </div>
+            <div class="book-panel" data-book-panel="scores" hidden>
+              <div class="book-wire-wrap">${bookWireShellHtml()}</div>
+            </div>
+            <div class="book-panel is-book" data-book-panel="book">
+              <iframe class="book-frame" title="Casala's Palace Casino" src="/members.html?embed=book#gambler"></iframe>
+            </div>
+            <div class="book-panel" data-book-panel="slip" hidden></div>
+          </div>`;
+        stage = mount.querySelector('.book-stage');
+        wireBookShell(mount);
+        state.bookPanel = state.bookPanel || 'book';
+      }
+
+      applyBookPanel(mount);
+      updateBookTabBadge(mount);
+      if (state.bookPanel === 'slip') renderBookSlip(mount);
+
+      if (state.bookPanel === 'scores') {
+        if (!state.sports) {
+          loadSportsWire();
+        } else {
+          renderSportsWire();
+          if (state.sportsAuto) scheduleSportsFlip();
+          else {
+            clearTimeout(state.sportsPollTimer);
+            state.sportsPollTimer = setTimeout(() => {
+              if (state.view === 'book' && state.bookPanel === 'scores') loadSportsWire();
+            }, SPORTS_POLL_MS);
+          }
+        }
+      } else {
+        clearTimeout(state.sportsFlipTimer);
+        // Keep scores fresh in the background while browsing casino/slip.
+        clearTimeout(state.sportsPollTimer);
+        state.sportsPollTimer = setTimeout(() => {
+          if (state.view === 'book') loadSportsWire();
+        }, SPORTS_POLL_MS);
+      }
+    } catch (err) {
+      console.error('Casino view failed', err);
       mount.innerHTML = `
         <div class="book-locked">
-          <h2>Sportsbook locked</h2>
-          <p class="msg">Casala's Palace is available to Members Lounge accounts.</p>
+          <h2>Casino unavailable</h2>
+          <p class="msg">${esc(err?.message || 'Something went wrong loading the casino.')}</p>
         </div>`;
-      return;
-    }
-
-    let stage = mount.querySelector('.book-stage');
-    if (!stage) {
-      const n = Array.isArray(state.bookSlip?.legs) ? state.bookSlip.legs.length : 0;
-      mount.innerHTML = `
-        <div class="book-stage">
-          <div class="book-subtabs" role="tablist" aria-label="Book sections">
-            <button type="button" role="tab" data-book-tab="scores">Scoreboard</button>
-            <button type="button" role="tab" data-book-tab="book" class="is-on" aria-selected="true">Book</button>
-            <button type="button" role="tab" data-book-tab="slip">
-              Bet slip
-              <span class="book-slip-badge" data-book-badge ${n ? '' : 'hidden'}>${n || ''}</span>
-            </button>
-          </div>
-          <div class="book-panel" data-book-panel="scores" hidden>
-            <div class="book-wire-wrap">${bookWireShellHtml()}</div>
-          </div>
-          <div class="book-panel is-book" data-book-panel="book">
-            <iframe class="book-frame" title="Casala's Palace Sportsbook" src="/members.html?embed=book#gambler"></iframe>
-          </div>
-          <div class="book-panel" data-book-panel="slip" hidden></div>
-        </div>`;
-      stage = mount.querySelector('.book-stage');
-      wireBookShell(mount);
-      state.bookPanel = state.bookPanel || 'book';
-    }
-
-    applyBookPanel(mount);
-    updateBookTabBadge(mount);
-    if (state.bookPanel === 'slip') renderBookSlip(mount);
-
-    if (state.bookPanel === 'scores') {
-      if (!state.sports) {
-        loadSportsWire();
-      } else {
-        renderSportsWire();
-        if (state.sportsAuto) scheduleSportsFlip();
-        else {
-          clearTimeout(state.sportsPollTimer);
-          state.sportsPollTimer = setTimeout(() => {
-            if (state.view === 'book' && state.bookPanel === 'scores') loadSportsWire();
-          }, SPORTS_POLL_MS);
-        }
-      }
-    } else {
-      clearTimeout(state.sportsFlipTimer);
-      // Keep scores fresh in the background while browsing book/slip.
-      clearTimeout(state.sportsPollTimer);
-      state.sportsPollTimer = setTimeout(() => {
-        if (state.view === 'book') loadSportsWire();
-      }, SPORTS_POLL_MS);
     }
   }
 

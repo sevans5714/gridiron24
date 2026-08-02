@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=102" />
-  <link rel="icon" href="/favicon.ico?v=102" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=102" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=102" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=104" />
+  <link rel="icon" href="/favicon.ico?v=104" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=104" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=104" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=153" />
   <style>
@@ -10498,12 +10498,20 @@
 
     async function load({ quiet = false } = {}) {
       const res = await fetch('/api/members', { cache: 'no-store' });
+      const isEmbedBook = document.documentElement.classList.contains('is-embed-book');
       if (res.status === 401) {
+        // Never navigate the parent PWA shell — keep the error inside the embed.
+        if (isEmbedBook) {
+          throw new Error('Sign in again to use the casino.');
+        }
         const next = location.pathname + location.search + (location.hash || '#gambler');
         window.location.replace('/enter?next=' + encodeURIComponent(next));
         return;
       }
       if (res.status === 403) {
+        if (isEmbedBook) {
+          throw new Error('Casino is available to Members Lounge accounts.');
+        }
         window.location.replace('/restricted.html?area=lounge');
         return;
       }
@@ -10579,12 +10587,16 @@
           applyDeskHash(location.hash);
         }
       } catch (err) {
+        if (isEmbedBook) {
+          const root = document.getElementById('degenerate-book-root')
+            || document.getElementById('degenerate-book')
+            || document.querySelector('[data-desk-panel="gambler"]')
+            || document.body;
+          root.innerHTML = `<div class="records-empty" style="padding:1.25rem">${esc(err.message || 'Casino unavailable')}</div>`;
+          return;
+        }
         const boards = document.getElementById('boards');
         if (boards) boards.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
-        const bookRoot = document.getElementById('degenerate-book-root');
-        if (isEmbedBook && bookRoot) {
-          bookRoot.innerHTML = `<div class="records-empty">${esc(err.message || 'Sportsbook unavailable')}</div>`;
-        }
         if (!isEmbedBook) setChatLive(false);
       }
     })();

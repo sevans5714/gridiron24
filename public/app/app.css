@@ -934,11 +934,12 @@ html[data-theme="day"] .s-row .num.col-pf {
   min-height: 3.55rem;
   padding: 0.08rem 0.04rem 0.06rem;
   font-family: var(--body);
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 700;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
   line-height: 1.05;
   text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
   transition: color 0.18s ease, transform 0.18s ease;
   transform: translateY(-0.45rem);
@@ -968,12 +969,6 @@ html[data-theme="day"] .s-row .num.col-pf {
   fill: rgba(47, 109, 255, 0.14);
   stroke-width: 2;
   filter: drop-shadow(0 0 7px rgba(47, 109, 255, 0.32));
-}
-
-/* Dice pips stay solid even when the active tab tints fills */
-.app-tabs button svg circle[fill="currentColor"] {
-  fill: currentColor;
-  stroke: none;
 }
 
 /* Center Home — raised orb; glyph shares the same icon row as side tabs */
