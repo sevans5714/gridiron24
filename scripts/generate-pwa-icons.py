@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Regenerate public/assets/pwa icons from the GridIron 24 crest.
+"""Regenerate public/assets/pwa icons from the GridIron 24 brand mark.
 
-Source: public/assets/gridiron24-pwa-source.png (white-backed brand art).
-Knocks out the white field and places the crest on navy so home-screen /
-bookmark tiles show the real logo, not a letter glyph.
+Source: public/assets/gridiron24-pwa-source.png
+- Dark-backed square app icons are used full-bleed (resize only).
+- Legacy white-paper crests still get a white-field knockout.
 """
 
 from __future__ import annotations
@@ -21,18 +21,39 @@ PUBLIC = ROOT / "public"
 BG = (2, 6, 15, 255)  # #02060f — matches manifest theme_color
 
 
+def _corner_avg(im: Image.Image) -> float:
+    px = im.load()
+    w, h = im.size
+    samples = [
+        px[2, 2],
+        px[w - 3, 2],
+        px[2, h - 3],
+        px[w - 3, h - 3],
+        px[w // 2, 2],
+        px[2, h // 2],
+    ]
+    vals = []
+    for c in samples:
+        r, g, b = c[:3]
+        vals.append((r + g + b) / 3.0)
+    return sum(vals) / len(vals)
+
+
 def load_crest() -> Image.Image:
     raw = Image.open(SRC).convert("RGBA")
+    # Ready-made app icon (dark square) — keep the full frame, including chrome.
+    if _corner_avg(raw) < 40:
+        return raw
+
+    # Legacy white-paper crest: knock out near-white field
     px = raw.load()
     w, h = raw.size
-    # Knock out near-white paper background (keep crest chrome / blue)
     for y in range(h):
         for x in range(w):
             r, g, b, a = px[x, y]
             if r >= 245 and g >= 245 and b >= 245:
                 px[x, y] = (0, 0, 0, 0)
             elif r >= 235 and g >= 235 and b >= 235:
-                # soft anti-aliased fringe → fade
                 strength = ((r + g + b) / 3 - 235) / 20.0
                 px[x, y] = (r, g, b, max(0, int(a * (1 - strength))))
     bbox = raw.getbbox()
@@ -50,6 +71,9 @@ def fit(
 ) -> Image.Image:
     canvas_bg = (0, 0, 0, 0) if transparent else BG
     canvas = Image.new("RGBA", (size, size), canvas_bg)
+    # Full-bleed square sources: use nearly the whole tile
+    if crest.size[0] == crest.size[1] and _corner_avg(crest) < 40:
+        fill = 1.0 if not maskable else 0.80
     target = int(size * (0.80 if maskable else fill))
     scale = target / max(crest.size)
     nw = max(1, int(crest.size[0] * scale))
@@ -91,27 +115,26 @@ def main() -> None:
     if not SRC.exists():
         raise SystemExit(f"Missing source: {SRC}")
     crest = load_crest()
-    print(f"crest crop {crest.size}")
+    print(f"source {crest.size} corner_avg={_corner_avg(crest):.1f}")
     OUT.mkdir(parents=True, exist_ok=True)
     for size, name in [(192, "icon-192.png"), (512, "icon-512.png"), (180, "apple-touch-icon.png")]:
-        save_rgb(fit(crest, size, fill=0.96), OUT / name)
+        save_rgb(fit(crest, size), OUT / name)
     save_rgb(fit(crest, 512, maskable=True), OUT / "icon-maskable-512.png")
-    fit(crest, 192, fill=0.98, transparent=True).save(OUT / "icon-192-transparent.png", "PNG", optimize=True)
-    fit(crest, 512, fill=0.98, transparent=True).save(OUT / "icon-512-transparent.png", "PNG", optimize=True)
+    fit(crest, 192, transparent=True).save(OUT / "icon-192-transparent.png", "PNG", optimize=True)
+    fit(crest, 512, transparent=True).save(OUT / "icon-512-transparent.png", "PNG", optimize=True)
     print(f"wrote {(OUT / 'icon-192-transparent.png').relative_to(ROOT)}")
     print(f"wrote {(OUT / 'icon-512-transparent.png').relative_to(ROOT)}")
 
-    # Favicons — always the crest (fill hard so tiny tiles keep as much detail as possible)
-    c16 = fit(crest, 16, fill=0.98)
-    c32 = fit(crest, 32, fill=0.98)
-    c48 = fit(crest, 48, fill=0.96)
-    c64 = fit(crest, 64, fill=0.96)
+    c16 = fit(crest, 16)
+    c32 = fit(crest, 32)
+    c48 = fit(crest, 48)
+    c64 = fit(crest, 64)
     write_ico(PUBLIC / "favicon.ico", [(16, c16), (32, c32), (48, c48)])
     save_rgb(c32, PUBLIC / "favicon-32.png")
     save_rgb(c48, PUBLIC / "favicon-48.png")
     save_rgb(c64, PUBLIC / "favicon.png")
-    save_rgb(fit(crest, 180, fill=0.96), PUBLIC / "apple-touch-icon.png")
-    save_rgb(fit(crest, 180, fill=0.96), PUBLIC / "apple-touch-icon-precomposed.png")
+    save_rgb(fit(crest, 180), PUBLIC / "apple-touch-icon.png")
+    save_rgb(fit(crest, 180), PUBLIC / "apple-touch-icon-precomposed.png")
 
     print("done — run: npm run bump:pwa")
 
