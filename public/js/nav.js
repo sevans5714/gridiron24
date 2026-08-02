@@ -61,6 +61,7 @@
       { href: `${base}/team-rosters.html`, label: 'Team Rosters' },
       { href: `${base}/rankings.html`, label: 'Rankings' },
       { href: `${base}/draft.html`, label: 'Draft' },
+      { href: `${base}/manage.html`, label: 'Manage' },
       { href: `${base}/settings.html`, label: 'Settings' },
       { href: `${base}/transactions.html`, label: 'Transactions' }
     ];

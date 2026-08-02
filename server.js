@@ -60,6 +60,7 @@ const deathPool = require('./death-pool-store');
 const deathPoolNews = require('./death-pool-news');
 const mockDraftRooms = require('./mock-draft-rooms-store');
 const independentDraft = require('./independent-draft-store');
+const independentScoreboard = require('./independent-scoreboard');
 const customPools = require('./custom-pool-store');
 const futuresMarkets = require('./futures-markets');
 const matchupDisplayWeek = require('./matchup-display-week');
@@ -3621,11 +3622,11 @@ function homePathForUser(user, req = null) {
       ? '/members.html'
       : '/restricted.html?area=lounge';
   }
-  if (user.leagueOwner && user.leagueId) {
+  if (user.leagueId) {
     try {
-      const owned = leagues.findById(user.leagueId);
-      if (owned?.platform === 'independent') {
-        return leagues.independentHomePath(owned);
+      const linked = leagues.findById(user.leagueId);
+      if (linked?.platform === 'independent') {
+        return leagues.independentHomePath(linked);
       }
     } catch { /* ignore */ }
   }
@@ -3650,7 +3651,8 @@ function homePathForUser(user, req = null) {
 
 const INDEPENDENT_HQ_SECTIONS = new Set([
   'standings', 'schedules', 'my-roster', 'team-rosters', 'rankings', 'draft',
-  'transactions', 'playoffs', 'calendar', 'rulebook', 'scoreboard', 'payouts', 'settings'
+  'transactions', 'playoffs', 'calendar', 'rulebook', 'scoreboard', 'payouts',
+  'settings', 'manage', 'team'
 ]);
 
 function parseIndependentHqPath(pathname) {
@@ -3761,7 +3763,7 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
         ? 'They can sign in now.'
         : 'Waiting for lounge access / approval.',
       '',
-      'Open League Tools → Member Access to manage accounts.'
+      'Use the button below to approve or deny in Member Access.'
     ].join('\n');
 
     for (const ownerUser of owners) {
@@ -3774,6 +3776,7 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
         relatedId: user.id,
         meta: {
           href: '/league-tools.html#members',
+          hrefLabel: 'Approve or deny',
           userId: user.id,
           source
         }
@@ -3820,12 +3823,13 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
           '',
           pendingNames,
           '',
-          'Open League Tools → Member Access to approve or reject these accounts.'
+          'Use the button below to approve or deny these accounts.'
         ].join('\n')
         : null,
       meta: {
         digest: true,
-        href: '/league-tools.html',
+        href: '/league-tools.html#members',
+        hrefLabel: 'Approve or deny',
         count: pendingUsers.length,
         pendingApprovals: true
       }
@@ -3850,12 +3854,13 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
             '',
             leagueLines,
             '',
-            'Open League Tools → League Requests to approve or reject.'
+            'Use the button below to approve or deny these leagues.'
           ].join('\n')
           : null,
         meta: {
           digest: true,
           href: '/league-tools.html#league-requests',
+          hrefLabel: 'Approve or deny',
           count: pendingLeagues.length,
           pendingLeagueApprovals: true
         }
@@ -5130,7 +5135,7 @@ const server = http.createServer(async (req, res) => {
           inviteRecord = invites.findByToken(inviteToken);
         }
         const socialInvite = Boolean(inviteRecord?.loungeOnly);
-        const user = users.createUser({
+        let user = users.createUser({
           name: body.name,
           email: body.email,
           loginName: body.loginName,
@@ -5141,6 +5146,21 @@ const server = http.createServer(async (req, res) => {
         });
         if (inviteToken) {
           try { invites.acceptInvite(inviteToken, user.email); } catch { /* non-fatal */ }
+          if (inviteRecord?.leagueId) {
+            try {
+              users.setUserLeagueOwner(user.id, inviteRecord.leagueId, false);
+              user = users.findById(user.id) || user;
+              if (inviteRecord.franchiseId) {
+                leagues.assignFranchiseManager(
+                  inviteRecord.leagueId,
+                  inviteRecord.franchiseId,
+                  user
+                );
+              }
+            } catch (attachErr) {
+              console.warn('[register] league attach failed', attachErr.message || attachErr);
+            }
+          }
         }
         notifySiteOwnersOfNewAccount(user, {
           source: socialInvite ? 'lounge_invite' : (inviteToken ? 'invite' : 'bootstrap')
@@ -5665,7 +5685,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/create-league/draft' && req.method === 'POST') {
-      if (!leagues.registrationEnabled()) {
+      const user = getSessionUser(req);
+      const needsSetup = user
+        && leagues.listIndependentLeaguesForOwner(user.id).some((l) =>
+          l.status === 'approved' && l.setupComplete === false
+        );
+      if (!leagues.registrationEnabled() && !needsSetup) {
         return sendJson(res, 403, { ok: false, error: 'League creation is disabled' });
       }
       const draftId = crypto.randomUUID();
@@ -5674,7 +5699,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/create-league/asset' && req.method === 'POST') {
-      if (!leagues.registrationEnabled()) {
+      const user = getSessionUser(req);
+      const needsSetup = user
+        && leagues.listIndependentLeaguesForOwner(user.id).some((l) =>
+          l.status === 'approved' && l.setupComplete === false
+        );
+      if (!leagues.registrationEnabled() && !needsSetup) {
         return sendJson(res, 403, { ok: false, error: 'League creation is disabled' });
       }
       try {
@@ -5715,41 +5745,60 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
       }
       try {
-        const owner = body.owner || {};
-        if (owner.password !== owner.confirmPassword) {
-          return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
-        }
-        const draftId = String(body.draftId || '').trim() || crypto.randomUUID();
-        const uploadedAssets = leagues.listDraftAssets(draftId);
+        // Step 1 only: register owner + league type + team count + name.
+        // Full setup (brand/rules/etc.) is step 3 after site-owner approval.
+        const sessionUser = getSessionUser(req);
+        let user = sessionUser || null;
+        let setCookie = null;
 
-        const user = users.createUser({
-          name: owner.name,
-          email: owner.email,
-          loginName: owner.loginName,
-          password: owner.password,
-          role: 'user',
-          approved: true,
-          loungeMember: true,
-          leagueOwner: true
-        });
-        notifySiteOwnersOfNewAccount(user, { source: 'create_league' });
+        if (!user) {
+          const owner = body.owner || {};
+          if (owner.password !== owner.confirmPassword) {
+            return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
+          }
+          user = users.createUser({
+            name: owner.name,
+            email: owner.email,
+            loginName: owner.loginName,
+            password: owner.password,
+            role: 'user',
+            approved: true,
+            loungeMember: true,
+            leagueOwner: true
+          });
+          notifySiteOwnersOfNewAccount(user, { source: 'create_league' });
+          const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
+          setCookie = sessionCookieHeader(signSession(user.id, expiresAt));
+        } else if (user.approved === false) {
+          return sendJson(res, 403, { ok: false, error: 'Your account is not approved yet' });
+        }
+
+        const existingOwned = leagues.listIndependentLeaguesForOwner(user.id);
+        if (existingOwned.some((l) => l.status === 'pending_approval' || (l.status === 'approved' && l.setupComplete === false))) {
+          return sendJson(res, 409, {
+            ok: false,
+            error: 'You already have a league waiting on approval or setup. Open Create a League to continue.'
+          });
+        }
+
+        const brandName = String(body.brand?.name || '').trim();
+        const leagueType = String(body.leagueType || '').trim();
+        const conferenceCount = Number(body.structure?.conferenceCount) === 2
+          || leagueType === 'two-conferences'
+          ? 2
+          : 1;
+        const totalTeams = Number(body.structure?.totalTeams);
 
         const league = leagues.createIndependentLeague({
-          id: draftId,
           ownerUserId: user.id,
           ownerName: user.name,
           ownerEmail: user.email,
-          season: body.season,
-          brand: body.brand,
-          conferences: body.conferences,
-          championship: body.championship,
-          structure: body.structure,
-          payouts: body.payouts,
-          calendarDefaults: body.calendarDefaults,
-          settings: body.settings,
-          franchises: body.franchises,
-          survival: body.survival,
-          uploadedAssets
+          brand: { name: brandName },
+          structure: {
+            totalTeams,
+            conferenceCount,
+            teamsPerConference: conferenceCount === 2 ? totalTeams / 2 : totalTeams
+          }
         });
 
         leagues.attachOwner(league.id, user.id);
@@ -5763,39 +5812,74 @@ const server = http.createServer(async (req, res) => {
               from: { name: 'League HQ' },
               subject: `League request: ${league.brand?.name || league.slug}`,
               body: [
-                'NEW INDEPENDENT LEAGUE REQUEST',
+                'NEW LEAGUE REGISTRATION',
                 '',
                 `League: ${league.brand?.name || league.slug}`,
                 `Owner: ${user.name} (${user.loginName}) · ${user.email}`,
-                `Teams: ${league.structure?.totalTeams || '?'} (${league.structure?.teamsPerConference || '?'} per conference)`,
-                `Conferences: ${(league.conferences || []).map((c) => c.name).join(' · ')}`,
+                `Teams: ${league.structure?.totalTeams || '?'}`,
+                `Type: ${conferenceCount === 2 ? 'Two conferences' : 'One conference'}`,
                 '',
-                'Open League Tools → League Requests to approve or reject.'
+                '1. Approve or reject in League Tools → League Requests.',
+                '2. After you approve, the owner sets up the league on /create-league.'
               ].join('\n'),
               type: 'league_request',
-              meta: { href: '/league-tools.html#league-requests', leagueId: league.id }
+              meta: {
+                href: '/league-tools.html#league-requests',
+                hrefLabel: 'Approve or deny',
+                leagueId: league.id
+              }
             });
           }
         } catch (mailErr) {
           console.warn('[create-league] owner notify failed', mailErr.message || mailErr);
         }
 
-        const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
-        const token = signSession(user.id, expiresAt);
-        return sendJson(
-          res,
-          201,
-          {
-            ok: true,
-            league,
-            user: users.publicUser(users.findById(user.id)),
-            homePath: leagues.independentHomePath(league),
-            message: 'League submitted for site owner approval. Your HQ homepage is ready at this league’s URL.'
-          },
-          { 'Set-Cookie': sessionCookieHeader(token) }
-        );
+        const payload = {
+          ok: true,
+          league,
+          user: users.publicUser(users.findById(user.id)),
+          homePath: leagues.independentHomePath(league),
+          message: 'Your request has been sent! Please keep an eye on your email for approval from GridIron 24.'
+        };
+        return setCookie
+          ? sendJson(res, 201, payload, { 'Set-Cookie': setCookie })
+          : sendJson(res, 201, payload);
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not create league' });
+      }
+    }
+
+    if (pathname === '/api/create-league/complete' && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      let body;
+      try {
+        body = await readJsonBody(req, { maxBytes: 1_000_000 });
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const leagueId = String(body.leagueId || '').trim();
+        if (!leagueId) return sendJson(res, 400, { ok: false, error: 'leagueId required' });
+        const existing = leagues.findById(leagueId);
+        if (!existing || existing.platform !== 'independent') {
+          return sendJson(res, 404, { ok: false, error: 'League not found' });
+        }
+        if (!leagues.canManageIndependentLeague(user, existing) && !users.isSiteOwner(user)) {
+          return sendJson(res, 403, { ok: false, error: 'Only the league owner can finish setup' });
+        }
+        const draftId = String(body.draftId || '').trim();
+        const uploadedAssets = draftId ? leagues.listDraftAssets(draftId) : {};
+        const actor = { ...users.publicUser(user), siteOwner: users.isSiteOwner(user) };
+        const league = leagues.completeIndependentLeagueSetup(leagueId, body, actor, uploadedAssets);
+        return sendJson(res, 200, {
+          ok: true,
+          league,
+          homePath: leagues.independentHomePath(league),
+          message: 'League setup complete. Your HQ is ready.'
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not complete setup' });
       }
     }
 
@@ -5847,7 +5931,9 @@ const server = http.createServer(async (req, res) => {
           rulebook: leagues.independentSectionPath(league, 'rulebook'),
           scoreboard: leagues.independentSectionPath(league, 'scoreboard'),
           payouts: leagues.independentSectionPath(league, 'payouts'),
-          settings: leagues.independentSectionPath(league, 'settings')
+          settings: leagues.independentSectionPath(league, 'settings'),
+          manage: leagues.independentSectionPath(league, 'manage'),
+          team: leagues.independentSectionPath(league, 'team')
         }
       });
     }
@@ -5880,6 +5966,314 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true, league: updated });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save settings' });
+      }
+    }
+
+    if (pathname.startsWith('/api/independent-leagues/') && req.method === 'POST') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const parts = pathname.split('/').filter(Boolean);
+      // independent-leagues/:id/asset | invites | invites/:inviteId/resend | franchises/assign | franchises/rename
+      if (parts.length < 3) {
+        return sendJson(res, 404, { ok: false, error: 'Not found' });
+      }
+      const leagueId = parts[1];
+      const league = leagues.findById(leagueId);
+      if (!league || league.platform !== 'independent') {
+        return sendJson(res, 404, { ok: false, error: 'League not found' });
+      }
+      const isOwner = leagues.canManageIndependentLeague(user, league) || users.isSiteOwner(user);
+      let body = {};
+      try {
+        body = await readJsonBody(req, { maxBytes: 3_500_000 });
+      } catch {
+        body = {};
+      }
+
+      if (parts.length === 3 && parts[2] === 'asset') {
+        if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can upload logos' });
+        if (league.setupComplete === false) {
+          return sendJson(res, 403, { ok: false, error: 'Finish the Create a League wizard first' });
+        }
+        try {
+          const assetType = String(body.assetType || '').trim();
+          if (!leagues.ASSET_TYPES.has(assetType)) {
+            return sendJson(res, 400, { ok: false, error: 'Unknown asset type' });
+          }
+          if (assetType.startsWith('conferenceLogo')) {
+            const idx = Number(assetType.replace('conferenceLogo', ''));
+            if (!Number.isFinite(idx) || idx < 0 || idx >= (league.conferences || []).length) {
+              return sendJson(res, 400, { ok: false, error: 'That conference logo slot is not available' });
+            }
+          }
+          const dataUrl = String(body.dataUrl || '');
+          const match = dataUrl.match(/^data:(image\/(?:png|jpeg|webp|svg\+xml));base64,([a-zA-Z0-9+/=\s]+)$/);
+          if (!match) {
+            return sendJson(res, 400, { ok: false, error: 'Upload a PNG, JPG, WEBP, or SVG image' });
+          }
+          const url = leagues.saveAssetBuffer(
+            leagueId,
+            assetType,
+            Buffer.from(match[2].replace(/\s+/g, ''), 'base64'),
+            match[1]
+          );
+          const updated = leagues.updateLeagueAssets(leagueId, { [assetType]: url });
+          return sendJson(res, 200, { ok: true, assetType, url, league: updated });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Upload failed' });
+        }
+      }
+
+      if (parts.length === 3 && parts[2] === 'invites') {
+        if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can invite players' });
+        if (league.status !== 'approved' || league.setupComplete === false) {
+          return sendJson(res, 403, { ok: false, error: 'Finish league setup before inviting players' });
+        }
+        const email = String(body.email || '').trim();
+        const franchiseId = String(body.franchiseId || '').trim() || null;
+        if (!email) return sendJson(res, 400, { ok: false, error: 'Email is required' });
+        if (franchiseId && !(league.franchises || []).some((f) => f.id === franchiseId)) {
+          return sendJson(res, 400, { ok: false, error: 'Franchise not found' });
+        }
+        try {
+          const existing = users.findByEmail(email);
+          if (existing) {
+            if (existing.leagueId && existing.leagueId !== leagueId && !users.isSiteOwner(existing)) {
+              return sendJson(res, 409, {
+                ok: false,
+                error: 'That account is already linked to another league'
+              });
+            }
+            users.setUserLeagueOwner(existing.id, leagueId, false);
+            let updatedLeague = leagues.publicLeague(league);
+            if (franchiseId) {
+              updatedLeague = leagues.assignFranchiseManager(leagueId, franchiseId, existing);
+            }
+            try {
+              inbox.sendMessage({
+                toUserId: existing.id,
+                from: { name: league.brand?.name || 'League HQ' },
+                subject: `You're in · ${league.brand?.name || 'league'}`,
+                body: [
+                  `${user.name || user.loginName} added you to ${league.brand?.name || 'their league'}.`,
+                  '',
+                  `Open HQ: ${leagues.independentHomePath(league)}`
+                ].join('\n'),
+                type: 'league_invite',
+                meta: { href: leagues.independentHomePath(league), leagueId }
+              });
+            } catch { /* ignore */ }
+            return sendJson(res, 200, {
+              ok: true,
+              attached: true,
+              user: users.publicUser(users.findById(existing.id)),
+              league: updatedLeague,
+              message: 'Existing account linked to this league.'
+            });
+          }
+          const created = invites.createInvite({
+            email,
+            invitedBy: user,
+            loungeOnly: false,
+            leagueId,
+            franchiseId
+          });
+          const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(created.token)}`;
+          let mailResult = { sent: false, method: 'none' };
+          try {
+            mailResult = await sendInviteEmail({
+              to: created.invite.email,
+              inviteUrl,
+              invitedByName: user.name || user.loginName,
+              leagueName: league.brand?.name || config.brand.name,
+              baseUrl: requestOrigin(req),
+              loungeOnly: false
+            });
+          } catch (mailErr) {
+            mailResult = {
+              sent: false,
+              method: 'error',
+              error: mailErr.message || 'Email send failed'
+            };
+          }
+          return sendJson(res, 201, {
+            ok: true,
+            attached: false,
+            invite: created.invite,
+            inviteUrl,
+            sent: Boolean(mailResult.sent),
+            method: mailResult.method,
+            mailError: mailResult.error || null,
+            message: mailResult.sent
+              ? 'Invite emailed.'
+              : 'Invite created — copy the link if email did not send.'
+          });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not invite' });
+        }
+      }
+
+      if (parts.length === 4 && parts[2] === 'invites' && parts[3] !== 'resend') {
+        // POST .../invites/:inviteId/resend handled below with length 5
+      }
+
+      if (parts.length === 5 && parts[2] === 'invites' && parts[4] === 'resend') {
+        if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can resend invites' });
+        const inviteId = parts[3];
+        try {
+          const existing = invites.listInvitesForLeague(leagueId).find((i) => i.id === inviteId);
+          if (!existing) return sendJson(res, 404, { ok: false, error: 'Invite not found' });
+          const refreshed = invites.refreshInvite(inviteId, user);
+          const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(refreshed.token)}`;
+          let mailResult = { sent: false, method: 'none' };
+          try {
+            mailResult = await sendInviteEmail({
+              to: refreshed.invite.email,
+              inviteUrl,
+              invitedByName: user.name || user.loginName,
+              leagueName: league.brand?.name || config.brand.name,
+              baseUrl: requestOrigin(req),
+              loungeOnly: false
+            });
+          } catch (mailErr) {
+            mailResult = { sent: false, method: 'error', error: mailErr.message || 'Email send failed' };
+          }
+          return sendJson(res, 200, {
+            ok: true,
+            invite: refreshed.invite,
+            inviteUrl,
+            sent: Boolean(mailResult.sent),
+            method: mailResult.method,
+            mailError: mailResult.error || null
+          });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not resend' });
+        }
+      }
+
+      if (parts.length === 4 && parts[2] === 'franchises' && parts[3] === 'assign') {
+        if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can assign franchises' });
+        const franchiseId = String(body.franchiseId || '').trim();
+        const userId = body.userId == null || body.userId === '' ? null : String(body.userId);
+        if (!franchiseId) return sendJson(res, 400, { ok: false, error: 'franchiseId required' });
+        try {
+          let manager = null;
+          if (userId) {
+            manager = users.findById(userId);
+            if (!manager) return sendJson(res, 404, { ok: false, error: 'User not found' });
+            if (manager.leagueId && manager.leagueId !== leagueId && manager.id !== league.ownerUserId) {
+              return sendJson(res, 400, { ok: false, error: 'That user is not in this league' });
+            }
+            if (!manager.leagueId) users.setUserLeagueOwner(manager.id, leagueId, false);
+            manager = users.findById(manager.id);
+          }
+          const updated = leagues.assignFranchiseManager(leagueId, franchiseId, manager);
+          return sendJson(res, 200, { ok: true, league: updated });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not assign' });
+        }
+      }
+
+      if (parts.length === 4 && parts[2] === 'franchises' && parts[3] === 'rename') {
+        if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can rename franchises' });
+        try {
+          const updated = leagues.renameIndependentFranchise(leagueId, body.franchiseId, {
+            name: body.name,
+            abbrev: body.abbrev
+          });
+          return sendJson(res, 200, { ok: true, league: updated });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not rename' });
+        }
+      }
+
+      return sendJson(res, 404, { ok: false, error: 'Not found' });
+    }
+
+    if (pathname.startsWith('/api/independent-leagues/') && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const parts = pathname.split('/').filter(Boolean);
+      // independent-leagues/:id/invites | members
+      if (parts.length !== 3) {
+        // draft GET is handled elsewhere with includes('/draft')
+        if (!(parts.length === 3 && (parts[2] === 'invites' || parts[2] === 'members'))) {
+          /* fall through below only for invites/members */
+        }
+      }
+      if (parts.length === 3 && (parts[2] === 'invites' || parts[2] === 'members' || parts[2] === 'scoreboard')) {
+        const leagueId = parts[1];
+        const league = leagues.findById(leagueId);
+        if (!league || league.platform !== 'independent') {
+          return sendJson(res, 404, { ok: false, error: 'League not found' });
+        }
+        if (parts[2] === 'scoreboard') {
+          if (!canViewIndependentLeague(user, league)) {
+            return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+          }
+          try {
+            const week = Number(requestUrl.searchParams.get('week')) || 0;
+            const scored = await independentScoreboard.scoreLeagueWeek(
+              leagues.publicLeague(league),
+              week || undefined
+            );
+            return sendJson(res, 200, scored);
+          } catch (err) {
+            return sendJson(res, err.status || 500, {
+              ok: false,
+              error: err.message || 'Could not score week'
+            });
+          }
+        }
+        if (!leagues.canManageIndependentLeague(user, league) && !users.isSiteOwner(user)) {
+          return sendJson(res, 403, { ok: false, error: 'Only the league owner can view this' });
+        }
+        if (parts[2] === 'invites') {
+          return sendJson(res, 200, {
+            ok: true,
+            invites: invites.listInvitesForLeague(leagueId),
+            mail: mailConfig()
+          });
+        }
+        const members = users.listUsers()
+          .filter((u) => u.leagueId === leagueId || u.id === league.ownerUserId)
+          .map((u) => {
+            const pub = users.publicUser(u);
+            const franchise = (league.franchises || []).find((f) => f.managerUserId === u.id) || null;
+            return {
+              ...pub,
+              isOwner: u.id === league.ownerUserId,
+              franchiseId: franchise?.id || null,
+              franchiseName: franchise?.name || null
+            };
+          });
+        return sendJson(res, 200, { ok: true, members });
+      }
+    }
+
+    if (pathname.startsWith('/api/independent-leagues/') && req.method === 'DELETE') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const parts = pathname.split('/').filter(Boolean);
+      // independent-leagues/:id/invites/:inviteId
+      if (parts.length === 4 && parts[2] === 'invites') {
+        const leagueId = parts[1];
+        const inviteId = parts[3];
+        const league = leagues.findById(leagueId);
+        if (!league || league.platform !== 'independent') {
+          return sendJson(res, 404, { ok: false, error: 'League not found' });
+        }
+        if (!leagues.canManageIndependentLeague(user, league) && !users.isSiteOwner(user)) {
+          return sendJson(res, 403, { ok: false, error: 'Only the league owner can revoke invites' });
+        }
+        const existing = invites.listInvitesForLeague(leagueId).find((i) => i.id === inviteId);
+        if (!existing) return sendJson(res, 404, { ok: false, error: 'Invite not found' });
+        try {
+          const revoked = invites.revokeInvite(inviteId);
+          return sendJson(res, 200, { ok: true, invite: revoked });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not revoke' });
+        }
       }
     }
 
@@ -6033,14 +6427,14 @@ const server = http.createServer(async (req, res) => {
               from: { name: 'League HQ' },
               subject: `${league.brand?.name || 'Your league'} was approved`,
               body: [
-                `Your independent league “${league.brand?.name || league.slug}” was approved.`,
+                `Your league “${league.brand?.name || league.slug}” was approved.`,
                 '',
-                `Open your league HQ: ${leagues.independentHomePath(league)}`,
+                'Next: open /create-league and set up the league (brand, conferences, roster, scoring, championship, payouts).',
                 '',
-                'This league is fully separate from GridIron 24 and AAA.'
+                `HQ opens after setup: ${leagues.independentHomePath(league)}`
               ].join('\n'),
               type: 'league_approved',
-              meta: { href: leagues.independentHomePath(league), leagueId: league.id }
+              meta: { href: '/create-league', leagueId: league.id }
             });
           }
         } catch { /* ignore */ }

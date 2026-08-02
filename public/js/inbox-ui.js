@@ -82,6 +82,9 @@
       rule_result: 'RULE CHANGE',
       feature_request: 'FEATURE REQUEST',
       pending_approvals: 'ACTION NEEDED',
+      pending_league_approvals: 'ACTION NEEDED',
+      account_created: 'ACTION NEEDED',
+      league_request: 'ACTION NEEDED',
       roster_violations: 'ROSTER PATROL',
       general: 'GridIron 24 HQ'
     };
@@ -98,6 +101,7 @@
       rule_result: 'RULE CHANGE',
       feature_request: 'FEATURE REQUEST',
       pending_approvals: 'Pending',
+      pending_league_approvals: 'League request',
       roster_violations: 'Roster',
       account_created: 'New account',
       league_request: 'League request',
@@ -182,41 +186,117 @@
     return t === t.toUpperCase();
   }
 
-  function formatBodyHtml(body) {
-    const lines = String(body || '').split('\n');
-    const chunks = [];
-    let listItems = [];
+  function isActionNeeded(msg) {
+    return Boolean(
+      msg?.type === 'account_created'
+      || msg?.type === 'pending_approvals'
+      || msg?.type === 'league_request'
+      || msg?.type === 'pending_league_approvals'
+      || msg?.meta?.pendingApprovals
+      || msg?.meta?.pendingLeagueApprovals
+    );
+  }
 
-    const flushList = () => {
-      if (!listItems.length) return;
-      chunks.push(`<ul class="inbox-body-list">${listItems.map((li) => `<li>${li}</li>`).join('')}</ul>`);
-      listItems = [];
-    };
+  function parseFactLines(body) {
+    const lines = String(body || '').split('\n');
+    const facts = [];
+    const rest = [];
+    let inFacts = false;
+    let sawBlankAfterFacts = false;
 
     for (const raw of lines) {
-      const line = String(raw || '');
-      const trimmed = line.trim();
+      const trimmed = String(raw || '').trim();
       if (!trimmed) {
-        flushList();
+        if (inFacts) {
+          sawBlankAfterFacts = true;
+          inFacts = false;
+        } else if (!sawBlankAfterFacts || rest.length) {
+          rest.push('');
+        }
         continue;
       }
-      if (/^[•\-–]\s+/.test(trimmed)) {
-        listItems.push(esc(trimmed.replace(/^[•\-–]\s+/, '')));
+      if (trimmed === 'NEW ACCOUNT CREATED' || trimmed === 'NEW LEAGUE REGISTRATION' || trimmed === 'PENDING APPROVALS' || trimmed === 'PENDING LEAGUE REQUESTS') {
         continue;
+      }
+      const factMatch = trimmed.match(/^([A-Za-z][A-Za-z /-]{0,24}):\s+(.+)$/);
+      if (factMatch && !sawBlankAfterFacts && !/^(http|Open |Use |After |Your |They )/i.test(trimmed)) {
+        inFacts = true;
+        facts.push({ label: factMatch[1], value: factMatch[2] });
+        continue;
+      }
+      if (/^[•\-–]\s+/.test(trimmed) && !sawBlankAfterFacts && facts.length) {
+        // keep bullet digests in rest as list lines
+        rest.push(trimmed);
+        continue;
+      }
+      sawBlankAfterFacts = true;
+      inFacts = false;
+      rest.push(trimmed);
+    }
+
+    return { facts, rest: rest.join('\n').trim() };
+  }
+
+  function formatBodyHtml(body, msg = null) {
+    const action = isActionNeeded(msg);
+    const parsed = action || /^(Name|Login|Email|Type|Source|League|Owner|Teams):/m.test(String(body || ''))
+      ? parseFactLines(body)
+      : { facts: [], rest: String(body || '') };
+
+    const chunks = [];
+    if (msg?.type === 'account_created') {
+      chunks.push('<p class="inbox-section">New account created</p>');
+    } else if (msg?.type === 'league_request') {
+      chunks.push('<p class="inbox-section">New league registration</p>');
+    } else if (msg?.type === 'pending_approvals') {
+      chunks.push('<p class="inbox-section">Pending approvals</p>');
+    } else if (msg?.type === 'pending_league_approvals') {
+      chunks.push('<p class="inbox-section">Pending league requests</p>');
+    }
+
+    if (parsed.facts.length) {
+      chunks.push(`<dl class="inbox-facts">${parsed.facts.map((f) => `
+        <div class="inbox-fact">
+          <dt>${esc(f.label)}</dt>
+          <dd>${esc(f.value)}</dd>
+        </div>`).join('')}</dl>`);
+    }
+
+    const restBody = parsed.rest || (!parsed.facts.length ? String(body || '') : '');
+    if (restBody) {
+      const lines = restBody.split('\n');
+      let listItems = [];
+      const flushList = () => {
+        if (!listItems.length) return;
+        chunks.push(`<ul class="inbox-body-list">${listItems.map((li) => `<li>${li}</li>`).join('')}</ul>`);
+        listItems = [];
+      };
+      for (const raw of lines) {
+        const line = String(raw || '');
+        const trimmed = line.trim();
+        if (!trimmed) {
+          flushList();
+          continue;
+        }
+        if (/^[•\-–]\s+/.test(trimmed)) {
+          listItems.push(esc(trimmed.replace(/^[•\-–]\s+/, '')));
+          continue;
+        }
+        flushList();
+        if (trimmed === 'RULE CHANGE' || trimmed === 'FEATURE REQUEST') continue;
+        if (isSectionHeading(trimmed)) {
+          chunks.push(`<p class="inbox-section">${esc(trimmed)}</p>`);
+        } else if (trimmed.startsWith('— ')) {
+          chunks.push(`<p class="inbox-signoff">${esc(trimmed)}</p>`);
+        } else if (/^(Open League Tools|Use the button below)/i.test(trimmed)) {
+          continue;
+        } else {
+          chunks.push(`<p class="inbox-p">${esc(trimmed)}</p>`);
+        }
       }
       flushList();
-      if (trimmed === 'RULE CHANGE' || trimmed === 'FEATURE REQUEST') {
-        continue;
-      }
-      if (isSectionHeading(trimmed)) {
-        chunks.push(`<p class="inbox-section">${esc(trimmed)}</p>`);
-      } else if (trimmed.startsWith('— ')) {
-        chunks.push(`<p class="inbox-signoff">${esc(trimmed)}</p>`);
-      } else {
-        chunks.push(`<p class="inbox-p">${esc(trimmed)}</p>`);
-      }
     }
-    flushList();
+
     return chunks.join('') || `<p class="inbox-p">${esc(body)}</p>`;
   }
 
@@ -243,20 +323,52 @@
           <a class="btn inbox-cta" href="${esc(href)}">${esc(label)}</a>
         </div>`;
     }
-    if (msg.meta?.digest && msg.meta?.href) {
-      const label = msg.type === 'roster_violations'
-        ? 'Open Roster Violations'
-        : msg.meta?.pendingApprovals
-          ? 'Open Owner Tools'
-          : msg.meta?.featureRequests || msg.meta?.ruleProposals
-            ? 'Open Inbox'
-            : 'Open';
+
+    let href = String(msg.meta?.href || msg.meta?.link || '').trim();
+    if (!href && (msg.type === 'account_created' || msg.type === 'pending_approvals' || msg.meta?.pendingApprovals)) {
+      href = '/league-tools.html#members';
+    }
+    if (!href && (msg.type === 'league_request' || msg.type === 'pending_league_approvals' || msg.meta?.pendingLeagueApprovals)) {
+      href = '/league-tools.html#league-requests';
+    }
+    if (!href) return '';
+
+    let label = msg.meta?.linkLabel || msg.meta?.hrefLabel || '';
+    let blurb = '';
+    if (!label) {
+      if (msg.type === 'account_created' || msg.type === 'pending_approvals' || msg.meta?.pendingApprovals) {
+        label = 'Approve or deny';
+        blurb = 'Open Member Access to approve or deny this account.';
+      } else if (msg.type === 'league_request' || msg.type === 'pending_league_approvals' || msg.meta?.pendingLeagueApprovals) {
+        label = 'Approve or deny';
+        blurb = 'Open League Requests to approve or deny this league.';
+      } else if (msg.type === 'roster_violations') {
+        label = 'Open Roster Violations';
+      } else if (msg.meta?.featureRequests || msg.meta?.ruleProposals) {
+        label = 'Open Inbox';
+      } else if (msg.type === 'league_invite' || msg.type === 'league_approved') {
+        label = 'Open league';
+      } else {
+        label = 'Open';
+      }
+    } else if (isActionNeeded(msg)) {
+      blurb = msg.type?.includes('league')
+        ? 'Jump to League Requests to take action.'
+        : 'Jump to Member Access to take action.';
+    }
+
+    if (isActionNeeded(msg)) {
       return `
-        <div class="inbox-cta-row">
-          <a class="btn inbox-cta" href="${esc(msg.meta.href)}">${esc(label)}</a>
+        <div class="inbox-cta-card">
+          ${blurb ? `<p class="inbox-cta-blurb">${esc(blurb)}</p>` : ''}
+          <a class="btn inbox-cta" href="${esc(href)}">${esc(label)}</a>
         </div>`;
     }
-    return '';
+
+    return `
+      <div class="inbox-cta-row">
+        <a class="btn inbox-cta" href="${esc(href)}">${esc(label)}</a>
+      </div>`;
   }
 
   function renderQuote(msg) {
@@ -347,9 +459,10 @@
     const unread = msg.unread ? ' is-unread' : '';
     const rule = isRuleChange(msg) ? ' is-rule' : '';
     const feature = isFeatureRequest(msg) ? ' is-feature' : '';
+    const action = isActionNeeded(msg) ? ' is-action' : '';
     const preview = previewText(msg.body);
     return `
-      <button type="button" class="inbox-row${unread}${active}${rule}${feature}" data-open-msg="${esc(msg.id)}" aria-current="${msg.id === selectedId ? 'true' : 'false'}">
+      <button type="button" class="inbox-row${unread}${active}${rule}${feature}${action}" data-open-msg="${esc(msg.id)}" aria-current="${msg.id === selectedId ? 'true' : 'false'}">
         <span class="inbox-row-dot" aria-hidden="true"></span>
         <span class="inbox-row-avatar" aria-hidden="true">${esc(initials(msg.fromName))}</span>
         <span class="inbox-row-main">
@@ -360,7 +473,7 @@
           <span class="inbox-row-subject">${esc(msg.subject)}</span>
           <span class="inbox-row-preview">${esc(preview)}</span>
         </span>
-        <span class="inbox-row-tag${isRuleChange(msg) ? ' is-rule' : ''}${isFeatureRequest(msg) ? ' is-feature' : ''}">${esc(typeTag(msg.type))}</span>
+        <span class="inbox-row-tag${isRuleChange(msg) ? ' is-rule' : ''}${isFeatureRequest(msg) ? ' is-feature' : ''}${isActionNeeded(msg) ? ' is-action' : ''}">${esc(typeTag(msg.type))}</span>
       </button>`;
   }
 
@@ -375,6 +488,7 @@
     }
     const rule = isRuleChange(msg);
     const feature = isFeatureRequest(msg);
+    const action = isActionNeeded(msg);
     const brandSrc = rule ? POWERDMS : CREST;
     const brandAlt = rule ? 'PowerDMS' : 'GridIron 24';
     const proposer = proposal?.authorName || msg.meta?.authorName || '';
@@ -383,7 +497,7 @@
       : '';
     const canReply = canSend && Boolean(msg.fromUserId);
     return `
-      <article class="inbox-letter${msg.unread ? ' is-unread' : ''}${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}" data-msg-id="${esc(msg.id)}" data-type="${esc(msg.type || '')}">
+      <article class="inbox-letter${msg.unread ? ' is-unread' : ''}${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}${action ? ' is-action' : ''}" data-msg-id="${esc(msg.id)}" data-type="${esc(msg.type || '')}">
         <div class="inbox-letter-toolbar">
           <button type="button" class="btn btn-ghost inbox-back" data-inbox-back>← Inbox</button>
           <div class="btn-row inbox-card-actions">
@@ -394,14 +508,11 @@
             ${msg.type === 'welcome' ? '' : `<button type="button" class="btn btn-ghost" data-del-msg="${esc(msg.id)}">Delete</button>`}
           </div>
         </div>
-        <header class="inbox-letter-head${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}">
+        <header class="inbox-letter-head${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}${action ? ' is-action' : ''}">
           <div class="inbox-letter-brand${rule ? ' is-rule-change' : ''}">
             <img class="inbox-crest${rule ? ' is-powerdms' : ''}" src="${brandSrc}" alt="${esc(brandAlt)}" width="${rule ? 220 : 96}" height="${rule ? 48 : 96}" decoding="async" />
-            <p class="inbox-eyebrow${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}">${esc(typeEyebrow(msg.type))}</p>
+            <p class="inbox-eyebrow${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}${action ? ' is-action' : ''}">${esc(typeEyebrow(msg.type))}</p>
           </div>
-          <h2 class="inbox-letter-subject">${esc(msg.subject)}</h2>
-          ${proposer && rule ? `<p class="inbox-proposer-line">Proposed by <strong>${esc(proposer)}</strong></p>` : ''}
-          ${proposer && feature ? `<p class="inbox-proposer-line">Requested by <strong>${esc(proposer)}</strong></p>` : ''}
           <div class="inbox-letter-meta">
             <span class="inbox-letter-avatar" aria-hidden="true">${esc(initials(msg.fromName))}</span>
             <div class="inbox-letter-from">
@@ -410,8 +521,11 @@
             </div>
             <time class="inbox-letter-when" datetime="${esc(msg.createdAt || '')}">${esc(fmtFullWhen(msg.createdAt))}</time>
           </div>
+          <h2 class="inbox-letter-subject">${esc(msg.subject)}</h2>
+          ${proposer && rule ? `<p class="inbox-proposer-line">Proposed by <strong>${esc(proposer)}</strong></p>` : ''}
+          ${proposer && feature ? `<p class="inbox-proposer-line">Requested by <strong>${esc(proposer)}</strong></p>` : ''}
         </header>
-        <div class="inbox-body">${formatBodyHtml(msg.body)}</div>
+        <div class="inbox-body">${formatBodyHtml(msg.body, msg)}</div>
         ${renderQuote(msg)}
         ${renderCta(msg)}
         ${related}

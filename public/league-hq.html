@@ -163,6 +163,160 @@
       resize: vertical;
       line-height: 1.45;
     }
+    .il-upload-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.45rem;
+    }
+    .il-upload-row img {
+      width: 3rem;
+      height: 3rem;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+    .il-upload-row input[type="file"] {
+      font-size: 0.82rem;
+    }
+    .il-manage-grid {
+      display: grid;
+      gap: 1rem;
+    }
+    @media (min-width: 900px) {
+      .il-manage-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+    }
+    .il-invite-row,
+    .il-member-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    }
+    .il-score-board {
+      display: grid;
+      gap: 0.85rem;
+    }
+    .il-matchup {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.65rem;
+      align-items: center;
+      padding: 0.85rem 0.95rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+    .il-matchup .side { min-width: 0; }
+    .il-matchup .side.is-right { text-align: right; }
+    .il-matchup .score {
+      font-family: var(--display), Bebas Neue, sans-serif;
+      font-size: 1.55rem;
+      letter-spacing: 0.04em;
+      color: #efd782;
+    }
+    .il-matchup .vs {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .il-week-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin: 0 0 1rem;
+    }
+    .il-week-bar select {
+      max-width: 8rem;
+    }
+    .il-pts {
+      font-variant-numeric: tabular-nums;
+      color: #efd782;
+      font-weight: 700;
+    }
+    .il-slot-roster {
+      --mock-qb: #ff6b6b;
+      --mock-rb: #3dd68c;
+      --mock-wr: #5b9dff;
+      --mock-te: #c084fc;
+      --mock-k: #f5b942;
+      --mock-dst: #94a3b8;
+      --mock-flex: #2dd4bf;
+      --mock-bn: #64748b;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .il-slot-roster-divider {
+      margin: 0.65rem 0 0.35rem;
+      padding: 0.25rem 0;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+    }
+    .il-slot-roster-row {
+      display: grid;
+      grid-template-columns: 3.1rem 1fr auto;
+      gap: 0.55rem;
+      align-items: center;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+    }
+    .il-slot-roster-row:last-child { border-bottom: 0; }
+    .il-slot-roster-row .slot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 1.55rem;
+      padding: 0.15rem 0.25rem;
+      border-radius: 0.25rem;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #0b1220;
+      background: var(--mock-bn);
+    }
+    .il-slot-roster-row .slot[data-pos="QB"] { background: var(--mock-qb); }
+    .il-slot-roster-row .slot[data-pos="RB"] { background: var(--mock-rb); }
+    .il-slot-roster-row .slot[data-pos="WR"] { background: var(--mock-wr); }
+    .il-slot-roster-row .slot[data-pos="TE"] { background: var(--mock-te); }
+    .il-slot-roster-row .slot[data-pos="K"] { background: var(--mock-k); }
+    .il-slot-roster-row .slot[data-pos="DST"],
+    .il-slot-roster-row .slot[data-pos="D/ST"] { background: var(--mock-dst); }
+    .il-slot-roster-row .slot[data-pos="FLEX"] { background: var(--mock-flex); }
+    .il-slot-roster-row .slot[data-pos="BN"],
+    .il-slot-roster-row .slot[data-pos="IR"] { background: var(--mock-bn); color: #e8eef8; }
+    .il-slot-roster-row .nm { min-width: 0; font-weight: 600; }
+    .il-slot-roster-row .nm .pro {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+    .il-slot-roster-row .nums {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: #efd782;
+    }
+    .il-slot-roster-row.is-empty .nm { color: var(--muted); font-weight: 500; }
+    .il-slot-roster-row.is-selected {
+      background: color-mix(in srgb, rgba(239, 215, 130, 0.12) 70%, transparent);
+    }
+    .il-team-link {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid color-mix(in srgb, #efd782 45%, transparent);
+    }
+    .il-team-link:hover { color: #efd782; }
     .il-rule-article {
       margin: 0 0 1.25rem;
       padding-bottom: 1rem;
@@ -391,7 +545,10 @@
 
     function statusBanner(league) {
       if (league.status === 'pending_approval') {
-        return `<div class="il-banner is-pending"><strong>Pending approval.</strong> Your league HQ is live at this URL for you — members unlock after the site owner approves. Fully separate from GridIron 24 and AAA.</div>`;
+        return `<div class="il-banner is-pending"><strong>Pending approval.</strong> After the site owner approves, open <a href="/create-league">Create a League</a> to set up the league.</div>`;
+      }
+      if (league.status === 'approved' && league.setupComplete === false) {
+        return `<div class="il-banner is-pending"><strong>Approved — setup required.</strong> <a href="/create-league">Set up your league</a>.</div>`;
       }
       if (league.status === 'rejected') {
         return `<div class="il-banner"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
@@ -410,20 +567,37 @@
       return [...map.values()];
     }
 
-    function standingsHtml(league) {
+    function standingsHtml(league, weekBoard = null) {
       const groups = franchisesByConf(league);
       if (!groups.length) return `<p class="il-empty">No franchises yet.</p>`;
-      return `<div class="il-split">${groups.map(({ conf, teams }) => `
+      const byId = new Map((weekBoard?.standings || []).map((s) => [s.franchiseId, s]));
+      return `<div class="il-split">${groups.map(({ conf, teams }) => {
+        const ranked = [...teams].sort((a, b) => {
+          const sa = byId.get(a.id);
+          const sb = byId.get(b.id);
+          if (!sa && !sb) return 0;
+          if (!sa) return 1;
+          if (!sb) return -1;
+          return (sb.wins - sa.wins) || (sb.pointsFor - sa.pointsFor);
+        });
+        return `
         <section class="il-panel">
           <h2>${esc(conf.name || conf.key)} Standings</h2>
           <ul class="il-team-list">
-            ${teams.map((t, i) => `
+            ${ranked.map((t, i) => {
+              const s = byId.get(t.id);
+              const record = s
+                ? `${s.wins}-${s.losses}${s.ties ? `-${s.ties}` : ''} · ${Number(s.pointsFor || 0).toFixed(1)} PF`
+                : '0-0';
+              return `
               <li>
-                <span>${i + 1}. ${esc(t.name || t.teamName || `Team ${i + 1}`)}</span>
-                <span class="il-meta">${esc(t.managerName || t.ownerName || 'Unclaimed')} · 0-0</span>
-              </li>`).join('') || '<li class="il-empty">No teams</li>'}
+                <span>${i + 1}. <a class="il-team-link" href="${esc(teamPath(t.id, weekBoard?.week))}">${esc(t.name || t.teamName || `Team ${i + 1}`)}</a></span>
+                <span class="il-meta">${esc(t.managerName || t.ownerName || 'Unclaimed')} · ${esc(record)}</span>
+              </li>`;
+            }).join('') || '<li class="il-empty">No teams</li>'}
           </ul>
-        </section>`).join('')}</div>`;
+        </section>`;
+      }).join('')}</div>`;
     }
 
     function formatRuleBody(text) {
@@ -439,7 +613,9 @@
         : (Array.isArray(rb.articles) ? rb.articles : []);
       const ownerArticles = sections.filter((a) => a.source === 'owner');
       const settingsArticles = sections.filter((a) => a.source !== 'owner');
-      const canEdit = Boolean(viewer?.isOwner || viewer?.isSiteOwner);
+      const canEdit = Boolean(viewer?.isOwner || viewer?.isSiteOwner)
+        && league.status !== 'pending_approval'
+        && league.status !== 'rejected';
 
       const settingsBlock = `
         <section class="il-panel">
@@ -508,7 +684,8 @@
       const s = league.settings || {};
       const st = league.structure || {};
       const ch = league.championship || {};
-      const locked = ['live', 'complete'].includes(String(league.draft?.status || ''));
+      const pendingLock = league.status === 'pending_approval' || league.status === 'rejected';
+      const locked = pendingLock || ['live', 'complete'].includes(String(league.draft?.status || ''));
       if (!viewer?.isOwner && !viewer?.isSiteOwner) {
         return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
           <section class="il-panel"><h2>League settings</h2>
@@ -516,8 +693,68 @@
           <p class="il-meta" style="margin-top:0.75rem;">Open the <strong>Rule Book</strong> page to read league rules.</p>
           </section>`;
       }
+      if (league.status === 'pending_approval') {
+        return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+          <section class="il-panel">
+            <h2>Waiting for approval</h2>
+            <p class="il-meta">You submitted <strong>${esc(league.brand?.name || league.slug)}</strong> — <strong>${esc(String(league.structure?.totalTeams || '—'))}</strong> teams · ${esc((league.leagueType === 'two-conferences' || (league.conferences || []).length === 2) ? 'two conferences' : 'one conference')}. After approval, set up the league on <a href="/create-league">Create a League</a>.</p>
+          </section>`;
+      }
+      if (league.status === 'approved' && league.setupComplete === false) {
+        return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+          <section class="il-panel">
+            <h2>Set up your league</h2>
+            <p class="il-meta">Approved. Complete setup on <a href="/create-league">Create a League</a> before Settings unlock here.</p>
+            <p class="il-actions" style="margin-top:0.85rem;"><a class="il-btn" href="/create-league">Open setup</a></p>
+          </section>`;
+      }
+      if (league.status === 'rejected') {
+        return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+          <section class="il-panel"><h2>League not approved</h2>
+          <p class="il-empty">Settings stay locked for rejected leagues.</p>
+          </section>`;
+      }
       return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
         <section class="il-panel">
+          <h2>Brand &amp; logos</h2>
+          <p class="il-meta">League logo appears on your HQ home. Conference logos show when you run two conferences.</p>
+          <div class="il-form is-wide" style="margin-top:0.85rem;">
+            <label>League logo
+              <div class="il-upload-row" data-asset="brandLogo">
+                ${league.brand?.logo || league.brand?.crest
+                  ? `<img src="${esc(league.brand.logo || league.brand.crest)}" alt="" />`
+                  : '<img alt="" hidden />'}
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+              </div>
+            </label>
+            <label>Login crest (optional)
+              <div class="il-upload-row" data-asset="brandCrest">
+                ${league.brand?.crest
+                  ? `<img src="${esc(league.brand.crest)}" alt="" />`
+                  : '<img alt="" hidden />'}
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+              </div>
+            </label>
+            ${(league.conferences || []).map((c, i) => `
+              <label>${esc(c.name || `Conference ${i + 1}`)} logo
+                <div class="il-upload-row" data-asset="conferenceLogo${i}">
+                  ${c.logo ? `<img src="${esc(c.logo)}" alt="" />` : '<img alt="" hidden />'}
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                </div>
+              </label>`).join('')}
+            <label>Championship logo
+              <div class="il-upload-row" data-asset="championshipLogo">
+                ${league.championship?.logo
+                  ? `<img src="${esc(league.championship.logo)}" alt="" />`
+                  : '<img alt="" hidden />'}
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+              </div>
+            </label>
+            <span class="il-status" id="il-logo-status" role="status"></span>
+          </div>
+          <p class="il-meta" style="margin-top:0.75rem;">Invite players and assign franchises on <a href="${esc((hqState.pages && hqState.pages.manage) || '#')}">Manage</a>.</p>
+        </section>
+        <section class="il-panel" style="margin-top:1rem;">
           <h2>Official draft</h2>
           <p class="il-meta">GridIron 24 stays on ESPN. This draft is local to your league and starts automatically at the time you set. Managers who are on the board make their own pick; if the clock hits zero, CPU autopicks for them.</p>
           <p class="il-meta" style="margin-top:0.55rem;">Everything here is owner-controlled. Structure, roster, scoring, draft, and playoffs feed the Rule Book. House rules live on the <a href="${esc((hqState.pages && hqState.pages.rulebook) || '#')}">Rule Book</a> page.</p>
@@ -694,6 +931,81 @@
         </section>`;
     }
 
+    function manageHtml(league, viewer = {}) {
+      const canManage = Boolean(viewer?.isOwner || viewer?.isSiteOwner);
+      if (!canManage) {
+        return `<h1 class="page-title">Manage</h1>${statusBanner(league)}
+          <section class="il-panel">
+            <h2>League management</h2>
+            <p class="il-empty">Only the league owner can invite players and assign franchises.</p>
+            <p class="il-meta" style="margin-top:0.75rem;">Claim an open franchise in <a href="${esc((hqState.pages && hqState.pages.settings) || '#')}">Settings</a>.</p>
+          </section>`;
+      }
+      if (league.setupComplete === false) {
+        return `<h1 class="page-title">Manage</h1>${statusBanner(league)}
+          <section class="il-panel">
+            <h2>Finish setup first</h2>
+            <p class="il-meta">Complete the <a href="/create-league">Create a League</a> wizard before inviting managers.</p>
+          </section>`;
+      }
+      const confs = league.conferences || [];
+      return `<h1 class="page-title">Manage</h1>${statusBanner(league)}
+        <div class="il-manage-grid">
+          <section class="il-panel">
+            <h2>Invite players</h2>
+            <p class="il-meta">Email an invite link. New accounts join this league automatically. Existing GridIron accounts are linked if that email already registered.</p>
+            <form class="il-form" id="il-invite-form" style="margin-top:0.85rem;">
+              <label>Email
+                <input type="email" name="email" required placeholder="manager@email.com" />
+              </label>
+              <label>Assign franchise (optional)
+                <select name="franchiseId">
+                  <option value="">Assign later</option>
+                  ${(league.franchises || []).map((f) =>
+                    `<option value="${esc(f.id)}">${esc(f.name)}${f.managerName ? ` · ${esc(f.managerName)}` : ' · open'}</option>`
+                  ).join('')}
+                </select>
+              </label>
+              <div class="il-actions">
+                <button type="submit" class="il-btn">Send invite</button>
+                <span class="il-status" id="il-invite-status" role="status"></span>
+              </div>
+            </form>
+            <div id="il-invite-list" style="margin-top:1rem;"><p class="il-meta">Loading invites…</p></div>
+          </section>
+          <section class="il-panel">
+            <h2>Members &amp; franchises</h2>
+            <p class="il-meta">Assign managers to seats. Rename franchises anytime.</p>
+            <div id="il-member-list" style="margin-top:0.75rem;"><p class="il-meta">Loading members…</p></div>
+            <h3 style="margin:1.25rem 0 0.5rem;">Franchise seats</h3>
+            <ul class="il-team-list" id="il-franchise-manage">
+              ${(league.franchises || []).map((f) => {
+                const conf = confs.find((c) => c.key === f.conferenceKey);
+                return `
+                <li style="flex-direction:column;align-items:stretch;gap:0.45rem;">
+                  <div style="display:flex;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
+                    <span><strong>${esc(f.name)}</strong>
+                      <span class="il-meta">· ${esc(conf?.shortName || conf?.name || f.conferenceKey || '')}
+                      · ${esc(f.managerName || 'Open')}</span>
+                    </span>
+                  </div>
+                  <div class="il-form" style="display:grid;grid-template-columns:1fr auto;gap:0.4rem;margin:0;">
+                    <input type="text" data-rename-name="${esc(f.id)}" value="${esc(f.name)}" maxlength="48" />
+                    <button type="button" class="il-btn is-ghost" data-rename="${esc(f.id)}">Rename</button>
+                  </div>
+                  <label class="il-meta" style="display:grid;gap:0.25rem;text-transform:none;letter-spacing:0;font-weight:500;">
+                    Manager
+                    <select data-assign="${esc(f.id)}">
+                      <option value="">Open seat</option>
+                    </select>
+                  </label>
+                </li>`;
+              }).join('') || '<li class="il-empty">No franchises</li>'}
+            </ul>
+          </section>
+        </div>`;
+    }
+
     function scoringFieldsHtml(scoring) {
       const num = (key, label, step = '1') => `
         <label>${esc(label)}
@@ -753,40 +1065,229 @@
         </div>`;
     }
 
-    function rosterPanel(franchise) {
+    function teamPath(franchiseId, week) {
+      const base = (hqState.pages && hqState.pages.team) || '#';
+      const params = new URLSearchParams();
+      if (franchiseId) params.set('franchiseId', franchiseId);
+      if (week) params.set('week', String(week));
+      const q = params.toString();
+      return q ? `${base}?${q}` : base;
+    }
+
+    function posBadge(slot, position) {
+      const s = String(slot || position || 'BN').toUpperCase();
+      if (s === 'D/ST') return 'DST';
+      return s;
+    }
+
+    function slotRosterHtml(scoredFranchise, franchise, rosterSlots = {}) {
+      const starters = Array.isArray(scoredFranchise?.starters) ? scoredFranchise.starters : [];
+      const bench = Array.isArray(scoredFranchise?.bench) ? scoredFranchise.bench : [];
+      const rawRoster = Array.isArray(franchise?.roster) ? franchise.roster : [];
+
+      // If no scored lineup yet, show raw roster as unselected pool.
+      if (!starters.length && !bench.length) {
+        if (!rawRoster.length) return `<p class="il-empty">No drafted players yet.</p>`;
+        return `<ul class="il-slot-roster" role="list">
+          <li class="il-slot-roster-divider">Roster</li>
+          ${rawRoster.map((p) => `
+            <li class="il-slot-roster-row">
+              <span class="slot" data-pos="${esc(posBadge(p.position))}">${esc(posBadge(p.position))}</span>
+              <span class="nm">${esc(p.name || p.playerName || 'Player')}
+                <span class="pro">${esc(p.nflTeam || p.team || '')}${p.round != null ? ` · Rd ${esc(p.round)}` : ''}</span>
+              </span>
+              <span class="nums">—</span>
+            </li>`).join('')}
+        </ul>`;
+      }
+
+      const slots = rosterSlots || {};
+      const needed = [];
+      ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K'].forEach((key) => {
+        const n = Number(slots[key]) || 0;
+        for (let i = 0; i < n; i += 1) needed.push(key);
+      });
+      const filled = [...starters];
+      while (filled.length < needed.length) {
+        const slot = needed[filled.length];
+        filled.push({
+          slot,
+          position: slot,
+          name: 'Empty',
+          weekPoints: null,
+          isStarter: true,
+          empty: true
+        });
+      }
+
+      const total = scoredFranchise?.total != null ? Number(scoredFranchise.total).toFixed(1) : null;
+      return `
+        ${total != null ? `<p class="il-meta" style="margin:0 0 0.55rem;">Selected lineup · week total <span class="il-pts">${esc(total)}</span></p>` : ''}
+        <ul class="il-slot-roster" role="list">
+          ${filled.map((p) => `
+            <li class="il-slot-roster-row ${p.empty ? 'is-empty' : 'is-selected'}">
+              <span class="slot" data-pos="${esc(posBadge(p.slot || p.position))}">${esc(posBadge(p.slot || p.position))}</span>
+              <span class="nm">${esc(p.empty ? '—' : (p.name || p.playerName || 'Player'))}
+                <span class="pro">${p.empty ? 'Open slot' : `${esc(p.nflTeam || p.team || p.position || '')}${p.isStarter !== false ? ' · selected' : ''}`}</span>
+              </span>
+              <span class="nums">${p.weekPoints != null ? Number(p.weekPoints).toFixed(1) : '—'}</span>
+            </li>`).join('')}
+          ${bench.length ? `<li class="il-slot-roster-divider" aria-hidden="true">Bench</li>${bench.map((p) => `
+            <li class="il-slot-roster-row">
+              <span class="slot" data-pos="BN">BN</span>
+              <span class="nm">${esc(p.name || p.playerName || 'Player')}
+                <span class="pro">${esc(p.nflTeam || p.team || p.position || '')} · not started</span>
+              </span>
+              <span class="nums">${p.weekPoints != null ? Number(p.weekPoints).toFixed(1) : '—'}</span>
+            </li>`).join('')}` : ''}
+        </ul>`;
+    }
+
+    function rosterPanel(franchise, scoredFranchise = null, opts = {}) {
+      const compact = Boolean(opts.compact);
+      const slots = hqState.league?.settings?.rosterSlots || {};
+      if (!compact) return slotRosterHtml(scoredFranchise, franchise, slots);
+      // Compact list for multi-team browse pages
+      const scoredPlayers = scoredFranchise?.players || null;
       const roster = Array.isArray(franchise?.roster) ? franchise.roster : [];
-      if (!roster.length) return `<p class="il-empty">No drafted players yet.</p>`;
-      return `<ul class="il-roster-list">${roster.map((p) => `
+      if (!roster.length && !(scoredPlayers || []).length) {
+        return `<p class="il-empty">No drafted players yet.</p>`;
+      }
+      const starters = scoredFranchise?.starters || [];
+      const bench = scoredFranchise?.bench || [];
+      const rows = starters.length || bench.length
+        ? [...starters.map((p) => ({ ...p, selected: true })), ...bench.map((p) => ({ ...p, selected: false }))]
+        : roster;
+      const total = scoredFranchise?.total != null ? Number(scoredFranchise.total).toFixed(1) : null;
+      return `
+        ${total != null ? `<p class="il-meta" style="margin:0 0 0.45rem;">Week <span class="il-pts">${esc(total)}</span></p>` : ''}
+        <ul class="il-roster-list">${rows.map((p) => `
         <li>
-          <span><strong>${esc(p.position || '')}</strong> ${esc(p.name || p.playerName || 'Player')}</span>
-          <span class="il-meta">Rd ${esc(p.round ?? '—')} · #${esc(p.draftOverall ?? '—')}</span>
+          <span><strong>${esc(p.slot || p.position || '')}</strong> ${esc(p.name || p.playerName || 'Player')}
+            ${p.selected === false || p.isStarter === false ? ' <span class="il-meta">bench</span>' : (p.selected || p.isStarter ? ' <span class="il-meta">selected</span>' : '')}</span>
+          <span class="il-pts">${p.weekPoints != null ? Number(p.weekPoints).toFixed(1) : '—'}</span>
         </li>`).join('')}</ul>`;
     }
 
-    function teamRostersHtml(league) {
+    function teamRostersHtml(league, weekBoard = null) {
+      const scoredById = new Map((weekBoard?.franchises || []).map((f) => [f.franchiseId, f]));
+      const week = weekBoard?.week;
       const groups = franchisesByConf(league);
       return `<div class="il-split">${groups.map(({ conf, teams }) => `
         <section class="il-panel">
           <h2>${esc(conf.name || conf.key)}</h2>
           ${teams.map((t) => `
             <div style="margin:0 0 1rem;">
-              <p class="il-meta" style="margin:0 0 0.35rem;"><strong>${esc(t.name)}</strong> · ${esc(t.managerName || 'Open')}</p>
-              ${rosterPanel(t)}
+              <p class="il-meta" style="margin:0 0 0.35rem;">
+                <a class="il-team-link" href="${esc(teamPath(t.id, week))}"><strong>${esc(t.name)}</strong></a>
+                · ${esc(t.managerName || 'Open')}
+              </p>
+              ${rosterPanel(t, scoredById.get(t.id) || null, { compact: true })}
             </div>`).join('') || '<p class="il-empty">No teams</p>'}
         </section>`).join('')}</div>`;
     }
 
-    function myRosterHtml(league, viewerId) {
+    function myRosterHtml(league, viewerId, weekBoard = null) {
       const mine = (league.franchises || []).find((f) => f.managerUserId && f.managerUserId === viewerId);
       if (!mine) {
         return `<section class="il-panel"><h2>My Team</h2>
           <p class="il-empty">Claim a franchise in Settings to see your roster here.</p></section>`;
       }
-      return `<section class="il-panel">
-        <h2>${esc(mine.name)}</h2>
-        <p class="il-meta" style="margin:0 0 0.75rem;">${esc(mine.managerName || 'You')}</p>
-        ${rosterPanel(mine)}
-      </section>`;
+      const scored = (weekBoard?.franchises || []).find((f) => f.franchiseId === mine.id) || null;
+      const week = weekBoard?.week;
+      return teamPageBody(league, mine, scored, week);
+    }
+
+    function teamPageBody(league, franchise, scored, week) {
+      const conf = (league.conferences || []).find((c) => c.key === franchise.conferenceKey);
+      const weeks = hqState.weekBoard?.availableWeeks?.length
+        ? hqState.weekBoard.availableWeeks
+        : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+      const currentWeek = week || hqState.weekBoard?.week || weeks[weeks.length - 1] || 1;
+      return `
+        <div class="il-week-bar">
+          <label class="il-meta" style="display:flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
+            Week
+            <select id="il-team-week" data-franchise="${esc(franchise.id)}">
+              ${weeks.map((w) => `<option value="${w}" ${Number(w) === Number(currentWeek) ? 'selected' : ''}>${w}</option>`).join('')}
+            </select>
+          </label>
+          <span class="il-meta">${esc(conf?.name || '')}${franchise.managerName ? ` · ${esc(franchise.managerName)}` : ''}</span>
+        </div>
+        <section class="il-panel">
+          <h2>${esc(franchise.name)}</h2>
+          <p class="il-meta" style="margin:0 0 0.75rem;">Selected starters count toward the scoreboard. Bench players are owned but not started this week.</p>
+          ${slotRosterHtml(scored, franchise, league.settings?.rosterSlots || {})}
+        </section>`;
+    }
+
+    function teamPageHtml(league, viewer = {}, weekBoard = null) {
+      const params = new URLSearchParams(location.search || '');
+      let franchiseId = params.get('franchiseId') || '';
+      if (!franchiseId && viewer?.id) {
+        const mine = (league.franchises || []).find((f) => f.managerUserId === viewer.id);
+        if (mine) franchiseId = mine.id;
+      }
+      const franchise = (league.franchises || []).find((f) => f.id === franchiseId) || null;
+      if (!franchise) {
+        return `<h1 class="page-title">Team</h1>${statusBanner(league)}
+          <section class="il-panel">
+            <h2>Pick a team</h2>
+            <ul class="il-team-list">
+              ${(league.franchises || []).map((f) => `
+                <li>
+                  <a class="il-team-link" href="${esc(teamPath(f.id, weekBoard?.week))}">${esc(f.name)}</a>
+                  <span class="il-meta">${esc(f.managerName || 'Open')}</span>
+                </li>`).join('') || '<li class="il-empty">No franchises</li>'}
+            </ul>
+          </section>`;
+      }
+      const scored = (weekBoard?.franchises || []).find((f) => f.franchiseId === franchise.id) || null;
+      return `<h1 class="page-title">${esc(franchise.name)}</h1>${statusBanner(league)}
+        <div id="il-week-scored">${teamPageBody(league, franchise, scored, weekBoard?.week)}</div>`;
+    }
+
+    function scoreboardShell(league, weekBoard = null) {
+      const weeks = weekBoard?.availableWeeks?.length
+        ? weekBoard.availableWeeks
+        : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+      const week = weekBoard?.week || weeks[weeks.length - 1] || 1;
+      const matchups = weekBoard?.matchups || [];
+      return `
+        <h1 class="page-title">Scoreboard</h1>${statusBanner(league)}
+        <div class="il-week-bar">
+          <label class="il-meta" style="display:flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
+            Week
+            <select id="il-score-week">
+              ${weeks.map((w) => `<option value="${w}" ${Number(w) === Number(week) ? 'selected' : ''}>${w}</option>`).join('')}
+            </select>
+          </label>
+          <span class="il-meta" id="il-score-meta">
+            ${weekBoard
+              ? (weekBoard.statsReady
+                ? `NFL ${esc(String(weekBoard.sourceSeason))} · ${esc(String(weekBoard.playerStatCount))} player rows · ${esc(weekBoard.scoringPreset || 'custom')} scoring`
+                : 'Waiting on weekly NFL stats for this season.')
+              : 'Loading week scores…'}
+          </span>
+        </div>
+        <section class="il-panel">
+          <div class="il-score-board" id="il-score-board">
+            ${matchups.length ? matchups.map((m) => `
+              <article class="il-matchup">
+                <div class="side">
+                  <div><a class="il-team-link" href="${esc(teamPath(m.home?.franchiseId, week))}"><strong>${esc(m.home?.name || 'Home')}</strong></a></div>
+                  <div class="il-meta">${esc(m.home?.managerName || '')}</div>
+                  <div class="score">${Number(m.homeScore || 0).toFixed(1)}</div>
+                </div>
+                <div class="vs">vs</div>
+                <div class="side is-right">
+                  <div><a class="il-team-link" href="${esc(teamPath(m.away?.franchiseId, week))}"><strong>${esc(m.away?.name || 'Away')}</strong></a></div>
+                  <div class="il-meta">${esc(m.away?.managerName || '')}</div>
+                  <div class="score">${Number(m.awayScore || 0).toFixed(1)}</div>
+                </div>
+              </article>`).join('') : '<p class="il-empty">No matchups yet — draft franchises first.</p>'}
+          </div>
+        </section>`;
     }
 
     function draftResultsHtml(league) {
@@ -890,7 +1391,90 @@
 
     let draftPollTimer = null;
     let draftClockTimer = null;
-    let hqState = { league: null, viewer: null, pages: {}, slug: '' };
+    let hqState = { league: null, viewer: null, pages: {}, slug: '', weekBoard: null };
+
+    async function loadWeekBoard(week) {
+      const league = hqState.league;
+      if (!league?.id) return null;
+      const q = week ? `?week=${encodeURIComponent(week)}` : '';
+      const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/scoreboard${q}`, {
+        cache: 'no-store'
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load scores');
+      hqState.weekBoard = data;
+      return data;
+    }
+
+    function renderWeekSection(section) {
+      const root = document.getElementById('il-week-scored');
+      const league = hqState.league;
+      if (!root || !league) return;
+      if (section === 'scoreboard') {
+        root.outerHTML = `<div id="il-week-scored">${scoreboardShell(league, hqState.weekBoard)}</div>`;
+        wireScoreboardUi();
+        return;
+      }
+      if (section === 'standings') {
+        root.innerHTML = standingsHtml(league, hqState.weekBoard);
+        return;
+      }
+      if (section === 'team-rosters') {
+        root.innerHTML = teamRostersHtml(league, hqState.weekBoard);
+        return;
+      }
+      if (section === 'my-roster') {
+        root.innerHTML = myRosterHtml(league, hqState.viewer?.id, hqState.weekBoard);
+        wireTeamWeekUi();
+        return;
+      }
+      if (section === 'team') {
+        const params = new URLSearchParams(location.search || '');
+        const franchiseId = params.get('franchiseId');
+        const franchise = (league.franchises || []).find((f) => f.id === franchiseId);
+        if (!franchise) {
+          document.getElementById('il-root').innerHTML = teamPageHtml(league, hqState.viewer, hqState.weekBoard);
+          return;
+        }
+        const scored = (hqState.weekBoard?.franchises || []).find((f) => f.franchiseId === franchise.id) || null;
+        root.innerHTML = teamPageBody(league, franchise, scored, hqState.weekBoard?.week);
+        wireTeamWeekUi();
+      }
+    }
+
+    function wireTeamWeekUi() {
+      const sel = document.getElementById('il-team-week');
+      sel?.addEventListener('change', async () => {
+        const franchiseId = sel.getAttribute('data-franchise');
+        try {
+          await loadWeekBoard(sel.value);
+          const section = parsePath().section;
+          if (section === 'team' && franchiseId) {
+            const url = new URL(location.href);
+            url.searchParams.set('franchiseId', franchiseId);
+            url.searchParams.set('week', sel.value);
+            history.replaceState({}, '', url);
+          }
+          renderWeekSection(section === 'my-roster' ? 'my-roster' : 'team');
+        } catch (err) {
+          alert(err.message || 'Could not load week');
+        }
+      });
+    }
+
+    function wireScoreboardUi() {
+      const sel = document.getElementById('il-score-week');
+      sel?.addEventListener('change', async () => {
+        const meta = document.getElementById('il-score-meta');
+        try {
+          if (meta) meta.textContent = 'Loading…';
+          await loadWeekBoard(sel.value);
+          renderWeekSection('scoreboard');
+        } catch (err) {
+          if (meta) meta.textContent = err.message || 'Could not load week';
+        }
+      });
+    }
 
     function sectionHtml(section, league, pages, viewer = {}) {
       const name = league.brand?.name || league.slug;
@@ -904,11 +1488,11 @@
               ? `<img src="${esc(league.brand.logo || league.brand.crest)}" alt="${esc(name)}" width="320" height="320" decoding="async" />`
               : ''}
             <h1 class="page-title" style="margin:0;">${esc(name)}</h1>
-            <p class="tag">${esc(league.brand?.tagline || `${league.structure?.totalTeams || '—'} teams · Two conferences · One champion`)}</p>
+            <p class="tag">${esc(league.brand?.tagline || `${league.structure?.totalTeams || '—'} teams`)}</p>
           </div>
           ${statusBanner(league)}
           <div class="il-grid">
-            ${standingsHtml(league)}
+            ${standingsHtml(league, hqState.weekBoard)}
             <section class="il-panel">
               <h2>League overview</h2>
               <p class="il-meta">
@@ -921,7 +1505,9 @@
                 Draft: <strong>${esc(league.draft?.status || 'scheduled')}</strong> · ${esc(draftAt)}
               </p>
               <p class="il-meta" style="margin-top:0.75rem;">
-                <a href="${esc(pages.settings || '#')}">League settings</a>
+                <a href="${esc(pages.scoreboard || '#')}">Scoreboard</a>
+                · <a href="${esc(pages.settings || '#')}">League settings</a>
+                · <a href="${esc(pages.manage || '#')}">Manage</a>
                 · <a href="${esc(pages.draft || '#')}">Draft board</a>
               </p>
             </section>
@@ -933,9 +1519,11 @@
         schedules: 'Schedules',
         'my-roster': 'My Team',
         'team-rosters': 'Team Rosters',
+        team: 'Team',
         rankings: 'Rankings',
         draft: 'Draft',
         settings: 'Settings',
+        manage: 'Manage',
         transactions: 'Transactions',
         playoffs: 'Playoff Bracket',
         calendar: 'Calendar',
@@ -946,16 +1534,28 @@
       const title = titles[section] || section;
 
       if (section === 'standings') {
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${standingsHtml(league)}`;
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+          <div id="il-week-scored">${standingsHtml(league, hqState.weekBoard)}</div>`;
       }
       if (section === 'team-rosters') {
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${teamRostersHtml(league)}`;
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+          <div id="il-week-scored">${teamRostersHtml(league, hqState.weekBoard)}</div>`;
       }
       if (section === 'my-roster') {
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${myRosterHtml(league, viewer.id)}`;
+        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+          <div id="il-week-scored">${myRosterHtml(league, viewer.id, hqState.weekBoard)}</div>`;
+      }
+      if (section === 'team') {
+        return teamPageHtml(league, viewer, hqState.weekBoard);
+      }
+      if (section === 'scoreboard') {
+        return `<div id="il-week-scored">${scoreboardShell(league, hqState.weekBoard)}</div>`;
       }
       if (section === 'settings') {
         return settingsHtml(league, viewer);
+      }
+      if (section === 'manage') {
+        return manageHtml(league, viewer);
       }
       if (section === 'rulebook') {
         return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${rulebookHtml(league, viewer)}`;
@@ -1172,6 +1772,55 @@
         return data.league;
       }
 
+      function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Could not read file'));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      document.querySelectorAll('.il-upload-row[data-asset]').forEach((row) => {
+        const input = row.querySelector('input[type="file"]');
+        const img = row.querySelector('img');
+        const status = document.getElementById('il-logo-status');
+        input?.addEventListener('change', async () => {
+          const file = input.files && input.files[0];
+          if (!file) return;
+          try {
+            if (status) {
+              status.textContent = 'Uploading…';
+              status.className = 'il-status';
+            }
+            const dataUrl = await fileToDataUrl(file);
+            const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/asset`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ assetType: row.dataset.asset, dataUrl })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+            hqState.league = data.league;
+            if (img && data.url) {
+              img.src = data.url;
+              img.hidden = false;
+            }
+            if (status) {
+              status.textContent = 'Logo saved.';
+              status.className = 'il-status is-ok';
+            }
+          } catch (err) {
+            if (status) {
+              status.textContent = err.message || 'Upload failed';
+              status.className = 'il-status is-err';
+            }
+          } finally {
+            input.value = '';
+          }
+        });
+      });
+
       document.getElementById('il-settings-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const status = document.getElementById('il-settings-status');
@@ -1337,6 +1986,194 @@
       });
     }
 
+    async function wireManageUi() {
+      const league = hqState.league;
+      if (!league || !(hqState.viewer?.isOwner || hqState.viewer?.isSiteOwner)) return;
+      if (league.setupComplete === false) return;
+
+      const inviteList = document.getElementById('il-invite-list');
+      const memberList = document.getElementById('il-member-list');
+      let members = [];
+
+      async function refreshInvites() {
+        if (!inviteList) return;
+        try {
+          const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/invites`, { cache: 'no-store' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load invites');
+          const rows = data.invites || [];
+          if (!rows.length) {
+            inviteList.innerHTML = '<p class="il-empty">No invites yet.</p>';
+            return;
+          }
+          inviteList.innerHTML = rows.map((inv) => `
+            <div class="il-invite-row">
+              <span>${esc(inv.email)} <span class="il-meta">· ${esc(inv.status)}</span></span>
+              <span style="display:flex;gap:0.35rem;">
+                ${inv.status === 'pending' || inv.status === 'expired'
+                  ? `<button type="button" class="il-btn is-ghost" data-resend="${esc(inv.id)}">Resend</button>
+                     <button type="button" class="il-btn is-ghost" data-revoke="${esc(inv.id)}">Revoke</button>`
+                  : ''}
+              </span>
+            </div>`).join('');
+          inviteList.querySelectorAll('[data-resend]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              try {
+                const res2 = await fetch(
+                  `/api/independent-leagues/${encodeURIComponent(league.id)}/invites/${encodeURIComponent(btn.getAttribute('data-resend'))}/resend`,
+                  { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }
+                );
+                const d = await res2.json().catch(() => ({}));
+                if (!res2.ok || !d.ok) throw new Error(d.error || 'Resend failed');
+                const status = document.getElementById('il-invite-status');
+                if (status) {
+                  status.textContent = d.sent ? 'Invite resent.' : (d.inviteUrl ? `Copy link: ${d.inviteUrl}` : 'Invite refreshed.');
+                  status.className = 'il-status is-ok';
+                }
+                await refreshInvites();
+              } catch (err) {
+                alert(err.message);
+              }
+            });
+          });
+          inviteList.querySelectorAll('[data-revoke]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              try {
+                const res2 = await fetch(
+                  `/api/independent-leagues/${encodeURIComponent(league.id)}/invites/${encodeURIComponent(btn.getAttribute('data-revoke'))}`,
+                  { method: 'DELETE' }
+                );
+                const d = await res2.json().catch(() => ({}));
+                if (!res2.ok || !d.ok) throw new Error(d.error || 'Revoke failed');
+                await refreshInvites();
+              } catch (err) {
+                alert(err.message);
+              }
+            });
+          });
+        } catch (err) {
+          inviteList.innerHTML = `<p class="il-empty">${esc(err.message)}</p>`;
+        }
+      }
+
+      function fillAssignSelects() {
+        document.querySelectorAll('[data-assign]').forEach((sel) => {
+          const fid = sel.getAttribute('data-assign');
+          const franchise = (hqState.league.franchises || []).find((f) => f.id === fid);
+          const current = franchise?.managerUserId || '';
+          sel.innerHTML = `<option value="">Open seat</option>${members.map((m) =>
+            `<option value="${esc(m.id)}" ${m.id === current ? 'selected' : ''}>${esc(m.name || m.loginName)}${m.isOwner ? ' · owner' : ''}</option>`
+          ).join('')}`;
+        });
+      }
+
+      async function refreshMembers() {
+        if (!memberList) return;
+        try {
+          const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/members`, { cache: 'no-store' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load members');
+          members = data.members || [];
+          memberList.innerHTML = members.length
+            ? members.map((m) => `
+              <div class="il-member-row">
+                <span>${esc(m.name || m.loginName)}
+                  <span class="il-meta">· ${esc(m.email || '')}${m.isOwner ? ' · owner' : ''}
+                  ${m.franchiseName ? ` · ${esc(m.franchiseName)}` : ' · no franchise'}</span>
+                </span>
+              </div>`).join('')
+            : '<p class="il-empty">No members yet — send an invite.</p>';
+          fillAssignSelects();
+        } catch (err) {
+          memberList.innerHTML = `<p class="il-empty">${esc(err.message)}</p>`;
+        }
+      }
+
+      document.getElementById('il-invite-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-invite-status');
+        const fd = new FormData(e.target);
+        try {
+          const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/invites`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: String(fd.get('email') || '').trim(),
+              franchiseId: String(fd.get('franchiseId') || '').trim() || null
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Invite failed');
+          if (data.league) hqState.league = data.league;
+          if (status) {
+            let msg = data.message || 'Done.';
+            if (!data.attached && data.inviteUrl && !data.sent) msg += ` Link: ${data.inviteUrl}`;
+            status.textContent = msg;
+            status.className = 'il-status is-ok';
+          }
+          e.target.reset();
+          await refreshInvites();
+          await refreshMembers();
+          if (data.league) {
+            document.getElementById('il-root').innerHTML = manageHtml(data.league, hqState.viewer);
+            wireManageUi();
+          }
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+
+      document.querySelectorAll('[data-assign]').forEach((sel) => {
+        sel.addEventListener('change', async () => {
+          try {
+            const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/franchises/assign`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                franchiseId: sel.getAttribute('data-assign'),
+                userId: sel.value || null
+              })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Assign failed');
+            hqState.league = data.league;
+            document.getElementById('il-root').innerHTML = manageHtml(data.league, hqState.viewer);
+            wireManageUi();
+          } catch (err) {
+            alert(err.message);
+            await refreshMembers();
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-rename]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const fid = btn.getAttribute('data-rename');
+          const input = document.querySelector(`[data-rename-name="${CSS.escape(fid)}"]`);
+          try {
+            const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/franchises/rename`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ franchiseId: fid, name: input?.value || '' })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Rename failed');
+            hqState.league = data.league;
+            document.getElementById('il-root').innerHTML = manageHtml(data.league, hqState.viewer);
+            wireManageUi();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+
+      await refreshInvites();
+      await refreshMembers();
+    }
+
     async function boot() {
       const root = document.getElementById('il-root');
       const { slug, section } = parsePath();
@@ -1377,9 +2214,21 @@
         if (section === 'draft') {
           await loadDraftBoard();
         } else {
+          const needsScores = ['home', 'scoreboard', 'standings', 'team-rosters', 'my-roster', 'team'].includes(section);
+          if (needsScores) {
+            try {
+              const weekParam = new URLSearchParams(location.search || '').get('week');
+              await loadWeekBoard(weekParam || undefined);
+            } catch (scoreErr) {
+              console.warn('[independent] week score', scoreErr.message || scoreErr);
+            }
+          }
           root.innerHTML = sectionHtml(section === 'home' ? 'home' : section, league, data.pages || {}, hqState.viewer);
           if (section === 'settings') wireSettingsUi();
+          if (section === 'manage') wireManageUi();
           if (section === 'rulebook') wireRulebookUi();
+          if (section === 'scoreboard') wireScoreboardUi();
+          if (section === 'team' || section === 'my-roster') wireTeamWeekUi();
         }
         window.GridIronNav?.setSync(league.brand?.name || 'League HQ', true);
       } catch (err) {

@@ -120,7 +120,9 @@
 
       let banner = '';
       if (league.status === 'pending_approval') {
-        banner = `<div class="banner">Your league request is with the site owner. You can review this outline now — live scoring, invites, and manager tools unlock after approval.</div>`;
+        banner = `<div class="banner">Registration is with the site owner. After approval, open <a href="/create-league">Create a League</a> to set up the league.</div>`;
+      } else if (league.status === 'approved' && league.setupComplete === false) {
+        banner = `<div class="banner">Approved. <a href="/create-league">Set up your league</a>.</div>`;
       } else if (league.status === 'rejected') {
         banner = `<div class="banner bad"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
       } else if (league.status === 'approved') {
@@ -152,21 +154,28 @@
         <div class="meta-grid">
           <div class="meta-card">
             <h3>Structure</h3>
-            <p>${esc(String(league.structure?.totalTeams || '—'))} teams · ${esc(String(league.structure?.teamsPerConference || '—'))} per conference<br/>
+            <p>${esc(String(league.structure?.totalTeams || '—'))} teams
+            ${league.status === 'pending_approval'
+              ? '<br/>Conferences, playoffs, and championship details are set in HQ after approval.'
+              : `<br/>${esc(String(league.structure?.teamsPerConference || '—'))} per conference<br/>
             Playoffs: ${esc(String(league.structure?.playoffTeamCount || '—'))} teams · Weeks ${(league.structure?.playoffWeeks || []).join(', ') || '—'}<br/>
-            ${esc(league.championship?.name || 'Championship')} · weeks ${esc(String(league.championship?.titleWeek || '—'))} / ${esc(String(league.championship?.bowlWeek || '—'))}</p>
+            ${esc(league.championship?.name || 'Championship')} · weeks ${esc(String(league.championship?.titleWeek || '—'))} / ${esc(String(league.championship?.bowlWeek || '—'))}`}</p>
           </div>
           <div class="meta-card">
             <h3>Roster &amp; scoring</h3>
-            <p>Preset: ${esc(scoring)}<br/>
+            <p>${league.status === 'pending_approval'
+              ? 'Configured in league HQ after approval.'
+              : `Preset: ${esc(scoring)}<br/>
             QB${slots.QB ?? '—'} RB${slots.RB ?? '—'} WR${slots.WR ?? '—'} TE${slots.TE ?? '—'}
-            FLEX${slots.FLEX ?? '—'} D/ST${slots.DST ?? '—'} K${slots.K ?? '—'} BN${slots.BN ?? '—'}</p>
+            FLEX${slots.FLEX ?? '—'} D/ST${slots.DST ?? '—'} K${slots.K ?? '—'} BN${slots.BN ?? '—'}`}</p>
           </div>
           <div class="meta-card">
             <h3>Payouts</h3>
-            <p>${esc(league.payouts?.seasonLabel || '')} · $${esc(String(league.payouts?.buyInPerTeam ?? 0))} buy-in</p>
-            <ul>${(league.payouts?.prizes || []).slice(0, 6).map((p) =>
-              `<li>${esc(p.label)} — $${esc(String(p.amount))}</li>`).join('')}</ul>
+            <p>${league.status === 'pending_approval'
+              ? 'Configured in league HQ after approval.'
+              : `${esc(league.payouts?.seasonLabel || '')} · $${esc(String(league.payouts?.buyInPerTeam ?? 0))} buy-in`}</p>
+            ${league.status === 'pending_approval' ? '' : `<ul>${(league.payouts?.prizes || []).slice(0, 6).map((p) =>
+              `<li>${esc(p.label)} — $${esc(String(p.amount))}</li>`).join('')}</ul>`}
           </div>
           <div class="meta-card">
             <h3>Platform</h3>

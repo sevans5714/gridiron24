@@ -66,7 +66,9 @@ function publicInvite(invite) {
     acceptedAt: invite.acceptedAt || null,
     invitedByName: invite.invitedByName || null,
     loungeOnly: Boolean(invite.loungeOnly),
-    accountType: invite.loungeOnly ? 'social' : 'member'
+    accountType: invite.loungeOnly ? 'social' : 'member',
+    leagueId: invite.leagueId || null,
+    franchiseId: invite.franchiseId || null
   };
 }
 
@@ -87,7 +89,13 @@ function listInvites() {
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
-function createInvite({ email, invitedBy, loungeOnly }) {
+function listInvitesForLeague(leagueId) {
+  const id = String(leagueId || '').trim();
+  if (!id) return [];
+  return listInvites().filter((i) => i.leagueId === id);
+}
+
+function createInvite({ email, invitedBy, loungeOnly, leagueId = null, franchiseId = null }) {
   const emailKey = normalizeEmail(email);
   if (!emailKey || !emailKey.includes('@')) {
     const err = new Error('Enter a valid email address');
@@ -96,9 +104,14 @@ function createInvite({ email, invitedBy, loungeOnly }) {
   }
 
   const social = Boolean(loungeOnly);
+  const leagueKey = leagueId ? String(leagueId).trim() : null;
+  const franchiseKey = franchiseId ? String(franchiseId).trim() : null;
   const store = readStore();
   const existingOpen = store.invites.find(
-    (i) => i.email === emailKey && (i.status === 'pending' || i.status === 'expired')
+    (i) =>
+      i.email === emailKey
+      && (i.status === 'pending' || i.status === 'expired')
+      && String(i.leagueId || '') === String(leagueKey || '')
   );
   if (existingOpen) {
     const err = new Error(
@@ -108,9 +121,17 @@ function createInvite({ email, invitedBy, loungeOnly }) {
     throw err;
   }
   const alreadyAccepted = store.invites.find(
-    (i) => i.email === emailKey && i.status === 'accepted'
+    (i) =>
+      i.email === emailKey
+      && i.status === 'accepted'
+      && String(i.leagueId || '') === String(leagueKey || '')
   );
-  if (alreadyAccepted) {
+  if (alreadyAccepted && leagueKey) {
+    const err = new Error('That email already accepted an invite to this league.');
+    err.status = 409;
+    throw err;
+  }
+  if (alreadyAccepted && !leagueKey) {
     const err = new Error('That email already accepted an invite.');
     err.status = 409;
     throw err;
@@ -128,7 +149,9 @@ function createInvite({ email, invitedBy, loungeOnly }) {
     acceptedAt: null,
     invitedById: invitedBy?.id || null,
     invitedByName: invitedBy?.name || invitedBy?.loginName || null,
-    loungeOnly: social
+    loungeOnly: social,
+    leagueId: leagueKey,
+    franchiseId: franchiseKey
   };
   store.invites.unshift(invite);
   writeStore(store);
@@ -227,6 +250,7 @@ function refreshInvite(id, invitedBy) {
 
 module.exports = {
   listInvites,
+  listInvitesForLeague,
   createInvite,
   findByToken,
   acceptInvite,
