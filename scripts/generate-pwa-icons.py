@@ -4,9 +4,6 @@
 Source: public/assets/gridiron24-pwa-source.png (white-backed brand art).
 Knocks out the white field and places the crest on navy so home-screen /
 bookmark tiles show the real logo, not a letter glyph.
-
-Tiny favicons (16/32) use a clear blue "24" mark — the full crest collapses
-into a shape that reads as a giant "H" at those sizes.
 """
 
 from __future__ import annotations
@@ -15,15 +12,13 @@ import io
 import struct
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "public" / "assets" / "gridiron24-pwa-source.png"
 OUT = ROOT / "public" / "assets" / "pwa"
 PUBLIC = ROOT / "public"
 BG = (2, 6, 15, 255)  # #02060f — matches manifest theme_color
-BLUE = (47, 109, 255, 255)
-SILVER = (236, 240, 248, 255)
 
 
 def load_crest() -> Image.Image:
@@ -62,36 +57,6 @@ def fit(
     resized = crest.resize((nw, nh), Image.Resampling.LANCZOS)
     canvas.alpha_composite(resized, ((size - nw) // 2, (size - nh) // 2))
     return canvas
-
-
-def mark_24(size: int) -> Image.Image:
-    """Legible blue '24' for bookmark/tab favicons (crest reads as 'H' below ~40px)."""
-    img = Image.new("RGBA", (size, size), BG)
-    draw = ImageDraw.Draw(img)
-    font_paths = [
-        "/System/Library/Fonts/Supplemental/Arial Black.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-        "/Library/Fonts/Arial Black.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    ]
-    font = None
-    for path in font_paths:
-        try:
-            font = ImageFont.truetype(path, max(10, int(size * 0.72)))
-            break
-        except OSError:
-            continue
-    if font is None:
-        font = ImageFont.load_default()
-    text = "24"
-    bbox = draw.textbbox((0, 0), text, font=font)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    tx = (size - tw) // 2 - bbox[0]
-    ty = (size - th) // 2 - bbox[1]
-    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-        draw.text((tx + dx, ty + dy), text, font=font, fill=SILVER)
-    draw.text((tx, ty), text, font=font, fill=BLUE)
-    return img
 
 
 def png_bytes(im: Image.Image) -> bytes:
@@ -136,13 +101,13 @@ def main() -> None:
     print(f"wrote {(OUT / 'icon-192-transparent.png').relative_to(ROOT)}")
     print(f"wrote {(OUT / 'icon-512-transparent.png').relative_to(ROOT)}")
 
-    # Favicons: 16/32 = legible "24"; 48+ = full crest for larger chrome tabs
-    m16 = mark_24(16)
-    m32 = mark_24(32)
+    # Favicons — always the crest (fill hard so tiny tiles keep as much detail as possible)
+    c16 = fit(crest, 16, fill=0.98)
+    c32 = fit(crest, 32, fill=0.98)
     c48 = fit(crest, 48, fill=0.96)
     c64 = fit(crest, 64, fill=0.96)
-    write_ico(PUBLIC / "favicon.ico", [(16, m16), (32, m32), (48, c48)])
-    save_rgb(m32, PUBLIC / "favicon-32.png")
+    write_ico(PUBLIC / "favicon.ico", [(16, c16), (32, c32), (48, c48)])
+    save_rgb(c32, PUBLIC / "favicon-32.png")
     save_rgb(c48, PUBLIC / "favicon-48.png")
     save_rgb(c64, PUBLIC / "favicon.png")
     save_rgb(fit(crest, 180, fill=0.96), PUBLIC / "apple-touch-icon.png")

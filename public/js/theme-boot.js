@@ -12,7 +12,7 @@
   // (e.g. "H" from "Home · GridIron 24").
   (function ensureBrandIcons() {
     try {
-      var bust = '90';
+      var bust = '92';
       var head = document.head || document.getElementsByTagName('head')[0];
       if (!head) return;
       function upsert(rel, href, attrs) {
@@ -29,7 +29,7 @@
         }
         el.setAttribute('href', href);
       }
-      // Prefer PNG "24" mark for tabs/bookmarks — tiny crest ICO reads as a giant H.
+      // Crest icons — prefer PNG (and apple-touch) so Safari doesn't fall back to a letter avatar.
       upsert('icon', '/favicon-32.png?v=' + bust, { type: 'image/png', sizes: '32x32' });
       upsert('icon', '/favicon.ico?v=' + bust, { type: 'image/x-icon', sizes: 'any' });
       upsert('icon', '/assets/pwa/icon-192.png?v=' + bust, { type: 'image/png', sizes: '192x192' });
