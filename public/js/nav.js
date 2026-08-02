@@ -733,21 +733,8 @@
         </div>
         <div class="user-menu-section">
           <span class="user-menu-label">Mobile app</span>
-          <a class="user-menu-item user-menu-item-platforms" href="/install-app.html" role="menuitem">
-            <span class="user-menu-platform-icons" aria-hidden="true">
-              <span class="user-menu-platform-icon is-apple">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.7 13.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-.9 2.7-2c.8-1.2 1.1-2.3 1.1-2.4-.1 0-2.2-.8-2.2-3.5zM14.7 5.7c.6-.8 1.1-1.9.9-3-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.8-.9 2.9 1 .1 2-.5 2.6-1.3z"/></svg>
-              </span>
-              <span class="user-menu-platform-icon is-android">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.5l1.4-2.4c.1-.2 0-.4-.2-.5-.2-.1-.4 0-.5.2l-1.4 2.5c-1.1-.5-2.4-.8-3.9-.8s-2.8.3-3.9.8L7.7 6.8c-.1-.2-.3-.3-.5-.2-.2.1-.3.3-.2.5l1.4 2.4C6.3 10.6 5 12.6 5 15v.5h14V15c0-2.4-1.3-4.4-3.4-5.5zM9.2 13.2c-.4 0-.8-.4-.8-.8s.4-.8.8-.8.8.4.8.8-.4.8-.8.8zm5.6 0c-.4 0-.8-.4-.8-.8s.4-.8.8-.8.8.4.8.8-.4.8-.8.8zM5 16.2h14v1.6c0 1.1-.9 2-2 2h-.5v2.2c0 .4-.3.7-.7.7s-.7-.3-.7-.7v-2.2H9v2.2c0 .4-.3.7-.7.7s-.7-.3-.7-.7v-2.2H7c-1.1 0-2-.9-2-2v-1.6z"/></svg>
-              </span>
-            </span>
-            <span class="user-menu-item-copy">
-              <span class="user-menu-item-title">Install the app</span>
-              <span class="user-menu-item-sub">iPhone &amp; Android steps</span>
-            </span>
-          </a>
-          <a class="user-menu-item user-menu-item-quiet" href="/docs/gridiron24-app-install.pdf" target="_blank" rel="noopener" role="menuitem">Download install PDF</a>
+          <a class="user-menu-action" href="/install-app.html" role="menuitem">Install on iPhone &amp; Android</a>
+          <a class="user-menu-action is-secondary" href="/docs/gridiron24-app-install.pdf" target="_blank" rel="noopener" role="menuitem">Download PDF</a>
         </div>
         <button type="button" class="user-menu-logout" role="menuitem">Log out</button>
       </div>`;

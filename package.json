@@ -8,6 +8,7 @@
     "generate:icons": "node scripts/generate-team-icons.js",
     "bump:pwa": "node scripts/bump-pwa-cache.js",
     "docs:pwa-pdf": "node scripts/generate-pwa-install-pdf.js",
+    "generate:pwa-icons": "python3 scripts/generate-pwa-icons.py",
     "prepare": "node -e \"try{require('child_process').execSync('git rev-parse --is-inside-work-tree',{stdio:'ignore'});require('child_process').execSync('git config core.hooksPath .githooks',{stdio:'ignore'})}catch{}\""
   },
   "engines": {
