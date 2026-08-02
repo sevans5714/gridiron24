@@ -57,6 +57,23 @@ function applyVersion(v) {
     .replace(/(\/manifest\.webmanifest\?v=)\d+/g, `$1${v}`)
     .replace(/(\/assets\/pwa\/[^'?]+\?v=)\d+/g, `$1${v}`));
 
+  const themeBoot = path.join(ROOT, 'public/js/theme-boot.js');
+  rewrite(themeBoot, (js) => js.replace(/(var bust = ')\d+(')/, `$1${v}$2`));
+
+  const login = path.join(ROOT, 'public/login.html');
+  rewrite(login, (html) => html
+    .replace(/(\/manifest\.webmanifest\?v=)\d+/g, `$1${v}`)
+    .replace(/(\/assets\/pwa\/[^"'?\s]+\?v=)\d+/g, `$1${v}`)
+    .replace(/(\/favicon\.ico\?v=)\d+/g, `$1${v}`)
+    .replace(/(\/apple-touch-icon\.png\?v=)\d+/g, `$1${v}`));
+
+  // Keep root apple-touch / favicon in sync with generated PWA assets
+  try {
+    const pwa = path.join(ROOT, 'public/assets/pwa');
+    fs.copyFileSync(path.join(pwa, 'apple-touch-icon.png'), path.join(ROOT, 'public/apple-touch-icon.png'));
+    fs.copyFileSync(path.join(pwa, 'apple-touch-icon.png'), path.join(ROOT, 'public/apple-touch-icon-precomposed.png'));
+  } catch { /* ignore */ }
+
   return v;
 }
 
@@ -78,7 +95,7 @@ function needsBump(files = stagedFiles()) {
 
 function stageBumpedFiles() {
   execSync(
-    'git add -- public/app/pwa-bust.json public/app/index.html public/manifest.webmanifest public/sw.js',
+    'git add -- public/app/pwa-bust.json public/app/index.html public/manifest.webmanifest public/sw.js public/js/theme-boot.js public/login.html public/apple-touch-icon.png public/apple-touch-icon-precomposed.png public/favicon.ico public/favicon.png',
     { cwd: ROOT, stdio: 'inherit' }
   );
 }

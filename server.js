@@ -187,6 +187,12 @@ const PUBLIC_PATHS = new Set([
   '/install-app.html',
   '/api/docs/pwa-install',
   '/docs/gridiron24-app-install.pdf',
+  '/favicon.ico',
+  '/favicon.png',
+  '/apple-touch-icon.png',
+  '/apple-touch-icon-precomposed.png',
+  '/manifest.webmanifest',
+  '/sw.js',
   '/api/lounge/fresh-start',
   '/manifest.webmanifest',
   '/sw.js'
@@ -625,7 +631,8 @@ function sendFile(res, filePath) {
       '.otf': 'font/otf',
       '.woff': 'font/woff',
       '.woff2': 'font/woff2',
-      '.pdf': 'application/pdf'
+      '.pdf': 'application/pdf',
+      '.ico': 'image/x-icon'
     }[ext] || 'application/octet-stream';
 
     const fileName = path.basename(filePath);

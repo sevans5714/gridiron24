@@ -8,6 +8,37 @@
   } catch (e) { /* ignore */ }
   document.documentElement.setAttribute('data-theme', theme);
 
+  // Site-wide crest icons — without these, Safari bookmarks use a letter avatar
+  // (e.g. "H" from "Home · GridIron 24").
+  (function ensureBrandIcons() {
+    try {
+      var bust = '86';
+      var head = document.head || document.getElementsByTagName('head')[0];
+      if (!head) return;
+      function upsert(rel, href, attrs) {
+        var sel = 'link[rel="' + rel + '"]';
+        if (attrs && attrs.sizes) sel += '[sizes="' + attrs.sizes + '"]';
+        var el = head.querySelector(sel);
+        if (!el) {
+          el = document.createElement('link');
+          el.setAttribute('rel', rel);
+          head.appendChild(el);
+        }
+        if (attrs) {
+          Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+        }
+        el.setAttribute('href', href);
+      }
+      upsert('icon', '/favicon.ico?v=' + bust, { type: 'image/x-icon' });
+      upsert('icon', '/assets/pwa/icon-192.png?v=' + bust, { type: 'image/png', sizes: '192x192' });
+      upsert('apple-touch-icon', '/apple-touch-icon.png?v=' + bust, { sizes: '180x180' });
+      upsert('apple-touch-icon', '/assets/pwa/apple-touch-icon.png?v=' + bust, { sizes: '180x180' });
+      if (!head.querySelector('link[rel="manifest"]')) {
+        upsert('manifest', '/manifest.webmanifest?v=' + bust);
+      }
+    } catch (e) { /* ignore */ }
+  })();
+
   function isStandalone() {
     try {
       return window.matchMedia('(display-mode: standalone)').matches
