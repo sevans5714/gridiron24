@@ -12,29 +12,29 @@
   <meta name="format-detection" content="telephone=no" />
   <meta name="description" content="GridIron 24 — standings, matchups, roster, and league HQ." />
   <title>GridIron 24</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=98" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=98" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=98" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=98" />
+  <link rel="manifest" href="/manifest.webmanifest?v=100" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=100" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=100" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=100" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/app/app.css?v=98" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=98" />
-  <link rel="icon" href="/favicon.ico?v=98" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=98" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=98" />
+  <link rel="stylesheet" href="/app/app.css?v=100" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=100" />
+  <link rel="icon" href="/favicon.ico?v=100" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=100" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=100" />
   <script src="/js/theme-boot.js"></script>
 </head>
 <body class="app-shell">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
-    <img src="/assets/pwa/icon-192-transparent.png?v=98" alt="" width="96" height="96" />
+    <img src="/assets/pwa/icon-192-transparent.png?v=100" alt="" width="96" height="96" />
     <strong>GridIron 24</strong>
   </div>
   <header class="app-top">
     <div class="app-top-row">
       <button type="button" class="brand" id="brand-home" aria-label="GridIron 24 Home">
-        <img src="/assets/pwa/icon-192-transparent.png?v=98" alt="" width="192" height="192" />
+        <img src="/assets/pwa/icon-192-transparent.png?v=100" alt="" width="192" height="192" />
         <div class="brand-copy">
           <strong>GridIron 24</strong>
           <span id="subtitle">HQ</span>
@@ -101,26 +101,26 @@
 
   <nav class="app-tabs" aria-label="App">
     <button type="button" data-tab="roster">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l3 5h5l-4 4 2 6-6-3.5L6 19l2-6-4-4h5z"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 18.2l-5.8 3.2 1.1-6.5-4.7-4.6 6.5-.9z"/></svg>
       Roster
     </button>
     <button type="button" data-tab="matchup">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4zM8 7v10M16 7v10M4 12h16"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6.5" width="17" height="11" rx="1.5"/><path d="M8.5 6.5v11M15.5 6.5v11M3.5 12h17"/></svg>
       Matchup
     </button>
     <button type="button" class="tab-home is-on" data-tab="home" aria-current="page">
       <span class="tab-home-orb" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M4.5 11.2 12 4.5l7.5 6.7V19a1 1 0 0 1-1 1h-4.2v-5.2h-4.6V20H5.5a1 1 0 0 1-1-1z"/></svg>
       </span>
       Home
     </button>
     <button type="button" data-tab="league">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v4H5zM5 10h14v4H5zM5 16h14v4H5z"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v3.2H5zM5 10.4h14v3.2H5zM5 15.3h14v3.2H5z"/></svg>
       League
       <span class="tab-badge" id="league-badge" hidden>0</span>
     </button>
     <button type="button" data-tab="book" id="tab-book">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h9l3 3v13H6zM9 10h6M9 14h6"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 4.5h8.2L17.5 7.3V19.5H6.5z"/><path d="M9.2 10.5h5.6M9.2 14h5.6"/></svg>
       Book
     </button>
   </nav>
@@ -138,6 +138,6 @@
     </div>
   </div>
 
-  <script src="/app/app.js?v=98"></script>
+  <script src="/app/app.js?v=100"></script>
 </body>
 </html>
