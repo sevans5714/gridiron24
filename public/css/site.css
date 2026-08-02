@@ -1086,30 +1086,20 @@ html[data-theme="day"] .inbox-btn.is-active {
   gap: 0.75rem 1rem;
   margin: 0.55rem 1.25rem 1.25rem;
   padding: 0.95rem 1.05rem;
-  border: 1px solid rgba(239, 215, 130, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.7rem;
-  background: linear-gradient(135deg, rgba(239, 215, 130, 0.16), rgba(47, 109, 255, 0.1));
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  background: rgba(255, 255, 255, 0.04);
 }
 .inbox-cta-blurb {
   margin: 0;
   flex: 1 1 12rem;
-  color: var(--text);
+  color: var(--muted);
   font-size: 0.95rem;
   line-height: 1.4;
 }
 .inbox-cta {
   text-decoration: none;
   flex: 0 0 auto;
-}
-.inbox-cta-card .inbox-cta {
-  background: linear-gradient(180deg, #f3e3a4, #d4b85a);
-  border-color: rgba(239, 215, 130, 0.55);
-  color: #14120a;
-  font-weight: 700;
-}
-.inbox-cta-card .inbox-cta:hover {
-  filter: brightness(1.05);
 }
 .inbox-letter.is-action .inbox-letter-head.is-action {
   background: linear-gradient(180deg, rgba(239, 215, 130, 0.07), transparent);
@@ -1360,9 +1350,9 @@ html[data-theme="day"] .inbox-fact {
   border-color: rgba(20, 24, 31, 0.08);
 }
 html[data-theme="day"] .inbox-cta-card {
-  border-color: rgba(184, 134, 11, 0.4);
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.12), rgba(47, 109, 255, 0.06));
-  box-shadow: 0 8px 20px rgba(20, 24, 31, 0.08);
+  border-color: rgba(20, 24, 31, 0.12);
+  background: rgba(20, 24, 31, 0.03);
+  box-shadow: none;
 }
 html[data-theme="day"] .inbox-filter.is-on {
   border-color: rgba(184, 134, 11, 0.4);

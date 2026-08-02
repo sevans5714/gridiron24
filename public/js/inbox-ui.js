@@ -333,28 +333,22 @@
     }
     if (!href) return '';
 
-    let label = msg.meta?.linkLabel || msg.meta?.hrefLabel || '';
+    let label = '';
     let blurb = '';
-    if (!label) {
-      if (msg.type === 'account_created' || msg.type === 'pending_approvals' || msg.meta?.pendingApprovals) {
-        label = 'Approve or deny';
-        blurb = 'Open Member Access to approve or deny this account.';
-      } else if (msg.type === 'league_request' || msg.type === 'pending_league_approvals' || msg.meta?.pendingLeagueApprovals) {
-        label = 'Approve or deny';
-        blurb = 'Open League Requests to approve or deny this league.';
-      } else if (msg.type === 'roster_violations') {
-        label = 'Open Roster Violations';
-      } else if (msg.meta?.featureRequests || msg.meta?.ruleProposals) {
-        label = 'Open Inbox';
-      } else if (msg.type === 'league_invite' || msg.type === 'league_approved') {
-        label = 'Open league';
-      } else {
-        label = 'Open';
-      }
-    } else if (isActionNeeded(msg)) {
-      blurb = msg.type?.includes('league')
-        ? 'Jump to League Requests to take action.'
-        : 'Jump to Member Access to take action.';
+    if (msg.type === 'account_created' || msg.type === 'pending_approvals' || msg.meta?.pendingApprovals) {
+      label = 'Open League Tools';
+      blurb = 'Go to Member Access to assign their league and manage approval.';
+    } else if (msg.type === 'league_request' || msg.type === 'pending_league_approvals' || msg.meta?.pendingLeagueApprovals) {
+      label = 'Open League Tools';
+      blurb = 'Go to League Requests to review this registration.';
+    } else if (msg.type === 'roster_violations') {
+      label = msg.meta?.linkLabel || msg.meta?.hrefLabel || 'Open Roster Violations';
+    } else if (msg.meta?.featureRequests || msg.meta?.ruleProposals) {
+      label = msg.meta?.linkLabel || msg.meta?.hrefLabel || 'Open Inbox';
+    } else if (msg.type === 'league_invite' || msg.type === 'league_approved') {
+      label = msg.meta?.linkLabel || msg.meta?.hrefLabel || 'Open league';
+    } else {
+      label = msg.meta?.linkLabel || msg.meta?.hrefLabel || 'Open';
     }
 
     if (isActionNeeded(msg)) {

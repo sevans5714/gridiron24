@@ -3763,7 +3763,7 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
         ? 'They can sign in now.'
         : 'Waiting for lounge access / approval.',
       '',
-      'Use the button below to approve or deny in Member Access.'
+      'Open League Tools → Member Access to assign their league and manage approval.'
     ].join('\n');
 
     for (const ownerUser of owners) {
@@ -3776,7 +3776,7 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
         relatedId: user.id,
         meta: {
           href: '/league-tools.html#members',
-          hrefLabel: 'Approve or deny',
+          hrefLabel: 'Open League Tools',
           userId: user.id,
           source
         }
@@ -3823,13 +3823,13 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
           '',
           pendingNames,
           '',
-          'Use the button below to approve or deny these accounts.'
+          'Open League Tools → Member Access to assign leagues and manage approval.'
         ].join('\n')
         : null,
       meta: {
         digest: true,
         href: '/league-tools.html#members',
-        hrefLabel: 'Approve or deny',
+        hrefLabel: 'Open League Tools',
         count: pendingUsers.length,
         pendingApprovals: true
       }
@@ -3854,13 +3854,13 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
             '',
             leagueLines,
             '',
-            'Use the button below to approve or deny these leagues.'
+            'Open League Tools → League Requests to review these registrations.'
           ].join('\n')
           : null,
         meta: {
           digest: true,
           href: '/league-tools.html#league-requests',
-          hrefLabel: 'Approve or deny',
+          hrefLabel: 'Open League Tools',
           count: pendingLeagues.length,
           pendingLeagueApprovals: true
         }
@@ -5819,13 +5819,13 @@ const server = http.createServer(async (req, res) => {
                 `Teams: ${league.structure?.totalTeams || '?'}`,
                 `Type: ${conferenceCount === 2 ? 'Two conferences' : 'One conference'}`,
                 '',
-                '1. Approve or reject in League Tools → League Requests.',
-                '2. After you approve, the owner sets up the league on /create-league.'
+                '1. Review in League Tools → League Requests.',
+                '2. After approval, the owner sets up the league on /create-league.'
               ].join('\n'),
               type: 'league_request',
               meta: {
                 href: '/league-tools.html#league-requests',
-                hrefLabel: 'Approve or deny',
+                hrefLabel: 'Open League Tools',
                 leagueId: league.id
               }
             });
