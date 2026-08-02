@@ -3763,7 +3763,7 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
         ? 'They can sign in now.'
         : 'Waiting for lounge access / approval.',
       '',
-      'Open League Tools → Member Access to assign their league and manage approval.'
+      'Open League Tools → Requests → Account Requests to approve or deny.'
     ].join('\n');
 
     for (const ownerUser of owners) {
@@ -3775,10 +3775,11 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
         type: 'account_created',
         relatedId: user.id,
         meta: {
-          href: '/league-tools.html#members',
+          href: '/league-tools.html#account-requests',
           hrefLabel: 'Open League Tools',
           userId: user.id,
-          source
+          source,
+          pendingApprovals: true
         }
       });
     }
@@ -3823,12 +3824,12 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
           '',
           pendingNames,
           '',
-          'Open League Tools → Member Access to assign leagues and manage approval.'
+          'Open League Tools → Requests → Account Requests to approve or deny.'
         ].join('\n')
         : null,
       meta: {
         digest: true,
-        href: '/league-tools.html#members',
+        href: '/league-tools.html#account-requests',
         hrefLabel: 'Open League Tools',
         count: pendingUsers.length,
         pendingApprovals: true
@@ -3854,7 +3855,7 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
             '',
             leagueLines,
             '',
-            'Open League Tools → League Requests to review these registrations.'
+            'Open League Tools → Requests → League Requests to review these registrations.'
           ].join('\n')
           : null,
         meta: {
@@ -5819,7 +5820,7 @@ const server = http.createServer(async (req, res) => {
                 `Teams: ${league.structure?.totalTeams || '?'}`,
                 `Type: ${conferenceCount === 2 ? 'Two conferences' : 'One conference'}`,
                 '',
-                '1. Review in League Tools → League Requests.',
+                '1. Review in League Tools → Requests → League Requests.',
                 '2. After approval, the owner sets up the league on /create-league.'
               ].join('\n'),
               type: 'league_request',
@@ -7506,6 +7507,14 @@ const server = http.createServer(async (req, res) => {
           code: err.code || null
         });
       }
+    }
+
+    if (pathname === '/api/users/pending' && req.method === 'GET') {
+      if (!requireCommissioner(req, res)) return;
+      const pending = users.listUsers()
+        .filter((u) => u.approved === false)
+        .map((u) => users.publicUser(u));
+      return sendJson(res, 200, { ok: true, users: pending, count: pending.length });
     }
 
     if (pathname === '/api/users' && req.method === 'GET') {

@@ -1033,9 +1033,9 @@
     <a class="tools-back" href="/profile.html">← Profile</a>
     <div id="league-tools">
       <div class="tools-overview" aria-label="Tool groups">
-        <a href="#group-league-requests" id="overview-league-requests" hidden>
-          <strong>Requests <span class="tools-badge" id="overview-league-requests-badge" hidden>0</span></strong>
-          <span>Independent leagues waiting for approval</span>
+        <a href="#group-requests" id="overview-requests" hidden>
+          <strong>Requests <span class="tools-badge" id="overview-requests-badge" hidden>0</span></strong>
+          <span>Account join requests and league registrations</span>
         </a>
         <a href="#group-espn">
           <strong>Sync</strong>
@@ -1057,9 +1057,10 @@
 
       <div class="comm-layout">
       <nav class="comm-nav" aria-label="Owner Tools sections" id="tools-side-nav">
-        <div class="comm-nav-group" id="nav-league-requests" hidden>
-          <p class="comm-nav-label">Leagues</p>
-          <a href="#league-requests" id="jump-league-requests">League Requests <span class="tools-badge" id="nav-league-requests-badge" hidden>0</span></a>
+        <div class="comm-nav-group" id="nav-requests" hidden>
+          <p class="comm-nav-label">Requests</p>
+          <a href="#account-requests" id="jump-account-requests">Account Requests <span class="tools-badge" id="nav-account-requests-badge" hidden>0</span></a>
+          <a href="#league-requests" id="jump-league-requests" hidden>League Requests <span class="tools-badge" id="nav-league-requests-badge" hidden>0</span></a>
         </div>
         <div class="comm-nav-group">
           <p class="comm-nav-label">Sync</p>
@@ -1091,16 +1092,25 @@
       </nav>
 
       <div class="comm-groups">
-        <section class="comm-group" id="group-league-requests" hidden>
+        <section class="comm-group" id="group-requests" hidden>
           <header>
-            <h2>League Requests</h2>
-            <p>Registrations from Create a League. Approve so the owner can set up the league (separate from GridIron 24 / ESPN).</p>
+            <h2>Requests</h2>
+            <p>Approve new accounts and independent league registrations here — same place your inbox points you.</p>
           </header>
           <div class="comm-group-body">
-            <section class="comm-section" id="league-requests">
+            <section class="comm-section" id="account-requests">
               <div class="section-head">
-                <h3>Pending approval</h3>
+                <h3>Account Requests</h3>
               </div>
+              <p class="help">New sign-ups waiting for approval. Pick a membership, then Approve — or Deny to remove the request.</p>
+              <div class="status-note" id="account-requests-msg" role="status"></div>
+              <div id="account-requests-list"><div class="msg">Loading…</div></div>
+            </section>
+            <section class="comm-section" id="league-requests" hidden>
+              <div class="section-head">
+                <h3>League Requests</h3>
+              </div>
+              <p class="help">Registrations from Create a League. Approve so the owner can finish setup (separate from GridIron 24 / ESPN).</p>
               <div class="status-note" id="league-requests-msg" role="status"></div>
               <div id="league-requests-list"><div class="msg">Loading…</div></div>
             </section>
@@ -1203,7 +1213,7 @@
               <div class="section-head">
                 <h3>Member Access <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
-              <p class="help">Approve join requests, then assign membership, franchise, role, lounge pass, and dues. Credentials stay collapsed under each member.</p>
+              <p class="help">Assign membership, franchise, role, lounge pass, and dues for approved members. New join requests are approved under <a href="#account-requests">Requests → Account Requests</a>.</p>
               <details class="help-more">
                 <summary>Welcome email previews</summary>
                 <p class="help"><a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
@@ -1845,13 +1855,29 @@
       el.hidden = n <= 0;
     }
 
-    function revealLeagueRequests() {
-      const group = document.getElementById('group-league-requests');
-      const nav = document.getElementById('nav-league-requests');
-      const overview = document.getElementById('overview-league-requests');
+    function revealRequests({ includeLeagues = false } = {}) {
+      const group = document.getElementById('group-requests');
+      const nav = document.getElementById('nav-requests');
+      const overview = document.getElementById('overview-requests');
+      const leagueSec = document.getElementById('league-requests');
+      const leagueJump = document.getElementById('jump-league-requests');
       if (group) group.hidden = false;
       if (nav) nav.hidden = false;
       if (overview) overview.hidden = false;
+      if (leagueSec) leagueSec.hidden = !includeLeagues;
+      if (leagueJump) leagueJump.hidden = !includeLeagues;
+    }
+
+    function updateRequestsOverviewBadge() {
+      const accounts = Number(document.getElementById('nav-account-requests-badge')?.textContent) || 0;
+      const leagues = Number(document.getElementById('nav-league-requests-badge')?.textContent) || 0;
+      // Badges may be hidden with 0 — read dataset counts when available.
+      const a = window.__giPendingAccountCount ?? accounts;
+      const l = window.__giPendingLeagueCount ?? leagues;
+      const total = a + l;
+      setToolsBadge('overview-requests-badge', total);
+      const overview = document.getElementById('overview-requests');
+      if (overview) overview.classList.toggle('is-alert', total > 0);
     }
 
     function memberSearchHaystack(u) {
@@ -1895,10 +1921,15 @@
       if (toolbar) toolbar.hidden = !list.length;
 
       const pendingCount = list.filter((u) => u.approved === false).length;
+      window.__giPendingAccountCount = pendingCount;
       setToolsBadge('nav-members-badge', pendingCount);
+      setToolsBadge('nav-account-requests-badge', pendingCount);
       setToolsBadge('overview-people-badge', pendingCount);
+      updateRequestsOverviewBadge();
       const peopleOverview = document.getElementById('overview-people');
       if (peopleOverview) peopleOverview.classList.toggle('is-alert', pendingCount > 0);
+
+      renderAccountRequests(list);
 
       if (!list.length) {
         document.getElementById('members-list').innerHTML = `<div class="msg">No member accounts yet.</div>`;
@@ -1921,7 +1952,7 @@
       }
 
       const pendingBanner = pendingCount
-        ? `<div class="members-pending-banner"><strong>${pendingCount} awaiting approval</strong> — approve or deny, then assign membership and franchise.</div>`
+        ? `<div class="members-pending-banner"><strong>${pendingCount} awaiting approval</strong> — review them in <a href="#account-requests">Requests → Account Requests</a>, then assign franchise here.</div>`
         : '';
 
       if (!visible.length) {
@@ -2362,6 +2393,8 @@
       const res = await fetch('/api/users', { cache: 'no-store' });
       if (res.status === 403) {
         document.getElementById('members').hidden = true;
+        const ar = document.getElementById('account-requests-list');
+        if (ar) ar.innerHTML = `<div class="msg">You don’t have permission to review account requests.</div>`;
         return;
       }
       if (!res.ok) throw new Error(`Could not load members (${res.status})`);
@@ -3540,6 +3573,122 @@
       if (overview) overview.hidden = false;
     }
 
+    function showAccountRequestsMsg(msg, ok) {
+      const el = document.getElementById('account-requests-msg');
+      if (!el) return;
+      el.textContent = msg || '';
+      el.classList.toggle('show', Boolean(msg));
+      el.classList.toggle('ok', Boolean(ok));
+      el.classList.toggle('err', Boolean(msg) && !ok);
+    }
+
+    function renderAccountRequests(usersList) {
+      const list = document.getElementById('account-requests-list');
+      if (!list) return;
+      const pending = (usersList || []).filter((u) => u.approved === false)
+        .slice()
+        .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+      window.__giPendingAccountCount = pending.length;
+      setToolsBadge('nav-account-requests-badge', pending.length);
+      updateRequestsOverviewBadge();
+
+      if (!pending.length) {
+        list.innerHTML = `<div class="msg">No account join requests waiting.</div>`;
+        return;
+      }
+
+      list.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Applicant</th>
+              <th>Submitted</th>
+              <th>Membership</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pending.map((u) => `
+              <tr data-pending-user="${esc(u.id)}">
+                <td>
+                  <strong>${esc(u.name || u.loginName)}</strong><br>
+                  <span class="muted-sm">${esc(u.loginName)} · ${esc(u.email || 'no email')}</span>
+                </td>
+                <td class="muted-sm">${esc((u.createdAt || '').slice(0, 10) || '—')}</td>
+                <td>
+                  <select class="field" data-pending-membership="${esc(u.id)}" aria-label="Membership for ${esc(u.name || u.loginName)}" style="max-width:13rem;">
+                    <option value="gridiron" ${!u.loungeOnly && u.membershipLeague !== 'aaa' ? 'selected' : ''}>GridIron 24</option>
+                    <option value="aaa" ${u.membershipLeague === 'aaa' ? 'selected' : ''}>AAA League</option>
+                    <option value="social" ${u.loungeOnly ? 'selected' : ''}>Social Membership</option>
+                  </select>
+                </td>
+                <td>
+                  <div class="invite-row-actions" style="display:flex;gap:0.45rem;flex-wrap:wrap;">
+                    <button type="button" class="btn" data-approve-account="${esc(u.id)}">Approve</button>
+                    <button type="button" class="link-action" data-deny-account="${esc(u.id)}">Deny</button>
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+
+      list.querySelectorAll('[data-approve-account]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const userId = btn.getAttribute('data-approve-account');
+          const membership = document.querySelector(`[data-pending-membership="${userId.replace(/"/g, '')}"]`)?.value || 'gridiron';
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/approve`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ approved: true, membership })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not approve');
+            const mailNote = data.mailSent ? ' Welcome email sent.' : '';
+            showAccountRequestsMsg(`Approved ${data.user?.loginName || 'account'}.${mailNote}`, true);
+            await loadAccountRequests();
+            try { await loadMembers(); } catch { /* full table optional */ }
+          } catch (err) {
+            showAccountRequestsMsg(err.message, false);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      list.querySelectorAll('[data-deny-account]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const userId = btn.getAttribute('data-deny-account');
+          if (!confirm('Deny and delete this join request?')) return;
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/reject`, { method: 'POST' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not deny');
+            showAccountRequestsMsg(`Denied ${data.user?.loginName || 'account'}.`, true);
+            await loadAccountRequests();
+            try { await loadMembers(); } catch { /* full table optional */ }
+          } catch (err) {
+            showAccountRequestsMsg(err.message, false);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function loadAccountRequests() {
+      const list = document.getElementById('account-requests-list');
+      if (!list) return;
+      const res = await fetch('/api/users/pending', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 403) {
+        list.innerHTML = `<div class="msg">You don’t have permission to review account requests.</div>`;
+        return;
+      }
+      if (!res.ok || !data.ok) throw new Error(data.error || `Could not load account requests (${res.status})`);
+      renderAccountRequests(data.users || []);
+    }
+
     function showLeagueRequestsMsg(msg, ok) {
       const el = document.getElementById('league-requests-msg');
       if (!el) return;
@@ -3556,10 +3705,9 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load league requests');
       const leagues = data.leagues || [];
+      window.__giPendingLeagueCount = leagues.length;
       setToolsBadge('nav-league-requests-badge', leagues.length);
-      setToolsBadge('overview-league-requests-badge', leagues.length);
-      const overview = document.getElementById('overview-league-requests');
-      if (overview) overview.classList.toggle('is-alert', leagues.length > 0);
+      updateRequestsOverviewBadge();
       if (!leagues.length) {
         list.innerHTML = `<div class="msg">No independent leagues waiting for approval.</div>`;
         return;
@@ -3707,8 +3855,17 @@
         document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
 
+      if (user?.siteOwner || user?.canSwitchLeagues || isPlatformAdmin(user)) {
+        revealRequests({ includeLeagues: Boolean(user?.siteOwner || user?.canSwitchLeagues) });
+        try {
+          await loadAccountRequests();
+        } catch (err) {
+          const list = document.getElementById('account-requests-list');
+          if (list) list.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        }
+      }
+
       if (user?.siteOwner || user?.canSwitchLeagues) {
-        revealLeagueRequests();
         try { await loadLeagueRequests(); } catch (err) {
           const list = document.getElementById('league-requests-list');
           if (list) list.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
@@ -3727,10 +3884,14 @@
         try { await loadHistoryAdmin(); } catch (err) {
           showHistoryMsg(err.message || 'Could not load season archive', false);
         }
-        try { await loadMembers(); } catch (err) {
+        try {
+          await loadMembers();
+        } catch (err) {
           document.getElementById('members').hidden = false;
           document.getElementById('jump-members').hidden = false;
           document.getElementById('members-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+          const ar = document.getElementById('account-requests-list');
+          if (ar) ar.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
         }
       }
     }
@@ -3744,7 +3905,15 @@
         window.GridIronNav?.setSync(toolsDeskLabel(user), true);
         wireToolsNavSpy();
         if (location.hash) {
-          const el = document.querySelector(location.hash);
+          const hash = location.hash;
+          // Legacy anchors from inbox / profile.
+          const aliases = {
+            '#group-league-requests': '#group-requests',
+            '#league-requests': '#league-requests',
+            '#members': '#account-requests'
+          };
+          const target = aliases[hash] || hash;
+          const el = document.querySelector(target);
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }
       } catch (err) {

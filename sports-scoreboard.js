@@ -1,11 +1,14 @@
 /**
  * Multi-sport live scores for the Members Lounge.
- * Primary: ESPN public site scoreboard / golf leaderboard APIs (multi-host).
- * Fallback: free public APIs (MLB Stats, NHL Web, TheSportsDB, optional CFBD).
+ * Providers are merged — ESPN is never the sole source of truth.
+ *   - ESPN public site scoreboards (multi-host)
+ *   - Little League.org tournament schedules (LLWS family)
+ *   - MLB Stats, NHL Web, TheSportsDB, optional CFBD
  */
 
 const espnResilient = require('./espn-resilient');
 const sportsFallbacks = require('./sports-fallbacks');
+const littleLeagueOrg = require('./little-league-org');
 const oddsEnrich = require('./odds-enrich');
 
 const CACHE_MS = 20_000;
@@ -203,6 +206,82 @@ function boardHasActiveGames(board) {
     const bucket = g?.status?.bucket;
     return bucket === 'live' || bucket === 'upcoming';
   });
+}
+
+function gameDedupeKey(g) {
+  const day = String(g?.date || '').slice(0, 10);
+  const a = String(g?.away?.name || g?.away?.abbreviation || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const h = String(g?.home?.name || g?.home?.abbreviation || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const series = String(g?.series || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  return `${series}|${day}|${a}|${h}`;
+}
+
+function gameFreshnessScore(g) {
+  let score = 0;
+  const bucket = g?.status?.bucket;
+  if (bucket === 'live') score += 50;
+  if (bucket === 'final') score += 30;
+  if (bucket === 'upcoming') score += 10;
+  if (g?.away?.score != null && g?.home?.score != null) score += 40;
+  if (g?.odds) score += 5;
+  if (g?.broadcasts?.length) score += 3;
+  // Prefer official youth schedules when ESPN has no score yet.
+  if (g?.provider === 'littleleague.org') score += 8;
+  if (g?.provider === 'espn' || !g?.provider) score += 2;
+  return score;
+}
+
+/** Merge multi-source games; keep the richest row per matchup. */
+function mergeGameLists(...lists) {
+  const map = new Map();
+  for (const list of lists) {
+    for (const g of list || []) {
+      if (!g) continue;
+      const key = gameDedupeKey(g) || `id:${g.id}`;
+      const prev = map.get(key);
+      if (!prev || gameFreshnessScore(g) >= gameFreshnessScore(prev)) {
+        map.set(key, {
+          ...prev,
+          ...g,
+          series: g.series || prev?.series || null,
+          provider: g.provider || prev?.provider || null,
+          away: { ...(prev?.away || {}), ...(g.away || {}) },
+          home: { ...(prev?.home || {}), ...(g.home || {}) },
+          status: g.status || prev?.status
+        });
+      }
+    }
+  }
+  const out = [...map.values()];
+  out.sort((a, b) => {
+    const order = { live: 0, upcoming: 1, final: 2 };
+    const ao = order[a.status?.bucket] ?? 3;
+    const bo = order[b.status?.bucket] ?? 3;
+    if (ao !== bo) return ao - bo;
+    return String(a.date || '').localeCompare(String(b.date || ''));
+  });
+  return out;
+}
+
+async function fetchSecondaryGames(leagueId) {
+  const extras = [];
+  if (leagueId === 'llws') {
+    try {
+      const ll = await littleLeagueOrg.fetchLlwsBoard({ leagueId: 'llws' });
+      if (ll?.games?.length) extras.push(ll.games);
+    } catch (err) {
+      console.warn('[sports] littleleague.org merge failed', err.message || err);
+    }
+  }
+  try {
+    const fb = await sportsFallbacks.fetchFallbackBoard(leagueId);
+    if (fb?.games?.length) {
+      extras.push(fb.games.map((g) => ({ ...g, provider: fb.provider || fb.source || 'fallback' })));
+    }
+  } catch {
+    /* optional */
+  }
+  return extras.flat();
 }
 
 /** Keep calendar-in-season leagues, plus any offseason board that still has live/upcoming games. */
@@ -922,7 +1001,7 @@ async function getSportsScores({
           if (meta.kind === 'golf') return normalizeGolfEvent(ev);
           if (meta.kind === 'racing') return normalizeRacingEvent(ev, meta.id);
           const series = meta.extraLeagues?.length ? 'Baseball' : null;
-          return normalizeTeamEvent(ev, id, { series });
+          return { ...normalizeTeamEvent(ev, id, { series }), provider: 'espn' };
         });
         if (meta.extraLeagues?.length && meta.kind === 'team') {
           const extras = await fetchExtraLeagueGames(meta, id, {
@@ -935,12 +1014,18 @@ async function getSportsScores({
             for (const g of extras) {
               if (seen.has(String(g.id))) continue;
               seen.add(String(g.id));
-              games.push(g);
+              games.push({ ...g, provider: g.provider || 'espn' });
             }
           }
         }
         if (meta.kind === 'racing') {
           games = await fillRacingFields(games);
+        }
+        // Always merge secondary providers — ESPN is never the sole source of truth.
+        const secondary = await fetchSecondaryGames(id);
+        if (secondary.length) {
+          usedFallback = true;
+          games = mergeGameLists(games, secondary);
         }
         const counts = { live: 0, final: 0, upcoming: 0 };
         for (const g of games) {
@@ -953,6 +1038,7 @@ async function getSportsScores({
           if (ao !== bo) return ao - bo;
           return String(a.date || '').localeCompare(String(b.date || ''));
         });
+        const providers = [...new Set(games.map((g) => g.provider).filter(Boolean))];
         return {
           ok: true,
           id: meta.id,
@@ -960,7 +1046,8 @@ async function getSportsScores({
           kind: meta.kind,
           logo: meta.lockLogo ? (meta.logo || null) : pickLeagueLogo(raw, meta.logo),
           from: from || 'live',
-          source: 'espn',
+          source: providers.length > 1 ? 'multi' : (providers[0] || 'espn'),
+          providers,
           counts,
           games,
           season: raw.season
@@ -976,12 +1063,12 @@ async function getSportsScores({
         };
       } catch (err) {
         try {
-          const fb = await sportsFallbacks.fetchFallbackBoard(id);
-          if (fb?.games) {
+          const secondary = await fetchSecondaryGames(id);
+          if (secondary.length) {
             usedFallback = true;
-            return boardFromGames(meta, fb.games, {
-              source: fb.source,
-              provider: fb.provider,
+            return boardFromGames(meta, secondary, {
+              source: 'multi',
+              provider: 'fallback',
               from: 'fallback'
             });
           }
@@ -1033,7 +1120,7 @@ async function getSportsScores({
 
   return {
     ok: true,
-    source: usedFallback ? 'sports-fallback' : 'espn-site-scoreboard',
+    source: usedFallback ? 'multi-source' : 'espn-site-scoreboard',
     fallbackUsed: usedFallback,
     oddsFilled,
     upstream: espnResilient.getUpstreamStatus().site,

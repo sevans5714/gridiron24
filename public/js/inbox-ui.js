@@ -326,7 +326,7 @@
 
     let href = String(msg.meta?.href || msg.meta?.link || '').trim();
     if (!href && (msg.type === 'account_created' || msg.type === 'pending_approvals' || msg.meta?.pendingApprovals)) {
-      href = '/league-tools.html#members';
+      href = '/league-tools.html#account-requests';
     }
     if (!href && (msg.type === 'league_request' || msg.type === 'pending_league_approvals' || msg.meta?.pendingLeagueApprovals)) {
       href = '/league-tools.html#league-requests';
@@ -337,10 +337,10 @@
     let blurb = '';
     if (msg.type === 'account_created' || msg.type === 'pending_approvals' || msg.meta?.pendingApprovals) {
       label = 'Open League Tools';
-      blurb = 'Go to Member Access to assign their league and manage approval.';
+      blurb = 'Go to Requests → Account Requests to approve or deny.';
     } else if (msg.type === 'league_request' || msg.type === 'pending_league_approvals' || msg.meta?.pendingLeagueApprovals) {
       label = 'Open League Tools';
-      blurb = 'Go to League Requests to review this registration.';
+      blurb = 'Go to Requests → League Requests to review this registration.';
     } else if (msg.type === 'roster_violations') {
       label = msg.meta?.linkLabel || msg.meta?.hrefLabel || 'Open Roster Violations';
     } else if (msg.meta?.featureRequests || msg.meta?.ruleProposals) {

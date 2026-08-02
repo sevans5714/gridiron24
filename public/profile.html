@@ -687,9 +687,9 @@
         </div>
       </div>
       <div class="tools-menu" aria-label="Owner Tools sections" id="tools-card-menu">
-        <a href="/league-tools.html#group-league-requests" id="profile-tools-requests" hidden>
-          <strong>League Requests</strong>
-          <span>Approve independent leagues</span>
+        <a href="/league-tools.html#group-requests" id="profile-tools-requests" hidden>
+          <strong>Requests</strong>
+          <span>Approve accounts and independent leagues</span>
         </a>
         <a href="/league-tools.html#group-espn">
           <strong>Sync</strong>
@@ -788,7 +788,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=99"></script>
-  <script src="/js/inbox-ui.js?v=16"></script>
+  <script src="/js/inbox-ui.js?v=17"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -933,12 +933,12 @@
       if (toolsOpen) toolsOpen.textContent = `Open ${deskLabel}`;
       if (toolsMenu) toolsMenu.setAttribute('aria-label', `${deskLabel} sections`);
       if (seasonLink) seasonLink.hidden = !isOwnerOrComm;
-      if (requestsLink) requestsLink.hidden = !isOwner;
+      if (requestsLink) requestsLink.hidden = !isOwnerOrComm;
       if (blurb) {
         blurb.textContent = isOwner
-          ? 'Owner desk — league requests, Sync, People, Broadcast, and Season.'
+          ? 'Owner desk — Requests, Sync, People, Broadcast, and Season.'
           : isOwnerOrComm
-            ? 'Commissioner desk — Sync, People, Broadcast, and Season.'
+            ? 'Commissioner desk — Requests, Sync, People, Broadcast, and Season.'
             : 'Conference admin desk — Sync, invites, owner email, and Broadcast.';
       }
       const urls = portalUrls();
