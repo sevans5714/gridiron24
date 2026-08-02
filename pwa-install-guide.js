@@ -28,7 +28,7 @@ const GUIDE = {
       'Go to https://www.gridiron24.com/enter and sign in.',
       'After you land in the app, tap the Share button (square with an arrow pointing up).',
       'Scroll the share sheet and tap Add to Home Screen.',
-      'Confirm the name (GridIron 24 / GI24), then tap Add.',
+      'Confirm the name (GridIron 24 / G24), then tap Add.',
       'Open the new GridIron 24 icon on your Home Screen anytime.'
     ],
     tips: [
