@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=150" />
+  <link rel="stylesheet" href="/css/site.css?v=152" />
   <style>
     body[data-page="install-app"] .page-hero { padding-bottom: 0.35rem; }
     body[data-page="install-app"] .page-hero::before,
@@ -36,15 +36,70 @@
     }
     .install-card {
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(47, 109, 255, 0.08), transparent 40%), var(--panel);
-      padding: 1.15rem 1.2rem 1.25rem;
+      background: var(--panel);
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .install-card-head {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 1rem 1.15rem;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(47, 109, 255, 0.12), transparent);
+    }
+    .install-card.is-android .install-card-head {
+      background: linear-gradient(180deg, rgba(61, 220, 132, 0.12), transparent);
+    }
+    .install-platform-icon {
+      width: 2.6rem;
+      height: 2.6rem;
+      border-radius: 0.7rem;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+    }
+    .install-card.is-apple .install-platform-icon {
+      background: #111;
+      color: #fff;
+      border-color: rgba(255,255,255,0.12);
+    }
+    .install-card.is-android .install-platform-icon {
+      background: #102418;
+      color: #3ddc84;
+      border-color: rgba(61, 220, 132, 0.35);
+    }
+    html[data-theme="day"] .install-card.is-android .install-platform-icon {
+      background: #e8f8ef;
+      color: #1b8a4c;
+    }
+    .install-platform-icon svg {
+      width: 1.35rem;
+      height: 1.35rem;
+      display: block;
+    }
+    .install-card-kicker {
+      margin: 0;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
     }
     .install-card h2 {
-      margin: 0 0 0.75rem;
+      margin: 0.15rem 0 0;
       font-family: var(--display);
-      font-size: 1.45rem;
+      font-size: 1.35rem;
       letter-spacing: 0.04em;
       text-transform: uppercase;
+      line-height: 1.1;
+    }
+    .install-card-body {
+      padding: 1.05rem 1.15rem 1.2rem;
+      flex: 1;
     }
     .install-card ol {
       margin: 0;
@@ -52,15 +107,19 @@
       color: var(--text);
       line-height: 1.5;
     }
-    .install-card li { margin: 0.35rem 0; }
+    .install-card li { margin: 0.4rem 0; }
     .install-tips {
-      margin: 0.95rem 0 0;
-      padding: 0.75rem 0.85rem;
+      margin: 1rem 0 0;
+      padding: 0.8rem 0.9rem;
       border-left: 3px solid var(--blue);
       background: rgba(47, 109, 255, 0.08);
       color: var(--muted);
       font-size: 0.92rem;
       line-height: 1.45;
+    }
+    .install-card.is-android .install-tips {
+      border-left-color: #3ddc84;
+      background: rgba(61, 220, 132, 0.08);
     }
     .install-tips strong {
       display: block;
@@ -104,7 +163,7 @@
 </head>
 <body data-page="install-app">
   <div id="nav"></div>
-  <script src="/js/nav.js?v=150"></script>
+  <script src="/js/nav.js?v=152"></script>
 
   <section class="page-hero shell">
     <p class="eyebrow">Mobile app</p>
@@ -116,6 +175,9 @@
   </main>
 
   <script>
+    const APPLE_ICON = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 13.3c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-.9 2.7-2c.8-1.2 1.1-2.3 1.1-2.4-.1 0-2.2-.8-2.2-3.5zM14.7 5.7c.6-.8 1.1-1.9.9-3-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.8-.9 2.9 1 .1 2-.5 2.6-1.3z"/></svg>`;
+    const ANDROID_ICON = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.5l1.4-2.4c.1-.2 0-.4-.2-.5-.2-.1-.4 0-.5.2l-1.4 2.5c-1.1-.5-2.4-.8-3.9-.8s-2.8.3-3.9.8L7.7 6.8c-.1-.2-.3-.3-.5-.2-.2.1-.3.3-.2.5l1.4 2.4C6.3 10.6 5 12.6 5 15v.5h14V15c0-2.4-1.3-4.4-3.4-5.5zM9.2 13.2c-.4 0-.8-.4-.8-.8s.4-.8.8-.8.8.4.8.8-.4.8-.8.8zm5.6 0c-.4 0-.8-.4-.8-.8s.4-.8.8-.8.8.4.8.8-.4.8-.8.8zM5 16.2h14v1.6c0 1.1-.9 2-2 2h-.5v2.2c0 .4-.3.7-.7.7s-.7-.3-.7-.7v-2.2H9v2.2c0 .4-.3.7-.7.7s-.7-.3-.7-.7v-2.2H7c-1.1 0-2-.9-2-2v-1.6z"/></svg>`;
+
     async function boot() {
       const main = document.getElementById('install-main');
       try {
@@ -137,20 +199,36 @@
             <ul>${(g.beforeYouStart || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
           </div>
           <div class="install-grid">
-            <section class="install-card">
-              <h2>${esc(g.apple.title)}</h2>
-              <ol>${(g.apple.steps || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
-              <div class="install-tips">
-                <strong>Tips</strong>
-                <ul>${(g.apple.tips || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+            <section class="install-card is-apple">
+              <div class="install-card-head">
+                <span class="install-platform-icon" aria-hidden="true">${APPLE_ICON}</span>
+                <div>
+                  <p class="install-card-kicker">Apple</p>
+                  <h2>${esc(g.apple.title)}</h2>
+                </div>
+              </div>
+              <div class="install-card-body">
+                <ol>${(g.apple.steps || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
+                <div class="install-tips">
+                  <strong>Tips</strong>
+                  <ul>${(g.apple.tips || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+                </div>
               </div>
             </section>
-            <section class="install-card">
-              <h2>${esc(g.android.title)}</h2>
-              <ol>${(g.android.steps || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
-              <div class="install-tips">
-                <strong>Tips</strong>
-                <ul>${(g.android.tips || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+            <section class="install-card is-android">
+              <div class="install-card-head">
+                <span class="install-platform-icon" aria-hidden="true">${ANDROID_ICON}</span>
+                <div>
+                  <p class="install-card-kicker">Google</p>
+                  <h2>${esc(g.android.title)}</h2>
+                </div>
+              </div>
+              <div class="install-card-body">
+                <ol>${(g.android.steps || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
+                <div class="install-tips">
+                  <strong>Tips</strong>
+                  <ul>${(g.android.tips || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+                </div>
               </div>
             </section>
           </div>

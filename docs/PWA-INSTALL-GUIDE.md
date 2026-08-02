@@ -5,26 +5,19 @@
 That file drives:
 
 - Web page → `/install-app.html`
-- PDF → `/docs/gridiron24-app-install.pdf`
+- PDF → `/docs/gridiron24-app-install.pdf` (rendered by `scripts/render_pwa_install_pdf.py`)
 - Owner email → League Tools → Communications → **Send app install guide**
 
 ## When steps change (Safari / Chrome / URLs)
 
 1. Edit `pwa-install-guide.js` (Apple steps, Android steps, tips, URLs).
-2. Regenerate the PDF:
+2. Regenerate the PDF (needs Python 3 + Pillow):
 
 ```bash
 npm run docs:pwa-pdf
 ```
 
-3. Commit both the JS and the PDF:
-
-```bash
-git add pwa-install-guide.js public/docs/gridiron24-app-install.pdf public/install-app.html
-git commit -m "Update PWA install guide"
-```
-
-4. Deploy (push `main`).
+3. Commit both the JS and the PDF, then deploy.
 
 ## Sending to members
 
@@ -33,5 +26,3 @@ Or share:
 
 - https://www.gridiron24.com/install-app.html  
 - https://www.gridiron24.com/docs/gridiron24-app-install.pdf  
-
-Toggle / edit the email copy under **Communications → Auto messages → PWA install guide**.

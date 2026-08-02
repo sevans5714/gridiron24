@@ -183,6 +183,10 @@ const PUBLIC_PATHS = new Set([
   '/api/cron/roster-violations',
   '/api/cron/death-pool-news',
   '/api/cron/paper-book-settle',
+  '/install-app',
+  '/install-app.html',
+  '/api/docs/pwa-install',
+  '/docs/gridiron24-app-install.pdf',
   '/api/lounge/fresh-start',
   '/manifest.webmanifest',
   '/sw.js'
@@ -327,6 +331,7 @@ function isPublicPath(pathname) {
   if (pathname.startsWith('/css/')) return true;
   if (pathname.startsWith('/js/')) return true;
   if (pathname.startsWith('/uploads/')) return true;
+  if (pathname.startsWith('/docs/') && pathname.endsWith('.pdf')) return true;
   return false;
 }
 
@@ -348,6 +353,10 @@ function isLoungeOnlyAllowedPath(pathname) {
     '/members',
     '/members.html',
     '/restricted.html',
+    '/install-app',
+    '/install-app.html',
+    '/api/docs/pwa-install',
+    '/docs/gridiron24-app-install.pdf',
     '/api/preferences',
     '/api/presence',
     '/api/survivor-pool',
