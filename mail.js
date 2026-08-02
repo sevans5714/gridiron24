@@ -628,6 +628,83 @@ function buildConferenceOwnerEmail({
   return { subject: subject || `Message from ${confLabel}`, text, html };
 }
 
+function buildPwaInstallEmail({ recipientName, fromName, baseUrl } = {}) {
+  const { GUIDE, plainTextGuide } = require('./pwa-install-guide');
+  let brandOverrides = {};
+  try {
+    brandOverrides = require('./comms-settings-store').getCopy('email.pwa_install') || {};
+  } catch {
+    brandOverrides = {};
+  }
+  const origin = siteBaseUrl(baseUrl);
+  const who = recipientName || 'there';
+  const sender = fromName || 'your commissioner';
+  const guideUrl = `${origin}${GUIDE.email.ctaPath}`;
+  const pdfUrl = `${origin}/docs/gridiron24-app-install.pdf`;
+  const subject = brandOverrides.subject || GUIDE.email.subject;
+  const preheader = brandOverrides.preheader || GUIDE.email.preheader;
+  const eyebrow = brandOverrides.eyebrow || 'GridIron 24 · Mobile app';
+  const headline = brandOverrides.headline || 'Install the GridIron 24 app';
+  const bodyLead = brandOverrides.bodyLead
+    || `${sender} sent you install instructions for iPhone and Android. Add GridIron 24 to your Home Screen — no App Store required.`;
+  const text = [
+    `Hi ${who},`,
+    '',
+    bodyLead,
+    '',
+    plainTextGuide(),
+    '',
+    `Web guide: ${guideUrl}`,
+    `PDF: ${pdfUrl}`
+  ].join('\n');
+  const html = brandedEmailHtml({
+    title: subject,
+    preheader,
+    eyebrow,
+    headline,
+    bodyHtml:
+      `Hi <strong style="color:#ffffff;">${escapeHtml(who)}</strong> — ` +
+      `${escapeHtml(bodyLead)}`,
+    midHtml: `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px;margin:0 auto;text-align:left;">
+        <tr><td style="padding:8px 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:#8eb6ff;">iPhone / iPad</td></tr>
+        <tr><td style="padding:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#c8c8c8;">Use <strong style="color:#fff;">Safari</strong> → sign in → Share → <strong style="color:#fff;">Add to Home Screen</strong>.</td></tr>
+        <tr><td style="padding:8px 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:#8eb6ff;">Android</td></tr>
+        <tr><td style="padding:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#c8c8c8;">Use <strong style="color:#fff;">Chrome</strong> → sign in → menu → <strong style="color:#fff;">Install app</strong> / Add to Home screen.</td></tr>
+      </table>`,
+    showConferences: false,
+    ctaLabel: brandOverrides.ctaLabel || GUIDE.email.ctaLabel,
+    ctaUrl: guideUrl,
+    noteHtml: `Prefer a printable PDF? <a href="${escapeHtml(pdfUrl)}" style="color:#8eb6ff;">Download the install guide</a>.`,
+    linkFallbackUrl: guideUrl,
+    baseUrl: origin
+  });
+  return { subject, text, html, guideUrl, pdfUrl };
+}
+
+async function sendPwaInstallEmail({ to, recipientName, fromName, baseUrl }) {
+  try {
+    if (!require('./comms-settings-store').isEnabled('email.pwa_install')) {
+      return { sent: false, method: 'disabled', skipped: true };
+    }
+  } catch { /* continue */ }
+  const content = buildPwaInstallEmail({ recipientName, fromName, baseUrl });
+  const cfg = mailConfig();
+  if (cfg.configured) {
+    await sendViaResend({
+      from: cfg.from,
+      apiKey: process.env.RESEND_API_KEY || '',
+      to,
+      subject: content.subject,
+      text: content.text,
+      html: content.html
+    });
+    return { sent: true, method: 'resend', subject: content.subject, guideUrl: content.guideUrl, pdfUrl: content.pdfUrl };
+  }
+  console.log(`[pwa-install] ${to}: ${content.guideUrl}`);
+  return { sent: false, method: 'log', subject: content.subject, previewHtml: content.html, guideUrl: content.guideUrl, pdfUrl: content.pdfUrl };
+}
+
 async function sendConferenceOwnerEmail({
   to,
   subject,
@@ -1151,6 +1228,7 @@ module.exports = {
   sendRulesSyncAlert,
   sendConferenceOwnerEmail,
   sendRosterViolationEmail,
+  sendPwaInstallEmail,
   mailConfig,
   buildInviteEmail,
   buildAccountApprovedEmail,
@@ -1158,5 +1236,6 @@ module.exports = {
   buildWeeklyWrapEmail,
   buildConferenceOwnerEmail,
   buildRosterViolationEmail,
+  buildPwaInstallEmail,
   siteBaseUrl
 };

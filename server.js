@@ -73,10 +73,13 @@ const {
   sendRulesSyncAlert,
   sendConferenceOwnerEmail,
   sendRosterViolationEmail,
+  sendPwaInstallEmail,
   buildWeeklyWrapEmail,
   buildConferenceOwnerEmail,
+  buildPwaInstallEmail,
   mailConfig
 } = require('./mail');
+const { GUIDE: pwaInstallGuide } = require('./pwa-install-guide');
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -612,7 +615,8 @@ function sendFile(res, filePath) {
       '.ttf': 'font/ttf',
       '.otf': 'font/otf',
       '.woff': 'font/woff',
-      '.woff2': 'font/woff2'
+      '.woff2': 'font/woff2',
+      '.pdf': 'application/pdf'
     }[ext] || 'application/octet-stream';
 
     const fileName = path.basename(filePath);
@@ -8044,6 +8048,90 @@ const server = http.createServer(async (req, res) => {
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not reject account' });
       }
+    }
+
+    if (pathname === '/api/docs/pwa-install' && req.method === 'GET') {
+      return sendJson(res, 200, { ok: true, guide: pwaInstallGuide });
+    }
+
+    if (pathname === '/api/mail/preview-pwa-install' && req.method === 'GET') {
+      if (!requireStaff(req, res)) return;
+      const content = buildPwaInstallEmail({
+        recipientName: 'Alex Manager',
+        fromName: 'League HQ',
+        baseUrl: requestOrigin(req)
+      });
+      const format = String(requestUrl.searchParams.get('format') || 'html').toLowerCase();
+      if (format === 'json') {
+        return sendJson(res, 200, {
+          ok: true,
+          subject: content.subject,
+          text: content.text,
+          html: content.html,
+          guideUrl: content.guideUrl,
+          pdfUrl: content.pdfUrl
+        });
+      }
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      return res.end(content.html);
+    }
+
+    if (pathname === '/api/comms/send-pwa-install' && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      const emails = Array.isArray(body.emails)
+        ? body.emails.map((e) => String(e || '').trim()).filter(Boolean)
+        : String(body.email || body.emails || '')
+          .split(/[,;\n]+/)
+          .map((e) => e.trim())
+          .filter(Boolean);
+      if (!emails.length) {
+        return sendJson(res, 400, { ok: false, error: 'Enter at least one email address' });
+      }
+      const results = [];
+      for (const email of emails) {
+        try {
+          const member = users.findByEmail(email);
+          const mailResult = await sendPwaInstallEmail({
+            to: email,
+            recipientName: member?.name || member?.loginName || email.split('@')[0],
+            fromName: admin.name || admin.loginName || 'League HQ',
+            baseUrl: requestOrigin(req)
+          });
+          results.push({
+            ok: !mailResult.skipped,
+            email,
+            sent: Boolean(mailResult.sent),
+            method: mailResult.method,
+            skipped: Boolean(mailResult.skipped),
+            guideUrl: mailResult.guideUrl || null,
+            pdfUrl: mailResult.pdfUrl || null
+          });
+        } catch (err) {
+          results.push({ ok: false, email, error: err.message || 'Send failed' });
+        }
+      }
+      const sentCount = results.filter((r) => r.sent).length;
+      const okCount = results.filter((r) => r.ok).length;
+      return sendJson(res, 200, {
+        ok: okCount > 0,
+        results,
+        mail: mailConfig(),
+        message: sentCount
+          ? `Sent install guide to ${sentCount} address${sentCount === 1 ? '' : 'es'}.`
+          : okCount
+            ? 'Guide prepared (email delivery offline — share the PDF or /install-app.html link).'
+            : 'No guides were sent.'
+      });
     }
 
     if (pathname === '/api/comms' && req.method === 'GET') {

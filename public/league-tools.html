@@ -1081,6 +1081,7 @@
         </div>
         <div class="comm-nav-group" id="nav-communications" hidden>
           <p class="comm-nav-label">Communications</p>
+          <a href="#comms-pwa-install">Install guide</a>
           <a href="#comms-brand">Email brand</a>
           <a href="#comms-catalog">Auto messages</a>
         </div>
@@ -1274,6 +1275,24 @@
             <p>Every auto email and inbox message — when it fires, what it says, and whether it’s on.</p>
           </header>
           <div class="comm-group-body">
+            <section class="admin-block" id="comms-pwa-install">
+              <div class="section-head">
+                <h3>Send app install guide</h3>
+              </div>
+              <p class="help">Email iPhone (Safari) and Android (Chrome) install steps. Members can also open <a href="/install-app.html" target="_blank" rel="noopener">/install-app.html</a> or download the <a href="/docs/gridiron24-app-install.pdf" target="_blank" rel="noopener">PDF</a>.</p>
+              <div class="status-note" id="comms-pwa-msg" role="status"></div>
+              <div class="invite-compose">
+                <label class="field-label" for="comms-pwa-emails">Email addresses</label>
+                <p class="field-hint">One or more — commas or new lines. Uses each member’s name when the email already has an account.</p>
+                <textarea class="field field-area field-box" id="comms-pwa-emails" rows="3" maxlength="800" spellcheck="false"></textarea>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-send" id="comms-pwa-send">Send install guide</button>
+                  <a class="btn btn-ghost" href="/api/mail/preview-pwa-install" target="_blank" rel="noopener">Preview email</a>
+                  <a class="btn btn-ghost" href="/docs/gridiron24-app-install.pdf" target="_blank" rel="noopener">PDF</a>
+                </div>
+              </div>
+            </section>
+
             <section class="admin-block" id="comms-brand">
               <div class="section-head">
                 <h3>Sitewide email brand</h3>
@@ -3158,6 +3177,35 @@
           await openCommsEditor(__giCommsEditId);
         } catch (err) {
           showCommsMsg('comms-editor-msg', err.message, false);
+        }
+      });
+
+      document.getElementById('comms-pwa-send')?.addEventListener('click', async () => {
+        const input = document.getElementById('comms-pwa-emails');
+        const btn = document.getElementById('comms-pwa-send');
+        const emails = String(input?.value || '')
+          .split(/[,;\n]+/)
+          .map((e) => e.trim())
+          .filter(Boolean);
+        if (!emails.length) {
+          showCommsMsg('comms-pwa-msg', 'Enter at least one email.', false);
+          return;
+        }
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/comms/send-pwa-install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emails })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || data.message || 'Send failed');
+          showCommsMsg('comms-pwa-msg', data.message || 'Install guide sent.', true);
+          if (input) input.value = '';
+        } catch (err) {
+          showCommsMsg('comms-pwa-msg', err.message, false);
+        } finally {
+          btn.disabled = false;
         }
       });
     }

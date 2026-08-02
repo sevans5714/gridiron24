@@ -45,6 +45,16 @@ const CATALOG = [
     preview: '/api/mail/preview-reset'
   },
   {
+    id: 'email.pwa_install',
+    name: 'PWA install guide',
+    channel: 'email',
+    group: 'Onboarding',
+    when: 'Owner sends install instructions from League Tools → Communications (or Members).',
+    editable: ['subject', 'preheader', 'eyebrow', 'headline', 'bodyLead', 'ctaLabel'],
+    preview: '/api/mail/preview-pwa-install',
+    canDisable: true
+  },
+  {
     id: 'email.weekly_wrap',
     name: 'Weekly wrap-up',
     channel: 'email',

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Install the GridIron 24 App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=150" />
+  <style>
+    body[data-page="install-app"] .page-hero { padding-bottom: 0.35rem; }
+    body[data-page="install-app"] .page-hero::before,
+    body[data-page="install-app"] .page-hero::after { display: none; }
+    .install-lead {
+      max-width: 40rem;
+      margin: 0 auto 1.25rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.55;
+      text-align: center;
+    }
+    .install-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      justify-content: center;
+      margin: 0 0 1.75rem;
+    }
+    .install-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .install-card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(47, 109, 255, 0.08), transparent 40%), var(--panel);
+      padding: 1.15rem 1.2rem 1.25rem;
+    }
+    .install-card h2 {
+      margin: 0 0 0.75rem;
+      font-family: var(--display);
+      font-size: 1.45rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .install-card ol {
+      margin: 0;
+      padding: 0 0 0 1.15rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .install-card li { margin: 0.35rem 0; }
+    .install-tips {
+      margin: 0.95rem 0 0;
+      padding: 0.75rem 0.85rem;
+      border-left: 3px solid var(--blue);
+      background: rgba(47, 109, 255, 0.08);
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .install-tips strong {
+      display: block;
+      margin-bottom: 0.35rem;
+      color: var(--text);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .install-tips ul { margin: 0; padding-left: 1.1rem; }
+    .install-panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 1.1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .install-panel h2 {
+      margin: 0 0 0.55rem;
+      font-family: var(--display);
+      font-size: 1.25rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .install-panel ul { margin: 0; padding-left: 1.15rem; line-height: 1.5; }
+    .install-panel li { margin: 0.3rem 0; }
+    .install-meta {
+      margin: 1.25rem 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    @media (max-width: 800px) {
+      .install-grid { grid-template-columns: 1fr; }
+    }
+    @media print {
+      .site-nav, .install-actions, .tools-back, .ticker-wrap { display: none !important; }
+      .install-card, .install-panel { break-inside: avoid; box-shadow: none; }
+      body { background: #fff; color: #111; }
+    }
+  </style>
+</head>
+<body data-page="install-app">
+  <div id="nav"></div>
+  <script src="/js/nav.js?v=150"></script>
+
+  <section class="page-hero shell">
+    <p class="eyebrow">Mobile app</p>
+    <h1>Install GridIron 24</h1>
+  </section>
+
+  <main class="page-main shell" id="install-main">
+    <p class="install-lead">Loading guide…</p>
+  </main>
+
+  <script>
+    async function boot() {
+      const main = document.getElementById('install-main');
+      try {
+        const res = await fetch('/api/docs/pwa-install', { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load guide');
+        const g = data.guide;
+        const esc = (s) => String(s || '')
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        main.innerHTML = `
+          <p class="install-lead">${(g.intro || []).map(esc).join('<br/><br/>')}</p>
+          <div class="install-actions">
+            <a class="btn" href="${esc(g.enterUrl)}">Sign in</a>
+            <a class="btn btn-ghost" href="/docs/gridiron24-app-install.pdf" download>Download PDF</a>
+            <button type="button" class="btn btn-ghost" id="install-print">Print / Save as PDF</button>
+          </div>
+          <div class="install-panel">
+            <h2>Before you start</h2>
+            <ul>${(g.beforeYouStart || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+          </div>
+          <div class="install-grid">
+            <section class="install-card">
+              <h2>${esc(g.apple.title)}</h2>
+              <ol>${(g.apple.steps || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
+              <div class="install-tips">
+                <strong>Tips</strong>
+                <ul>${(g.apple.tips || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+              </div>
+            </section>
+            <section class="install-card">
+              <h2>${esc(g.android.title)}</h2>
+              <ol>${(g.android.steps || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
+              <div class="install-tips">
+                <strong>Tips</strong>
+                <ul>${(g.android.tips || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+              </div>
+            </section>
+          </div>
+          <div class="install-panel">
+            <h2>${esc(g.afterInstall.title)}</h2>
+            <ul>${(g.afterInstall.bullets || []).map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+          </div>
+          <div class="install-panel">
+            <h2>${esc(g.help.title)}</h2>
+            <p style="margin:0;line-height:1.5;color:var(--muted);">${esc(g.help.body)}</p>
+          </div>
+          <p class="install-meta">${esc(g.siteUrl)} · ${esc(g.updatedLabel)}</p>`;
+        document.getElementById('install-print')?.addEventListener('click', () => window.print());
+      } catch (err) {
+        main.innerHTML = `<p class="install-lead">${String(err.message || err)}</p>`;
+      }
+    }
+    boot();
+  </script>
+</body>
+</html>
