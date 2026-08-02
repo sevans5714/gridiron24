@@ -929,7 +929,8 @@ html[data-theme="day"] .s-row .num.col-pf {
   display: grid;
   gap: 0.22rem;
   justify-items: center;
-  align-content: center;
+  /* Labels share a baseline; icons sit above them */
+  align-content: end;
   min-height: 3.35rem;
   padding: 0.2rem 0.05rem;
   font-family: var(--label);
@@ -939,6 +940,13 @@ html[data-theme="day"] .s-row .num.col-pf {
   text-transform: uppercase;
   cursor: pointer;
   transition: color 0.18s ease, transform 0.18s ease;
+}
+
+/* Side tabs: lift to Home’s raise, then space the glyph up into the orb */
+.app-tabs button:not(.tab-home) {
+  transform: translateY(-0.55rem);
+  /* (orb 3.35 − svg 1.55) / 2 ≈ 0.9rem above a tight icon–label stack */
+  gap: 1.12rem;
 }
 
 .app-tabs button.is-on {
@@ -967,6 +975,7 @@ html[data-theme="day"] .s-row .num.col-pf {
 /* Center Home — circle orb (icon size matches side tabs) */
 .app-tabs button.tab-home {
   transform: translateY(-0.55rem);
+  gap: 0.22rem;
   min-height: 3.6rem;
   font-size: 0.62rem;
   color: var(--muted);
@@ -3420,7 +3429,7 @@ html[data-theme="day"] .s-row .num.col-pf {
 
 .tab-badge {
   position: absolute;
-  top: 0.2rem;
+  top: -0.15rem;
   right: calc(50% - 1.75rem);
   min-width: 1.05rem;
   height: 1.05rem;
