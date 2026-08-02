@@ -1,16 +1,16 @@
 /* GridIron 24 PWA — app shell cache */
-const CACHE = 'gi24-app-v94';
+const CACHE = 'gi24-app-v96';
 const SHELL = [
   '/app/',
   '/app/index.html',
-  '/app/app.css?v=94',
-  '/app/app.js?v=94',
-  '/manifest.webmanifest?v=94',
-  '/assets/pwa/icon-192.png?v=94',
-  '/assets/pwa/icon-512.png?v=94',
-  '/assets/pwa/icon-maskable-512.png?v=94',
-  '/assets/pwa/icon-192-transparent.png?v=94',
-  '/assets/pwa/apple-touch-icon.png?v=94',
+  '/app/app.css?v=96',
+  '/app/app.js?v=96',
+  '/manifest.webmanifest?v=96',
+  '/assets/pwa/icon-192.png?v=96',
+  '/assets/pwa/icon-512.png?v=96',
+  '/assets/pwa/icon-maskable-512.png?v=96',
+  '/assets/pwa/icon-192-transparent.png?v=96',
+  '/assets/pwa/apple-touch-icon.png?v=96',
   '/assets/team-logo-placeholder.svg',
   '/assets/gridiron24-brand.png?v=3',
   '/assets/aaa-league.png?v=7',
@@ -18,9 +18,31 @@ const SHELL = [
   '/assets/mayors-cup.png?v=7'
 ];
 
+function isCacheableShellResponse(url, res) {
+  if (!res || !res.ok || res.type === 'opaqueredirect') return false;
+  // Never store the auth gate HTML as JS/CSS
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  if (url.includes('.js') && !ct.includes('javascript')) return false;
+  if (url.includes('.css') && !ct.includes('css')) return false;
+  if (url.includes('.webmanifest') && !(ct.includes('json') || ct.includes('manifest'))) return false;
+  if (/\.(png|jpe?g|webp|svg)(\?|$)/i.test(url) && !(ct.includes('image') || ct.includes('svg'))) return false;
+  return true;
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(async (cache) => {
+      await Promise.all(SHELL.map(async (url) => {
+        const res = await fetch(url, { credentials: 'same-origin', redirect: 'follow' });
+        if (!isCacheableShellResponse(url, res)) {
+          // index.html /app/ may require auth — skip rather than poison the cache
+          if (url === '/app/' || url === '/app/index.html') return;
+          throw new Error('Bad shell response for ' + url);
+        }
+        await cache.put(url, res.clone());
+      }));
+      await self.skipWaiting();
+    })
   );
 });
 
@@ -42,8 +64,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copy)).catch(() => {});
+          if (isCacheableShellResponse(url.pathname + url.search, res)) {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(req, copy)).catch(() => {});
+          }
           return res;
         })
         .catch(() =>

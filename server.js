@@ -189,6 +189,8 @@ const PUBLIC_PATHS = new Set([
   '/docs/gridiron24-app-install.pdf',
   '/favicon.ico',
   '/favicon.png',
+  '/favicon-32.png',
+  '/favicon-48.png',
   '/apple-touch-icon.png',
   '/apple-touch-icon-precomposed.png',
   '/manifest.webmanifest',
@@ -338,6 +340,15 @@ function isPublicPath(pathname) {
   if (pathname.startsWith('/js/')) return true;
   if (pathname.startsWith('/uploads/')) return true;
   if (pathname.startsWith('/docs/') && pathname.endsWith('.pdf')) return true;
+  // App shell assets must be public so the service worker can cache real JS/CSS
+  // (auth redirects were getting stored as app.js and breaking the PWA).
+  if (
+    pathname.startsWith('/app/')
+    && pathname !== '/app/index.html'
+    && /\.(js|css|map|svg|png|jpe?g|webp|woff2?)$/i.test(pathname)
+  ) {
+    return true;
+  }
   return false;
 }
 
