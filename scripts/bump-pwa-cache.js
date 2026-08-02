@@ -16,7 +16,7 @@ const MANIFEST = path.join(ROOT, 'public/manifest.webmanifest');
 const SW = path.join(ROOT, 'public/sw.js');
 
 const TRIGGER_RE =
-  /^(public\/app\/(?!pwa-bust\.json).+|public\/assets\/pwa\/.+|public\/manifest\.webmanifest|public\/sw\.js)$/;
+  /^(public\/app\/(?!pwa-bust\.json).+|public\/assets\/pwa\/.+|public\/favicon(\.ico|-32\.png|-48\.png|\.png)|public\/apple-touch-icon(-precomposed)?\.png|public\/manifest\.webmanifest|public\/sw\.js)$/;
 
 function readVersion() {
   try {
@@ -46,7 +46,9 @@ function applyVersion(v) {
     .replace(/(\/manifest\.webmanifest\?v=)\d+/g, `$1${v}`)
     .replace(/(\/assets\/pwa\/[^"'?\s]+\?v=)\d+/g, `$1${v}`)
     .replace(/(\/app\/app\.css\?v=)\d+/g, `$1${v}`)
-    .replace(/(\/app\/app\.js\?v=)\d+/g, `$1${v}`));
+    .replace(/(\/app\/app\.js\?v=)\d+/g, `$1${v}`)
+    .replace(/(\/favicon(?:\.ico|-32\.png|-48\.png|\.png)\?v=)\d+/g, `$1${v}`)
+    .replace(/(\/apple-touch-icon(?:-precomposed)?\.png\?v=)\d+/g, `$1${v}`));
 
   rewrite(MANIFEST, (json) => json.replace(/(\/assets\/pwa\/[^"?]+\?v=)\d+/g, `$1${v}`));
 
@@ -64,10 +66,20 @@ function applyVersion(v) {
   rewrite(login, (html) => html
     .replace(/(\/manifest\.webmanifest\?v=)\d+/g, `$1${v}`)
     .replace(/(\/assets\/pwa\/[^"'?\s]+\?v=)\d+/g, `$1${v}`)
-    .replace(/(\/favicon\.ico\?v=)\d+/g, `$1${v}`)
-    .replace(/(\/apple-touch-icon\.png\?v=)\d+/g, `$1${v}`));
+    .replace(/(\/favicon(?:\.ico|-32\.png|-48\.png|\.png)\?v=)\d+/g, `$1${v}`)
+    .replace(/(\/apple-touch-icon(?:-precomposed)?\.png\?v=)\d+/g, `$1${v}`));
 
-  // Keep root apple-touch / favicon in sync with generated PWA assets
+  // Bump favicon/apple-touch query tokens across static HTML shells
+  const publicDir = path.join(ROOT, 'public');
+  for (const name of fs.readdirSync(publicDir)) {
+    if (!name.endsWith('.html')) continue;
+    rewrite(path.join(publicDir, name), (html) => html
+      .replace(/(\/favicon(?:\.ico|-32\.png|-48\.png|\.png)\?v=)\d+/g, `$1${v}`)
+      .replace(/(\/apple-touch-icon(?:-precomposed)?\.png\?v=)\d+/g, `$1${v}`)
+      .replace(/(\/assets\/pwa\/[^"'?\s]+\?v=)\d+/g, `$1${v}`));
+  }
+
+  // Keep root apple-touch in sync with generated PWA assets
   try {
     const pwa = path.join(ROOT, 'public/assets/pwa');
     fs.copyFileSync(path.join(pwa, 'apple-touch-icon.png'), path.join(ROOT, 'public/apple-touch-icon.png'));
@@ -95,7 +107,7 @@ function needsBump(files = stagedFiles()) {
 
 function stageBumpedFiles() {
   execSync(
-    'git add -- public/app/pwa-bust.json public/app/index.html public/manifest.webmanifest public/sw.js public/js/theme-boot.js public/login.html public/apple-touch-icon.png public/apple-touch-icon-precomposed.png public/favicon.ico public/favicon.png',
+    'git add -- public/app/pwa-bust.json public/app/index.html public/manifest.webmanifest public/sw.js public/js/theme-boot.js public/login.html public/*.html public/apple-touch-icon.png public/apple-touch-icon-precomposed.png public/favicon.ico public/favicon.png public/favicon-32.png public/favicon-48.png',
     { cwd: ROOT, stdio: 'inherit' }
   );
 }

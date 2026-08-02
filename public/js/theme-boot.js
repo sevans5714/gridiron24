@@ -12,7 +12,7 @@
   // (e.g. "H" from "Home · GridIron 24").
   (function ensureBrandIcons() {
     try {
-      var bust = '86';
+      var bust = '88';
       var head = document.head || document.getElementsByTagName('head')[0];
       if (!head) return;
       function upsert(rel, href, attrs) {
@@ -29,7 +29,9 @@
         }
         el.setAttribute('href', href);
       }
-      upsert('icon', '/favicon.ico?v=' + bust, { type: 'image/x-icon' });
+      // Prefer PNG "24" mark for tabs/bookmarks — tiny crest ICO reads as a giant H.
+      upsert('icon', '/favicon-32.png?v=' + bust, { type: 'image/png', sizes: '32x32' });
+      upsert('icon', '/favicon.ico?v=' + bust, { type: 'image/x-icon', sizes: 'any' });
       upsert('icon', '/assets/pwa/icon-192.png?v=' + bust, { type: 'image/png', sizes: '192x192' });
       upsert('apple-touch-icon', '/apple-touch-icon.png?v=' + bust, { sizes: '180x180' });
       upsert('apple-touch-icon', '/assets/pwa/apple-touch-icon.png?v=' + bust, { sizes: '180x180' });
