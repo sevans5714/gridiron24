@@ -1036,6 +1036,24 @@ html[data-theme="day"] .s-row .num.col-pf {
   flex-direction: column;
   gap: 0.55rem;
   min-height: calc(100dvh - 7.5rem - var(--safe-top) - var(--safe-bottom));
+  height: calc(100dvh - 7.5rem - var(--safe-top) - var(--safe-bottom));
+}
+
+.book-panel.is-book {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.book-frame {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: #060b16;
 }
 
 .book-subtabs {
@@ -1096,11 +1114,6 @@ html[data-theme="day"] .s-row .num.col-pf {
   display: none !important;
 }
 
-.book-panel.is-book {
-  position: relative;
-  z-index: 2;
-}
-
 .book-wire-wrap {
   flex: 0 0 auto;
   position: relative;
@@ -1122,15 +1135,6 @@ html[data-theme="day"] .s-row .num.col-pf {
   flex-direction: column;
   position: relative;
   z-index: 2;
-}
-
-.book-frame {
-  width: 100%;
-  flex: 1 1 auto;
-  min-height: calc(100dvh - 11.5rem - var(--safe-top) - var(--safe-bottom));
-  border: 0;
-  border-radius: var(--radius-md);
-  background: #060b16;
 }
 
 .book-locked {

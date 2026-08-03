@@ -853,6 +853,17 @@
     });
   }
 
+  function loadCasinoFrame(mount, { force = false } = {}) {
+    const frame = mount?.querySelector('iframe.book-frame');
+    if (!frame) return;
+    const base = frame.getAttribute('data-casino-src') || '/app/casino-embed.html?embed=book';
+    if (!force && frame.dataset.loaded === '1' && frame.getAttribute('src') && frame.getAttribute('src') !== 'about:blank') {
+      return;
+    }
+    frame.dataset.loaded = '1';
+    frame.src = `${base}${base.includes('?') ? '&' : '?'}t=${Date.now()}`;
+  }
+
   function wireBookShell(mount) {
     mount.querySelectorAll('[data-book-tab]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -872,6 +883,7 @@
           postBook({ type: 'gi-book-ping' });
         }
         if (state.bookPanel === 'book') {
+          loadCasinoFrame(mount);
           postBook({ type: 'gi-book-ping' });
         }
       });
@@ -880,6 +892,7 @@
     frame?.addEventListener('load', () => {
       postBook({ type: 'gi-book-ping' });
     });
+    loadCasinoFrame(mount);
   }
 
   function renderBook() {
@@ -916,18 +929,27 @@
               <div class="book-wire-wrap">${bookWireShellHtml()}</div>
             </div>
             <div class="book-panel is-book" data-book-panel="book">
-              <iframe class="book-frame" title="Casala's Palace Casino" src="/members.html?embed=book#gambler"></iframe>
+              <iframe class="book-frame" title="Casala's Palace Casino" src="about:blank" data-casino-src="/app/casino-embed.html?embed=book"></iframe>
             </div>
             <div class="book-panel" data-book-panel="slip" hidden></div>
           </div>`;
         stage = mount.querySelector('.book-stage');
         wireBookShell(mount);
         state.bookPanel = state.bookPanel || 'book';
+      } else {
+        // Migrate older Book iframes that pointed outside the PWA scope.
+        const frame = stage.querySelector('iframe.book-frame');
+        if (frame && !frame.getAttribute('data-casino-src')) {
+          frame.setAttribute('data-casino-src', '/app/casino-embed.html?embed=book');
+          frame.dataset.loaded = '';
+          loadCasinoFrame(mount, { force: true });
+        }
       }
 
       applyBookPanel(mount);
       updateBookTabBadge(mount);
       if (state.bookPanel === 'slip') renderBookSlip(mount);
+      if (state.bookPanel === 'book') loadCasinoFrame(mount);
 
       if (state.bookPanel === 'scores') {
         if (!state.sports) {

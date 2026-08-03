@@ -1,16 +1,16 @@
 /* GridIron 24 PWA — app shell cache */
-const CACHE = 'gi24-app-v106';
+const CACHE = 'gi24-app-v108';
 const SHELL = [
   '/app/',
   '/app/index.html',
-  '/app/app.css?v=106',
-  '/app/app.js?v=106',
-  '/manifest.webmanifest?v=106',
-  '/assets/pwa/icon-192.png?v=106',
-  '/assets/pwa/icon-512.png?v=106',
-  '/assets/pwa/icon-maskable-512.png?v=106',
-  '/assets/pwa/icon-192-transparent.png?v=106',
-  '/assets/pwa/apple-touch-icon.png?v=106',
+  '/app/app.css?v=108',
+  '/app/app.js?v=108',
+  '/manifest.webmanifest?v=108',
+  '/assets/pwa/icon-192.png?v=108',
+  '/assets/pwa/icon-512.png?v=108',
+  '/assets/pwa/icon-maskable-512.png?v=108',
+  '/assets/pwa/icon-192-transparent.png?v=108',
+  '/assets/pwa/apple-touch-icon.png?v=108',
   '/assets/team-logo-placeholder.svg',
   '/assets/gridiron24-brand.png?v=3',
   '/assets/aaa-league.png?v=7',
@@ -26,6 +26,8 @@ function isCacheableShellResponse(url, res) {
   if (url.includes('.css') && !ct.includes('css')) return false;
   if (url.includes('.webmanifest') && !(ct.includes('json') || ct.includes('manifest'))) return false;
   if (/\.(png|jpe?g|webp|svg)(\?|$)/i.test(url) && !(ct.includes('image') || ct.includes('svg'))) return false;
+  // Don't cache the casino embed HTML — it should always hit the network with the session.
+  if (url.includes('casino-embed')) return false;
   return true;
 }
 

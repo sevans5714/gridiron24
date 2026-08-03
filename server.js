@@ -340,12 +340,13 @@ function isPublicPath(pathname) {
   if (pathname.startsWith('/js/')) return true;
   if (pathname.startsWith('/uploads/')) return true;
   if (pathname.startsWith('/docs/') && pathname.endsWith('.pdf')) return true;
-  // App shell assets must be public so the service worker can cache real JS/CSS
-  // (auth redirects were getting stored as app.js and breaking the PWA).
+  // App shell HTML embeds (casino iframe lives under /app/ so PWA scope allows it)
   if (
     pathname.startsWith('/app/')
     && pathname !== '/app/index.html'
-    && /\.(js|css|map|svg|png|jpe?g|webp|woff2?)$/i.test(pathname)
+    && pathname !== '/app/'
+    && pathname !== '/app'
+    && /\.(js|css|map|svg|png|jpe?g|webp|woff2?|html)$/i.test(pathname)
   ) {
     return true;
   }
