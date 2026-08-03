@@ -1555,33 +1555,6 @@
           </div>
         </div>
 
-        <nav class="home-launch" aria-label="Quick launch">
-          <button type="button" class="home-launch-btn" data-go="matchup">
-            <span class="home-launch-orb" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M4.5 7.2h6.2v9.6L4.5 14.8z"/><path d="M19.5 7.2h-6.2v9.6l6.2-2z"/><path d="M11.2 12h1.6"/></svg>
-            </span>
-            Matchup
-          </button>
-          <button type="button" class="home-launch-btn" data-go="roster">
-            <span class="home-launch-orb" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="2.6"/><circle cx="16.2" cy="8.6" r="2.1"/><path d="M4.2 18.5c.2-3 2.4-5 4.8-5s4.5 2 4.8 5"/><path d="M13.4 18.5c.4-2.2 1.9-3.7 4-3.9 2.2.1 3.8 1.7 4 3.9"/></svg>
-            </span>
-            Roster
-          </button>
-          <button type="button" class="home-launch-btn" data-go="league" data-league-jump="messages">
-            <span class="home-launch-orb" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M8.2 5h7.6v2.8a3.8 3.8 0 0 1-7.6 0V5z"/><path d="M8.2 6.4H5.6a2.2 2.2 0 0 0 2.1 3.6"/><path d="M15.8 6.4h2.6a2.2 2.2 0 0 1-2.1 3.6"/><path d="M10.4 12.4h3.2V15h-3.2z"/><path d="M9 18.6h6M8.2 20.2h7.6"/></svg>
-            </span>
-            League${state.unread ? `<em>${state.unread > 99 ? '99+' : state.unread}</em>` : ''}
-          </button>
-          <button type="button" class="home-launch-btn" data-go="book">
-            <span class="home-launch-orb is-casino" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><rect x="4" y="4" width="9" height="9" rx="1.5"/><rect x="11" y="11" width="9" height="9" rx="1.5"/><path d="M6.5 6.5h.01M10.5 10.5h.01M6.5 10.5h.01M13.5 13.5h.01M17.5 13.5h.01M13.5 17.5h.01M17.5 17.5h.01M15.5 15.5h.01"/></svg>
-            </span>
-            Casino
-          </button>
-        </nav>
-
         <section class="home-block">
           <div class="home-block-head"><h2>Standings</h2><span>${esc(conf)}</span></div>
           ${homeStandingsHtml()}
