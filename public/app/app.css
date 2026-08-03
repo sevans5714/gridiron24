@@ -2269,64 +2269,6 @@ html[data-theme="day"] .s-row .num.col-pf {
   line-height: 1;
 }
 
-.home-launch {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.35rem;
-  padding: 0.15rem 0 0.1rem;
-}
-
-.home-launch-btn {
-  appearance: none;
-  display: grid;
-  gap: 0.35rem;
-  justify-items: center;
-  margin: 0;
-  padding: 0.2rem 0.1rem 0.15rem;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-family: var(--body);
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.home-launch-orb {
-  display: grid;
-  place-items: center;
-  width: 2.85rem;
-  height: 2.85rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(47, 109, 255, 0.16));
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
-}
-
-.home-launch-orb.is-casino {
-  background:
-    linear-gradient(160deg, rgba(232, 196, 90, 0.2), rgba(47, 109, 255, 0.18));
-}
-
-.home-launch-orb svg {
-  width: 1.35rem;
-  height: 1.35rem;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  color: var(--blue-soft);
-}
-
-.home-launch-btn em {
-  font-style: normal;
-  color: var(--gold);
-}
-
 .home-block {
   margin: 0;
 }
@@ -3431,15 +3373,6 @@ html[data-theme="day"] .s-row .num.col-pf {
 
   .home-greeting {
     font-size: 2rem;
-  }
-
-  .home-launch {
-    gap: 0.2rem;
-  }
-
-  .home-launch-orb {
-    width: 2.65rem;
-    height: 2.65rem;
   }
 }
 
