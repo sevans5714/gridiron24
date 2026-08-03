@@ -12,7 +12,7 @@
   // (e.g. "H" from "Home · GridIron 24").
   (function ensureBrandIcons() {
     try {
-      var bust = '108';
+      var bust = '110';
       var head = document.head || document.getElementsByTagName('head')[0];
       if (!head) return;
       function upsert(rel, href, attrs) {

@@ -1483,39 +1483,114 @@
     });
   }
 
+  function homeFeaturedMatchupHtml() {
+    const { matchup: m } = findMyMatchup();
+    const week = state.week || state.myTeam?.currentMatchupPeriod || '—';
+    if (!m) {
+      return `
+        <button type="button" class="home-kickoff is-empty" data-go="matchup">
+          <span class="home-kickoff-kicker">Week ${esc(String(week))}</span>
+          <strong>Your matchup locks in soon</strong>
+          <span class="home-kickoff-cta">Open matchup →</span>
+        </button>`;
+    }
+    const st = matchupStatus(m);
+    const status = st.inProgress ? 'Live' : st.decided ? 'Final' : 'Upcoming';
+    const mid = st.decided || st.inProgress
+      ? `${fmtScore(m.away?.score)} – ${fmtScore(m.home?.score)}`
+      : 'VS';
+    return `
+      <button type="button" class="home-kickoff${st.inProgress ? ' is-live' : ''}" data-go="matchup">
+        <span class="home-kickoff-kicker">
+          <span>Week ${esc(String(week))}</span>
+          <span class="home-kickoff-status${st.inProgress ? ' is-live' : ''}">${esc(status)}</span>
+        </span>
+        <div class="home-kickoff-board">
+          <div class="home-kickoff-side">
+            <img src="${esc(m.away?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
+            <span>${esc(m.away?.name || 'Away')}</span>
+          </div>
+          <div class="home-kickoff-mid${st.inProgress ? ' is-live' : ''}">${esc(mid)}</div>
+          <div class="home-kickoff-side is-home">
+            <img src="${esc(m.home?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
+            <span>${esc(m.home?.name || 'Home')}</span>
+          </div>
+        </div>
+        <span class="home-kickoff-cta">Tap for the full box score</span>
+      </button>`;
+  }
+
   function renderHome() {
     const mount = document.getElementById('home-mount');
     if (!mount) return;
     const who = firstName(state.authUser);
     const t = state.myTeam?.team;
     const week = state.week || state.myTeam?.currentMatchupPeriod || '—';
+    const conf = conferenceLabel(userConferenceKey());
     const leagueLogo = leagueBrandLogo();
+    const rank = t?.standingRank ? `#${t.standingRank}` : '—';
 
     mount.innerHTML = `
-      <div class="home-hero">
-        <p class="home-greeting">Welcome back <span>${esc(who)}</span></p>
-        <div class="home-strip">
-          <div class="home-tile is-league">
-            <span class="lbl">League</span>
-            <img class="home-league-logo" src="${esc(leagueLogo.src)}" alt="${esc(leagueLogo.alt)}" width="72" height="72" decoding="async" />
+      <div class="home-stage">
+        <header class="home-hero">
+          <img class="home-hero-mark" src="${esc(leagueLogo.src)}" alt="" width="120" height="120" decoding="async" />
+          <p class="home-eyebrow">${esc(conf)} · Week ${esc(String(week))}</p>
+          <p class="home-greeting">Let's go, <span>${esc(who || 'champ')}</span></p>
+          <p class="home-tagline">Your board for the week — standings, slate, and the fight in front of you.</p>
+        </header>
+
+        ${homeFeaturedMatchupHtml()}
+
+        <div class="home-pulse" role="group" aria-label="Season pulse">
+          <div class="home-pulse-cell">
+            <span class="lbl">Week</span>
+            <span class="val">${esc(String(week))}</span>
           </div>
-          <div class="home-tile"><span class="lbl">Week</span><span class="val">${esc(String(week))}</span></div>
-          <div class="home-tile"><span class="lbl">Record</span><span class="val">${esc(record(t))}</span></div>
+          <div class="home-pulse-cell">
+            <span class="lbl">Record</span>
+            <span class="val">${esc(record(t))}</span>
+          </div>
+          <div class="home-pulse-cell">
+            <span class="lbl">Rank</span>
+            <span class="val">${esc(rank)}</span>
+          </div>
         </div>
-      </div>
-      <section class="home-block">
-        <div class="home-block-head"><h2>Standings</h2></div>
-        ${homeStandingsHtml()}
-      </section>
-      <section class="home-block">
-        <div class="home-block-head"><h2>This week</h2></div>
-        ${homeWeekScheduleHtml()}
-      </section>
-      <div class="quick-row">
-        <button type="button" class="quick-chip" data-go="matchup">My matchup</button>
-        <button type="button" class="quick-chip" data-go="roster">My roster</button>
-        <button type="button" class="quick-chip" data-go="league" data-league-jump="messages">Messages${state.unread ? ` · ${state.unread}` : ''}</button>
-        <button type="button" class="quick-chip" data-go="account">Account</button>
+
+        <nav class="home-launch" aria-label="Quick launch">
+          <button type="button" class="home-launch-btn" data-go="matchup">
+            <span class="home-launch-orb" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4.5 7.2h6.2v9.6L4.5 14.8z"/><path d="M19.5 7.2h-6.2v9.6l6.2-2z"/><path d="M11.2 12h1.6"/></svg>
+            </span>
+            Matchup
+          </button>
+          <button type="button" class="home-launch-btn" data-go="roster">
+            <span class="home-launch-orb" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="2.6"/><circle cx="16.2" cy="8.6" r="2.1"/><path d="M4.2 18.5c.2-3 2.4-5 4.8-5s4.5 2 4.8 5"/><path d="M13.4 18.5c.4-2.2 1.9-3.7 4-3.9 2.2.1 3.8 1.7 4 3.9"/></svg>
+            </span>
+            Roster
+          </button>
+          <button type="button" class="home-launch-btn" data-go="league" data-league-jump="messages">
+            <span class="home-launch-orb" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 6.5h14v3.2H5zM5 10.9h14v3.2H5zM5 15.3h14v3.2H5z"/></svg>
+            </span>
+            League${state.unread ? `<em>${state.unread > 99 ? '99+' : state.unread}</em>` : ''}
+          </button>
+          <button type="button" class="home-launch-btn" data-go="book">
+            <span class="home-launch-orb is-casino" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><rect x="4" y="4" width="9" height="9" rx="1.5"/><rect x="11" y="11" width="9" height="9" rx="1.5"/><path d="M6.5 6.5h.01M10.5 10.5h.01M6.5 10.5h.01M13.5 13.5h.01M17.5 13.5h.01M13.5 17.5h.01M17.5 17.5h.01M15.5 15.5h.01"/></svg>
+            </span>
+            Casino
+          </button>
+        </nav>
+
+        <section class="home-block">
+          <div class="home-block-head"><h2>Standings</h2><span>${esc(conf)}</span></div>
+          ${homeStandingsHtml()}
+        </section>
+        <section class="home-block">
+          <div class="home-block-head"><h2>This week</h2><span>Week ${esc(String(week))}</span></div>
+          ${homeWeekScheduleHtml()}
+        </section>
       </div>
     `;
 
