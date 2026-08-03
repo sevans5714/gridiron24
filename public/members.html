@@ -4761,6 +4761,70 @@
     .mock-dialog-card.mock-profile-card > .mock-dialog-close {
       z-index: 3;
     }
+    .mock-dialog-card.mock-pick-card {
+      width: min(28rem, 100%);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      flex: none;
+      grid-template-columns: none;
+      gap: 0;
+      align-items: stretch;
+      max-height: min(90vh, 44rem);
+      overflow: hidden;
+      padding: 1.25rem 1.2rem 0;
+      box-sizing: border-box;
+      will-change: transform, opacity, box-shadow;
+      transform-origin: center center;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      background:
+        linear-gradient(180deg, rgba(47, 123, 255, 0.16), transparent 44%),
+        #0b1322;
+      border-color: rgba(126, 200, 255, 0.22);
+      box-shadow:
+        0 28px 64px rgba(0, 0, 0, 0.72),
+        0 0 0 1px rgba(0, 0, 0, 0.45);
+      isolation: isolate;
+    }
+    .mock-dialog-card.mock-pick-card > .mock-dialog-close {
+      z-index: 5;
+    }
+    .mock-dialog-card.mock-pick-card > .mock-dialog-kicker,
+    .mock-dialog-card.mock-pick-card > h3 {
+      position: relative;
+      z-index: 1;
+      padding-right: 2.25rem;
+    }
+    #mock-confirm-player {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      padding-bottom: 0.35rem;
+      scrollbar-width: thin;
+    }
+    .mock-dialog-card.mock-pick-card > .mock-dialog-actions {
+      flex: 0 0 auto;
+      position: sticky;
+      bottom: 0;
+      z-index: 4;
+      margin: 0 -1.2rem;
+      padding: 0.75rem 1.2rem 1.1rem;
+      border-top: 1px solid rgba(126, 200, 255, 0.14);
+      background: linear-gradient(180deg, rgba(11, 19, 34, 0.92), #0b1322 35%);
+    }
+    html[data-theme="day"] .mock-dialog-card.mock-pick-card {
+      background:
+        linear-gradient(180deg, rgba(31, 94, 240, 0.08), transparent 44%),
+        #ffffff;
+      border-color: rgba(20, 24, 31, 0.12);
+      box-shadow:
+        0 24px 48px rgba(20, 24, 31, 0.18),
+        0 0 0 1px rgba(20, 24, 31, 0.06);
+    }
+    html[data-theme="day"] .mock-dialog-card.mock-pick-card > .mock-dialog-actions {
+      border-top-color: rgba(20, 24, 31, 0.1);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), #ffffff 35%);
+    }
     #mock-profile-body {
       flex: 1 1 auto;
       min-height: 0;
@@ -5490,42 +5554,12 @@
       border-radius: 0.75rem;
       background: var(--mo-surface-2);
     }
-    .mock-dialog-card.mock-pick-card {
-      width: min(28rem, 100%);
-      position: relative;
-      padding-top: 1.25rem;
-      display: block;
-      flex: none;
-      grid-template-columns: none;
-      gap: 0;
-      align-items: stretch;
-      will-change: transform, opacity, box-shadow;
-      transform-origin: center center;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-      background:
-        linear-gradient(180deg, rgba(47, 123, 255, 0.16), transparent 44%),
-        #0b1322;
-      border-color: rgba(126, 200, 255, 0.22);
-      box-shadow:
-        0 28px 64px rgba(0, 0, 0, 0.72),
-        0 0 0 1px rgba(0, 0, 0, 0.45);
-      isolation: isolate;
-    }
-    html[data-theme="day"] .mock-dialog-card.mock-pick-card {
-      background:
-        linear-gradient(180deg, rgba(31, 94, 240, 0.08), transparent 44%),
-        #ffffff;
-      border-color: rgba(20, 24, 31, 0.12);
-      box-shadow:
-        0 24px 48px rgba(20, 24, 31, 0.18),
-        0 0 0 1px rgba(20, 24, 31, 0.06);
-    }
     .mock-dialog-card.mock-pick-card.is-draft-glow {
       border-color: color-mix(in srgb, var(--mo-good) 72%, var(--mo-line));
       background:
         radial-gradient(ellipse 90% 70% at 50% 0%, color-mix(in srgb, var(--mo-good) 28%, transparent), transparent 58%),
         linear-gradient(180deg, color-mix(in srgb, var(--mo-good) 14%, transparent), transparent 48%),
-        var(--mo-surface);
+        #0b1322;
       box-shadow:
         0 0 0 2px color-mix(in srgb, var(--mo-good) 50%, transparent),
         0 0 36px color-mix(in srgb, var(--mo-good) 42%, transparent),
@@ -9057,7 +9091,7 @@
   </footer>
   <script src="/js/nav.js?v=153"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=66"></script>
+  <script src="/js/lounge-desk.js?v=67"></script>
   <script src="/js/lounge-games.js?v=38"></script>
   <script>
     const esc = (v = '') => String(v)

@@ -1790,6 +1790,17 @@
     const title = document.getElementById('mock-confirm-title');
     const body = document.getElementById('mock-confirm-player');
     const draftBtn = document.getElementById('mock-confirm-draft');
+    const cancelBtn = document.getElementById('mock-confirm-cancel');
+    const closeBtn = document.getElementById('mock-confirm-cancel-x');
+    const dialog = document.getElementById('mock-confirm-dialog');
+    const card = dialog?.querySelector('.mock-pick-card');
+    if (card) {
+      card.classList.remove('is-draft-glow', 'is-draft-fly');
+      card.style.removeProperty('--pick-fly-x');
+      card.style.removeProperty('--pick-fly-y');
+    }
+    if (cancelBtn) cancelBtn.disabled = false;
+    if (closeBtn) closeBtn.disabled = false;
     if (!body) return;
     const short = shortPlayerName(player.name);
     if (title) title.textContent = `Draft ${short}?`;
@@ -1840,6 +1851,18 @@
   function closePickModal() {
     pendingPickPlayerId = null;
     const dialog = document.getElementById('mock-confirm-dialog');
+    const card = dialog?.querySelector('.mock-pick-card');
+    if (card) {
+      card.classList.remove('is-draft-glow', 'is-draft-fly');
+      card.style.removeProperty('--pick-fly-x');
+      card.style.removeProperty('--pick-fly-y');
+    }
+    const cancelBtn = document.getElementById('mock-confirm-cancel');
+    const closeBtn = document.getElementById('mock-confirm-cancel-x');
+    const draftBtn = document.getElementById('mock-confirm-draft');
+    if (cancelBtn) cancelBtn.disabled = false;
+    if (closeBtn) closeBtn.disabled = false;
+    if (draftBtn) draftBtn.disabled = false;
     if (dialog?.open) dialog.close();
   }
 
@@ -4471,10 +4494,14 @@
       e.preventDefault();
       closeMockSettings();
     });
-    document.getElementById('mock-confirm-cancel')?.addEventListener('click', () => {
+    document.getElementById('mock-confirm-cancel')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       closePickModal();
     });
-    document.getElementById('mock-confirm-cancel-x')?.addEventListener('click', () => {
+    document.getElementById('mock-confirm-cancel-x')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       closePickModal();
     });
     document.getElementById('mock-confirm-draft')?.addEventListener('click', async () => {
@@ -4490,6 +4517,8 @@
       const card = e.currentTarget.querySelector('.mock-pick-card');
       if (card?.classList.contains('is-draft-glow') || card?.classList.contains('is-draft-fly')) {
         e.preventDefault();
+        // Still allow Escape to abort — clear the fly lock so Cancel/X work again.
+        closePickModal();
         return;
       }
       pendingPickPlayerId = null;
