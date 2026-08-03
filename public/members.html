@@ -5166,13 +5166,16 @@
     }
 
     .mock-complete-dialog {
-      width: min(96rem, calc(100vw - 1rem));
-      max-width: calc(100vw - 1rem);
-      max-height: calc(100vh - 1rem);
+      width: min(110rem, calc(100vw - 0.75rem));
+      max-width: calc(100vw - 0.75rem);
+      max-height: calc(100vh - 0.75rem);
       padding: 0;
       border: 0;
       background: transparent;
       overflow: visible;
+    }
+    .mock-complete-dialog.mock-dialog {
+      max-width: calc(100vw - 0.75rem);
     }
     .mock-complete-dialog::backdrop {
       background:
@@ -5254,9 +5257,9 @@
     }
     .mock-complete-board {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(13.25rem, 1fr));
-      gap: 0.5rem;
-      padding: 0.5rem 1rem 0.75rem;
+      grid-template-columns: repeat(auto-fill, minmax(17.5rem, 1fr));
+      gap: 0.55rem;
+      padding: 0.55rem 1.1rem 0.85rem;
     }
     .mock-complete-team {
       border: 1px solid var(--mo-line);
@@ -5297,9 +5300,9 @@
     }
     .mock-complete-slots {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.12rem 0.3rem;
-      padding: 0.35rem 0.35rem 0.45rem;
+      grid-template-columns: 1fr;
+      gap: 0.14rem;
+      padding: 0.35rem 0.4rem 0.5rem;
       align-content: start;
     }
     .mock-complete-slots .mock-complete-divider {
@@ -5307,10 +5310,10 @@
     }
     .mock-complete-row {
       display: grid;
-      grid-template-columns: 2.15rem minmax(0, 1fr);
-      gap: 0.22rem;
+      grid-template-columns: 2.35rem minmax(0, 1fr) auto;
+      gap: 0.35rem;
       align-items: center;
-      padding: 0.16rem 0.22rem;
+      padding: 0.2rem 0.28rem;
       border-radius: 0.28rem;
       border: 1px solid transparent;
       background: rgba(255, 255, 255, 0.02);
@@ -5349,23 +5352,30 @@
     .mock-complete-row .slot[data-pos="BN"] { background: var(--mock-bn); color: #e8eef8; }
     .mock-complete-row .nm {
       min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 0.68rem;
+      overflow: visible;
+      text-overflow: unset;
+      white-space: normal;
+      font-size: 0.74rem;
       font-weight: 600;
       color: var(--mo-text);
-      line-height: 1.15;
+      line-height: 1.2;
+      word-break: break-word;
     }
     .mock-complete-row .nm em {
       font-style: normal;
       color: var(--mo-muted);
       font-weight: 500;
-      font-size: 0.56rem;
-      margin-left: 0.18rem;
+      font-size: 0.62rem;
+      margin-left: 0.22rem;
     }
     .mock-complete-row .bye {
-      display: none;
+      display: inline-block;
+      flex: 0 0 auto;
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--mo-muted);
+      white-space: nowrap;
     }
     .mock-complete-divider {
       margin: 0.18rem 0.05rem 0.02rem;
@@ -5399,7 +5409,7 @@
         right: 0.55rem;
       }
       .mock-complete-board {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr);
       }
       .mock-complete-slots {
         grid-template-columns: 1fr;
