@@ -2108,15 +2108,6 @@ html[data-theme="day"] .s-row .num.col-pf {
   color: var(--gold);
 }
 
-.home-tagline {
-  position: relative;
-  margin: 0.55rem 0 0;
-  max-width: 28rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
 .home-kickoff {
   appearance: none;
   display: grid;

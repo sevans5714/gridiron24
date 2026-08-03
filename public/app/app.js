@@ -1536,7 +1536,6 @@
           <img class="home-hero-mark" src="${esc(leagueLogo.src)}" alt="" width="120" height="120" decoding="async" />
           <p class="home-eyebrow">${esc(conf)} · Week ${esc(String(week))}</p>
           <p class="home-greeting">Let's go, <span>${esc(who || 'champ')}</span></p>
-          <p class="home-tagline">Your board for the week — standings, slate, and the fight in front of you.</p>
         </header>
 
         ${homeFeaturedMatchupHtml()}
