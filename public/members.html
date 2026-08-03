@@ -4079,6 +4079,7 @@
       grid-template-columns: minmax(0, 1.35fr) minmax(11.5rem, 0.52fr) minmax(12.5rem, 0.48fr);
       gap: 0.7rem;
       align-items: stretch;
+      --mock-board-h: min(38rem, 70vh);
     }
     .mock-panel {
       border: 1px solid var(--mo-line);
@@ -4088,8 +4089,11 @@
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
       overflow: hidden;
     }
-    .mock-pool {
-      max-height: 38rem;
+    .mock-pool,
+    .mock-side,
+    .mock-chat {
+      height: var(--mock-board-h);
+      max-height: var(--mock-board-h);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -4100,17 +4104,11 @@
       overflow: auto;
       --mock-cols: 2rem 1.35rem 2.2rem minmax(11rem, 1.55fr) 2.4rem 2rem 2.4rem 2.6rem 1.9rem 3.1rem 2.1rem 2.2rem 2.9rem 2.5rem 3rem 2.5rem;
     }
-    .mock-myteam,
-    .mock-side,
-    .mock-chat {
+    .mock-myteam {
       max-height: none;
       overflow: visible;
       display: flex;
       flex-direction: column;
-    }
-    .mock-chat {
-      max-height: 38rem;
-      overflow: hidden;
     }
     .mock-chat-log {
       flex: 1 1 auto;
@@ -4207,6 +4205,7 @@
       line-height: 1.4;
     }
     .mock-side-tabs {
+      flex: 0 0 auto;
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 0.3rem;
@@ -4248,19 +4247,25 @@
       box-shadow: 0 1px 0 color-mix(in srgb, var(--mo-blue) 35%, transparent);
     }
     .mock-side-panel {
-      flex: 0 1 auto;
+      flex: 1 1 auto;
       min-height: 0;
-      overflow: visible;
-      display: none;
-    }
-    .mock-side-panel.is-on { display: block; }
-    .mock-side-panel[data-mock-side-panel="targets"].is-on,
-    .mock-side-panel[data-mock-side-panel="recent"].is-on {
-      max-height: min(32rem, 55vh);
       overflow: auto;
+      display: none;
       scrollbar-width: thin;
     }
-    .mock-side-head { position: sticky; top: 0; }
+    .mock-side-panel.is-on { display: flex; flex-direction: column; }
+    .mock-side-panel[data-mock-side-panel="targets"].is-on,
+    .mock-side-panel[data-mock-side-panel="recent"].is-on,
+    .mock-side-panel[data-mock-side-panel="roster"].is-on {
+      max-height: none;
+    }
+    .mock-side-head { position: sticky; top: 0; flex: 0 0 auto; }
+    .mock-roster-drop,
+    .mock-targets-drop,
+    #mock-recent-list {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
     .mock-targets-drop {
       min-height: 12rem;
       padding-bottom: 0.65rem;
@@ -8242,16 +8247,16 @@
       }
       .mock-layout {
         grid-template-columns: 1fr;
+        --mock-board-h: min(28rem, 58vh);
       }
-      .mock-pool {
-        max-height: 22rem;
-      }
-      .mock-myteam,
-      .mock-side {
-        max-height: none;
-      }
+      .mock-pool,
+      .mock-side,
       .mock-chat {
-        max-height: 18rem;
+        height: var(--mock-board-h);
+        max-height: var(--mock-board-h);
+      }
+      .mock-myteam {
+        max-height: none;
       }
       .mock-clock {
         grid-template-columns: 1fr;
