@@ -11,6 +11,7 @@
 
   const DEFAULT_STARTERS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
   const FLEX_ELIGIBLE = new Set(['RB', 'WR', 'TE']);
+  // Mild seat flavor only — never enough to sleep on consensus elites.
   const CPU_STYLES = ['balanced', 'zeroRb', 'rbHeavy', 'qbEarly', 'tePremium', 'heroRb', 'robust'];
   const LATE_POS = new Set(['K', 'D/ST', 'DST']);
   const SKILL_POS = new Set(['RB', 'WR', 'TE']);
@@ -237,42 +238,53 @@
     const fillsStarter = buildsStarter(state, pos);
 
     // —— Base talent (BPA spine) ——
-    let score = vorp * 4.1;
-    if (Number.isFinite(proj)) score += proj * 0.28;
-    else if (Number.isFinite(prior)) score += prior * 0.18;
-    score += Math.max(0, 42 - rank * 0.28);
-    if (posRank <= 5) score += (6 - posRank) * 2.2;
+    let score = vorp * 4.6;
+    if (Number.isFinite(proj)) score += proj * 0.32;
+    else if (Number.isFinite(prior)) score += prior * 0.2;
+    score += Math.max(0, 48 - rank * 0.32);
+    if (posRank <= 5) score += (6 - posRank) * 2.8;
+    // Consensus board rank: never let need/style bury a top pick early
+    if (early && rank <= overall + 1) score += 55;
+    else if (early && rank <= overall + 3) score += 28;
+    else if (rank <= overall) score += 18;
 
-    // —— Market (ADP): respect consensus early, hunt value later ——
+    // —— Market (ADP): adp is average pick # (lower = better).
+    // fall = overall - adp → + fallen / steal, − reach ahead of ADP ——
     if (Number.isFinite(adp)) {
-      const gap = adp - overall; // + = available later than ADP (value), - = reach
+      const fall = overall - adp;
       if (veryEarly) {
-        if (gap >= -1) score += 36 + Math.min(24, Math.max(0, gap) * 2.2);
-        else if (gap >= -teamCount * 0.35) score += 8 + gap * 1.5;
-        else score -= Math.min(90, Math.abs(gap) * 4.2); // hard punish early reaches
+        if (fall >= -1) score += 42 + Math.min(36, Math.max(0, fall) * 3.2);
+        else if (fall >= -teamCount * 0.35) score += 10 + fall * 1.2;
+        else score -= Math.min(95, Math.abs(fall) * 4.5); // hard punish early reaches
       } else if (early) {
-        if (gap >= 0) score += 32 + Math.min(28, gap * 1.8);
-        else if (gap >= -teamCount * 0.45) score += 10 + gap * 0.9;
-        else score -= Math.min(75, Math.abs(gap) * 2.8);
+        if (fall >= 0) score += 40 + Math.min(40, fall * 2.4);
+        else if (fall >= -teamCount * 0.45) score += 12 + fall * 0.8;
+        else score -= Math.min(80, Math.abs(fall) * 3.0);
       } else {
-        if (gap >= 4) score += 38 + Math.min(35, gap * 1.5); // steal
-        else if (gap >= 0) score += 22 + gap * 1.1;
-        else if (gap >= -teamCount * 0.75) score += 6 + gap * 0.35;
-        else score -= Math.min(55, (Math.abs(gap) - teamCount * 0.4) * 1.5);
+        if (fall >= 4) score += 44 + Math.min(42, fall * 1.8); // steal
+        else if (fall >= 0) score += 26 + fall * 1.3;
+        else if (fall >= -teamCount * 0.75) score += 6 + fall * 0.3;
+        else score -= Math.min(55, (Math.abs(fall) - teamCount * 0.4) * 1.5);
       }
+      // Absolute elite still on the board — take them
+      if (adp <= 12 && overall >= adp - 1) score += 35;
+      if (adp <= 24 && fall >= 0 && early) score += 18;
     } else {
       // No ADP — lean on rank more
-      score += Math.max(0, 28 - rank * 0.2);
+      score += Math.max(0, 32 - rank * 0.22);
     }
 
     // —— Starter construction (smart managers fill holes) ——
+    const eliteOnBoard = (Number.isFinite(adp) && adp <= overall + 1)
+      || rank <= Math.max(overall + 1, 12);
     if (fillsStarter) {
-      score += 48 + openPos * 14;
-      if (startersLeft > 0 && left <= startersLeft + 1) score += 55; // running out of rounds
-      if (startersLeft > 0 && left <= startersLeft) score += 40;
+      score += 42 + openPos * 12;
+      if (startersLeft > 0 && left <= startersLeft + 1) score += 50; // running out of rounds
+      if (startersLeft > 0 && left <= startersLeft) score += 36;
     } else if (startersLeft > 0 && !LATE_POS.has(pos)) {
-      // Bench luxury while starters remain — harsh early/mid
-      score -= early ? 55 : (mid ? 38 : 18);
+      // Bench luxury while starters remain — but never dunk on fallen elites
+      if (eliteOnBoard && early) score -= 8;
+      else score -= early ? 48 : (mid ? 34 : 16);
     }
 
     // —— Position strategy ——
@@ -332,8 +344,8 @@
       score += 18;
     }
     // Quick turnaround (snake) → slightly prefer pure BPA / ADP value
-    if (untilNext <= 2 && Number.isFinite(adp) && adp - overall >= -1) {
-      score += 10;
+    if (untilNext <= 2 && Number.isFinite(adp) && overall - adp >= -1) {
+      score += 12;
     }
 
     // —— Bye week stacking ——
@@ -366,21 +378,23 @@
     // —— Injury ——
     score -= injuryPenalty(player);
 
-    // —— Style personalities (mild — still smart) ——
-    if (style === 'zeroRb') {
-      if (pos === 'WR' && round <= 5) score += 16;
-      if (pos === 'RB' && round <= 2) score -= 18;
-      if (pos === 'RB' && round >= 3 && round <= 7 && fillsStarter) score += 14;
-    } else if (style === 'rbHeavy' || style === 'heroRb') {
-      if (pos === 'RB' && round <= 6) score += style === 'heroRb' ? 18 : 12;
-      if (pos === 'WR' && round <= 2 && owned === 0) score -= 6;
-    } else if (style === 'qbEarly') {
-      if (pos === 'QB' && owned === 0 && round >= 3 && round <= 6 && posRank <= 6) score += 24;
-    } else if (style === 'tePremium') {
-      if (pos === 'TE' && owned === 0 && posRank <= 4 && round <= 5) score += 22;
-    } else if (style === 'robust') {
-      if ((pos === 'RB' || pos === 'WR') && owned < 3 && round <= 9) score += 9;
-      if (pos === 'QB' && round <= 5) score -= 10;
+    // —— Style personalities (light — never override consensus elites) ——
+    if (!eliteOnBoard || round >= 4) {
+      if (style === 'zeroRb') {
+        if (pos === 'WR' && round <= 5) score += 10;
+        if (pos === 'RB' && round <= 2) score -= 8;
+        if (pos === 'RB' && round >= 3 && round <= 7 && fillsStarter) score += 10;
+      } else if (style === 'rbHeavy' || style === 'heroRb') {
+        if (pos === 'RB' && round <= 6) score += style === 'heroRb' ? 12 : 8;
+        if (pos === 'WR' && round <= 2 && owned === 0) score -= 4;
+      } else if (style === 'qbEarly') {
+        if (pos === 'QB' && owned === 0 && round >= 3 && round <= 6 && posRank <= 6) score += 16;
+      } else if (style === 'tePremium') {
+        if (pos === 'TE' && owned === 0 && posRank <= 4 && round <= 5) score += 14;
+      } else if (style === 'robust') {
+        if ((pos === 'RB' || pos === 'WR') && owned < 3 && round <= 9) score += 6;
+        if (pos === 'QB' && round <= 5) score -= 6;
+      }
     }
 
     // —— Late-round K / DST ——
@@ -399,12 +413,12 @@
   }
 
   function earlyTopN(round, rounds, scoreGap) {
-    // Tighter board early = smarter, more consensus picks
-    if (round <= 2) return scoreGap < 6 ? 1 : 2;
-    if (round <= 4) return scoreGap < 8 ? 2 : 3;
-    if (round <= 7) return 3;
-    if (round >= rounds - 1) return 5;
-    return 4;
+    // Almost no roulette early — CPUs should take the board, not gift humans
+    if (round <= 2) return 1;
+    if (round <= 4) return scoreGap < 5 ? 1 : 2;
+    if (round <= 7) return scoreGap < 8 ? 2 : 3;
+    if (round >= rounds - 1) return 4;
+    return 3;
   }
 
   function chooseCpuPick(opts) {
@@ -447,17 +461,18 @@
 
     const best = scored[0];
     const scoreGap = scored.length > 1 ? best.s - scored[1].s : 99;
-    // Clear favorite → just take it (feels like a sharp GM)
-    if (scoreGap >= 14 || (slot.round <= 3 && scoreGap >= 7)) {
+    // Clear favorite → take it. Early rounds are basically BPA.
+    if (scoreGap >= 8 || (slot.round <= 4 && scoreGap >= 3) || slot.round <= 2) {
       return best.p;
     }
 
     const topN = Math.min(scored.length, earlyTopN(slot.round, rounds, scoreGap));
+    if (topN <= 1) return best.p;
     const top = scored.slice(0, topN);
-    // Softmax — heavily favor #1, light variance only among near-ties
+    // Softmax — heavily favor #1, light variance only among near-ties (mid/late)
     const weights = top.map((row, i) => {
       const gap = best.s - row.s;
-      return Math.exp(Math.max(-5, 3.4 - i * 0.85 - gap * 0.16));
+      return Math.exp(Math.max(-5, 4.2 - i * 1.1 - gap * 0.22));
     });
     const total = weights.reduce((a, b) => a + b, 0) || 1;
     let roll = rng() * total;
