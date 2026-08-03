@@ -9,10 +9,10 @@ const path = require('path');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DRAFT_FILE = path.join(DATA_DIR, 'beta-draft.json');
-const FANTASY_POSITIONS = new Set(['QB', 'RB', 'WR', 'TE', 'K']);
+const FANTASY_POSITIONS = new Set(['QB', 'RB', 'WR', 'TE', 'K', 'D/ST']);
 const EXCLUDE_STATUS = new Set(['INA', 'RET', 'CUT', 'NWT', 'EXE']);
 const POOL_CACHE_MS = 2 * 60 * 60 * 1000;
-const UA = 'GridIron24-DraftPool/2.1';
+const UA = 'GridIron24-DraftPool/2.2';
 
 const ROSTER_URL = (season) =>
   `https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_${season}.csv`;
@@ -27,9 +27,22 @@ const FFC_ADP_URL = (scoring, teams, year) =>
   `https://fantasyfootballcalculator.com/api/v1/adp/${scoring}?teams=${teams}${year ? `&year=${year}` : ''}`;
 
 /** Replacement-level depth for VORP fallback when a player has no ADP. */
-const REPLACEMENT_DEPTH = { QB: 12, RB: 36, WR: 48, TE: 12, K: 12 };
+const REPLACEMENT_DEPTH = { QB: 12, RB: 36, WR: 48, TE: 12, K: 12, 'D/ST': 12 };
+const CURRENT_NFL_TEAMS = new Set([
+  'ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE',
+  'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'KC',
+  'LAC', 'LAR', 'LV', 'MIA', 'MIN', 'NE', 'NO', 'NYG',
+  'NYJ', 'PHI', 'PIT', 'SEA', 'SF', 'TB', 'TEN', 'WAS'
+]);
 
 let poolCache = { key: '', at: 0, players: null, meta: null };
+
+function normalizeFantasyPos(pos) {
+  const p = String(pos || '').trim().toUpperCase();
+  if (p === 'DEF' || p === 'DST' || p === 'D/ST') return 'D/ST';
+  if (p === 'PK') return 'K';
+  return p;
+}
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -129,7 +142,7 @@ function toNum(value) {
 }
 
 function normalizePlayer(row, season) {
-  const position = String(row.position || '').trim().toUpperCase();
+  const position = normalizeFantasyPos(row.position);
   const status = String(row.status || '').trim().toUpperCase();
   const gsisId = String(row.gsis_id || '').trim();
   const espnId = String(row.espn_id || '').trim();
@@ -207,6 +220,21 @@ function buildTeamLogoMap(teamRows) {
   return map;
 }
 
+function buildTeamMetaMap(teamRows) {
+  const map = new Map();
+  for (const row of teamRows) {
+    const abbr = String(row.team_abbr || '').trim().toUpperCase();
+    if (!abbr) continue;
+    map.set(abbr, {
+      abbr,
+      name: String(row.team_name || '').trim() || null,
+      nick: String(row.team_nick || '').trim() || null,
+      logo: String(row.team_logo_espn || row.team_logo_squared || '').trim() || null
+    });
+  }
+  return map;
+}
+
 function buildStats2025Map(statRows) {
   const map = new Map();
   for (const row of statRows) {
@@ -266,7 +294,7 @@ async function loadFfcAdpMaps(year) {
       if (!meta) meta = data.meta || { source: url };
       for (const row of players) {
         const name = String(row.name || '').trim();
-        const pos = String(row.position || '').toUpperCase();
+        const pos = normalizeFantasyPos(row.position);
         if (!name || !FANTASY_POSITIONS.has(pos)) continue;
         const team = String(row.team || '').toUpperCase() || null;
         const adp = cleanAdp(row.adp);
@@ -283,6 +311,10 @@ async function loadFfcAdpMaps(year) {
         const noTeam = matchKey(name, '', pos);
         if (!byKey.has(withTeam)) byKey.set(withTeam, payload);
         if (!byKey.has(noTeam)) byKey.set(noTeam, payload);
+        if (pos === 'D/ST' && team) {
+          const dstKey = `__dst__|${team}`;
+          if (!byKey.has(dstKey)) byKey.set(dstKey, payload);
+        }
       }
       if (byKey.size >= 100) break;
     } catch {
@@ -351,14 +383,15 @@ function buildSleeperMaps(sleeperPlayers, projections) {
   const byGsis = new Map();
   const byEspn = new Map();
   const byKey = new Map();
+  const byTeamDef = new Map();
   for (const [sleeperId, row] of Object.entries(sleeperPlayers || {})) {
     if (!row || typeof row !== 'object') continue;
-    const pos = String(row.position || '').toUpperCase();
+    const pos = normalizeFantasyPos(row.position);
     if (!FANTASY_POSITIONS.has(pos)) continue;
-    const team = String(row.team || row.team_abbr || '').toUpperCase() || null;
+    const team = String(row.team || row.team_abbr || sleeperId || '').toUpperCase() || null;
     const name = String(row.full_name || `${row.first_name || ''} ${row.last_name || ''}`).trim();
-    if (!name) continue;
-    const projRow = projections?.[sleeperId] || null;
+    if (!name && pos !== 'D/ST') continue;
+    const projRow = projections?.[sleeperId] || (pos === 'D/ST' && team ? projections?.[team] : null) || null;
     const projected = toNum(projRow?.pts_ppr ?? projRow?.pts_half_ppr ?? projRow?.pts_std);
     const payload = {
       sleeperId: String(sleeperId),
@@ -373,10 +406,12 @@ function buildSleeperMaps(sleeperPlayers, projections) {
       projRec: toNum(projRow?.rec),
       projRecYds: toNum(projRow?.rec_yd),
       projRecTd: toNum(projRow?.rec_td),
-      headshot: SLEEPER_HEADSHOT(sleeperId),
+      headshot: pos === 'D/ST' ? null : SLEEPER_HEADSHOT(sleeperId),
       team,
       position: pos,
-      name,
+      name: name || (team ? `${team} D/ST` : 'D/ST'),
+      firstName: String(row.first_name || '').trim() || null,
+      lastName: String(row.last_name || '').trim() || null,
       injuryStatus: String(row.injury_status || '').trim() || null,
       injuryBodyPart: String(row.injury_body_part || '').trim() || null,
       injuryNotes: String(row.injury_notes || '').trim() || null,
@@ -386,10 +421,105 @@ function buildSleeperMaps(sleeperPlayers, projections) {
     const gsis = String(row.gsis_id || '').trim();
     if (gsis) byGsis.set(gsis, payload);
     if (payload.espnId) byEspn.set(payload.espnId, payload);
-    byKey.set(matchKey(name, team, pos), payload);
-    byKey.set(matchKey(name, '', pos), payload);
+    byKey.set(matchKey(payload.name, team, pos), payload);
+    byKey.set(matchKey(payload.name, '', pos), payload);
+    if (pos === 'D/ST' && team) byTeamDef.set(team, payload);
   }
-  return { byGsis, byEspn, byKey };
+  return { byGsis, byEspn, byKey, byTeamDef };
+}
+
+/**
+ * NFL team defenses aren't on the player roster CSV — stitch them from Sleeper DEF
+ * units + FFC ADP + nflverse team logos/byes so mocks have a full D/ST board.
+ */
+function buildDefenseUnits({ sleeper, ffcAdp, byeMap, teamMeta, season }) {
+  const teams = new Set([
+    ...teamMeta.keys(),
+    ...(sleeper.byTeamDef ? sleeper.byTeamDef.keys() : [])
+  ]);
+  // FFC sometimes lists defenses for teams not yet in the current meta snapshot
+  for (const key of ffcAdp.byKey.keys()) {
+    if (String(key).startsWith('__dst__|')) teams.add(String(key).slice(8));
+  }
+
+  const units = [];
+  for (const team of [...teams].sort()) {
+    if (!CURRENT_NFL_TEAMS.has(team)) continue;
+    const meta = teamMeta.get(team) || {};
+    const sleeperHit = sleeper.byTeamDef?.get(team) || null;
+    const ffcHit = ffcAdp.byKey.get(`__dst__|${team}`) || null;
+    const nick = meta.nick || sleeperHit?.lastName || team;
+    const name = `${nick} D/ST`;
+    let adp = null;
+    let adpSource = null;
+    let adpStdev = null;
+    let adpSample = null;
+    if (ffcHit?.adp != null && sleeperHit?.adp != null) {
+      const stdev = ffcHit.stdev;
+      if (stdev != null && stdev >= 9) {
+        adp = Math.round((ffcHit.adp * 0.72 + sleeperHit.adp * 0.28) * 10) / 10;
+        adpSource = 'ffc+sleeper';
+      } else {
+        adp = ffcHit.adp;
+        adpSource = 'ffc';
+      }
+      adpStdev = stdev ?? null;
+      adpSample = ffcHit.timesDrafted ?? null;
+    } else if (ffcHit?.adp != null) {
+      adp = ffcHit.adp;
+      adpSource = 'ffc';
+      adpStdev = ffcHit.stdev ?? null;
+      adpSample = ffcHit.timesDrafted ?? null;
+    } else if (sleeperHit?.adp != null) {
+      adp = sleeperHit.adp;
+      adpSource = 'sleeper';
+    }
+
+    const sources = ['sleeper-dst'];
+    if (ffcHit) sources.push('ffc');
+
+    units.push({
+      id: `dst-${team}`,
+      gsisId: null,
+      espnId: sleeperHit?.espnId || null,
+      name,
+      firstName: sleeperHit?.firstName || meta.name?.split(' ')[0] || team,
+      lastName: 'D/ST',
+      position: 'D/ST',
+      team,
+      jersey: null,
+      status: 'ACT',
+      yearsExp: null,
+      headshot: meta.logo || sleeperHit?.headshot || null,
+      college: null,
+      draftNumber: null,
+      draftClub: null,
+      season: Number(season),
+      byeWeek: byeMap.get(team) || null,
+      teamLogo: meta.logo || null,
+      fantasyPoints2025: null,
+      projectedPoints2026: sleeperHit?.projectedPoints2026 ?? null,
+      avgPpg: null,
+      games: null,
+      adp,
+      adpSource,
+      adpStdev,
+      adpSample,
+      delta: null,
+      injuryStatus: null,
+      injuryBodyPart: null,
+      injuryNotes: null,
+      practiceStatus: null,
+      practiceDescription: null,
+      stats: null,
+      projStats: null,
+      sleeperId: sleeperHit?.sleeperId || team,
+      sources,
+      overallRank: null,
+      posRank: null
+    });
+  }
+  return units;
 }
 
 async function loadRoster(season) {
@@ -406,7 +536,7 @@ async function loadRoster(season) {
 async function loadDraftPool({ season, activeOnly = true, force = false } = {}) {
   const year = Number(season) || new Date().getFullYear();
   const priorSeason = year - 1;
-  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v6`;
+  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v7-dst`;
   if (!force && poolCache.players && poolCache.key === key && Date.now() - poolCache.at < POOL_CACHE_MS) {
     return {
       ok: true,
@@ -434,9 +564,11 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
     loadFfcAdpMaps(year)
   ]);
 
+  const teamRows = teamsCsv ? parseCsv(teamsCsv) : [];
   const statsMap = buildStats2025Map(statsCsv ? parseCsv(statsCsv) : []);
   const byeMap = buildByeMap(scheduleCsv ? parseCsv(scheduleCsv) : [], year);
-  const logoMap = buildTeamLogoMap(teamsCsv ? parseCsv(teamsCsv) : []);
+  const logoMap = buildTeamLogoMap(teamRows);
+  const teamMeta = buildTeamMetaMap(teamRows);
   const sleeper = buildSleeperMaps(sleeperPlayers, sleeperProj);
 
   const normalized = roster.rows
@@ -543,6 +675,18 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
       posRank: null
     };
   });
+
+  const defenses = buildDefenseUnits({
+    sleeper,
+    ffcAdp,
+    byeMap,
+    teamMeta,
+    season: roster.season
+  });
+  for (const d of defenses) {
+    if (d.adp != null) ffcHits += 1;
+    players.push(d);
+  }
 
   rankDraftPool(players);
 
