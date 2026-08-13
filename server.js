@@ -2567,10 +2567,23 @@ async function runRosterViolationsJob({
 } = {}) {
   let firstQuarter = null;
   if (onlyIfFirstQuarter) {
-    firstQuarter = await nflverseLive.getFirstQuarterPatrolState({
-      season: config.season,
-      seasontype: 2
-    });
+    try {
+      firstQuarter = await nflverseLive.getFirstQuarterPatrolState({
+        season: config.season,
+        seasontype: 2
+      });
+    } catch (err) {
+      return {
+        ok: true,
+        skipped: true,
+        reason: 'scoreboard_unavailable',
+        error: err.message || String(err),
+        triggeredBy,
+        season: config.season,
+        openCount: rosterViolations.listOpen({ season: config.season }).length,
+        generatedAt: new Date().toISOString()
+      };
+    }
     if (!firstQuarter.active) {
       return {
         ok: true,
@@ -5013,7 +5026,12 @@ const server = http.createServer(async (req, res) => {
           postNews: requestUrl.searchParams.get('news') !== '0',
           triggeredBy: 'cron'
         });
-        return sendJson(res, result.ok || result.skipped ? 200 : 409, result);
+        // Not-ready (no finals yet) is an expected skip — do not 409 or Render
+        // cron jobs email a crash report every Tuesday in preseason/offseason.
+        if (!result.ok && !result.skipped) {
+          return sendJson(res, 200, { ...result, skipped: true });
+        }
+        return sendJson(res, 200, result);
       } catch (err) {
         console.error('[weekly-wrap] cron failed', err);
         return sendJson(res, 500, { ok: false, error: err.message || 'Weekly wrap failed' });

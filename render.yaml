@@ -46,6 +46,10 @@ services:
       - key: WRAP_EMAIL_MODE
         value: "all"
 
+  # Sportsbook settle runs in-process on the web service (every 3 min).
+  # Do not add a Render cron for it — failed ticks emailed "server crashed"
+  # every 5 minutes.
+
   - type: cron
     name: gridiron24-weekly-wrap
     runtime: node
@@ -53,12 +57,12 @@ services:
     region: ohio
     schedule: "0 14 * * 2"
     buildCommand: npm install
-    startCommand: node -e "const u=process.env.APP_BASE_URL||'https://www.gridiron24.com';const s=process.env.CRON_SECRET;if(!s){console.error('CRON_SECRET missing');process.exit(1);}fetch(u.replace(/\\/$/,'')+'/api/cron/weekly-wrap',{method:'POST',headers:{Authorization:'Bearer '+s}}).then(async r=>{const t=await r.text();console.log(r.status,t.slice(0,500));if(!r.ok)process.exit(1);}).catch(e=>{console.error(e);process.exit(1);});"
+    startCommand: node scripts/run-cron.js /api/cron/weekly-wrap
     envVars:
       - key: NODE_VERSION
         value: "20"
       - key: APP_BASE_URL
-        value: "https://www.gridiron24.com"
+        value: "https://gridiron24.onrender.com"
       - key: CRON_SECRET
         sync: false
 
@@ -70,12 +74,12 @@ services:
     # Mondays and Thursdays at 14:00 UTC (~10am ET)
     schedule: "0 14 * * 1,4"
     buildCommand: npm install
-    startCommand: node -e "const u=process.env.APP_BASE_URL||'https://www.gridiron24.com';const s=process.env.CRON_SECRET;if(!s){console.error('CRON_SECRET missing');process.exit(1);}fetch(u.replace(/\\/$/,'')+'/api/cron/rules-sync',{method:'POST',headers:{Authorization:'Bearer '+s}}).then(async r=>{const t=await r.text();console.log(r.status,t.slice(0,800));if(!r.ok)process.exit(1);}).catch(e=>{console.error(e);process.exit(1);});"
+    startCommand: node scripts/run-cron.js /api/cron/rules-sync
     envVars:
       - key: NODE_VERSION
         value: "20"
       - key: APP_BASE_URL
-        value: "https://www.gridiron24.com"
+        value: "https://gridiron24.onrender.com"
       - key: CRON_SECRET
         sync: false
 
@@ -87,12 +91,12 @@ services:
     # Daily 14:00 UTC (~10am ET) — pre-kickoff scan of injured starters
     schedule: "0 14 * * *"
     buildCommand: npm install
-    startCommand: node -e "const u=process.env.APP_BASE_URL||'https://www.gridiron24.com';const s=process.env.CRON_SECRET;if(!s){console.error('CRON_SECRET missing');process.exit(1);}fetch(u.replace(/\\/$/,'')+'/api/cron/roster-violations',{method:'POST',headers:{Authorization:'Bearer '+s}}).then(async r=>{const t=await r.text();console.log(r.status,t.slice(0,800));if(!r.ok)process.exit(1);}).catch(e=>{console.error(e);process.exit(1);});"
+    startCommand: node scripts/run-cron.js /api/cron/roster-violations
     envVars:
       - key: NODE_VERSION
         value: "20"
       - key: APP_BASE_URL
-        value: "https://www.gridiron24.com"
+        value: "https://gridiron24.onrender.com"
       - key: CRON_SECRET
         sync: false
 
@@ -104,29 +108,12 @@ services:
     # Daily 13:00 UTC (~9am ET) — celebrity / sports / pop / politics death headlines
     schedule: "0 13 * * *"
     buildCommand: npm install
-    startCommand: node -e "const u=process.env.APP_BASE_URL||'https://www.gridiron24.com';const s=process.env.CRON_SECRET;if(!s){console.error('CRON_SECRET missing');process.exit(1);}fetch(u.replace(/\\/$/,'')+'/api/cron/death-pool-news?force=1',{method:'POST',headers:{Authorization:'Bearer '+s}}).then(async r=>{const t=await r.text();console.log(r.status,t.slice(0,800));if(!r.ok)process.exit(1);}).catch(e=>{console.error(e);process.exit(1);});"
+    startCommand: "node scripts/run-cron.js /api/cron/death-pool-news?force=1"
     envVars:
       - key: NODE_VERSION
         value: "20"
       - key: APP_BASE_URL
-        value: "https://www.gridiron24.com"
-      - key: CRON_SECRET
-        sync: false
-
-  - type: cron
-    name: gridiron24-paper-book-settle
-    runtime: node
-    plan: starter
-    region: ohio
-    # Every 5 min — grade finals and credit sportsbook Funds / Earnings
-    schedule: "*/5 * * * *"
-    buildCommand: npm install
-    startCommand: node -e "const u=process.env.APP_BASE_URL||'https://www.gridiron24.com';const s=process.env.CRON_SECRET;if(!s){console.error('CRON_SECRET missing');process.exit(1);}fetch(u.replace(/\\/$/,'')+'/api/cron/paper-book-settle',{method:'POST',headers:{Authorization:'Bearer '+s}}).then(async r=>{const t=await r.text();console.log(r.status,t.slice(0,800));if(!r.ok)process.exit(1);}).catch(e=>{console.error(e);process.exit(1);});"
-    envVars:
-      - key: NODE_VERSION
-        value: "20"
-      - key: APP_BASE_URL
-        value: "https://www.gridiron24.com"
+        value: "https://gridiron24.onrender.com"
       - key: CRON_SECRET
         sync: false
 
@@ -139,11 +126,11 @@ services:
     # Endpoint no-ops unless at least one NFL game is in the 1st quarter.
     schedule: "*/10 0-3,16-23 * * 0,1,2,4,5"
     buildCommand: npm install
-    startCommand: node -e "const u=process.env.APP_BASE_URL||'https://www.gridiron24.com';const s=process.env.CRON_SECRET;if(!s){console.error('CRON_SECRET missing');process.exit(1);}fetch(u.replace(/\\/$/,'')+'/api/cron/roster-violations?when=first-quarter',{method:'POST',headers:{Authorization:'Bearer '+s}}).then(async r=>{const t=await r.text();console.log(r.status,t.slice(0,800));if(!r.ok)process.exit(1);}).catch(e=>{console.error(e);process.exit(1);});"
+    startCommand: "node scripts/run-cron.js /api/cron/roster-violations?when=first-quarter"
     envVars:
       - key: NODE_VERSION
         value: "20"
       - key: APP_BASE_URL
-        value: "https://www.gridiron24.com"
+        value: "https://gridiron24.onrender.com"
       - key: CRON_SECRET
         sync: false

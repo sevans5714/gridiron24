@@ -250,8 +250,18 @@ async function getFirstQuarterPatrolState({ season, week, seasontype } = {}) {
   try {
     live = await getLiveScoring(query);
   } catch {
-    // Fall back to "current" scoreboard if week/season query fails.
-    live = await getLiveScoring({});
+    try {
+      // Fall back to "current" scoreboard if week/season query fails.
+      live = await getLiveScoring({});
+    } catch (err) {
+      return {
+        ok: false,
+        active: false,
+        error: err.message || String(err),
+        fetchedAt: new Date().toISOString(),
+        games: []
+      };
+    }
   }
 
   const firstQuarterGames = (live.games || []).filter(isFirstQuarterGame);
