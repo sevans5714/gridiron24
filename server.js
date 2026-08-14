@@ -65,6 +65,7 @@ const independentScoreboard = require('./independent-scoreboard');
 const customPools = require('./custom-pool-store');
 const futuresMarkets = require('./futures-markets');
 const matchupDisplayWeek = require('./matchup-display-week');
+const { startInProcessCrons } = require('./in-process-cron');
 const {
   sendPasswordResetEmail,
   sendInviteEmail,
@@ -2527,20 +2528,25 @@ async function notifyRosterViolationManagers(openRows, { force = false, week } =
       continue;
     }
 
-    const sendResult = await sendRosterViolationEmail({
-      to: email,
-      recipientName: ownerUser.name || claim.ownerName || 'Manager',
-      teamName: sample.teamName,
-      conferenceName: sample.conferenceName,
-      conferenceKey: sample.conferenceKey,
-      week: week || sample.week,
-      players: rows.map((r) => ({
-        playerName: r.playerName,
-        position: r.position,
-        slot: r.slot,
-        injuryStatus: r.injuryStatus
-      }))
-    });
+    let sendResult;
+    try {
+      sendResult = await sendRosterViolationEmail({
+        to: email,
+        recipientName: ownerUser.name || claim.ownerName || 'Manager',
+        teamName: sample.teamName,
+        conferenceName: sample.conferenceName,
+        conferenceKey: sample.conferenceKey,
+        week: week || sample.week,
+        players: rows.map((r) => ({
+          playerName: r.playerName,
+          position: r.position,
+          slot: r.slot,
+          injuryStatus: r.injuryStatus
+        }))
+      });
+    } catch (err) {
+      sendResult = { sent: false, method: 'error', error: err.message || String(err) };
+    }
 
     if (sendResult.sent || sendResult.method === 'log') {
       for (const r of rows) warnedKeys.push(r.key);
@@ -2598,35 +2604,53 @@ async function runRosterViolationsJob({
     }
   }
 
-  const { findings, week, conferenceErrors } = await scanRosterViolationsAcrossConferences();
-  const merged = rosterViolations.mergeScan({
-    season: config.season,
-    week,
-    findings,
-    triggeredBy
-  });
-  const open = rosterViolations.listOpen({ season: config.season, week });
-  let notifications = [];
-  if (notify) {
-    notifications = await notifyRosterViolationManagers(open, { force: forceNotify, week });
+  try {
+    const { findings, week, conferenceErrors } = await scanRosterViolationsAcrossConferences();
+    const merged = rosterViolations.mergeScan({
+      season: config.season,
+      week,
+      findings,
+      triggeredBy
+    });
+    const open = rosterViolations.listOpen({ season: config.season, week });
+    let notifications = [];
+    if (notify) {
+      try {
+        notifications = await notifyRosterViolationManagers(open, { force: forceNotify, week });
+      } catch (err) {
+        notifications = [{ sent: false, error: err.message || String(err) }];
+      }
+    }
+    return {
+      ok: true,
+      skipped: false,
+      season: config.season,
+      week,
+      lastScan: merged.lastScan,
+      openCount: open.length,
+      open,
+      created: merged.created,
+      resolved: merged.resolved,
+      unchanged: merged.unchanged,
+      conferenceErrors,
+      notifications,
+      firstQuarter,
+      mail: mailConfig(),
+      generatedAt: new Date().toISOString()
+    };
+  } catch (err) {
+    console.error('[roster-violations] job failed', err);
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'job_failed',
+      error: err.message || String(err),
+      triggeredBy,
+      season: config.season,
+      firstQuarter,
+      generatedAt: new Date().toISOString()
+    };
   }
-  return {
-    ok: true,
-    skipped: false,
-    season: config.season,
-    week,
-    lastScan: merged.lastScan,
-    openCount: open.length,
-    open,
-    created: merged.created,
-    resolved: merged.resolved,
-    unchanged: merged.unchanged,
-    conferenceErrors,
-    notifications,
-    firstQuarter,
-    mail: mailConfig(),
-    generatedAt: new Date().toISOString()
-  };
 }
 
 function weekStatTotal(entry, week, sourceId) {
@@ -5071,7 +5095,12 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, result);
       } catch (err) {
         console.error('[roster-violations] cron failed', err);
-        return sendJson(res, 500, { ok: false, error: err.message || 'Roster violations scan failed' });
+        return sendJson(res, 200, {
+          ok: false,
+          skipped: true,
+          reason: 'job_failed',
+          error: err.message || 'Roster violations scan failed'
+        });
       }
     }
 
@@ -10199,5 +10228,47 @@ server.listen(PORT, '0.0.0.0', () => {
         console.warn('[independent-draft] tick failed', err.message || err);
       });
   }, INDEPENDENT_DRAFT_TICK_MS);
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+    startInProcessCrons([
+      {
+        name: 'weekly-wrap',
+        days: [2],
+        hour: 14,
+        minute: 0,
+        run: () => runWeeklyWrapJob({ triggeredBy: 'in-process', sendEmail: true, postNews: true })
+      },
+      {
+        name: 'rules-sync',
+        days: [1, 4],
+        hour: 14,
+        minute: 0,
+        run: () => runRulesSyncJob({ triggeredBy: 'in-process', notify: true })
+      },
+      {
+        name: 'roster-violations',
+        hour: 14,
+        minute: 0,
+        run: () => runRosterViolationsJob({ triggeredBy: 'in-process', notify: true })
+      },
+      {
+        name: 'death-pool-news',
+        hour: 13,
+        minute: 0,
+        run: () => deathPoolNews.runDeathNewsScan({ force: true })
+      },
+      {
+        name: 'roster-violations-q1',
+        days: [0, 1, 2, 4, 5],
+        hours: [0, 1, 2, 3, 16, 17, 18, 19, 20, 21, 22, 23],
+        everyMinutes: 10,
+        run: () => runRosterViolationsJob({
+          triggeredBy: 'in-process-q1',
+          notify: true,
+          onlyIfFirstQuarter: true
+        })
+      }
+    ]);
+    console.log('In-process crons: weekly-wrap, rules-sync, roster-violations, death-pool-news, roster-violations-q1');
+  }
   console.log('');
 });
