@@ -188,6 +188,8 @@ const PUBLIC_PATHS = new Set([
   '/install-app.html',
   '/api/docs/pwa-install',
   '/docs/gridiron24-app-install.pdf',
+  '/espn-setup',
+  '/espn-setup.html',
   '/favicon.ico',
   '/favicon.png',
   '/favicon-32.png',
@@ -6849,6 +6851,10 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/roster-2026' || pathname === '/roster-2026.html') {
       return sendFile(res, path.join(PUBLIC_DIR, 'roster-2026.html'));
+    }
+
+    if (pathname === '/espn-setup' || pathname === '/espn-setup.html') {
+      return sendFile(res, path.join(PUBLIC_DIR, 'espn-setup.html'));
     }
 
     if (pathname === '/api/beta/live-scoring' && req.method === 'GET') {

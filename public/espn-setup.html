@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ESPN League Setup · Conference Admin · GridIron 24</title>
+  <meta name="description" content="What a GridIron 24 conference admin must do to create the ESPN league." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=119" />
+  <link rel="icon" href="/favicon.ico?v=119" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=119" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=119" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=153" />
+  <style>
+    .sheet-lead {
+      max-width: 42rem;
+      margin: 0 0 1.5rem;
+      color: var(--muted);
+      font-size: 1.08rem;
+      line-height: 1.5;
+    }
+    .sheet-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin: 0 0 1.75rem;
+    }
+    .sheet-actions .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.55rem 0.95rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .sheet-actions .btn-primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+    .sheet {
+      display: grid;
+      gap: 1.15rem;
+      max-width: 46rem;
+    }
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 1.15rem 1.25rem 1.25rem;
+    }
+    .card h2 {
+      margin: 0 0 0.65rem;
+      font-family: var(--display);
+      font-size: 1.15rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .card ol, .card ul {
+      margin: 0;
+      padding-left: 1.2rem;
+    }
+    .card li {
+      margin: 0 0 0.45rem;
+      line-height: 1.45;
+    }
+    .card li:last-child { margin-bottom: 0; }
+    .why {
+      margin: 0 0 0.85rem;
+      color: var(--muted);
+    }
+    .check {
+      margin: 0.85rem 0 0;
+      padding: 0.75rem 0.85rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+    .check strong { display: block; margin-bottom: 0.35rem; }
+    .warn {
+      border-left: 3px solid var(--overtime, #e2232a);
+    }
+    .ok {
+      border-left: 3px solid var(--blue);
+    }
+    code {
+      font-size: 0.92em;
+    }
+    @media print {
+      .topbar, .site-footer, .sheet-actions, .page-hero .eyebrow { display: none !important; }
+      body { background: #fff !important; color: #111 !important; }
+      .page-hero, .page-main, .card, .check { box-shadow: none; background: #fff !important; color: #111 !important; }
+      .card { break-inside: avoid; border-color: #ccc; }
+      a { color: #111; text-decoration: none; }
+    }
+  </style>
+</head>
+<body data-page="espn-setup">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Conference admin</div>
+    </div>
+  </header>
+  <section class="page-hero shell">
+    <p class="eyebrow">2026 season</p>
+    <h1>Create the ESPN league</h1>
+  </section>
+  <main class="page-main shell">
+    <p class="sheet-lead">
+      Each conference lives in its own ESPN league. The conference admin creates that ESPN league so they are the ESPN league creator. GridIron 24 will still name it Detail, Overtime, or AAA on this site — ESPN’s title can be anything.
+    </p>
+    <div class="sheet-actions">
+      <button type="button" class="btn btn-primary" id="print-sheet">Print / Save PDF</button>
+      <a class="btn" href="https://fantasy.espn.com/football/league/create" target="_blank" rel="noopener">Open ESPN Create League</a>
+    </div>
+
+    <div class="sheet">
+      <section class="card">
+        <h2>Who does this</h2>
+        <ul>
+          <li><strong>Detail Conference Admin</strong> creates the Detail ESPN league (12 teams).</li>
+          <li><strong>Overtime Conference Admin</strong> creates the Overtime ESPN league (12 teams).</li>
+          <li><strong>AAA League Admin</strong> creates the AAA ESPN league (12 teams unless the commissioner says otherwise; AAA may be 10–14).</li>
+        </ul>
+        <p class="why">ESPN will not let the original league creator leave a slot. Whoever creates the ESPN league owns that creator seat for as long as the league exists. That person should be the admin who also plays in that conference.</p>
+      </section>
+
+      <section class="card">
+        <h2>1. Create a League Manager league</h2>
+        <ol>
+          <li>Sign in to ESPN with <strong>your</strong> account (the conference admin).</li>
+          <li>Go to Fantasy Football → <strong>Create a League</strong>.</li>
+          <li>Choose <strong>League Manager</strong> (sometimes labeled Private / LM). Do <strong>not</strong> create a Public league. Public leagues cannot use our custom scoring, keepers, and playoff tree.</li>
+          <li>Season: <strong>2026</strong>.</li>
+          <li>Number of teams: <strong>12</strong> for Detail or Overtime. AAA: <strong>12</strong> unless told otherwise.</li>
+          <li>League name on ESPN: whatever you want. GridIron 24 will display Detail / Overtime / AAA from League Tools, not ESPN’s name.</li>
+          <li>Finish create. You are now the ESPN league creator and occupy one team slot — that is expected if you play in this conference.</li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <h2>2. Make it viewable — not joinable</h2>
+        <ol>
+          <li>Open <strong>LM Tools</strong> / League Settings.</li>
+          <li>Turn on <strong>public viewing</strong> (anyone can look at standings and rosters without an invite).</li>
+          <li>Keep joining <strong>invite-only</strong>. Strangers must not be able to claim a team.</li>
+        </ol>
+        <p class="check ok">GridIron 24 reads ESPN over the internet. If the league is viewable only to members, the site cannot load standings, scores, or the roster.</p>
+      </section>
+
+      <section class="card">
+        <h2>3. Copy settings from Detail</h2>
+        <p class="why">Detail Conference is the source of truth. Overtime and AAA scoring/lineup must match Detail. The commissioner can send screenshots or walk you through League Tools → Rules Sync after the ID is saved.</p>
+        <ol>
+          <li><strong>Roster / lineup</strong> — match Detail exactly (standard GridIron shape is 1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX, 1 D/ST, 1 K, plus the same bench and IR counts Detail uses).</li>
+          <li><strong>Scoring</strong> — copy every Detail scoring value. Do not use ESPN default PPR/standard if Detail is already customized.</li>
+          <li><strong>Schedule</strong> — 13-week regular season.</li>
+          <li><strong>Playoffs (Detail &amp; Overtime)</strong> — 6 teams, reseed on, playoffs start Week 14, conference title Week 16. Week 17 is the GridIron Bowl on our site (ESPN’s “championship week” can stay Week 17).</li>
+          <li><strong>Playoffs (AAA)</strong> — scoring/lineup still match Detail. Bracket size may differ (12-team AAA uses 6 playoff teams).</li>
+          <li><strong>Draft</strong> — Draft Day is <strong>Monday, August 24, 2026</strong>. Set the ESPN draft to that date once the commissioner confirms time. ESPN remains the draft board; keepers are declared on GridIron 24 HQ, not ESPN’s keeper tool.</li>
+          <li>Save on ESPN.</li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <h2>4. Invite only this conference’s managers</h2>
+        <ol>
+          <li>Invite the <strong>12 franchise managers</strong> assigned to your conference (or AAA).</li>
+          <li>Do <strong>not</strong> invite the overall site owner / commissioner unless they actually play a team in <em>your</em> ESPN league. If they are already ESPN creator of another conference, adding them here puts them in a second slot they cannot leave.</li>
+          <li>Do not fill leftover slots with dummy ESPN accounts. Leave unused teams empty until a real manager is assigned on GridIron 24.</li>
+        </ol>
+        <p class="check warn">If you invite the wrong person as an ESPN owner, ESPN will not let that creator/owner seat be vacated. Fix it by creating a new LM league and starting this sheet over — do not try to “remove the commissioner” on ESPN.</p>
+      </section>
+
+      <section class="card">
+        <h2>5. Send this back</h2>
+        <p class="why">When the league is created, viewable, and settings are in, text or email the commissioner:</p>
+        <ol>
+          <li>Which conference: Detail, Overtime, or AAA.</li>
+          <li>The ESPN <strong>league ID</strong>. Open League Settings and copy the number after <code>leagueId=</code> in the URL. Example: <code>leagueId=123456789</code> → send <code>123456789</code>.</li>
+          <li>Confirm: 12 teams, League Manager (not Public), publicly viewable, invite-only.</li>
+        </ol>
+        <p class="check ok">The commissioner pastes that ID in GridIron 24 → League Tools → Sync → ESPN Leagues, names it Detail / Overtime / AAA on the site, looks it up, and saves. You do not need to rename it on ESPN.</p>
+      </section>
+
+      <section class="card">
+        <h2>Quick checklist</h2>
+        <ul>
+          <li>I created the league on <strong>my</strong> ESPN account.</li>
+          <li>It is a <strong>League Manager</strong> league, not Public.</li>
+          <li>It is <strong>2026</strong>, <strong>12 teams</strong>.</li>
+          <li>Anyone can <strong>view</strong>; only invites can <strong>join</strong>.</li>
+          <li>Scoring and lineup match <strong>Detail</strong>.</li>
+          <li>Playoffs: 13 regular-season weeks, 6 teams, reseed, Weeks 14–16 (GI24 conferences).</li>
+          <li>Only this conference’s managers were invited.</li>
+          <li>The commissioner has the <code>leagueId</code>.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=154"></script>
+  <script>
+    document.getElementById('print-sheet')?.addEventListener('click', () => window.print());
+  </script>
+</body>
+</html>
