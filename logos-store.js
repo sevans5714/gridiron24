@@ -143,6 +143,18 @@ function unassignTeam(userId) {
   return true;
 }
 
+function unassignConference(userId, conferenceKey) {
+  if (!userId) return false;
+  const conf = normalizeConference(conferenceKey);
+  if (!conf) return false;
+  const data = readStore();
+  const next = data.claims.filter((c) => !(c.userId === userId && c.conferenceKey === conf));
+  if (next.length === data.claims.length) return false;
+  data.claims = next;
+  writeStore(data);
+  return true;
+}
+
 /** @deprecated Use assignTeam — kept for internal callers */
 function claimTeam(userId, conferenceKey, teamId, teamName = '') {
   return assignTeam(userId, conferenceKey, teamId, teamName, null);
@@ -425,6 +437,7 @@ module.exports = {
   listClaims,
   assignTeam,
   unassignTeam,
+  unassignConference,
   claimTeam,
   getLogo,
   getUserAvatar,

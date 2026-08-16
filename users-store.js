@@ -127,6 +127,12 @@ function publicUser(user) {
   // Social accounts: lounge admission without franchise / HQ access.
   const loungeOnly = Boolean(user.loungeOnly) && !siteOwner && role === ROLES.USER;
   let membershipLeague = normalizeMembershipLeague(user.membershipLeague);
+  if (membershipLeague === 'aaa' && (siteOwner || isOwnerLogin(user))) {
+    membershipLeague = 'gridiron';
+  }
+  if (membershipLeague === 'aaa' && isAaaAdminAlt(user)) {
+    membershipLeague = null;
+  }
   if (!membershipLeague && !loungeOnly && (siteOwner || role === ROLES.COMMISSIONER)) {
     membershipLeague = 'gridiron';
   }
@@ -172,6 +178,7 @@ function normalizeMembershipKind(raw, user = null) {
   if (key === 'gridiron' || key === 'gridiron24' || key === 'gi24') return 'gridiron';
   if (user) {
     if (isLoungeOnly(user)) return 'social';
+    if (isOwnerLogin(user) || isAaaAdminAlt(user)) return 'gridiron';
     const league = normalizeMembershipLeague(user.membershipLeague);
     if (league === 'aaa') return 'aaa';
   }
@@ -182,14 +189,37 @@ function membershipKindOf(user) {
   return normalizeMembershipKind(null, user);
 }
 
+function siteOwnerLogin() {
+  return normalizeLoginName(process.env.SITE_OWNER_LOGIN || process.env.COMMISSIONER_LOGIN || 'sevans');
+}
+
+function aaaAdminLogin() {
+  return normalizeLoginName(process.env.AAA_ADMIN_LOGIN || `${siteOwnerLogin()}-aaa`);
+}
+
+function isOwnerLogin(user) {
+  if (!user) return false;
+  if (isSiteOwner(user)) return true;
+  return normalizeLoginName(user.loginName) === siteOwnerLogin();
+}
+
+function isAaaAdminAlt(user) {
+  return Boolean(user) && normalizeLoginName(user.loginName) === aaaAdminLogin();
+}
+
 /** HQ roster league: explicit assignment, else site owner / commissioner → GridIron 24. */
 function hqMembershipOf(user) {
   if (!user || user.approved === false) return null;
   if (isLoungeOnly(user)) return null;
-  const explicit = normalizeMembershipLeague(user.membershipLeague);
-  if (explicit) return explicit;
-  if (isSiteOwner(user) || normalizeRole(user.role) === ROLES.COMMISSIONER) return 'gridiron';
-  return null;
+  if (isOwnerLogin(user)) {
+    const explicit = normalizeMembershipLeague(user.membershipLeague);
+    return explicit === 'aaa' ? 'gridiron' : (explicit || 'gridiron');
+  }
+  if (isAaaAdminAlt(user)) {
+    const explicit = normalizeMembershipLeague(user.membershipLeague);
+    return explicit === 'gridiron' ? 'gridiron' : null;
+  }
+  return normalizeMembershipLeague(user.membershipLeague);
 }
 
 function membershipKindLabel(kind) {
@@ -236,6 +266,9 @@ function setLeagueMembership(userId, patch = {}) {
     const nextLeague = raw === '' || raw == null ? null : normalizeMembershipLeague(raw);
     if (raw != null && raw !== '' && !nextLeague) {
       throw Object.assign(new Error('League must be GridIron 24 or AAA'), { status: 400 });
+    }
+    if (nextLeague === 'aaa' && (isSiteOwner(user) || isOwnerLogin(user) || isAaaAdminAlt(user))) {
+      throw Object.assign(new Error('Site owner stays on GridIron 24 — not AAA'), { status: 400 });
     }
     if (nextLeague) {
       const cap = membershipCap(nextLeague);
@@ -779,9 +812,7 @@ function ensureBootstrapCommissioner() {
       store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
       store.users[idx].loungeMember = true;
       store.users[idx].loungeOnly = false;
-      if (!normalizeMembershipLeague(store.users[idx].membershipLeague)) {
-        store.users[idx].membershipLeague = 'gridiron';
-      }
+      store.users[idx].membershipLeague = 'gridiron';
       writeStore(store);
       return publicUser(store.users[idx]);
     }
@@ -810,9 +841,7 @@ function ensureBootstrapCommissioner() {
       store.users[idx].siteOwner = true;
       store.users[idx].loungeMember = true;
       store.users[idx].loungeOnly = false;
-      if (!normalizeMembershipLeague(store.users[idx].membershipLeague)) {
-        store.users[idx].membershipLeague = 'gridiron';
-      }
+      store.users[idx].membershipLeague = 'gridiron';
       writeStore(store);
       console.log(`Bootstrap GridIron 24 site owner created: ${login}`);
       return publicUser(store.users[idx]);
@@ -874,6 +903,7 @@ function ensureBootstrapAaaAdmin() {
     store.users[idx].conference = conference;
     store.users[idx].approved = true;
     store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
+    store.users[idx].membershipLeague = null;
     writeStore(store);
     console.log(`Bootstrap AAA league admin ready: ${login}`);
     return publicUser(store.users[idx]);
@@ -896,6 +926,14 @@ function ensureBootstrapAaaAdmin() {
       approved: true,
       loungeMember: true
     });
+    const store = readStore();
+    const idx = store.users.findIndex((u) => u.id === user.id);
+    if (idx !== -1) {
+      store.users[idx].membershipLeague = null;
+      writeStore(store);
+      console.log(`Bootstrap AAA league admin created: ${login}`);
+      return publicUser(store.users[idx]);
+    }
     console.log(`Bootstrap AAA league admin created: ${login}`);
     return user;
   } catch (err) {

@@ -58,7 +58,7 @@
   };
 
   const SPORTS_SLOT = 4;
-  const SPORTS_FLIP_MS = 7000;
+  const SPORTS_FLIP_MS = 3500;
   const SPORTS_POLL_MS = 25000;
   const SPORTS_POLL_LIVE_MS = 15000;
 
@@ -418,17 +418,11 @@
 
   function sportsRotateIds() {
     const boards = Array.isArray(state.sports?.leagues) ? state.sports.leagues : [];
-    const liveFirst = boards.filter((b) =>
-      (b.games || []).some((g) => g.status?.bucket === 'live')
-    );
-    const withUpcoming = boards.filter((b) =>
-      !liveFirst.includes(b) &&
-      (b.games || []).some((g) => g.status?.bucket === 'upcoming')
-    );
-    const pool = liveFirst.length || withUpcoming.length
-      ? [...liveFirst, ...withUpcoming]
-      : boards.filter((b) => (b.games || []).length);
-    return pool.map((b) => b.id).filter(Boolean);
+    const isFantasy = (b) => Boolean(b.fantasy) || b.id === 'gi24' || b.id === 'aaa';
+    const inSeasonReal = boards.filter((b) => b?.id && !isFantasy(b) && b.inSeason);
+    const fantasy = boards.filter((b) => b?.id && isFantasy(b) && (b.games || []).length);
+    const rest = boards.filter((b) => b?.id && !isFantasy(b) && !b.inSeason && (b.games || []).length);
+    return [...inSeasonReal, ...fantasy, ...rest].map((b) => b.id);
   }
 
   function sportsGamesForFilter() {
@@ -573,7 +567,8 @@
 
     if (tabs) {
       const boards = Array.isArray(state.sports?.leagues) ? state.sports.leagues : [];
-      tabs.innerHTML = boards.map((b) => `
+      const tabBoards = boards.filter((b) => b?.id && (b.inSeason || (b.games || []).length));
+      tabs.innerHTML = tabBoards.map((b) => `
         <button type="button" class="wire-tab${b.id === state.sportsFilter ? ' is-on' : ''}" data-wire="${esc(b.id)}" role="tab" aria-selected="${b.id === state.sportsFilter ? 'true' : 'false'}">
           ${b.logo ? `<img src="${esc(b.logo)}" alt="" width="16" height="16" loading="lazy" decoding="async" referrerpolicy="no-referrer" />` : ''}
           ${esc(b.label)}
@@ -650,9 +645,10 @@
   async function loadSportsWire() {
     try {
       const data = await apiGet('/api/sports-scores');
+      const firstLoad = !state.sports;
       state.sports = data;
       const ids = sportsRotateIds();
-      if (ids.length && (!state.sportsFilter || !ids.includes(state.sportsFilter))) {
+      if (ids.length && (firstLoad || !state.sportsFilter || !ids.includes(state.sportsFilter))) {
         state.sportsFilter = ids[0];
       }
       if (state.view === 'book' && state.bookPanel === 'scores') {

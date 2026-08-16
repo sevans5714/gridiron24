@@ -9,6 +9,7 @@
 const espnResilient = require('./espn-resilient');
 const sportsFallbacks = require('./sports-fallbacks');
 const littleLeagueOrg = require('./little-league-org');
+const llwsTeams = require('./llws-teams');
 const oddsEnrich = require('./odds-enrich');
 
 const CACHE_MS = 20_000;
@@ -289,13 +290,18 @@ function mergeGameLists(...lists) {
       const key = gameDedupeKey(g) || `id:${g.id}`;
       const prev = map.get(key);
       if (!prev || gameFreshnessScore(g) >= gameFreshnessScore(prev)) {
+        const llws = g.league === 'llws' || prev?.league === 'llws';
         map.set(key, {
           ...prev,
           ...g,
           series: g.series || prev?.series || null,
           provider: g.provider || prev?.provider || null,
-          away: { ...(prev?.away || {}), ...(g.away || {}) },
-          home: { ...(prev?.home || {}), ...(g.home || {}) },
+          away: llws
+            ? llwsTeams.mergeLlwsSide(prev?.away, g.away)
+            : { ...(prev?.away || {}), ...(g.away || {}), logo: g?.away?.logo || prev?.away?.logo || null },
+          home: llws
+            ? llwsTeams.mergeLlwsSide(prev?.home, g.home)
+            : { ...(prev?.home || {}), ...(g.home || {}), logo: g?.home?.logo || prev?.home?.logo || null },
           status: g.status || prev?.status
         });
       }
@@ -785,9 +791,10 @@ async function fetchTeamEventById(leagueId, eventId) {
         competitions: [competition]
       };
       const seriesHit = (meta.extraLeagues || []).find((e) => e.league === slug);
-      return normalizeTeamEvent(event, meta.id, {
+      const game = normalizeTeamEvent(event, meta.id, {
         series: seriesHit?.series || (slug === meta.league && meta.extraLeagues?.length ? 'Baseball' : null)
       });
+      return meta.id === 'llws' ? llwsTeams.enrichLlwsGame(game) : game;
     } catch {
       /* try next slug */
     }
@@ -1080,6 +1087,9 @@ async function getSportsScores({
         if (secondary.length) {
           usedFallback = true;
           games = mergeGameLists(games, secondary);
+        }
+        if (id === 'llws') {
+          games = games.map((g) => llwsTeams.enrichLlwsGame(g));
         }
         const counts = { live: 0, final: 0, upcoming: 0 };
         for (const g of games) {

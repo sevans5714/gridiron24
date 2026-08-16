@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=119" />
-  <link rel="icon" href="/favicon.ico?v=119" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=119" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=119" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=120" />
+  <link rel="icon" href="/favicon.ico?v=120" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=120" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=120" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=153" />
   <style>
@@ -9179,7 +9179,7 @@
     let sportsWageredIds = new Set();
     const SPORTS_POLL_MS = 25000;
     const SPORTS_POLL_LIVE_MS = 15000;
-    const SPORTS_FLIP_MS = 7000;
+    const SPORTS_FLIP_MS = 3500;
     const SPORTS_FLIP_PAUSE_MS = 20000;
     const SPORTS_SLOT = 12;
     const SPORTS_GOLF_SLOT = 1;
@@ -9560,18 +9560,13 @@
 
     function sportsRotateIds() {
       const boards = Array.isArray(sportsData?.leagues) ? sportsData.leagues : [];
-      const scored = boards.map((b) => {
-        const games = b.games || [];
-        const live = games.filter((g) => g.status?.bucket === 'live').length;
-        const upcoming = games.filter((g) => g.status?.bucket === 'upcoming').length;
-        return { id: b.id, live, upcoming, total: games.length };
-      }).filter((b) => b.id && b.total > 0);
-      scored.sort((a, b) => {
-        if (b.live !== a.live) return b.live - a.live;
-        if (b.upcoming !== a.upcoming) return b.upcoming - a.upcoming;
-        return 0;
-      });
-      return scored.map((b) => b.id);
+      const isFantasy = (b) => Boolean(b.fantasy) || b.id === 'gi24' || b.id === 'aaa';
+      // In-season sports stay in the cycle as soon as the calendar season starts,
+      // even if today’s slate is empty. Off-season boards only appear with games.
+      const inSeasonReal = boards.filter((b) => b?.id && !isFantasy(b) && b.inSeason);
+      const fantasy = boards.filter((b) => b?.id && isFantasy(b) && (b.games || []).length);
+      const rest = boards.filter((b) => b?.id && !isFantasy(b) && !b.inSeason && (b.games || []).length);
+      return [...inSeasonReal, ...fantasy, ...rest].map((b) => b.id);
     }
 
     function markSportsTabs() {
@@ -9622,7 +9617,9 @@
       const root = document.getElementById('sports-tabs');
       if (!root) return;
       const boards = Array.isArray(sportsData?.leagues) ? sportsData.leagues : [];
-      const tabs = boards.map((b) => ({
+      const tabs = boards
+        .filter((b) => b?.id && (b.inSeason || (b.games || []).length))
+        .map((b) => ({
         id: b.id,
         label: b.label,
         count: (b.games || []).length,
@@ -9633,7 +9630,7 @@
         return;
       }
       if (!tabs.some((t) => t.id === sportsFilter)) {
-        sportsFilter = tabs[0].id;
+        sportsFilter = sportsRotateIds()[0] || tabs[0].id;
       }
       root.innerHTML = tabs.map((t) => `
         <button type="button" class="sports-tab${sportsFilter === t.id ? ' is-on' : ''}"

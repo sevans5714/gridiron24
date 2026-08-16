@@ -10478,6 +10478,12 @@ server.listen(PORT, '0.0.0.0', () => {
     console.warn('League bootstrap failed:', err.message || err);
   }
   users.ensureBootstrapOwnerAccounts();
+  try {
+    const owner = users.listUsers().find((u) => u.siteOwner);
+    if (owner?.id) logos.unassignConference(owner.id, 'aaa');
+  } catch (err) {
+    console.warn('Could not drop owner AAA franchise claim:', err.message || err);
+  }
   try { users.migrateApprovalFlags(); } catch (err) {
     console.warn('Approval migration failed:', err.message || err);
   }

@@ -5,6 +5,8 @@
  * Parses public World Series tournament schedule pages (ws-card markup).
  */
 
+const llwsTeams = require('./llws-teams');
+
 const CACHE_MS = 45_000;
 const cache = new Map(); // key -> { at, games }
 
@@ -127,6 +129,18 @@ function parseCardTime(headerText, year) {
   };
 }
 
+function parseMarkColors(li) {
+  const style = (String(li).match(/ws-card__initials"[^>]*style="([^"]*)"/i) || [])[1]
+    || (String(li).match(/class="[^"]*ws-card__initials[^"]*"[^>]*style="([^"]*)"/i) || [])[1]
+    || '';
+  const fill = (style.match(/(?:^|;)\s*color:\s*([^;]+)/i) || [])[1];
+  const stroke = (style.match(/border-color:\s*([^;]+)/i) || [])[1];
+  return {
+    markFill: fill ? fill.trim() : null,
+    markStroke: stroke ? stroke.trim() : null
+  };
+}
+
 function parseTeams(matchupHtml) {
   const teams = [];
   const lis = String(matchupHtml).match(/<li[\s\S]*?<\/li>/gi) || [];
@@ -140,7 +154,8 @@ function parseTeams(matchupHtml) {
       ? Number(String(scoreRaw).trim())
       : null;
     if (!name && !abbr) continue;
-    teams.push({
+    const marks = parseMarkColors(li);
+    teams.push(llwsTeams.enrichLlwsTeam({
       id: null,
       abbreviation: abbr || (name || '?').slice(0, 3).toUpperCase(),
       name: name || abbr || 'TBD',
@@ -148,8 +163,10 @@ function parseTeams(matchupHtml) {
       logo: null,
       score: Number.isFinite(score) ? score : null,
       record: null,
-      winner: false
-    });
+      winner: false,
+      markFill: marks.markFill,
+      markStroke: marks.markStroke
+    }));
   }
   return teams;
 }
