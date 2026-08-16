@@ -3969,14 +3969,19 @@
       z-index: 3;
     }
     .mock-order .mock-seat-chip .last.is-name-in {
-      animation: mock-name-in 0.55s ease;
+      animation: mock-name-pop 0.72s cubic-bezier(0.22, 1.2, 0.36, 1);
       color: #9dffc4;
-      font-weight: 700;
+      font-weight: 800;
       opacity: 1;
+      overflow: visible;
+      text-overflow: clip;
+      transform-origin: center bottom;
+      z-index: 4;
     }
-    @keyframes mock-name-in {
-      0% { opacity: 0; transform: translateY(0.35rem); }
-      100% { opacity: 1; transform: translateY(0); }
+    @keyframes mock-name-pop {
+      0% { transform: scale(2.25); filter: brightness(1.35); }
+      58% { transform: scale(1.08); }
+      100% { transform: scale(1); filter: brightness(1); }
     }
     .mock-order .mock-seat-chip .last.is-empty {
       color: var(--mo-muted);
@@ -4046,15 +4051,20 @@
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--mo-gold) 45%, transparent);
       color: var(--mo-text);
     }
+    .mock-order .mock-seat-chip.is-just-picked,
+    .mock-order .mock-seat-chip.is-name-reveal {
+      overflow: visible;
+      z-index: 6;
+    }
     .mock-order .mock-seat-chip.is-just-picked {
       border-color: color-mix(in srgb, var(--mo-good) 65%, var(--mo-line));
       background: color-mix(in srgb, var(--mo-good) 16%, var(--mo-surface));
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--mo-good) 35%, transparent);
       animation: mock-seat-picked 1.1s ease;
     }
-    .mock-order .mock-seat-chip.is-just-picked .last {
+    .mock-order .mock-seat-chip.is-just-picked .last:not(.is-empty):not(.is-selecting) {
       color: var(--mo-text);
-      font-weight: 700;
+      font-weight: 800;
     }
     @keyframes mock-seat-picked {
       0% { transform: scale(1); }
@@ -6208,8 +6218,11 @@
       font-style: italic;
     }
     .mock-other-team .ot-picks span.is-name-in {
-      animation: mock-name-in 0.55s ease;
+      animation: mock-name-pop 0.72s cubic-bezier(0.22, 1.2, 0.36, 1);
       background: color-mix(in srgb, var(--mo-good) 28%, transparent);
+      transform-origin: left center;
+      z-index: 2;
+      position: relative;
     }
     .mock-other-team .ot-name {
       display: flex;
@@ -9101,7 +9114,7 @@
   </footer>
   <script src="/js/nav.js?v=154"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=68"></script>
+  <script src="/js/lounge-desk.js?v=69"></script>
   <script src="/js/lounge-games.js?v=38"></script>
   <script>
     const esc = (v = '') => String(v)

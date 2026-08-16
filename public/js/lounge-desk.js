@@ -2851,6 +2851,12 @@
     if (justPickedTimer) clearTimeout(justPickedTimer);
     const chip = document.querySelector(`#mock-order [data-seat="${teamIndex}"]`);
     chip?.classList.add('is-just-picked');
+    const last = chip?.querySelector('.last');
+    if (last && !last.classList.contains('is-empty') && !last.classList.contains('is-selecting')) {
+      last.classList.remove('is-name-in');
+      void last.offsetWidth;
+      last.classList.add('is-name-in');
+    }
     justPickedTimer = setTimeout(() => {
       justPickedSeat = null;
       document.querySelectorAll('#mock-order .is-just-picked').forEach((el) => {
@@ -3060,9 +3066,10 @@
             : (you && (phase === 'setup' || roomStatus === 'lobby')
               ? (canDrag ? 'DRAG TO MOVE' : 'YOUR SEAT')
               : '')));
+      const namePop = Boolean(last) && (revealing || justPickedSeat === i);
       const lastHtml = selecting
         ? '<span class="last is-selecting">Selecting…</span>'
-        : `<span class="last${last ? '' : ' is-empty'}${revealing ? ' is-name-in' : ''}">${last
+        : `<span class="last${last ? '' : ' is-empty'}${namePop ? ' is-name-in' : ''}">${last
           ? `${esc(last.position || '')} ${esc(last.playerName)}`
           : '—'}</span>`;
       const label = boardLabel;
