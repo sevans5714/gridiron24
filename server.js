@@ -6679,7 +6679,13 @@ const server = http.createServer(async (req, res) => {
         const leagues = requestUrl.searchParams.get('leagues');
         // Default lounge pull includes fantasy boards; explicit ?leagues=nfl (etc.) skips them.
         const extraBoards = leagues ? [] : await loadFantasySportsBoards();
-        const payload = await sportsScoreboard.getSportsScores({ leagues, extraBoards });
+        // Short date window for day-based leagues so ESPN doesn't return
+        // far-future openers (e.g. NHL in September) on the lounge board.
+        const payload = await sportsScoreboard.getSportsScores({
+          leagues,
+          extraBoards,
+          daysAhead: 2
+        });
         return sendJson(res, 200, payload);
       } catch (err) {
         return sendJson(res, err.status || 502, {

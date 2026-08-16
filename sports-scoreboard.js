@@ -195,17 +195,66 @@ const FANTASY_LEAGUE_IDS = new Set(['gi24', 'aaa']);
 /** Cap only as a safety valve — ESPN can return a full field. */
 const GOLF_LEADER_LIMIT = 40;
 
+/**
+ * Off-season boards may surface only for live action or games starting very soon.
+ * Prevents NHL/NBA/etc. from appearing all summer because ESPN listed a Sept opener.
+ */
+const OFFSEASON_UPCOMING_MAX_MS = 2 * 24 * 60 * 60 * 1000;
+const OFFSEASON_FINAL_MAX_MS = 36 * 60 * 60 * 1000;
+
 function isLeagueMonthInSeason(meta, now = new Date()) {
   const months = meta?.seasonMonths;
   if (!Array.isArray(months) || !months.length) return true;
   return months.includes(now.getMonth() + 1);
 }
 
-function boardHasActiveGames(board) {
+function gameStartTime(g) {
+  const t = Date.parse(g?.date || '');
+  return Number.isFinite(t) ? t : null;
+}
+
+function isNearTermUpcoming(g, now = new Date(), maxMs = OFFSEASON_UPCOMING_MAX_MS) {
+  if (g?.status?.bucket !== 'upcoming') return false;
+  const start = gameStartTime(g);
+  if (start == null) return false;
+  const t = now.getTime();
+  // Allow a small past skew for timezone / late tip-off status lag.
+  return start >= t - 6 * 60 * 60 * 1000 && start <= t + maxMs;
+}
+
+function boardHasActiveGames(board, now = new Date()) {
   return (board?.games || []).some((g) => {
-    const bucket = g?.status?.bucket;
-    return bucket === 'live' || bucket === 'upcoming';
+    if (g?.status?.bucket === 'live') return true;
+    return isNearTermUpcoming(g, now);
   });
+}
+
+function recountBoardGames(games) {
+  const counts = { live: 0, final: 0, upcoming: 0 };
+  for (const g of games || []) {
+    const bucket = g?.status?.bucket;
+    if (bucket && counts[bucket] != null) counts[bucket] += 1;
+  }
+  return counts;
+}
+
+/** Drop far-future schedule teasers from calendar-offseason boards. */
+function pruneOffSeasonGames(board, now = new Date()) {
+  if (board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)) return board;
+  const meta = LEAGUES[board?.id];
+  if (!meta || isLeagueMonthInSeason(meta, now)) return board;
+  const games = (board.games || []).filter((g) => {
+    const bucket = g?.status?.bucket;
+    if (bucket === 'live') return true;
+    if (bucket === 'final') {
+      const start = gameStartTime(g);
+      if (start == null) return false;
+      return start >= now.getTime() - OFFSEASON_FINAL_MAX_MS;
+    }
+    return isNearTermUpcoming(g, now);
+  });
+  if (games.length === (board.games || []).length) return board;
+  return { ...board, games, counts: recountBoardGames(games) };
 }
 
 function gameDedupeKey(g) {
@@ -284,20 +333,23 @@ async function fetchSecondaryGames(leagueId) {
   return extras.flat();
 }
 
-/** Keep calendar-in-season leagues, plus any offseason board that still has live/upcoming games. */
+/** Keep calendar-in-season leagues, plus any offseason board that still has live/near-term games. */
 function filterInSeasonBoards(boards, now = new Date()) {
-  return (boards || []).filter((board) => {
-    if (board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)) return true;
-    const meta = LEAGUES[board.id];
-    if (!meta) return Boolean(board?.games?.length);
-    if (isLeagueMonthInSeason(meta, now)) return true;
-    return boardHasActiveGames(board);
-  }).map((board) => ({
-    ...board,
-    inSeason: board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)
-      ? true
-      : isLeagueMonthInSeason(LEAGUES[board.id], now)
-  }));
+  return (boards || [])
+    .map((board) => pruneOffSeasonGames(board, now))
+    .filter((board) => {
+      if (board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)) return true;
+      const meta = LEAGUES[board.id];
+      if (!meta) return Boolean(board?.games?.length);
+      if (isLeagueMonthInSeason(meta, now)) return true;
+      return boardHasActiveGames(board, now);
+    })
+    .map((board) => ({
+      ...board,
+      inSeason: board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)
+        ? true
+        : isLeagueMonthInSeason(LEAGUES[board.id], now)
+    }));
 }
 
 function yyyymmddLocal(d = new Date()) {
@@ -971,7 +1023,9 @@ async function getSportsScores({
   extraBoards = [],
   daysAhead = 0,
   daysBehind = 0,
-  forceDateRange = false
+  forceDateRange = false,
+  /** When false (settlement), keep off-season boards so open tickets can still grade. */
+  applySeasonFilter = true
 } = {}) {
   const ids = parseLeagueList(leagues);
   const fetchedAt = new Date().toISOString();
@@ -1104,7 +1158,14 @@ async function getSportsScores({
       }
     }
   }
-  const visible = filterInSeasonBoards(enriched);
+  const visible = applySeasonFilter
+    ? filterInSeasonBoards(enriched)
+    : enriched.map((board) => ({
+        ...board,
+        inSeason: board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)
+          ? true
+          : isLeagueMonthInSeason(LEAGUES[board.id])
+      }));
 
   const totals = { live: 0, final: 0, upcoming: 0, games: 0 };
   let oddsFilled = 0;
@@ -1139,7 +1200,8 @@ async function getSettlementBoards({ openLegs = [] } = {}) {
   const scores = await getSportsScores({
     daysAhead: 6,
     daysBehind: 14,
-    forceDateRange: true
+    forceDateRange: true,
+    applySeasonFilter: false
   });
   const boards = (scores.leagues || []).map((b) => ({
     ...b,
