@@ -3397,6 +3397,7 @@
       display: grid;
       gap: 0;
       min-width: 0;
+      align-items: center;
     }
     .mock-start-copy strong {
       font-family: "Oswald", sans-serif;
@@ -3409,6 +3410,70 @@
       color: var(--mo-muted);
       font-size: 0.9rem;
       line-height: 1.4;
+    }
+    .mock-round-chip {
+      display: grid;
+      grid-template-rows: auto auto auto auto;
+      justify-items: center;
+      align-content: start;
+      gap: 0.18rem;
+      width: 5.6rem;
+      padding: 0.45rem 0.3rem 0.4rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--mo-line);
+      background: var(--mo-surface);
+      color: var(--mo-muted);
+      text-align: center;
+    }
+    .mock-round-chip .n {
+      width: 1.55rem;
+      height: 1.55rem;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.74rem;
+      font-weight: 700;
+      background: rgba(47, 123, 255, 0.2);
+      color: var(--mo-blue-hot);
+    }
+    .mock-round-chip .nm {
+      font-size: 0.68rem;
+      font-weight: 700;
+      line-height: 1.15;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--mo-text);
+    }
+    .mock-round-chip .st {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1.1;
+      color: var(--mo-upcoming, #7aa2ff);
+    }
+    .mock-round-chip.is-clock {
+      border-color: rgba(77, 255, 154, 0.7);
+      background: rgba(77, 255, 154, 0.16);
+      color: #b8ffd6;
+      box-shadow:
+        0 0 0 2px rgba(77, 255, 154, 0.22),
+        0 0 18px rgba(77, 255, 154, 0.2);
+    }
+    .mock-round-chip.is-clock .n {
+      background: rgba(77, 255, 154, 0.32);
+      color: var(--mo-good);
+    }
+    .mock-round-chip.is-clock .st {
+      color: var(--mo-good);
+    }
+    .mock-start-copy .mock-round-chip span {
+      display: grid !important;
+      color: inherit;
+      font-size: inherit;
+      line-height: inherit;
     }
     .mock-live-timer {
       display: grid;
@@ -8493,6 +8558,26 @@
       border-color: rgba(161, 98, 7, 0.45);
       background: #fffbeb;
     }
+    html[data-theme="day"] .mock-round-chip {
+      background: #fff;
+      border-color: rgba(20, 24, 31, 0.12);
+    }
+    html[data-theme="day"] .mock-round-chip .nm {
+      color: #0f172a;
+    }
+    html[data-theme="day"] .mock-round-chip.is-clock {
+      border-color: rgba(21, 128, 61, 0.4);
+      background: #ecfdf3;
+      color: #15803d;
+      box-shadow: none;
+    }
+    html[data-theme="day"] .mock-round-chip.is-clock .n {
+      background: rgba(21, 128, 61, 0.18);
+      color: #15803d;
+    }
+    html[data-theme="day"] .mock-round-chip.is-clock .st {
+      color: #15803d;
+    }
     html[data-theme="day"] .mock-order .mock-seat-chip .nm {
       color: #64748b;
     }
@@ -9114,7 +9199,7 @@
   </footer>
   <script src="/js/nav.js?v=154"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=69"></script>
+  <script src="/js/lounge-desk.js?v=70"></script>
   <script src="/js/lounge-games.js?v=38"></script>
   <script>
     const esc = (v = '') => String(v)

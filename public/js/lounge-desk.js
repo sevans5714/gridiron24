@@ -379,17 +379,25 @@
       }
     }
     if (copy) {
-      let headline = 'Start Draft';
-      if (waitingSeat) headline = 'Join in progress';
-      else if (done) headline = 'Board is final';
-      else if (inLobby && !positionsLocked) headline = roomIsHost ? 'Drag teams into order' : 'Drag your team';
-      else if (inLobby && lobbyLeft > 0) headline = 'Positions locked';
-      else if (inLobby && roomIsHost) headline = 'Starting draft';
-      else if (inLobby) headline = 'Lobby ready';
-      else if (draftLive && mine) headline = 'ON THE CLOCK';
-      else if (draftLive) headline = isMultiplayer() ? 'Live mock' : 'Waiting your turn';
-      else headline = 'Start Draft to choose settings';
-      copy.innerHTML = `<strong>${headline}</strong>`;
+      const slot = draftLive && !done ? currentSlot() : null;
+      if (slot) {
+        const status = mine ? 'ON THE CLOCK' : `${slot.pick} OF ${mock.teamNames.length}`;
+        copy.innerHTML = `<div class="mock-round-chip${mine ? ' is-clock' : ''}" aria-label="Round ${esc(String(slot.round))} of ${esc(String(mock.rounds))}, pick ${esc(String(slot.pick))}">
+          <span class="n">${esc(String(slot.round))}</span>
+          <span class="nm">Round</span>
+          <span class="st">${esc(status)}</span>
+        </div>`;
+      } else {
+        let headline = 'Start Draft';
+        if (waitingSeat) headline = 'Join in progress';
+        else if (done) headline = 'Board is final';
+        else if (inLobby && !positionsLocked) headline = roomIsHost ? 'Drag teams into order' : 'Drag your team';
+        else if (inLobby && lobbyLeft > 0) headline = 'Positions locked';
+        else if (inLobby && roomIsHost) headline = 'Starting draft';
+        else if (inLobby) headline = 'Lobby ready';
+        else headline = 'Start Draft to choose settings';
+        copy.innerHTML = `<strong>${esc(headline)}</strong>`;
+      }
     }
     if (sub) {
       sub.hidden = true;
