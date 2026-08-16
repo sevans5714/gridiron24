@@ -7419,7 +7419,8 @@ const server = http.createServer(async (req, res) => {
       try {
         const season = requestUrl.searchParams.get('season');
         const activeOnly = requestUrl.searchParams.get('activeOnly') !== '0';
-        const payload = await nflverseDraft.loadDraftPool({ season, activeOnly });
+        const refresh = String(requestUrl.searchParams.get('refresh') || requestUrl.searchParams.get('force') || '') === '1';
+        const payload = await nflverseDraft.loadDraftPool({ season, activeOnly, force: refresh });
         return sendJson(res, 200, payload);
       } catch (err) {
         return sendJson(res, err.status || 502, {
@@ -10513,6 +10514,11 @@ server.listen(PORT, '0.0.0.0', () => {
       console.warn('[paper-book-settle] interval failed', err.message || err);
     });
   }, PAPER_BOOK_SETTLE_MS);
+  setTimeout(() => {
+    nflverseDraft.loadDraftPool({ activeOnly: true, force: true }).catch((err) => {
+      console.warn('[draft-pool] startup refresh failed', err.message || err);
+    });
+  }, 8_000);
   const INDEPENDENT_DRAFT_TICK_MS = 4_000;
   setInterval(() => {
     nflverseDraft.loadDraftPool({ activeOnly: true })

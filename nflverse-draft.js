@@ -12,7 +12,9 @@ const DRAFT_FILE = path.join(DATA_DIR, 'beta-draft.json');
 const FANTASY_POSITIONS = new Set(['QB', 'RB', 'WR', 'TE', 'K', 'D/ST']);
 const EXCLUDE_STATUS = new Set(['INA', 'RET', 'CUT', 'NWT', 'EXE']);
 const POOL_CACHE_MS = 2 * 60 * 60 * 1000;
-const UA = 'GridIron24-DraftPool/2.2';
+const PRESEASON_POOL_CACHE_MS = 15 * 60 * 1000;
+const FORCE_COALESCE_MS = 5 * 60 * 1000;
+const UA = 'GridIron24-DraftPool/2.3';
 
 const ROSTER_URL = (season) =>
   `https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_${season}.csv`;
@@ -21,10 +23,41 @@ const STATS_URL = (season) =>
 const SCHEDULE_URL = 'https://github.com/nflverse/nflverse-data/releases/download/schedules/games.csv';
 const TEAMS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/teams/teams_colors_logos.csv';
 const SLEEPER_PLAYERS_URL = 'https://api.sleeper.app/v1/players/nfl';
+const SLEEPER_STATE_URL = 'https://api.sleeper.app/v1/state/nfl';
 const SLEEPER_PROJ_URL = (season) => `https://api.sleeper.app/v1/projections/nfl/regular/${season}`;
 const SLEEPER_HEADSHOT = (id) => `https://sleepercdn.com/content/nfl/players/thumb/${id}.jpg`;
 const FFC_ADP_URL = (scoring, teams, year) =>
   `https://fantasyfootballcalculator.com/api/v1/adp/${scoring}?teams=${teams}${year ? `&year=${year}` : ''}`;
+
+function sleeperSeasonProjListUrl(season) {
+  const url = new URL(`https://api.sleeper.com/projections/nfl/${season}`);
+  url.searchParams.set('season_type', 'regular');
+  url.searchParams.set('order_by', 'pts_ppr');
+  for (const pos of ['QB', 'RB', 'WR', 'TE', 'K', 'DEF']) {
+    url.searchParams.append('position[]', pos);
+  }
+  return url.toString();
+}
+
+const TEAM_ALIASES = {
+  LA: 'LAR',
+  LAR: 'LAR',
+  JAC: 'JAX',
+  JAX: 'JAX',
+  WSH: 'WAS',
+  WAS: 'WAS',
+  OAK: 'LV',
+  LV: 'LV',
+  SD: 'LAC',
+  LAC: 'LAC',
+  STL: 'LAR'
+};
+
+function canonTeam(team) {
+  const t = String(team || '').trim().toUpperCase();
+  if (!t) return null;
+  return TEAM_ALIASES[t] || t;
+}
 
 /** Replacement-level depth for VORP fallback when a player has no ADP. */
 const REPLACEMENT_DEPTH = { QB: 12, RB: 36, WR: 48, TE: 12, K: 12, 'D/ST': 12 };
@@ -36,6 +69,23 @@ const CURRENT_NFL_TEAMS = new Set([
 ]);
 
 let poolCache = { key: '', at: 0, players: null, meta: null };
+
+function cachedPoolPayload() {
+  return {
+    ok: true,
+    source: poolCache.meta.source,
+    adpSource: poolCache.meta.adpSource,
+    ffcDrafts: poolCache.meta.ffcDrafts,
+    ffcWindow: poolCache.meta.ffcWindow || null,
+    season: poolCache.meta.season,
+    statsSeason: poolCache.meta.statsSeason,
+    projectionSeason: poolCache.meta.projectionSeason,
+    fetchedAt: new Date(poolCache.at).toISOString(),
+    cacheMs: poolCache.meta.cacheMs || POOL_CACHE_MS,
+    counts: poolCache.meta.counts,
+    players: poolCache.players
+  };
+}
 
 function normalizeFantasyPos(pos) {
   const p = String(pos || '').trim().toUpperCase();
@@ -132,7 +182,7 @@ function normName(value) {
 }
 
 function matchKey(name, team, position) {
-  return `${normName(name)}|${String(team || '').toUpperCase()}|${String(position || '').toUpperCase()}`;
+  return `${normName(name)}|${canonTeam(team) || ''}|${String(position || '').toUpperCase()}`;
 }
 
 function toNum(value) {
@@ -158,7 +208,7 @@ function normalizePlayer(row, season) {
     firstName: String(row.first_name || '').trim() || null,
     lastName: String(row.last_name || '').trim() || null,
     position,
-    team: String(row.team || '').trim().toUpperCase() || null,
+    team: canonTeam(row.team) || String(row.team || '').trim().toUpperCase() || null,
     jersey: String(row.jersey_number || '').trim() || null,
     status,
     yearsExp: row.years_exp === '' || row.years_exp == null ? null : Number(row.years_exp),
@@ -296,7 +346,7 @@ async function loadFfcAdpMaps(year) {
         const name = String(row.name || '').trim();
         const pos = normalizeFantasyPos(row.position);
         if (!name || !FANTASY_POSITIONS.has(pos)) continue;
-        const team = String(row.team || '').toUpperCase() || null;
+        const team = canonTeam(row.team) || String(row.team || '').toUpperCase() || null;
         const adp = cleanAdp(row.adp);
         if (adp == null) continue;
         const payload = {
@@ -304,6 +354,7 @@ async function loadFfcAdpMaps(year) {
           name,
           team,
           position: pos,
+          byeWeek: toNum(row.bye),
           timesDrafted: toNum(row.times_drafted),
           stdev: toNum(row.stdev)
         };
@@ -322,6 +373,29 @@ async function loadFfcAdpMaps(year) {
     }
   }
   return { byKey, meta, count: byKey.size };
+}
+
+function lookupFfc(ffcAdp, name, team, pos) {
+  const canon = canonTeam(team);
+  return ffcAdp.byKey.get(matchKey(name, canon, pos))
+    || ffcAdp.byKey.get(matchKey(name, team, pos))
+    || ffcAdp.byKey.get(matchKey(name, '', pos))
+    || (pos === 'D/ST' && canon ? ffcAdp.byKey.get(`__dst__|${canon}`) : null)
+    || null;
+}
+
+function indexSleeperProjList(list) {
+  const byId = new Map();
+  for (const row of Array.isArray(list) ? list : []) {
+    const stats = row?.stats;
+    if (!stats || typeof stats !== 'object') continue;
+    const id = String(row.player_id || '').trim();
+    if (id) byId.set(id, stats);
+    const team = canonTeam(row.team || row.player?.team);
+    const pos = normalizeFantasyPos(row.player?.position || row.player?.fantasy_positions?.[0]);
+    if (pos === 'D/ST' && team) byId.set(`def-${team}`, stats);
+  }
+  return byId;
 }
 
 function assignVorp(players) {
@@ -379,7 +453,7 @@ function rankDraftPool(players) {
   return players;
 }
 
-function buildSleeperMaps(sleeperPlayers, projections) {
+function buildSleeperMaps(sleeperPlayers, projections, listById = new Map()) {
   const byGsis = new Map();
   const byEspn = new Map();
   const byKey = new Map();
@@ -388,10 +462,14 @@ function buildSleeperMaps(sleeperPlayers, projections) {
     if (!row || typeof row !== 'object') continue;
     const pos = normalizeFantasyPos(row.position);
     if (!FANTASY_POSITIONS.has(pos)) continue;
-    const team = String(row.team || row.team_abbr || sleeperId || '').toUpperCase() || null;
+    const team = canonTeam(row.team || row.team_abbr || sleeperId) || String(row.team || row.team_abbr || '').toUpperCase() || null;
     const name = String(row.full_name || `${row.first_name || ''} ${row.last_name || ''}`).trim();
     if (!name && pos !== 'D/ST') continue;
-    const projRow = projections?.[sleeperId] || (pos === 'D/ST' && team ? projections?.[team] : null) || null;
+    const dictRow = projections?.[sleeperId] || (pos === 'D/ST' && team ? projections?.[team] : null) || {};
+    const listRow = listById.get(String(sleeperId))
+      || (pos === 'D/ST' && team ? listById.get(`def-${team}`) : null)
+      || {};
+    const projRow = { ...dictRow, ...listRow };
     const projected = toNum(projRow?.pts_ppr ?? projRow?.pts_half_ppr ?? projRow?.pts_std);
     const payload = {
       sleeperId: String(sleeperId),
@@ -446,8 +524,10 @@ function buildDefenseUnits({ sleeper, ffcAdp, byeMap, teamMeta, season }) {
   for (const team of [...teams].sort()) {
     if (!CURRENT_NFL_TEAMS.has(team)) continue;
     const meta = teamMeta.get(team) || {};
-    const sleeperHit = sleeper.byTeamDef?.get(team) || null;
-    const ffcHit = ffcAdp.byKey.get(`__dst__|${team}`) || null;
+    const sleeperHit = sleeper.byTeamDef?.get(canonTeam(team) || team) || sleeper.byTeamDef?.get(team) || null;
+    const ffcHit = ffcAdp.byKey.get(`__dst__|${canonTeam(team) || team}`)
+      || ffcAdp.byKey.get(`__dst__|${team}`)
+      || null;
     const nick = meta.nick || sleeperHit?.lastName || team;
     const name = `${nick} D/ST`;
     let adp = null;
@@ -495,7 +575,7 @@ function buildDefenseUnits({ sleeper, ffcAdp, byeMap, teamMeta, season }) {
       draftNumber: null,
       draftClub: null,
       season: Number(season),
-      byeWeek: byeMap.get(team) || null,
+      byeWeek: byeMap.get(canonTeam(team) || team) || ffcHit?.byeWeek || null,
       teamLogo: meta.logo || null,
       fantasyPoints2025: null,
       projectedPoints2026: sleeperHit?.projectedPoints2026 ?? null,
@@ -534,42 +614,44 @@ async function loadRoster(season) {
 }
 
 async function loadDraftPool({ season, activeOnly = true, force = false } = {}) {
-  const year = Number(season) || new Date().getFullYear();
-  const priorSeason = year - 1;
-  const key = `${year}:${activeOnly ? 'active' : 'all'}:enriched-v7-dst`;
-  if (!force && poolCache.players && poolCache.key === key && Date.now() - poolCache.at < POOL_CACHE_MS) {
-    return {
-      ok: true,
-      source: poolCache.meta.source,
-      adpSource: poolCache.meta.adpSource,
-      ffcDrafts: poolCache.meta.ffcDrafts,
-      season: poolCache.meta.season,
-      statsSeason: poolCache.meta.statsSeason,
-      projectionSeason: poolCache.meta.projectionSeason,
-      fetchedAt: new Date(poolCache.at).toISOString(),
-      cacheMs: POOL_CACHE_MS,
-      counts: poolCache.meta.counts,
-      players: poolCache.players
-    };
+  const yearGuess = Number(season) || new Date().getFullYear();
+  const key = `${yearGuess}:${activeOnly ? 'active' : 'all'}:enriched-v8-dst`;
+  const cacheAge = Date.now() - (poolCache.at || 0);
+  const cacheMs = poolCache.meta?.cacheMs || POOL_CACHE_MS;
+  const freshEnough = poolCache.players && poolCache.key === key && cacheAge < cacheMs;
+  if (!force && freshEnough) {
+    return cachedPoolPayload();
+  }
+  if (force && freshEnough && cacheAge < FORCE_COALESCE_MS) {
+    return cachedPoolPayload();
   }
 
-  const roster = await loadRoster(year);
+  const roster = await loadRoster(yearGuess);
+  const priorSeason = yearGuess - 1;
 
-  const [statsCsv, scheduleCsv, teamsCsv, sleeperPlayers, sleeperProj, ffcAdp] = await Promise.all([
+  const [nflState, statsCsv, scheduleCsv, teamsCsv, sleeperPlayers, sleeperProj, sleeperProjList, ffcAdp] = await Promise.all([
+    fetchJson(SLEEPER_STATE_URL).catch(() => null),
     fetchText(STATS_URL(priorSeason)).catch(() => ''),
     fetchText(SCHEDULE_URL).catch(() => ''),
     fetchText(TEAMS_URL).catch(() => ''),
     fetchJson(SLEEPER_PLAYERS_URL).catch(() => ({})),
-    fetchJson(SLEEPER_PROJ_URL(year)).catch(() => ({})),
-    loadFfcAdpMaps(year)
+    fetchJson(SLEEPER_PROJ_URL(yearGuess)).catch(() => ({})),
+    fetchJson(sleeperSeasonProjListUrl(yearGuess)).catch(() => []),
+    loadFfcAdpMaps(yearGuess)
   ]);
+
+  const year = Number(season) || Number(nflState?.season) || yearGuess;
+  const seasonType = String(nflState?.season_type || '').toLowerCase();
+  const liveCacheMs = (seasonType === 'pre' || seasonType === 'off')
+    ? PRESEASON_POOL_CACHE_MS
+    : POOL_CACHE_MS;
 
   const teamRows = teamsCsv ? parseCsv(teamsCsv) : [];
   const statsMap = buildStats2025Map(statsCsv ? parseCsv(statsCsv) : []);
   const byeMap = buildByeMap(scheduleCsv ? parseCsv(scheduleCsv) : [], year);
   const logoMap = buildTeamLogoMap(teamRows);
   const teamMeta = buildTeamMetaMap(teamRows);
-  const sleeper = buildSleeperMaps(sleeperPlayers, sleeperProj);
+  const sleeper = buildSleeperMaps(sleeperPlayers, sleeperProj, indexSleeperProjList(sleeperProjList));
 
   const normalized = roster.rows
     .map((row) => normalizePlayer(row, roster.season))
@@ -584,9 +666,7 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
       || sleeper.byKey.get(matchKey(p.name, p.team, p.position))
       || sleeper.byKey.get(matchKey(p.name, '', p.position))
       || null;
-    const ffcHit = ffcAdp.byKey.get(matchKey(p.name, p.team, p.position))
-      || ffcAdp.byKey.get(matchKey(p.name, '', p.position))
-      || null;
+    const ffcHit = lookupFfc(ffcAdp, p.name, p.team, p.position);
     if (ffcHit) ffcHits += 1;
     const fantasyPoints2025 = stats?.fantasyPoints ?? null;
     const projectedPoints2026 = sleeperHit?.projectedPoints2026 ?? null;
@@ -628,8 +708,8 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
 
     return {
       ...p,
-      byeWeek: (p.team && byeMap.get(p.team)) || null,
-      teamLogo: (p.team && logoMap.get(p.team)) || null,
+      byeWeek: (p.team && byeMap.get(canonTeam(p.team) || p.team)) || ffcHit?.byeWeek || null,
+      teamLogo: (p.team && (logoMap.get(canonTeam(p.team) || p.team) || logoMap.get(p.team))) || null,
       fantasyPoints2025,
       projectedPoints2026,
       avgPpg: stats?.avgPpg ?? null,
@@ -702,6 +782,10 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
     projectionSeason: year,
     adpSource: ffcHits > 0 ? 'fantasyfootballcalculator' : 'sleeper',
     ffcDrafts: ffcAdp.meta?.total_drafts || null,
+    ffcWindow: ffcAdp.meta?.start_date && ffcAdp.meta?.end_date
+      ? { start: ffcAdp.meta.start_date, end: ffcAdp.meta.end_date }
+      : null,
+    cacheMs: liveCacheMs,
     counts
   };
 
@@ -717,11 +801,12 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
     source: meta.source,
     adpSource: meta.adpSource,
     ffcDrafts: meta.ffcDrafts,
+    ffcWindow: meta.ffcWindow || null,
     season: meta.season,
     statsSeason: meta.statsSeason,
     projectionSeason: meta.projectionSeason,
     fetchedAt: new Date().toISOString(),
-    cacheMs: POOL_CACHE_MS,
+    cacheMs: liveCacheMs,
     counts,
     players
   };

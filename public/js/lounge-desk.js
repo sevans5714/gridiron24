@@ -4181,7 +4181,7 @@
   }
 
   async function loadPool() {
-    const res = await fetch('/api/beta/draft-pool', { cache: 'no-store' });
+    const res = await fetch('/api/beta/draft-pool?refresh=1', { cache: 'no-store' });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load draft pool');
     poolAll = data.players || [];
@@ -4192,6 +4192,20 @@
     }
     paintPoolSeasonHeaders(data);
     return data;
+  }
+
+  function poolFreshnessTitle(data) {
+    const bits = [];
+    if (data?.projectionSeason) bits.push(`${data.projectionSeason} Sleeper projections`);
+    if (data?.adpSource === 'fantasyfootballcalculator') {
+      bits.push(data.ffcDrafts ? `${Number(data.ffcDrafts).toLocaleString()} FFC mocks` : 'FFC ADP');
+      if (data.ffcWindow?.end) bits.push(`through ${data.ffcWindow.end}`);
+    }
+    if (data?.fetchedAt) {
+      const t = new Date(data.fetchedAt);
+      if (!Number.isNaN(t.getTime())) bits.push(`updated ${t.toLocaleString()}`);
+    }
+    return bits.join(' · ');
   }
 
   function paintPoolSeasonHeaders(data) {
@@ -4217,6 +4231,9 @@
       const drafts = data?.ffcDrafts ? ` · ${data.ffcDrafts} drafts` : '';
       adpBtn.title = `Sort by average draft position (${src}${drafts})`;
     }
+    const count = document.getElementById('mock-pool-count');
+    const fresh = poolFreshnessTitle(data);
+    if (count && fresh) count.title = fresh;
     markPoolSortHeaders();
   }
 
