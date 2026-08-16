@@ -122,11 +122,14 @@ function publicUser(user) {
   const role = normalizeRole(user.role);
   const approved = user.approved !== false;
   const siteOwner = Boolean(user.siteOwner);
-  const membershipLeague = normalizeMembershipLeague(user.membershipLeague);
   const loungeMember = Boolean(user.loungeMember);
   const loungeToken = Boolean(user.loungeToken);
   // Social accounts: lounge admission without franchise / HQ access.
   const loungeOnly = Boolean(user.loungeOnly) && !siteOwner && role === ROLES.USER;
+  let membershipLeague = normalizeMembershipLeague(user.membershipLeague);
+  if (!membershipLeague && !loungeOnly && (siteOwner || role === ROLES.COMMISSIONER)) {
+    membershipLeague = 'gridiron';
+  }
   return {
     id: user.id,
     name: user.name,
@@ -179,6 +182,16 @@ function membershipKindOf(user) {
   return normalizeMembershipKind(null, user);
 }
 
+/** HQ roster league: explicit assignment, else site owner / commissioner → GridIron 24. */
+function hqMembershipOf(user) {
+  if (!user || user.approved === false) return null;
+  if (isLoungeOnly(user)) return null;
+  const explicit = normalizeMembershipLeague(user.membershipLeague);
+  if (explicit) return explicit;
+  if (isSiteOwner(user) || normalizeRole(user.role) === ROLES.COMMISSIONER) return 'gridiron';
+  return null;
+}
+
 function membershipKindLabel(kind) {
   if (kind === 'social') return 'Social Membership';
   if (kind === 'aaa') return 'AAA League';
@@ -199,8 +212,7 @@ function countMembership(store, league, exceptUserId = null) {
   if (!key) return 0;
   return store.users.filter((u) => {
     if (exceptUserId && u.id === exceptUserId) return false;
-    if (u.approved === false) return false;
-    return normalizeMembershipLeague(u.membershipLeague) === key;
+    return hqMembershipOf(u) === key;
   }).length;
 }
 
@@ -300,11 +312,8 @@ function listLeagueMembers() {
       .filter((u) => u.loungeMember)
   );
 
-  const byLeague = (key) => lounge
-    .filter((u) => u.membershipLeague === key);
-
-  const unassigned = lounge
-    .filter((u) => !u.membershipLeague);
+  const byLeague = (key) => lounge.filter((u) => hqMembershipOf(u) === key);
+  const unassigned = lounge.filter((u) => !hqMembershipOf(u));
 
   return {
     members: lounge,
@@ -768,6 +777,11 @@ function ensureBootstrapCommissioner() {
       store.users[idx].conference = null;
       store.users[idx].approved = true;
       store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
+      store.users[idx].loungeMember = true;
+      store.users[idx].loungeOnly = false;
+      if (!normalizeMembershipLeague(store.users[idx].membershipLeague)) {
+        store.users[idx].membershipLeague = 'gridiron';
+      }
       writeStore(store);
       return publicUser(store.users[idx]);
     }
@@ -794,6 +808,11 @@ function ensureBootstrapCommissioner() {
     const idx = store.users.findIndex((u) => u.id === user.id);
     if (idx !== -1) {
       store.users[idx].siteOwner = true;
+      store.users[idx].loungeMember = true;
+      store.users[idx].loungeOnly = false;
+      if (!normalizeMembershipLeague(store.users[idx].membershipLeague)) {
+        store.users[idx].membershipLeague = 'gridiron';
+      }
       writeStore(store);
       console.log(`Bootstrap GridIron 24 site owner created: ${login}`);
       return publicUser(store.users[idx]);
@@ -1094,6 +1113,7 @@ module.exports = {
   normalizeMembershipLeague,
   normalizeMembershipKind,
   membershipKindOf,
+  hqMembershipOf,
   membershipKindLabel,
   migrateApprovalFlags,
   ensureCommissionerFromEnv,

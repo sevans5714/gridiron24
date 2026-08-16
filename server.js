@@ -3381,7 +3381,7 @@ function loadLeagueRoster() {
 
   function entriesFor(leagueKey) {
     const assigned = members
-      .filter((u) => users.normalizeMembershipLeague(u.membershipLeague) === leagueKey)
+      .filter((u) => users.hqMembershipOf(u) === leagueKey)
       .map((u) => ({
         name: leagueRosterDisplayName(u),
         userId: u.id,

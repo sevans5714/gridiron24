@@ -381,12 +381,7 @@
     if (copy) {
       const slot = draftLive && !done ? currentSlot() : null;
       if (slot) {
-        const status = mine ? 'ON THE CLOCK' : `${slot.pick} OF ${mock.teamNames.length}`;
-        copy.innerHTML = `<div class="mock-round-chip${mine ? ' is-clock' : ''}" aria-label="Round ${esc(String(slot.round))} of ${esc(String(mock.rounds))}, pick ${esc(String(slot.pick))}">
-          <span class="n">${esc(String(slot.round))}</span>
-          <span class="nm">Round</span>
-          <span class="st">${esc(status)}</span>
-        </div>`;
+        copy.innerHTML = `<strong>Round ${esc(String(slot.round))}</strong>`;
       } else {
         let headline = 'Start Draft';
         if (waitingSeat) headline = 'Join in progress';
@@ -652,8 +647,8 @@
 
   function completeSlotRowHtml(row, isBench) {
     const empty = !row.player;
-    const playerPos = !empty ? String(row.player.position || '').toUpperCase() : '';
-    const label = empty ? (isBench ? 'BN' : row.slot) : (isBench ? (playerPos || 'BN') : row.slot);
+    const playerPos = !empty ? posKey(row.player.position) : '';
+    const label = empty ? (isBench ? 'BN' : row.slot) : (playerPos || (isBench ? 'BN' : row.slot));
     const bye = !empty && row.player.byeWeek != null ? String(row.player.byeWeek) : '';
     const team = !empty ? (row.player.nflTeam || '') : '';
     return `<div class="mock-complete-row${isBench ? ' is-bench' : ''}${empty ? ' is-empty' : ''}">
@@ -2485,9 +2480,20 @@
     )).join('');
   }
 
+  function posKey(pos) {
+    const p = String(pos || '').toUpperCase();
+    if (p === 'DST' || p === 'DEF') return 'D/ST';
+    return p || '—';
+  }
+
   function posBadge(pos) {
-    const p = String(pos || '—');
+    const p = posKey(pos);
     return `<span class="mock-pos-badge" data-pos="${esc(p)}">${esc(p)}</span>`;
+  }
+
+  function posInk(pos) {
+    const p = posKey(pos);
+    return `<em class="mock-pos-ink" data-pos="${esc(p)}">${esc(p)}</em>`;
   }
 
   function unlockDraftAudio() {
@@ -3057,7 +3063,7 @@
               : '')));
       const namePop = Boolean(last) && (revealing || justPickedSeat === i);
       const lastHtml = `<span class="last${last ? '' : ' is-empty'}${namePop ? ' is-name-in' : ''}">${last
-        ? `${esc(last.playerName)}`
+        ? `${posInk(last.position)} ${esc(last.playerName)}`
         : '—'}</span>`;
       const label = boardLabel;
       return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} ${you && draftLive && !isDraftComplete() ? 'data-drop-player="1"' : ''} title="${esc(title)}">
@@ -3698,10 +3704,10 @@
     if (count) count.textContent = `${mine.length} / ${totalSlots}`;
     const rowHtml = (row, isBench) => {
       const empty = !row.player;
-      const playerPos = !empty ? String(row.player.position || '').toUpperCase() : '';
-      // Keep the roster slot label (QB/RB/…) so empty rows still show colored positions.
+      const playerPos = !empty ? posKey(row.player.position) : '';
+      // Empty rows keep the slot label (QB/RB/FLEX). Filled rows use the player's position color.
       const slotPos = isBench ? 'BN' : String(row.slot || 'BN').toUpperCase();
-      const label = empty ? slotPos : (isBench ? (playerPos || 'BN') : slotPos);
+      const label = empty ? slotPos : (playerPos || slotPos);
       const bye = !empty && row.player.byeWeek != null ? String(row.player.byeWeek) : '';
       return `<div class="mock-slot-row${isBench ? ' is-bench' : ''}${empty ? ' is-empty' : ' is-filled'}">
         <span class="slot" data-pos="${esc(label)}" title="${esc(slotPos)}">${esc(label)}</span>
@@ -3828,7 +3834,7 @@
               && pickReveal.phase === 'show'
               && pickReveal.teamIndex === t.i
               && Number(p.overall) === Number(pickReveal.overall);
-            return `<span class="${fresh ? 'is-name-in' : ''}"><em>${esc(p.position || '')}</em>${esc(p.playerName)}</span>`;
+            return `<span class="${fresh ? 'is-name-in' : ''}" data-pos="${esc(posKey(p.position))}">${posInk(p.position)}${esc(p.playerName)}</span>`;
           })
           .join('')
         : '';
