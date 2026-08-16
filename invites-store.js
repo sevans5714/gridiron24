@@ -67,6 +67,7 @@ function publicInvite(invite) {
     invitedByName: invite.invitedByName || null,
     loungeOnly: Boolean(invite.loungeOnly),
     accountType: invite.loungeOnly ? 'social' : 'member',
+    membershipLeague: invite.loungeOnly ? null : (invite.membershipLeague || null),
     leagueId: invite.leagueId || null,
     franchiseId: invite.franchiseId || null
   };
@@ -95,7 +96,14 @@ function listInvitesForLeague(leagueId) {
   return listInvites().filter((i) => i.leagueId === id);
 }
 
-function createInvite({ email, invitedBy, loungeOnly, leagueId = null, franchiseId = null }) {
+function normalizeInviteMembership(raw) {
+  const key = String(raw || '').trim().toLowerCase();
+  if (key === 'aaa') return 'aaa';
+  if (key === 'gridiron' || key === 'gridiron24' || key === 'gi24') return 'gridiron';
+  return null;
+}
+
+function createInvite({ email, invitedBy, loungeOnly, leagueId = null, franchiseId = null, membershipLeague = null }) {
   const emailKey = normalizeEmail(email);
   if (!emailKey || !emailKey.includes('@')) {
     const err = new Error('Enter a valid email address');
@@ -106,6 +114,8 @@ function createInvite({ email, invitedBy, loungeOnly, leagueId = null, franchise
   const social = Boolean(loungeOnly);
   const leagueKey = leagueId ? String(leagueId).trim() : null;
   const franchiseKey = franchiseId ? String(franchiseId).trim() : null;
+  // HQ member invites land on GridIron 24 or AAA. Independent-league invites keep leagueId instead.
+  const membership = social || leagueKey ? null : (normalizeInviteMembership(membershipLeague) || 'gridiron');
   const store = readStore();
   const existingOpen = store.invites.find(
     (i) =>
@@ -150,6 +160,7 @@ function createInvite({ email, invitedBy, loungeOnly, leagueId = null, franchise
     invitedById: invitedBy?.id || null,
     invitedByName: invitedBy?.name || invitedBy?.loginName || null,
     loungeOnly: social,
+    membershipLeague: membership,
     leagueId: leagueKey,
     franchiseId: franchiseKey
   };

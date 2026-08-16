@@ -14,9 +14,16 @@
 
   function rowHtml(slot, currentUserId) {
     const you = currentUserId && slot.userId === currentUserId;
-    const name = slot.vacant ? 'Open' : slot.name;
+    const invited = Boolean(slot.invited) && !slot.vacant;
+    const name = slot.vacant ? 'Open' : (invited ? 'Invited but not joined' : slot.name);
     const num = String(slot.slot).padStart(2, '0');
-    return `<div class="gi-roster-row${slot.vacant ? ' is-open' : ''}${you ? ' is-you' : ''}">
+    const cls = [
+      'gi-roster-row',
+      slot.vacant ? 'is-open' : '',
+      invited ? 'is-invited' : '',
+      you ? 'is-you' : ''
+    ].filter(Boolean).join(' ');
+    return `<div class="${cls}">
       <span class="num">${esc(num)}</span>
       <span class="nm">${esc(name)}</span>
     </div>`;
@@ -24,8 +31,12 @@
 
   function boardHtml(league, currentUserId) {
     const cols = splitColumns(league.slots || []);
-    const filled = Number(league.filled || 0);
+    const assigned = Number(league.assigned != null ? league.assigned : league.filled || 0);
+    const invited = Number(league.invited || 0);
     const total = Number(league.slotCount || (league.slots || []).length || 0);
+    const meta = invited
+      ? `${assigned} of ${total} assigned · ${invited} invited`
+      : `${assigned} of ${total} assigned`;
     const logo = league.logo
       ? `<img src="${esc(league.logo)}" alt="" width="64" height="64" decoding="async">`
       : '';
@@ -35,7 +46,7 @@
         ${logo}
         <div>
           <h3>${esc(league.name || league.shortName || 'League')}</h3>
-          <p class="meta">${filled} of ${total} assigned</p>
+          <p class="meta">${esc(meta)}</p>
         </div>
       </header>
       <div class="gi-roster-grid${cols.length === 1 ? ' is-single' : ''}">

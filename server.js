@@ -3328,25 +3328,37 @@ function leagueRosterDisplayName(user) {
   return name || login || null;
 }
 
-function padLeagueNameSlots(members, slotCount) {
+/** HQ membership for a pending invite. Independent-league and social invites are excluded. */
+function inviteHqMembership(invite) {
+  if (!invite || invite.loungeOnly || invite.leagueId) return null;
+  return users.normalizeMembershipLeague(invite.membershipLeague) || 'gridiron';
+}
+
+function padLeagueRosterSlots(entries, slotCount) {
   const seen = new Set();
   const names = [];
-  for (const user of members) {
-    const name = leagueRosterDisplayName(user);
-    if (!name) continue;
-    const key = name.toLowerCase();
+  for (const entry of entries) {
+    const invited = Boolean(entry.invited);
+    const name = invited ? 'Invited but not joined' : String(entry?.name || '').trim();
+    if (!invited && !name) continue;
+    const key = invited ? `invite:${entry.inviteId || names.length}` : name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    names.push({ name, userId: user.id });
+    names.push({
+      name,
+      userId: invited ? null : (entry.userId || null),
+      invited
+    });
   }
-  names.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  const count = Math.max(Number(slotCount) || 0, names.length);
   const slots = [];
-  for (let i = 0; i < slotCount; i++) {
+  for (let i = 0; i < count; i++) {
     const member = names[i] || null;
     slots.push({
       slot: i + 1,
       name: member?.name || null,
       userId: member?.userId || null,
+      invited: Boolean(member?.invited),
       vacant: !member
     });
   }
@@ -3354,10 +3366,56 @@ function padLeagueNameSlots(members, slotCount) {
 }
 
 function loadLeagueRoster() {
-  const members = users.listUsers().filter((u) => u.approved !== false && !u.loungeOnly);
-  const byLeague = (key) => members.filter((u) => users.normalizeMembershipLeague(u.membershipLeague) === key);
-  const giSlots = padLeagueNameSlots(byLeague('gridiron'), users.LEAGUE_MEMBERSHIP_CAPS.gridiron || 24);
-  const aaaSlots = padLeagueNameSlots(byLeague('aaa'), users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12);
+  const allUsers = users.listUsers();
+  const members = allUsers.filter((u) => u.approved !== false && !u.loungeOnly);
+  const emailsWithAccounts = new Set(
+    allUsers.map((u) => String(u.email || '').trim().toLowerCase()).filter(Boolean)
+  );
+  const pendingInvites = invites.listInvites().filter((inv) => {
+    if (inv.status !== 'pending') return false;
+    if (!inviteHqMembership(inv)) return false;
+    return !emailsWithAccounts.has(String(inv.email || '').trim().toLowerCase());
+  });
+
+  function entriesFor(leagueKey) {
+    const assigned = members
+      .filter((u) => users.normalizeMembershipLeague(u.membershipLeague) === leagueKey)
+      .map((u) => ({
+        name: leagueRosterDisplayName(u),
+        userId: u.id,
+        invited: false
+      }))
+      .filter((row) => row.name)
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    const invited = pendingInvites
+      .filter((inv) => inviteHqMembership(inv) === leagueKey)
+      .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
+      .map((inv) => ({
+        name: 'Invited but not joined',
+        userId: null,
+        invited: true,
+        inviteId: inv.id
+      }));
+    return [...assigned, ...invited];
+  }
+
+  function leaguePayload(key, slotCount, meta) {
+    const slots = padLeagueRosterSlots(entriesFor(key), slotCount);
+    const assigned = slots.filter((s) => !s.vacant && !s.invited).length;
+    const invited = slots.filter((s) => s.invited).length;
+    return {
+      key,
+      name: meta.name,
+      shortName: meta.shortName,
+      logo: meta.logo,
+      slotCount,
+      assigned,
+      invited,
+      filled: assigned,
+      slots
+    };
+  }
+
   const aaa = getAffiliatedLeague('aaa');
   return {
     ok: true,
@@ -3365,24 +3423,16 @@ function loadLeagueRoster() {
     brand: config.brand,
     source: 'app',
     leagues: [
-      {
-        key: 'gridiron',
+      leaguePayload('gridiron', users.LEAGUE_MEMBERSHIP_CAPS.gridiron || 24, {
         name: config.brand?.name || 'GridIron 24',
         shortName: 'GI24',
-        logo: config.brand?.logo || '/assets/gridiron24-league.png?v=8',
-        slotCount: giSlots.length,
-        filled: giSlots.filter((s) => !s.vacant).length,
-        slots: giSlots
-      },
-      {
-        key: 'aaa',
+        logo: config.brand?.logo || '/assets/gridiron24-league.png?v=8'
+      }),
+      leaguePayload('aaa', users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12, {
         name: aaa?.name || 'AAA',
         shortName: aaa?.shortName || 'AAA',
-        logo: aaa?.logo || '/assets/aaa-league.png?v=7',
-        slotCount: aaaSlots.length,
-        filled: aaaSlots.filter((s) => !s.vacant).length,
-        slots: aaaSlots
-      }
+        logo: aaa?.logo || '/assets/aaa-league.png?v=7'
+      })
     ],
     generatedAt: new Date().toISOString()
   };
@@ -5366,6 +5416,16 @@ const server = http.createServer(async (req, res) => {
               }
             } catch (attachErr) {
               console.warn('[register] league attach failed', attachErr.message || attachErr);
+            }
+          } else if (!socialInvite) {
+            const membership = inviteHqMembership(inviteRecord);
+            if (membership) {
+              try {
+                users.setLeagueMembership(user.id, { league: membership });
+                user = users.findById(user.id) || user;
+              } catch (memErr) {
+                console.warn('[register] membership assign failed', memErr.message || memErr);
+              }
             }
           }
         }
@@ -8687,7 +8747,16 @@ const server = http.createServer(async (req, res) => {
         seen.add(key);
         emails.push(email.trim());
       }
-      const loungeOnly = Boolean(body.loungeOnly || body.social || body.accountType === 'social');
+      const membershipRaw = String(body.membership || body.kind || body.league || '').trim().toLowerCase();
+      const loungeOnly = Boolean(
+        body.loungeOnly || body.social || body.accountType === 'social' || membershipRaw === 'social'
+      );
+      const membershipLeague = loungeOnly ? null : (membershipRaw === 'aaa' ? 'aaa' : 'gridiron');
+      const inviteLeagueName = loungeOnly
+        ? config.brand.name
+        : membershipLeague === 'aaa'
+          ? (getAffiliatedLeague('aaa')?.name || 'AAA')
+          : config.brand.name;
       const results = [];
       for (const email of emails) {
         try {
@@ -8699,7 +8768,12 @@ const server = http.createServer(async (req, res) => {
             });
             continue;
           }
-          const created = invites.createInvite({ email, invitedBy: user, loungeOnly });
+          const created = invites.createInvite({
+            email,
+            invitedBy: user,
+            loungeOnly,
+            membershipLeague
+          });
           const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(created.token)}`;
           let mailResult = { sent: false, method: 'none' };
           try {
@@ -8707,7 +8781,7 @@ const server = http.createServer(async (req, res) => {
               to: created.invite.email,
               inviteUrl,
               invitedByName: user.name || user.loginName,
-              leagueName: config.brand.name,
+              leagueName: inviteLeagueName,
               baseUrl: requestOrigin(req),
               loungeOnly
             });
@@ -8774,7 +8848,9 @@ const server = http.createServer(async (req, res) => {
               to: refreshed.invite.email,
               inviteUrl,
               invitedByName: user.name || user.loginName,
-              leagueName: config.brand.name,
+              leagueName: inviteHqMembership(refreshed.invite) === 'aaa'
+                ? (getAffiliatedLeague('aaa')?.name || 'AAA')
+                : config.brand.name,
               baseUrl: requestOrigin(req),
               loungeOnly: Boolean(refreshed.invite.loungeOnly)
             });

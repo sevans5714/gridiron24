@@ -107,6 +107,11 @@ html[data-theme="day"] .gi-roster-row {
   color: var(--muted);
   font-style: italic;
 }
+.gi-roster-row.is-invited .nm {
+  font-weight: 600;
+  color: var(--muted);
+  font-style: italic;
+}
 .gi-roster-row.is-you {
   background: rgba(47, 109, 255, 0.14);
 }

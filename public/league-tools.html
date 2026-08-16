@@ -1245,7 +1245,7 @@
               <div class="status-note" id="invites-msg" role="status"></div>
               <div class="invite-compose" id="invites-admin">
                 <label class="field-label" for="invite-emails">Invite by email</label>
-                <p class="field-hint" id="invite-emails-hint">One or more addresses — commas or new lines. Full members get franchise HQ; check Social for lounge-only.</p>
+                <p class="field-hint" id="invite-emails-hint">One or more addresses — commas or new lines. GridIron 24 and AAA invites show on the 2026 roster until they join. Social is lounge-only.</p>
                 <textarea
                   class="field field-area field-box"
                   id="invite-emails"
@@ -1256,10 +1256,12 @@
                   spellcheck="false"
                   aria-describedby="invite-emails-hint"
                 ></textarea>
-                <label class="field-label" style="display:flex;align-items:center;gap:0.5rem;margin-top:0.65rem;cursor:pointer;">
-                  <input type="checkbox" id="invite-social" name="inviteSocial" />
-                  Social accounts — Members Lounge only (no franchise / HQ)
-                </label>
+                <label class="field-label" for="invite-kind">Invite as</label>
+                <select class="field" id="invite-kind" name="inviteKind" style="max-width:16rem;margin:0 0 0.85rem;">
+                  <option value="gridiron" selected>GridIron 24 member</option>
+                  <option value="aaa">AAA member</option>
+                  <option value="social">Social / lounge only</option>
+                </select>
                 <div class="btn-row">
                   <button type="button" class="btn btn-send" id="invite-send">Send Invites</button>
                 </div>
@@ -3500,7 +3502,7 @@
                     </div>
                   </div>
                 </td>
-                <td class="muted-sm">${inv.loungeOnly ? 'Social / lounge' : 'Full member'}</td>
+                <td class="muted-sm">${inv.loungeOnly ? 'Social / lounge' : (inv.membershipLeague === 'aaa' ? 'AAA' : 'GridIron 24')}</td>
                 <td class="muted-sm">${esc((inv.createdAt || '').slice(0, 10))}</td>
               </tr>`).join('')}
           </tbody>
@@ -3521,11 +3523,12 @@
         }
         btn.disabled = true;
         try {
-          const social = Boolean(document.getElementById('invite-social')?.checked);
+          const membership = document.getElementById('invite-kind')?.value || 'gridiron';
+          const social = membership === 'social';
           const res = await fetch('/api/invites', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ emails, loungeOnly: social })
+            body: JSON.stringify({ emails, membership, loungeOnly: social })
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(data.error || data.message || 'Could not send invites');
