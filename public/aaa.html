@@ -890,6 +890,41 @@
     }
     .msg strong { display: block; color: var(--text); margin-bottom: 0.2rem; font-size: 1.1rem; }
 
+    .hq-board .section-head a.roster-link { margin-left: auto; font-size: 0.92rem; }
+    .name-slots { border-top: 1px solid var(--line); }
+    .name-slot {
+      display: grid;
+      grid-template-columns: 2rem minmax(0, 1fr);
+      gap: 0.5rem;
+      align-items: baseline;
+      padding: 0.28rem 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.98rem;
+    }
+    .name-slot .num {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+    .name-slot .nm { font-weight: 700; }
+    .name-slot.is-open .nm { font-weight: 600; color: var(--muted); }
+    .name-slot.is-you {
+      background: rgba(47, 109, 255, 0.12);
+      margin: 0 -0.35rem;
+      padding-left: 0.35rem;
+      padding-right: 0.35rem;
+    }
+    html[data-theme="day"] .name-slot.is-you { background: rgba(31, 94, 240, 0.08); }
+    .league-names-block { margin-bottom: 1.1rem; }
+    .league-names-block:last-child { margin-bottom: 0; }
+    .league-names-block h3 {
+      margin: 0 0 0.4rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
 
     @media (max-width: 1100px) {
       .hq-board {
@@ -961,6 +996,15 @@
       <div class="hq-board-main">
         <section class="hq-section">
           <div class="section-head">
+            <h2>2026 Roster</h2>
+            <a class="roster-link" href="/roster-2026.html">Full board</a>
+          </div>
+          <div class="league-names" id="league-roster">
+            <div class="msg">Loading roster…</div>
+          </div>
+        </section>
+        <section class="hq-section">
+          <div class="section-head">
             <h2>Standings</h2>
           </div>
           <div class="standings-preview" id="standings">
@@ -1011,7 +1055,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=153"></script>
+  <script src="/js/nav.js?v=154"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -1234,6 +1278,32 @@
         </div>`;
     }
 
+    function rosterSlotRow(slot) {
+      const you = currentUser && slot.userId === currentUser.id;
+      const name = slot.vacant ? 'Open' : slot.name;
+      return `<div class="name-slot${slot.vacant ? ' is-open' : ''}${you ? ' is-you' : ''}"><span class="num">${slot.slot}</span><span class="nm">${esc(name)}</span></div>`;
+    }
+
+    function rosterLeagueBlock(league) {
+      return `<div class="league-names-block">
+        <h3>${esc(league.name)}</h3>
+        <div class="name-slots">${(league.slots || []).map(rosterSlotRow).join('')}</div>
+      </div>`;
+    }
+
+    async function loadLeagueRoster() {
+      const el = document.getElementById('league-roster');
+      if (!el) return;
+      try {
+        const res = await fetch('/api/league-roster', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        el.innerHTML = (data.leagues || []).map(rosterLeagueBlock).join('');
+      } catch (err) {
+        el.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+      }
+    }
+
     async function loadAaa() {
       try {
         const res = await fetch('/api/aaa', { cache: 'no-store' });
@@ -1417,6 +1487,7 @@
       currentUser = auth.user || null;
       wireBoard();
       await Promise.all([
+        loadLeagueRoster(),
         loadAaa(),
         loadPolls().catch(() => {
           document.getElementById('polls-list').innerHTML = '';

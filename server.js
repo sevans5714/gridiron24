@@ -3270,6 +3270,67 @@ async function apiLeagues(res) {
   });
 }
 
+function leagueRosterDisplayName(user) {
+  if (!user) return null;
+  const name = String(user.name || '').trim();
+  const login = String(user.loginName || '').trim();
+  return name || login || null;
+}
+
+function padLeagueNameSlots(members, slotCount) {
+  const seen = new Set();
+  const names = [];
+  for (const user of members) {
+    const name = leagueRosterDisplayName(user);
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push({ name, userId: user.id });
+  }
+  names.sort((a, b) => a.name.localeCompare(b.name));
+  const slots = [];
+  for (let i = 0; i < slotCount; i++) {
+    const member = names[i] || null;
+    slots.push({
+      slot: i + 1,
+      name: member?.name || null,
+      userId: member?.userId || null,
+      vacant: !member
+    });
+  }
+  return slots;
+}
+
+function loadLeagueRoster() {
+  const members = users.listUsers().filter((u) => u.approved !== false && !u.loungeOnly);
+  const byLeague = (key) => members.filter((u) => users.normalizeMembershipLeague(u.membershipLeague) === key);
+  const gridiron = padLeagueNameSlots(byLeague('gridiron'), users.LEAGUE_MEMBERSHIP_CAPS.gridiron || 24);
+  const aaa = padLeagueNameSlots(byLeague('aaa'), users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12);
+  return {
+    ok: true,
+    season: config.season,
+    brand: config.brand,
+    leagues: [
+      {
+        key: 'gridiron',
+        name: 'GridIron 24',
+        slotCount: gridiron.length,
+        filled: gridiron.filter((s) => !s.vacant).length,
+        slots: gridiron
+      },
+      {
+        key: 'aaa',
+        name: 'AAA',
+        slotCount: aaa.length,
+        filled: aaa.filter((s) => !s.vacant).length,
+        slots: aaa
+      }
+    ],
+    generatedAt: new Date().toISOString()
+  };
+}
+
 function upstreamMeta() {
   const u = espnResilient.getUpstreamStatus();
   const fantasyMode = u.fantasy?.mode || 'unknown';
@@ -6658,6 +6719,10 @@ const server = http.createServer(async (req, res) => {
       return sendFile(res, path.join(PUBLIC_DIR, 'beta-draft.html'));
     }
 
+    if (pathname === '/roster-2026' || pathname === '/roster-2026.html') {
+      return sendFile(res, path.join(PUBLIC_DIR, 'roster-2026.html'));
+    }
+
     if (pathname === '/api/beta/live-scoring' && req.method === 'GET') {
       try {
         const week = requestUrl.searchParams.get('week');
@@ -9521,6 +9586,17 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/leagues') {
       return await apiLeagues(res);
+    }
+
+    if (pathname === '/api/league-roster') {
+      try {
+        return sendJson(res, 200, loadLeagueRoster());
+      } catch (err) {
+        return sendJson(res, err.status || 500, {
+          ok: false,
+          error: err.message || 'Could not load 2026 roster'
+        });
+      }
     }
 
     if (pathname === '/api/draft' && req.method === 'GET') {

@@ -24,6 +24,7 @@
   let leagueScope = { scope: 'gridiron', conferenceKey: null, homePath: HOME_DEFAULT, label: 'GridIron 24' };
 
   const LEAGUE_MENU = [
+    { href: '/roster-2026.html', label: '2026 Roster' },
     { href: '/my-roster.html', label: 'My Team' },
     { href: '/standings.html', label: 'Standings' },
     { href: '/schedules.html', label: 'Schedules' },
@@ -35,6 +36,7 @@
 
   /** Same league options as GridIron, pointed at AAA destinations where pages differ. */
   const AAA_LEAGUE_MENU = [
+    { href: '/roster-2026.html', label: '2026 Roster' },
     { href: '/my-roster.html', label: 'My Team' },
     { href: '/aaa.html', label: 'Standings' },
     { href: '/schedules.html', label: 'Schedules' },
@@ -134,7 +136,7 @@
     if (active === 'scoring' || active === 'rulebook' || active === 'payouts' || active === 'aaa-rulebook') {
       return 'rulebook';
     }
-    if (active === 'standings' || active === 'teams' || active === 'my-roster' || active === 'team-rosters' || active === 'draft' || active === 'history' || active === 'transactions' || active === 'rankings' || active === 'schedules') {
+    if (active === 'standings' || active === 'teams' || active === 'my-roster' || active === 'team-rosters' || active === 'draft' || active === 'history' || active === 'transactions' || active === 'rankings' || active === 'schedules' || active === 'roster-2026') {
       return 'league';
     }
     if (active === 'aaa') {

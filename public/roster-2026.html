@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2026 Roster · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=119" />
+  <link rel="icon" href="/favicon.ico?v=119" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=119" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=119" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=153" />
+  <style>
+    .roster-block { margin-bottom: 2rem; }
+    .roster-block h2 {
+      margin: 0 0 0.65rem;
+      font-family: var(--display);
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .roster-block .meta {
+      margin: 0 0 0.75rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .name-slots {
+      max-width: 28rem;
+      border-top: 1px solid var(--line);
+    }
+    .name-slot {
+      display: grid;
+      grid-template-columns: 2.2rem minmax(0, 1fr);
+      gap: 0.65rem;
+      align-items: baseline;
+      padding: 0.42rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .name-slot .num {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+    .name-slot .nm { font-weight: 700; }
+    .name-slot.is-open .nm { font-weight: 600; color: var(--muted); }
+    .name-slot.is-you { background: rgba(47, 109, 255, 0.12); margin: 0 -0.4rem; padding-left: 0.4rem; padding-right: 0.4rem; }
+    html[data-theme="day"] .name-slot.is-you { background: rgba(31, 94, 240, 0.08); }
+    .msg { color: var(--muted); }
+  </style>
+</head>
+<body data-page="roster-2026">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">2026 Roster</div>
+    </div>
+  </header>
+  <section class="page-hero shell">
+    <p class="eyebrow">2026</p>
+    <h1>League Roster</h1>
+  </section>
+  <main class="page-main shell" id="boards">
+    <div class="msg">Loading roster…</div>
+  </main>
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=154"></script>
+  <script>
+    const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+    let currentUserId = null;
+
+    function slotRow(slot) {
+      const you = currentUserId && slot.userId === currentUserId;
+      const name = slot.vacant ? 'Open' : slot.name;
+      return `<div class="name-slot${slot.vacant ? ' is-open' : ''}${you ? ' is-you' : ''}"><span class="num">${slot.slot}</span><span class="nm">${esc(name)}</span></div>`;
+    }
+
+    function leagueBlock(league) {
+      const filled = Number(league.filled || 0);
+      const total = Number(league.slotCount || 0);
+      return `<section class="roster-block">
+        <h2>${esc(league.name)}</h2>
+        <p class="meta">${filled} of ${total} assigned</p>
+        <div class="name-slots">${(league.slots || []).map(slotRow).join('')}</div>
+      </section>`;
+    }
+
+    (async () => {
+      const auth = await (window.GridIronNav?.authReady || Promise.resolve({ user: null }));
+      currentUserId = auth.user?.id || null;
+      const el = document.getElementById('boards');
+      try {
+        const res = await fetch('/api/league-roster', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        el.innerHTML = (data.leagues || []).map(leagueBlock).join('');
+        window.GridIronNav?.setSync(`${data.season || 2026} roster`);
+      } catch (err) {
+        el.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+      }
+    })();
+  </script>
+</body>
+</html>
