@@ -14,6 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=119" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=153" />
+  <link rel="stylesheet" href="/css/league-roster.css?v=1" />
   <style>
     .aaa-portal {
       display: inline-flex;
@@ -916,39 +917,6 @@
     .msg strong { display: block; color: var(--text); margin-bottom: 0.2rem; font-size: 1.1rem; }
 
     .hq-board .section-head a.roster-link { margin-left: auto; font-size: 0.92rem; }
-    .name-slots { border-top: 1px solid var(--line); }
-    .name-slot {
-      display: grid;
-      grid-template-columns: 2rem minmax(0, 1fr);
-      gap: 0.5rem;
-      align-items: baseline;
-      padding: 0.28rem 0;
-      border-bottom: 1px solid var(--line);
-      font-size: 0.98rem;
-    }
-    .name-slot .num {
-      color: var(--muted);
-      font-variant-numeric: tabular-nums;
-      font-weight: 700;
-    }
-    .name-slot .nm { font-weight: 700; }
-    .name-slot.is-open .nm { font-weight: 600; color: var(--muted); }
-    .name-slot.is-you {
-      background: rgba(47, 109, 255, 0.12);
-      margin: 0 -0.35rem;
-      padding-left: 0.35rem;
-      padding-right: 0.35rem;
-    }
-    html[data-theme="day"] .name-slot.is-you { background: rgba(31, 94, 240, 0.08); }
-    .league-names-block { margin-bottom: 1.1rem; }
-    .league-names-block:last-child { margin-bottom: 0; }
-    .league-names-block h3 {
-      margin: 0 0 0.4rem;
-      font-family: var(--display);
-      font-size: 0.95rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
 
 
     @media (max-width: 1100px) {
@@ -1061,6 +1029,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=154"></script>
+  <script src="/js/league-roster-ui.js?v=1"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -1315,19 +1284,6 @@
         </div>`;
     }
 
-    function rosterSlotRow(slot) {
-      const you = currentUser && slot.userId === currentUser.id;
-      const name = slot.vacant ? 'Open' : slot.name;
-      return `<div class="name-slot${slot.vacant ? ' is-open' : ''}${you ? ' is-you' : ''}"><span class="num">${slot.slot}</span><span class="nm">${esc(name)}</span></div>`;
-    }
-
-    function rosterLeagueBlock(league) {
-      return `<div class="league-names-block">
-        <h3>${esc(league.name)}</h3>
-        <div class="name-slots">${(league.slots || []).map(rosterSlotRow).join('')}</div>
-      </div>`;
-    }
-
     async function loadLeagueRoster() {
       const el = document.getElementById('league-roster');
       if (!el) return;
@@ -1335,7 +1291,7 @@
         const res = await fetch('/api/league-roster', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
-        el.innerHTML = (data.leagues || []).map(rosterLeagueBlock).join('');
+        window.GridIronRoster.render(el, data, currentUser?.id);
       } catch (err) {
         el.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
       }

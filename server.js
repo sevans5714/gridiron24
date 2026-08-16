@@ -3339,7 +3339,7 @@ function padLeagueNameSlots(members, slotCount) {
     seen.add(key);
     names.push({ name, userId: user.id });
   }
-  names.sort((a, b) => a.name.localeCompare(b.name));
+  names.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   const slots = [];
   for (let i = 0; i < slotCount; i++) {
     const member = names[i] || null;
@@ -3353,105 +3353,32 @@ function padLeagueNameSlots(members, slotCount) {
   return slots;
 }
 
-function rosterSlotFromEspnTeam(conference, team, userById) {
-  const claim = logos.getClaimForTeam(conference.key, team.id);
-  const manager = claim ? userById.get(claim.userId) : null;
-  const siteName = leagueRosterDisplayName(manager);
-  const espnOwner = team.owner && team.owner !== 'Owner pending' ? team.owner : null;
-  const name = siteName || espnOwner || null;
-  return {
-    slot: 0,
-    conferenceKey: conference.key,
-    teamId: Number(team.id) || null,
-    teamName: team.name || null,
-    name,
-    userId: manager?.id || null,
-    vacant: !name
-  };
-}
-
-async function espnSlotsForBinding(binding, userById) {
-  const espnId = Number(binding?.espnLeagueId);
-  if (!Number.isFinite(espnId) || espnId <= 0) {
-    return { ok: false, configured: false, key: binding?.key || null, error: 'No ESPN league ID', slots: [] };
-  }
-  try {
-    const data = await fetchEspnLeague(binding);
-    const teams = (data.teams || []).slice().sort((a, b) => Number(a.id) - Number(b.id));
-    const slots = teams.map((team) => rosterSlotFromEspnTeam(binding, team, userById));
-    return {
-      ok: true,
-      configured: true,
-      key: binding.key,
-      espnName: data.espnLeagueName || null,
-      size: slots.length,
-      slots
-    };
-  } catch (err) {
-    return {
-      ok: false,
-      configured: true,
-      key: binding?.key || null,
-      error: err.message || 'ESPN unavailable',
-      slots: []
-    };
-  }
-}
-
-function numberRosterSlots(slots) {
-  return (slots || []).map((slot, i) => ({ ...slot, slot: i + 1 }));
-}
-
-async function loadLeagueRoster() {
-  const userById = new Map(
-    users.listUsers()
-      .filter((u) => u.approved !== false)
-      .map((u) => [u.id, u])
-  );
+function loadLeagueRoster() {
   const members = users.listUsers().filter((u) => u.approved !== false && !u.loungeOnly);
   const byLeague = (key) => members.filter((u) => users.normalizeMembershipLeague(u.membershipLeague) === key);
-
-  const giParts = await Promise.all(
-    (config.conferences || []).map((conference) => espnSlotsForBinding(conference, userById))
-  );
-  let giSlots = giParts.flatMap((part) => part.slots || []);
-  if (!giParts.some((part) => part.ok)) {
-    giSlots = padLeagueNameSlots(byLeague('gridiron'), users.LEAGUE_MEMBERSHIP_CAPS.gridiron || 24);
-  } else {
-    giSlots = numberRosterSlots(giSlots);
-  }
-
+  const giSlots = padLeagueNameSlots(byLeague('gridiron'), users.LEAGUE_MEMBERSHIP_CAPS.gridiron || 24);
+  const aaaSlots = padLeagueNameSlots(byLeague('aaa'), users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12);
   const aaa = getAffiliatedLeague('aaa');
-  const aaaPart = aaa
-    ? await espnSlotsForBinding({
-        key: aaa.key,
-        name: aaa.name,
-        shortName: aaa.shortName,
-        espnLeagueId: aaa.espnLeagueId
-      }, userById)
-    : { ok: false, configured: false, slots: [] };
-  let aaaSlots = aaaPart.slots || [];
-  if (!aaaPart.ok) {
-    aaaSlots = padLeagueNameSlots(byLeague('aaa'), users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12);
-  } else {
-    aaaSlots = numberRosterSlots(aaaSlots);
-  }
-
   return {
     ok: true,
     season: config.season,
     brand: config.brand,
+    source: 'app',
     leagues: [
       {
         key: 'gridiron',
-        name: 'GridIron 24',
+        name: config.brand?.name || 'GridIron 24',
+        shortName: 'GI24',
+        logo: config.brand?.logo || '/assets/gridiron24-league.png?v=8',
         slotCount: giSlots.length,
         filled: giSlots.filter((s) => !s.vacant).length,
         slots: giSlots
       },
       {
         key: 'aaa',
-        name: 'AAA',
+        name: aaa?.name || 'AAA',
+        shortName: aaa?.shortName || 'AAA',
+        logo: aaa?.logo || '/assets/aaa-league.png?v=7',
         slotCount: aaaSlots.length,
         filled: aaaSlots.filter((s) => !s.vacant).length,
         slots: aaaSlots
@@ -9724,7 +9651,7 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/league-roster') {
       try {
-        return sendJson(res, 200, await loadLeagueRoster());
+        return sendJson(res, 200, loadLeagueRoster());
       } catch (err) {
         return sendJson(res, err.status || 500, {
           ok: false,

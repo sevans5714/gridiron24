@@ -13,42 +13,13 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=119" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=153" />
+  <link rel="stylesheet" href="/css/league-roster.css?v=1" />
   <style>
-    .roster-block { margin-bottom: 2rem; }
-    .roster-block h2 {
-      margin: 0 0 0.65rem;
-      font-family: var(--display);
-      font-size: 1.25rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    .roster-block .meta {
-      margin: 0 0 0.75rem;
+    .roster-lead {
+      margin: 0 0 1.25rem;
       color: var(--muted);
-      font-size: 0.95rem;
+      font-size: 1.05rem;
     }
-    .name-slots {
-      max-width: 28rem;
-      border-top: 1px solid var(--line);
-    }
-    .name-slot {
-      display: grid;
-      grid-template-columns: 2.2rem minmax(0, 1fr);
-      gap: 0.65rem;
-      align-items: baseline;
-      padding: 0.42rem 0;
-      border-bottom: 1px solid var(--line);
-    }
-    .name-slot .num {
-      color: var(--muted);
-      font-variant-numeric: tabular-nums;
-      font-weight: 700;
-    }
-    .name-slot .nm { font-weight: 700; }
-    .name-slot.is-open .nm { font-weight: 600; color: var(--muted); }
-    .name-slot.is-you { background: rgba(47, 109, 255, 0.12); margin: 0 -0.4rem; padding-left: 0.4rem; padding-right: 0.4rem; }
-    html[data-theme="day"] .name-slot.is-you { background: rgba(31, 94, 240, 0.08); }
-    .msg { color: var(--muted); }
   </style>
 </head>
 <body data-page="roster-2026">
@@ -62,46 +33,29 @@
     <p class="eyebrow">2026</p>
     <h1>League Roster</h1>
   </section>
-  <main class="page-main shell" id="boards">
-    <div class="msg">Loading roster…</div>
+  <main class="page-main shell">
+    <p class="roster-lead">Names assigned in GridIron 24 — 24 GridIron slots, then 12 AAA.</p>
+    <div id="boards"><div class="msg">Loading roster…</div></div>
   </main>
   <footer class="shell site-footer">
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=154"></script>
+  <script src="/js/league-roster-ui.js?v=1"></script>
   <script>
-    const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
-    let currentUserId = null;
-
-    function slotRow(slot) {
-      const you = currentUserId && slot.userId === currentUserId;
-      const name = slot.vacant ? 'Open' : slot.name;
-      return `<div class="name-slot${slot.vacant ? ' is-open' : ''}${you ? ' is-you' : ''}"><span class="num">${slot.slot}</span><span class="nm">${esc(name)}</span></div>`;
-    }
-
-    function leagueBlock(league) {
-      const filled = Number(league.filled || 0);
-      const total = Number(league.slotCount || 0);
-      return `<section class="roster-block">
-        <h2>${esc(league.name)}</h2>
-        <p class="meta">${filled} of ${total} assigned</p>
-        <div class="name-slots">${(league.slots || []).map(slotRow).join('')}</div>
-      </section>`;
-    }
-
     (async () => {
       const auth = await (window.GridIronNav?.authReady || Promise.resolve({ user: null }));
-      currentUserId = auth.user?.id || null;
       const el = document.getElementById('boards');
       try {
         const res = await fetch('/api/league-roster', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
-        el.innerHTML = (data.leagues || []).map(leagueBlock).join('');
+        window.GridIronRoster.render(el, data, auth.user?.id, { wide: true });
         window.GridIronNav?.setSync(`${data.season || 2026} roster`);
       } catch (err) {
-        el.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+        el.innerHTML = `<div class="msg">${String(err.message || err).replaceAll('<','&lt;')}</div>`;
+        window.GridIronNav?.setSync('Connection error', false);
       }
     })();
   </script>
