@@ -2882,35 +2882,32 @@
   }
 
   /**
-   * CPU picks: keep the seat highlighted with "Selecting…" first,
-   * then swap in the player name under that team.
+   * CPU picks: flash the seat and pop the player name under the team.
    */
-  function beginCpuPickReveal(pick, { holdMs = 350 } = {}) {
+  function beginCpuPickReveal(pick, { holdMs = 0 } = {}) {
     if (!pick || !Number.isFinite(Number(pick.teamIndex))) return;
     clearPickReveal();
     pickReveal = {
       teamIndex: Number(pick.teamIndex),
       overall: Number(pick.overall),
-      phase: 'holding'
+      phase: 'show'
     };
     flashSeatPick(pick.teamIndex);
     scrollToSeat(pick.teamIndex);
     renderOrder();
     renderOtherTeams();
+    const last = document.querySelector(`#mock-order [data-seat="${pick.teamIndex}"] .last`);
+    if (last && !last.classList.contains('is-empty')) {
+      last.classList.remove('is-name-in');
+      void last.offsetWidth;
+      last.classList.add('is-name-in');
+    }
     pickRevealTimer = setTimeout(() => {
-      if (!pickReveal || Number(pickReveal.overall) !== Number(pick.overall)) return;
-      pickReveal.phase = 'show';
-      renderOrder();
-      renderOtherTeams();
-      const chip = document.querySelector(`#mock-order [data-seat="${pick.teamIndex}"] .last`);
-      chip?.classList.add('is-name-in');
-      pickRevealTimer = setTimeout(() => {
-        if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
-          pickReveal = null;
-        }
-        pickRevealTimer = null;
-      }, 1400);
-    }, holdMs);
+      if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
+        pickReveal = null;
+      }
+      pickRevealTimer = null;
+    }, 1400);
   }
 
   function seatSelecting(teamIndex) {
@@ -2993,22 +2990,6 @@
     return null;
   }
 
-  /** Visible last-pick line — hides a brand-new CPU name until the reveal fires. */
-  function visibleLastPickForTeam(teamIndex) {
-    if (seatSelecting(teamIndex)) return null;
-    const last = lastPickForTeam(teamIndex);
-    if (
-      last
-      && pickReveal
-      && pickReveal.phase === 'holding'
-      && pickReveal.teamIndex === teamIndex
-      && Number(last.overall) === Number(pickReveal.overall)
-    ) {
-      return null;
-    }
-    return last;
-  }
-
   function renderOrder() {
     const el = document.getElementById('mock-order');
     if (!el || !mock) return;
@@ -3037,7 +3018,7 @@
       const you = !awaitingSeatClaim && i === mock.seatIndex;
       const open = awaitingSeatClaim && seat && !seat.userId;
       const human = seat && seat.userId && !seat.isCpu;
-      const last = phase === 'setup' ? null : visibleLastPickForTeam(i);
+      const last = phase === 'setup' ? null : lastPickForTeam(i);
       const draggable = canDrag && you;
       const dropTarget = canDrag && !you;
       const revealing = pickReveal && pickReveal.teamIndex === i && pickReveal.phase === 'show';
@@ -3075,17 +3056,15 @@
               ? (canDrag ? 'DRAG TO MOVE' : 'YOUR SEAT')
               : '')));
       const namePop = Boolean(last) && (revealing || justPickedSeat === i);
-      const lastHtml = selecting
-        ? '<span class="last is-selecting">Selecting…</span>'
-        : `<span class="last${last ? '' : ' is-empty'}${namePop ? ' is-name-in' : ''}">${last
-          ? `${esc(last.position || '')} ${esc(last.playerName)}`
-          : '—'}</span>`;
+      const lastHtml = `<span class="last${last ? '' : ' is-empty'}${namePop ? ' is-name-in' : ''}">${last
+        ? `${esc(last.playerName)}`
+        : '—'}</span>`;
       const label = boardLabel;
       return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} ${you && draftLive && !isDraftComplete() ? 'data-drop-player="1"' : ''} title="${esc(title)}">
         <span class="n">${i + 1}</span>
         <span class="nm">${esc(label)}</span>
-        ${status ? `<span class="st">${status}</span>` : ''}
         ${lastHtml}
+        ${status ? `<span class="st">${status}</span>` : ''}
       </button>`;
     }).join('');
   }
