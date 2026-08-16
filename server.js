@@ -3339,9 +3339,11 @@ function padLeagueRosterSlots(entries, slotCount) {
   const names = [];
   for (const entry of entries) {
     const invited = Boolean(entry.invited);
-    const name = invited ? 'Invited but not joined' : String(entry?.name || '').trim();
-    if (!invited && !name) continue;
-    const key = invited ? `invite:${entry.inviteId || names.length}` : name.toLowerCase();
+    const name = String(entry?.name || '').trim();
+    if (!name) continue;
+    const key = invited
+      ? `invite:${entry.inviteId || name.toLowerCase()}`
+      : name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     names.push({
@@ -3389,13 +3391,14 @@ function loadLeagueRoster() {
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     const invited = pendingInvites
       .filter((inv) => inviteHqMembership(inv) === leagueKey)
-      .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
       .map((inv) => ({
-        name: 'Invited but not joined',
+        name: String(inv.email || '').trim().toLowerCase(),
         userId: null,
         invited: true,
         inviteId: inv.id
-      }));
+      }))
+      .filter((row) => row.name)
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     return [...assigned, ...invited];
   }
 
