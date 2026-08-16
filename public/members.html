@@ -8711,7 +8711,7 @@
       </section>
 
       <nav class="lounge-desk-jump" id="lounge-desk-tabs" aria-label="Lounge desk tools" role="tablist">
-        <button type="button" role="tab" aria-selected="true" data-desk="records" class="is-active" id="tab-records" aria-label="Record Book">
+        <button type="button" role="tab" aria-selected="false" data-desk="records" id="tab-records" aria-label="Record Book">
           <img class="desk-icon-night" src="/assets/lounge/record-book.jpg?v=1" alt="" width="1024" height="341" decoding="async" />
           <img class="desk-icon-day" src="/assets/lounge/record-book-day.jpg?v=1" alt="" width="1024" height="147" decoding="async" />
         </button>
@@ -8725,7 +8725,7 @@
         </button>
       </nav>
 
-      <section class="lounge-section is-records lounge-desk-panel" id="record-book" data-desk-panel="records" aria-label="Record book" role="tabpanel">
+      <section class="lounge-section is-records lounge-desk-panel" id="record-book" data-desk-panel="records" aria-label="Record book" role="tabpanel" hidden>
         <div class="lounge-section-label">
           <h2>Record Book</h2>
         </div>
@@ -10462,8 +10462,34 @@
       }
     }
 
+    function closeDeskTabs({ updateHash = false } = {}) {
+      const leavingMock = Boolean(document.querySelector('[data-desk-panel="mock"]:not([hidden])'));
+      document.querySelectorAll('#lounge-desk-tabs [data-desk]').forEach((btn) => {
+        btn.classList.remove('is-active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('[data-desk-panel]').forEach((panel) => {
+        panel.hidden = true;
+      });
+      if (leavingMock) {
+        window.dispatchEvent(new CustomEvent('gi:mock-leave'));
+        if (typeof window.giAbandonMockDraft === 'function') window.giAbandonMockDraft();
+      }
+      if (updateHash) {
+        history.replaceState(null, '', `${location.pathname}${location.search}`);
+      }
+    }
+
     function setDeskTab(key, { updateHash = false, gambler = null } = {}) {
-      const next = ['records', 'mock', 'gambler'].includes(key) ? key : 'records';
+      if (!key || key === 'none' || key === 'close') {
+        closeDeskTabs({ updateHash });
+        return;
+      }
+      const next = ['records', 'mock', 'gambler'].includes(key) ? key : null;
+      if (!next) {
+        closeDeskTabs({ updateHash });
+        return;
+      }
       const leavingMock = Boolean(document.querySelector('[data-desk-panel="mock"]:not([hidden])'))
         && next !== 'mock';
       document.querySelectorAll('#lounge-desk-tabs [data-desk]').forEach((btn) => {
@@ -10492,7 +10518,7 @@
           };
           history.replaceState(null, '', gMap[gambler] || '#gambler');
         } else {
-          history.replaceState(null, '', hashMap[next] || '#record-book');
+          history.replaceState(null, '', hashMap[next] || `${location.pathname}${location.search}`);
         }
       }
       if (document.documentElement.classList.contains('is-embed-book')) return;
@@ -10530,13 +10556,20 @@
         hash === '#book'
       ) {
         setDeskTab('gambler', { gambler: 'book' });
+        return;
       }
+      closeDeskTabs();
     }
 
     document.getElementById('lounge-desk-tabs')?.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-desk]');
       if (!btn) return;
-      setDeskTab(btn.getAttribute('data-desk'), { updateHash: true, gambler: 'book' });
+      const key = btn.getAttribute('data-desk');
+      if (btn.classList.contains('is-active')) {
+        closeDeskTabs({ updateHash: true });
+        return;
+      }
+      setDeskTab(key, { updateHash: true, gambler: 'book' });
     });
     document.getElementById('gambler-subtabs')?.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-gambler]');
