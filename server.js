@@ -2901,6 +2901,55 @@ function espnSettingsUrl(leagueId, season) {
   return `https://fantasy.espn.com/football/league/settings?leagueId=${id}&seasonId=${yr}`;
 }
 
+function listEspnLeagueBindings() {
+  const season = Number(config.season);
+  const conferences = (config.conferences || []).map((c) => ({
+    key: c.key,
+    kind: 'conference',
+    name: c.name,
+    shortName: c.shortName,
+    espnLeagueId: Number(c.espnLeagueId) > 0 ? Number(c.espnLeagueId) : null,
+    settingsUrl: espnSettingsUrl(c.espnLeagueId, season)
+  }));
+  const affiliates = (config.affiliatedLeagues || []).map((l) => ({
+    key: l.key,
+    kind: 'affiliate',
+    name: l.name,
+    shortName: l.shortName,
+    espnLeagueId: Number(l.espnLeagueId) > 0 ? Number(l.espnLeagueId) : null,
+    settingsUrl: espnSettingsUrl(l.espnLeagueId, season)
+  }));
+  return {
+    season,
+    leagues: [...conferences, ...affiliates]
+  };
+}
+
+async function peekEspnLeagueById(espnLeagueId, seasonOverride = null) {
+  const id = Number(espnLeagueId);
+  if (!Number.isFinite(id) || id <= 0) {
+    throw Object.assign(new Error('Enter a valid ESPN league ID'), { status: 400 });
+  }
+  const season = Number(seasonOverride) || Number(config.season);
+  const raw = await fetchEspnRaw(
+    { key: 'peek', name: 'ESPN', espnLeagueId: id },
+    ['mTeam', 'mSettings', 'mStatus'],
+    'espn-id-peek',
+    {},
+    season
+  );
+  const teams = Array.isArray(raw.teams) ? raw.teams : [];
+  return {
+    ok: true,
+    espnLeagueId: id,
+    season,
+    name: raw.settings?.name || raw.settings?.naming?.name || `ESPN League ${id}`,
+    size: Number(raw.settings?.size || teams.length) || teams.length,
+    isViewable: raw.status?.isViewable ?? raw.settings?.isPublic ?? null,
+    settingsUrl: espnSettingsUrl(id, season)
+  };
+}
+
 async function runRulesSyncJob({
   triggeredBy = 'system',
   notify = true,
@@ -3302,11 +3351,90 @@ function padLeagueNameSlots(members, slotCount) {
   return slots;
 }
 
-function loadLeagueRoster() {
+function rosterSlotFromEspnTeam(conference, team, userById) {
+  const claim = logos.getClaimForTeam(conference.key, team.id);
+  const manager = claim ? userById.get(claim.userId) : null;
+  const siteName = leagueRosterDisplayName(manager);
+  const espnOwner = team.owner && team.owner !== 'Owner pending' ? team.owner : null;
+  const name = siteName || espnOwner || null;
+  return {
+    slot: 0,
+    conferenceKey: conference.key,
+    teamId: Number(team.id) || null,
+    teamName: team.name || null,
+    name,
+    userId: manager?.id || null,
+    vacant: !name
+  };
+}
+
+async function espnSlotsForBinding(binding, userById) {
+  const espnId = Number(binding?.espnLeagueId);
+  if (!Number.isFinite(espnId) || espnId <= 0) {
+    return { ok: false, configured: false, key: binding?.key || null, error: 'No ESPN league ID', slots: [] };
+  }
+  try {
+    const data = await fetchEspnLeague(binding);
+    const teams = (data.teams || []).slice().sort((a, b) => Number(a.id) - Number(b.id));
+    const slots = teams.map((team) => rosterSlotFromEspnTeam(binding, team, userById));
+    return {
+      ok: true,
+      configured: true,
+      key: binding.key,
+      espnName: data.espnLeagueName || null,
+      size: slots.length,
+      slots
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      configured: true,
+      key: binding?.key || null,
+      error: err.message || 'ESPN unavailable',
+      slots: []
+    };
+  }
+}
+
+function numberRosterSlots(slots) {
+  return (slots || []).map((slot, i) => ({ ...slot, slot: i + 1 }));
+}
+
+async function loadLeagueRoster() {
+  const userById = new Map(
+    users.listUsers()
+      .filter((u) => u.approved !== false)
+      .map((u) => [u.id, u])
+  );
   const members = users.listUsers().filter((u) => u.approved !== false && !u.loungeOnly);
   const byLeague = (key) => members.filter((u) => users.normalizeMembershipLeague(u.membershipLeague) === key);
-  const gridiron = padLeagueNameSlots(byLeague('gridiron'), users.LEAGUE_MEMBERSHIP_CAPS.gridiron || 24);
-  const aaa = padLeagueNameSlots(byLeague('aaa'), users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12);
+
+  const giParts = await Promise.all(
+    (config.conferences || []).map((conference) => espnSlotsForBinding(conference, userById))
+  );
+  let giSlots = giParts.flatMap((part) => part.slots || []);
+  if (!giParts.some((part) => part.ok)) {
+    giSlots = padLeagueNameSlots(byLeague('gridiron'), users.LEAGUE_MEMBERSHIP_CAPS.gridiron || 24);
+  } else {
+    giSlots = numberRosterSlots(giSlots);
+  }
+
+  const aaa = getAffiliatedLeague('aaa');
+  const aaaPart = aaa
+    ? await espnSlotsForBinding({
+        key: aaa.key,
+        name: aaa.name,
+        shortName: aaa.shortName,
+        espnLeagueId: aaa.espnLeagueId
+      }, userById)
+    : { ok: false, configured: false, slots: [] };
+  let aaaSlots = aaaPart.slots || [];
+  if (!aaaPart.ok) {
+    aaaSlots = padLeagueNameSlots(byLeague('aaa'), users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12);
+  } else {
+    aaaSlots = numberRosterSlots(aaaSlots);
+  }
+
   return {
     ok: true,
     season: config.season,
@@ -3315,16 +3443,16 @@ function loadLeagueRoster() {
       {
         key: 'gridiron',
         name: 'GridIron 24',
-        slotCount: gridiron.length,
-        filled: gridiron.filter((s) => !s.vacant).length,
-        slots: gridiron
+        slotCount: giSlots.length,
+        filled: giSlots.filter((s) => !s.vacant).length,
+        slots: giSlots
       },
       {
         key: 'aaa',
         name: 'AAA',
-        slotCount: aaa.length,
-        filled: aaa.filter((s) => !s.vacant).length,
-        slots: aaa
+        slotCount: aaaSlots.length,
+        filled: aaaSlots.filter((s) => !s.vacant).length,
+        slots: aaaSlots
       }
     ],
     generatedAt: new Date().toISOString()
@@ -9590,11 +9718,84 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/league-roster') {
       try {
-        return sendJson(res, 200, loadLeagueRoster());
+        return sendJson(res, 200, await loadLeagueRoster());
       } catch (err) {
         return sendJson(res, err.status || 500, {
           ok: false,
           error: err.message || 'Could not load 2026 roster'
+        });
+      }
+    }
+
+    if (pathname === '/api/espn-leagues' && req.method === 'GET') {
+      if (!requireStaff(req, res)) return;
+      const bindings = listEspnLeagueBindings();
+      const peek = String(requestUrl.searchParams.get('peek') || '').trim() === '1';
+      if (!peek) {
+        return sendJson(res, 200, { ok: true, ...bindings });
+      }
+      const leagues = await Promise.all((bindings.leagues || []).map(async (row) => {
+        if (!row.espnLeagueId) return { ...row, lookup: null };
+        try {
+          return { ...row, lookup: await peekEspnLeagueById(row.espnLeagueId, bindings.season) };
+        } catch (err) {
+          return { ...row, lookup: { ok: false, error: err.message || 'ESPN lookup failed' } };
+        }
+      }));
+      return sendJson(res, 200, { ok: true, season: bindings.season, leagues });
+    }
+
+    if (pathname === '/api/espn-leagues/peek' && req.method === 'POST') {
+      if (!requireStaff(req, res)) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const lookup = await peekEspnLeagueById(body.espnLeagueId, body.season);
+        return sendJson(res, 200, lookup);
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not look up ESPN league'
+        });
+      }
+    }
+
+    if (pathname === '/api/espn-leagues' && req.method === 'POST') {
+      const actor = requireCommissioner(req, res);
+      if (!actor) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      const rows = Array.isArray(body.leagues) ? body.leagues : [];
+      if (!rows.length) {
+        return sendJson(res, 400, { ok: false, error: 'No ESPN league IDs to save' });
+      }
+      try {
+        for (const row of rows) {
+          const id = Number(row.espnLeagueId);
+          if (!Number.isFinite(id) || id <= 0) continue;
+          await peekEspnLeagueById(id, body.season);
+        }
+        const leagueId = config.leagueId || leagues.getActiveLeagueId();
+        const updated = leagues.setEspnLeagueBindings(leagueId, rows);
+        const bindings = listEspnLeagueBindings();
+        return sendJson(res, 200, {
+          ok: true,
+          leagues: bindings.leagues,
+          season: bindings.season,
+          updatedAt: updated.updatedAt || null
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not save ESPN league IDs'
         });
       }
     }

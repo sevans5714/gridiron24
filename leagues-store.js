@@ -274,6 +274,70 @@ function normalizeHistorySeasons(list) {
     .sort((a, b) => b.season - a.season);
 }
 
+function parseEspnLeagueId(value) {
+  if (value == null || String(value).trim() === '') return null;
+  const id = Number(String(value).trim());
+  if (!Number.isFinite(id) || id <= 0) {
+    throw Object.assign(new Error('ESPN league ID must be a positive number'), { status: 400 });
+  }
+  return Math.trunc(id);
+}
+
+function setEspnLeagueBindings(leagueId, rows = []) {
+  const store = readStore();
+  const league = store.leagues.find((l) => l.id === leagueId);
+  if (!league) throw Object.assign(new Error('League not found'), { status: 404 });
+  const list = Array.isArray(rows) ? rows : [];
+  if (!list.length) {
+    throw Object.assign(new Error('No ESPN league IDs to save'), { status: 400 });
+  }
+
+  const seen = new Set();
+  for (const row of list) {
+    const key = String(row?.key || '').trim().toLowerCase();
+    if (!key) throw Object.assign(new Error('Each ESPN binding needs a league key'), { status: 400 });
+    const espnLeagueId = parseEspnLeagueId(row.espnLeagueId);
+    if (espnLeagueId) {
+      const idKey = String(espnLeagueId);
+      if (seen.has(idKey)) {
+        throw Object.assign(new Error(`ESPN league ID ${espnLeagueId} is used more than once`), { status: 400 });
+      }
+      seen.add(idKey);
+    }
+    const conference = (league.conferences || []).find((c) => String(c.key || '').toLowerCase() === key);
+    if (conference) {
+      conference.espnLeagueId = espnLeagueId;
+      if (typeof row.name === 'string') {
+        const nextName = row.name.trim();
+        if (nextName) conference.name = nextName.slice(0, 80);
+      }
+      if (typeof row.shortName === 'string') {
+        const nextShort = row.shortName.trim();
+        if (nextShort) conference.shortName = nextShort.slice(0, 24);
+      }
+      continue;
+    }
+    const affiliate = (league.affiliatedLeagues || []).find((l) => String(l.key || '').toLowerCase() === key);
+    if (affiliate) {
+      affiliate.espnLeagueId = espnLeagueId;
+      if (typeof row.name === 'string') {
+        const nextName = row.name.trim();
+        if (nextName) affiliate.name = nextName.slice(0, 80);
+      }
+      if (typeof row.shortName === 'string') {
+        const nextShort = row.shortName.trim();
+        if (nextShort) affiliate.shortName = nextShort.slice(0, 24);
+      }
+      continue;
+    }
+    throw Object.assign(new Error(`Unknown league: ${key}`), { status: 400 });
+  }
+
+  league.updatedAt = new Date().toISOString();
+  writeStore(store);
+  return publicLeague(league);
+}
+
 function setHistorySeasons(leagueId, seasons) {
   const store = readStore();
   const league = store.leagues.find((l) => l.id === leagueId);
@@ -1099,7 +1163,7 @@ function ensureSystemLeague(seed) {
         }
         const seedEspn = Number(match.espnLeagueId);
         const rowEspn = Number(row.espnLeagueId);
-        if (Number.isFinite(seedEspn) && seedEspn > 0 && seedEspn !== rowEspn) {
+        if ((!Number.isFinite(rowEspn) || rowEspn <= 0) && Number.isFinite(seedEspn) && seedEspn > 0) {
           dirty = true;
           next = {
             ...next,
@@ -1158,6 +1222,18 @@ function ensureSystemLeague(seed) {
         }
       ];
       dirty = true;
+    }
+    if (Array.isArray(system.conferences) && Array.isArray(seed.conferences)) {
+      system.conferences = system.conferences.map((row) => {
+        const match = seed.conferences.find((s) => s.key === row.key);
+        const rowEspn = Number(row.espnLeagueId);
+        const seedEspn = Number(match?.espnLeagueId);
+        if ((!Number.isFinite(rowEspn) || rowEspn <= 0) && Number.isFinite(seedEspn) && seedEspn > 0) {
+          dirty = true;
+          return { ...row, espnLeagueId: seedEspn };
+        }
+        return row;
+      });
     }
     if (!store.activeLeagueId) {
       store.activeLeagueId = system.id;
@@ -1987,6 +2063,7 @@ module.exports = {
   registrationEnabled,
   publicLeague,
   setHistorySeasons,
+  setEspnLeagueBindings,
   normalizeHistorySeasons,
   slugify,
   conferenceKeyFromName

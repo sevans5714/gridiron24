@@ -193,9 +193,40 @@
       line-height: 1.4;
       max-width: 36rem;
     }
-    body[data-page="league-tools"] .invite-compose {
-      margin: 0 0 1.15rem;
-      max-width: 40rem;
+    body[data-page="league-tools"] .espn-bind-row {
+      display: grid;
+      grid-template-columns: minmax(10rem, 1.1fr) minmax(7rem, 0.7fr) minmax(8rem, 1fr) auto;
+      gap: 0.45rem 0.65rem;
+      align-items: end;
+      margin: 0 0 0.9rem;
+      max-width: 52rem;
+    }
+    body[data-page="league-tools"] .espn-bind-row label {
+      display: block;
+      margin: 0 0 0.28rem;
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+    body[data-page="league-tools"] .espn-bind-meta {
+      grid-column: 1 / -1;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+    body[data-page="league-tools"] .espn-bind-meta.is-error { color: #f0a0b0; }
+    @media (max-width: 800px) {
+      body[data-page="league-tools"] .espn-bind-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      body[data-page="league-tools"] .espn-bind-row .espn-bind-id,
+      body[data-page="league-tools"] .espn-bind-row .espn-bind-peek {
+        grid-column: auto;
+      }
+    }
+    @media (max-width: 640px) {
+      body[data-page="league-tools"] .espn-bind-row {
+        grid-template-columns: 1fr;
+      }
     }
     body[data-page="league-tools"] .invite-compose .field-label {
       display: block;
@@ -1043,7 +1074,7 @@
         </a>
         <a href="#group-espn">
           <strong>Sync</strong>
-          <span>Rules, AAA points, playoffs, roster patrol</span>
+          <span>ESPN league IDs, rules, AAA points, playoffs, roster patrol</span>
         </a>
         <a href="#group-people" id="overview-people" hidden>
           <strong>People <span class="tools-badge" id="overview-people-badge" hidden>0</span></strong>
@@ -1072,9 +1103,10 @@
         </div>
         <div class="comm-nav-group">
           <p class="comm-nav-label">Sync</p>
+          <a href="#espn-leagues">ESPN Leagues</a>
           <a href="#rules-sync">Rules</a>
           <a href="#aaa-rules-sync">AAA Points</a>
-          <a id="nav-aaa-espn-settings" href="https://fantasy.espn.com/football/league/settings?leagueId=529121946&amp;seasonId=2026" target="_blank" rel="noopener">AAA League Settings</a>
+          <a id="nav-aaa-espn-settings" href="#" target="_blank" rel="noopener">AAA League Settings</a>
           <a href="#playoff-sync">Playoffs</a>
           <a href="#roster-violations">Roster Violations</a>
         </div>
@@ -1133,9 +1165,21 @@
         <section class="comm-group" id="group-espn">
           <header>
             <h2>Sync</h2>
-            <p>Keep Detail, Overtime, and AAA scoring aligned on ESPN. Detail is the source of truth.</p>
+            <p>Point GridIron 24 at live ESPN leagues, then keep Detail, Overtime, and AAA scoring aligned. Detail is the source of truth.</p>
           </header>
           <div class="comm-group-body">
+            <section class="comm-section" id="espn-leagues">
+              <div class="section-head">
+                <h3>ESPN Leagues</h3>
+              </div>
+              <p class="help">Name each league as it should appear on this site — that name is independent of ESPN. Then paste the <code>leagueId</code> from the ESPN settings URL and look it up. Recreate a conference on ESPN? Update the ID here; the site name stays yours.</p>
+              <div id="espn-leagues-list"><div class="msg">Loading ESPN league IDs…</div></div>
+              <div class="status-note" id="espn-leagues-msg" role="status"></div>
+              <div class="sync-tools" id="espn-leagues-actions" hidden>
+                <button type="button" class="btn" id="espn-leagues-save">Save ESPN leagues</button>
+              </div>
+            </section>
+
             <section class="comm-section" id="rules-sync">
               <div class="section-head">
                 <h3>Rules Sync</h3>
@@ -1520,10 +1564,11 @@
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
     const ESPN = {
-      detail: 'https://fantasy.espn.com/football/league/settings?leagueId=559054421&seasonId=2026',
-      overtime: 'https://fantasy.espn.com/football/league/settings?leagueId=236438046&seasonId=2026',
-      aaa: 'https://fantasy.espn.com/football/league/settings?leagueId=529121946&seasonId=2026'
+      detail: '',
+      overtime: '',
+      aaa: ''
     };
+    let toolsUser = null;
 
     function applyEspnLinks(links) {
       if (!links) return;
@@ -1532,6 +1577,152 @@
       if (links.aaa) ESPN.aaa = links.aaa;
       const aaaNav = document.getElementById('nav-aaa-espn-settings');
       if (aaaNav && ESPN.aaa) aaaNav.href = ESPN.aaa;
+    }
+
+    function espnBindMeta(row) {
+      const lookup = row.lookup;
+      if (lookup?.ok) {
+        const size = lookup.size != null ? ` · ${lookup.size} teams` : '';
+        return `On ESPN: ${esc(lookup.name || 'league')}${size}`;
+      }
+      if (lookup?.error) return esc(lookup.error);
+      if (row.espnLeagueId) return `ID ${esc(String(row.espnLeagueId))} · site name is independent of ESPN`;
+      return 'No ESPN league ID yet';
+    }
+
+    function renderEspnBindings(data) {
+      const el = document.getElementById('espn-leagues-list');
+      const actions = document.getElementById('espn-leagues-actions');
+      const rows = data?.leagues || [];
+      if (!el) return;
+      if (!rows.length) {
+        el.innerHTML = `<div class="msg">No conferences or feeder leagues are configured.</div>`;
+        return;
+      }
+      el.innerHTML = rows.map((row) => {
+        const id = row.espnLeagueId ? String(row.espnLeagueId) : '';
+        const err = Boolean(row.lookup && row.lookup.ok === false);
+        const name = row.name || '';
+        const shortName = row.shortName || '';
+        return `<div class="espn-bind-row">
+          <div>
+            <label for="espn-name-${esc(row.key)}">Name in this app</label>
+            <input class="field" id="espn-name-${esc(row.key)}" data-espn-name="${esc(row.key)}" value="${esc(name)}" maxlength="80" placeholder="e.g. Detail Conference" />
+          </div>
+          <div>
+            <label for="espn-short-${esc(row.key)}">Short name</label>
+            <input class="field" id="espn-short-${esc(row.key)}" data-espn-short="${esc(row.key)}" value="${esc(shortName)}" maxlength="24" placeholder="DETAIL" />
+          </div>
+          <div class="espn-bind-id">
+            <label for="espn-id-${esc(row.key)}">ESPN league ID</label>
+            <input class="field" id="espn-id-${esc(row.key)}" data-espn-key="${esc(row.key)}" inputmode="numeric" pattern="[0-9]*" value="${esc(id)}" placeholder="leagueId" />
+          </div>
+          <div class="espn-bind-peek">
+            <label>&nbsp;</label>
+            <button type="button" class="btn btn-ghost" data-espn-peek="${esc(row.key)}">Look up</button>
+          </div>
+          <div class="espn-bind-meta${err ? ' is-error' : ''}" data-espn-meta="${esc(row.key)}">${espnBindMeta(row)}</div>
+        </div>`;
+      }).join('');
+      if (actions) actions.hidden = !isPlatformAdmin(toolsUser);
+      applyEspnLinks({
+        detail: rows.find((r) => r.key === 'detail')?.settingsUrl || rows.find((r) => r.key === 'detail')?.lookup?.settingsUrl,
+        overtime: rows.find((r) => r.key === 'overtime')?.settingsUrl || rows.find((r) => r.key === 'overtime')?.lookup?.settingsUrl,
+        aaa: rows.find((r) => r.key === 'aaa')?.settingsUrl || rows.find((r) => r.key === 'aaa')?.lookup?.settingsUrl
+      });
+    }
+
+    function collectEspnBindings() {
+      return [...document.querySelectorAll('[data-espn-key]')].map((input) => {
+        const key = input.getAttribute('data-espn-key');
+        const name = document.querySelector(`[data-espn-name="${CSS.escape(key)}"]`)?.value || '';
+        const shortName = document.querySelector(`[data-espn-short="${CSS.escape(key)}"]`)?.value || '';
+        return {
+          key,
+          name: String(name).trim(),
+          shortName: String(shortName).trim(),
+          espnLeagueId: String(input.value || '').trim()
+        };
+      });
+    }
+
+    function showEspnLeaguesMsg(text, ok) {
+      const el = document.getElementById('espn-leagues-msg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.className = text ? `status-note show ${ok ? 'ok' : 'err'}` : 'status-note';
+    }
+
+    async function loadEspnBindings({ peek = false } = {}) {
+      const el = document.getElementById('espn-leagues-list');
+      try {
+        const res = await fetch(`/api/espn-leagues${peek ? '?peek=1' : ''}`, { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || `Could not load ESPN league IDs (${res.status})`);
+        renderEspnBindings(data);
+      } catch (err) {
+        if (el) el.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+      }
+    }
+
+    async function peekEspnBinding(key) {
+      const input = document.querySelector(`[data-espn-key="${CSS.escape(key)}"]`);
+      const meta = document.querySelector(`[data-espn-meta="${CSS.escape(key)}"]`);
+      const id = Number(input?.value);
+      if (!Number.isFinite(id) || id <= 0) {
+        if (meta) {
+          meta.textContent = 'Enter a valid ESPN league ID';
+          meta.classList.add('is-error');
+        }
+        return;
+      }
+      if (meta) {
+        meta.textContent = 'Looking up…';
+        meta.classList.remove('is-error');
+      }
+      try {
+        const res = await fetch('/api/espn-leagues/peek', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ espnLeagueId: id })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Look up failed');
+        if (meta) {
+          const size = data.size != null ? ` · ${data.size} teams` : '';
+          meta.textContent = `On ESPN: ${data.name || 'league'}${size}`;
+          meta.classList.remove('is-error');
+        }
+        if (data.settingsUrl) {
+          applyEspnLinks({ [key]: data.settingsUrl });
+        }
+      } catch (err) {
+        if (meta) {
+          meta.textContent = err.message;
+          meta.classList.add('is-error');
+        }
+      }
+    }
+
+    async function saveEspnBindings() {
+      const btn = document.getElementById('espn-leagues-save');
+      showEspnLeaguesMsg('');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('/api/espn-leagues', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leagues: collectEspnBindings() })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
+        renderEspnBindings(data);
+        showEspnLeaguesMsg('Saved. This site will use your names; ESPN is only used for live data.', true);
+      } catch (err) {
+        showEspnLeaguesMsg(err.message, false);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     const ROLE_LABELS = {
@@ -2477,6 +2668,13 @@
     }
 
     document.getElementById('check-sync')?.addEventListener('click', () => { load(); });
+    document.getElementById('espn-leagues')?.addEventListener('click', (event) => {
+      const peek = event.target.closest('[data-espn-peek]');
+      if (!peek) return;
+      event.preventDefault();
+      peekEspnBinding(peek.getAttribute('data-espn-peek'));
+    });
+    document.getElementById('espn-leagues-save')?.addEventListener('click', () => { saveEspnBindings(); });
 
     function fmtWhen(iso) {
       if (!iso) return '—';
@@ -4131,7 +4329,9 @@
         window.location.replace('/profile.html');
         return;
       }
+      toolsUser = user;
       applyToolsAccess(user);
+      try { await loadEspnBindings({ peek: true }); } catch { /* form still usable */ }
       await load();
       try { await loadViolations(); } catch (err) {
         document.getElementById('violations-content').innerHTML =

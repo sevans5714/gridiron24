@@ -4,6 +4,9 @@ module.exports = {
     name: 'GridIron 24',
     tagline: '24 Teams. Two Conferences. One Champion.'
   },
+  // Bootstrap ESPN IDs for a first install only. Live IDs are stored on the
+  // system league (League Tools → Sync → ESPN League IDs) and are looked up
+  // at runtime — this file does not overwrite a saved ID.
   conferences: [
     {
       key: 'detail',
