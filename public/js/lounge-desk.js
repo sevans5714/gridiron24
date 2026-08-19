@@ -3221,8 +3221,8 @@
       const lastPos = last ? pickPos(last) : '';
       const bits = last ? splitPlayerName(last.playerName) : null;
       const lastHtml = last
-        ? `<span class="last"><span class="pick-last">${esc(bits.last)}</span><span class="pick-meta">${bits.first ? `<span class="pick-first">${esc(bits.first)}</span>` : ''}${posBadge(lastPos)}</span></span>`
-        : '<span class="last is-empty">—</span>';
+        ? `<span class="last" data-pos="${esc(lastPos)}"><span class="pick-last">${esc(bits.last)}</span><span class="pick-line">${bits.first ? `<span class="pick-first">${esc(bits.first)}</span>` : ''}<span class="pick-pos">${esc(lastPos)}</span></span></span>`
+        : '<span class="last is-empty"></span>';
       const label = boardLabel;
       return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} ${you && draftLive && !isDraftComplete() ? 'data-drop-player="1"' : ''} title="${esc(title)}">
         <span class="n">${String(i + 1).padStart(2, '0')}</span>
