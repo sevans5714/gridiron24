@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=121" />
-  <link rel="icon" href="/favicon.ico?v=121" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=121" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=121" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=122" />
+  <link rel="icon" href="/favicon.ico?v=122" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=122" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=122" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=154" />
   <style>
@@ -643,8 +643,7 @@
       gap: 0.35rem;
       margin: 0.45rem 0 0;
     }
-    .sports-pager-btn,
-    .sports-pager-auto {
+    .sports-pager-btn {
       appearance: none;
       min-width: 1.85rem;
       min-height: 1.85rem;
@@ -658,32 +657,14 @@
       line-height: 1;
       cursor: pointer;
     }
-    .sports-pager-btn:hover,
-    .sports-pager-auto:hover {
+    .sports-pager-btn:hover {
       border-color: rgba(126, 200, 255, 0.5);
       color: #fff;
     }
-    .sports-pager-auto {
-      font-size: 0.68rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--mo-muted);
-    }
-    .sports-pager-auto.is-on {
-      color: var(--mo-blue-hot);
-      border-color: rgba(47, 109, 255, 0.55);
-      background: rgba(47, 109, 255, 0.16);
-    }
-    html[data-theme="day"] .sports-pager-btn,
-    html[data-theme="day"] .sports-pager-auto {
+    html[data-theme="day"] .sports-pager-btn {
       background: #fff;
       border-color: rgba(20, 24, 31, 0.14);
       color: var(--mo-text);
-    }
-    html[data-theme="day"] .sports-pager-auto.is-on {
-      color: var(--mo-blue);
-      border-color: rgba(31, 94, 240, 0.4);
-      background: rgba(31, 94, 240, 0.08);
     }
 
     .sgame {
@@ -4064,29 +4045,32 @@
       border-radius: 0;
       padding: 0;
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 1.55rem;
+      font-size: 1.05rem;
       font-weight: 400;
       line-height: 0.9;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       background: none;
       color: var(--mo-gold);
       box-shadow: none;
     }
     .mock-order .mock-seat-chip .nm {
-      font-family: "Oswald", sans-serif;
-      font-size: 0.7rem;
-      font-weight: 700;
-      line-height: 1.15;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 1.22rem;
+      font-weight: 400;
+      line-height: 0.92;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       width: 100%;
       max-width: 100%;
       min-width: 0;
-      padding: 0.06rem 0.1rem 0.18rem;
-      color: #f4f7ff;
-      letter-spacing: 0.08em;
+      min-height: 1.7rem;
+      padding: 0.08rem 0.06rem 0.22rem;
+      color: #fff;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
     }
     .mock-order .mock-seat-chip.is-you .nm { color: var(--mo-gold); }
     .mock-order .mock-seat-chip.is-clock .nm { color: #d8ffe8; }
@@ -8953,11 +8937,10 @@
           <div class="sports-grid" id="sports-grid" aria-live="polite">
             <div class="sports-empty">Loading…</div>
           </div>
-          <nav class="sports-pager" id="sports-pager" aria-label="Scoreboard pages">
-            <button type="button" class="sports-pager-btn" id="sports-page-prev" aria-label="Previous page" hidden>‹</button>
-            <button type="button" class="sports-page-meta" id="sports-page-meta" hidden>1 / 4</button>
-            <button type="button" class="sports-pager-btn" id="sports-page-next" aria-label="Next page" hidden>›</button>
-            <button type="button" class="sports-pager-auto is-on" id="sports-page-auto" aria-pressed="true" title="Auto-cycle sports and pages">Auto</button>
+          <nav class="sports-pager" id="sports-pager" aria-label="Scoreboard pages" hidden>
+            <button type="button" class="sports-pager-btn" id="sports-page-prev" aria-label="Previous page">‹</button>
+            <button type="button" class="sports-page-meta" id="sports-page-meta">1 / 4</button>
+            <button type="button" class="sports-pager-btn" id="sports-page-next" aria-label="Next page">›</button>
           </nav>
         </div>
       </section>
@@ -9461,6 +9444,13 @@
           live: false
         };
       }
+      if (g.kind === 'golf' || g.kind === 'racing') {
+        return {
+          when: g.status?.shortDetail || g.status?.detail || kickShort(g.date),
+          watch: sportsWatchLine(g),
+          live: false
+        };
+      }
       return {
         when: kickShort(g.date),
         watch: sportsWatchLine(g),
@@ -9497,10 +9487,28 @@
 
     function sportsCompactGolfThru(thru) {
       const s = String(thru || '').trim();
-      if (!s || s === '—') return '—';
-      // "8:42 AM" / "12:05 PM" → "8:42a" / "12:05p" so tee times fit the column
-      const m = s.match(/^(\d{1,2}:\d{2})\s*([AaPp])\.?[Mm]\.?$/);
+      if (!s || s === '—' || s === '-') return '—';
+      if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+        try {
+          const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/New_York',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          }).formatToParts(new Date(s));
+          const hour = parts.find((p) => p.type === 'hour')?.value;
+          const minute = parts.find((p) => p.type === 'minute')?.value;
+          const period = String(parts.find((p) => p.type === 'dayPeriod')?.value || '');
+          const ap = period[0] ? period[0].toLowerCase() : '';
+          if (hour && minute && ap) return `${hour}:${minute}${ap}`;
+        } catch {
+          return '—';
+        }
+      }
+      const m = s.match(/(\d{1,2}:\d{2})\s*([AaPp])(?:\.?[Mm]\.?)?(?:\s*[A-Z]{1,3})?/);
       if (m) return `${m[1]}${m[2].toLowerCase()}`;
+      const already = s.match(/^(\d{1,2}:\d{2})([ap])$/i);
+      if (already) return `${already[1]}${already[2].toLowerCase()}`;
       return s;
     }
 
@@ -9806,21 +9814,6 @@
       sportsAuto = false;
       clearTimeout(sportsFlipTimer);
       sportsFlipTimer = null;
-      paintSportsPagerAuto();
-    }
-
-    function resumeSportsAutoFlip() {
-      sportsAuto = true;
-      paintSportsPagerAuto();
-      scheduleSportsFlip(SPORTS_FLIP_MS);
-    }
-
-    function paintSportsPagerAuto() {
-      const auto = document.getElementById('sports-page-auto');
-      if (!auto) return;
-      auto.classList.toggle('is-on', sportsAuto);
-      auto.setAttribute('aria-pressed', sportsAuto ? 'true' : 'false');
-      auto.title = sportsAuto ? 'Auto-cycle on — tap to stop' : 'Auto-cycle off — tap to resume';
     }
 
     function goSportsPage(delta) {
@@ -9837,30 +9830,19 @@
       const prev = document.getElementById('sports-page-prev');
       const next = document.getElementById('sports-page-next');
       const meta = document.getElementById('sports-page-meta');
-      const auto = document.getElementById('sports-page-auto');
       if (!prev || prev.dataset.wired === '1') return;
       prev.dataset.wired = '1';
       prev.addEventListener('click', () => goSportsPage(-1));
       next?.addEventListener('click', () => goSportsPage(1));
       meta?.addEventListener('click', () => goSportsPage(1));
-      auto?.addEventListener('click', () => {
-        if (sportsAuto) stopSportsAutoFlip();
-        else resumeSportsAutoFlip();
-      });
     }
 
     function paintSportsPager(pages) {
-      const prev = document.getElementById('sports-page-prev');
-      const next = document.getElementById('sports-page-next');
+      const pager = document.getElementById('sports-pager');
       const meta = document.getElementById('sports-page-meta');
       const multi = pages > 1;
-      if (prev) prev.hidden = !multi;
-      if (next) next.hidden = !multi;
-      if (meta) {
-        meta.hidden = !multi;
-        if (multi) meta.textContent = `${sportsPage + 1} / ${pages}`;
-      }
-      paintSportsPagerAuto();
+      if (pager) pager.hidden = !multi;
+      if (meta && multi) meta.textContent = `${sportsPage + 1} / ${pages}`;
     }
 
     function renderSportsTabs() {

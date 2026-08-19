@@ -1,16 +1,16 @@
 /* GridIron 24 PWA — app shell cache */
-const CACHE = 'gi24-app-v121';
+const CACHE = 'gi24-app-v122';
 const SHELL = [
   '/app/',
   '/app/index.html',
-  '/app/app.css?v=121',
-  '/app/app.js?v=121',
-  '/manifest.webmanifest?v=121',
-  '/assets/pwa/icon-192.png?v=121',
-  '/assets/pwa/icon-512.png?v=121',
-  '/assets/pwa/icon-maskable-512.png?v=121',
-  '/assets/pwa/icon-192-transparent.png?v=121',
-  '/assets/pwa/apple-touch-icon.png?v=121',
+  '/app/app.css?v=122',
+  '/app/app.js?v=122',
+  '/manifest.webmanifest?v=122',
+  '/assets/pwa/icon-192.png?v=122',
+  '/assets/pwa/icon-512.png?v=122',
+  '/assets/pwa/icon-maskable-512.png?v=122',
+  '/assets/pwa/icon-192-transparent.png?v=122',
+  '/assets/pwa/apple-touch-icon.png?v=122',
   '/assets/team-logo-placeholder.svg',
   '/assets/gridiron24-brand.png?v=3',
   '/assets/aaa-league.png?v=7',

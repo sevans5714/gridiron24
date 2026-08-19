@@ -443,7 +443,7 @@
         ? (g.status?.shortDetail || 'LIVE')
         : bucket === 'final'
           ? 'Final'
-          : kickShort(g.date);
+          : (g.status?.shortDetail || g.status?.detail || kickShort(g.date));
       const rows = leaders.length
         ? leaders.map((p) => {
           const tot = p.overall || p.score || '—';

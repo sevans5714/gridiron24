@@ -476,46 +476,89 @@ function golfPositionSort(a, b) {
 
   /** ESPN often puts an ISO tee time in displayValue between rounds — never show that raw. */
 function golfThruLabel(status = {}) {
-  if (status.displayThru) return compactGolfTee(String(status.displayThru));
   const thruN = Number(status.thru);
   if (Number.isFinite(thruN) && thruN > 0) return thruN >= 18 ? 'F' : String(thruN);
-
-  const dv = String(status.displayValue || '').trim();
-  if (/^\d{4}-\d{2}-\d{2}T/.test(dv)) {
-    const tee = String(status.detail || '').trim();
-    return tee ? compactGolfTee(tee) : '—';
+  if (status.displayThru) {
+    const thru = compactGolfTee(String(status.displayThru));
+    if (thru && thru !== '—') return thru;
   }
-  if (dv && dv !== '-') return compactGolfTee(dv);
-
   const detail = String(status.detail || '').trim();
-  if (detail && !/^scheduled$/i.test(detail)) return compactGolfTee(detail);
+  if (detail && !/^scheduled$/i.test(detail) && !looksLikeGolfScore(detail)) {
+    const tee = compactGolfTee(detail);
+    if (tee && tee !== '—') return tee;
+  }
+  if (status.teeTime) {
+    const tee = compactGolfTee(String(status.teeTime));
+    if (tee && tee !== '—') return tee;
+  }
+  const dv = String(status.displayValue || '').trim();
+  if (dv && dv !== '-') {
+    const tee = compactGolfTee(dv);
+    if (tee && tee !== '—') return tee;
+  }
   return '—';
 }
 
-/** "8:42 AM" → "8:42a" so lounge tee columns don't clip. */
+function looksLikeIsoDate(value) {
+  return /^\d{4}-\d{2}-\d{2}T/.test(String(value || '').trim());
+}
+
+function looksLikeGolfScore(value) {
+  const s = String(value || '').trim();
+  return /^([+-]?\d+|E)\s*(?:\(\d+\))?$/i.test(s);
+}
+
+function formatGolfTeeIso(iso) {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).formatToParts(d);
+    const hour = parts.find((p) => p.type === 'hour')?.value;
+    const minute = parts.find((p) => p.type === 'minute')?.value;
+    const period = String(parts.find((p) => p.type === 'dayPeriod')?.value || '');
+    const ap = period[0] ? period[0].toLowerCase() : '';
+    if (hour && minute && ap) return `${hour}:${minute}${ap}`;
+  } catch {
+    /* fall through */
+  }
+  return '';
+}
+
+/** "1:20 PM ET" / "8:42 AM" / ISO → "1:20p" / "8:42a" so the Tee column stays readable. */
 function compactGolfTee(value) {
   const s = String(value || '').trim();
-  if (!s) return s;
-  const m = s.match(/^(\d{1,2}:\d{2})\s*([AaPp])\.?[Mm]\.?$/);
+  if (!s || s === '-' || s === '—') return '—';
+  if (looksLikeIsoDate(s)) return formatGolfTeeIso(s) || '—';
+  const m = s.match(/(\d{1,2}:\d{2})\s*([AaPp])(?:\.?[Mm]\.?)?(?:\s*[A-Z]{1,3})?/);
   if (m) return `${m[1]}${m[2].toLowerCase()}`;
+  const already = s.match(/^(\d{1,2}:\d{2})([ap])$/i);
+  if (already) return `${already[1]}${already[2].toLowerCase()}`;
   return s;
 }
 
-/** Pull today's to-par from ESPN (without the "(thru)" suffix). */
+/** Pull today's to-par from ESPN (without the "(thru)" suffix). Never use tee-time detail. */
 function golfTodayScore(row = {}, rowStatus = {}) {
   const lines = Array.isArray(row.linescores) ? row.linescores : [];
   const currentPeriod = Number(rowStatus.period) || 0;
   const currentLine = lines.find((ls) => Number(ls.period) === currentPeriod && ls.displayValue != null)
     || [...lines].reverse().find((ls) => ls.displayValue != null && ls.displayValue !== '');
   if (currentLine?.displayValue != null && String(currentLine.displayValue).trim() !== '') {
-    return String(currentLine.displayValue).trim();
+    const fromLine = String(currentLine.displayValue).trim();
+    if (fromLine !== '-' && !looksLikeIsoDate(fromLine) && !/\d{1,2}:\d{2}/.test(fromLine)) {
+      return fromLine;
+    }
   }
-  const raw = String(rowStatus.todayDetail || rowStatus.detail || '').trim();
-  if (!raw || /^scheduled$/i.test(raw)) return null;
-  // "-3(11)" / "E(3)" → "-3" / "E"
+  const raw = String(rowStatus.todayDetail || '').trim();
+  if (!raw || /^scheduled$/i.test(raw) || looksLikeIsoDate(raw) || /\d{1,2}:\d{2}/.test(raw)) return null;
   const m = raw.match(/^([+-]?\d+|E)\s*(?:\(\d+\))?$/i);
   if (m) return m[1].toUpperCase() === 'E' ? 'E' : m[1];
-  return raw;
+  if (looksLikeGolfScore(raw)) return raw;
+  return null;
 }
 
 function normalizeGolfEvent(event) {
@@ -541,7 +584,7 @@ function normalizeGolfEvent(event) {
       const athlete = row.athlete || {};
       const rowStatus = row.status || {};
       const scoreRaw = row.score?.displayValue ?? row.score;
-      const overall = (scoreRaw == null || scoreRaw === '')
+      const overall = (scoreRaw == null || scoreRaw === '' || scoreRaw === '-')
         ? null
         : String(scoreRaw);
       const today = golfTodayScore(row, rowStatus);
