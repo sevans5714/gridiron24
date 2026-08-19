@@ -82,6 +82,7 @@
   let pickReveal = null; // { teamIndex, overall, phase: 'holding'|'show' }
   let pickRevealTimer = null;
   let cpuAnnounceEpoch = 0;
+  let lastOrderHtml = '';
 
   function isMultiplayer() {
     return Boolean(roomId);
@@ -275,6 +276,7 @@
       mock.seatIndex = 0;
     }
     mockCompleteShown = false;
+    lastOrderHtml = '';
     clearPersistedMock();
     if (!silent) {
       history.replaceState(null, '', '#mock-draft');
@@ -2505,6 +2507,24 @@
     return `<span class="mock-pos-badge" data-pos="${esc(p)}">${esc(p)}</span>`;
   }
 
+  function splitPlayerName(fullName) {
+    const raw = String(fullName || '').trim();
+    if (!raw) return { first: '', last: '' };
+    const parts = raw.split(/\s+/).filter(Boolean);
+    const suffix = /^(Jr\.?|Sr\.?|II|III|IV|V)$/i;
+    const particle = /^(St\.?|Ste\.?|De|Del|Van|Von|La|Le|Di|Da|Du|El)$/i;
+    if (parts.length >= 3 && suffix.test(parts[parts.length - 1])) {
+      return { first: parts.slice(0, -2).join(' '), last: parts.slice(-2).join(' ') };
+    }
+    if (parts.length >= 3 && particle.test(parts[parts.length - 2])) {
+      return { first: parts.slice(0, -2).join(' '), last: parts.slice(-2).join(' ') };
+    }
+    if (parts.length >= 2) {
+      return { first: parts.slice(0, -1).join(' '), last: parts[parts.length - 1] };
+    }
+    return { first: '', last: raw };
+  }
+
   function posInk(pos) {
     const p = posKey(pos);
     return `<em class="mock-pos-ink" data-pos="${esc(p)}">${esc(p)}</em>`;
@@ -2868,10 +2888,15 @@
   }
 
   function scrollToSeat(teamIndex) {
-    const el = document.getElementById('mock-order');
-    const chip = el?.querySelector(`[data-seat="${teamIndex}"]`);
-    if (!chip) return;
-    chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    const scroller = document.getElementById('mock-order');
+    const chip = scroller?.querySelector(`[data-seat="${teamIndex}"]`);
+    if (!chip || !scroller) return;
+    if (scroller.scrollWidth <= scroller.clientWidth + 2) return;
+    const s = scroller.getBoundingClientRect();
+    const c = chip.getBoundingClientRect();
+    if (c.left >= s.left - 1 && c.right <= s.right + 1) return;
+    const nextLeft = scroller.scrollLeft + (c.left - s.left) - (s.width - c.width) / 2;
+    scroller.scrollTo({ left: Math.max(0, nextLeft), behavior: 'smooth' });
   }
 
   function clearNamePops() {
@@ -2934,7 +2959,7 @@
       : '';
     return `
       <p class="cpu-kicker">${esc(club)} selects</p>
-      <strong class="cpu-name" data-pos="${esc(pos)}">${esc(name)}</strong>
+      <strong class="cpu-name">${esc(name)}</strong>
       <div class="cpu-meta">
         ${teamMark}
         ${nfl ? `<span class="cpu-team">${esc(nfl)}</span>` : ''}
@@ -2975,9 +3000,9 @@
       if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
         pickReveal.phase = 'show';
       }
-      flashSeatPick(pick.teamIndex);
       renderOrder();
       renderOtherTeams();
+      flashSeatPick(pick.teamIndex);
     };
 
     return new Promise((resolve) => {
@@ -3149,7 +3174,7 @@
           ? 'Draft order — positions locked'
           : 'Draft order — click an open seat to join')
     );
-    el.innerHTML = mock.teamNames.map((name, i) => {
+    const html = mock.teamNames.map((name, i) => {
       const selecting = seatSelecting(i);
       const onClock = (next && next.teamIndex === i) || selecting;
       const upNext = !onClock && following && following.teamIndex === i;
@@ -3173,8 +3198,7 @@
         phase === 'setup' || roomStatus === 'lobby' ? 'is-setup' : '',
         draggable ? 'is-draggable' : '',
         dropTarget ? 'is-drop' : '',
-        positionsLocked && !draftLive ? 'is-locked' : '',
-        justPickedSeat === i ? 'is-just-picked' : ''
+        positionsLocked && !draftLive ? 'is-locked' : ''
       ].filter(Boolean).join(' ');
       const canClick = open || (phase === 'setup' && !isMultiplayer() && !awaitingSeatClaim);
       const boardLabel = open ? name : seatBoardLabel(i);
@@ -3194,19 +3218,22 @@
             : (you && (phase === 'setup' || roomStatus === 'lobby')
               ? (canDrag ? 'DRAG TO MOVE' : 'YOUR SEAT')
               : '')));
-      const namePop = Boolean(last) && (revealing || justPickedSeat === i);
       const lastPos = last ? pickPos(last) : '';
-      const lastHtml = `<span class="last${last ? '' : ' is-empty'}${namePop ? ' is-name-in' : ''}"${lastPos && lastPos !== '—' ? ` data-pos="${esc(lastPos)}"` : ''}>${last
-        ? `${posInk(lastPos)} ${esc(last.playerName)}`
-        : '—'}</span>`;
+      const bits = last ? splitPlayerName(last.playerName) : null;
+      const lastHtml = last
+        ? `<span class="last"><span class="pick-last">${esc(bits.last)}</span><span class="pick-meta">${bits.first ? `<span class="pick-first">${esc(bits.first)}</span>` : ''}${posBadge(lastPos)}</span></span>`
+        : '<span class="last is-empty">—</span>';
       const label = boardLabel;
       return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} ${you && draftLive && !isDraftComplete() ? 'data-drop-player="1"' : ''} title="${esc(title)}">
-        <span class="n">${i + 1}</span>
+        <span class="n">${String(i + 1).padStart(2, '0')}</span>
         <span class="nm">${esc(label)}</span>
         ${lastHtml}
-        ${status ? `<span class="st">${status}</span>` : ''}
+        <span class="st${status ? '' : ' is-idle'}">${status || ''}</span>
       </button>`;
     }).join('');
+    if (html === lastOrderHtml) return;
+    lastOrderHtml = html;
+    el.innerHTML = html;
   }
 
   function renderClock() {
@@ -3969,7 +3996,7 @@
               && pickReveal.teamIndex === t.i
               && Number(p.overall) === Number(pickReveal.overall);
             const pos = pickPos(p);
-            return `<span class="${fresh ? 'is-name-in' : ''}" data-pos="${esc(pos)}">${posInk(pos)}${esc(p.playerName)}</span>`;
+            return `<span class="ot-pick${fresh ? ' is-name-in' : ''}">${posBadge(pos)}<span class="pick-nm">${esc(p.playerName)}</span></span>`;
           })
           .join('')
         : '';
@@ -4270,7 +4297,7 @@
         if (opts.includeUser !== true && slot.teamIndex === mock.seatIndex) break;
         const teamName = mock.teamNames[slot.teamIndex] || `Team ${slot.teamIndex + 1}`;
         scrollToSeat(slot.teamIndex);
-        renderMock();
+        renderOrder();
         setMockStatus(`On the clock · ${teamName}`, true);
         // Hold highlighted CPU seat before the pick lands.
         await sleep(1400);
