@@ -78,9 +78,10 @@
   let justPickedTimer = null;
   let lastFocusSeat = null;
   let mockCompleteShown = false;
-  /** Staged CPU reveal: highlight first, then animate the name under the seat. */
-  let pickReveal = null; // { teamIndex, overall, phase: 'holding'|'show', timer }
+  /** Staged CPU reveal: big name card, then fly down onto the seat. */
+  let pickReveal = null; // { teamIndex, overall, phase: 'holding'|'show' }
   let pickRevealTimer = null;
+  let cpuAnnounceEpoch = 0;
 
   function isMultiplayer() {
     return Boolean(roomId);
@@ -619,6 +620,7 @@
     turnCueKey = null;
     mockCompleteShown = false;
     closeMockCompleteScreen();
+    hideCpuPickAnnounce();
     if (!awaitingSeatClaim) leaveRoomLocal();
     setDraftLive(false);
   }
@@ -647,7 +649,7 @@
 
   function completeSlotRowHtml(row, isBench) {
     const empty = !row.player;
-    const playerPos = !empty ? posKey(row.player.position) : '';
+    const playerPos = !empty ? pickPos(row.player) : '';
     const label = empty ? (isBench ? 'BN' : row.slot) : (playerPos || (isBench ? 'BN' : row.slot));
     const bye = !empty && row.player.byeWeek != null ? String(row.player.byeWeek) : '';
     const team = !empty ? (row.player.nflTeam || '') : '';
@@ -1532,10 +1534,10 @@
   }
 
   function slotAccepts(slot, position) {
-    const pos = String(position || '').toUpperCase();
-    const s = String(slot || '').toUpperCase();
-    if (s === 'FLEX') return FLEX_ELIGIBLE.has(pos);
-    if (s === 'D/ST' || s === 'DST') return pos === 'D/ST' || pos === 'DST';
+    const pos = posKey(position);
+    const s = posKey(slot);
+    if (String(slot || '').toUpperCase() === 'FLEX' || s === 'FLEX') return FLEX_ELIGIBLE.has(pos);
+    if (s === 'D/ST') return pos === 'D/ST';
     return s === pos;
   }
 
@@ -1546,7 +1548,7 @@
       let placed = false;
       for (const row of starters) {
         if (row.player || row.slot === 'FLEX') continue;
-        if (slotAccepts(row.slot, pick.position)) {
+        if (slotAccepts(row.slot, pickPos(pick))) {
           row.player = pick;
           placed = true;
           break;
@@ -1555,7 +1557,7 @@
       if (!placed) {
         for (const row of starters) {
           if (row.player || row.slot !== 'FLEX') continue;
-          if (slotAccepts('FLEX', pick.position)) {
+          if (slotAccepts('FLEX', pickPos(pick))) {
             row.player = pick;
             placed = true;
             break;
@@ -2481,9 +2483,21 @@
   }
 
   function posKey(pos) {
-    const p = String(pos || '').toUpperCase();
-    if (p === 'DST' || p === 'DEF') return 'D/ST';
-    return p || '—';
+    const raw = String(pos || '').trim().toUpperCase();
+    if (!raw || raw === '—' || raw === '-') return '—';
+    if (raw === 'DST' || raw === 'DEF' || raw === 'D/ST' || raw === 'DEFENSE') return 'D/ST';
+    if (raw === 'PK' || raw === 'KICKER') return 'K';
+    const first = raw.split(/[\s,/]+/)[0];
+    if (first === 'QB' || first === 'RB' || first === 'WR' || first === 'TE' || first === 'K') return first;
+    if (first === 'DST' || first === 'DEF') return 'D/ST';
+    return raw;
+  }
+
+  function pickPos(pick) {
+    if (!pick) return '—';
+    const direct = posKey(pick.position);
+    if (direct !== '—') return direct;
+    return posKey(findPlayer(pick.playerId)?.position);
   }
 
   function posBadge(pos) {
@@ -2860,6 +2874,12 @@
     chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }
 
+  function clearNamePops() {
+    document.querySelectorAll('#mock-order .last.is-name-in, .mock-other-team .ot-picks .is-name-in').forEach((el) => {
+      el.classList.remove('is-name-in');
+    });
+  }
+
   function flashSeatPick(teamIndex) {
     justPickedSeat = teamIndex;
     if (justPickedTimer) clearTimeout(justPickedTimer);
@@ -2876,7 +2896,8 @@
       document.querySelectorAll('#mock-order .is-just-picked').forEach((el) => {
         el.classList.remove('is-just-picked');
       });
-    }, 1100);
+      clearNamePops();
+    }, 900);
   }
 
   function clearPickReveal() {
@@ -2885,35 +2906,136 @@
       pickRevealTimer = null;
     }
     pickReveal = null;
+    hideCpuPickAnnounce();
+  }
+
+  function hideCpuPickAnnounce() {
+    cpuAnnounceEpoch += 1;
+    const wrap = document.getElementById('mock-cpu-announce');
+    const card = document.getElementById('mock-cpu-announce-card');
+    if (card) {
+      card.classList.remove('is-pop', 'is-fly');
+      card.style.removeProperty('--cpu-fly-x');
+      card.style.removeProperty('--cpu-fly-y');
+      card.innerHTML = '';
+    }
+    if (wrap) wrap.hidden = true;
+  }
+
+  function cpuPickAnnounceHtml(pick) {
+    const player = findPlayer(pick.playerId);
+    const pos = pickPos(pick);
+    const name = pick.playerName || player?.name || 'Player';
+    const nfl = String(pick.nflTeam || player?.team || '').toUpperCase();
+    const logo = pick.teamLogo || player?.teamLogo || '';
+    const club = seatBoardLabel(pick.teamIndex);
+    const teamMark = logo
+      ? `<img class="cpu-team-logo" src="${esc(logo)}" alt="" width="28" height="28" />`
+      : '';
+    return `
+      <p class="cpu-kicker">${esc(club)} selects</p>
+      <strong class="cpu-name" data-pos="${esc(pos)}">${esc(name)}</strong>
+      <div class="cpu-meta">
+        ${teamMark}
+        ${nfl ? `<span class="cpu-team">${esc(nfl)}</span>` : ''}
+        ${posBadge(pos)}
+      </div>`;
+  }
+
+  function playCpuPickAnnounce(pick) {
+    const wrap = document.getElementById('mock-cpu-announce');
+    const card = document.getElementById('mock-cpu-announce-card');
+    if (!wrap || !card || !pick) return Promise.resolve();
+    const epoch = ++cpuAnnounceEpoch;
+    card.innerHTML = cpuPickAnnounceHtml(pick);
+    card.classList.remove('is-pop', 'is-fly');
+    card.style.removeProperty('--cpu-fly-x');
+    card.style.removeProperty('--cpu-fly-y');
+    wrap.hidden = false;
+    void card.offsetWidth;
+    card.classList.add('is-pop');
+
+    const flyToSeat = () => {
+      if (epoch !== cpuAnnounceEpoch) return;
+      const seat = document.querySelector(`#mock-order [data-seat="${pick.teamIndex}"]`);
+      scrollToSeat(pick.teamIndex);
+      const cardRect = card.getBoundingClientRect();
+      let dx = 0;
+      let dy = 140;
+      if (seat) {
+        const seatRect = seat.getBoundingClientRect();
+        dx = (seatRect.left + seatRect.width / 2) - (cardRect.left + cardRect.width / 2);
+        dy = (seatRect.top + seatRect.height / 2) - (cardRect.top + cardRect.height / 2);
+      }
+      card.style.setProperty('--cpu-fly-x', `${Math.round(dx)}px`);
+      card.style.setProperty('--cpu-fly-y', `${Math.round(dy)}px`);
+      card.classList.remove('is-pop');
+      void card.offsetWidth;
+      card.classList.add('is-fly');
+      if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
+        pickReveal.phase = 'show';
+      }
+      flashSeatPick(pick.teamIndex);
+      renderOrder();
+      renderOtherTeams();
+    };
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        card.removeEventListener('animationend', onEnd);
+        if (epoch === cpuAnnounceEpoch) {
+          wrap.hidden = true;
+          card.classList.remove('is-pop', 'is-fly');
+          card.style.removeProperty('--cpu-fly-x');
+          card.style.removeProperty('--cpu-fly-y');
+        }
+        resolve();
+      };
+      const onEnd = (e) => {
+        if (e.target !== card) return;
+        if (e.animationName !== 'mock-cpu-announce-fly') return;
+        finish();
+      };
+      card.addEventListener('animationend', onEnd);
+      window.setTimeout(() => {
+        if (epoch !== cpuAnnounceEpoch) {
+          finish();
+          return;
+        }
+        flyToSeat();
+      }, 700);
+      window.setTimeout(finish, 1500);
+    });
   }
 
   /**
-   * CPU picks: flash the seat and pop the player name under the team.
+   * CPU picks: big name / team / position, then fly down onto the draft board.
    */
-  function beginCpuPickReveal(pick, { holdMs = 0 } = {}) {
-    if (!pick || !Number.isFinite(Number(pick.teamIndex))) return;
+  function beginCpuPickReveal(pick) {
+    if (!pick || !Number.isFinite(Number(pick.teamIndex))) return Promise.resolve();
     clearPickReveal();
     pickReveal = {
       teamIndex: Number(pick.teamIndex),
       overall: Number(pick.overall),
-      phase: 'show'
+      phase: 'holding'
     };
-    flashSeatPick(pick.teamIndex);
     scrollToSeat(pick.teamIndex);
     renderOrder();
     renderOtherTeams();
-    const last = document.querySelector(`#mock-order [data-seat="${pick.teamIndex}"] .last`);
-    if (last && !last.classList.contains('is-empty')) {
-      last.classList.remove('is-name-in');
-      void last.offsetWidth;
-      last.classList.add('is-name-in');
-    }
+    const done = playCpuPickAnnounce(pick);
     pickRevealTimer = setTimeout(() => {
       if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
         pickReveal = null;
       }
       pickRevealTimer = null;
-    }, 1400);
+      clearNamePops();
+      renderOrder();
+      renderOtherTeams();
+    }, 1600);
+    return done;
   }
 
   function seatSelecting(teamIndex) {
@@ -2921,11 +3043,7 @@
     if (draftLive && next && next.teamIndex === teamIndex && !seatIsHuman(teamIndex)) {
       return true;
     }
-    return Boolean(
-      pickReveal
-      && pickReveal.teamIndex === teamIndex
-      && pickReveal.phase === 'holding'
-    );
+    return false;
   }
 
   function maybePlayTurnCues() {
@@ -2996,6 +3114,21 @@
     return null;
   }
 
+  /** Hide the pick on the board until the CPU card flies down onto the seat. */
+  function visibleLastPickForTeam(teamIndex) {
+    const last = lastPickForTeam(teamIndex);
+    if (!last || !pickReveal) return last;
+    if (
+      pickReveal.phase === 'holding'
+      && Number(pickReveal.teamIndex) === Number(teamIndex)
+      && Number(last.overall) === Number(pickReveal.overall)
+    ) {
+      const picks = picksForTeam(teamIndex);
+      return picks.length > 1 ? picks[picks.length - 2] : null;
+    }
+    return last;
+  }
+
   function renderOrder() {
     const el = document.getElementById('mock-order');
     if (!el || !mock) return;
@@ -3024,7 +3157,7 @@
       const you = !awaitingSeatClaim && i === mock.seatIndex;
       const open = awaitingSeatClaim && seat && !seat.userId;
       const human = seat && seat.userId && !seat.isCpu;
-      const last = phase === 'setup' ? null : lastPickForTeam(i);
+      const last = phase === 'setup' ? null : visibleLastPickForTeam(i);
       const draggable = canDrag && you;
       const dropTarget = canDrag && !you;
       const revealing = pickReveal && pickReveal.teamIndex === i && pickReveal.phase === 'show';
@@ -3062,8 +3195,9 @@
               ? (canDrag ? 'DRAG TO MOVE' : 'YOUR SEAT')
               : '')));
       const namePop = Boolean(last) && (revealing || justPickedSeat === i);
-      const lastHtml = `<span class="last${last ? '' : ' is-empty'}${namePop ? ' is-name-in' : ''}">${last
-        ? `${posInk(last.position)} ${esc(last.playerName)}`
+      const lastPos = last ? pickPos(last) : '';
+      const lastHtml = `<span class="last${last ? '' : ' is-empty'}${namePop ? ' is-name-in' : ''}"${lastPos && lastPos !== '—' ? ` data-pos="${esc(lastPos)}"` : ''}>${last
+        ? `${posInk(lastPos)} ${esc(last.playerName)}`
         : '—'}</span>`;
       const label = boardLabel;
       return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} ${you && draftLive && !isDraftComplete() ? 'data-drop-player="1"' : ''} title="${esc(title)}">
@@ -3704,7 +3838,7 @@
     if (count) count.textContent = `${mine.length} / ${totalSlots}`;
     const rowHtml = (row, isBench) => {
       const empty = !row.player;
-      const playerPos = !empty ? posKey(row.player.position) : '';
+      const playerPos = !empty ? pickPos(row.player) : '';
       // Empty rows keep the slot label (QB/RB/FLEX). Filled rows use the player's position color.
       const slotPos = isBench ? 'BN' : String(row.slot || 'BN').toUpperCase();
       const label = empty ? slotPos : (playerPos || slotPos);
@@ -3834,7 +3968,8 @@
               && pickReveal.phase === 'show'
               && pickReveal.teamIndex === t.i
               && Number(p.overall) === Number(pickReveal.overall);
-            return `<span class="${fresh ? 'is-name-in' : ''}" data-pos="${esc(posKey(p.position))}">${posInk(p.position)}${esc(p.playerName)}</span>`;
+            const pos = pickPos(p);
+            return `<span class="${fresh ? 'is-name-in' : ''}" data-pos="${esc(pos)}">${posInk(pos)}${esc(p.playerName)}</span>`;
           })
           .join('')
         : '';
@@ -4138,7 +4273,7 @@
         renderMock();
         setMockStatus(`On the clock · ${teamName}`, true);
         // Hold highlighted CPU seat before the pick lands.
-        await sleep(2500);
+        await sleep(1400);
         if (!draftLive && !opts.allowPrestart) break;
         const still = currentSlot();
         if (!still || still.overall !== slot.overall) break;
@@ -4148,8 +4283,7 @@
         const pick = mock.picks[mock.picks.length - 1];
         if (pick && mock.picks.length > before) {
           setMockStatus(`CPU · ${teamName} selected ${pick.playerName}`, true);
-          beginCpuPickReveal(pick, { holdMs: 375 });
-          await sleep(750);
+          await beginCpuPickReveal(pick);
         } else {
           renderMock();
           await sleep(250);
@@ -4608,6 +4742,16 @@
     });
 
     const orderEl = document.getElementById('mock-order');
+    orderEl?.addEventListener('animationend', (e) => {
+      if (e.animationName === 'mock-name-pop' || e.animationName === 'mock-name-pop-chip') {
+        e.target.classList.remove('is-name-in');
+      }
+    });
+    document.getElementById('mock-others-list')?.addEventListener('animationend', (e) => {
+      if (e.animationName === 'mock-name-pop' || e.animationName === 'mock-name-pop-chip') {
+        e.target.classList.remove('is-name-in');
+      }
+    });
     orderEl?.addEventListener('dragstart', (e) => {
       const chip = e.target.closest('[data-seat]');
       if (!chip || !canDragSeat() || !chip.classList.contains('is-you')) {

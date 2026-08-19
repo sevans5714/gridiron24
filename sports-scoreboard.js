@@ -296,6 +296,10 @@ function mergeGameLists(...lists) {
           ...g,
           series: g.series || prev?.series || null,
           provider: g.provider || prev?.provider || null,
+          odds: g.odds || prev?.odds || null,
+          broadcasts: (g.broadcasts && g.broadcasts.length)
+            ? g.broadcasts
+            : (prev?.broadcasts || g.broadcasts || []),
           away: llws
             ? llwsTeams.mergeLlwsSide(prev?.away, g.away)
             : { ...(prev?.away || {}), ...(g.away || {}), logo: g?.away?.logo || prev?.away?.logo || null },
@@ -458,7 +462,7 @@ function normalizeTeamEvent(event, leagueId, { series = null } = {}) {
     broadcasts,
     away: pickCompetitor(competition.competitors, 'away'),
     home: pickCompetitor(competition.competitors, 'home'),
-    odds: leagueId === 'ncaaf' ? null : pickOdds(competition),
+    odds: pickOdds(competition),
     leaders: null
   };
 }
@@ -711,6 +715,53 @@ async function fillRacingFields(games) {
     }
     return { ...g, leaders: standings };
   });
+}
+
+function boardHasOpenGames(games) {
+  return (games || []).some((g) => {
+    const bucket = g?.status?.bucket;
+    return bucket === 'live' || bucket === 'upcoming';
+  });
+}
+
+/** ESPN week boards lag after a slate ends (preseason NFL stuck on last week's finals). */
+async function fetchFootballWeekRaw(meta, { week, seasontype }) {
+  const w = Number(week);
+  if (!Number.isFinite(w) || w < 1) return null;
+  const q = [`week=${w}`];
+  const st = Number(seasontype);
+  if (Number.isFinite(st) && st > 0) q.push(`seasontype=${st}`);
+  const pathAndQuery = `apis/site/v2/sports/${meta.sport}/${meta.league}/scoreboard?${q.join('&')}`;
+  const hit = await espnResilient.fetchJsonResilient({
+    urls: espnResilient.siteApiUrls(pathAndQuery),
+    cacheKey: `site:${meta.id}:${pathAndQuery}`,
+    ttlMs: CACHE_MS,
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'GridIron24-MembersLounge/1.0'
+    },
+    lane: 'site'
+  });
+  return hit.data || null;
+}
+
+async function rollForwardFootballWeek(meta, raw, games) {
+  if (meta?.id !== 'nfl' && meta?.id !== 'ncaaf') return null;
+  if (boardHasOpenGames(games)) return null;
+  const week = Number(raw?.week?.number);
+  const seasontype = Number(raw?.season?.type);
+  if (!Number.isFinite(week) || week < 1) return null;
+  try {
+    const nextRaw = await fetchFootballWeekRaw(meta, { week: week + 1, seasontype });
+    const nextGames = (nextRaw?.events || []).map((ev) => ({
+      ...normalizeTeamEvent(ev, meta.id),
+      provider: 'espn'
+    }));
+    if (!boardHasOpenGames(nextGames)) return null;
+    return { raw: nextRaw, games: nextGames };
+  } catch {
+    return null;
+  }
 }
 
 async function fetchLeagueRaw(meta, { daysAhead = 0, daysBehind = 0, forceDateRange = false } = {}) {
@@ -1053,17 +1104,26 @@ async function getSportsScores({
         };
       }
       try {
-        const { raw, from } = await fetchLeagueRaw(meta, {
+        const fetched = await fetchLeagueRaw(meta, {
           daysAhead,
           daysBehind,
           forceDateRange
         });
+        let raw = fetched.raw;
+        const from = fetched.from;
         let games = (raw.events || []).map((ev) => {
           if (meta.kind === 'golf') return normalizeGolfEvent(ev);
           if (meta.kind === 'racing') return normalizeRacingEvent(ev, meta.id);
           const series = meta.extraLeagues?.length ? 'Baseball' : null;
           return { ...normalizeTeamEvent(ev, id, { series }), provider: 'espn' };
         });
+        if (!forceDateRange) {
+          const rolled = await rollForwardFootballWeek(meta, raw, games);
+          if (rolled?.games?.length) {
+            games = rolled.games;
+            raw = rolled.raw || raw;
+          }
+        }
         if (meta.extraLeagues?.length && meta.kind === 'team') {
           const extras = await fetchExtraLeagueGames(meta, id, {
             daysAhead,

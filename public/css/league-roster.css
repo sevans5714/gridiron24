@@ -54,12 +54,11 @@ html[data-theme="day"] .gi-roster-head {
 .gi-roster-board.is-gridiron .gi-roster-head h3 { color: var(--blue); }
 .gi-roster-board.is-aaa .gi-roster-head h3 { color: var(--detail, #ff7a18); }
 .gi-roster-head .meta {
-  margin: 0.15rem 0 0;
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  margin: 0.2rem 0 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
 }
 .gi-roster-grid {
   display: grid;

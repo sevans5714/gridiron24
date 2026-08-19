@@ -35,8 +35,8 @@
     const invited = Number(league.invited || 0);
     const total = Number(league.slotCount || (league.slots || []).length || 0);
     const meta = invited
-      ? `${assigned} of ${total} assigned · ${invited} invited`
-      : `${assigned} of ${total} assigned`;
+      ? `${assigned} of ${total} registered · ${invited} invited`
+      : `${assigned} of ${total} registered`;
     const logo = league.logo
       ? `<img src="${esc(league.logo)}" alt="" width="64" height="64" decoding="async">`
       : '';

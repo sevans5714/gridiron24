@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=120" />
-  <link rel="icon" href="/favicon.ico?v=120" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=120" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=120" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=121" />
+  <link rel="icon" href="/favicon.ico?v=121" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=121" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=121" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=153" />
+  <link rel="stylesheet" href="/css/site.css?v=154" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -3088,9 +3088,10 @@
       --mock-dst: #94a3b8;
       --mock-flex: #2dd4bf;
       --mock-bn: #64748b;
+      position: relative;
       border-color: color-mix(in srgb, var(--mo-blue) 40%, var(--mo-line));
       background: var(--mo-panel-mock);
-      overflow: hidden;
+      overflow: visible;
     }
     .lounge-section.is-mock .lounge-section-label h2 { color: var(--mo-blue-hot); }
     .lounge-section.is-mock .mock-section-label {
@@ -3873,9 +3874,113 @@
       grid-template-columns: repeat(var(--mock-seats, 12), minmax(0, 1fr));
       gap: 0.4rem;
       margin: 0 0 1rem;
-      padding: 0.15rem 0;
+      padding: 0.55rem 0 0.85rem;
       width: 100%;
+      overflow: visible;
     }
+    .mock-cpu-announce {
+      position: absolute;
+      inset: 0;
+      z-index: 18;
+      display: grid;
+      place-items: start center;
+      padding: 5.5rem 1rem 0;
+      pointer-events: none;
+    }
+    .mock-cpu-announce[hidden] { display: none !important; }
+    .mock-cpu-announce-card {
+      display: grid;
+      justify-items: center;
+      gap: 0.4rem;
+      min-width: min(22rem, 92vw);
+      max-width: min(34rem, 94vw);
+      padding: 1.05rem 1.5rem 1.15rem;
+      border-radius: 1.05rem;
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 45%, var(--mo-line));
+      background:
+        radial-gradient(ellipse 80% 70% at 50% 0%, color-mix(in srgb, var(--mo-gold) 22%, transparent), transparent 62%),
+        linear-gradient(180deg, rgba(10, 18, 32, 0.96), rgba(8, 14, 24, 0.94));
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--mo-gold) 28%, transparent),
+        0 18px 40px rgba(0, 0, 0, 0.45);
+      text-align: center;
+      transform-origin: center center;
+    }
+    .mock-cpu-announce-card .cpu-kicker {
+      margin: 0;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mo-gold);
+    }
+    .mock-cpu-announce-card .cpu-name {
+      font-family: "Oswald", "Bebas Neue", sans-serif;
+      font-size: clamp(2.15rem, 5.6vw, 3.35rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 0.95;
+      color: #f4f7ff;
+      text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+    }
+    .mock-cpu-announce-card .cpu-name[data-pos="QB"] { color: var(--mock-qb); }
+    .mock-cpu-announce-card .cpu-name[data-pos="RB"] { color: var(--mock-rb); }
+    .mock-cpu-announce-card .cpu-name[data-pos="WR"] { color: var(--mock-wr); }
+    .mock-cpu-announce-card .cpu-name[data-pos="TE"] { color: var(--mock-te); }
+    .mock-cpu-announce-card .cpu-name[data-pos="K"] { color: var(--mock-k); }
+    .mock-cpu-announce-card .cpu-name[data-pos="D/ST"],
+    .mock-cpu-announce-card .cpu-name[data-pos="DST"] { color: var(--mock-dst); }
+    .mock-cpu-announce-card .cpu-meta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+    .mock-cpu-announce-card .cpu-team-logo {
+      width: 1.55rem;
+      height: 1.55rem;
+      object-fit: contain;
+    }
+    .mock-cpu-announce-card .cpu-team {
+      font-family: "Oswald", sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #e8eef8;
+    }
+    .mock-cpu-announce-card .mock-pos-badge {
+      min-width: 2.6rem;
+      padding: 0.22rem 0.5rem;
+      font-size: 0.95rem;
+    }
+    .mock-cpu-announce-card.is-pop {
+      animation: mock-cpu-announce-pop 0.42s cubic-bezier(0.22, 1.18, 0.36, 1);
+    }
+    .mock-cpu-announce-card.is-fly {
+      animation: mock-cpu-announce-fly 0.62s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+    }
+    @keyframes mock-cpu-announce-pop {
+      0% { transform: scale(0.55); opacity: 0.2; filter: brightness(1.4); }
+      62% { transform: scale(1.12); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; filter: brightness(1); }
+    }
+    @keyframes mock-cpu-announce-fly {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% {
+        transform: translate(var(--cpu-fly-x, 0px), var(--cpu-fly-y, 140px)) scale(0.16);
+        opacity: 0;
+      }
+    }
+    html[data-theme="day"] .mock-cpu-announce-card {
+      background:
+        radial-gradient(ellipse 80% 70% at 50% 0%, color-mix(in srgb, var(--mo-gold) 18%, transparent), transparent 62%),
+        #fff;
+      border-color: color-mix(in srgb, var(--mo-gold) 40%, #d6d3d1);
+      box-shadow: 0 16px 36px rgba(20, 24, 31, 0.12);
+    }
+    html[data-theme="day"] .mock-cpu-announce-card .cpu-team { color: #0f172a; }
     .mock-order .mock-seat-chip {
       display: grid;
       grid-template-rows: auto auto auto auto;
@@ -3958,15 +4063,29 @@
       opacity: 1;
       text-align: center;
     }
+    .mock-order .mock-seat-chip .last[data-pos="QB"] { color: color-mix(in srgb, var(--mock-qb) 72%, #fff); }
+    .mock-order .mock-seat-chip .last[data-pos="RB"] { color: color-mix(in srgb, var(--mock-rb) 72%, #fff); }
+    .mock-order .mock-seat-chip .last[data-pos="WR"] { color: color-mix(in srgb, var(--mock-wr) 72%, #fff); }
+    .mock-order .mock-seat-chip .last[data-pos="TE"] { color: color-mix(in srgb, var(--mock-te) 72%, #fff); }
+    .mock-order .mock-seat-chip .last[data-pos="K"] { color: color-mix(in srgb, var(--mock-k) 72%, #fff); }
+    .mock-order .mock-seat-chip .last[data-pos="D/ST"],
+    .mock-order .mock-seat-chip .last[data-pos="DST"] { color: color-mix(in srgb, var(--mock-dst) 78%, #fff); }
     .mock-order .mock-seat-chip .last .mock-pos-ink {
       display: inline;
       margin-right: 0.15em;
       font-size: 0.68rem;
       vertical-align: 0.02em;
     }
+    .mock-order .mock-seat-chip .last .mock-pos-ink[data-pos="QB"] { color: var(--mock-qb); }
+    .mock-order .mock-seat-chip .last .mock-pos-ink[data-pos="RB"] { color: var(--mock-rb); }
+    .mock-order .mock-seat-chip .last .mock-pos-ink[data-pos="WR"] { color: var(--mock-wr); }
+    .mock-order .mock-seat-chip .last .mock-pos-ink[data-pos="TE"] { color: var(--mock-te); }
+    .mock-order .mock-seat-chip .last .mock-pos-ink[data-pos="K"] { color: var(--mock-k); }
+    .mock-order .mock-seat-chip .last .mock-pos-ink[data-pos="D/ST"],
+    .mock-order .mock-seat-chip .last .mock-pos-ink[data-pos="DST"] { color: var(--mock-dst); }
     .mock-order .mock-seat-chip:has(.last.is-name-in) {
       overflow: visible;
-      z-index: 6;
+      z-index: 8;
     }
     .mock-order .mock-seat-chip .last.is-selecting {
       color: var(--mo-good);
@@ -3984,19 +4103,22 @@
       z-index: 3;
     }
     .mock-order .mock-seat-chip .last.is-name-in {
-      animation: mock-name-pop 0.72s cubic-bezier(0.22, 1.2, 0.36, 1);
-      color: #9dffc4;
+      display: block;
+      overflow: visible;
+      -webkit-line-clamp: unset;
+      text-overflow: clip;
+      white-space: nowrap;
+      animation: mock-name-pop 0.85s cubic-bezier(0.22, 1.15, 0.36, 1);
       font-weight: 800;
       opacity: 1;
-      overflow: visible;
-      text-overflow: clip;
       transform-origin: center bottom;
       z-index: 4;
+      text-shadow: 0 0 12px color-mix(in srgb, currentColor 45%, transparent);
     }
     @keyframes mock-name-pop {
-      0% { transform: scale(2.25); filter: brightness(1.35); }
-      58% { transform: scale(1.08); }
-      100% { transform: scale(1); filter: brightness(1); }
+      0% { font-size: 1.45rem; transform: scale(1.15); filter: brightness(1.28); }
+      62% { font-size: 0.86rem; transform: scale(1.02); }
+      100% { font-size: 0.72rem; transform: scale(1); filter: brightness(1); }
     }
     .mock-order .mock-seat-chip .last.is-empty {
       color: var(--mo-muted);
@@ -4078,7 +4200,6 @@
       animation: mock-seat-picked 1.1s ease;
     }
     .mock-order .mock-seat-chip.is-just-picked .last:not(.is-empty):not(.is-selecting) {
-      color: var(--mo-text);
       font-weight: 800;
     }
     @keyframes mock-seat-picked {
@@ -6125,7 +6246,6 @@
       pointer-events: none;
     }
     .mock-player.is-drafted {
-      opacity: 0.78;
       cursor: default;
     }
     .mock-player.is-drafted:hover {
@@ -6134,6 +6254,13 @@
     .mock-player.is-drafted .mock-rank,
     .mock-player.is-drafted .mock-cell {
       opacity: 0.55;
+    }
+    .mock-player.is-drafted .mock-player-name {
+      opacity: 0.88;
+    }
+    .mock-player.is-drafted .mock-pos-badge {
+      opacity: 1;
+      filter: none;
     }
     .mock-draft-meta {
       display: block;
@@ -6247,11 +6374,15 @@
       font-style: italic;
     }
     .mock-other-team .ot-picks span.is-name-in {
-      animation: mock-name-pop 0.72s cubic-bezier(0.22, 1.2, 0.36, 1);
-      background: color-mix(in srgb, var(--mo-good) 28%, transparent);
+      animation: mock-name-pop-chip 0.85s cubic-bezier(0.22, 1.15, 0.36, 1);
       transform-origin: left center;
       z-index: 2;
       position: relative;
+      font-weight: 800;
+    }
+    @keyframes mock-name-pop-chip {
+      0% { font-size: 1.05rem; transform: scale(1.2); filter: brightness(1.2); }
+      100% { font-size: 0.68rem; transform: scale(1); filter: brightness(1); }
     }
     .mock-other-team .ot-name {
       display: flex;
@@ -8540,9 +8671,13 @@
     html[data-theme="day"] .mock-order .mock-seat-chip .last {
       color: #0f172a;
     }
-    html[data-theme="day"] .mock-order .mock-seat-chip .last.is-name-in {
-      color: #15803d;
-    }
+    html[data-theme="day"] .mock-order .mock-seat-chip .last[data-pos="QB"] { color: color-mix(in srgb, var(--mock-qb) 55%, #0f172a); }
+    html[data-theme="day"] .mock-order .mock-seat-chip .last[data-pos="RB"] { color: color-mix(in srgb, var(--mock-rb) 45%, #0f172a); }
+    html[data-theme="day"] .mock-order .mock-seat-chip .last[data-pos="WR"] { color: color-mix(in srgb, var(--mock-wr) 45%, #0f172a); }
+    html[data-theme="day"] .mock-order .mock-seat-chip .last[data-pos="TE"] { color: color-mix(in srgb, var(--mock-te) 45%, #0f172a); }
+    html[data-theme="day"] .mock-order .mock-seat-chip .last[data-pos="K"] { color: color-mix(in srgb, var(--mock-k) 45%, #0f172a); }
+    html[data-theme="day"] .mock-order .mock-seat-chip .last[data-pos="D/ST"],
+    html[data-theme="day"] .mock-order .mock-seat-chip .last[data-pos="DST"] { color: color-mix(in srgb, var(--mock-dst) 50%, #0f172a); }
     html[data-theme="day"] .mock-other-team .ot-name > span:first-child {
       color: #64748b;
     }
@@ -8879,6 +9014,9 @@
           </div>
         </dialog>
         <div class="mock-order" id="mock-order" aria-label="Draft order — drag your team to set pick position"></div>
+        <div class="mock-cpu-announce" id="mock-cpu-announce" hidden aria-live="polite">
+          <div class="mock-cpu-announce-card" id="mock-cpu-announce-card"></div>
+        </div>
         <div class="mock-layout">
           <div class="mock-panel mock-pool">
             <div class="mock-panel-head mock-pool-head">
@@ -9151,9 +9289,9 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=154"></script>
+  <script src="/js/nav.js?v=156"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=73"></script>
+  <script src="/js/lounge-desk.js?v=75"></script>
   <script src="/js/lounge-games.js?v=38"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -9417,23 +9555,19 @@
       const bucket = g.status?.bucket || 'upcoming';
       const meta = sportsMetaLine(g);
       const fantasy = Boolean(g.fantasy || g.league === 'gi24' || g.league === 'aaa');
-      const noBetting = !fantasy && String(g.league || '') === 'ncaaf';
-      const odds = noBetting ? null : (g.odds || null);
-      const hasLines = !noBetting && sportsHasLines(g);
+      const odds = g.odds || null;
+      const hasLines = sportsHasLines(g);
       const showLineCol = hasLines || fantasy;
-      const wagered = !fantasy && !noBetting && sportsWageredIds.has(String(g.id));
+      const wagered = !fantasy && sportsWageredIds.has(String(g.id));
       const watchHtml = meta.watch
         ? `<span class="sgame-watch" title="Watch on ${esc(meta.watch)}">${esc(meta.watch)}</span>`
         : '';
       const ouLabel = odds?.overUnder != null ? sportsFormatTotal(odds.overUnder) : '';
-      let ouHtml = '';
-      if (!noBetting) {
-        ouHtml = ouLabel
-          ? `<span class="sgame-ou" title="${esc(odds.provider === 'Projected' || fantasy ? 'Projected total' : (odds.provider ? `${odds.provider} total` : 'Game total'))}">O/U ${esc(ouLabel)}</span>`
-          : (fantasy
-            ? `<span class="sgame-ou is-blank" title="No projected total">O/U —</span>`
-            : '');
-      }
+      const ouHtml = ouLabel
+        ? `<span class="sgame-ou" title="${esc(odds.provider === 'Projected' || fantasy ? 'Projected total' : (odds.provider ? `${odds.provider} total` : 'Game total'))}">O/U ${esc(ouLabel)}</span>`
+        : (fantasy
+          ? `<span class="sgame-ou is-blank" title="No projected total">O/U —</span>`
+          : '');
 
       if (isFieldSportKind(g.kind)) return sportsGolfBoardHtml(g);
 

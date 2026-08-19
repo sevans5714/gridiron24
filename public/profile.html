@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Profile · GridIron 24</title>
+  <title>Settings · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=120" />
-  <link rel="icon" href="/favicon.ico?v=120" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=120" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=120" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=121" />
+  <link rel="icon" href="/favicon.ico?v=121" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=121" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=121" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=153" />
+  <link rel="stylesheet" href="/css/site.css?v=154" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -620,12 +620,13 @@
 
   <section class="page-hero shell">
     <p class="eyebrow">Account</p>
-    <h1>Your Profile</h1>
+    <h1>Settings</h1>
   </section>
 
   <main class="page-main shell">
-    <nav class="profile-jump" aria-label="Profile sections">
+    <nav class="profile-jump" aria-label="Settings sections">
       <a href="#account">Account</a>
+      <a href="#tools" id="jump-tools" hidden>Owner Tools</a>
       <a href="#inbox">Inbox</a>
       <a href="#appearance">Appearance</a>
       <a href="#franchise">Franchise</a>
@@ -633,7 +634,6 @@
       <a href="#keeper">Keeper</a>
       <a href="#logo">Avatar / Logo</a>
       <a href="#password">Password</a>
-      <a href="#tools" id="jump-tools" hidden>Owner Tools</a>
     </nav>
 
     <section class="profile-card" id="account">
@@ -644,6 +644,48 @@
         </div>
       </div>
       <div id="account-body"><div class="msg">Loading…</div></div>
+    </section>
+
+    <section class="profile-card tools-card" id="tools" hidden>
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2 id="tools-card-title">Owner Tools</h2>
+          <p id="tools-card-blurb">Staff controls for this HQ — jump to a section or open the full desk.</p>
+        </div>
+      </div>
+      <div class="tools-menu" aria-label="Owner Tools sections" id="tools-card-menu">
+        <a href="/league-tools.html#group-requests" id="profile-tools-requests" hidden>
+          <strong>Requests</strong>
+          <span>Approve accounts and independent leagues</span>
+        </a>
+        <a href="/league-tools.html#members" id="profile-tools-accounts">
+          <strong>Registered Players</strong>
+          <span>How many in GridIron 24 and AAA</span>
+        </a>
+        <a href="/league-tools.html#group-communications" id="profile-tools-comms" hidden>
+          <strong>Communications</strong>
+          <span>Auto emails, digests, brand look</span>
+        </a>
+        <a href="/league-tools.html#group-espn">
+          <strong>Sync</strong>
+          <span>Rules, playoffs, roster patrol</span>
+        </a>
+        <a href="/league-tools.html#invites" id="profile-tools-people">
+          <strong>Invites</strong>
+          <span>Send invites and email owners</span>
+        </a>
+        <a href="/league-tools.html#group-comms">
+          <strong>Broadcast</strong>
+          <span>News, polls, ticker</span>
+        </a>
+        <a href="/league-tools.html#group-season" id="profile-tools-season" hidden>
+          <strong>Season</strong>
+          <span>Calendar, rankings preview, archive</span>
+        </a>
+      </div>
+      <div class="tools-actions">
+        <a class="btn-tools" id="tools-card-open" href="/league-tools.html">Open Owner Tools</a>
+      </div>
     </section>
 
     <section class="profile-card" id="inbox">
@@ -680,44 +722,6 @@
         </label>
         <p class="theme-switch-hint">Off = night · On = day. Saved to your account.</p>
         <p class="profile-note" id="appearance-status" role="status"></p>
-      </div>
-    </section>
-
-    <section class="profile-card tools-card" id="tools" hidden>
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2 id="tools-card-title">Owner Tools</h2>
-          <p id="tools-card-blurb">Staff controls for this HQ — jump to a section or open the full desk.</p>
-        </div>
-      </div>
-      <div class="tools-menu" aria-label="Owner Tools sections" id="tools-card-menu">
-        <a href="/league-tools.html#group-requests" id="profile-tools-requests" hidden>
-          <strong>Requests</strong>
-          <span>Approve accounts and independent leagues</span>
-        </a>
-        <a href="/league-tools.html#group-communications" id="profile-tools-comms" hidden>
-          <strong>Communications</strong>
-          <span>Auto emails, digests, brand look</span>
-        </a>
-        <a href="/league-tools.html#group-espn">
-          <strong>Sync</strong>
-          <span>Rules, playoffs, roster patrol</span>
-        </a>
-        <a href="/league-tools.html#group-people" id="profile-tools-people">
-          <strong>People</strong>
-          <span>Invites, access, owner email</span>
-        </a>
-        <a href="/league-tools.html#group-comms">
-          <strong>Broadcast</strong>
-          <span>News, polls, ticker</span>
-        </a>
-        <a href="/league-tools.html#group-season" id="profile-tools-season" hidden>
-          <strong>Season</strong>
-          <span>Calendar, rankings preview, archive</span>
-        </a>
-      </div>
-      <div class="tools-actions">
-        <a class="btn-tools" id="tools-card-open" href="/league-tools.html">Open Owner Tools</a>
       </div>
     </section>
 
@@ -795,7 +799,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=154"></script>
+  <script src="/js/nav.js?v=156"></script>
   <script src="/js/inbox-ui.js?v=17"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
@@ -946,11 +950,13 @@
       if (commsLink) commsLink.hidden = !isOwner;
       if (blurb) {
         blurb.textContent = isOwner
-          ? 'Owner desk — Requests, Communications, Sync, People, Broadcast, and Season.'
+          ? 'Owner desk — Active Accounts, Requests, Communications, Sync, Broadcast, and Season.'
           : isOwnerOrComm
-            ? 'Commissioner desk — Requests, Sync, People, Broadcast, and Season.'
+            ? 'Commissioner desk — Active Accounts, Requests, Sync, Broadcast, and Season.'
             : 'Conference admin desk — Sync, invites, owner email, and Broadcast.';
       }
+      const accountsLink = document.getElementById('profile-tools-accounts');
+      if (accountsLink) accountsLink.hidden = !isOwnerOrComm;
       const urls = portalUrls();
       const accountBody = document.getElementById('account-body');
       accountBody.innerHTML = `

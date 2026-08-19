@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=120" />
-  <link rel="icon" href="/favicon.ico?v=120" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=120" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=120" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=121" />
+  <link rel="icon" href="/favicon.ico?v=121" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=121" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=121" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=153" />
+  <link rel="stylesheet" href="/css/site.css?v=154" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -85,6 +85,49 @@
     }
     .comm-nav a[hidden],
     .comm-nav-group[hidden] { display: none !important; }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .tools-find {
+      display: block;
+      margin: 0 0 0.35rem;
+    }
+    .tools-find input {
+      width: 100%;
+      min-height: 2.15rem;
+      padding: 0.4rem 0.55rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2, var(--panel));
+      color: var(--text);
+      font-size: 0.88rem;
+    }
+    .tools-find input:focus {
+      outline: 2px solid color-mix(in srgb, var(--blue) 55%, transparent);
+      outline-offset: 1px;
+    }
+    .comm-nav-group.is-filtered-out { display: none !important; }
+    .comm-nav a.is-filtered-out { display: none !important; }
+
+    @media (max-width: 900px) {
+      .comm-layout {
+        grid-template-columns: 1fr;
+      }
+      .comm-nav {
+        position: sticky;
+        top: 3.55rem;
+        z-index: 6;
+        gap: 0.55rem;
+      }
+      .tools-find { margin-bottom: 0.15rem; }
+    }
 
     .comm-groups {
       display: grid;
@@ -974,6 +1017,49 @@
       color: var(--muted);
       font-size: 0.86rem;
     }
+    .members-census {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+      gap: 0.55rem;
+      margin: 0 0 1rem;
+    }
+    .members-census[hidden] { display: none !important; }
+    .members-census button,
+    .members-census a {
+      appearance: none;
+      display: grid;
+      gap: 0.12rem;
+      margin: 0;
+      padding: 0.7rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: var(--panel-2, var(--panel));
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+    }
+    .members-census button:hover,
+    .members-census a:hover {
+      border-color: color-mix(in srgb, var(--blue) 55%, var(--line));
+    }
+    .members-census button.is-on {
+      border-color: color-mix(in srgb, var(--blue) 70%, var(--line));
+      background: color-mix(in srgb, var(--blue) 12%, var(--panel));
+    }
+    .members-census strong {
+      font-family: var(--display);
+      font-size: 1.35rem;
+      letter-spacing: 0.03em;
+      line-height: 1;
+      color: var(--text);
+    }
+    .members-census span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.25;
+    }
+    .members-census .census-open { color: color-mix(in srgb, var(--detail, #ff7a18) 80%, var(--text)); }
     .members-pending-banner {
       margin: 0 0 0.85rem;
       padding: 0.7rem 0.85rem;
@@ -1065,20 +1151,24 @@
   </section>
 
   <main class="page-main shell">
-    <a class="tools-back" href="/profile.html">← Profile</a>
+    <a class="tools-back" href="/profile.html">← Settings</a>
     <div id="league-tools">
       <div class="tools-overview" aria-label="Tool groups">
+        <a href="#members" id="overview-accounts" hidden>
+          <strong>Registered Players</strong>
+          <span id="overview-accounts-blurb">GridIron 24 and AAA membership counts</span>
+        </a>
         <a href="#group-requests" id="overview-requests" hidden>
           <strong>Requests <span class="tools-badge" id="overview-requests-badge" hidden>0</span></strong>
           <span>Account join requests and league registrations</span>
         </a>
+        <a href="#group-people" id="overview-people" hidden>
+          <strong>People</strong>
+          <span>Invites and owner email</span>
+        </a>
         <a href="#group-espn">
           <strong>Sync</strong>
           <span>ESPN league IDs, rules, AAA points, playoffs, roster patrol</span>
-        </a>
-        <a href="#group-people" id="overview-people" hidden>
-          <strong>People <span class="tools-badge" id="overview-people-badge" hidden>0</span></strong>
-          <span>Invites, member access, owner email</span>
         </a>
         <a href="#group-communications" id="overview-communications" hidden>
           <strong>Communications</strong>
@@ -1096,10 +1186,20 @@
 
       <div class="comm-layout">
       <nav class="comm-nav" aria-label="Owner Tools sections" id="tools-side-nav">
+        <label class="tools-find">
+          <span class="visually-hidden">Jump to a tool</span>
+          <input type="search" id="tools-find" placeholder="Find a tool…" autocomplete="off" />
+        </label>
         <div class="comm-nav-group" id="nav-requests" hidden>
           <p class="comm-nav-label">Requests</p>
           <a href="#account-requests" id="jump-account-requests">Account Requests <span class="tools-badge" id="nav-account-requests-badge" hidden>0</span></a>
           <a href="#league-requests" id="jump-league-requests" hidden>League Requests <span class="tools-badge" id="nav-league-requests-badge" hidden>0</span></a>
+        </div>
+        <div class="comm-nav-group" id="nav-people" hidden>
+          <p class="comm-nav-label">People</p>
+          <a href="#members" id="jump-members" hidden>Registered Players</a>
+          <a href="#invites" id="jump-invites" hidden>Invites</a>
+          <a href="#conference-owners" id="jump-owners">Email Owners</a>
         </div>
         <div class="comm-nav-group">
           <p class="comm-nav-label">Sync</p>
@@ -1109,11 +1209,6 @@
           <a id="nav-aaa-espn-settings" href="#" target="_blank" rel="noopener">AAA League Settings</a>
           <a href="#playoff-sync">Playoffs</a>
           <a href="#roster-violations">Roster Violations</a>
-        </div>
-        <div class="comm-nav-group" id="nav-people" hidden>
-          <p class="comm-nav-label">People</p>
-          <a href="#members" id="jump-members" hidden>Members <span class="tools-badge" id="nav-members-badge" hidden>0</span></a>
-          <a href="#conference-owners" id="jump-owners">Email Owners</a>
         </div>
         <div class="comm-nav-group" id="nav-communications" hidden>
           <p class="comm-nav-label">Communications</p>
@@ -1158,6 +1253,104 @@
               <p class="help">Registrations from Create a League. Approve so the owner can finish setup (separate from GridIron 24 / ESPN).</p>
               <div class="status-note" id="league-requests-msg" role="status"></div>
               <div id="league-requests-list"><div class="msg">Loading…</div></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="comm-group" id="group-people" hidden>
+          <header>
+            <h2>People</h2>
+            <p>Registration counts first, then invites and owner email.</p>
+          </header>
+          <div class="comm-group-body">
+            <section class="admin-block" id="members" hidden>
+              <div class="section-head">
+                <h3>Registered Players <span class="access-tag">Owner / Commissioner</span></h3>
+              </div>
+              <p class="help">How many approved members are in each league. Full list, franchise, and dues are below. Open the public <a href="/roster-2026.html">2026 Roster</a> for the named boards. Join requests live under <a href="#account-requests">Requests</a>.</p>
+              <div class="members-census" id="members-census" hidden></div>
+              <div id="members-access-block">
+                <div class="status-note" id="members-msg" role="status"></div>
+                <div class="members-toolbar" id="members-toolbar" hidden>
+                  <input class="field" id="members-search" type="search" placeholder="Search name, login, or email…" autocomplete="off" />
+                  <p class="members-count" id="members-count"></p>
+                </div>
+                <div id="members-list"><div class="msg">Loading accounts…</div></div>
+              </div>
+            </section>
+
+            <section class="admin-block" id="invites" hidden>
+              <div class="section-head">
+                <h3>Invites <span class="access-tag">Owner / Commissioner</span></h3>
+              </div>
+              <p class="help">Invite by email. GridIron 24 and AAA invites show on the 2026 roster until they join. Social is lounge-only.</p>
+              <details class="help-more">
+                <summary>Email previews</summary>
+                <p class="help">Invites: <a href="/api/invites/preview-email" target="_blank" rel="noopener">Member</a> · <a href="/api/invites/preview-email?social=1" target="_blank" rel="noopener">Lounge</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">JSON</a></p>
+                <p class="help">Welcome: <a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
+              </details>
+              <div class="status-note" id="invites-mail-status" role="status"></div>
+              <div class="status-note" id="invites-msg" role="status"></div>
+              <div class="invite-compose" id="invites-admin">
+                <label class="field-label" for="invite-emails">Invite by email</label>
+                <p class="field-hint" id="invite-emails-hint">One or more addresses — commas or new lines.</p>
+                <textarea
+                  class="field field-area field-box"
+                  id="invite-emails"
+                  name="inviteEmails"
+                  rows="3"
+                  maxlength="800"
+                  autocomplete="email"
+                  spellcheck="false"
+                  aria-describedby="invite-emails-hint"
+                ></textarea>
+                <label class="field-label" for="invite-kind">Invite as</label>
+                <select class="field" id="invite-kind" name="inviteKind" style="max-width:16rem;margin:0 0 0.85rem;">
+                  <option value="gridiron" selected>GridIron 24 member</option>
+                  <option value="aaa">AAA member</option>
+                  <option value="social">Social / lounge only</option>
+                </select>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-send" id="invite-send">Send Invites</button>
+                </div>
+              </div>
+              <div id="invite-links" class="invite-links" hidden></div>
+              <div class="list-gap" id="invites-list"><div class="msg">Loading invites…</div></div>
+            </section>
+
+            <section class="admin-block" id="conference-owners">
+              <div class="section-head">
+                <h3>Email Owners</h3>
+              </div>
+              <p class="help">Select claimed franchises and send a branded mass email. Unclaimed teams need an Active Accounts assignment first.</p>
+              <div class="status-note" id="owners-mail-status" role="status"></div>
+              <div class="status-note" id="owners-msg" role="status"></div>
+              <div class="owners-toolbar" id="owners-conf-picker" hidden>
+                <label class="field-label" for="owners-conference">Conference</label>
+                <select class="field" id="owners-conference" style="max-width:16rem;">
+                  <option value="detail">Detail Conference</option>
+                  <option value="overtime">Overtime Conference</option>
+                  <option value="aaa">AAA League</option>
+                </select>
+              </div>
+              <div class="owners-actions">
+                <button type="button" class="btn btn-secondary" id="owners-select-all">Select emailable</button>
+                <button type="button" class="btn btn-secondary" id="owners-clear">Clear</button>
+                <span class="owners-selected" id="owners-selected-count">0 selected</span>
+              </div>
+              <div id="owners-table"><div class="msg">Loading conference teams…</div></div>
+              <div class="invite-compose owners-compose">
+                <label class="field-label" for="owners-subject">Subject</label>
+                <input class="field field-box" id="owners-subject" type="text" maxlength="160" placeholder="Subject line" />
+                <label class="field-label" for="owners-headline">Headline</label>
+                <input class="field field-box" id="owners-headline" type="text" maxlength="120" placeholder="Email headline (optional)" />
+                <label class="field-label" for="owners-body">Message</label>
+                <textarea class="field field-area field-box" id="owners-body" rows="6" maxlength="8000" placeholder="Write your message to selected team owners…"></textarea>
+                <div class="btn-row">
+                  <button type="button" class="btn btn-secondary" id="owners-preview">Preview branded email</button>
+                  <button type="button" class="btn btn-send" id="owners-send">Send to selected</button>
+                </div>
+              </div>
             </section>
           </div>
         </section>
@@ -1220,101 +1413,6 @@
               </div>
               <div class="status-note" id="violations-status" role="status"></div>
               <div id="violations-content"><div class="msg">Loading roster violations…</div></div>
-            </section>
-          </div>
-        </section>
-
-        <section class="comm-group" id="group-people" hidden>
-          <header>
-            <h2>People</h2>
-            <p>Invite managers, manage member access, and email team owners.</p>
-          </header>
-          <div class="comm-group-body">
-            <section class="admin-block" id="members" hidden>
-              <div class="section-head">
-                <h3>Members <span class="access-tag">Owner / Commissioner</span></h3>
-              </div>
-              <p class="help">Invite by email, then assign franchise, role, membership, lounge pass, and dues. New self-signups land in <a href="#account-requests">Requests → Account Requests</a>.</p>
-              <details class="help-more">
-                <summary>Email previews</summary>
-                <p class="help">Invites: <a href="/api/invites/preview-email" target="_blank" rel="noopener">Member</a> · <a href="/api/invites/preview-email?social=1" target="_blank" rel="noopener">Lounge</a> · <a href="/api/invites/preview-email?format=json" target="_blank" rel="noopener">JSON</a></p>
-                <p class="help">Welcome: <a href="/api/mail/preview-approved?kind=gridiron" target="_blank" rel="noopener">GridIron 24</a> · <a href="/api/mail/preview-approved?kind=aaa" target="_blank" rel="noopener">AAA</a> · <a href="/api/mail/preview-approved?kind=social" target="_blank" rel="noopener">Social</a></p>
-              </details>
-
-              <div class="status-note" id="invites-mail-status" role="status"></div>
-              <div class="status-note" id="invites-msg" role="status"></div>
-              <div class="invite-compose" id="invites-admin">
-                <label class="field-label" for="invite-emails">Invite by email</label>
-                <p class="field-hint" id="invite-emails-hint">One or more addresses — commas or new lines. GridIron 24 and AAA invites show on the 2026 roster until they join. Social is lounge-only.</p>
-                <textarea
-                  class="field field-area field-box"
-                  id="invite-emails"
-                  name="inviteEmails"
-                  rows="3"
-                  maxlength="800"
-                  autocomplete="email"
-                  spellcheck="false"
-                  aria-describedby="invite-emails-hint"
-                ></textarea>
-                <label class="field-label" for="invite-kind">Invite as</label>
-                <select class="field" id="invite-kind" name="inviteKind" style="max-width:16rem;margin:0 0 0.85rem;">
-                  <option value="gridiron" selected>GridIron 24 member</option>
-                  <option value="aaa">AAA member</option>
-                  <option value="social">Social / lounge only</option>
-                </select>
-                <div class="btn-row">
-                  <button type="button" class="btn btn-send" id="invite-send">Send Invites</button>
-                </div>
-              </div>
-              <div id="invite-links" class="invite-links" hidden></div>
-              <div class="list-gap" id="invites-list"><div class="msg">Loading invites…</div></div>
-
-              <div id="members-access-block" hidden>
-                <div class="section-head" style="margin-top:1.35rem;">
-                  <h3>Access</h3>
-                </div>
-                <div class="status-note" id="members-msg" role="status"></div>
-                <div class="members-toolbar" id="members-toolbar" hidden>
-                  <input class="field" id="members-search" type="search" placeholder="Search name, login, or email…" autocomplete="off" />
-                  <p class="members-count" id="members-count"></p>
-                </div>
-                <div id="members-list"><div class="msg">Loading members…</div></div>
-              </div>
-            </section>
-
-            <section class="admin-block" id="conference-owners">
-              <div class="section-head">
-                <h3>Email Owners</h3>
-              </div>
-              <p class="help">Select claimed franchises and send a branded mass email. Unclaimed teams need a Members → Access assignment first.</p>
-              <div class="status-note" id="owners-mail-status" role="status"></div>
-              <div class="status-note" id="owners-msg" role="status"></div>
-              <div class="owners-toolbar" id="owners-conf-picker" hidden>
-                <label class="field-label" for="owners-conference">Conference</label>
-                <select class="field" id="owners-conference" style="max-width:16rem;">
-                  <option value="detail">Detail Conference</option>
-                  <option value="overtime">Overtime Conference</option>
-                  <option value="aaa">AAA League</option>
-                </select>
-              </div>
-              <div class="owners-actions">
-                <button type="button" class="btn btn-secondary" id="owners-select-all">Select emailable</button>
-                <button type="button" class="btn btn-secondary" id="owners-clear">Clear</button>
-                <span class="owners-selected" id="owners-selected-count">0 selected</span>
-              </div>
-              <div id="owners-table"><div class="msg">Loading conference teams…</div></div>
-              <div class="invite-compose owners-compose">
-                <label class="field-label" for="owners-subject">Subject</label>
-                <input class="field field-box" id="owners-subject" type="text" maxlength="160" placeholder="Subject line" />
-                <label class="field-label" for="owners-headline">Headline</label>
-                <input class="field field-box" id="owners-headline" type="text" maxlength="120" placeholder="Email headline (optional)" />
-                <label class="field-label" for="owners-body">Message</label>
-                <textarea class="field field-area field-box" id="owners-body" rows="6" maxlength="8000" placeholder="Write your message to selected team owners…"></textarea>
-                <div class="btn-row">
-                  <button type="button" class="btn btn-secondary" id="owners-preview">Preview branded email</button>
-                  <button type="button" class="btn btn-send" id="owners-send">Send to selected</button>
-                </div>
-              </div>
             </section>
           </div>
         </section>
@@ -1558,7 +1656,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=154"></script>
+  <script src="/js/nav.js?v=156"></script>
   <script src="/js/conference-diff.js?v=5"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1996,6 +2094,26 @@
       return user.role || 'user';
     }
 
+    function revealInvites() {
+      revealPeopleTools();
+      const invites = document.getElementById('invites');
+      const jumpI = document.getElementById('jump-invites');
+      if (invites) invites.hidden = false;
+      if (jumpI) jumpI.hidden = false;
+    }
+
+    function revealAccountsAndInvites() {
+      revealInvites();
+      const members = document.getElementById('members');
+      const jumpM = document.getElementById('jump-members');
+      const overviewA = document.getElementById('overview-accounts');
+      if (members) members.hidden = false;
+      if (jumpM) jumpM.hidden = false;
+      if (overviewA) overviewA.hidden = false;
+      const block = document.getElementById('members-access-block');
+      if (block) block.hidden = false;
+    }
+
     function showMembersMsg(text, ok) {
       const el = document.getElementById('members-msg');
       el.textContent = text;
@@ -2154,6 +2272,75 @@
       if (overview) overview.classList.toggle('is-alert', total > 0);
     }
 
+    let membersLeagueFilter = 'all';
+
+    function memberLeagueKey(u) {
+      if (!u || u.approved === false) return null;
+      if (u.loungeOnly) return 'social';
+      if (u.membershipLeague === 'aaa') return 'aaa';
+      if (u.membershipLeague === 'gridiron') return 'gridiron';
+      if (u.siteOwner || u.canSwitchLeagues || u.role === 'commissioner') return 'gridiron';
+      return 'unassigned';
+    }
+
+    function membersCensus(list) {
+      const approved = (list || []).filter((u) => u.approved !== false);
+      const gi = approved.filter((u) => memberLeagueKey(u) === 'gridiron').length;
+      const aaa = approved.filter((u) => memberLeagueKey(u) === 'aaa').length;
+      const social = approved.filter((u) => memberLeagueKey(u) === 'social').length;
+      const unassigned = approved.filter((u) => memberLeagueKey(u) === 'unassigned').length;
+      const pending = (list || []).filter((u) => u.approved === false).length;
+      return {
+        gi,
+        aaa,
+        social,
+        unassigned,
+        pending,
+        giCap: 24,
+        aaaCap: 12,
+        giOpen: Math.max(0, 24 - gi),
+        aaaOpen: Math.max(0, 12 - aaa)
+      };
+    }
+
+    function paintMembersCensus(list) {
+      const stats = membersCensus(list);
+      const census = document.getElementById('members-census');
+      const overviewBlurb = document.getElementById('overview-accounts-blurb');
+      const jump = document.getElementById('jump-members');
+      if (overviewBlurb) {
+        overviewBlurb.textContent = `GridIron 24 ${stats.gi} / ${stats.giCap} · AAA ${stats.aaa} / ${stats.aaaCap}`;
+      }
+      if (jump) {
+        jump.textContent = `Registered Players · ${stats.gi + stats.aaa}`;
+      }
+      if (!census) return;
+      census.hidden = false;
+      const chip = (key, strong, label, extraCls = '') => `
+        <button type="button" data-members-filter="${esc(key)}" class="${membersLeagueFilter === key ? 'is-on' : ''} ${extraCls}">
+          <strong>${strong}</strong>
+          <span>${label}</span>
+        </button>`;
+      census.innerHTML = [
+        chip('gridiron', `${stats.gi} / ${stats.giCap}`, `GridIron 24 registered · ${stats.giOpen} open`),
+        chip('aaa', `${stats.aaa} / ${stats.aaaCap}`, `AAA registered · ${stats.aaaOpen} open`),
+        chip('social', String(stats.social), 'Social / lounge'),
+        stats.unassigned
+          ? chip('unassigned', String(stats.unassigned), 'Approved · no league yet', 'census-open')
+          : chip('all', String(stats.gi + stats.aaa + stats.social + stats.unassigned), 'All approved accounts'),
+        stats.pending
+          ? `<a href="#account-requests" class="census-open"><strong>${stats.pending}</strong><span>Awaiting approval</span></a>`
+          : ''
+      ].join('');
+      census.querySelectorAll('[data-members-filter]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const next = btn.getAttribute('data-members-filter') || 'all';
+          membersLeagueFilter = membersLeagueFilter === next && next !== 'all' ? 'all' : next;
+          if (window.__giMembersPayload) renderMembers(window.__giMembersPayload);
+        });
+      });
+    }
+
     function memberSearchHaystack(u) {
       return [u.name, u.loginName, u.email, u.claim?.teamName]
         .filter(Boolean)
@@ -2164,8 +2351,9 @@
     function filteredMembersList(list) {
       const q = String(document.getElementById('members-search')?.value || '').trim().toLowerCase();
       return list.filter((u) => {
-        // Pending join requests live under Requests → Account Requests.
+        if (membersLeagueFilter === 'pending') return u.approved === false;
         if (u.approved === false) return false;
+        if (membersLeagueFilter !== 'all' && memberLeagueKey(u) !== membersLeagueFilter) return false;
         if (!q) return true;
         return memberSearchHaystack(u).includes(q);
       });
@@ -2188,17 +2376,14 @@
       window.__giAdminLeagues = conferences;
       window.__giArchiveSeasons = payload.archiveSeasons || [];
       wireMembersToolbar();
+      paintMembersCensus(list);
       const toolbar = document.getElementById('members-toolbar');
       if (toolbar) toolbar.hidden = !list.length;
 
       const pendingCount = list.filter((u) => u.approved === false).length;
       window.__giPendingAccountCount = pendingCount;
-      setToolsBadge('nav-members-badge', pendingCount);
       setToolsBadge('nav-account-requests-badge', pendingCount);
-      setToolsBadge('overview-people-badge', pendingCount);
       updateRequestsOverviewBadge();
-      const peopleOverview = document.getElementById('overview-people');
-      if (peopleOverview) peopleOverview.classList.toggle('is-alert', pendingCount > 0);
 
       renderAccountRequests(list);
 
@@ -2214,10 +2399,21 @@
       );
       const countEl = document.getElementById('members-count');
       if (countEl) {
-        const approvedN = list.filter((u) => u.approved !== false).length;
-        countEl.textContent = visible.length === approvedN
-          ? `${approvedN} member${approvedN === 1 ? '' : 's'}`
-          : `Showing ${visible.length} of ${approvedN}`;
+        const stats = membersCensus(list);
+        const leagueLabel = membersLeagueFilter === 'gridiron'
+          ? 'GridIron 24'
+          : membersLeagueFilter === 'aaa'
+            ? 'AAA'
+            : membersLeagueFilter === 'social'
+              ? 'Social'
+              : membersLeagueFilter === 'unassigned'
+                ? 'unassigned'
+                : membersLeagueFilter === 'pending'
+                  ? 'pending'
+                  : 'approved';
+        countEl.textContent = membersLeagueFilter === 'all'
+          ? `${stats.gi} GridIron 24 · ${stats.aaa} AAA`
+          : `Showing ${visible.length} ${leagueLabel}`;
       }
 
       const pendingBanner = pendingCount
@@ -2617,11 +2813,7 @@
       }
       if (!res.ok) throw new Error(`Could not load members (${res.status})`);
       const data = await res.json();
-      revealPeopleTools();
-      document.getElementById('members').hidden = false;
-      document.getElementById('jump-members').hidden = false;
-      const block = document.getElementById('members-access-block');
-      if (block) block.hidden = false;
+      revealAccountsAndInvites();
       renderMembers(data);
     }
 
@@ -3471,10 +3663,7 @@
     }
 
     async function loadInvitesAdmin() {
-      revealPeopleTools();
-      const members = document.getElementById('members');
-      if (members) members.hidden = false;
-      document.getElementById('jump-members').hidden = false;
+      revealInvites();
       const res = await fetch('/api/invites', { cache: 'no-store' });
       if (!res.ok) throw new Error(`Could not load invites (${res.status})`);
       const data = await res.json();
@@ -4072,9 +4261,11 @@
       const group = document.getElementById('group-people');
       const nav = document.getElementById('nav-people');
       const overview = document.getElementById('overview-people');
+      const overviewA = document.getElementById('overview-accounts');
       if (group) group.hidden = false;
       if (nav) nav.hidden = false;
       if (overview) overview.hidden = false;
+      if (overviewA) overviewA.hidden = false;
     }
 
     function revealSeasonTools() {
@@ -4364,9 +4555,7 @@
       // Invites: commissioner + conference admin
       wireInvitesAdmin();
       try { await loadInvitesAdmin(); } catch (err) {
-        revealPeopleTools();
-        document.getElementById('members').hidden = false;
-        document.getElementById('jump-members').hidden = false;
+        revealAccountsAndInvites();
         document.getElementById('invites-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
       }
 
@@ -4408,10 +4597,7 @@
         try {
           await loadMembers();
         } catch (err) {
-          document.getElementById('members').hidden = false;
-          document.getElementById('jump-members').hidden = false;
-          const block = document.getElementById('members-access-block');
-          if (block) block.hidden = false;
+          revealAccountsAndInvites();
           document.getElementById('members-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
           const ar = document.getElementById('account-requests-list');
           if (ar) ar.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
@@ -4433,8 +4619,10 @@
           const aliases = {
             '#group-league-requests': '#group-requests',
             '#league-requests': '#league-requests',
-            '#invites-admin': '#members',
-            '#members': '#members'
+            '#invites-admin': '#invites',
+            '#members': '#members',
+            '#accounts': '#members',
+            '#active-accounts': '#members'
           };
           const target = aliases[hash] || hash;
           const el = document.querySelector(target);
@@ -4470,6 +4658,25 @@
       sections.forEach((sec) => observer.observe(sec));
       if (location.hash?.startsWith('#')) setActive(location.hash.slice(1));
       else if (sections[0]?.id) setActive(sections[0].id);
+
+      const find = document.getElementById('tools-find');
+      if (find && find.dataset.wired !== '1') {
+        find.dataset.wired = '1';
+        find.addEventListener('input', () => {
+          const q = String(find.value || '').trim().toLowerCase();
+          nav.querySelectorAll('.comm-nav-group').forEach((group) => {
+            if (group.hidden) return;
+            let any = false;
+            group.querySelectorAll('a[href^="#"]').forEach((a) => {
+              if (a.hidden) return;
+              const hit = !q || String(a.textContent || '').toLowerCase().includes(q);
+              a.classList.toggle('is-filtered-out', !hit);
+              if (hit) any = true;
+            });
+            group.classList.toggle('is-filtered-out', Boolean(q) && !any);
+          });
+        });
+      }
     }
   </script>
 </body>

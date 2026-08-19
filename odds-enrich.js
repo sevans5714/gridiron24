@@ -170,8 +170,16 @@ function normalizeEspnOddsBlob(raw) {
   }
 
   // pointSpread outcomes sometimes carry signed lines
-  const psAway = Number(raw.pointSpread?.away?.close?.line ?? raw.pointSpread?.away?.line);
-  const psHome = Number(raw.pointSpread?.home?.close?.line ?? raw.pointSpread?.home?.line);
+  const psAway = Number(
+    raw.pointSpread?.away?.close?.line
+    ?? raw.pointSpread?.away?.close?.point
+    ?? raw.pointSpread?.away?.line
+  );
+  const psHome = Number(
+    raw.pointSpread?.home?.close?.line
+    ?? raw.pointSpread?.home?.close?.point
+    ?? raw.pointSpread?.home?.line
+  );
   if (awaySpread == null && Number.isFinite(psAway)) awaySpread = psAway;
   if (homeSpread == null && Number.isFinite(psHome)) homeSpread = psHome;
 
