@@ -98,6 +98,7 @@
   let lastOrderHtml = '';
   let boardRound = 1;
   let lastAnnouncedRound = 0;
+  let roundBreakHold = null;
 
   function isMultiplayer() {
     return Boolean(roomId);
@@ -413,7 +414,10 @@
     }
     if (copy) {
       const slot = draftLive && !done ? currentSlot() : null;
-      if (slot) {
+      const headlineRound = roundBreakHold || (draftLive && !done ? boardRound : null);
+      if (headlineRound) {
+        copy.innerHTML = `<strong>Round ${esc(String(headlineRound))}</strong>`;
+      } else if (slot) {
         copy.innerHTML = `<strong>Round ${esc(String(slot.round))}</strong>`;
       } else {
         let headline = 'Start Draft';
@@ -3073,13 +3077,16 @@
     const wrap = document.getElementById('mock-cpu-announce');
     const card = document.getElementById('mock-cpu-announce-card');
     if (card) {
-      card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap');
+      card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade');
       card.style.removeProperty('--cpu-fly-x');
       card.style.removeProperty('--cpu-fly-y');
       card.removeAttribute('data-pos');
       card.innerHTML = '';
     }
-    if (wrap) wrap.hidden = true;
+    if (wrap) {
+      wrap.hidden = true;
+      wrap.classList.remove('is-recap-board');
+    }
   }
 
   function cpuPickAnnounceHtml(pick) {
@@ -3285,6 +3292,10 @@
   }
 
   function syncBoardRound() {
+    if (roundBreakHold) {
+      boardRound = roundBreakHold;
+      return;
+    }
     const pending = pendingRoundAnnounce();
     if (pending) {
       boardRound = pending === 1 ? 1 : Math.max(1, lastAnnouncedRound);
@@ -3310,6 +3321,7 @@
   function resetBoardAnnounce() {
     boardAnnounceGen += 1;
     boardAnnounceTail = Promise.resolve();
+    roundBreakHold = null;
     hideCpuPickAnnounce();
   }
 
@@ -3334,12 +3346,20 @@
     const mix = order.filter((pos) => counts[pos]).map((pos) => `${counts[pos]} ${pos}`).join(' · ');
     const rows = picks.map((pick) => {
       const meta = pickNflMeta(pick);
-      const last = splitPlayerName(pick.playerName).last || pick.playerName || 'Player';
+      const bits = splitPlayerName(pick.playerName);
+      const last = bits.last || pick.playerName || 'Player';
       const you = Number(pick.teamIndex) === Number(mock.seatIndex);
+      const logo = meta.logo
+        ? `<img class="logo" src="${esc(meta.logo)}" alt="" width="36" height="36" />`
+        : '';
       return `<li data-pos="${esc(meta.pos)}" class="${you ? 'is-you' : ''}">
         <span class="rk">${esc(String(pick.overall))}</span>
         <span class="pos">${esc(meta.pos)}</span>
-        <span class="nm">${esc(last)}</span>
+        <span class="who">
+          ${bits.first ? `<span class="fn">${esc(bits.first)}</span>` : ''}
+          <span class="nm">${esc(last)}</span>
+        </span>
+        ${logo}
         <span class="nfl">${esc(meta.nfl || '')}</span>
       </li>`;
     }).join('');
@@ -3355,10 +3375,11 @@
     const card = document.getElementById('mock-cpu-announce-card');
     if (!wrap || !card) return Promise.resolve();
     const epoch = ++cpuAnnounceEpoch;
-    card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap');
+    card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade');
     card.style.removeProperty('--cpu-fly-x');
     card.style.removeProperty('--cpu-fly-y');
     card.removeAttribute('data-pos');
+    wrap.classList.toggle('is-recap-board', recap);
     card.classList.add('is-round');
     if (recap) card.classList.add('is-recap');
     card.innerHTML = html;
@@ -3386,6 +3407,13 @@
       card.classList.add('is-fly');
     };
 
+    const fadeAway = () => {
+      if (epoch !== cpuAnnounceEpoch) return;
+      card.classList.remove('is-pop');
+      void card.offsetWidth;
+      card.classList.add('is-fade');
+    };
+
     return new Promise((resolve) => {
       let settled = false;
       const finish = () => {
@@ -3394,7 +3422,8 @@
         card.removeEventListener('animationend', onEnd);
         if (epoch === cpuAnnounceEpoch) {
           wrap.hidden = true;
-          card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap');
+          wrap.classList.remove('is-recap-board');
+          card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade');
           card.style.removeProperty('--cpu-fly-x');
           card.style.removeProperty('--cpu-fly-y');
         }
@@ -3402,8 +3431,8 @@
       };
       const onEnd = (e) => {
         if (e.target !== card) return;
-        if (e.animationName !== 'mock-cpu-announce-fly') return;
-        finish();
+        if (recap && e.animationName === 'mock-cpu-announce-fade') finish();
+        if (!recap && e.animationName === 'mock-cpu-announce-fly') finish();
       };
       card.addEventListener('animationend', onEnd);
       window.setTimeout(() => {
@@ -3411,9 +3440,10 @@
           finish();
           return;
         }
-        flyAway();
+        if (recap) fadeAway();
+        else flyAway();
       }, holdMs);
-      window.setTimeout(finish, holdMs + 800);
+      window.setTimeout(finish, holdMs + (recap ? 550 : 800));
     });
   }
 
@@ -3429,7 +3459,7 @@
     return playAnnounceCard({
       html: roundRecapHtml(round),
       recap: true,
-      holdMs: 3800
+      holdMs: 4600
     });
   }
 
@@ -3439,21 +3469,33 @@
       const next = pendingRoundAnnounce();
       if (!next) return played;
       const completed = lastAnnouncedRound >= 1 ? lastAnnouncedRound : null;
-      lastAnnouncedRound = next;
       if (completed) {
+        roundBreakHold = completed;
         boardRound = completed;
         lastOrderHtml = '';
         renderOrder();
+        paintMockStartBar();
         setMockStatus(`Round ${completed} complete`, true);
         await sleep(1400);
         await playRoundRecap(completed);
-        await sleep(400);
+        await sleep(350);
+        await playRoundAnnounce(next);
+        lastAnnouncedRound = next;
+        roundBreakHold = null;
+        boardRound = next;
+        lastOrderHtml = '';
+        renderOrder();
+        paintMockStartBar();
+        setMockStatus(`Round ${next}`, true);
+      } else {
+        lastAnnouncedRound = next;
+        boardRound = next;
+        lastOrderHtml = '';
+        renderOrder();
+        paintMockStartBar();
+        setMockStatus(`Round ${next}`, true);
+        await playRoundAnnounce(next);
       }
-      boardRound = next;
-      lastOrderHtml = '';
-      renderOrder();
-      setMockStatus(`Round ${next}`, true);
-      await playRoundAnnounce(next);
       played = true;
     }
   }

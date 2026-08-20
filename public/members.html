@@ -3928,6 +3928,14 @@
       padding: 5.5rem 1rem 0;
       pointer-events: none;
     }
+    .mock-cpu-announce.is-recap-board {
+      place-items: center;
+      padding: 1.1rem 1rem 1.4rem;
+      z-index: 42;
+      background:
+        radial-gradient(ellipse 70% 60% at 50% 42%, rgba(10, 18, 34, 0.55), transparent 70%),
+        rgba(3, 7, 14, 0.78);
+    }
     .mock-cpu-announce[hidden] { display: none !important; }
     .mock-cpu-announce-card {
       --pick-ink: var(--mo-gold);
@@ -4017,52 +4025,73 @@
       color: var(--mo-gold);
     }
     .mock-cpu-announce-card.is-recap {
-      min-width: min(32rem, 94vw);
-      max-width: min(42rem, 96vw);
-      padding: 1.1rem 1.35rem 1.2rem;
+      width: min(74rem, calc(100% - 0.5rem));
+      min-width: 0;
+      max-width: none;
+      min-height: min(36rem, calc(100dvh - 7.5rem));
+      padding: 1.6rem 1.8rem 1.7rem;
+      justify-items: stretch;
+      gap: 0.7rem;
+      border-radius: 1.35rem;
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--mo-gold) 38%, transparent),
+        0 28px 80px rgba(0, 0, 0, 0.55);
+    }
+    .mock-cpu-announce-card.is-recap .cpu-kicker {
+      font-size: 0.92rem;
+      letter-spacing: 0.22em;
     }
     .mock-cpu-announce-card.is-recap .cpu-name {
-      font-size: clamp(2.1rem, 6vw, 3.1rem);
+      font-size: clamp(3.4rem, 9vw, 6.2rem);
+      line-height: 0.88;
+      text-align: center;
     }
     .cpu-recap-mix {
       margin: 0;
+      text-align: center;
       font-family: "Oswald", sans-serif;
-      font-size: 0.72rem;
+      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: color-mix(in srgb, var(--mo-gold) 82%, #fff);
+      color: color-mix(in srgb, var(--mo-gold) 88%, #fff);
     }
     .cpu-recap-picks {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.18rem 0.9rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem 1.15rem;
       list-style: none;
       width: 100%;
-      margin: 0.45rem 0 0;
-      padding: 0;
+      margin: 0.35rem 0 0;
+      padding: 0.35rem 0 0;
+      border-top: 1px solid color-mix(in srgb, var(--mo-gold) 22%, transparent);
     }
     .cpu-recap-picks li {
       display: grid;
-      grid-template-columns: 1.7rem 2.35rem minmax(0, 1fr) auto;
-      align-items: baseline;
-      gap: 0.28rem;
+      grid-template-columns: 2.4rem 3.1rem minmax(0, 1fr) 2.1rem 2.6rem;
+      align-items: center;
+      gap: 0.4rem;
       min-width: 0;
-      font-family: "Oswald", sans-serif;
-      line-height: 1.15;
+      padding: 0.42rem 0.35rem;
+      border-radius: 0.45rem;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .cpu-recap-picks li.is-you {
+      background: color-mix(in srgb, var(--mo-gold) 16%, rgba(255, 255, 255, 0.04));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mo-gold) 40%, transparent);
     }
     .cpu-recap-picks li.is-you .nm { color: var(--mo-gold); }
     .cpu-recap-picks .rk {
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 0.95rem;
+      font-size: 1.55rem;
       letter-spacing: 0.04em;
-      color: color-mix(in srgb, var(--mo-gold) 70%, #fff);
+      color: color-mix(in srgb, var(--mo-gold) 78%, #fff);
       text-align: right;
     }
     .cpu-recap-picks .pos {
-      font-size: 0.68rem;
+      font-size: 0.92rem;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--pick-ink, var(--mo-gold));
     }
@@ -4073,32 +4102,74 @@
     .cpu-recap-picks li[data-pos="K"] .pos { color: var(--mock-k); }
     .cpu-recap-picks li[data-pos="D/ST"] .pos,
     .cpu-recap-picks li[data-pos="DST"] .pos { color: var(--mock-dst); }
+    .cpu-recap-picks .who {
+      min-width: 0;
+      display: grid;
+      justify-items: start;
+      gap: 0.04rem;
+    }
+    .cpu-recap-picks .fn {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: color-mix(in srgb, #e8eef8 70%, transparent);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
     .cpu-recap-picks .nm {
       min-width: 0;
+      max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 1.05rem;
-      letter-spacing: 0.04em;
+      font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+      letter-spacing: 0.05em;
+      line-height: 0.92;
       text-transform: uppercase;
-      color: #eef3fb;
+      color: #f4f7ff;
+    }
+    .cpu-recap-picks .logo {
+      width: 2rem;
+      height: 2rem;
+      object-fit: contain;
+      justify-self: center;
     }
     .cpu-recap-picks .nfl {
-      font-size: 0.62rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: color-mix(in srgb, var(--mo-text) 55%, transparent);
+      color: color-mix(in srgb, var(--mo-text) 62%, transparent);
+    }
+    @media (max-width: 960px) {
+      .cpu-recap-picks { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .cpu-recap-picks { grid-template-columns: 1fr; }
+      .mock-cpu-announce-card.is-recap { min-height: 0; }
     }
     html[data-theme="day"] .cpu-recap-mix { color: #7a5a12; }
+    html[data-theme="day"] .cpu-recap-picks li { background: rgba(15, 23, 42, 0.05); }
     html[data-theme="day"] .cpu-recap-picks .nm { color: #0f172a; }
+    html[data-theme="day"] .cpu-recap-picks .fn { color: #334155; }
     html[data-theme="day"] .cpu-recap-picks .rk { color: #8a6414; }
+    html[data-theme="day"] .mock-cpu-announce.is-recap-board {
+      background:
+        radial-gradient(ellipse 70% 60% at 50% 42%, rgba(255, 255, 255, 0.55), transparent 70%),
+        rgba(15, 23, 42, 0.28);
+    }
     .mock-cpu-announce-card.is-pop {
       animation: mock-cpu-announce-pop 0.42s cubic-bezier(0.22, 1.18, 0.36, 1);
     }
     .mock-cpu-announce-card.is-fly {
       animation: mock-cpu-announce-fly 0.62s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+    }
+    .mock-cpu-announce-card.is-fade {
+      animation: mock-cpu-announce-fade 0.45s ease forwards;
     }
     @keyframes mock-cpu-announce-pop {
       0% { transform: scale(0.55); opacity: 0.2; filter: brightness(1.4); }
@@ -4111,6 +4182,10 @@
         transform: translate(var(--cpu-fly-x, 0px), var(--cpu-fly-y, 140px)) scale(0.16);
         opacity: 0;
       }
+    }
+    @keyframes mock-cpu-announce-fade {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.985); opacity: 0; }
     }
     html[data-theme="day"] .mock-cpu-announce-card {
       background:
@@ -9549,7 +9624,7 @@
   </footer>
   <script src="/js/nav.js?v=157"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=91"></script>
+  <script src="/js/lounge-desk.js?v=92"></script>
   <script src="/js/lounge-games.js?v=38"></script>
   <script>
     const esc = (v = '') => String(v)
