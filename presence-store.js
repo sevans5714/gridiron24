@@ -48,8 +48,13 @@ function isOnline(userId) {
   return true;
 }
 
+function drop(userId) {
+  if (userId) presence.delete(userId);
+}
+
 module.exports = {
   touch,
+  drop,
   listOnline,
   isOnline,
   ONLINE_MS

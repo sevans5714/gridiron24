@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=122" />
-  <link rel="icon" href="/favicon.ico?v=122" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=122" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=122" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=123" />
+  <link rel="icon" href="/favicon.ico?v=123" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=123" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=123" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=154" />
   <style>
@@ -669,6 +669,8 @@
 
     .sgame {
       min-width: 0;
+      display: flex;
+      flex-direction: column;
       padding: 0.32rem 0.38rem 0.36rem;
       border: 1px solid rgba(126, 200, 255, 0.1);
       border-radius: 0.32rem;
@@ -718,6 +720,53 @@
         0 0 18px rgba(77, 255, 154, 0.45),
         0 0 32px rgba(77, 255, 154, 0.16);
     }
+    .sgame-sides { flex: 1 1 auto; }
+    .sgame-wager {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.02rem;
+      margin-top: auto;
+      padding-top: 0.18rem;
+    }
+    .sgame-wager-label {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mo-live);
+      line-height: 1.15;
+    }
+    .sgame-wager-open {
+      appearance: none;
+      width: auto;
+      height: auto;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--mo-gold-soft);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      line-height: 1.2;
+      cursor: pointer;
+    }
+    .sgame-wager-open:hover,
+    .sgame-wager-open:focus-visible {
+      color: var(--mo-gold);
+      background: transparent;
+      outline: 2px solid color-mix(in srgb, var(--mo-gold) 55%, transparent);
+      outline-offset: 2px;
+    }
+    html[data-theme="day"] .sgame-wager-label { color: #166534; }
+    html[data-theme="day"] .sgame-wager-open { color: #a16207; }
+    html[data-theme="day"] .sgame-wager-open:hover,
+    html[data-theme="day"] .sgame-wager-open:focus-visible { color: #854d0e; }
     .sgame.is-nolines .sgame-line.is-blank {
       color: rgba(155, 170, 188, 0.45);
     }
@@ -2132,22 +2181,32 @@
       border: 0;
       background: transparent;
     }
-    .member-league {
+    .member-avatar {
       width: 1.45rem;
       height: 1.45rem;
       object-fit: contain;
       flex: 0 0 auto;
+      border-radius: 0.2rem;
       filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
     }
-    .member-league.is-blank {
-      width: 1.45rem;
-      height: 1.45rem;
-      flex: 0 0 auto;
-      border-radius: 0.15rem;
-      background: rgba(126, 200, 255, 0.08);
-      border: 1px solid rgba(126, 200, 255, 0.12);
+    .member-avatar.is-fallback {
+      display: grid;
+      place-items: center;
+      background: rgba(126, 200, 255, 0.12);
+      border: 1px solid rgba(126, 200, 255, 0.16);
+      color: var(--mo-text);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      filter: none;
     }
-    .member-row .name {
+    .member-id {
+      min-width: 0;
+      display: grid;
+      gap: 0.02rem;
+    }
+    .member-row .team {
       font-family: "Oswald", sans-serif;
       font-weight: 600;
       font-size: 0.92rem;
@@ -2159,8 +2218,24 @@
       min-width: 0;
       line-height: 1.2;
     }
-    .member-row.is-you .name {
+    .member-row .name {
+      font-family: "Oswald", sans-serif;
+      font-weight: 500;
+      font-size: 0.68rem;
+      letter-spacing: 0.04em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--mo-muted);
+      min-width: 0;
+      line-height: 1.15;
+    }
+    .member-row.is-you .team {
       color: var(--mo-blue-hot);
+    }
+    html[data-theme="day"] .member-avatar.is-fallback {
+      background: rgba(20, 24, 31, 0.06);
+      border-color: rgba(20, 24, 31, 0.12);
     }
 
     .flash {
@@ -3168,6 +3243,96 @@
     .lounge-section.is-mock .mock-settings-gear {
       display: block;
     }
+    .lounge-section.is-mock .mock-board-btn {
+      appearance: none;
+      flex: 0 0 auto;
+      height: 2.15rem;
+      margin: -0.35rem 0 0;
+      padding: 0 0.9rem;
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 52%, var(--mo-line));
+      border-radius: 0.5rem;
+      background: color-mix(in srgb, var(--mo-gold) 16%, var(--mo-surface));
+      color: var(--mo-gold);
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .lounge-section.is-mock .mock-board-btn:hover,
+    .lounge-section.is-mock .mock-board-btn[aria-pressed="true"] {
+      border-color: var(--mo-gold);
+      background: color-mix(in srgb, var(--mo-gold) 30%, var(--mo-surface));
+      color: #fff8e8;
+    }
+    .lounge-section.is-mock.is-board-open .mock-section-label {
+      z-index: 48;
+    }
+    .mock-board-view {
+      position: absolute;
+      inset: 0;
+      z-index: 46;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 3.35rem 0.45rem 0.5rem;
+      background: rgba(3, 7, 14, 0.92);
+    }
+    .mock-board-view[hidden] { display: none !important; }
+    .mock-board-view-bar {
+      display: flex;
+      justify-content: flex-end;
+      flex: 0 0 auto;
+    }
+    .mock-board-view-close {
+      appearance: none;
+      height: 2.15rem;
+      padding: 0 0.95rem;
+      border-radius: 0.5rem;
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 55%, var(--mo-line));
+      background: color-mix(in srgb, var(--mo-gold) 22%, var(--mo-surface));
+      color: #fff8e8;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .mock-board-view-close:hover {
+      background: color-mix(in srgb, var(--mo-gold) 38%, var(--mo-surface));
+    }
+    .mock-board-view-card {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.55rem 0.55rem 0.6rem;
+      border-radius: 0.55rem;
+      overflow: hidden;
+      background: linear-gradient(180deg, #1a1c22 0%, #0d1016 100%);
+      border: 1px solid color-mix(in srgb, var(--mo-line) 80%, #000);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 22px 70px rgba(0, 0, 0, 0.55);
+    }
+    .mock-board-view-card .cpu-recap-board {
+      flex: 1;
+    }
+    html[data-theme="day"] .lounge-section.is-mock .mock-board-btn {
+      color: #a16207;
+      background: #fff4d4;
+      border-color: rgba(161, 98, 7, 0.35);
+    }
+    html[data-theme="day"] .mock-board-view {
+      background: rgba(15, 23, 42, 0.28);
+    }
+    html[data-theme="day"] .mock-board-view-card {
+      background: linear-gradient(180deg, #ece7dc 0%, #d8d2c6 100%);
+      border-color: rgba(20, 24, 31, 0.18);
+    }
     .mock-start-bar {
       display: grid;
       grid-template-columns: minmax(16rem, 1.2fr) minmax(0, 1fr) auto;
@@ -3919,6 +4084,16 @@
       border-radius: 0.4rem;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
     }
+    .mock-order.is-recap-hold {
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        inset 0 0 0 2px color-mix(in srgb, var(--mo-gold) 78%, transparent);
+    }
+    .mock-order.is-recap-hold .mock-seat-chip.is-clock,
+    .mock-order.is-recap-hold .mock-seat-chip.is-selecting,
+    .mock-order.is-recap-hold .mock-seat-chip.is-next {
+      box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.1), inset -1px 0 0 rgba(0, 0, 0, 0.35);
+    }
     .mock-cpu-announce {
       position: absolute;
       inset: 0;
@@ -3927,14 +4102,6 @@
       place-items: start center;
       padding: 5.5rem 1rem 0;
       pointer-events: none;
-    }
-    .mock-cpu-announce.is-recap-board {
-      place-items: center;
-      padding: 1.1rem 1rem 1.4rem;
-      z-index: 42;
-      background:
-        radial-gradient(ellipse 70% 60% at 50% 42%, rgba(10, 18, 34, 0.55), transparent 70%),
-        rgba(3, 7, 14, 0.78);
     }
     .mock-cpu-announce[hidden] { display: none !important; }
     .mock-cpu-announce-card {
@@ -4024,143 +4191,315 @@
       letter-spacing: 0.06em;
       color: var(--mo-gold);
     }
+    .mock-cpu-announce.is-recap-board {
+      place-items: stretch;
+      padding: 0.4rem 0.4rem 0.5rem;
+      z-index: 42;
+      background: rgba(3, 7, 14, 0.9);
+    }
     .mock-cpu-announce-card.is-recap {
-      width: min(74rem, calc(100% - 0.5rem));
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.4rem;
+      width: 100%;
+      height: 100%;
       min-width: 0;
       max-width: none;
-      min-height: min(36rem, calc(100dvh - 7.5rem));
-      padding: 1.6rem 1.8rem 1.7rem;
-      justify-items: stretch;
-      gap: 0.7rem;
-      border-radius: 1.35rem;
+      padding: 0.55rem 0.55rem 0.6rem;
+      border-radius: 0.55rem;
+      text-align: left;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, #1a1c22 0%, #0d1016 100%);
+      border: 1px solid color-mix(in srgb, var(--mo-line) 80%, #000);
       box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--mo-gold) 38%, transparent),
-        0 28px 80px rgba(0, 0, 0, 0.55);
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 22px 70px rgba(0, 0, 0, 0.55);
     }
-    .mock-cpu-announce-card.is-recap .cpu-kicker {
-      font-size: 0.92rem;
-      letter-spacing: 0.22em;
+    .mock-cpu-announce-card.is-recap-in {
+      animation: mock-cpu-recap-in 0.32s ease both;
     }
-    .mock-cpu-announce-card.is-recap .cpu-name {
-      font-size: clamp(3.4rem, 9vw, 6.2rem);
-      line-height: 0.88;
-      text-align: center;
+    @keyframes mock-cpu-recap-in {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
     }
-    .cpu-recap-mix {
+    .cpu-recap-title {
+      flex: 0 0 auto;
       margin: 0;
+      padding: 0.05rem 0 0.15rem;
       text-align: center;
-      font-family: "Oswald", sans-serif;
-      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: color-mix(in srgb, var(--mo-gold) 88%, #fff);
-    }
-    .cpu-recap-picks {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.55rem 1.15rem;
-      list-style: none;
-      width: 100%;
-      margin: 0.35rem 0 0;
-      padding: 0.35rem 0 0;
-      border-top: 1px solid color-mix(in srgb, var(--mo-gold) 22%, transparent);
-    }
-    .cpu-recap-picks li {
-      display: grid;
-      grid-template-columns: 2.4rem 3.1rem minmax(0, 1fr) 2.1rem 2.6rem;
-      align-items: center;
-      gap: 0.4rem;
-      min-width: 0;
-      padding: 0.42rem 0.35rem;
-      border-radius: 0.45rem;
-      background: rgba(255, 255, 255, 0.04);
-    }
-    .cpu-recap-picks li.is-you {
-      background: color-mix(in srgb, var(--mo-gold) 16%, rgba(255, 255, 255, 0.04));
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mo-gold) 40%, transparent);
-    }
-    .cpu-recap-picks li.is-you .nm { color: var(--mo-gold); }
-    .cpu-recap-picks .rk {
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 1.55rem;
-      letter-spacing: 0.04em;
-      color: color-mix(in srgb, var(--mo-gold) 78%, #fff);
-      text-align: right;
-    }
-    .cpu-recap-picks .pos {
-      font-size: 0.92rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      font-size: clamp(1.35rem, 3.2vw, 2.05rem);
+      letter-spacing: 0.14em;
+      line-height: 1;
       text-transform: uppercase;
-      color: var(--pick-ink, var(--mo-gold));
+      color: #f4f1ea;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
     }
-    .cpu-recap-picks li[data-pos="QB"] .pos { color: var(--mock-qb); }
-    .cpu-recap-picks li[data-pos="RB"] .pos { color: var(--mock-rb); }
-    .cpu-recap-picks li[data-pos="WR"] .pos { color: var(--mock-wr); }
-    .cpu-recap-picks li[data-pos="TE"] .pos { color: var(--mock-te); }
-    .cpu-recap-picks li[data-pos="K"] .pos { color: var(--mock-k); }
-    .cpu-recap-picks li[data-pos="D/ST"] .pos,
-    .cpu-recap-picks li[data-pos="DST"] .pos { color: var(--mock-dst); }
-    .cpu-recap-picks .who {
-      min-width: 0;
+    .cpu-recap-board {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 0.15rem;
+      background: #0a0c10;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0.28rem;
+    }
+    .cpu-recap-row {
       display: grid;
-      justify-items: start;
-      gap: 0.04rem;
+      grid-template-columns: 1.85rem repeat(var(--mock-seats, 12), minmax(0, 1fr)) 1.85rem;
+      column-gap: 5px;
+      align-items: stretch;
     }
-    .cpu-recap-picks .fn {
+    .cpu-recap-row.is-head {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      margin-bottom: 2px;
+    }
+    .cpu-recap-row.is-now {
+      position: relative;
+      z-index: 3;
+      padding: 5px 4px;
+      margin: 3px 0;
+      border-radius: 0.28rem;
+      background: color-mix(in srgb, var(--mo-gold) 12%, transparent);
+      outline: 2px solid var(--mo-gold);
+      outline-offset: 0;
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--mo-gold) 40%, #000),
+        0 0 16px color-mix(in srgb, var(--mo-gold) 32%, transparent);
+    }
+    .cpu-recap-row.is-now .last:not(.is-empty) {
+      outline: 2px solid #fff8e4;
+      outline-offset: 1px;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -3px 5px rgba(0, 0, 0, 0.28),
+        0 1px 0 rgba(255, 255, 255, 0.18),
+        0 2px 0 #1c1c1c,
+        0 4px 0 #111,
+        0 6px 0 #0a0a0a,
+        0 0 0 3px var(--mo-gold),
+        0 10px 16px rgba(0, 0, 0, 0.5);
+    }
+    .cpu-recap-rn {
+      display: grid;
+      place-items: center;
       font-family: "Oswald", sans-serif;
       font-size: 0.72rem;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 0.04em;
-      color: color-mix(in srgb, #e8eef8 70%, transparent);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
+      color: rgba(232, 196, 92, 0.78);
     }
-    .cpu-recap-picks .nm {
+    .cpu-recap-row.is-now .cpu-recap-rn {
+      color: var(--mo-gold);
+    }
+    .cpu-recap-head {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.28rem;
       min-width: 0;
+      padding: 0.32rem 0.2rem 0.34rem;
+      background: #f4f1ea;
+      border-bottom: 2px solid #111;
+      box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.12), inset -1px 0 0 rgba(0, 0, 0, 0.12);
+    }
+    .cpu-recap-head.is-alt { background: #ebe6db; }
+    .cpu-recap-head.is-you {
+      background: #fff6d8;
+      border-bottom-color: var(--mo-gold);
+    }
+    .cpu-recap-head .nm {
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      font-family: "Oswald", sans-serif;
+      font-size: clamp(0.56rem, 0.95vw, 0.78rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #16181d;
+    }
+    .cpu-recap-avatar,
+    .seat-chip-avatar,
+    .ot-avatar,
+    .complete-team-avatar {
+      width: 1.05rem;
+      height: 1.05rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+      border-radius: 0.12rem;
+    }
+    .cpu-recap-avatar {
+      width: 0.95rem;
+      height: 0.95rem;
+    }
+    .cpu-recap-head.is-you .nm { color: #7a5b12; }
+    .cpu-recap-cell { min-width: 0; }
+    .cpu-recap-board .last {
+      --pick-ink: #8b97a8;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      align-items: stretch;
+      justify-items: stretch;
+      gap: 0.06rem;
+      overflow: visible;
+      width: 100%;
+      max-width: 100%;
+      min-height: 3.55rem;
+      margin: 0;
+      padding: 0;
+      color: #0b0d12;
+      text-align: center;
+    }
+    .cpu-recap-board .last:not(.is-empty) {
+      padding: 0.28rem 0.32rem 0.28rem;
+      border-radius: 0.22rem;
+      border: 1px solid rgba(0, 0, 0, 0.38);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0.08) 22%, transparent 48%),
+        linear-gradient(180deg,
+          color-mix(in srgb, #fff 18%, var(--pick-ink)) 0%,
+          var(--pick-ink) 52%,
+          color-mix(in srgb, #000 24%, var(--pick-ink)) 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -3px 5px rgba(0, 0, 0, 0.28),
+        0 1px 0 rgba(255, 255, 255, 0.18),
+        0 2px 0 #1c1c1c,
+        0 4px 0 #111,
+        0 6px 0 #0a0a0a,
+        0 10px 16px rgba(0, 0, 0, 0.5);
+    }
+    .cpu-recap-board .last[data-pos="QB"] { --pick-ink: var(--mock-qb); }
+    .cpu-recap-board .last[data-pos="RB"] { --pick-ink: var(--mock-rb); }
+    .cpu-recap-board .last[data-pos="WR"] { --pick-ink: var(--mock-wr); }
+    .cpu-recap-board .last[data-pos="TE"] { --pick-ink: var(--mock-te); }
+    .cpu-recap-board .last[data-pos="K"] { --pick-ink: var(--mock-k); }
+    .cpu-recap-board .last[data-pos="D/ST"],
+    .cpu-recap-board .last[data-pos="DST"] { --pick-ink: var(--mock-dst); }
+    .cpu-recap-board .last.is-empty {
+      min-height: 3.55rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+    }
+    .cpu-recap-board .last .pick-meta {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.16rem;
+      min-width: 0;
+    }
+    .cpu-recap-board .last .pick-pos {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      text-transform: uppercase;
+      color: #0b0d12;
+      text-align: left;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+    .cpu-recap-board .last .pick-first {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1;
+      text-transform: none;
+      color: #0b0d12;
+      text-align: center;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+    .cpu-recap-board .last .pick-nfl-logo {
+      display: block;
+      width: 1.05rem;
+      height: 1.05rem;
+      object-fit: contain;
+    }
+    .cpu-recap-board .last .pick-nfl-abbr {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.56rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #0b0d12;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+    .cpu-recap-board .last .pick-last {
+      display: block;
+      overflow: hidden;
+      min-width: 0;
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: clamp(1.35rem, 2.4vw, 1.9rem);
-      letter-spacing: 0.05em;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
       line-height: 0.92;
       text-transform: uppercase;
-      color: #f4f7ff;
+      color: #05070b;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
     }
-    .cpu-recap-picks .logo {
-      width: 2rem;
-      height: 2rem;
-      object-fit: contain;
-      justify-self: center;
-    }
-    .cpu-recap-picks .nfl {
-      font-size: 0.78rem;
+    .cpu-recap-board .last .pick-bye {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.56rem;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.06em;
+      line-height: 1;
       text-transform: uppercase;
-      color: color-mix(in srgb, var(--mo-text) 62%, transparent);
+      color: #0b0d12;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
     }
-    @media (max-width: 960px) {
-      .cpu-recap-picks { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 720px) {
+      .cpu-recap-row {
+        grid-template-columns: 1.45rem repeat(var(--mock-seats, 12), minmax(4.4rem, 1fr)) 1.45rem;
+        min-width: calc(2.9rem + (var(--mock-seats, 12) * 4.65rem));
+      }
     }
-    @media (max-width: 640px) {
-      .cpu-recap-picks { grid-template-columns: 1fr; }
-      .mock-cpu-announce-card.is-recap { min-height: 0; }
+    html[data-theme="day"] .mock-cpu-announce-card.is-recap {
+      background: linear-gradient(180deg, #ece7dc 0%, #d8d2c6 100%);
+      border-color: rgba(20, 24, 31, 0.18);
     }
-    html[data-theme="day"] .cpu-recap-mix { color: #7a5a12; }
-    html[data-theme="day"] .cpu-recap-picks li { background: rgba(15, 23, 42, 0.05); }
-    html[data-theme="day"] .cpu-recap-picks .nm { color: #0f172a; }
-    html[data-theme="day"] .cpu-recap-picks .fn { color: #334155; }
-    html[data-theme="day"] .cpu-recap-picks .rk { color: #8a6414; }
     html[data-theme="day"] .mock-cpu-announce.is-recap-board {
-      background:
-        radial-gradient(ellipse 70% 60% at 50% 42%, rgba(255, 255, 255, 0.55), transparent 70%),
-        rgba(15, 23, 42, 0.28);
+      background: rgba(15, 23, 42, 0.28);
+    }
+    html[data-theme="day"] .cpu-recap-title { color: #1c1916; }
+    html[data-theme="day"] .cpu-recap-board { background: #1c1c1a; }
+    html[data-theme="day"] .cpu-recap-head { background: #f6f1e6; }
+    html[data-theme="day"] .cpu-recap-head.is-alt { background: #efe9dc; }
+    html[data-theme="day"] .cpu-recap-head.is-you { background: #fff4d4; }
+    html[data-theme="day"] .cpu-recap-row.is-now {
+      background: rgba(161, 98, 7, 0.12);
+      outline-color: #a16207;
+    }
+    html[data-theme="day"] .cpu-recap-row.is-now .last:not(.is-empty) {
+      outline-color: #fff;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -3px 5px rgba(0, 0, 0, 0.28),
+        0 1px 0 rgba(255, 255, 255, 0.18),
+        0 2px 0 #1c1c1c,
+        0 4px 0 #111,
+        0 6px 0 #0a0a0a,
+        0 0 0 3px #a16207,
+        0 10px 16px rgba(0, 0, 0, 0.5);
+    }
+    html[data-theme="day"] .cpu-recap-board .last.is-empty {
+      background: rgba(20, 24, 31, 0.08);
+      border-color: rgba(20, 24, 31, 0.14);
     }
     .mock-cpu-announce-card.is-pop {
       animation: mock-cpu-announce-pop 0.42s cubic-bezier(0.22, 1.18, 0.36, 1);
@@ -4246,9 +4585,10 @@
       font-weight: 400;
       line-height: 0.92;
       overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.28rem;
       width: 100%;
       max-width: 100%;
       min-width: 0;
@@ -4260,6 +4600,17 @@
       text-transform: uppercase;
       text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
       border-bottom: 2px solid rgba(232, 196, 92, 0.42);
+    }
+    .mock-order .mock-seat-chip .nm-text {
+      min-width: 0;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .mock-order .mock-seat-chip .seat-chip-avatar {
+      width: 1.15rem;
+      height: 1.15rem;
     }
     .mock-order .mock-seat-chip.is-you .nm { color: var(--mo-gold); }
     .mock-order .mock-seat-chip.is-clock .nm { color: #d8ffe8; }
@@ -5110,36 +5461,40 @@
     }
     .mock-injury {
       appearance: none;
-      border: 0;
-      background: none;
-      color: #ef4444;
-      height: auto;
-      border-radius: 0;
+      border: 1px solid rgba(15, 23, 42, 0.22);
+      background: #fff;
+      color: #dc2626;
+      width: 1.14rem;
+      height: 1.14rem;
+      border-radius: 0.2rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0;
       padding: 0;
-      margin: 0 0 0 0.15rem;
+      margin: 0 0 0 0.2rem;
       cursor: pointer;
       flex: 0 0 auto;
       position: relative;
       z-index: 2;
-      box-shadow: none;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.35),
+        0 1px 2px rgba(0, 0, 0, 0.45);
       vertical-align: middle;
       line-height: 1;
     }
     .mock-injury:hover {
-      background: none;
-      color: #ff6b6b;
+      background: #fff;
+      color: #b91c1c;
+      transform: scale(1.08);
     }
     .mock-injury:focus-visible {
-      outline: 2px solid #ff8f8f;
+      outline: 2px solid #f87171;
       outline-offset: 2px;
     }
     .mock-injury-cross {
-      width: 0.78rem;
-      height: 0.78rem;
+      width: 0.72rem;
+      height: 0.72rem;
       position: relative;
       display: block;
       pointer-events: none;
@@ -5149,19 +5504,19 @@
       content: "";
       position: absolute;
       background: currentColor;
-      border-radius: 0;
+      border-radius: 0.04rem;
     }
     .mock-injury-cross::before {
       left: 50%;
       top: 0;
-      width: 0.2rem;
+      width: 0.24rem;
       height: 100%;
       transform: translateX(-50%);
     }
     .mock-injury-cross::after {
       top: 50%;
       left: 0;
-      height: 0.2rem;
+      height: 0.24rem;
       width: 100%;
       transform: translateY(-50%);
     }
@@ -5172,9 +5527,22 @@
     .mock-injury[data-status="SUS"],
     .mock-injury[data-status="Q"],
     .mock-injury[data-status="D"] {
-      background: none;
-      color: #ef4444;
-      box-shadow: none;
+      background: #fff;
+      color: #dc2626;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.35),
+        0 1px 2px rgba(0, 0, 0, 0.45);
+    }
+    html[data-theme="day"] .mock-injury,
+    html[data-theme="day"] .mock-injury[data-status="O"],
+    html[data-theme="day"] .mock-injury[data-status="IR"],
+    html[data-theme="day"] .mock-injury[data-status="PUP"],
+    html[data-theme="day"] .mock-injury[data-status="SUS"],
+    html[data-theme="day"] .mock-injury[data-status="Q"],
+    html[data-theme="day"] .mock-injury[data-status="D"] {
+      background: #fff;
+      border-color: rgba(15, 23, 42, 0.28);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.16);
     }
     #mock-injury-dialog,
     #mock-profile-dialog,
@@ -5756,7 +6124,7 @@
     .mock-complete-team-head {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: center;
       gap: 0.35rem;
       padding: 0.4rem 0.5rem;
       border-bottom: 1px solid var(--mo-line);
@@ -5766,6 +6134,15 @@
       font-family: "Oswald", sans-serif;
       font-size: 0.74rem;
       font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-width: 0;
+    }
+    .mock-complete-team-head .complete-team-avatar {
+      width: 1.15rem;
+      height: 1.15rem;
+    }
       letter-spacing: 0.04em;
       text-transform: uppercase;
       min-width: 0;
@@ -6709,7 +7086,7 @@
       display: flex;
       justify-content: space-between;
       gap: 0.35rem;
-      align-items: baseline;
+      align-items: center;
       font-family: "Oswald", sans-serif;
       font-size: 0.86rem;
       font-weight: 700;
@@ -6725,6 +7102,13 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       color: #f4f7ff;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .mock-other-team .ot-avatar {
+      width: 1.05rem;
+      height: 1.05rem;
     }
     .mock-other-team.is-clock .ot-name > span:first-child {
       color: #d8ffe8;
@@ -8177,11 +8561,41 @@
       color: var(--mo-casino);
       font-weight: 400;
     }
-    .degen-slip-row, .degen-lb-row {
-      padding: 0.45rem 0;
-      border-bottom: 1px solid color-mix(in srgb, var(--mo-casino) 10%, transparent);
-      font-size: 0.86rem;
+    .degen-slip-row.is-wager-focus {
+      border-radius: 0.35rem;
+      padding-left: 0.4rem;
+      padding-right: 0.4rem;
+      background: color-mix(in srgb, var(--mo-good) 14%, transparent);
+      outline: 2px solid color-mix(in srgb, var(--mo-good) 80%, #fff);
+      box-shadow: 0 0 16px color-mix(in srgb, var(--mo-good) 28%, transparent);
     }
+    .degen-open-legs {
+      margin: 0.22rem 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.18rem;
+    }
+    .degen-open-leg {
+      font-size: 0.72rem;
+      color: var(--mo-muted);
+      line-height: 1.35;
+    }
+    .degen-open-leg strong {
+      display: block;
+      color: var(--mo-text);
+      font-weight: 650;
+      font-size: 0.78rem;
+    }
+    .degen-locked-tag {
+      color: var(--mo-gold-soft);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.58rem;
+      font-weight: 700;
+    }
+    .degen-ticket .degen-open-leg strong { color: var(--slip-ink, #1a1a1a); }
+    .degen-ticket .degen-locked-tag { color: #8a6a12; }
     .degen-slip-row .top, .degen-lb-row {
       display: flex;
       justify-content: space-between;
@@ -8211,7 +8625,228 @@
       color: var(--slip-mute, #5c5348);
     }
     .degen-slip-row .won { color: var(--mo-good); }
-    .degen-slip-row .lost { color: #ff8f8f; }
+    .degen-slip-row .lost { color: #ff4d4d; }
+    .degen-slip-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.55rem;
+    }
+    .degen-result-stamp {
+      flex: 0 0 auto;
+      display: inline-block;
+      padding: 0.16rem 0.48rem;
+      border: 1px solid transparent;
+      font-family: "Oswald", "Bebas Neue", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+    .degen-result-stamp.is-winner {
+      color: var(--mo-good);
+      border-color: color-mix(in srgb, var(--mo-good) 72%, transparent);
+      background: color-mix(in srgb, var(--mo-good) 16%, transparent);
+      box-shadow: 0 0 14px color-mix(in srgb, var(--mo-good) 28%, transparent);
+    }
+    .degen-result-stamp.is-lost {
+      color: #ff4d4d;
+      border-color: color-mix(in srgb, #ff4d4d 75%, transparent);
+      background: color-mix(in srgb, #ff4d4d 14%, transparent);
+      box-shadow: 0 0 14px color-mix(in srgb, #ff4d4d 22%, transparent);
+    }
+    .degen-result-stamp.is-push {
+      color: var(--mo-gold-soft);
+      border-color: color-mix(in srgb, var(--mo-gold) 55%, transparent);
+      background: color-mix(in srgb, var(--mo-gold) 12%, transparent);
+    }
+    .degen-slip-row.is-won {
+      padding: 0.45rem 0.5rem 0.5rem;
+      border: 1px solid color-mix(in srgb, var(--mo-good) 38%, transparent);
+      background: color-mix(in srgb, var(--mo-good) 8%, transparent);
+      box-shadow: inset 3px 0 0 var(--mo-good);
+    }
+    .degen-slip-row.is-lost {
+      padding: 0.45rem 0.5rem 0.5rem;
+      border: 1px solid color-mix(in srgb, #ff4d4d 40%, transparent);
+      background: color-mix(in srgb, #ff4d4d 8%, transparent);
+      box-shadow: inset 3px 0 0 #ff4d4d;
+    }
+    .degen-slip-row.is-push {
+      padding: 0.45rem 0.5rem 0.5rem;
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 32%, transparent);
+      background: color-mix(in srgb, var(--mo-gold) 7%, transparent);
+      box-shadow: inset 3px 0 0 var(--mo-gold);
+    }
+    .degen-slip-row.is-won + .degen-slip-row,
+    .degen-slip-row.is-lost + .degen-slip-row,
+    .degen-slip-row.is-push + .degen-slip-row {
+      margin-top: 0.45rem;
+    }
+    .degen-slip-row.is-won.is-locked,
+    .degen-slip-row.is-lost.is-locked,
+    .degen-slip-row.is-push.is-locked {
+      opacity: 1;
+      border-left: 0;
+    }
+    html[data-theme="day"] .degen-result-stamp.is-lost,
+    html[data-theme="day"] .degen-slip-row .lost { color: #b91c1c; }
+    html[data-theme="day"] .degen-slip-row.is-lost {
+      border-color: rgba(185, 28, 28, 0.28);
+      background: rgba(185, 28, 28, 0.06);
+      box-shadow: inset 3px 0 0 #b91c1c;
+    }
+    html[data-theme="day"] .degen-result-stamp.is-lost {
+      border-color: rgba(185, 28, 28, 0.45);
+      background: rgba(185, 28, 28, 0.08);
+      box-shadow: none;
+    }
+    #settle-recap-dialog {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      max-width: min(42rem, calc(100vw - 1.4rem));
+      width: 42rem;
+    }
+    #settle-recap-dialog::backdrop {
+      background: rgba(2, 6, 14, 0.78);
+      backdrop-filter: blur(8px);
+    }
+    .settle-recap-sheet {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 42%, transparent);
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--mo-good) 18%, transparent), transparent 58%),
+        radial-gradient(ellipse 70% 45% at 100% 110%, color-mix(in srgb, #ff4d4d 14%, transparent), transparent 55%),
+        linear-gradient(180deg, #0b1410 0%, #07100c 55%, #050b09 100%);
+      box-shadow:
+        0 0 0 1px rgba(232, 196, 90, 0.18),
+        0 28px 80px rgba(0, 0, 0, 0.55);
+      color: var(--mo-text);
+    }
+    .settle-recap-hero {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      padding: 1.1rem 1.15rem 0.85rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--mo-gold) 22%, transparent);
+    }
+    .settle-recap-hero img {
+      width: 3.2rem;
+      height: 3.2rem;
+      object-fit: contain;
+    }
+    .settle-recap-kicker {
+      margin: 0;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--mo-gold-soft);
+    }
+    .settle-recap-hero h3 {
+      margin: 0.12rem 0 0;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 1.85rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 400;
+    }
+    .settle-recap-tag {
+      margin: 0.2rem 0 0;
+      color: var(--mo-muted);
+      font-size: 0.88rem;
+    }
+    .settle-recap-close {
+      margin-left: auto;
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--mo-gold-soft);
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .settle-recap-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.45rem;
+      padding: 0.8rem 1.15rem 0.35rem;
+    }
+    .settle-recap-stat {
+      padding: 0.55rem 0.6rem;
+      border: 1px solid color-mix(in srgb, var(--mo-casino) 22%, transparent);
+      background: rgba(0, 0, 0, 0.22);
+      text-align: center;
+    }
+    .settle-recap-stat em {
+      display: block;
+      font-style: normal;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mo-muted);
+    }
+    .settle-recap-stat strong {
+      display: block;
+      margin-top: 0.12rem;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 1.35rem;
+      letter-spacing: 0.04em;
+    }
+    .settle-recap-stat.is-win strong { color: var(--mo-good); }
+    .settle-recap-stat.is-lost strong { color: #ff4d4d; }
+    .settle-recap-stat.is-net strong.is-up { color: var(--mo-good); }
+    .settle-recap-stat.is-net strong.is-down { color: #ff4d4d; }
+    .settle-recap-list {
+      margin: 0.35rem 1.15rem 0.7rem;
+      max-height: min(48vh, 26rem);
+      overflow: auto;
+      display: grid;
+      gap: 0.45rem;
+      padding-right: 0.15rem;
+    }
+    .settle-recap-foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding: 0.75rem 1.15rem 1rem;
+      border-top: 1px solid color-mix(in srgb, var(--mo-gold) 16%, transparent);
+    }
+    .settle-recap-foot button {
+      appearance: none;
+      cursor: pointer;
+      font-family: "Oswald", sans-serif;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.55rem 0.9rem;
+    }
+    .settle-recap-ghost {
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 35%, transparent);
+      background: transparent;
+      color: var(--mo-gold-soft);
+    }
+    .settle-recap-go {
+      border: 1px solid color-mix(in srgb, var(--mo-good) 45%, transparent);
+      background: color-mix(in srgb, var(--mo-good) 18%, transparent);
+      color: var(--mo-good);
+    }
+    html[data-theme="day"] .settle-recap-sheet {
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(21, 128, 61, 0.12), transparent 58%),
+        linear-gradient(180deg, #f7f3e8 0%, #efe6d2 100%);
+      color: #1c1917;
+    }
+    html[data-theme="day"] #settle-recap-dialog::backdrop {
+      background: rgba(28, 25, 23, 0.45);
+    }
+    html[data-theme="day"] .settle-recap-stat.is-lost strong,
+    html[data-theme="day"] .settle-recap-stat.is-net strong.is-down { color: #b91c1c; }
     .degen-league-banner {
       display: flex;
       align-items: center;
@@ -9269,6 +9904,7 @@
       <section class="lounge-section is-mock lounge-desk-panel" id="mock-draft" data-desk-panel="mock" aria-label="Mock draft generator" role="tabpanel" hidden>
         <div class="lounge-section-label mock-section-label">
           <h2>Mock Draft</h2>
+          <button type="button" class="mock-board-btn" id="mock-board-btn" hidden aria-pressed="false" aria-controls="mock-board-view">Board</button>
         </div>
         <div class="mock-start-bar" id="mock-start-bar">
           <button type="button" class="mock-start-btn" id="mock-start" aria-label="Start Draft">
@@ -9339,8 +9975,12 @@
                 </label>
               </div>
               <div class="row">
-                <label>Your seat
-                  <select id="mock-seat" aria-label="Your draft position"></select>
+                <label>Scoring
+                  <select id="mock-scoring" aria-label="Scoring format">
+                    <option value="ppr" selected>Full PPR</option>
+                    <option value="half-ppr">Half PPR</option>
+                    <option value="standard">Standard</option>
+                  </select>
                 </label>
                 <label>Pick clock
                   <select id="mock-pick-seconds" aria-label="Pick clock length">
@@ -9350,6 +9990,11 @@
                     <option value="240">4:00</option>
                     <option value="300">5:00</option>
                   </select>
+                </label>
+              </div>
+              <div class="row">
+                <label>Your seat
+                  <select id="mock-seat" aria-label="Your draft position"></select>
                 </label>
               </div>
               <div class="mock-settings-actions">
@@ -9363,6 +10008,12 @@
         <div class="mock-order" id="mock-order" aria-label="Draft order — drag your team to set pick position"></div>
         <div class="mock-cpu-announce" id="mock-cpu-announce" hidden aria-live="polite">
           <div class="mock-cpu-announce-card" id="mock-cpu-announce-card"></div>
+        </div>
+        <div class="mock-board-view" id="mock-board-view" hidden>
+          <div class="mock-board-view-bar">
+            <button type="button" class="mock-board-view-close" id="mock-board-view-close">Back to draft</button>
+          </div>
+          <div class="mock-board-view-card" id="mock-board-view-card"></div>
         </div>
         <div class="mock-layout">
           <div class="mock-panel mock-pool">
@@ -9398,14 +10049,14 @@
             </div>
             <div class="mock-pool-scroll">
               <div class="mock-pool-cols" role="row">
-                <button type="button" data-sort="rank" data-label="Rk" title="Sort by overall rank">Rk</button>
+                <button type="button" data-sort="rank" data-label="Rk" title="Sort by GridIron rank (multi-source average)">Rk</button>
                 <span class="c-blank c-target" title="Target">Tgt</span>
                 <span class="c-blank" aria-hidden="true"></span>
                 <button type="button" class="c-player" data-sort="player" data-label="Player" title="Sort by name">Player</button>
                 <button type="button" data-sort="pos" data-label="Pos" title="Sort by position">Pos</button>
                 <button type="button" data-sort="bye" data-label="Bye" title="Sort by bye week">Bye</button>
-                <button type="button" data-sort="adp" data-label="ADP" title="Sort by average draft position">ADP</button>
-                <button type="button" data-sort="posrk" data-label="PosRk" title="Sort by position rank">PosRk</button>
+                <button type="button" data-sort="adp" data-label="ADP" title="Sort by market average draft position">ADP</button>
+                <button type="button" data-sort="posrk" data-label="PosRk" title="Sort by GridIron position rank">PosRk</button>
                 <button type="button" data-sort="games" data-label="G" title="Sort by games played (prior season)">G</button>
                 <button type="button" data-sort="yds" data-label="Yds" title="Sort by position yards">Yds</button>
                 <button type="button" data-sort="td" data-label="TD" title="Sort by position touchdowns">TD</button>
@@ -9632,14 +10283,33 @@
       </section>
     </div>
   </main>
+  <dialog id="settle-recap-dialog" class="settle-recap-dialog" aria-labelledby="settle-recap-title">
+    <div class="settle-recap-sheet">
+      <header class="settle-recap-hero">
+        <img src="/assets/gridiron24-brand.png?v=3" alt="" width="72" height="72" decoding="async" />
+        <div>
+          <p class="settle-recap-kicker">Casala's Palace</p>
+          <h3 id="settle-recap-title">Slips settled</h3>
+          <p class="settle-recap-tag" id="settle-recap-tag">Finals are in. These tickets graded while you were away.</p>
+        </div>
+        <button type="button" class="settle-recap-close" id="settle-recap-close" aria-label="Close">×</button>
+      </header>
+      <div class="settle-recap-stats" id="settle-recap-stats"></div>
+      <div class="settle-recap-list" id="settle-recap-list"></div>
+      <footer class="settle-recap-foot">
+        <button type="button" class="settle-recap-ghost" id="settle-recap-dismiss">Close</button>
+        <button type="button" class="settle-recap-go" id="settle-recap-history">View history</button>
+      </footer>
+    </div>
+  </dialog>
   <footer class="shell site-footer">
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=157"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=94"></script>
-  <script src="/js/lounge-games.js?v=38"></script>
+  <script src="/js/lounge-desk.js?v=102"></script>
+  <script src="/js/lounge-games.js?v=44"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -9662,6 +10332,7 @@
     let sportsFlipTimer = null;
     let sportsAuto = true;
     let sportsWageredIds = new Set();
+    let sportsWageredSlipByEvent = new Map();
     const SPORTS_POLL_MS = 25000;
     const SPORTS_POLL_LIVE_MS = 15000;
     const SPORTS_FLIP_MS = 3500;
@@ -9911,12 +10582,17 @@
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) return;
         const ids = new Set();
+        const slips = new Map();
         for (const slip of data.open || []) {
           for (const leg of slip.legs || []) {
-            if (leg?.eventId) ids.add(String(leg.eventId));
+            if (!leg?.eventId) continue;
+            const eventId = String(leg.eventId);
+            ids.add(eventId);
+            if (slip.id && !slips.has(eventId)) slips.set(eventId, String(slip.id));
           }
         }
         sportsWageredIds = ids;
+        sportsWageredSlipByEvent = slips;
       } catch {
         /* keep prior set */
       }
@@ -9994,6 +10670,13 @@
         </div>`;
       };
 
+      const wagerMark = wagered
+        ? `<div class="sgame-wager">
+            <span class="sgame-wager-label">WAGER</span>
+            <button type="button" class="sgame-wager-open" data-open-wager="${esc(String(g.id || ''))}" title="View the locked line on your slip" aria-label="View slip">View slip</button>
+          </div>`
+        : '';
+
       return `<article class="sgame is-${esc(bucket)}${fantasy ? ' is-fantasy' : ''}${hasLines || fantasy ? '' : ' is-nolines'}${wagered ? ' is-wagered' : ''}" data-event-id="${esc(String(g.id || ''))}" title="${esc(g.name || '')}${wagered ? ' · Your Casala\'s bet' : ''}">
         <div class="sgame-top">
           <span class="sgame-when${meta.live ? ' sgame-status is-live' : ''}">${esc(meta.when)}${g.series ? ` · ${esc(g.series)}` : ''}</span>
@@ -10006,6 +10689,7 @@
           ${side(g.away, awayWin, odds?.away)}
           ${side(g.home, homeWin, odds?.home)}
         </div>
+        ${wagerMark}
       </article>`;
     }
 
@@ -10904,55 +11588,25 @@
         </div>`;
     }
 
-    function leagueLogoForMember(m) {
-      const nameKey = String(m?.name || '').trim().toLowerCase();
-      const loginKey = String(m?.loginName || '').trim().toLowerCase();
-      // Site owner (Steve Evans / sevans) → platform brand crest.
-      if (
-        m?.siteOwner
-        || nameKey === 'steve evans'
-        || loginKey === 'sevans'
-        || m?.conferenceKey === 'brand'
-      ) {
-        return {
-          src: '/assets/gridiron24-brand.png?v=3',
-          alt: 'GridIron 24'
-        };
-      }
-      if (m?.conferenceLogo) {
-        return {
-          src: m.conferenceLogo,
-          alt: m.conferenceLabel || m.conferenceKey || 'League'
-        };
-      }
-      const key = String(m?.membershipLeague || m?.conferenceKey || '').toLowerCase();
-      if (key === 'aaa') {
-        return { src: '/assets/aaa-league.png?v=7', alt: 'AAA' };
-      }
-      if (key === 'detail') {
-        return { src: '/assets/detail-conference.png', alt: 'Detail' };
-      }
-      if (key === 'overtime') {
-        return { src: '/assets/overtime-conference.png', alt: 'Overtime' };
-      }
-      if (key === 'gridiron') {
-        return { src: '/assets/gridiron24-league-sm.png?v=8', alt: 'GridIron 24' };
-      }
-      return null;
-    }
-
     function memberRow(m) {
       if (!m || m.open) return '';
       const isMe = state.viewer?.id === m.id;
-      const league = leagueLogoForMember(m);
-      const mark = league
-        ? `<img class="member-league" src="${esc(league.src)}" alt="${esc(league.alt)}" title="${esc(league.alt)}" width="44" height="44" loading="lazy" decoding="async" />`
-        : `<span class="member-league is-blank" aria-hidden="true"></span>`;
-      const title = [m.name, m.teamName, league?.alt].filter(Boolean).join(' · ');
+      const team = String(m.teamName || '').trim();
+      const who = String(m.name || '').trim() || 'Member';
+      const letters = initials(who);
+      const pic = m.avatarUrl
+        ? `<img class="member-avatar" src="${esc(m.avatarUrl)}" alt="" width="24" height="24" loading="lazy" decoding="async" />`
+        : `<span class="member-avatar is-fallback" aria-hidden="true">${esc(letters)}</span>`;
+      const primary = team || who;
+      const secondary = team && who && who.toLowerCase() !== team.toLowerCase() ? who : '';
+      const title = [team || null, who, m.conferenceLabel].filter(Boolean).join(' · ');
       return `
         <div class="member-row${isMe ? ' is-you' : ''}" data-user-id="${esc(m.id)}" title="${esc(title)}">
-          ${mark}
-          <div class="name">${esc(m.name)}</div>
+          ${pic}
+          <div class="member-id">
+            <div class="team">${esc(primary)}</div>
+            ${secondary ? `<div class="name">${esc(secondary)}</div>` : ''}
+          </div>
         </div>`;
     }
 
@@ -11051,6 +11705,20 @@
       }
     }
 
+    function openWagerSlip(eventId) {
+      const id = String(eventId || '');
+      if (!id) return;
+      setDeskTab('gambler', { gambler: 'book', updateHash: true });
+      document.getElementById('gambler-desk')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const detail = {
+        eventId: id,
+        slipId: sportsWageredSlipByEvent.get(id) || null
+      };
+      window.requestAnimationFrame(() => {
+        window.dispatchEvent(new CustomEvent('gi:open-wager-slip', { detail }));
+      });
+    }
+
     function setDeskTab(key, { updateHash = false, gambler = null } = {}) {
       if (!key || key === 'none' || key === 'close') {
         closeDeskTabs({ updateHash });
@@ -11120,6 +11788,11 @@
         setDeskTab('gambler', { gambler: 'pools' });
         return;
       }
+      if (hash === '#history' || hash === '#bet-history' || hash === '#my-bets') {
+        setDeskTab('gambler', { gambler: 'book' });
+        window.dispatchEvent(new CustomEvent('gi:open-bet-history'));
+        return;
+      }
       if (
         hash === '#gambler' ||
         hash === '#degenerate-book' ||
@@ -11132,6 +11805,13 @@
       closeDeskTabs();
     }
 
+    document.getElementById('sports-grid')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-open-wager]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      openWagerSlip(btn.getAttribute('data-open-wager'));
+    });
     document.getElementById('lounge-desk-tabs')?.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-desk]');
       if (!btn) return;
@@ -11192,12 +11872,22 @@
           renderPresence();
         }
       });
+      window.addEventListener('gi:open-bet-history', () => {
+        if (isEmbedBook) return;
+        setDeskTab('gambler', { gambler: 'book', updateHash: true });
+        document.getElementById('gambler-desk')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
       document.addEventListener('gi:bet-placed', (e) => {
         if (!isEmbedBook) loadChat({ incremental: true }).catch(() => {});
         const slip = e.detail?.slip;
         if (slip?.legs?.length) {
           for (const leg of slip.legs) {
-            if (leg?.eventId) sportsWageredIds.add(String(leg.eventId));
+            if (!leg?.eventId) continue;
+            const eventId = String(leg.eventId);
+            sportsWageredIds.add(eventId);
+            if (slip.id && !sportsWageredSlipByEvent.has(eventId)) {
+              sportsWageredSlipByEvent.set(eventId, String(slip.id));
+            }
           }
           if (!isEmbedBook) renderSportsBoard({ rebuildTabs: false });
         }

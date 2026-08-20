@@ -287,6 +287,18 @@ function ensureRelatedMessage({
   });
 }
 
+function purgeUser(userId) {
+  const id = String(userId || '');
+  if (!id) return 0;
+  const store = readStore();
+  const before = (store.messages || []).length;
+  store.messages = (store.messages || []).filter(
+    (m) => String(m.toUserId) !== id && String(m.fromUserId || '') !== id
+  );
+  writeStore(store);
+  return before - store.messages.length;
+}
+
 module.exports = {
   sendMessage,
   sendToUsers,
@@ -296,6 +308,7 @@ module.exports = {
   markRead,
   markAllRead,
   deleteMessage,
+  purgeUser,
   upsertDigest,
   ensureRelatedMessage,
   publicMessage

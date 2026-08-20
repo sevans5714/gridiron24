@@ -1,8 +1,8 @@
 /**
  * Beta / lounge draft pool — current NFL fantasy players with:
  * roster + headshot (nflverse), prior-season fantasy + box stats (nflverse),
- * projections (Sleeper), consensus ADP (Fantasy Football Calculator + Sleeper),
- * bye week (schedule), team logos (nflverse teams), overall / position ranks.
+ * projections (Sleeper), multi-source GridIron ranks (FFC ADP, Sleeper ADP,
+ * ESPN, VORP, prior-season scoring), bye week, team logos.
  */
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +14,7 @@ const EXCLUDE_STATUS = new Set(['INA', 'RET', 'CUT', 'NWT', 'EXE']);
 const POOL_CACHE_MS = 2 * 60 * 60 * 1000;
 const PRESEASON_POOL_CACHE_MS = 15 * 60 * 1000;
 const FORCE_COALESCE_MS = 5 * 60 * 1000;
-const UA = 'GridIron24-DraftPool/2.3';
+const UA = 'GridIron24-DraftPool/2.4';
 
 const ROSTER_URL = (season) =>
   `https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_${season}.csv`;
@@ -28,11 +28,76 @@ const SLEEPER_PROJ_URL = (season) => `https://api.sleeper.app/v1/projections/nfl
 const SLEEPER_HEADSHOT = (id) => `https://sleepercdn.com/content/nfl/players/thumb/${id}.jpg`;
 const FFC_ADP_URL = (scoring, teams, year) =>
   `https://fantasyfootballcalculator.com/api/v1/adp/${scoring}?teams=${teams}${year ? `&year=${year}` : ''}`;
+const FFC_TEAM_SIZES = new Set([8, 10, 12, 14]);
 
-function sleeperSeasonProjListUrl(season) {
+function normalizeScoring(value) {
+  const s = String(value || '').trim().toLowerCase().replace(/[_\s]+/g, '-');
+  if (s === 'std' || s === 'standard' || s === 'non-ppr' || s === 'nonppr') return 'standard';
+  if (s === 'half' || s === 'half-ppr' || s === 'halfppr' || s === '0.5-ppr' || s === '0.5ppr') return 'half-ppr';
+  return 'ppr';
+}
+
+function scoringLabel(scoring) {
+  const s = normalizeScoring(scoring);
+  if (s === 'standard') return 'Standard';
+  if (s === 'half-ppr') return 'Half PPR';
+  return 'PPR';
+}
+
+function scoringFromSettings(settings) {
+  const preset = String(settings?.scoringPreset || settings?.preset || '').toLowerCase();
+  if (preset === 'standard') return 'standard';
+  if (preset === 'half-ppr' || preset === 'halfppr') return 'half-ppr';
+  if (preset === 'gridiron24-vanilla' || preset === 'ppr' || preset === 'full-ppr' || preset === 'fullppr') {
+    return 'ppr';
+  }
+  const rec = Number(settings?.scoring?.reception ?? settings?.reception);
+  if (rec === 0) return 'standard';
+  if (rec === 0.5) return 'half-ppr';
+  return 'ppr';
+}
+
+function clampAdpTeams(n) {
+  const v = Number(n);
+  return FFC_TEAM_SIZES.has(v) ? v : 12;
+}
+
+function sleeperOrderBy(scoring) {
+  const s = normalizeScoring(scoring);
+  if (s === 'standard') return 'pts_std';
+  if (s === 'half-ppr') return 'pts_half_ppr';
+  return 'pts_ppr';
+}
+
+function projectedPointsForScoring(projRow, scoring) {
+  if (!projRow || typeof projRow !== 'object') return null;
+  const ppr = toNum(projRow.pts_ppr);
+  const half = toNum(projRow.pts_half_ppr);
+  const std = toNum(projRow.pts_std);
+  const rec = toNum(projRow.rec) || 0;
+  const s = normalizeScoring(scoring);
+  if (s === 'standard') return std ?? (ppr != null ? ppr - rec : half);
+  if (s === 'half-ppr') {
+    if (half != null) return half;
+    if (ppr != null && std != null) return (ppr + std) / 2;
+    if (ppr != null) return ppr - (0.5 * rec);
+    return std != null ? std + (0.5 * rec) : null;
+  }
+  return ppr ?? (std != null ? std + rec : half);
+}
+
+function sleeperAdpForScoring(projRow, scoring) {
+  if (!projRow || typeof projRow !== 'object') return null;
+  const s = normalizeScoring(scoring);
+  if (s === 'standard') return cleanAdp(projRow.adp_std ?? projRow.adp_half_ppr ?? projRow.adp_ppr);
+  if (s === 'half-ppr') return cleanAdp(projRow.adp_half_ppr ?? projRow.adp_ppr ?? projRow.adp_std);
+  return cleanAdp(projRow.adp_ppr ?? projRow.adp_half_ppr ?? projRow.adp_std);
+}
+
+function sleeperSeasonProjListUrl(season, scoring = 'ppr') {
   const url = new URL(`https://api.sleeper.com/projections/nfl/${season}`);
   url.searchParams.set('season_type', 'regular');
-  url.searchParams.set('order_by', 'pts_ppr');
+  url.searchParams.set('order_by', sleeperOrderBy(scoring));
   for (const pos of ['QB', 'RB', 'WR', 'TE', 'K', 'DEF']) {
     url.searchParams.append('position[]', pos);
   }
@@ -53,6 +118,15 @@ const TEAM_ALIASES = {
   STL: 'LAR'
 };
 
+/** ESPN fantasy proTeamId → NFL abbr (for matching expert ranks). */
+const ESPN_PRO_TEAM = {
+  1: 'ATL', 2: 'BUF', 3: 'CHI', 4: 'CIN', 5: 'CLE', 6: 'DAL', 7: 'DEN', 8: 'DET',
+  9: 'GB', 10: 'TEN', 11: 'IND', 12: 'KC', 13: 'LV', 14: 'LAR', 15: 'MIA', 16: 'MIN',
+  17: 'NE', 18: 'NO', 19: 'NYG', 20: 'NYJ', 21: 'PHI', 22: 'ARI', 23: 'PIT', 24: 'LAC',
+  25: 'SF', 26: 'SEA', 27: 'TB', 28: 'WAS', 29: 'CAR', 30: 'JAX', 33: 'BAL', 34: 'HOU'
+};
+const ESPN_POS = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K', 16: 'D/ST' };
+
 function canonTeam(team) {
   const t = String(team || '').trim().toUpperCase();
   if (!t) return null;
@@ -68,22 +142,28 @@ const CURRENT_NFL_TEAMS = new Set([
   'NYJ', 'PHI', 'PIT', 'SEA', 'SF', 'TB', 'TEN', 'WAS'
 ]);
 
-let poolCache = { key: '', at: 0, players: null, meta: null };
+let poolCaches = new Map();
+const poolInflight = new Map();
 
-function cachedPoolPayload() {
+function cachedPoolPayload(entry) {
   return {
     ok: true,
-    source: poolCache.meta.source,
-    adpSource: poolCache.meta.adpSource,
-    ffcDrafts: poolCache.meta.ffcDrafts,
-    ffcWindow: poolCache.meta.ffcWindow || null,
-    season: poolCache.meta.season,
-    statsSeason: poolCache.meta.statsSeason,
-    projectionSeason: poolCache.meta.projectionSeason,
-    fetchedAt: new Date(poolCache.at).toISOString(),
-    cacheMs: poolCache.meta.cacheMs || POOL_CACHE_MS,
-    counts: poolCache.meta.counts,
-    players: poolCache.players
+    source: entry.meta.source,
+    adpSource: entry.meta.adpSource,
+    scoring: entry.meta.scoring || 'ppr',
+    scoringLabel: entry.meta.scoringLabel || scoringLabel(entry.meta.scoring),
+    adpTeams: entry.meta.adpTeams || 12,
+    rankModel: entry.meta.rankModel || 'gridiron-composite',
+    rankSources: entry.meta.rankSources || [],
+    ffcDrafts: entry.meta.ffcDrafts,
+    ffcWindow: entry.meta.ffcWindow || null,
+    season: entry.meta.season,
+    statsSeason: entry.meta.statsSeason,
+    projectionSeason: entry.meta.projectionSeason,
+    fetchedAt: new Date(entry.at).toISOString(),
+    cacheMs: entry.meta.cacheMs || POOL_CACHE_MS,
+    counts: entry.meta.counts,
+    players: entry.players
   };
 }
 
@@ -285,14 +365,27 @@ function buildTeamMetaMap(teamRows) {
   return map;
 }
 
-function buildStats2025Map(statRows) {
+function fantasyPointsForScoring(row, scoring) {
+  const ppr = toNum(row.fantasy_points_ppr);
+  const std = toNum(row.fantasy_points);
+  const rec = toNum(row.receptions) || 0;
+  const s = normalizeScoring(scoring);
+  if (s === 'standard') return std ?? (ppr != null ? ppr - rec : null);
+  if (s === 'half-ppr') {
+    if (ppr != null && std != null) return (ppr + std) / 2;
+    if (std != null) return std + (0.5 * rec);
+    if (ppr != null) return ppr - (0.5 * rec);
+    return null;
+  }
+  return ppr ?? (std != null ? std + rec : null);
+}
+
+function buildStats2025Map(statRows, scoring = 'ppr') {
   const map = new Map();
   for (const row of statRows) {
     const id = String(row.player_id || '').trim();
     if (!id) continue;
-    const ppr = toNum(row.fantasy_points_ppr);
-    const std = toNum(row.fantasy_points);
-    const pts = ppr != null ? ppr : std;
+    const pts = fantasyPointsForScoring(row, scoring);
     if (pts == null) continue;
     const games = toNum(row.games);
     const rounded = Math.round(pts * 10) / 10;
@@ -328,20 +421,23 @@ function cleanAdp(value) {
  * Fantasy Football Calculator ADP — real mock-draft market order (much better
  * than ranking by raw season-long projection totals).
  */
-async function loadFfcAdpMaps(year) {
+async function loadFfcAdpMaps(year, scoring = 'ppr', teams = 12) {
   const byKey = new Map();
+  const ffcScoring = normalizeScoring(scoring);
+  const ffcTeams = clampAdpTeams(teams);
   const attempts = [
-    FFC_ADP_URL('ppr', 12, year),
-    FFC_ADP_URL('half-ppr', 12, year),
-    FFC_ADP_URL('ppr', 12, null)
-  ];
+    FFC_ADP_URL(ffcScoring, ffcTeams, year),
+    FFC_ADP_URL(ffcScoring, ffcTeams, null),
+    ffcTeams !== 12 ? FFC_ADP_URL(ffcScoring, 12, year) : null,
+    ffcTeams !== 12 ? FFC_ADP_URL(ffcScoring, 12, null) : null
+  ].filter(Boolean);
   let meta = null;
   for (const url of attempts) {
     try {
       const data = await fetchJson(url);
       const players = Array.isArray(data?.players) ? data.players : [];
       if (!players.length) continue;
-      if (!meta) meta = data.meta || { source: url };
+      if (!meta) meta = { ...(data.meta || {}), source: url, scoring: ffcScoring, teams: ffcTeams };
       for (const row of players) {
         const name = String(row.name || '').trim();
         const pos = normalizeFantasyPos(row.position);
@@ -369,9 +465,10 @@ async function loadFfcAdpMaps(year) {
       }
       if (byKey.size >= 100) break;
     } catch {
-      /* try next scoring / URL */
+      /* try next URL in the same scoring format */
     }
   }
+  if (!meta) meta = { scoring: ffcScoring, teams: ffcTeams };
   return { byKey, meta, count: byKey.size };
 }
 
@@ -381,6 +478,105 @@ function lookupFfc(ffcAdp, name, team, pos) {
     || ffcAdp.byKey.get(matchKey(name, team, pos))
     || ffcAdp.byKey.get(matchKey(name, '', pos))
     || (pos === 'D/ST' && canon ? ffcAdp.byKey.get(`__dst__|${canon}`) : null)
+    || null;
+}
+
+function averageNums(values) {
+  const nums = [];
+  for (const value of values) {
+    const n = Number(value);
+    if (Number.isFinite(n)) nums.push(n);
+  }
+  if (!nums.length) return null;
+  return Math.round((nums.reduce((sum, n) => sum + n, 0) / nums.length) * 10) / 10;
+}
+
+function marketAdpFields(ffcHit, sleeperHit) {
+  const adpFfc = ffcHit?.adp ?? null;
+  const adpSleeper = sleeperHit?.adp ?? null;
+  const adp = averageNums([adpFfc, adpSleeper]);
+  let adpSource = null;
+  if (adpFfc != null && adpSleeper != null) adpSource = 'market';
+  else if (adpFfc != null) adpSource = 'ffc';
+  else if (adpSleeper != null) adpSource = 'sleeper';
+  return {
+    adp,
+    adpFfc,
+    adpSleeper,
+    adpSource,
+    adpStdev: ffcHit?.stdev ?? null,
+    adpSample: ffcHit?.timesDrafted ?? null
+  };
+}
+
+function espnRankForScoring(draftRanks, scoring) {
+  const ranks = draftRanks && typeof draftRanks === 'object' ? draftRanks : {};
+  const ppr = toNum(ranks.PPR?.rank);
+  const std = toNum(ranks.STANDARD?.rank);
+  const s = normalizeScoring(scoring);
+  if (s === 'standard') return std != null && std > 0 ? std : ppr;
+  if (s === 'half-ppr') {
+    if (ppr != null && std != null) return Math.round(((ppr + std) / 2) * 10) / 10;
+    return ppr ?? std;
+  }
+  return ppr != null && ppr > 0 ? ppr : std;
+}
+
+async function loadEspnDraftRanks(year, scoring) {
+  const empty = { byEspnId: new Map(), byKey: new Map(), byDst: new Map(), count: 0 };
+  try {
+    const espnResilient = require('./espn-resilient');
+    const pathAndQuery = `apis/v3/games/ffl/seasons/${year}/segments/0/leaguedefaults/3?view=kona_player_info`;
+    const hit = await espnResilient.fetchJsonResilient({
+      urls: espnResilient.fantasyLeagueUrls(pathAndQuery),
+      cacheKey: `espn-draft-ranks:${year}`,
+      ttlMs: Math.min(POOL_CACHE_MS, 60 * 60 * 1000),
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': UA,
+        'X-Fantasy-Filter': JSON.stringify({
+          players: { limit: 2000, sortPercOwned: { sortPriority: 1, sortAsc: false } }
+        })
+      },
+      lane: 'fantasy'
+    });
+    const list = Array.isArray(hit?.data?.players) ? hit.data.players : [];
+    const byEspnId = new Map();
+    const byKey = new Map();
+    const byDst = new Map();
+    for (const row of list) {
+      const player = row?.player || row;
+      const id = String(player?.id || row?.id || '').trim();
+      const name = String(player?.fullName || '').trim();
+      const pos = ESPN_POS[Number(player?.defaultPositionId)] || normalizeFantasyPos(player?.defaultPosition);
+      const team = ESPN_PRO_TEAM[Number(player?.proTeamId)] || canonTeam(player?.proTeam) || null;
+      const rank = espnRankForScoring(player?.draftRanksByRankType, scoring);
+      if (rank == null || rank <= 0) continue;
+      const payload = { rank, name, team, position: pos, espnId: id };
+      if (id) byEspnId.set(id, payload);
+      if (name && FANTASY_POSITIONS.has(pos)) {
+        const withTeam = matchKey(name, team, pos);
+        const noTeam = matchKey(name, '', pos);
+        if (!byKey.has(withTeam)) byKey.set(withTeam, payload);
+        if (!byKey.has(noTeam)) byKey.set(noTeam, payload);
+      }
+      if (pos === 'D/ST' && team && !byDst.has(team)) byDst.set(team, payload);
+    }
+    return { byEspnId, byKey, byDst, count: byEspnId.size };
+  } catch {
+    return empty;
+  }
+}
+
+function lookupEspn(espnRanks, player) {
+  if (!espnRanks || !player) return null;
+  const espnId = String(player.espnId || '').trim();
+  if (espnId && espnRanks.byEspnId.get(espnId)) return espnRanks.byEspnId.get(espnId);
+  return espnRanks.byKey.get(matchKey(player.name, player.team, player.position))
+    || espnRanks.byKey.get(matchKey(player.name, '', player.position))
+    || (player.position === 'D/ST' && player.team
+      ? espnRanks.byDst.get(canonTeam(player.team) || player.team)
+      : null)
     || null;
 }
 
@@ -422,23 +618,53 @@ function assignVorp(players) {
   }
 }
 
+function rankMapAsc(players, getter) {
+  const scored = [];
+  for (const p of players) {
+    const v = getter(p);
+    if (v == null || !Number.isFinite(Number(v))) continue;
+    scored.push({ p, v: Number(v) });
+  }
+  scored.sort((a, b) => a.v - b.v || String(a.p.name || '').localeCompare(String(b.p.name || '')));
+  const map = new Map();
+  scored.forEach((row, i) => map.set(row.p, i + 1));
+  return map;
+}
+
 function rankDraftPool(players) {
   assignVorp(players);
+  const ffc = rankMapAsc(players, (p) => p.adpFfc);
+  const sleeperAdp = rankMapAsc(players, (p) => p.adpSleeper);
+  const espn = rankMapAsc(players, (p) => p.espnRank);
+  const vorp = rankMapAsc(players, (p) => (p._vorp != null && p._vorp > -900 ? -p._vorp : null));
+  const prior = rankMapAsc(players, (p) => (p.fantasyPoints2025 != null ? -p.fantasyPoints2025 : null));
+  const inputs = [
+    { key: 'ffc', map: ffc },
+    { key: 'sleeperAdp', map: sleeperAdp },
+    { key: 'espn', map: espn },
+    { key: 'vorp', map: vorp },
+    { key: 'prior', map: prior }
+  ];
+  for (const p of players) {
+    const used = [];
+    const breakdown = {};
+    let sum = 0;
+    for (const src of inputs) {
+      const r = src.map.get(p);
+      if (r == null) continue;
+      used.push(src.key);
+      breakdown[src.key] = r;
+      sum += r;
+    }
+    p.rankScore = used.length ? Math.round((sum / used.length) * 10) / 10 : 9999;
+    p.rankInputs = used;
+    p.rankBreakdown = breakdown;
+  }
   players.sort((a, b) => {
-    const aa = a.adp != null ? a.adp : 9999;
-    const ab = b.adp != null ? b.adp : 9999;
-    if (aa !== ab) return aa - ab;
+    if (a.rankScore !== b.rankScore) return a.rankScore - b.rankScore;
     const va = a._vorp != null ? a._vorp : -999;
     const vb = b._vorp != null ? b._vorp : -999;
     if (vb !== va) return vb - va;
-    const pa = a.projectedPoints2026 != null ? a.projectedPoints2026 : -1;
-    const pb = b.projectedPoints2026 != null ? b.projectedPoints2026 : -1;
-    if (pb !== pa) return pb - pa;
-    const fa = a.fantasyPoints2025 != null ? a.fantasyPoints2025 : -1;
-    const fb = b.fantasyPoints2025 != null ? b.fantasyPoints2025 : -1;
-    if (fb !== fa) return fb - fa;
-    const pos = String(a.position || '').localeCompare(String(b.position || ''));
-    if (pos) return pos;
     return String(a.name || '').localeCompare(String(b.name || ''));
   });
   const posCounts = {};
@@ -453,7 +679,7 @@ function rankDraftPool(players) {
   return players;
 }
 
-function buildSleeperMaps(sleeperPlayers, projections, listById = new Map()) {
+function buildSleeperMaps(sleeperPlayers, projections, listById = new Map(), scoring = 'ppr') {
   const byGsis = new Map();
   const byEspn = new Map();
   const byKey = new Map();
@@ -470,12 +696,12 @@ function buildSleeperMaps(sleeperPlayers, projections, listById = new Map()) {
       || (pos === 'D/ST' && team ? listById.get(`def-${team}`) : null)
       || {};
     const projRow = { ...dictRow, ...listRow };
-    const projected = toNum(projRow?.pts_ppr ?? projRow?.pts_half_ppr ?? projRow?.pts_std);
+    const projected = projectedPointsForScoring(projRow, scoring);
     const payload = {
       sleeperId: String(sleeperId),
       espnId: String(row.espn_id || '').trim() || null,
       projectedPoints2026: projected != null ? Math.round(projected * 10) / 10 : null,
-      adp: cleanAdp(projRow?.adp_ppr ?? projRow?.adp_half_ppr ?? projRow?.adp_std),
+      adp: sleeperAdpForScoring(projRow, scoring),
       projPassYds: toNum(projRow?.pass_yd),
       projPassTd: toNum(projRow?.pass_td),
       projPassInt: toNum(projRow?.pass_int),
@@ -510,7 +736,7 @@ function buildSleeperMaps(sleeperPlayers, projections, listById = new Map()) {
  * NFL team defenses aren't on the player roster CSV — stitch them from Sleeper DEF
  * units + FFC ADP + nflverse team logos/byes so mocks have a full D/ST board.
  */
-function buildDefenseUnits({ sleeper, ffcAdp, byeMap, teamMeta, season }) {
+function buildDefenseUnits({ sleeper, ffcAdp, espnRanks, byeMap, teamMeta, season }) {
   const teams = new Set([
     ...teamMeta.keys(),
     ...(sleeper.byTeamDef ? sleeper.byTeamDef.keys() : [])
@@ -530,38 +756,21 @@ function buildDefenseUnits({ sleeper, ffcAdp, byeMap, teamMeta, season }) {
       || null;
     const nick = meta.nick || sleeperHit?.lastName || team;
     const name = `${nick} D/ST`;
-    let adp = null;
-    let adpSource = null;
-    let adpStdev = null;
-    let adpSample = null;
-    if (ffcHit?.adp != null && sleeperHit?.adp != null) {
-      const stdev = ffcHit.stdev;
-      if (stdev != null && stdev >= 9) {
-        adp = Math.round((ffcHit.adp * 0.72 + sleeperHit.adp * 0.28) * 10) / 10;
-        adpSource = 'ffc+sleeper';
-      } else {
-        adp = ffcHit.adp;
-        adpSource = 'ffc';
-      }
-      adpStdev = stdev ?? null;
-      adpSample = ffcHit.timesDrafted ?? null;
-    } else if (ffcHit?.adp != null) {
-      adp = ffcHit.adp;
-      adpSource = 'ffc';
-      adpStdev = ffcHit.stdev ?? null;
-      adpSample = ffcHit.timesDrafted ?? null;
-    } else if (sleeperHit?.adp != null) {
-      adp = sleeperHit.adp;
-      adpSource = 'sleeper';
-    }
-
+    const market = marketAdpFields(ffcHit, sleeperHit);
+    const espnHit = lookupEspn(espnRanks, {
+      espnId: sleeperHit?.espnId,
+      name,
+      team,
+      position: 'D/ST'
+    });
     const sources = ['sleeper-dst'];
     if (ffcHit) sources.push('ffc');
+    if (espnHit) sources.push('espn');
 
     units.push({
       id: `dst-${team}`,
       gsisId: null,
-      espnId: sleeperHit?.espnId || null,
+      espnId: sleeperHit?.espnId || espnHit?.espnId || null,
       name,
       firstName: sleeperHit?.firstName || meta.name?.split(' ')[0] || team,
       lastName: 'D/ST',
@@ -581,10 +790,13 @@ function buildDefenseUnits({ sleeper, ffcAdp, byeMap, teamMeta, season }) {
       projectedPoints2026: sleeperHit?.projectedPoints2026 ?? null,
       avgPpg: null,
       games: null,
-      adp,
-      adpSource,
-      adpStdev,
-      adpSample,
+      adp: market.adp,
+      adpFfc: market.adpFfc,
+      adpSleeper: market.adpSleeper,
+      adpSource: market.adpSource,
+      adpStdev: market.adpStdev,
+      adpSample: market.adpSample,
+      espnRank: espnHit?.rank ?? null,
       delta: null,
       injuryStatus: null,
       injuryBodyPart: null,
@@ -613,31 +825,39 @@ async function loadRoster(season) {
   }
 }
 
-async function loadDraftPool({ season, activeOnly = true, force = false } = {}) {
+async function loadDraftPool({ season, activeOnly = true, force = false, scoring, teams } = {}) {
   const yearGuess = Number(season) || new Date().getFullYear();
-  const key = `${yearGuess}:${activeOnly ? 'active' : 'all'}:enriched-v8-dst`;
-  const cacheAge = Date.now() - (poolCache.at || 0);
-  const cacheMs = poolCache.meta?.cacheMs || POOL_CACHE_MS;
-  const freshEnough = poolCache.players && poolCache.key === key && cacheAge < cacheMs;
+  const scoringKey = normalizeScoring(scoring);
+  const teamKey = clampAdpTeams(teams);
+  const key = `${yearGuess}:${activeOnly ? 'active' : 'all'}:${scoringKey}:${teamKey}:v10-composite`;
+  const cached = poolCaches.get(key);
+  const cacheAge = Date.now() - (cached?.at || 0);
+  const cacheMs = cached?.meta?.cacheMs || POOL_CACHE_MS;
+  const freshEnough = cached?.players && cacheAge < cacheMs;
   if (!force && freshEnough) {
-    return cachedPoolPayload();
+    return cachedPoolPayload(cached);
   }
   if (force && freshEnough && cacheAge < FORCE_COALESCE_MS) {
-    return cachedPoolPayload();
+    return cachedPoolPayload(cached);
+  }
+  if (poolInflight.has(key)) {
+    return poolInflight.get(key);
   }
 
+  const build = (async () => {
   const roster = await loadRoster(yearGuess);
   const priorSeason = yearGuess - 1;
 
-  const [nflState, statsCsv, scheduleCsv, teamsCsv, sleeperPlayers, sleeperProj, sleeperProjList, ffcAdp] = await Promise.all([
+  const [nflState, statsCsv, scheduleCsv, teamsCsv, sleeperPlayers, sleeperProj, sleeperProjList, ffcAdp, espnRanks] = await Promise.all([
     fetchJson(SLEEPER_STATE_URL).catch(() => null),
     fetchText(STATS_URL(priorSeason)).catch(() => ''),
     fetchText(SCHEDULE_URL).catch(() => ''),
     fetchText(TEAMS_URL).catch(() => ''),
     fetchJson(SLEEPER_PLAYERS_URL).catch(() => ({})),
     fetchJson(SLEEPER_PROJ_URL(yearGuess)).catch(() => ({})),
-    fetchJson(sleeperSeasonProjListUrl(yearGuess)).catch(() => []),
-    loadFfcAdpMaps(yearGuess)
+    fetchJson(sleeperSeasonProjListUrl(yearGuess, scoringKey)).catch(() => []),
+    loadFfcAdpMaps(yearGuess, scoringKey, teamKey),
+    loadEspnDraftRanks(yearGuess, scoringKey)
   ]);
 
   const year = Number(season) || Number(nflState?.season) || yearGuess;
@@ -647,11 +867,11 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
     : POOL_CACHE_MS;
 
   const teamRows = teamsCsv ? parseCsv(teamsCsv) : [];
-  const statsMap = buildStats2025Map(statsCsv ? parseCsv(statsCsv) : []);
+  const statsMap = buildStats2025Map(statsCsv ? parseCsv(statsCsv) : [], scoringKey);
   const byeMap = buildByeMap(scheduleCsv ? parseCsv(scheduleCsv) : [], year);
   const logoMap = buildTeamLogoMap(teamRows);
   const teamMeta = buildTeamMetaMap(teamRows);
-  const sleeper = buildSleeperMaps(sleeperPlayers, sleeperProj, indexSleeperProjList(sleeperProjList));
+  const sleeper = buildSleeperMaps(sleeperPlayers, sleeperProj, indexSleeperProjList(sleeperProjList), scoringKey);
 
   const normalized = roster.rows
     .map((row) => normalizePlayer(row, roster.season))
@@ -674,37 +894,20 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
       ? Math.round((projectedPoints2026 - fantasyPoints2025) * 10) / 10
       : null;
 
-    let adp = null;
-    let adpSource = null;
-    let adpStdev = null;
-    let adpSample = null;
-    if (ffcHit?.adp != null && sleeperHit?.adp != null) {
-      const stdev = ffcHit.stdev;
-      // High-variance FFC ADPs get a light Sleeper blend; otherwise trust FFC mocks.
-      if (stdev != null && stdev >= 9) {
-        adp = Math.round((ffcHit.adp * 0.72 + sleeperHit.adp * 0.28) * 10) / 10;
-        adpSource = 'ffc+sleeper';
-        blendedHits += 1;
-      } else {
-        adp = ffcHit.adp;
-        adpSource = 'ffc';
-      }
-      adpStdev = stdev ?? null;
-      adpSample = ffcHit.timesDrafted ?? null;
-    } else if (ffcHit?.adp != null) {
-      adp = ffcHit.adp;
-      adpSource = 'ffc';
-      adpStdev = ffcHit.stdev ?? null;
-      adpSample = ffcHit.timesDrafted ?? null;
-    } else if (sleeperHit?.adp != null) {
-      adp = sleeperHit.adp;
-      adpSource = 'sleeper';
-    }
+    const market = marketAdpFields(ffcHit, sleeperHit);
+    if (market.adpFfc != null && market.adpSleeper != null) blendedHits += 1;
+    const espnHit = lookupEspn(espnRanks, {
+      espnId: sleeperHit?.espnId || p.espnId,
+      name: p.name,
+      team: p.team,
+      position: p.position
+    });
 
     const sources = ['nflverse'];
     if (stats) sources.push('nflverse-stats');
     if (sleeperHit) sources.push('sleeper');
     if (ffcHit) sources.push('ffc');
+    if (espnHit) sources.push('espn');
 
     return {
       ...p,
@@ -714,10 +917,13 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
       projectedPoints2026,
       avgPpg: stats?.avgPpg ?? null,
       games: stats?.games ?? null,
-      adp,
-      adpSource,
-      adpStdev,
-      adpSample,
+      adp: market.adp,
+      adpFfc: market.adpFfc,
+      adpSleeper: market.adpSleeper,
+      adpSource: market.adpSource,
+      adpStdev: market.adpStdev,
+      adpSample: market.adpSample,
+      espnRank: espnHit?.rank ?? null,
       delta,
       injuryStatus: sleeperHit?.injuryStatus || null,
       injuryBodyPart: sleeperHit?.injuryBodyPart || null,
@@ -759,6 +965,7 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
   const defenses = buildDefenseUnits({
     sleeper,
     ffcAdp,
+    espnRanks,
     byeMap,
     teamMeta,
     season: roster.season
@@ -770,17 +977,28 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
 
   rankDraftPool(players);
 
-  const counts = { total: players.length, ffcAdpMatched: ffcHits, adpBlended: blendedHits };
+  const counts = {
+    total: players.length,
+    ffcAdpMatched: ffcHits,
+    adpBlended: blendedHits,
+    espnRankMatched: espnRanks.count || 0
+  };
   for (const p of players) counts[p.position] = (counts[p.position] || 0) + 1;
 
-  const sourceParts = ['nflverse', 'sleeper'];
+  const sourceParts = ['gridiron-composite', 'nflverse', 'sleeper'];
   if (ffcHits > 0) sourceParts.push('ffc-adp');
+  if (espnRanks.count > 0) sourceParts.push('espn');
   const meta = {
     source: sourceParts.join('+'),
     season: roster.season,
     statsSeason: priorSeason,
     projectionSeason: year,
-    adpSource: ffcHits > 0 ? 'fantasyfootballcalculator' : 'sleeper',
+    scoring: scoringKey,
+    scoringLabel: scoringLabel(scoringKey),
+    adpTeams: teamKey,
+    rankModel: 'gridiron-composite',
+    rankSources: ['ffc', 'sleeperAdp', 'espn', 'vorp', 'prior'],
+    adpSource: 'market',
     ffcDrafts: ffcAdp.meta?.total_drafts || null,
     ffcWindow: ffcAdp.meta?.start_date && ffcAdp.meta?.end_date
       ? { start: ffcAdp.meta.start_date, end: ffcAdp.meta.end_date }
@@ -789,27 +1007,22 @@ async function loadDraftPool({ season, activeOnly = true, force = false } = {}) 
     counts
   };
 
-  poolCache = {
+  const entry = {
     key,
     at: Date.now(),
     players,
     meta
   };
+  poolCaches.set(key, entry);
+  return cachedPoolPayload(entry);
+  })();
 
-  return {
-    ok: true,
-    source: meta.source,
-    adpSource: meta.adpSource,
-    ffcDrafts: meta.ffcDrafts,
-    ffcWindow: meta.ffcWindow || null,
-    season: meta.season,
-    statsSeason: meta.statsSeason,
-    projectionSeason: meta.projectionSeason,
-    fetchedAt: new Date().toISOString(),
-    cacheMs: liveCacheMs,
-    counts,
-    players
-  };
+  poolInflight.set(key, build);
+  try {
+    return await build;
+  } finally {
+    poolInflight.delete(key);
+  }
 }
 
 function defaultTeamNames(count) {
@@ -1049,5 +1262,8 @@ module.exports = {
   resetDraft,
   makePick,
   undoPick,
+  normalizeScoring,
+  scoringLabel,
+  scoringFromSettings,
   FANTASY_POSITIONS
 };

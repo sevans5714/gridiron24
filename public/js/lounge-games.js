@@ -67,47 +67,250 @@
     return fmtKick(new Date(times[0]).toISOString());
   }
 
-  function openGameBetHtml(s) {
-    const picks = (s.legs || []).map((l) => l.label).filter(Boolean);
-    const pickMain = picks.length ? picks.join(' · ') : (s.type || 'Ticket');
+  function fmtLockedNum(n) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return '';
+    return v > 0 ? `+${v}` : String(v);
+  }
+
+  function lockedLegRows(slip) {
+    return (slip?.legs || []).map((l) => {
+      const market = String(l.market || '').toLowerCase();
+      const line = Number(l.lockedLine ?? l.line);
+      const odds = fmtOdds(l.lockedOdds ?? l.odds);
+      const pick = l.label || `${l.side || market} ${Number.isFinite(line) ? fmtLockedNum(line) : ''}`.trim();
+      const bits = [];
+      if (l.matchup) bits.push(l.matchup);
+      if (market === 'moneyline') bits.push(`locked ${odds}`);
+      else if (Number.isFinite(line)) bits.push(`locked ${market === 'total' ? line : fmtLockedNum(line)}`);
+      else bits.push('locked at bet');
+      bits.push(odds);
+      if (l.finalAway != null && l.finalHome != null) {
+        bits.push(`final ${l.finalAway}–${l.finalHome}`);
+      } else if (!l.result) {
+        bits.push('grades vs this line');
+      }
+      if (l.result) bits.push(String(l.result));
+      return { pick, meta: bits.filter(Boolean).join(' · '), result: l.result || '' };
+    });
+  }
+
+  function resultStamp(status) {
+    const s = String(status || '').toLowerCase();
+    if (s === 'won' || s === 'win') {
+      return { row: 'is-won', cls: 'is-winner', label: 'Winner' };
+    }
+    if (s === 'lost' || s === 'loss') {
+      return { row: 'is-lost', cls: 'is-lost', label: 'Lost' };
+    }
+    if (s === 'push') {
+      return { row: 'is-push', cls: 'is-push', label: 'Push' };
+    }
+    return null;
+  }
+
+  function resultStampHtml(status) {
+    const stamp = resultStamp(status);
+    if (!stamp) return '';
+    return `<span class="degen-result-stamp ${stamp.cls}">${esc(stamp.label)}</span>`;
+  }
+
+  function gameSlipRowHtml(s, { locked = false, history = false } = {}) {
+    const rows = lockedLegRows(s);
+    const pickMain = rows.length
+      ? rows.map((r) => r.pick).join(' · ')
+      : (s.type || 'Ticket');
     const kick = slipKickoffLabel(s);
+    const graded = history || (s.status && s.status !== 'open');
+    const stamp = graded ? resultStamp(s.status) : null;
     const sub = [
-      kick,
+      graded ? fmtKick(s.settledAt || s.createdAt) : kick,
       s.type,
       s.private ? 'private' : '',
-      `${fmtCash(s.stake)} → ${fmtCash(s.toWin)}`
+      graded ? `${fmtCash(s.stake)} · ${fmtCash(s.profit)}` : `${fmtCash(s.stake)} → ${fmtCash(s.toWin)}`
     ].filter(Boolean).join(' · ');
-    return `<div class="degen-slip-row is-locked">
-      <div class="degen-open-pick">${esc(pickMain)}</div>
-      <div class="degen-open-meta">${esc(sub)}</div>
-      <button type="button" class="degen-rebet" data-rebet="${attrJson({
+    const eventIds = (s.legs || []).map((l) => l.eventId).filter(Boolean).join(' ');
+    const legsHtml = rows.length
+      ? `<ul class="degen-open-legs">${rows.map((r) => `
+          <li class="degen-open-leg">
+            <strong>${esc(r.pick)}</strong>
+            <span><span class="degen-locked-tag">Locked line</span> · ${esc(r.meta)}</span>
+          </li>`).join('')}</ul>`
+      : '';
+    const rebet = locked
+      ? `<button type="button" class="degen-rebet" data-rebet="${attrJson({
         stake: s.stake,
         legs: (s.legs || []).map((l) => ({
           eventId: l.eventId,
           market: l.market,
           side: l.side,
-          line: l.line,
-          odds: l.odds,
+          line: l.lockedLine ?? l.line,
+          odds: l.lockedOdds ?? l.odds,
           label: l.label,
           matchup: l.matchup,
           leagueLabel: l.leagueLabel,
           startsAt: l.startsAt || null
         }))
-      })}">Reuse legs</button>
+      })}">Reuse legs</button>`
+      : '';
+    const profitCls = Number(s.profit) > 0 ? 'won' : Number(s.profit) < 0 ? 'lost' : '';
+    const statusHtml = stamp
+      ? `<div class="degen-open-meta"><strong class="${profitCls}">${esc(sub)}</strong></div>`
+      : `<div class="degen-open-meta">${esc(sub)}</div>`;
+    const rowCls = [
+      'degen-slip-row',
+      locked ? 'is-locked' : '',
+      stamp ? stamp.row : ''
+    ].filter(Boolean).join(' ');
+    return `<div class="${rowCls}" data-slip-id="${esc(String(s.id || ''))}" data-event-ids="${esc(eventIds)}">
+      <div class="degen-slip-head">
+        <div class="degen-open-pick">${esc(pickMain)}</div>
+        ${resultStampHtml(s.status)}
+      </div>
+      ${legsHtml}
+      ${statusHtml}
+      ${rebet}
     </div>`;
   }
 
-  function openFutureBetHtml(f) {
+  function openGameBetHtml(s) {
+    return gameSlipRowHtml(s, { locked: true });
+  }
+
+  function openFutureBetHtml(f, { history = false } = {}) {
     const pick = f.selection || 'Future';
+    const graded = history || (f.status && f.status !== 'open');
+    const stamp = graded ? resultStamp(f.status) : null;
     const sub = [
       f.marketLabel || f.sport || 'Future',
       f.private ? 'private' : '',
-      `${fmtCash(f.stake)} → ${fmtCash(f.toWin)}`
+      graded ? fmtKick(f.settledAt || f.createdAt) : '',
+      graded ? `${fmtCash(f.stake)} · ${fmtCash(f.profit)}` : `${fmtCash(f.stake)} → ${fmtCash(f.toWin)}`,
+      f.champion ? `result ${f.champion}` : ''
     ].filter(Boolean).join(' · ');
-    return `<div class="degen-slip-row is-locked">
-      <div class="degen-open-pick">${esc(pick)}</div>
-      <div class="degen-open-meta">${esc(sub)}</div>
+    const profitCls = Number(f.profit) > 0 ? 'won' : Number(f.profit) < 0 ? 'lost' : '';
+    const rowCls = [
+      'degen-slip-row',
+      graded ? '' : 'is-locked',
+      stamp ? stamp.row : ''
+    ].filter(Boolean).join(' ');
+    return `<div class="${rowCls}" data-slip-id="${esc(String(f.id || ''))}">
+      <div class="degen-slip-head">
+        <div class="degen-open-pick">${esc(pick)}</div>
+        ${resultStampHtml(f.status)}
+      </div>
+      <div class="degen-open-meta">${stamp ? `<strong class="${profitCls}">${esc(sub)}</strong>` : esc(sub)}</div>
     </div>`;
+  }
+
+  function betHistoryHtml(d, limit = 0) {
+    const games = (d.recent || []).map((s) => ({
+      at: s.settledAt || s.createdAt || '',
+      html: gameSlipRowHtml(s, { locked: true, history: true })
+    }));
+    const futures = (d.recentFutures || []).map((f) => ({
+      at: f.settledAt || f.createdAt || '',
+      html: openFutureBetHtml(f, { history: true })
+    }));
+    const rows = [...games, ...futures].sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    if (!rows.length) {
+      return `<div class="degen-empty">No previous slips yet — lock a ticket and it lands here after the game grades.</div>`;
+    }
+    const shown = limit > 0 ? rows.slice(0, limit) : rows;
+    return shown.map((r) => r.html).join('');
+  }
+
+  function settlementRecapCounts(slips, futures) {
+    const rows = [...(slips || []), ...(futures || [])];
+    let wins = 0;
+    let losses = 0;
+    let pushes = 0;
+    let profit = 0;
+    for (const row of rows) {
+      const status = String(row.status || '').toLowerCase();
+      if (status === 'won' || status === 'win') wins += 1;
+      else if (status === 'lost' || status === 'loss') losses += 1;
+      else if (status === 'push') pushes += 1;
+      profit += Number(row.profit) || 0;
+    }
+    return { wins, losses, pushes, profit, total: rows.length };
+  }
+
+  function sameBookUser(a, b) {
+    const left = String(a || '').trim();
+    const right = String(b || '').trim();
+    return Boolean(left) && left === right;
+  }
+
+  function closeSettlementRecap() {
+    const dialog = document.getElementById('settle-recap-dialog');
+    if (dialog?.open) dialog.close();
+  }
+
+  function openBetHistoryDesk() {
+    book.tab = 'history';
+    if (book.data) renderBook();
+    window.dispatchEvent(new CustomEvent('gi:open-bet-history'));
+  }
+
+  function wireSettlementRecap() {
+    if (book.settlementModalWired) return;
+    const dialog = document.getElementById('settle-recap-dialog');
+    if (!dialog) return;
+    book.settlementModalWired = true;
+    document.getElementById('settle-recap-close')?.addEventListener('click', closeSettlementRecap);
+    document.getElementById('settle-recap-dismiss')?.addEventListener('click', closeSettlementRecap);
+    document.getElementById('settle-recap-history')?.addEventListener('click', () => {
+      closeSettlementRecap();
+      openBetHistoryDesk();
+    });
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) closeSettlementRecap();
+    });
+  }
+
+  function ackSettledTickets(ids) {
+    const list = (ids || []).map((id) => String(id || '')).filter(Boolean);
+    if (!list.length) return;
+    fetch('/api/paper-book', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'ack-settled', ids: list })
+    }).catch(() => {});
+  }
+
+  function maybeShowSettlementRecap(unseen, account) {
+    if (isEmbedBook() || book.settlementModalShown) return;
+    const uid = String(account?.userId || '').trim();
+    if (!uid) return;
+    const mine = (row) => sameBookUser(row?.userId, uid);
+    const slips = (unseen?.slips || []).filter(mine);
+    const futures = (unseen?.futures || []).filter(mine);
+    if (!slips.length && !futures.length) return;
+    const dialog = document.getElementById('settle-recap-dialog');
+    const list = document.getElementById('settle-recap-list');
+    const stats = document.getElementById('settle-recap-stats');
+    const tag = document.getElementById('settle-recap-tag');
+    if (!dialog || !list || !stats) return;
+    wireSettlementRecap();
+    book.settlementModalShown = true;
+    const counts = settlementRecapCounts(slips, futures);
+    const netCls = counts.profit > 0 ? 'is-up' : counts.profit < 0 ? 'is-down' : '';
+    stats.innerHTML = `
+      <div class="settle-recap-stat is-win"><em>Winners</em><strong>${counts.wins}</strong></div>
+      <div class="settle-recap-stat is-lost"><em>Lost</em><strong>${counts.losses}</strong></div>
+      <div class="settle-recap-stat is-net"><em>Net</em><strong class="${netCls}">${esc(fmtCash(counts.profit))}</strong></div>`;
+    tag.textContent = counts.total === 1
+      ? 'A ticket graded while you were away. This board only pops once.'
+      : `${counts.total} tickets graded while you were away. This board only pops once.`;
+    list.innerHTML = [
+      ...slips.map((s) => gameSlipRowHtml(s, { history: true })),
+      ...futures.map((f) => openFutureBetHtml(f, { history: true }))
+    ].join('');
+    ackSettledTickets([...slips, ...futures].map((row) => row.id));
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
   }
 
   function americanToWin(stake, odds) {
@@ -314,7 +517,7 @@
     data: null,
     slip: [],
     busy: false,
-    tab: 'lines', // lines | futures | tickets | standings
+    tab: 'lines', // lines | futures | tickets | history | standings
     sportId: null,
     futureId: null,
     showAllFutures: false,
@@ -326,6 +529,8 @@
     teamQuery: '',
     expandedGameId: null,
     fieldMarket: 'winner', // winner | top3 | top5 | top10 | top20
+    focusSlipId: null,
+    focusEventId: null,
     embedBridge: false,
     instanceId: `bk-${Math.random().toString(36).slice(2, 10)}`,
     draftUpdatedAt: null,
@@ -1335,7 +1540,7 @@
           <div class="degen-leg">
             <div class="degen-leg-body">
               <div class="degen-leg-pick">${esc(leg.label || `${leg.market} ${leg.side}`)}${isFutureLeg(leg) ? ' <em class="degen-leg-tag">future</em>' : ''}${leg.alt ? ' <em class="degen-leg-tag">alt</em>' : ''}${!isFutureLeg(leg) && (eventCounts.get(String(leg.eventId)) || 0) > 1 ? ' <em class="degen-leg-tag">sgp</em>' : ''}</div>
-              <div class="degen-leg-meta">${esc(leg.leagueLabel || '')}${leg.matchup ? ` · ${esc(leg.matchup)}` : ''}${isFutureLeg(leg) ? ' · future' : ''}</div>
+              <div class="degen-leg-meta">${esc(leg.leagueLabel || '')}${leg.matchup ? ` · ${esc(leg.matchup)}` : ''}${isFutureLeg(leg) ? ' · future' : ' · line locked on slip'}</div>
             </div>
             <div class="degen-leg-odds">${esc(fmtOdds(leg.odds))}</div>
             <button type="button" data-remove="${esc(slipKey(leg))}" aria-label="Remove leg">✕</button>
@@ -1346,14 +1551,8 @@
       ? d.open.map(openGameBetHtml).join('')
       : `<div class="degen-empty">No open game slips.</div>`;
 
-    const recentHtml = (d.recent || []).slice(0, 12).map((s) => {
-      const cls = s.status === 'won' ? 'won' : s.status === 'lost' ? 'lost' : '';
-      const picks = (s.legs || []).map((l) => l.label).filter(Boolean).join(' · ') || s.type;
-      return `<div class="degen-slip-row">
-        <div class="degen-open-pick">${esc(picks)}</div>
-        <div class="degen-open-meta"><strong class="${cls}">${esc(s.status)}</strong> · ${esc(fmtCash(s.profit))}</div>
-      </div>`;
-    }).join('') || `<div class="degen-empty">No graded tickets yet.</div>`;
+    const historyCount = (d.recent || []).length + (d.recentFutures || []).length;
+    const historyPreview = betHistoryHtml(d, 4);
 
     const openFuturesHtml = (d.openFutures || []).length
       ? d.openFutures.map(openFutureBetHtml).join('')
@@ -1495,7 +1694,17 @@
       screen = `
         <div class="degen-slips"><h3>Open futures</h3>${openFuturesHtml}</div>
         <div class="degen-slips"><h3>Open game slips</h3>${openHtml}</div>
-        <div class="degen-slips"><h3>Recent results</h3>${recentHtml}</div>`;
+        <div class="degen-slips is-history">
+          <h3>Bet history</h3>
+          ${historyPreview}
+          ${historyCount > 4 ? `<button type="button" class="degen-more" data-tab="history">Full bet history</button>` : ''}
+        </div>`;
+    } else if (tab === 'history') {
+      screen = `
+        <div class="degen-slips is-history">
+          <h3>Bet history</h3>
+          ${betHistoryHtml(d)}
+        </div>`;
     } else {
       screen = `
         <div class="degen-lb degen-standings">${lbHtml}</div>`;
@@ -1510,6 +1719,7 @@
         <button type="button" role="tab" class="${tab === 'lines' ? 'is-on' : ''}" data-tab="lines">Games</button>
         <button type="button" role="tab" class="${tab === 'futures' ? 'is-on' : ''}" data-tab="futures">Futures</button>
         ${embed ? '' : `<button type="button" role="tab" class="${tab === 'tickets' ? 'is-on' : ''}" data-tab="tickets">My bets</button>`}
+        ${embed ? '' : `<button type="button" role="tab" class="${tab === 'history' ? 'is-on' : ''}" data-tab="history">History</button>`}
         ${embed ? '' : `<button type="button" role="tab" class="${tab === 'standings' ? 'is-on' : ''}" data-tab="standings">Standings</button>`}
       </div>
       <div class="degen-layout${embed ? ' is-embed' : ''}">
@@ -1691,6 +1901,39 @@
       }
     }
     emitSlipToParent();
+    highlightFocusedSlip();
+  }
+
+  function highlightFocusedSlip() {
+    const root = document.getElementById('degenerate-book-root');
+    if (!root || (book.tab !== 'tickets' && book.tab !== 'history')) return;
+    const slipId = book.focusSlipId ? String(book.focusSlipId) : '';
+    const eventId = book.focusEventId ? String(book.focusEventId) : '';
+    if (!slipId && !eventId) return;
+    const scope = root.querySelector('.degen-screen') || root;
+    const cssVal = (v) => (typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(v) : v);
+    let row = slipId ? scope.querySelector(`[data-slip-id="${cssVal(slipId)}"]`) : null;
+    if (!row && eventId) {
+      row = [...scope.querySelectorAll('[data-event-ids]')].find((el) => {
+        return String(el.getAttribute('data-event-ids') || '').split(/\s+/).includes(eventId);
+      }) || null;
+    }
+    if (!row) return;
+    book.focusSlipId = null;
+    book.focusEventId = null;
+    requestAnimationFrame(() => {
+      row.classList.add('is-wager-focus');
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.setTimeout(() => row.classList.remove('is-wager-focus'), 4200);
+    });
+  }
+
+  function openFocusedWager({ slipId = null, eventId = null } = {}) {
+    book.tab = 'tickets';
+    book.focusSlipId = slipId || null;
+    book.focusEventId = eventId || null;
+    if (book.data) renderBook();
+    else loadBook();
   }
 
   async function loadBook({ quiet = false } = {}) {
@@ -1705,6 +1948,7 @@
       if (!applyDraftState(data.draft, { render: true })) {
         renderBook();
       }
+      if (!quiet) maybeShowSettlementRecap(data.unseenSettled, data.account);
       startBookPoll();
     } catch (err) {
       if (!quiet) {
@@ -1764,7 +2008,8 @@
               market: l.market,
               side: l.side,
               line: l.line,
-              odds: l.odds
+              odds: l.odds,
+              alt: Boolean(l.alt)
             }))
           })
         });
@@ -3160,6 +3405,14 @@
       getSyncChannel();
       wireEmbedBridge();
       loadBook();
+      window.addEventListener('gi:open-wager-slip', (e) => {
+        const d = e.detail || {};
+        openFocusedWager({ slipId: d.slipId || null, eventId: d.eventId || null });
+      });
+      window.addEventListener('gi:open-bet-history', () => {
+        book.tab = 'history';
+        if (book.data) renderBook();
+      });
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden && sportsbookVisible()) loadBook({ quiet: true });
       });

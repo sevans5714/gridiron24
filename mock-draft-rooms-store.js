@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const MockDraftCpu = require('./public/js/mock-draft-cpu');
+const logos = require('./logos-store');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'mock-draft-rooms.json');
@@ -13,6 +14,7 @@ const FILE = path.join(DATA_DIR, 'mock-draft-rooms.json');
 const TEAM_COUNTS = new Set([10, 12, 14]);
 const ROUND_OPTIONS = new Set([8, 10, 12, 15, 16, 18]);
 const PICK_SECONDS_OPTIONS = new Set([60, 120, 180, 240, 300]);
+const SCORING_OPTIONS = new Set(['ppr', 'half-ppr', 'standard']);
 const JOIN_LOBBY_SECONDS = 240; // 4:00 for others to join after positions lock
 const CPU_PICK_GAP_MS = 2500;
 const MAX_ROOMS = 12;
@@ -58,6 +60,14 @@ function clampRounds(n) {
   return ROUND_OPTIONS.has(v) ? v : 15;
 }
 
+function clampScoring(value) {
+  const s = String(value || '').trim().toLowerCase().replace(/[_\s]+/g, '-');
+  if (s === 'std' || s === 'standard' || s === 'non-ppr') return 'standard';
+  if (s === 'half' || s === 'half-ppr' || s === 'halfppr') return 'half-ppr';
+  if (SCORING_OPTIONS.has(s)) return s;
+  return 'ppr';
+}
+
 function clampPickSeconds(n) {
   const v = Number(n);
   if (PICK_SECONDS_OPTIONS.has(v)) return v;
@@ -98,12 +108,21 @@ function pruneRooms(store) {
 }
 
 function publicSeat(seat, viewerId) {
+  const isCpu = Boolean(seat.isCpu || !seat.userId);
+  let avatarUrl = null;
+  if (!isCpu && seat.userId) {
+    try {
+      const logo = logos.resolveLogoForUser(seat.userId);
+      if (logo?.type === 'icon' || logo?.type === 'upload') avatarUrl = logo.url || null;
+    } catch { /* optional */ }
+  }
   return {
     index: seat.index,
     userId: seat.userId || null,
     userName: seat.userName || null,
-    isCpu: Boolean(seat.isCpu || !seat.userId),
-    isMe: Boolean(viewerId && seat.userId && seat.userId === viewerId)
+    isCpu,
+    isMe: Boolean(viewerId && seat.userId && seat.userId === viewerId),
+    avatarUrl
   };
 }
 
@@ -121,6 +140,7 @@ function publicRoom(room, viewerId = null) {
     hostName: room.hostName,
     teamCount: room.teamCount,
     rounds: room.rounds,
+    scoring: clampScoring(room.scoring),
     pickSeconds: room.pickSeconds,
     teamNames: room.teamNames.slice(),
     seats: room.seats.map((s) => publicSeat(s, viewerId)),
@@ -290,7 +310,7 @@ function advanceRoom(room, pool) {
   return changed;
 }
 
-function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames, hostTeamName }) {
+function createRoom({ user, teamCount, rounds, pickSeconds, scoring, seatIndex, teamNames, hostTeamName }) {
   if (!user?.id) throw err(401, 'Sign in required');
   const count = clampTeamCount(teamCount);
   const seat = Number(seatIndex);
@@ -323,6 +343,7 @@ function createRoom({ user, teamCount, rounds, pickSeconds, seatIndex, teamNames
     status: 'lobby',
     teamCount: count,
     rounds: clampRounds(rounds),
+    scoring: clampScoring(scoring),
     pickSeconds: clampPickSeconds(pickSeconds),
     teamNames: names,
     seats,
@@ -574,7 +595,9 @@ module.exports = {
   addChatMessage,
   currentSlot,
   clampPickSeconds,
+  clampScoring,
   PICK_SECONDS_OPTIONS,
+  SCORING_OPTIONS,
   JOIN_LOBBY_SECONDS,
   CPU_PICK_GAP_MS
 };

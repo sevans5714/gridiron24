@@ -592,9 +592,9 @@ function createUser({ name, email, loginName, password, role, conference, approv
   }
 
   const isCommissionerAccount = nextRole === ROLES.COMMISSIONER;
-  // Invite token admits to the lounge. Commissioners/bootstrap always admitted.
+  // Invite token can mark lounge eligibility, but new signups still wait for approval.
   const finalLoungeMember = isCommissionerAccount || loungeMember === true;
-  const finalApproved = isCommissionerAccount || approved === true || finalLoungeMember;
+  const finalApproved = isCommissionerAccount || approved === true;
   // Social invites: lounge-only. Never apply to staff / owner accounts.
   const finalLoungeOnly =
     Boolean(loungeOnly) && !isCommissionerAccount && nextRole === ROLES.USER;
@@ -775,14 +775,14 @@ function deleteUser(userId, actorId = null) {
   }
   const target = store.users[idx];
   if (Boolean(target.siteOwner) || isOwnerLogin(target)) {
-    throw Object.assign(new Error('Cannot remove the site owner'), { status: 400 });
+    throw Object.assign(new Error('Cannot delete the site owner'), { status: 400 });
   }
   if (normalizeRole(target.role) === ROLES.COMMISSIONER) {
     const otherCommissioners = store.users.filter(
       (u, i) => i !== idx && normalizeRole(u.role) === ROLES.COMMISSIONER
     );
     if (otherCommissioners.length === 0) {
-      throw Object.assign(new Error('Cannot remove the last commissioner'), { status: 400 });
+      throw Object.assign(new Error('Cannot delete the last commissioner'), { status: 400 });
     }
   }
   const removed = store.users[idx];

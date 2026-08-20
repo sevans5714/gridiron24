@@ -131,6 +131,15 @@ function assignTeam(userId, conferenceKey, teamId, teamName = '', assignedBy = n
   return getClaimForUser(userId);
 }
 
+function wipeUser(userId) {
+  if (!userId) return false;
+  const data = readStore();
+  data.claims = (data.claims || []).filter((c) => c.userId !== userId);
+  data.avatars = (data.avatars || []).filter((a) => a.userId !== userId);
+  writeStore(data);
+  return true;
+}
+
 function unassignTeam(userId) {
   if (!userId) throw Object.assign(new Error('User is required'), { status: 400 });
   const data = readStore();
@@ -437,6 +446,7 @@ module.exports = {
   listClaims,
   assignTeam,
   unassignTeam,
+  wipeUser,
   unassignConference,
   claimTeam,
   getLogo,

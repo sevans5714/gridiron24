@@ -18,6 +18,8 @@
   const ROUND_OPTIONS = new Set([8, 10, 12, 15, 16, 18]);
   const DEFAULT_TEAM_COUNT = 12;
   const DEFAULT_ROUNDS = 15;
+  const DEFAULT_SCORING = 'ppr';
+  const SCORING_OPTIONS = new Set(['ppr', 'half-ppr', 'standard']);
   const DEFAULT_STARTERS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
   const STARTER_LABEL_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
   const FLEX_ELIGIBLE = new Set(['RB', 'WR', 'TE']);
@@ -100,6 +102,7 @@
   let lastAnnouncedRound = 0;
   let roundBreakHold = null;
   let revealedOverall = 0;
+  let boardViewOpen = false;
 
   function isMultiplayer() {
     return Boolean(roomId);
@@ -262,10 +265,14 @@
     setDisabled('mock-autofill', !live || mp);
     setDisabled('mock-undo', done || mp || !mock?.picks?.length);
     setDisabled('mock-shuffle', live || done || mp);
+    const boardBtn = document.getElementById('mock-board-btn');
+    if (boardBtn) boardBtn.hidden = !mock;
     const teamsEl = document.getElementById('mock-teams');
     const roundsEl = document.getElementById('mock-rounds');
+    const scoringEl = document.getElementById('mock-scoring');
     if (teamsEl) teamsEl.disabled = live || done || mp;
     if (roundsEl) roundsEl.disabled = live || done || mp;
+    if (scoringEl) scoringEl.disabled = live || done || mp;
   }
 
   function showAdvancedTools() {
@@ -310,6 +317,7 @@
     boardRound = 1;
     lastAnnouncedRound = 0;
     revealedOverall = 0;
+    setBoardViewOpen(false);
     clearPersistedMock();
     if (!silent) {
       history.replaceState(null, '', '#mock-draft');
@@ -737,7 +745,7 @@
       const label = seatBoardLabel(i);
       return `<article class="mock-complete-team${you ? ' is-you' : ''}">
         <div class="mock-complete-team-head">
-          <strong>${you ? '★ ' : ''}${esc(label)}</strong>
+          <strong>${seatAvatarHtml(i, 'complete-team-avatar')}${you ? '★ ' : ''}${esc(label)}</strong>
           <span>${picks.length} / ${totalSlots}</span>
         </div>
         <div class="mock-complete-slots">
@@ -935,6 +943,7 @@
           action: 'create',
           teamCount: mock.teamNames.length,
           rounds: mock.rounds,
+          scoring: getScoring(),
           pickSeconds,
           seatIndex: mock.seatIndex,
           teamNames: mock.teamNames,
@@ -1025,8 +1034,13 @@
     if (clockEl && PICK_SECONDS_OPTIONS.has(pickSeconds)) clockEl.value = String(pickSeconds);
     const teamsEl = document.getElementById('mock-teams');
     const roundsEl = document.getElementById('mock-rounds');
+    const scoringEl = document.getElementById('mock-scoring');
     if (teamsEl) teamsEl.value = String(room.teamCount || mock.teamNames.length);
     if (roundsEl) roundsEl.value = String(room.rounds || mock.rounds);
+    if (room.scoring) {
+      mock.scoring = normalizeScoring(room.scoring);
+      if (scoringEl) scoringEl.value = mock.scoring;
+    }
     mock.teamNames = Array.isArray(room.teamNames) ? room.teamNames.slice() : mock.teamNames;
     mock.rounds = Number(room.rounds) || mock.rounds;
     mock.picks = Array.isArray(room.picks) ? room.picks.slice() : [];
@@ -1129,6 +1143,7 @@
       && draftLive
       && room.status === 'live'
       && !roundBreakHold
+      && !pendingRoundAnnounce()
       && revealedOverall >= (mock.picks || []).length
       && onClock.teamIndex !== lastFocusSeat
     ) {
@@ -1157,6 +1172,7 @@
         setMockStatus('Waiting for host to start drafting', true);
       }
     }
+    syncPoolToSettings();
   }
 
   async function syncRoom({ tick = false } = {}) {
@@ -1263,6 +1279,33 @@
   function normalizeTeamCount(n) {
     const v = Number(n);
     return TEAM_COUNTS.has(v) ? v : DEFAULT_TEAM_COUNT;
+  }
+
+  function normalizeScoring(value) {
+    const s = String(value || '').trim().toLowerCase().replace(/[_\s]+/g, '-');
+    if (s === 'std' || s === 'standard' || s === 'non-ppr') return 'standard';
+    if (s === 'half' || s === 'half-ppr' || s === 'halfppr') return 'half-ppr';
+    if (SCORING_OPTIONS.has(s)) return s;
+    return DEFAULT_SCORING;
+  }
+
+  function scoringLabel(scoring) {
+    const s = normalizeScoring(scoring);
+    if (s === 'standard') return 'Standard';
+    if (s === 'half-ppr') return 'Half PPR';
+    return 'PPR';
+  }
+
+  function getScoring() {
+    const el = document.getElementById('mock-scoring');
+    if (el?.value) return normalizeScoring(el.value);
+    return normalizeScoring(mock?.scoring || DEFAULT_SCORING);
+  }
+
+  function scoringRankTitle() {
+    const label = scoringLabel(getScoring());
+    const teams = mock?.teamNames?.length || DEFAULT_TEAM_COUNT;
+    return `${label} · ${teams}-team`;
   }
 
   function padTeamNames(names, count) {
@@ -1568,8 +1611,11 @@
   /* —— Mock draft (browser-local) —— */
   let mock = null;
   let poolAll = [];
+  let poolScoring = null;
+  let poolTeams = null;
   let teamNames = [];
   let myFantasyTeamName = null;
+  let myTeamLogoUrl = null;
   let rosterPlan = {
     starters: DEFAULT_STARTERS.slice(),
     bench: DEFAULT_BENCH
@@ -2245,12 +2291,12 @@
       <section class="mock-profile-section" aria-label="Draft value">
         <p class="mock-profile-section-label">Draft value</p>
         <div class="mock-profile-grid is-value">
-          <div class="mock-profile-stat"><span>Rank</span><strong>${esc(String(player.overallRank ?? '—'))}</strong></div>
-          <div class="mock-profile-stat"><span>Pos rk</span><strong>${player.posRank != null ? esc(`${player.position}${player.posRank}`) : '—'}</strong></div>
+          <div class="mock-profile-stat" title="${esc(rankTooltip(player))}"><span>Rank</span><strong>${esc(String(player.overallRank ?? '—'))}</strong></div>
+          <div class="mock-profile-stat" title="${esc(rankTooltip(player))}"><span>Pos rk</span><strong>${player.posRank != null ? esc(`${player.position}${player.posRank}`) : '—'}</strong></div>
           <div class="mock-profile-stat" title="${esc(adpTooltip(player))}"><span>ADP</span><strong>${esc(fmtAdp(player.adp))}</strong></div>
           <div class="mock-profile-stat"><span>VORP</span><strong>${player.vorp != null ? esc(fmtPts(player.vorp)) : '—'}</strong></div>
         </div>
-        ${player.adp != null ? `<p class="mock-profile-footnote">${esc(adpTooltip(player))}</p>` : ''}
+        <p class="mock-profile-footnote">${esc(rankTooltip(player))}</p>
       </section>
 
       <section class="mock-profile-section" aria-label="Fantasy points">
@@ -2439,6 +2485,7 @@
     mock = {
       teamNames: applyCelebrityCpuNames(list, 0),
       rounds: r,
+      scoring: getScoring(),
       picks: [],
       seatIndex: 0,
       season: null
@@ -2512,6 +2559,9 @@
       );
     }
 
+    const scoringEl = document.getElementById('mock-scoring');
+    if (scoringEl) mock.scoring = normalizeScoring(scoringEl.value);
+
     pickSeconds = getPickSeconds();
     if (clockEl && PICK_SECONDS_OPTIONS.has(pickSeconds)) {
       clockEl.value = String(pickSeconds);
@@ -2534,9 +2584,15 @@
       okBtn.textContent = 'Starting…';
     }
     unlockDraftAudio();
+    const prevScoring = mock.scoring;
+    const prevTeams = mock.teamNames.length;
     readSettingsFromForm();
     closeMockSettings();
     try {
+      if (mock.scoring !== prevScoring || mock.teamNames.length !== prevTeams || poolScoring !== mock.scoring) {
+        await loadPool();
+        renderMock();
+      }
       // OK starts the draft with the settings chosen above (sound + join countdown).
       await startDraftSession({ fromSettings: true });
     } finally {
@@ -3103,7 +3159,7 @@
     const wrap = document.getElementById('mock-cpu-announce');
     const card = document.getElementById('mock-cpu-announce-card');
     if (card) {
-      card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade');
+      card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in');
       card.style.removeProperty('--cpu-fly-x');
       card.style.removeProperty('--cpu-fly-y');
       card.removeAttribute('data-pos');
@@ -3142,9 +3198,10 @@
     const epoch = ++cpuAnnounceEpoch;
     card.innerHTML = cpuPickAnnounceHtml(pick);
     card.dataset.pos = pickNflMeta(pick).pos;
-    card.classList.remove('is-pop', 'is-fly');
+    card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in');
     card.style.removeProperty('--cpu-fly-x');
     card.style.removeProperty('--cpu-fly-y');
+    wrap.classList.remove('is-recap-board');
     wrap.hidden = false;
     void card.offsetWidth;
     card.classList.add('is-pop');
@@ -3166,22 +3223,26 @@
       card.classList.remove('is-pop');
       void card.offsetWidth;
       card.classList.add('is-fly');
-      if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
-        pickReveal.phase = 'show';
-      }
-      revealedOverall = Math.max(revealedOverall, Number(pick.overall) || 0);
-      renderOrder();
-      renderOtherTeams();
-      flashSeatPick(pick.teamIndex);
     };
 
     return new Promise((resolve) => {
       let settled = false;
+      const landMagnet = () => {
+        if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
+          pickReveal.phase = 'show';
+        }
+        revealedOverall = Math.max(revealedOverall, Number(pick.overall) || 0);
+        lastOrderHtml = '';
+        renderOrder();
+        renderOtherTeams();
+        flashSeatPick(pick.teamIndex);
+      };
       const finish = () => {
         if (settled) return;
         settled = true;
         card.removeEventListener('animationend', onEnd);
         if (epoch === cpuAnnounceEpoch) {
+          landMagnet();
           wrap.hidden = true;
           card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap');
           card.style.removeProperty('--cpu-fly-x');
@@ -3234,7 +3295,8 @@
   }
 
   function seatSelecting(teamIndex) {
-    if (roundBreakHold) return false;
+    if (roundBreakHold || pendingRoundAnnounce()) return false;
+    if (pickReveal && Number(pickReveal.teamIndex) === Number(teamIndex)) return true;
     const next = visualNextSlot();
     if (draftLive && next && next.teamIndex === teamIndex && !seatIsHuman(teamIndex)) {
       return true;
@@ -3243,7 +3305,7 @@
   }
 
   function maybePlayTurnCues() {
-    if (!draftLive || !mock || awaitingSeatClaim || roundBreakHold) {
+    if (!draftLive || !mock || awaitingSeatClaim || roundBreakHold || pendingRoundAnnounce()) {
       turnCueKey = null;
       return;
     }
@@ -3299,6 +3361,22 @@
     return stored || `Team ${i + 1}`;
   }
 
+  function seatAvatarUrl(teamIndex) {
+    const i = Number(teamIndex);
+    const you = !awaitingSeatClaim && mock && i === Number(mock.seatIndex);
+    const seat = roomSeats?.[i];
+    if (seat && !seat.isCpu && seat.avatarUrl) return seat.avatarUrl;
+    if (you && myTeamLogoUrl) return myTeamLogoUrl;
+    return null;
+  }
+
+  function seatAvatarHtml(teamIndex, cls = 'seat-avatar') {
+    const url = seatAvatarUrl(teamIndex);
+    if (!url) return '';
+    const label = seatBoardLabel(teamIndex);
+    return `<img class="${esc(cls)}" src="${esc(url)}" alt="" title="${esc(label)}" width="20" height="20" loading="lazy" decoding="async" />`;
+  }
+
   function updateDraftDropState() {
     /* Draft drop zone removed — double-click only */
   }
@@ -3352,6 +3430,7 @@
     boardAnnounceTail = Promise.resolve();
     roundBreakHold = null;
     hideCpuPickAnnounce();
+    setOrderRecapHold(false);
   }
 
   function roundAnnounceHtml(round) {
@@ -3361,60 +3440,100 @@
       <div class="cpu-meta"><span class="cpu-team">Snake draft</span></div>`;
   }
 
-  function roundRecapHtml(round) {
-    const picks = (mock?.picks || [])
-      .filter((p) => Number(p.round) === Number(round))
-      .slice()
-      .sort((a, b) => Number(a.overall) - Number(b.overall));
-    const order = ['QB', 'RB', 'WR', 'TE', 'K', 'D/ST'];
-    const counts = {};
-    for (const pick of picks) {
-      const pos = pickPos(pick);
-      counts[pos] = (counts[pos] || 0) + 1;
-    }
-    const mix = order.filter((pos) => counts[pos]).map((pos) => `${counts[pos]} ${pos}`).join(' · ');
-    const rows = picks.map((pick) => {
-      const meta = pickNflMeta(pick);
-      const bits = splitPlayerName(pick.playerName);
-      const last = bits.last || pick.playerName || 'Player';
-      const you = Number(pick.teamIndex) === Number(mock.seatIndex);
-      const logo = meta.logo
-        ? `<img class="logo" src="${esc(meta.logo)}" alt="" width="36" height="36" />`
-        : '';
-      return `<li data-pos="${esc(meta.pos)}" class="${you ? 'is-you' : ''}">
-        <span class="rk">${esc(String(pick.overall))}</span>
-        <span class="pos">${esc(meta.pos)}</span>
-        <span class="who">
-          ${bits.first ? `<span class="fn">${esc(bits.first)}</span>` : ''}
-          <span class="nm">${esc(last)}</span>
-        </span>
-        ${logo}
-        <span class="nfl">${esc(meta.nfl || '')}</span>
-      </li>`;
-    }).join('');
-    return `
-      <p class="cpu-kicker">Round complete</p>
-      <strong class="cpu-name">Round ${esc(String(round))}</strong>
-      ${mix ? `<p class="cpu-recap-mix">${esc(mix)}</p>` : ''}
-      <ol class="cpu-recap-picks">${rows}</ol>`;
+  function recapMagnetHtml(pick) {
+    if (!pick) return '<span class="last is-empty"></span>';
+    return lastPickMagnetHtml(pick);
   }
 
-  function playAnnounceCard({ html, recap = false, holdMs = 2000, audioRound = null }) {
+  function draftBoardHtml({ highlightRound = null } = {}) {
+    const teams = mock?.teamNames || [];
+    const totalRounds = Math.max(Number(mock?.rounds) || 1, Number(highlightRound) || 1);
+    const heads = teams.map((_, i) => {
+      const you = !awaitingSeatClaim && i === Number(mock.seatIndex);
+      const label = seatBoardLabel(i);
+      return `<div class="cpu-recap-head${you ? ' is-you' : ''}${i % 2 ? ' is-alt' : ''}" title="${esc(label)}">${seatAvatarHtml(i, 'cpu-recap-avatar')}<span class="nm">${esc(label)}</span></div>`;
+    }).join('');
+    const rows = [];
+    for (let r = 1; r <= totalRounds; r += 1) {
+      const now = highlightRound != null && r === Number(highlightRound);
+      const hideLater = highlightRound != null && r > Number(highlightRound);
+      const cells = teams.map((_, i) => {
+        const pick = hideLater ? null : pickForTeamInRound(i, r);
+        return `<div class="cpu-recap-cell">${recapMagnetHtml(pick)}</div>`;
+      }).join('');
+      const rn = `<div class="cpu-recap-rn">${r}</div>`;
+      rows.push(
+        `<div class="cpu-recap-row${now ? ' is-now' : ''}">${rn}${cells}${rn}</div>`
+      );
+    }
+    return `
+      <div class="cpu-recap-title">Fantasy Draft Board</div>
+      <div class="cpu-recap-board" style="--mock-seats:${teams.length}">
+        <div class="cpu-recap-row is-head">
+          <div class="cpu-recap-rn" aria-hidden="true"></div>
+          ${heads}
+          <div class="cpu-recap-rn" aria-hidden="true"></div>
+        </div>
+        ${rows.join('')}
+      </div>`;
+  }
+
+  function roundRecapHtml(round) {
+    return draftBoardHtml({ highlightRound: round });
+  }
+
+  function paintBoardView() {
+    const view = document.getElementById('mock-board-view');
+    const card = document.getElementById('mock-board-view-card');
+    const btn = document.getElementById('mock-board-btn');
+    const open = Boolean(boardViewOpen && mock);
+    if (view) view.hidden = !open;
+    document.getElementById('mock-draft')?.classList.toggle('is-board-open', open);
+    if (btn) {
+      btn.hidden = !mock;
+      btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+      btn.textContent = open ? 'Close' : 'Board';
+    }
+    if (!open || !card || !mock) return;
+    card.innerHTML = draftBoardHtml();
+    requestAnimationFrame(() => {
+      const board = card.querySelector('.cpu-recap-board');
+      if (!board) return;
+      const rows = [...board.querySelectorAll('.cpu-recap-row:not(.is-head)')];
+      const hit = [...rows].reverse().find((row) => row.querySelector('.last:not(.is-empty)')) || rows[0];
+      if (!hit) return;
+      const box = board.getBoundingClientRect();
+      const rec = hit.getBoundingClientRect();
+      board.scrollTop += (rec.top + rec.height / 2) - (box.top + box.height / 2);
+    });
+  }
+
+  function setBoardViewOpen(on) {
+    boardViewOpen = Boolean(on) && Boolean(mock);
+    paintBoardView();
+  }
+
+  function toggleBoardView() {
+    setBoardViewOpen(!boardViewOpen);
+  }
+
+  function playAnnounceCard({ html, recap = false, fadeOut = false, holdMs = 2000, audioRound = null }) {
     const wrap = document.getElementById('mock-cpu-announce');
     const card = document.getElementById('mock-cpu-announce-card');
     if (!wrap || !card) return Promise.resolve();
     const epoch = ++cpuAnnounceEpoch;
-    card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade');
+    const shouldFade = recap || fadeOut;
+    card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in');
     card.style.removeProperty('--cpu-fly-x');
     card.style.removeProperty('--cpu-fly-y');
     card.removeAttribute('data-pos');
     wrap.classList.toggle('is-recap-board', recap);
-    card.classList.add('is-round');
     if (recap) card.classList.add('is-recap');
+    else card.classList.add('is-round');
     card.innerHTML = html;
     wrap.hidden = false;
     void card.offsetWidth;
-    card.classList.add('is-pop');
+    card.classList.add(recap ? 'is-recap-in' : 'is-pop');
     paintMockStartBar();
     if (audioRound) playRoundAudio(audioRound);
 
@@ -3438,7 +3557,7 @@
 
     const fadeAway = () => {
       if (epoch !== cpuAnnounceEpoch) return;
-      card.classList.remove('is-pop');
+      card.classList.remove('is-pop', 'is-recap-in');
       void card.offsetWidth;
       card.classList.add('is-fade');
     };
@@ -3452,7 +3571,7 @@
         if (epoch === cpuAnnounceEpoch) {
           wrap.hidden = true;
           wrap.classList.remove('is-recap-board');
-          card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade');
+          card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in');
           card.style.removeProperty('--cpu-fly-x');
           card.style.removeProperty('--cpu-fly-y');
         }
@@ -3460,8 +3579,8 @@
       };
       const onEnd = (e) => {
         if (e.target !== card) return;
-        if (recap && e.animationName === 'mock-cpu-announce-fade') finish();
-        if (!recap && e.animationName === 'mock-cpu-announce-fly') finish();
+        if (shouldFade && e.animationName === 'mock-cpu-announce-fade') finish();
+        if (!shouldFade && e.animationName === 'mock-cpu-announce-fly') finish();
       };
       card.addEventListener('animationend', onEnd);
       window.setTimeout(() => {
@@ -3469,27 +3588,42 @@
           finish();
           return;
         }
-        if (recap) fadeAway();
+        if (shouldFade) fadeAway();
         else flyAway();
       }, holdMs);
-      window.setTimeout(finish, holdMs + (recap ? 550 : 800));
+      window.setTimeout(finish, holdMs + (shouldFade ? 550 : 800));
     });
   }
 
   function playRoundAnnounce(round) {
     return playAnnounceCard({
       html: roundAnnounceHtml(round),
+      fadeOut: true,
       holdMs: 2000,
       audioRound: round
     });
   }
 
-  function playRoundRecap(round) {
-    return playAnnounceCard({
+  function setOrderRecapHold(on) {
+    document.getElementById('mock-order')?.classList.toggle('is-recap-hold', Boolean(on));
+  }
+
+  async function playRoundRecap(round) {
+    const shown = playAnnounceCard({
       html: roundRecapHtml(round),
       recap: true,
-      holdMs: 4600
+      fadeOut: true,
+      holdMs: 3200
     });
+    requestAnimationFrame(() => {
+      const board = document.querySelector('#mock-cpu-announce-card .cpu-recap-board');
+      const row = board?.querySelector('.cpu-recap-row.is-now');
+      if (!board || !row) return;
+      const box = board.getBoundingClientRect();
+      const hit = row.getBoundingClientRect();
+      board.scrollTop += (hit.top + hit.height / 2) - (box.top + box.height / 2);
+    });
+    await shown;
   }
 
   async function maybePlayRoundBreak() {
@@ -3499,19 +3633,27 @@
       if (!next) return played;
       const completed = lastAnnouncedRound >= 1 ? lastAnnouncedRound : null;
       if (completed) {
+        if (pickRevealTimer) {
+          clearTimeout(pickRevealTimer);
+          pickRevealTimer = null;
+        }
+        pickReveal = null;
+        hideCpuPickAnnounce();
         roundBreakHold = completed;
         boardRound = completed;
+        setOrderRecapHold(true);
         lastOrderHtml = '';
         renderOrder();
         paintMockStartBar();
         setMockStatus(`Round ${completed} complete`, true);
-        await sleep(1400);
+        await sleep(900);
         await playRoundRecap(completed);
-        await sleep(350);
+        await sleep(250);
         await playRoundAnnounce(next);
         lastAnnouncedRound = next;
         roundBreakHold = null;
         boardRound = next;
+        setOrderRecapHold(false);
         lastOrderHtml = '';
         renderOrder();
         paintMockStartBar();
@@ -3559,7 +3701,7 @@
     if (!el || !mock) return;
     const phase = draftPhase();
     const catchingUp = draftLive && revealedOverall < (mock.picks || []).length;
-    const next = phase === 'setup' || roundBreakHold
+    const next = phase === 'setup' || roundBreakHold || pendingRoundAnnounce()
       ? null
       : (catchingUp ? visualNextSlot() : currentSlot());
     const following = next
@@ -3630,7 +3772,7 @@
       const label = boardLabel;
       return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} ${you && draftLive && !isDraftComplete() ? 'data-drop-player="1"' : ''} title="${esc(title)}">
         <span class="n">${String(i + 1).padStart(2, '0')}</span>
-        <span class="nm">${esc(label)}</span>
+        <span class="nm">${seatAvatarHtml(i, 'seat-chip-avatar')}<span class="nm-text">${esc(label)}</span></span>
         ${lastHtml}
         <span class="st${status ? '' : ' is-idle'}">${status || ''}</span>
       </button>`;
@@ -3699,17 +3841,39 @@
 
   function adpSourceLabel(source) {
     const s = String(source || '').toLowerCase();
+    if (s === 'market' || s === 'ffc+sleeper') return 'FFC + Sleeper market';
     if (s === 'ffc') return 'Fantasy Football Calculator';
     if (s === 'sleeper') return 'Sleeper';
-    if (s === 'ffc+sleeper') return 'FFC + Sleeper';
     return source || 'ADP';
+  }
+
+  function rankInputLabel(key) {
+    const labels = {
+      ffc: 'FFC ADP',
+      sleeperAdp: 'Sleeper ADP',
+      espn: 'ESPN',
+      vorp: 'VORP',
+      prior: 'prior season'
+    };
+    return labels[key] || key;
+  }
+
+  function rankTooltip(player) {
+    const rk = player?.overallRank != null ? String(player.overallRank) : '—';
+    const bits = [`GridIron rank ${rk} · ${scoringRankTitle()}`];
+    const inputs = Array.isArray(player?.rankInputs) ? player.rankInputs : [];
+    if (inputs.length) bits.push(`average of ${inputs.map(rankInputLabel).join(', ')}`);
+    if (player?.rankScore != null && Number.isFinite(Number(player.rankScore))) {
+      bits.push(`score ${Number(player.rankScore).toFixed(1)}`);
+    }
+    return bits.join(' · ');
   }
 
   function adpTooltip(player) {
     if (player?.adp == null || !Number.isFinite(Number(player.adp))) {
       return 'Average draft position unavailable';
     }
-    const bits = [`ADP ${fmtAdp(player.adp)} · ${adpSourceLabel(player.adpSource)}`];
+    const bits = [`ADP ${fmtAdp(player.adp)} · ${adpSourceLabel(player.adpSource)} · ${scoringRankTitle()}`];
     if (player.adpStdev != null && Number.isFinite(Number(player.adpStdev))) {
       bits.push(`σ ${Number(player.adpStdev).toFixed(1)}`);
     }
@@ -3721,18 +3885,22 @@
 
   function playerSourcesHtml(player, { news = false } = {}) {
     const chips = [];
+    chips.push('<span class="mock-source-chip" title="GridIron composite rank from multiple sources">GridIron</span>');
     const src = new Set(Array.isArray(player?.sources) ? player.sources : []);
     if (src.has('nflverse') || src.has('nflverse-stats')) {
       chips.push('<span class="mock-source-chip" title="Roster, bye, prior-season stats">nflverse</span>');
     }
     if (src.has('sleeper') || player?.projectedPoints2026 != null || injuryLabel(player)) {
-      chips.push('<span class="mock-source-chip" title="Projections, injuries, practice report">Sleeper</span>');
+      chips.push('<span class="mock-source-chip" title="Projections, injuries, practice report, ADP">Sleeper</span>');
     }
-    if (src.has('ffc') || String(player?.adpSource || '').includes('ffc')) {
-      chips.push('<span class="mock-source-chip" title="Consensus mock ADP">FFC ADP</span>');
+    if (src.has('espn') || player?.espnRank != null) {
+      chips.push('<span class="mock-source-chip" title="ESPN published draft rank">ESPN</span>');
+    }
+    if (src.has('ffc') || String(player?.adpSource || '').includes('ffc') || player?.adpSource === 'market') {
+      chips.push('<span class="mock-source-chip" title="Mock-draft market ADP">FFC market</span>');
     }
     if (news) {
-      chips.push('<span class="mock-source-chip" title="Athlete headlines">ESPN</span>');
+      chips.push('<span class="mock-source-chip" title="Athlete headlines">ESPN news</span>');
     }
     if (!chips.length) return '';
     return `<p class="mock-sources" aria-label="Data sources"><span class="mock-sources-label">Sources</span>${chips.join('')}</p>`;
@@ -4225,7 +4393,7 @@
       const st = posBoardStats(p);
       const ydsText = st.ydsText != null ? st.ydsText : fmtInt(st.yds);
       return `<div class="mock-player${targeted ? ' is-targeted' : ''}${injury ? ' has-injury' : ''}${drafted ? ' is-drafted' : ''}" role="button" tabindex="0" data-id="${esc(p.id)}"${drafted ? ' data-drafted="1"' : ' draggable="true"'} title="${esc(title)}">
-        <span class="mock-rank" title="Overall rank">${esc(String(rk))}</span>
+        <span class="mock-rank" title="${esc(rankTooltip(p))}">${esc(String(rk))}</span>
         ${targetBtn}
         ${head}
         <span class="mock-player-main">
@@ -4239,7 +4407,7 @@
         ${posBadge(p.position)}
         <span class="mock-cell num" title="Bye week">${p.byeWeek != null ? esc(String(p.byeWeek)) : '—'}</span>
         <span class="mock-cell num" title="${esc(adpTooltip(p))}">${esc(fmtAdp(p.adp))}</span>
-        <span class="mock-cell num mock-posrk" title="Position rank">${posRk}</span>
+        <span class="mock-cell num mock-posrk" title="${esc(rankTooltip(p))}">${posRk}</span>
         <span class="mock-cell num" title="Games played (${esc(seasonYy(mock?.statsSeason, 'prior'))})">${esc(fmtInt(p.games))}</span>
         <span class="mock-cell num" title="${esc(st.ydsLabel)}">${esc(ydsText)}</span>
         <span class="mock-cell num" title="${esc(st.tdLabel)}">${esc(fmtInt(st.td))}</span>
@@ -4372,7 +4540,10 @@
     const list = document.getElementById('mock-others-list');
     const count = document.getElementById('mock-others-count');
     if (!list || !mock) return;
-    const next = currentSlot();
+    const catchingUp = draftLive && revealedOverall < (mock.picks || []).length;
+    const next = draftPhase() === 'setup' || roundBreakHold || pendingRoundAnnounce()
+      ? null
+      : (catchingUp ? visualNextSlot() : currentSlot());
     const others = mock.teamNames
       .map((name, i) => ({ name: seatBoardLabel(i), i, picks: picksForTeam(i) }))
       .filter((t) => t.i !== mock.seatIndex);
@@ -4409,7 +4580,7 @@
         : (chips || `<div class="ot-empty">Waiting…</div>`);
       return `<div class="mock-other-team${onClock ? ' is-clock' : ''}${selecting ? ' is-selecting' : ''}">
         <div class="ot-name">
-          <span>${esc(t.i + 1)}. ${esc(t.name)}</span>
+          <span>${seatAvatarHtml(t.i, 'ot-avatar')}${esc(t.i + 1)}. ${esc(t.name)}</span>
           ${onClock ? `<span class="tag">${selecting ? 'Selecting' : 'On the clock'}</span>` : `<span class="tag">${t.picks.length}</span>`}
         </div>
         <div class="ot-picks">${body}</div>
@@ -4511,6 +4682,7 @@
     paintSettingsSummary();
     renderDraftChat();
     persistMock();
+    if (boardViewOpen) paintBoardView();
   }
 
   function announceMockStart(player) {
@@ -4748,27 +4920,47 @@
     return rosterPlan;
   }
 
-  async function loadPool() {
-    const res = await fetch('/api/beta/draft-pool?refresh=1', { cache: 'no-store' });
+  async function loadPool({ force = false } = {}) {
+    const scoring = getScoring();
+    const teams = mock?.teamNames?.length || DEFAULT_TEAM_COUNT;
+    const qs = new URLSearchParams({ scoring, teams: String(teams) });
+    if (force) qs.set('refresh', '1');
+    const res = await fetch(`/api/beta/draft-pool?${qs}`, { cache: 'no-store' });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load draft pool');
     poolAll = data.players || [];
+    poolScoring = data.scoring || scoring;
+    poolTeams = Number(data.adpTeams) || teams;
     if (mock) {
       mock.season = data.season || mock.season;
       mock.statsSeason = data.statsSeason || null;
       mock.projectionSeason = data.projectionSeason || null;
+      mock.scoring = poolScoring;
     }
     paintPoolSeasonHeaders(data);
     return data;
   }
 
+  function syncPoolToSettings() {
+    if (!mock) return;
+    const scoring = getScoring();
+    const teams = mock.teamNames.length;
+    if (poolScoring === scoring && poolTeams === teams && poolAll.length) return;
+    loadPool().then(() => renderMock()).catch(() => {});
+  }
+
   function poolFreshnessTitle(data) {
     const bits = [];
-    if (data?.projectionSeason) bits.push(`${data.projectionSeason} Sleeper projections`);
-    if (data?.adpSource === 'fantasyfootballcalculator') {
-      bits.push(data.ffcDrafts ? `${Number(data.ffcDrafts).toLocaleString()} FFC mocks` : 'FFC ADP');
-      if (data.ffcWindow?.end) bits.push(`through ${data.ffcWindow.end}`);
+    bits.push('GridIron composite rank');
+    if (Array.isArray(data?.rankSources) && data.rankSources.length) {
+      bits.push(data.rankSources.map(rankInputLabel).join(' + '));
     }
+    if (data?.projectionSeason) bits.push(`${data.projectionSeason} Sleeper projections`);
+    if (data?.ffcDrafts) bits.push(`${Number(data.ffcDrafts).toLocaleString()} FFC mocks`);
+    const score = data?.scoringLabel || scoringLabel(data?.scoring);
+    const teams = data?.adpTeams || mock?.teamNames?.length;
+    bits.push(`${score}${teams ? ` · ${teams}-team` : ''}`);
+    if (data?.ffcWindow?.end) bits.push(`through ${data.ffcWindow.end}`);
     if (data?.fetchedAt) {
       const t = new Date(data.fetchedAt);
       if (!Number.isNaN(t.getTime())) bits.push(`updated ${t.toLocaleString()}`);
@@ -4785,20 +4977,23 @@
     if (fpBtn) {
       const label = seasonYy(statsY, '’25');
       fpBtn.setAttribute('data-label', label);
-      fpBtn.title = `Sort by ${label} fantasy points (nflverse)`;
+      fpBtn.title = `Sort by ${label} fantasy points (${scoringLabel(getScoring())}, nflverse)`;
     }
     if (projBtn) {
       const label = seasonYy(projY, 'Proj');
       projBtn.setAttribute('data-label', label === 'Proj' ? 'Proj' : label);
-      projBtn.title = `Sort by ${seasonYy(projY, '')} projected points (Sleeper)`.replace(/\s+/g, ' ').trim();
+      projBtn.title = `Sort by ${seasonYy(projY, '')} projected points (${scoringLabel(getScoring())}, Sleeper)`.replace(/\s+/g, ' ').trim();
     }
     if (adpBtn) {
-      const src = data?.adpSource === 'fantasyfootballcalculator'
-        ? 'Fantasy Football Calculator mocks'
-        : (data?.adpSource || 'consensus ADP');
+      const src = 'FFC + Sleeper market ADP';
       const drafts = data?.ffcDrafts ? ` · ${data.ffcDrafts} drafts` : '';
-      adpBtn.title = `Sort by average draft position (${src}${drafts})`;
+      const teams = data?.adpTeams ? ` · ${data.adpTeams}-team` : '';
+      adpBtn.title = `Sort by market ADP (${src}${teams}${drafts})`;
     }
+    const rankBtn = document.querySelector('.mock-pool-cols [data-sort="rank"]');
+    const posRkBtn = document.querySelector('.mock-pool-cols [data-sort="posrk"]');
+    if (rankBtn) rankBtn.title = `Sort by GridIron rank (${scoringRankTitle()} · multi-source average)`;
+    if (posRkBtn) posRkBtn.title = `Sort by GridIron position rank (${scoringRankTitle()} · multi-source average)`;
     const count = document.getElementById('mock-pool-count');
     const fresh = poolFreshnessTitle(data);
     if (count && fresh) count.title = fresh;
@@ -4826,6 +5021,8 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return null;
       myFantasyTeamName = String(data?.team?.name || data?.claim?.teamName || '').trim() || null;
+      const logo = data?.logo;
+      myTeamLogoUrl = (logo?.type === 'icon' || logo?.type === 'upload') ? (logo.url || null) : null;
       return myFantasyTeamName;
     } catch {
       return null;
@@ -4846,6 +5043,17 @@
         return;
       }
       startDraftSession();
+    });
+    document.getElementById('mock-board-btn')?.addEventListener('click', () => {
+      toggleBoardView();
+    });
+    document.getElementById('mock-board-view-close')?.addEventListener('click', () => {
+      setBoardViewOpen(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !boardViewOpen) return;
+      if (e.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      setBoardViewOpen(false);
     });
     document.getElementById('mock-skip-join')?.addEventListener('click', () => {
       skipJoinWait();
@@ -5298,7 +5506,7 @@
       renderMock();
       setMockStatus(`You’re pick #${mock.seatIndex + 1}`, true);
     });
-    document.getElementById('mock-teams')?.addEventListener('change', (e) => {
+    document.getElementById('mock-teams')?.addEventListener('change', async (e) => {
       const count = normalizeTeamCount(e.target.value);
       if ((mock.picks.length || draftLive || isMultiplayer()) && !confirm('Changing team count clears the board. Continue?')) {
         e.target.value = String(mock.teamNames.length);
@@ -5308,8 +5516,29 @@
       leaveRoomLocal();
       applyTeamCount(count);
       fillSeatSelect();
+      setMockStatus(`Updating ${count}-team rankings…`, true);
+      try {
+        await loadPool();
+      } catch { /* keep previous pool */ }
       renderMock();
       setMockStatus(`Set to ${count} teams`, true);
+    });
+    document.getElementById('mock-scoring')?.addEventListener('change', async (e) => {
+      const scoring = normalizeScoring(e.target.value);
+      if (draftLive || isMultiplayer()) {
+        e.target.value = mock.scoring || DEFAULT_SCORING;
+        setMockStatus('Scoring locked while the draft is live — reset to change', false);
+        return;
+      }
+      mock.scoring = scoring;
+      setMockStatus(`Updating ${scoringLabel(scoring)} rankings…`, true);
+      try {
+        await loadPool();
+        renderMock();
+        setMockStatus(`${scoringLabel(scoring)} rankings loaded`, true);
+      } catch (err) {
+        setMockStatus(err.message || 'Could not update rankings', false);
+      }
     });
     document.getElementById('mock-rounds')?.addEventListener('change', (e) => {
       const rounds = normalizeRounds(e.target.value);
@@ -5512,22 +5741,25 @@
       }
       const teamsEl = document.getElementById('mock-teams');
       const roundsEl = document.getElementById('mock-rounds');
+      const scoringEl = document.getElementById('mock-scoring');
       clearPersistedMock();
       const teamCount = normalizeTeamCount(
         teamsEl?.value || DEFAULT_TEAM_COUNT
       );
       if (teamsEl) teamsEl.value = String(teamCount);
+      if (scoringEl) scoringEl.value = normalizeScoring(scoringEl.value);
       ensureMock(
         teamNames,
         normalizeRounds(roundsEl?.value || DEFAULT_ROUNDS),
         teamCount
       );
+      mock.scoring = getScoring();
       if (roundsEl) roundsEl.value = String(mock.rounds);
       if (teamsEl) teamsEl.value = String(mock.teamNames.length);
       pickSeconds = getPickSeconds();
       restoreTargets();
       renderMock();
-      await loadPool();
+      await loadPool({ force: true });
       renderMock();
       const joinId = parseMockRoomFromHash();
       if (joinId) {

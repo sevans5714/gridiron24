@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=122" />
-  <link rel="icon" href="/favicon.ico?v=122" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=122" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=122" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=123" />
+  <link rel="icon" href="/favicon.ico?v=123" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=123" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=123" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=154" />
 </head>
@@ -20,7 +20,7 @@
     <img class="auth-crest" src="/assets/gridiron24-crest.png?v=10" alt="GridIron 24" width="1024" height="1024" />
     <h1 class="auth-title">Create Account</h1>
     <div class="status-note err" id="err" role="alert"></div>
-    <p class="auth-help" id="invite-help" hidden>You're invited to GridIron 24. Create your account below to get in.</p>
+    <p class="auth-help" id="invite-help" hidden>You're invited to GridIron 24. Create your account below. A commissioner still has to approve you before you can sign in.</p>
 
     <label class="field-label" for="name">Full Name</label>
     <input class="field" id="name" name="name" type="text" required autofocus autocomplete="name" />
@@ -73,10 +73,10 @@
       help.hidden = false;
       if (peek.loungeOnly || peek.accountType === 'social') {
         help.textContent =
-          "You're invited to a social account for the Members Lounge — chat, games, and the social desk. This invite does not include a fantasy franchise.";
+          "You're invited to a social account for the Members Lounge. Create your account, then wait for commissioner approval before you can sign in.";
         document.querySelector('.auth-title').textContent = 'Create Lounge Account';
       } else {
-        help.textContent = "You're invited to GridIron 24. Create your account below to get in.";
+        help.textContent = "You're invited to GridIron 24. Create your account below. A commissioner still has to approve you before you can sign in.";
       }
       document.getElementById('email').value = peek.email || '';
       document.getElementById('email').readOnly = true;

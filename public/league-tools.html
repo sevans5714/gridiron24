@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=122" />
-  <link rel="icon" href="/favicon.ico?v=122" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=122" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=122" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=123" />
+  <link rel="icon" href="/favicon.ico?v=123" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=123" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=123" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=154" />
   <style>
@@ -1159,6 +1159,69 @@
     .members-pending-banner strong { font-weight: 700; }
     .link-action.is-danger { color: #f0a0b0; }
     .link-action.is-danger:hover { color: #ffc8d0; }
+    #delete-account-dialog {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      max-width: min(26rem, calc(100vw - 1.5rem));
+      width: 26rem;
+    }
+    #delete-account-dialog::backdrop {
+      background: rgba(8, 10, 16, 0.72);
+      backdrop-filter: blur(6px);
+    }
+    .delete-account-sheet {
+      padding: 1.25rem 1.2rem 1.15rem;
+      border: 1px solid color-mix(in srgb, #ef4444 45%, var(--line));
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, #ef4444 16%, transparent), transparent 60%),
+        var(--panel);
+      color: var(--text);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+    }
+    .delete-account-sheet h3 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.55rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .delete-account-sheet p {
+      margin: 0.55rem 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+    .delete-account-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      margin-top: 1.1rem;
+    }
+    .delete-account-yes,
+    .delete-account-no {
+      appearance: none;
+      min-height: 3.1rem;
+      border: 2px solid transparent;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .delete-account-yes {
+      background: #dc2626;
+      border-color: #f87171;
+      color: #fff;
+    }
+    .delete-account-yes:hover { background: #b91c1c; }
+    .delete-account-no {
+      background: var(--good);
+      border-color: color-mix(in srgb, var(--good) 70%, #fff);
+      color: #fff;
+    }
+    .delete-account-no:hover { filter: brightness(1.08); }
     tr.is-pending-member td {
       background: color-mix(in srgb, var(--detail, #ff7a18) 8%, transparent);
     }
@@ -1331,7 +1394,7 @@
               <div class="section-head">
                 <h3>Account Requests</h3>
               </div>
-              <p class="help">New sign-ups waiting for approval. Pick a membership, then Approve — or Deny to remove the request.</p>
+              <p class="help">Every new signup waits here until you approve. Pick a membership, then Approve — or Deny to delete the request. They cannot sign in until you approve.</p>
               <div class="status-note" id="account-requests-msg" role="status"></div>
               <div id="account-requests-list"><div class="msg">Loading…</div></div>
             </section>
@@ -1356,7 +1419,7 @@
               <div class="section-head">
                 <h3>Registered Players <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
-              <p class="help">How many approved members are in each league. Put GridIron 24 players in <strong>Detail</strong> or <strong>Overtime</strong> (12 each). Invites still show on the <a href="/roster-2026.html">2026 Roster</a> until they join. <strong>Remove from league</strong> deletes their account, frees the franchise, and they need a new invite to come back.</p>
+              <p class="help">How many approved members are in each league. Put GridIron 24 players in <strong>Detail</strong> or <strong>Overtime</strong> (12 each). Invites still show on the <a href="/roster-2026.html">2026 Roster</a> until they join. <strong>Delete Account</strong> wipes them from the system — login and password are revoked.</p>
               <div class="members-census" id="members-census" hidden></div>
               <div id="members-access-block">
                 <div class="status-note" id="members-msg" role="status"></div>
@@ -2369,6 +2432,41 @@
       el.className = `status-note show ${ok ? 'ok' : 'err'}`;
     }
 
+    function confirmDeleteAccount(name) {
+      const dialog = document.getElementById('delete-account-dialog');
+      const copy = document.getElementById('delete-account-copy');
+      if (!dialog || typeof dialog.showModal !== 'function') {
+        return Promise.resolve(window.confirm(`Are you sure?\n\nDelete ${name}'s account from the whole system?`));
+      }
+      copy.textContent = `Delete ${name} from the whole system? Login and password are revoked. This cannot be undone.`;
+      return new Promise((resolve) => {
+        const yes = document.getElementById('delete-account-yes');
+        const no = document.getElementById('delete-account-no');
+        const finish = (ok) => {
+          yes.removeEventListener('click', onYes);
+          no.removeEventListener('click', onNo);
+          dialog.removeEventListener('cancel', onCancel);
+          dialog.removeEventListener('click', onBackdrop);
+          if (dialog.open) dialog.close();
+          resolve(ok);
+        };
+        const onYes = () => finish(true);
+        const onNo = () => finish(false);
+        const onCancel = (e) => {
+          e.preventDefault();
+          finish(false);
+        };
+        const onBackdrop = (e) => {
+          if (e.target === dialog) finish(false);
+        };
+        yes.addEventListener('click', onYes);
+        no.addEventListener('click', onNo);
+        dialog.addEventListener('cancel', onCancel);
+        dialog.addEventListener('click', onBackdrop);
+        dialog.showModal();
+      });
+    }
+
     function teamAssignValue(claim) {
       if (!claim) return '';
       return `${claim.conferenceKey}:${claim.teamId}`;
@@ -2758,7 +2856,7 @@
               <th>Conference</th>
               <th>Lounge</th>
               <th>Dues</th>
-              <th>Remove</th>
+              <th>Delete</th>
             </tr>
           </thead>
           <tbody>
@@ -2827,7 +2925,7 @@
                 <td>
                   ${u.siteOwner || u.id === toolsUser?.id
                     ? `<span class="muted-sm">${u.siteOwner ? 'Owner' : 'You'}</span>`
-                    : `<button type="button" class="link-action is-danger" data-remove-member="${esc(u.id)}" data-remove-name="${esc(u.name || u.loginName || 'this member')}">Remove from league</button>`}
+                    : `<button type="button" class="link-action is-danger" data-delete-account="${esc(u.id)}" data-delete-name="${esc(u.name || u.loginName || 'this member')}">Delete Account</button>`}
                 </td>
               </tr>`).join('')}
           </tbody>
@@ -3160,19 +3258,18 @@
         });
       });
 
-      document.getElementById('members-list').querySelectorAll('[data-remove-member]').forEach((btn) => {
+      document.getElementById('members-list').querySelectorAll('[data-delete-account]').forEach((btn) => {
         btn.addEventListener('click', async () => {
-          const userId = btn.getAttribute('data-remove-member');
-          const name = btn.getAttribute('data-remove-name') || 'this member';
-          if (!confirm(`Remove ${name} from the league?\n\nThis deletes their account, frees their franchise, and they will need a new invite to join again.`)) {
-            return;
-          }
+          const userId = btn.getAttribute('data-delete-account');
+          const name = btn.getAttribute('data-delete-name') || 'this member';
+          const ok = await confirmDeleteAccount(name);
+          if (!ok) return;
           btn.disabled = true;
           try {
-            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/remove`, { method: 'POST' });
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/delete`, { method: 'POST' });
             const data = await res.json().catch(() => ({}));
-            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not remove member');
-            showMembersMsg(`Removed ${name} and deleted their account.`, true);
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not delete account');
+            showMembersMsg(`Deleted ${name}. Login and password revoked.`, true);
             await loadMembers();
           } catch (err) {
             showMembersMsg(err.message, false);
@@ -5073,5 +5170,15 @@
       }
     }
   </script>
+  <dialog id="delete-account-dialog" aria-labelledby="delete-account-title">
+    <div class="delete-account-sheet">
+      <h3 id="delete-account-title">Are you sure?</h3>
+      <p id="delete-account-copy">This deletes the account from the whole system. Login and password are revoked.</p>
+      <div class="delete-account-actions">
+        <button type="button" class="delete-account-yes" id="delete-account-yes">Yes</button>
+        <button type="button" class="delete-account-no" id="delete-account-no">No</button>
+      </div>
+    </div>
+  </dialog>
 </body>
 </html>

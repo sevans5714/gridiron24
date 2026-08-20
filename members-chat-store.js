@@ -117,6 +117,17 @@ function deleteMessage(id, requester) {
   return true;
 }
 
+function purgeUser(userId) {
+  const id = String(userId || '');
+  if (!id) return 0;
+  const store = readStore();
+  const before = (store.messages || []).length;
+  store.messages = (store.messages || []).filter((m) => String(m.authorId) !== id);
+  writeStore(store);
+  lastPostByUser.delete(id);
+  return before - store.messages.length;
+}
+
 /** Wipe the lounge chat (all kinds: chat, bet, mock). Staff-only caller responsibility. */
 function clearAllMessages() {
   const store = readStore();
@@ -161,6 +172,7 @@ module.exports = {
   listMessages,
   addMessage,
   deleteMessage,
+  purgeUser,
   clearAllMessages,
   resolveMentionedUsers,
   MAX_BODY

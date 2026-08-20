@@ -64,6 +64,12 @@ function lastNameOf(full) {
   return last;
 }
 
+function sameUserId(a, b) {
+  const left = String(a || '').trim();
+  const right = String(b || '').trim();
+  return Boolean(left) && left === right;
+}
+
 function ensureAccount(store, user) {
   const id = user.id;
   const fullName = user.name || user.loginName || 'Member';
@@ -374,10 +380,12 @@ function applyQuotedPrice(built, quote = {}, boardLine = null) {
   const next = { ...built };
   const qLine = Number(quote.line);
   const qOdds = Number(quote.odds);
+  const main = Number.isFinite(Number(boardLine)) ? Number(boardLine) : Number(next.line);
+  // Lock the number that was on the slip. Board prices can move after that;
+  // settlement always uses this locked line + the final score, never live odds.
   if ((next.market === 'spread' || next.market === 'total') && Number.isFinite(qLine)) {
-    const main = Number.isFinite(Number(boardLine)) ? Number(boardLine) : Number(next.line);
-    if (Number.isFinite(main) && Math.abs(qLine - main) > 7.01) {
-      throw Object.assign(new Error('Alternate line is too far from the posted number'), { status: 400 });
+    if (Number.isFinite(main) && Math.abs(qLine - main) > 10.51) {
+      throw Object.assign(new Error('That line moved too far from the board — tap the game again'), { status: 409 });
     }
     next.line = qLine;
   }
@@ -400,6 +408,10 @@ function applyQuotedPrice(built, quote = {}, boardLine = null) {
     const who = next.side === 'away' ? away : home;
     next.label = `${who} ML ${next.odds > 0 ? '+' : ''}${next.odds}`;
   }
+  next.lockedLine = next.market === 'moneyline' ? null : next.line;
+  next.lockedOdds = next.odds;
+  next.boardLineAtPlace = Number.isFinite(main) ? main : next.line;
+  next.lockedAt = new Date().toISOString();
   return next;
 }
 
@@ -409,7 +421,7 @@ function gradeLeg(leg, game) {
   }
 
   if (isFieldFinishMarket(leg.market)) {
-    const place = Number(leg.line) || fieldFinishPlace(leg.market) || 1;
+    const place = Number(leg.lockedLine ?? leg.line) || fieldFinishPlace(leg.market) || 1;
     const field = fieldEntries(game);
     if (!field.length) return null;
     const pick = field.find((p) => String(p.id) === String(leg.side));
@@ -436,8 +448,11 @@ function gradeLeg(leg, game) {
   const homeScore = Number(game.home?.score);
   if (!Number.isFinite(awayScore) || !Number.isFinite(homeScore)) return null;
 
+  // Grade only against the line locked on the ticket — ignore later board moves.
+  const line = Number(leg.lockedLine ?? leg.line);
+
   if (leg.market === 'spread') {
-    const line = Number(leg.line);
+    if (!Number.isFinite(line)) return null;
     const margin = awayScore - homeScore;
     // Positive line = getting points. Away +3 covers if awayScore + 3 >= homeScore → margin + line >= 0
     const cover = leg.side === 'away'
@@ -448,9 +463,9 @@ function gradeLeg(leg, game) {
   }
 
   if (leg.market === 'total') {
+    if (!Number.isFinite(line)) return null;
     const total = awayScore + homeScore;
-    const line = Number(leg.line);
-    if (total === line) return 'push';
+    if (Math.abs(total - line) < 0.0001) return 'push';
     if (leg.side === 'over') return total > line ? 'win' : 'loss';
     return total < line ? 'win' : 'loss';
   }
@@ -464,6 +479,19 @@ function gradeLeg(leg, game) {
   return null;
 }
 
+function stampLegFinal(leg, game) {
+  if (!leg || !game) return;
+  if (isFieldFinishMarket(leg.market)) return;
+  const awayScore = Number(game.away?.score);
+  const homeScore = Number(game.home?.score);
+  if (!Number.isFinite(awayScore) || !Number.isFinite(homeScore)) return;
+  leg.finalAway = awayScore;
+  leg.finalHome = homeScore;
+  leg.finalTotal = awayScore + homeScore;
+  if (leg.lockedLine == null && leg.line != null) leg.lockedLine = Number(leg.line);
+  if (leg.lockedOdds == null && leg.odds != null) leg.lockedOdds = Number(leg.odds);
+}
+
 function settleSlip(slip, gameIndex) {
   if (slip.status !== 'open') return false;
   let changed = false;
@@ -474,6 +502,7 @@ function settleSlip(slip, gameIndex) {
     if (!result) continue;
     leg.result = result;
     leg.status = result;
+    if (hit) stampLegFinal(leg, hit.game);
     changed = true;
   }
   if (!slip.legs.every((l) => l.result)) return changed;
@@ -745,7 +774,116 @@ function settleOpenSlips(boards) {
   return settled;
 }
 
+function publicSettledTicket(row) {
+  if (!row) return null;
+  if (row.type === 'future' || row.marketId) {
+    return {
+      id: row.id,
+      userId: row.userId || null,
+      type: 'future',
+      status: row.status,
+      selection: row.selection,
+      marketLabel: row.marketLabel,
+      sport: row.sport,
+      title: row.title,
+      stake: row.stake,
+      odds: row.odds,
+      toWin: row.toWin,
+      profit: row.profit,
+      payout: row.payout,
+      champion: row.champion || null,
+      createdAt: row.createdAt,
+      settledAt: row.settledAt
+    };
+  }
+  return {
+    id: row.id,
+    userId: row.userId || null,
+    type: row.type,
+    status: row.status,
+    stake: row.stake,
+    odds: row.odds,
+    toWin: row.toWin,
+    profit: row.profit,
+    payout: row.payout,
+    private: Boolean(row.private),
+    createdAt: row.createdAt,
+    settledAt: row.settledAt,
+    legs: (row.legs || []).map((l) => ({
+      eventId: l.eventId,
+      market: l.market,
+      side: l.side,
+      line: l.lockedLine ?? l.line,
+      lockedLine: l.lockedLine ?? l.line,
+      odds: l.lockedOdds ?? l.odds,
+      lockedOdds: l.lockedOdds ?? l.odds,
+      label: l.label,
+      matchup: l.matchup,
+      leagueLabel: l.leagueLabel,
+      result: l.result,
+      finalAway: l.finalAway,
+      finalHome: l.finalHome,
+      startsAt: l.startsAt || null
+    }))
+  };
+}
+
+const UNSEEN_SETTLED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
+
+function collectUnseenSettled(store, userId) {
+  const uid = String(userId || '').trim();
+  if (!uid) return { slips: [], futures: [] };
+  const now = Date.now();
+  const slips = [];
+  const futures = [];
+  const consider = (row, bucket) => {
+    if (!row || !sameUserId(row.userId, uid) || row.status === 'open' || row._notified) return;
+    const at = Date.parse(row.settledAt || '') || 0;
+    if (!at) return;
+    if (now - at > UNSEEN_SETTLED_LOOKBACK_MS) {
+      row._notified = true;
+      row.notifiedAt = row.notifiedAt || new Date().toISOString();
+      return;
+    }
+    bucket.push(publicSettledTicket(row));
+  };
+  for (const s of store.slips || []) consider(s, slips);
+  for (const f of store.futures || []) consider(f, futures);
+  const byTime = (a, b) => String(b.settledAt || '').localeCompare(String(a.settledAt || ''));
+  return {
+    slips: slips.sort(byTime).slice(0, 16),
+    futures: futures.sort(byTime).slice(0, 8)
+  };
+}
+
+function ackSettlements(user, ids = []) {
+  const uid = String(user?.id || '').trim();
+  if (!uid) {
+    throw Object.assign(new Error('Sign in required'), { status: 401 });
+  }
+  const store = readStore();
+  const idSet = new Set((Array.isArray(ids) ? ids : []).map((id) => String(id || '').trim()).filter(Boolean));
+  const ackAll = !idSet.size;
+  const nowIso = new Date().toISOString();
+  let n = 0;
+  const mark = (row) => {
+    if (!row || !sameUserId(row.userId, uid) || row.status === 'open' || row._notified) return;
+    if (!ackAll && !idSet.has(String(row.id))) return;
+    row._notified = true;
+    row.notifiedAt = nowIso;
+    n += 1;
+  };
+  for (const s of store.slips || []) mark(s);
+  for (const f of store.futures || []) mark(f);
+  writeStore(store);
+  return { ok: true, acked: n };
+}
+
 function getBook(user, boards = []) {
+  const uid = String(user?.id || '').trim();
+  if (!uid) {
+    throw Object.assign(new Error('Sign in required'), { status: 401 });
+  }
   if (boards?.length) settleOpenSlips(boards);
   const store = readStore();
   settleFutures(store);
@@ -754,14 +892,15 @@ function getBook(user, boards = []) {
   for (const a of Object.values(store.accounts || {})) {
     reconcileAccountBankroll(store, a);
   }
+  const unseenSettled = collectUnseenSettled(store, uid);
   writeStore(store);
 
   const mine = store.slips
-    .filter((s) => s.userId === user.id)
+    .filter((s) => sameUserId(s.userId, uid))
     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
   const myFutures = (store.futures || [])
-    .filter((f) => f.userId === user.id)
+    .filter((f) => sameUserId(f.userId, uid))
     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
   const standings = buildStandings(store);
@@ -784,9 +923,10 @@ function getBook(user, boards = []) {
     },
     draft,
     open: mine.filter((s) => s.status === 'open'),
-    recent: mine.filter((s) => s.status !== 'open').slice(0, 25),
+    recent: mine.filter((s) => s.status !== 'open').slice(0, 80),
     openFutures: myFutures.filter((f) => f.status === 'open'),
-    recentFutures: myFutures.filter((f) => f.status !== 'open').slice(0, 20),
+    recentFutures: myFutures.filter((f) => f.status !== 'open').slice(0, 40),
+    unseenSettled,
     standings,
     leaderboard: standings,
     champions: store.champions || {}
@@ -1078,7 +1218,9 @@ function placeBet(user, body = {}, boards = []) {
         market: l.market,
         side: l.side,
         line: l.line,
+        lockedLine: l.lockedLine ?? l.line,
         odds: l.odds,
+        lockedOdds: l.lockedOdds ?? l.odds,
         startsAt: l.startsAt || null
       })),
       createdAt: slip.createdAt
@@ -1221,12 +1363,25 @@ function formatSlipChat(slip) {
   return { body, meta };
 }
 
+function purgeUser(userId) {
+  const id = String(userId || '');
+  if (!id) return false;
+  const store = readStore();
+  delete store.accounts[id];
+  if (store.drafts && typeof store.drafts === 'object') delete store.drafts[id];
+  store.slips = (store.slips || []).filter((s) => String(s.userId) !== id);
+  store.futures = (store.futures || []).filter((f) => String(f.userId) !== id);
+  writeStore(store);
+  return true;
+}
+
 module.exports = {
   getBook,
   placeBet,
   placeFuture,
   saveDraft,
   settleOpenSlips,
+  ackSettlements,
   listOpenUngradedLegs,
   hasOpenTickets,
   setChampion,
@@ -1234,6 +1389,8 @@ module.exports = {
   lastNameOf,
   grantLoungeBankroll,
   resetBook,
+  purgeUser,
+  gradeLeg,
   STARTING_BANKROLL,
   MIN_STAKE,
   MAX_STAKE,

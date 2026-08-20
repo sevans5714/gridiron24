@@ -82,6 +82,21 @@ const {
 } = require('./mail');
 const { GUIDE: pwaInstallGuide } = require('./pwa-install-guide');
 
+function draftPoolOpts(roomOrSettings = {}, extra = {}) {
+  const scoring = extra.scoring
+    || roomOrSettings.scoring
+    || nflverseDraft.scoringFromSettings(roomOrSettings.settings || roomOrSettings);
+  const teams = extra.teams
+    || roomOrSettings.teamCount
+    || roomOrSettings.teams;
+  return {
+    activeOnly: true,
+    scoring,
+    teams,
+    ...extra
+  };
+}
+
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const CACHE_MS = 30_000;
@@ -555,9 +570,14 @@ function removeMemberAccount(userId, actor) {
   if (!target) {
     throw Object.assign(new Error('User not found'), { status: 404 });
   }
+  try { logos.wipeUser(userId); } catch { /* ignore */ }
   try { logos.unassignTeam(userId); } catch { /* no franchise */ }
   try { career.removeAllForUser(userId); } catch { /* ignore */ }
   try { invites.revokeInvitesForEmail(target.email); } catch { /* ignore */ }
+  try { paperBook.purgeUser(userId); } catch { /* ignore */ }
+  try { inbox.purgeUser(userId); } catch { /* ignore */ }
+  try { membersChat.purgeUser(userId); } catch { /* ignore */ }
+  try { presence.drop(userId); } catch { /* ignore */ }
   return users.deleteUser(userId, actor?.id);
 }
 
@@ -4200,13 +4220,15 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
     );
     if (!owners.length) return;
 
-    const kind = user.loungeOnly
-      ? 'Social (Members Lounge only)'
-      : user.leagueOwner
-        ? 'League owner'
-        : user.loungeMember
-          ? 'Member'
-          : 'Pending approval';
+    const kind = user.approved === false
+      ? 'Pending approval'
+      : user.loungeOnly
+        ? 'Social (Members Lounge only)'
+        : user.leagueOwner
+          ? 'League owner'
+          : user.loungeMember
+            ? 'Member'
+            : 'Pending approval';
     const subject = `New account: ${user.name || user.loginName}`;
     const body = [
       'NEW ACCOUNT CREATED',
@@ -4217,9 +4239,9 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
       `Type: ${kind}`,
       `Source: ${source}`,
       '',
-      user.loungeMember
-        ? 'They can sign in now.'
-        : 'Waiting for lounge access / approval.',
+      user.approved === false
+        ? 'Waiting for commissioner approval. They cannot sign in yet.'
+        : 'They can sign in now.',
       '',
       'Open League Tools → Requests → Account Requests to approve or deny.'
     ].join('\n');
@@ -5614,7 +5636,7 @@ const server = http.createServer(async (req, res) => {
           email: body.email,
           loginName: body.loginName,
           password: body.password,
-          approved: bootstrap || admittedByToken,
+          approved: bootstrap,
           loungeMember: bootstrap || admittedByToken,
           loungeOnly: socialInvite
         });
@@ -5649,8 +5671,8 @@ const server = http.createServer(async (req, res) => {
         notifySiteOwnersOfNewAccount(user, {
           source: socialInvite ? 'lounge_invite' : (inviteToken ? 'invite' : 'bootstrap')
         });
-        // Invite token admits to the Members Lounge — no separate commissioner approval step.
-        if (!user.loungeMember) {
+        // Invite lets them create an account. Commissioner still has to approve before sign-in.
+        if (!user.approved) {
           for (const staffUser of users.listUsers()) {
             if (users.isSiteOwner(staffUser) || users.isCommissioner(staffUser)) {
               syncPendingInboxDigests(staffUser, { force: true });
@@ -5660,7 +5682,7 @@ const server = http.createServer(async (req, res) => {
             ok: true,
             pendingApproval: true,
             user,
-            message: 'Account created, but lounge access requires a commissioner invite token.'
+            message: 'Account created. Wait for commissioner approval, then sign in.'
           });
         }
         deliverWelcomeInboxIfNeeded(user);
@@ -6778,7 +6800,7 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
       }
       try {
-        const poolPayload = await nflverseDraft.loadDraftPool({ activeOnly: true });
+        const poolPayload = await nflverseDraft.loadDraftPool(draftPoolOpts(league));
         const pool = poolPayload.players || [];
         const tick = independentDraft.tickLeague(leagueId, pool, user.id) || {
           league: leagues.publicLeague(league),
@@ -6840,7 +6862,7 @@ const server = http.createServer(async (req, res) => {
       }
       const action = String(body.action || 'tick').toLowerCase();
       try {
-        const poolPayload = await nflverseDraft.loadDraftPool({ activeOnly: true });
+        const poolPayload = await nflverseDraft.loadDraftPool(draftPoolOpts(league));
         const pool = poolPayload.players || [];
         const actor = { ...users.publicUser(user), siteOwner: users.isSiteOwner(user) };
 
@@ -7378,6 +7400,10 @@ const server = http.createServer(async (req, res) => {
       try {
         const publicAuthor = users.publicUser(user);
         const action = String(body.action || 'bet').toLowerCase();
+        if (action === 'ack-settled' || action === 'ack-settlements') {
+          const result = paperBook.ackSettlements(publicAuthor, body.ids);
+          return sendJson(res, 200, result);
+        }
         const openLegs = paperBook.listOpenUngradedLegs();
         const boards = await sportsScoreboard.getSettlementBoards({ openLegs });
 
@@ -7445,12 +7471,11 @@ const server = http.createServer(async (req, res) => {
       if (!user) return;
       const roomId = String(requestUrl.searchParams.get('roomId') || '').trim();
       try {
-        const poolPayload = await nflverseDraft.loadDraftPool({ activeOnly: true });
-        const pool = poolPayload.players || [];
         if (roomId) {
           let room = mockDraftRooms.getRoom(roomId);
           if (!room) return sendJson(res, 404, { ok: false, error: 'Mock draft not found' });
-          if (mockDraftRooms.advanceRoom(room, pool)) {
+          const roomPool = (await nflverseDraft.loadDraftPool(draftPoolOpts(room))).players || [];
+          if (mockDraftRooms.advanceRoom(room, roomPool)) {
             room = mockDraftRooms.saveRoom(room);
           }
           return sendJson(res, 200, {
@@ -7459,11 +7484,13 @@ const server = http.createServer(async (req, res) => {
             generatedAt: new Date().toISOString()
           });
         }
-        const rooms = mockDraftRooms.listActiveRooms().map((r) => {
-          mockDraftRooms.advanceRoom(r, pool);
+        const rooms = [];
+        for (const r of mockDraftRooms.listActiveRooms()) {
+          const roomPool = (await nflverseDraft.loadDraftPool(draftPoolOpts(r))).players || [];
+          mockDraftRooms.advanceRoom(r, roomPool);
           mockDraftRooms.saveRoom(r);
-          return mockDraftRooms.publicRoom(r, user.id);
-        });
+          rooms.push(mockDraftRooms.publicRoom(r, user.id));
+        }
         return sendJson(res, 200, { ok: true, rooms, generatedAt: new Date().toISOString() });
       } catch (err) {
         return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Could not load mock draft' });
@@ -7482,14 +7509,20 @@ const server = http.createServer(async (req, res) => {
       const action = String(body.action || '').trim().toLowerCase();
       const publicAuthor = users.publicUser(user);
       try {
-        const poolPayload = await nflverseDraft.loadDraftPool({ activeOnly: true });
-        const pool = poolPayload.players || [];
+        async function poolFor(roomLike) {
+          const payload = await nflverseDraft.loadDraftPool(draftPoolOpts(roomLike || {
+            scoring: body.scoring,
+            teamCount: body.teamCount
+          }));
+          return payload.players || [];
+        }
 
         if (action === 'create') {
           const room = mockDraftRooms.createRoom({
             user: publicAuthor,
             teamCount: body.teamCount,
             rounds: body.rounds,
+            scoring: body.scoring,
             pickSeconds: body.pickSeconds,
             seatIndex: body.seatIndex,
             teamNames: body.teamNames,
@@ -7524,6 +7557,8 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (action === 'start') {
+          const existing = mockDraftRooms.getRoom(body.roomId);
+          const pool = await poolFor(existing);
           const room = mockDraftRooms.startDraft({
             roomId: body.roomId,
             user: publicAuthor,
@@ -7592,17 +7627,18 @@ const server = http.createServer(async (req, res) => {
                 user: publicAuthor,
                 teamName
               });
-          mockDraftRooms.advanceRoom(room, pool);
+          mockDraftRooms.advanceRoom(room, await poolFor(room));
           room = mockDraftRooms.saveRoom(room);
           return sendJson(res, 200, { ok: true, room: mockDraftRooms.publicRoom(room, user.id) });
         }
 
         if (action === 'pick') {
+          const existing = mockDraftRooms.getRoom(body.roomId);
           const room = mockDraftRooms.humanPick({
             roomId: body.roomId,
             user: publicAuthor,
             playerId: body.playerId,
-            pool
+            pool: await poolFor(existing)
           });
           return sendJson(res, 200, { ok: true, room: mockDraftRooms.publicRoom(room, user.id) });
         }
@@ -7610,7 +7646,7 @@ const server = http.createServer(async (req, res) => {
         if (action === 'tick') {
           let room = mockDraftRooms.getRoom(body.roomId);
           if (!room) return sendJson(res, 404, { ok: false, error: 'Mock draft not found' });
-          if (mockDraftRooms.advanceRoom(room, pool)) room = mockDraftRooms.saveRoom(room);
+          if (mockDraftRooms.advanceRoom(room, await poolFor(room))) room = mockDraftRooms.saveRoom(room);
           return sendJson(res, 200, { ok: true, room: mockDraftRooms.publicRoom(room, user.id) });
         }
 
@@ -7634,7 +7670,13 @@ const server = http.createServer(async (req, res) => {
         const season = requestUrl.searchParams.get('season');
         const activeOnly = requestUrl.searchParams.get('activeOnly') !== '0';
         const refresh = String(requestUrl.searchParams.get('refresh') || requestUrl.searchParams.get('force') || '') === '1';
-        const payload = await nflverseDraft.loadDraftPool({ season, activeOnly, force: refresh });
+        const payload = await nflverseDraft.loadDraftPool({
+          season,
+          activeOnly,
+          force: refresh,
+          scoring: requestUrl.searchParams.get('scoring'),
+          teams: requestUrl.searchParams.get('teams')
+        });
         return sendJson(res, 200, payload);
       } catch (err) {
         return sendJson(res, err.status || 502, {
@@ -7938,12 +7980,15 @@ const server = http.createServer(async (req, res) => {
             conferenceLogo = '/assets/gridiron24-league-sm.png?v=8';
             conferenceLabel = 'GridIron 24';
           }
+          const avatar = logos.resolveLogoForUser(m.id);
+          const avatarUrl = (avatar?.type === 'icon' || avatar?.type === 'upload') ? avatar.url : null;
           return {
             ...m,
             conferenceKey,
             conferenceLogo,
             conferenceLabel,
-            teamName: claim?.teamName || null
+            teamName: claim?.teamName || null,
+            avatarUrl
           };
         };
         const decorateList = (list) => (Array.isArray(list) ? list.map(decorateMember) : []);
@@ -8604,7 +8649,20 @@ const server = http.createServer(async (req, res) => {
         syncPendingInboxDigests(admin, { force: true });
         return sendJson(res, 200, { ok: true, user: removed });
       } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not remove member' });
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete account' });
+      }
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/delete') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/delete'.length);
+      try {
+        const removed = removeMemberAccount(userId, admin);
+        syncPendingInboxDigests(admin, { force: true });
+        return sendJson(res, 200, { ok: true, user: removed });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete account' });
       }
     }
 
@@ -10821,7 +10879,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`AAA league admin: ${process.env.AAA_ADMIN_LOGIN}`);
   }
   // Background sportsbook settle — stake already deducted on place; finals credit Funds/Earnings.
-  const PAPER_BOOK_SETTLE_MS = 3 * 60 * 1000;
+  const PAPER_BOOK_SETTLE_MS = 60 * 1000;
   setTimeout(() => {
     settlePaperBookFromScores().catch((err) => {
       console.warn('[paper-book-settle] startup pass failed', err.message || err);

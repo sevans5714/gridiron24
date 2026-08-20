@@ -1307,8 +1307,19 @@ async function getSportsScores({
 
 /**
  * Scoreboards for grading open sportsbook tickets.
- * Uses a wide date window (incl. NFL/CFB) and backfills missing events by id.
+ * Uses a wide date window (incl. NFL/CFB) and refreshes open events by id
+ * so a cached "live" board cannot block a game that already went final.
  */
+function gameIsGradeable(game) {
+  if (!game) return false;
+  const done = game.status?.bucket === 'final' || game.status?.completed;
+  if (!done) return false;
+  if (game.kind === 'golf' || game.kind === 'racing' || (game.leaders && game.leaders.length)) {
+    return Array.isArray(game.leaders) && game.leaders.length > 0;
+  }
+  return Number.isFinite(Number(game.away?.score)) && Number.isFinite(Number(game.home?.score));
+}
+
 async function getSettlementBoards({ openLegs = [] } = {}) {
   const scores = await getSportsScores({
     daysAhead: 6,
@@ -1323,27 +1334,36 @@ async function getSettlementBoards({ openLegs = [] } = {}) {
   const byId = new Map();
   for (const board of boards) {
     for (const g of board.games || []) {
-      byId.set(String(g.id), true);
+      byId.set(String(g.id), { game: g, board });
     }
   }
 
-  const missing = [];
+  const pending = [];
   const seen = new Set();
   for (const leg of openLegs || []) {
     const eventId = String(leg.eventId || '').trim();
     const leagueId = String(leg.leagueId || '').trim().toLowerCase();
-    if (!eventId || byId.has(eventId)) continue;
+    if (!eventId) continue;
     const key = `${leagueId}|${eventId}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    missing.push({ eventId, leagueId });
+    const hit = byId.get(eventId);
+    if (hit && gameIsGradeable(hit.game)) continue;
+    pending.push({ eventId, leagueId: leagueId || hit?.board?.id || '' });
   }
 
   // Cap per settle pass so a huge backlog can't hammer ESPN.
-  for (const row of missing.slice(0, 40)) {
+  for (const row of pending.slice(0, 40)) {
     const game = await fetchTeamEventById(row.leagueId, row.eventId);
     if (!game) continue;
-    byId.set(String(game.id), true);
+    const existing = byId.get(String(game.id));
+    if (existing) {
+      const idx = existing.board.games.findIndex((g) => String(g.id) === String(game.id));
+      if (idx >= 0) existing.board.games[idx] = game;
+      else existing.board.games.push(game);
+      byId.set(String(game.id), { game, board: existing.board });
+      continue;
+    }
     let board = boards.find((b) => b.id === row.leagueId);
     if (!board) {
       const meta = LEAGUES[row.leagueId];
@@ -1361,6 +1381,7 @@ async function getSettlementBoards({ openLegs = [] } = {}) {
     board.games.push(game);
     const bucket = game.status?.bucket || 'upcoming';
     board.counts[bucket] = (board.counts[bucket] || 0) + 1;
+    byId.set(String(game.id), { game, board });
   }
 
   return boards;
