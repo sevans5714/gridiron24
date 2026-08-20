@@ -1092,7 +1092,7 @@
     } else if (newPicks.length) {
       const last = newPicks[newPicks.length - 1];
       if (last && Number.isFinite(Number(last.teamIndex))) {
-        if (Number(last.teamIndex) !== Number(mock.seatIndex)) playPickSound();
+        if (Number(last.teamIndex) !== Number(mock.seatIndex) && !last.cpu) playPickSound();
         scrollToSeat(last.teamIndex);
         flashSeatPick(last.teamIndex);
         lastFocusSeat = last.teamIndex;
@@ -3133,7 +3133,6 @@
       }
       renderOrder();
       renderOtherTeams();
-      playPickSound();
       flashSeatPick(pick.teamIndex);
     };
 
