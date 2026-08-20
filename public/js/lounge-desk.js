@@ -69,7 +69,7 @@
   let audioWarmEpoch = 0;
   let lastCountdownBeep = null;
   const ON_CLOCK_AUDIO_URL = '/assets/lounge/nfl-draft-on-clock.wav?v=2';
-  const WELCOME_AUDIO_URL = '/assets/lounge/nfl-draft-welcome.mp3?v=2';
+  const WELCOME_AUDIO_URL = '/assets/lounge/nfl-draft-welcome.mp3?v=3';
   const COMPLETE_AUDIO_URL = '/assets/lounge/nfl-draft-complete.mp3?v=1';
   const COUNTDOWN_TICK_AUDIO_URL = '/assets/lounge/nfl-draft-countdown-10.mp3?v=1';
   /** File is silent until 1.24s, then speaks 10…1 on exact 1s beats. */
