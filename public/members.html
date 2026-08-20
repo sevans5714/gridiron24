@@ -4016,6 +4016,84 @@
       letter-spacing: 0.06em;
       color: var(--mo-gold);
     }
+    .mock-cpu-announce-card.is-recap {
+      min-width: min(32rem, 94vw);
+      max-width: min(42rem, 96vw);
+      padding: 1.1rem 1.35rem 1.2rem;
+    }
+    .mock-cpu-announce-card.is-recap .cpu-name {
+      font-size: clamp(2.1rem, 6vw, 3.1rem);
+    }
+    .cpu-recap-mix {
+      margin: 0;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--mo-gold) 82%, #fff);
+    }
+    .cpu-recap-picks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.18rem 0.9rem;
+      list-style: none;
+      width: 100%;
+      margin: 0.45rem 0 0;
+      padding: 0;
+    }
+    .cpu-recap-picks li {
+      display: grid;
+      grid-template-columns: 1.7rem 2.35rem minmax(0, 1fr) auto;
+      align-items: baseline;
+      gap: 0.28rem;
+      min-width: 0;
+      font-family: "Oswald", sans-serif;
+      line-height: 1.15;
+    }
+    .cpu-recap-picks li.is-you .nm { color: var(--mo-gold); }
+    .cpu-recap-picks .rk {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      color: color-mix(in srgb, var(--mo-gold) 70%, #fff);
+      text-align: right;
+    }
+    .cpu-recap-picks .pos {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--pick-ink, var(--mo-gold));
+    }
+    .cpu-recap-picks li[data-pos="QB"] .pos { color: var(--mock-qb); }
+    .cpu-recap-picks li[data-pos="RB"] .pos { color: var(--mock-rb); }
+    .cpu-recap-picks li[data-pos="WR"] .pos { color: var(--mock-wr); }
+    .cpu-recap-picks li[data-pos="TE"] .pos { color: var(--mock-te); }
+    .cpu-recap-picks li[data-pos="K"] .pos { color: var(--mock-k); }
+    .cpu-recap-picks li[data-pos="D/ST"] .pos,
+    .cpu-recap-picks li[data-pos="DST"] .pos { color: var(--mock-dst); }
+    .cpu-recap-picks .nm {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #eef3fb;
+    }
+    .cpu-recap-picks .nfl {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--mo-text) 55%, transparent);
+    }
+    html[data-theme="day"] .cpu-recap-mix { color: #7a5a12; }
+    html[data-theme="day"] .cpu-recap-picks .nm { color: #0f172a; }
+    html[data-theme="day"] .cpu-recap-picks .rk { color: #8a6414; }
     .mock-cpu-announce-card.is-pop {
       animation: mock-cpu-announce-pop 0.42s cubic-bezier(0.22, 1.18, 0.36, 1);
     }
@@ -9471,7 +9549,7 @@
   </footer>
   <script src="/js/nav.js?v=157"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=90"></script>
+  <script src="/js/lounge-desk.js?v=91"></script>
   <script src="/js/lounge-games.js?v=38"></script>
   <script>
     const esc = (v = '') => String(v)
