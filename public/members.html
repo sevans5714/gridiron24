@@ -5111,56 +5111,70 @@
     .mock-injury {
       appearance: none;
       border: 0;
-      background: color-mix(in srgb, #ef4444 22%, transparent);
-      color: #ffb4b4;
-      height: 1.35rem;
-      border-radius: 999px;
+      background: none;
+      color: #ef4444;
+      height: auto;
+      border-radius: 0;
       display: inline-flex;
       align-items: center;
-      gap: 0.18rem;
-      padding: 0 0.42rem 0 0.28rem;
-      margin: 0;
+      justify-content: center;
+      gap: 0;
+      padding: 0;
+      margin: 0 0 0 0.15rem;
       cursor: pointer;
       flex: 0 0 auto;
       position: relative;
       z-index: 2;
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, #ef4444 45%, transparent);
+      box-shadow: none;
       vertical-align: middle;
+      line-height: 1;
     }
     .mock-injury:hover {
-      background: color-mix(in srgb, #ef4444 38%, transparent);
-      color: #fff;
+      background: none;
+      color: #ff6b6b;
     }
     .mock-injury:focus-visible {
       outline: 2px solid #ff8f8f;
       outline-offset: 2px;
     }
     .mock-injury-cross {
-      font-size: 0.72rem;
-      line-height: 1;
-      font-weight: 700;
+      width: 0.78rem;
+      height: 0.78rem;
+      position: relative;
+      display: block;
       pointer-events: none;
     }
-    .mock-injury-code {
-      font-family: "Oswald", sans-serif;
-      font-size: 0.66rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      line-height: 1;
-      pointer-events: none;
+    .mock-injury-cross::before,
+    .mock-injury-cross::after {
+      content: "";
+      position: absolute;
+      background: currentColor;
+      border-radius: 0;
     }
+    .mock-injury-cross::before {
+      left: 50%;
+      top: 0;
+      width: 0.2rem;
+      height: 100%;
+      transform: translateX(-50%);
+    }
+    .mock-injury-cross::after {
+      top: 50%;
+      left: 0;
+      height: 0.2rem;
+      width: 100%;
+      transform: translateY(-50%);
+    }
+    .mock-injury-code { display: none; }
     .mock-injury[data-status="O"],
     .mock-injury[data-status="IR"],
     .mock-injury[data-status="PUP"],
-    .mock-injury[data-status="SUS"] {
-      background: color-mix(in srgb, #ef4444 34%, transparent);
-      color: #fff;
-    }
+    .mock-injury[data-status="SUS"],
     .mock-injury[data-status="Q"],
     .mock-injury[data-status="D"] {
-      background: color-mix(in srgb, #f59e0b 26%, transparent);
-      color: #ffd28a;
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, #f59e0b 50%, transparent);
+      background: none;
+      color: #ef4444;
+      box-shadow: none;
     }
     #mock-injury-dialog,
     #mock-profile-dialog,
@@ -9624,7 +9638,7 @@
   </footer>
   <script src="/js/nav.js?v=157"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=92"></script>
+  <script src="/js/lounge-desk.js?v=93"></script>
   <script src="/js/lounge-games.js?v=38"></script>
   <script>
     const esc = (v = '') => String(v)

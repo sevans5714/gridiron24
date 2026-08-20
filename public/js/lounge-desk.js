@@ -2071,8 +2071,7 @@
     const code = injuryAbbrev(label);
     const part = player.injuryBodyPart ? ` · ${player.injuryBodyPart}` : '';
     return `<button type="button" class="mock-injury" data-injury-id="${esc(player.id)}" data-status="${esc(code)}" title="${esc(label)}${esc(part)} — open injury news" aria-label="Injury: ${esc(label)}${esc(part)}">
-      <span class="mock-injury-cross" aria-hidden="true">✚</span>
-      <span class="mock-injury-code">${esc(code)}</span>
+      <span class="mock-injury-cross" aria-hidden="true"></span>
     </button>`;
   }
 
