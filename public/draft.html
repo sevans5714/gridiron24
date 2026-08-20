@@ -57,12 +57,13 @@
     [data-theme="night"] .draft-scroll { background: #121212; }
     .draft-board {
       display: grid;
-      gap: 2px;
+      row-gap: 1px;
+      column-gap: 5px;
       min-width: max-content;
-      padding: 2px;
-      background: #c8c8c4;
+      padding: 4px;
+      background: #1c1c1a;
     }
-    [data-theme="night"] .draft-board { background: #2a2a2a; }
+    [data-theme="night"] .draft-board { background: #0c0c0c; }
     .draft-corner,
     .draft-team-head,
     .draft-round,
@@ -88,20 +89,31 @@
       z-index: 4;
       min-width: 7.6rem;
       max-width: 8.4rem;
-      padding: 0.45rem 0.35rem;
+      padding: 0.5rem 0.4rem 0.55rem;
       text-align: center;
-      border-bottom: 2px solid #111;
+      border-bottom: 3px solid #111;
+      box-shadow: inset 1px 0 0 rgba(0,0,0,0.18), inset -1px 0 0 rgba(0,0,0,0.18);
       font-family: var(--display);
-      font-size: 0.72rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      line-height: 1.2;
+      line-height: 1.15;
       color: #111;
     }
+    .draft-team-head.is-alt {
+      background: #f3f1ea;
+    }
     [data-theme="night"] .draft-team-head {
-      border-bottom-color: rgba(255,255,255,0.35);
+      border-bottom-color: rgba(255,255,255,0.4);
       color: var(--text);
+      box-shadow: inset 1px 0 0 rgba(255,255,255,0.08), inset -1px 0 0 rgba(0,0,0,0.45);
+    }
+    [data-theme="night"] .draft-team-head.is-alt {
+      background: #222;
+    }
+    [data-theme="night"] .draft-cell.is-alt:not([class*="pos-"]) {
+      background: #1c1c1c;
     }
     .draft-team-head .owner {
       display: block;
@@ -139,12 +151,22 @@
       grid-template-rows: auto 1fr;
       gap: 0.1rem;
       color: #111;
+      box-shadow: inset 1px 0 0 rgba(0,0,0,0.12), inset -1px 0 0 rgba(0,0,0,0.12);
+    }
+    .draft-cell.is-alt:not([class*="pos-"]) {
+      background: #f3f1ea;
     }
     .draft-cell.empty {
       background: #ecece8;
     }
+    .draft-cell.empty.is-alt {
+      background: #e2e0d8;
+    }
     [data-theme="night"] .draft-cell.empty {
       background: #222;
+    }
+    [data-theme="night"] .draft-cell.empty.is-alt {
+      background: #1a1a1a;
     }
     .draft-cell .top {
       display: grid;
@@ -283,12 +305,13 @@
       });
     }
 
-    function cellHtml(pick) {
+    function cellHtml(pick, colIndex = 0) {
+      const alt = colIndex % 2 ? ' is-alt' : '';
       if (!pick?.filled) {
-        return `<div class="draft-cell empty" title="Undrafted slot"></div>`;
+        return `<div class="draft-cell empty${alt}" title="Undrafted slot"></div>`;
       }
       const pos = pick.position === 'D/ST' ? 'D/ST' : pick.position;
-      return `<div class="draft-cell ${posClass(pos)}" title="${esc(pick.fullName)} · Rd ${esc(String(pick.round))} · Overall ${esc(String(pick.overall || ''))}">
+      return `<div class="draft-cell ${posClass(pos)}${alt}" title="${esc(pick.fullName)} · Rd ${esc(String(pick.round))} · Overall ${esc(String(pick.overall || ''))}">
         <div class="top">
           <span>${esc(pos)}</span>
           <span class="first">${esc(pick.firstName)}</span>
@@ -329,11 +352,11 @@
 
       const head = [
         `<div class="draft-corner"></div>`,
-        ...cols.map((t) => `<div class="draft-team-head" title="${esc(t.name)}">${esc(t.abbreviation || t.name)}${t.owner ? `<span class="owner">${esc(t.owner)}</span>` : ''}</div>`)
+        ...cols.map((t, i) => `<div class="draft-team-head${i % 2 ? ' is-alt' : ''}" title="${esc(t.name)}">${esc(t.abbreviation || t.name)}${t.owner ? `<span class="owner">${esc(t.owner)}</span>` : ''}</div>`)
       ].join('');
 
       const body = rows.map((row) => {
-        const cells = (row.cells || []).map(cellHtml).join('');
+        const cells = (row.cells || []).map((pick, i) => cellHtml(pick, i)).join('');
         return `<div class="draft-round">${esc(String(row.round))}</div>${cells}`;
       }).join('');
 

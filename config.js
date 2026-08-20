@@ -12,7 +12,7 @@ module.exports = {
       key: 'detail',
       name: 'Detail Conference',
       shortName: 'DETAIL',
-      espnLeagueId: 559054421,
+      espnLeagueId: 1444967743,
       logo: '/assets/detail-conference.png'
     },
     {

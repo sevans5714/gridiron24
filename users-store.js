@@ -774,6 +774,9 @@ function deleteUser(userId, actorId = null) {
     throw Object.assign(new Error('You cannot delete your own account here'), { status: 400 });
   }
   const target = store.users[idx];
+  if (Boolean(target.siteOwner) || isOwnerLogin(target)) {
+    throw Object.assign(new Error('Cannot remove the site owner'), { status: 400 });
+  }
   if (normalizeRole(target.role) === ROLES.COMMISSIONER) {
     const otherCommissioners = store.users.filter(
       (u, i) => i !== idx && normalizeRole(u.role) === ROLES.COMMISSIONER

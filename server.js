@@ -256,15 +256,19 @@ function getSessionUser(req) {
   return user;
 }
 
-/** Fantasy franchise name for lounge mock draft seats (display override → claim). */
+/** Fantasy franchise name for lounge mock draft seats (display override → custom ESPN name → owner). */
 function fantasyTeamNameForUser(user) {
   if (!user?.id) return null;
   try {
     const claim = logos.getClaimForUser(user.id);
     if (!claim) return null;
     const nameEntry = logos.getDisplayName(claim.conferenceKey, claim.teamId);
-    const name = String(nameEntry?.displayName || claim.teamName || '').trim();
-    return name || null;
+    const override = String(nameEntry?.displayName || '').trim();
+    if (override) return override;
+    const claimed = String(claim.teamName || '').trim();
+    if (claimed && !espnDisplayNameLooksDefault(claimed)) return claimed;
+    const owner = String(user?.name || user?.loginName || '').trim();
+    return owner || claimed || null;
   } catch {
     return null;
   }
@@ -543,6 +547,17 @@ function requireCommissioner(req, res) {
   return user;
 }
 
+function removeMemberAccount(userId, actor) {
+  const target = users.findById(userId);
+  if (!target) {
+    throw Object.assign(new Error('User not found'), { status: 404 });
+  }
+  try { logos.unassignTeam(userId); } catch { /* no franchise */ }
+  try { career.removeAllForUser(userId); } catch { /* ignore */ }
+  try { invites.revokeInvitesForEmail(target.email); } catch { /* ignore */ }
+  return users.deleteUser(userId, actor?.id);
+}
+
 function resolveStaffConferenceKey(user, requestedKey) {
   const allowed = new Set(listAdminLeagues().map((l) => l.key));
   if (user.role === 'conference_admin') {
@@ -688,6 +703,55 @@ function ownerName(member) {
   return full || member.displayName || 'Owner';
 }
 
+function espnDisplayNameLooksDefault(name) {
+  return /^team(\s+\S+)?$/i.test(String(name || '').trim());
+}
+
+function espnTeamNameIsCustom(team) {
+  const location = String(team?.location || '').trim();
+  const nickname = String(team?.nickname || '').trim();
+  const name = String(team?.name || `${location} ${nickname}`).trim();
+  if (!name) return false;
+  // ESPN default franchises are "Team" / "Team LastName".
+  return !espnDisplayNameLooksDefault(name);
+}
+
+function ownerAbbrev(label, fallback = '') {
+  const parts = String(label || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return String(fallback || '');
+  const last = parts[parts.length - 1];
+  return last.slice(0, 4).toUpperCase() || String(fallback || '');
+}
+
+function gridironOwnerForEspnTeam(conferenceKey, teamId) {
+  try {
+    const claim = logos.getClaimForTeam(conferenceKey, teamId);
+    if (!claim?.userId) return null;
+    const user = users.findById(claim.userId);
+    return String(user?.name || user?.loginName || '').trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveEspnTeamIdentity(conferenceKey, team, membersById) {
+  const ownerId = team?.primaryOwner || (team?.owners || [])[0];
+  const espnOwner = ownerName(membersById?.get(ownerId));
+  const claimOwner = conferenceKey ? gridironOwnerForEspnTeam(conferenceKey, team?.id) : null;
+  const owner = claimOwner || (espnOwner !== 'Owner pending' ? espnOwner : null) || espnOwner;
+  const espnName = (team?.name || `${team?.location || ''} ${team?.nickname || ''}`).trim()
+    || (team?.id != null ? `Team ${team.id}` : '');
+  const key = conferenceKey && team?.id != null ? logos.logoKey(conferenceKey, team.id) : null;
+  const overrideName = key ? logos.getNameOverrideMap().get(key) : null;
+  const custom = espnTeamNameIsCustom(team);
+  const name = overrideName
+    || (custom ? espnName : (owner && owner !== 'Owner pending' ? owner : espnName));
+  const abbreviation = (custom && team?.abbrev)
+    ? team.abbrev
+    : (ownerAbbrev(name, team?.abbrev || '') || team?.abbrev || '');
+  return { espnName, name, owner, abbreviation };
+}
+
 function conferenceAdminName(conferenceKey) {
   const key = String(conferenceKey || '').trim().toLowerCase();
   if (!key) return null;
@@ -701,9 +765,7 @@ function conferenceAdminName(conferenceKey) {
 function normalizeLeague(raw, conference) {
   const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
   const logoOverrides = logos.getOverrideMap();
-  const nameOverrides = logos.getNameOverrideMap();
   const teams = (raw.teams || []).map((team) => {
-    const ownerId = team.primaryOwner || (team.owners || [])[0];
     const record = team.record?.overall || {};
 
     const wins = record.wins || 0;
@@ -713,20 +775,19 @@ function normalizeLeague(raw, conference) {
     const pointsFor = Number(record.pointsFor || team.points || 0);
     const streakType = record.streakType || 'NONE';
     const streakLength = Number(record.streakLength || 0);
+    const identity = resolveEspnTeamIdentity(conference.key, team, membersById);
     const key = logos.logoKey(conference.key, team.id);
     const overrideLogo = logoOverrides.get(key);
-    const espnName = (team.name || `${team.location || ''} ${team.nickname || ''}`).trim() || `Team ${team.id}`;
-    const overrideName = nameOverrides.get(key);
 
     return {
       id: team.id,
-      name: overrideName || espnName,
-      espnName,
-      abbreviation: team.abbrev || '',
+      name: identity.name,
+      espnName: identity.espnName,
+      abbreviation: identity.abbreviation,
       logo: logos.displayLogoUrl(overrideLogo),
       logoSource: overrideLogo ? 'gridiron' : 'placeholder',
       espnLogo: team.logo || null,
-      owner: ownerName(membersById.get(ownerId)),
+      owner: identity.owner,
       wins,
       losses,
       ties,
@@ -940,20 +1001,18 @@ async function loadDraftBoard(conferenceKey, seasonOverride = null) {
   );
   const draftDetail = raw.draftDetail || {};
   const settings = raw.settings?.draftSettings || {};
-  const nameOverrides = logos.getNameOverrideMap();
   const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
   const teamsById = new Map();
   for (const team of raw.teams || []) {
     const key = logos.logoKey(conference.key, team.id);
     const overrideLogo = logos.getOverrideMap().get(key);
-    const espnName = (team.name || `${team.location || ''} ${team.nickname || ''}`).trim() || `Team ${team.id}`;
-    const ownerId = team.primaryOwner || (team.owners || [])[0];
+    const identity = resolveEspnTeamIdentity(conference.key, team, membersById);
     teamsById.set(Number(team.id), {
       id: Number(team.id),
-      name: nameOverrides.get(key) || espnName,
-      abbreviation: team.abbrev || '',
+      name: identity.name,
+      abbreviation: identity.abbreviation,
       logo: logos.displayLogoUrl(overrideLogo),
-      owner: ownerName(membersById.get(ownerId))
+      owner: identity.owner
     });
   }
 
@@ -1414,11 +1473,9 @@ function playerName(player) {
 }
 
 function normalizeRosterTeam(team, conference, membersById, lineupSlotCounts = null) {
-  const ownerId = team.primaryOwner || (team.owners || [])[0];
   const key = logos.logoKey(conference.key, team.id);
   const overrideLogo = logos.getOverrideMap().get(key);
-  const nameOverrides = logos.getNameOverrideMap();
-  const espnName = (team.name || `${team.location || ''} ${team.nickname || ''}`).trim() || `Team ${team.id}`;
+  const identity = resolveEspnTeamIdentity(conference.key, team, membersById);
   const entries = (team.roster?.entries || []).map((entry) => {
     const pool = entry.playerPoolEntry || {};
     const player = pool.player || {};
@@ -1454,11 +1511,11 @@ function normalizeRosterTeam(team, conference, membersById, lineupSlotCounts = n
   const record = team.record?.overall || {};
   return {
     id: team.id,
-    name: nameOverrides.get(key) || espnName,
-    espnName,
-    abbreviation: team.abbrev || '',
+    name: identity.name,
+    espnName: identity.espnName,
+    abbreviation: identity.abbreviation,
     logo: logos.displayLogoUrl(overrideLogo),
-    owner: ownerName(membersById.get(ownerId)),
+    owner: identity.owner,
     wins: record.wins || 0,
     losses: record.losses || 0,
     ties: record.ties || 0,
@@ -2373,20 +2430,18 @@ function normalizeSettings(raw, conference) {
 function teamMapFromRaw(raw, conferenceKey) {
   const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
   const logoOverrides = logos.getOverrideMap();
-  const nameOverrides = logos.getNameOverrideMap();
   const map = new Map();
   for (const team of raw.teams || []) {
-    const ownerId = team.primaryOwner || (team.owners || [])[0];
     const key = conferenceKey ? logos.logoKey(conferenceKey, team.id) : null;
     const overrideLogo = key ? logoOverrides.get(key) : null;
-    const espnName = (team.name || `${team.location || ''} ${team.nickname || ''}`).trim() || `Team ${team.id}`;
-    const overrideName = key ? nameOverrides.get(key) : null;
+    const identity = resolveEspnTeamIdentity(conferenceKey, team, membersById);
     map.set(team.id, {
       id: team.id,
-      name: overrideName || espnName,
+      name: identity.name,
       logo: logos.displayLogoUrl(overrideLogo),
       logoSource: overrideLogo ? 'gridiron' : 'placeholder',
-      owner: ownerName(membersById.get(ownerId)),
+      owner: identity.owner,
+      abbreviation: identity.abbreviation,
       record: team.record?.overall || {}
     });
   }
@@ -2445,11 +2500,11 @@ const BENCH_OR_IR_SLOTS = new Set([20, 21]);
 function collectInjuredStarterFindings(raw, conference) {
   const findings = [];
   const logoOverrides = logos.getOverrideMap();
-  const nameOverrides = logos.getNameOverrideMap();
+  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
   for (const team of raw.teams || []) {
     const key = logos.logoKey(conference.key, team.id);
-    const espnName = (team.name || `${team.location || ''} ${team.nickname || ''}`).trim() || `Team ${team.id}`;
-    const teamName = nameOverrides.get(key) || espnName;
+    const identity = resolveEspnTeamIdentity(conference.key, team, membersById);
+    const teamName = identity.name;
     const teamLogo = logos.displayLogoUrl(logoOverrides.get(key));
     for (const entry of team.roster?.entries || []) {
       const slotId = Number(entry.lineupSlotId);
@@ -2896,23 +2951,44 @@ async function loadAaaLeagueSettings() {
   }
 }
 
+function espnLeagueSeasonQuery(season) {
+  const yr = Number(season) || Number(config.season);
+  return Number.isFinite(yr) && yr > 0 ? `?seasonId=${yr}` : '';
+}
+
+function espnLeagueOfficeUrl(leagueId, season) {
+  const id = Number(leagueId);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  return `https://fantasy.espn.com/football/league/_/leagueId/${id}${espnLeagueSeasonQuery(season)}`;
+}
+
 function espnSettingsUrl(leagueId, season) {
   const id = Number(leagueId);
-  const yr = Number(season) || Number(config.season);
   if (!Number.isFinite(id) || id <= 0) return null;
-  return `https://fantasy.espn.com/football/league/settings?leagueId=${id}&seasonId=${yr}`;
+  return `https://fantasy.espn.com/football/league/_/leagueId/${id}/settings${espnLeagueSeasonQuery(season)}`;
+}
+
+function seedEspnLeagueIds() {
+  // Retired ESPN IDs from the previous Detail / Overtime leagues.
+  // New 2026 recreations must not be flagged as "previous."
+  return new Set([559054421, 236438046]);
 }
 
 function parseEspnLeagueId(raw) {
   const text = String(raw || '').trim();
   if (!text) return null;
-  const fromQuery = text.match(/[?&]leagueId=(\d+)/i);
+  const fromQuery = text.match(/[?&#]leagueId=(\d+)/i);
   if (fromQuery) return Number(fromQuery[1]);
-  const fromPath = text.match(/\/leagues\/(\d+)/i);
-  if (fromPath) return Number(fromPath[1]);
+  const fromPathKey = text.match(/\/(?:leagueId)\/(\d+)/i);
+  if (fromPathKey) return Number(fromPathKey[1]);
+  const fromIdSegment = text.match(/\/_\/id\/(\d+)/i);
+  if (fromIdSegment) return Number(fromIdSegment[1]);
+  const fromLeagues = text.match(/\/leagues\/(\d+)/i);
+  if (fromLeagues) return Number(fromLeagues[1]);
   if (/^\d{4,}$/.test(text)) return Number(text);
-  const any = text.match(/(\d{6,})/);
-  if (any) return Number(any[1]);
+  const matches = [...text.matchAll(/(\d{6,})/g)].map((m) => Number(m[1]));
+  const notSeason = matches.filter((n) => n < 1990 || n > 2100);
+  if (notSeason.length) return notSeason[0];
   return null;
 }
 
@@ -2924,26 +3000,31 @@ function espnBindingLogo(row) {
   return null;
 }
 
+function espnBindingUrls(leagueId, season) {
+  return {
+    leagueUrl: espnLeagueOfficeUrl(leagueId, season),
+    settingsUrl: espnSettingsUrl(leagueId, season)
+  };
+}
+
 function listEspnLeagueBindings() {
   const season = Number(config.season);
-  const conferences = (config.conferences || []).map((c) => ({
-    key: c.key,
-    kind: 'conference',
-    name: c.name,
-    shortName: c.shortName,
-    logo: espnBindingLogo(c),
-    espnLeagueId: Number(c.espnLeagueId) > 0 ? Number(c.espnLeagueId) : null,
-    settingsUrl: espnSettingsUrl(c.espnLeagueId, season)
-  }));
-  const affiliates = (config.affiliatedLeagues || []).map((l) => ({
-    key: l.key,
-    kind: 'affiliate',
-    name: l.name,
-    shortName: l.shortName,
-    logo: espnBindingLogo(l),
-    espnLeagueId: Number(l.espnLeagueId) > 0 ? Number(l.espnLeagueId) : null,
-    settingsUrl: espnSettingsUrl(l.espnLeagueId, season)
-  }));
+  const seeds = seedEspnLeagueIds();
+  const toRow = (row, kind) => {
+    const espnLeagueId = Number(row.espnLeagueId) > 0 ? Number(row.espnLeagueId) : null;
+    return {
+      key: row.key,
+      kind,
+      name: row.name,
+      shortName: row.shortName,
+      logo: espnBindingLogo(row),
+      espnLeagueId,
+      previousEspnId: espnLeagueId != null && seeds.has(espnLeagueId),
+      ...espnBindingUrls(espnLeagueId, season)
+    };
+  };
+  const conferences = (config.conferences || []).map((c) => toRow(c, 'conference'));
+  const affiliates = (config.affiliatedLeagues || []).map((l) => toRow(l, 'affiliate'));
   return {
     season,
     leagues: [...conferences, ...affiliates]
@@ -2971,7 +3052,9 @@ async function peekEspnLeagueById(espnLeagueId, seasonOverride = null) {
     name: raw.settings?.name || raw.settings?.naming?.name || `ESPN League ${id}`,
     size: Number(raw.settings?.size || teams.length) || teams.length,
     isViewable: raw.status?.isViewable ?? raw.settings?.isPublic ?? null,
-    settingsUrl: espnSettingsUrl(id, season)
+    settingsUrl: espnSettingsUrl(id, season),
+    leagueUrl: espnLeagueOfficeUrl(id, season),
+    previousEspnId: seedEspnLeagueIds().has(id)
   };
 }
 
@@ -8499,12 +8582,24 @@ const server = http.createServer(async (req, res) => {
       const userId = pathname.slice('/api/users/'.length, -'/reject'.length);
       try {
         // Reject = delete pending account (and clear any team assignment).
-        try { logos.unassignTeam(userId); } catch { /* may have no team */ }
-        const removed = users.deleteUser(userId, admin.id);
+        const removed = removeMemberAccount(userId, admin);
         syncPendingInboxDigests(admin, { force: true });
         return sendJson(res, 200, { ok: true, user: removed });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not reject account' });
+      }
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/remove') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/remove'.length);
+      try {
+        const removed = removeMemberAccount(userId, admin);
+        syncPendingInboxDigests(admin, { force: true });
+        return sendJson(res, 200, { ok: true, user: removed });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not remove member' });
       }
     }
 
@@ -10178,7 +10273,7 @@ const server = http.createServer(async (req, res) => {
             ...(team || { id: claim.teamId, conferenceKey: claim.conferenceKey }),
             name: nameEntry.displayName
           };
-        } else if (claim.teamName && team) {
+        } else if (claim.teamName && team && !espnDisplayNameLooksDefault(claim.teamName)) {
           team.name = claim.teamName;
         }
         keeper = keepers.getKeeper(claim.conferenceKey, claim.teamId, keeperWindow.forSeason);

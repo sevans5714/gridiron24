@@ -229,6 +229,24 @@ function revokeInvite(id) {
   return publicInvite(store.invites[idx]);
 }
 
+function revokeInvitesForEmail(email) {
+  const key = normalizeEmail(email);
+  if (!key) return [];
+  const store = readStore();
+  const revoked = [];
+  let changed = false;
+  for (const invite of store.invites) {
+    if (normalizeEmail(invite.email) !== key) continue;
+    if (invite.status === 'pending' || invite.status === 'expired') {
+      invite.status = 'revoked';
+      changed = true;
+      revoked.push(publicInvite(invite));
+    }
+  }
+  if (changed) writeStore(store);
+  return revoked;
+}
+
 /** Resend uses the same token so earlier emails keep working. */
 function refreshInvite(id, invitedBy) {
   const store = readStore();
@@ -266,6 +284,7 @@ module.exports = {
   findByToken,
   acceptInvite,
   revokeInvite,
+  revokeInvitesForEmail,
   refreshInvite,
   publicInvite
 };

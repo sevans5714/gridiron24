@@ -4,7 +4,7 @@ This is the first working GridIron 24 dashboard. It uses a tiny local Node.js se
 
 ## Configured ESPN leagues
 
-- Detail Conference: `559054421`
+- Detail Conference: `1444967743`
 - Overtime Conference: `236438046`
 - Season: `2026`
 

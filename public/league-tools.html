@@ -1157,6 +1157,8 @@
       line-height: 1.4;
     }
     .members-pending-banner strong { font-weight: 700; }
+    .link-action.is-danger { color: #f0a0b0; }
+    .link-action.is-danger:hover { color: #ffc8d0; }
     tr.is-pending-member td {
       background: color-mix(in srgb, var(--detail, #ff7a18) 8%, transparent);
     }
@@ -1354,7 +1356,7 @@
               <div class="section-head">
                 <h3>Registered Players <span class="access-tag">Owner / Commissioner</span></h3>
               </div>
-              <p class="help">How many approved members are in each league. Put GridIron 24 players in <strong>Detail</strong> or <strong>Overtime</strong> (12 each). Invites still show on the <a href="/roster-2026.html">2026 Roster</a> until they join. Franchise, dues, and the full list are below.</p>
+              <p class="help">How many approved members are in each league. Put GridIron 24 players in <strong>Detail</strong> or <strong>Overtime</strong> (12 each). Invites still show on the <a href="/roster-2026.html">2026 Roster</a> until they join. <strong>Remove from league</strong> deletes their account, frees the franchise, and they need a new invite to come back.</p>
               <div class="members-census" id="members-census" hidden></div>
               <div id="members-access-block">
                 <div class="status-note" id="members-msg" role="status"></div>
@@ -1452,7 +1454,7 @@
               <div class="section-head">
                 <h3>ESPN Leagues</h3>
               </div>
-              <p class="help">Paste the ESPN <code>leagueId</code> or the whole settings URL. Look up confirms the league, then save. Site names stay yours if you recreate a conference on ESPN. <a href="/espn-setup.html">How to create the ESPN league</a>.</p>
+              <p class="help">Paste this year’s ESPN league or team URL (<code>leagueId=1444967743</code> or <code>…/league/_/leagueId/1444967743</code>) or the number, then Look up. Classic <code>/league/settings?leagueId=</code> links are last year’s league. <a href="https://fantasy.espn.com/football/" target="_blank" rel="noopener">Open ESPN Fantasy</a> and pick the new league, then paste that address bar. <a href="/espn-setup.html">How to create the ESPN league</a>.</p>
               <div class="espn-bind-actions" id="espn-leagues-actions" hidden>
                 <button type="button" class="btn" id="espn-leagues-save">Save league IDs</button>
                 <button type="button" class="btn btn-secondary" id="espn-leagues-peek-all">Look up all</button>
@@ -1771,13 +1773,20 @@
     function parseEspnLeagueId(raw) {
       const text = String(raw || '').trim();
       if (!text) return '';
-      const fromQuery = text.match(/[?&]leagueId=(\d+)/i);
+      const fromQuery = text.match(/[?&#]leagueId=(\d+)/i);
       if (fromQuery) return fromQuery[1];
-      const fromPath = text.match(/\/leagues\/(\d+)/i);
-      if (fromPath) return fromPath[1];
+      const fromPathKey = text.match(/\/(?:leagueId)\/(\d+)/i);
+      if (fromPathKey) return fromPathKey[1];
+      const fromIdSegment = text.match(/\/_\/id\/(\d+)/i);
+      if (fromIdSegment) return fromIdSegment[1];
+      const fromLeagues = text.match(/\/leagues\/(\d+)/i);
+      if (fromLeagues) return fromLeagues[1];
       if (/^\d{4,}$/.test(text)) return text;
-      const any = text.match(/(\d{6,})/);
-      return any ? any[1] : text;
+      const matches = [...text.matchAll(/(\d{6,})/g)].map((m) => m[1]).filter((n) => {
+        const num = Number(n);
+        return num < 1990 || num > 2100;
+      });
+      return matches[0] || '';
     }
 
     function normalizeEspnIdInput(input) {
@@ -1795,21 +1804,49 @@
     }
 
     function espnBindStatus(row) {
-      if (row.lookup?.ok) return { cls: 'is-ok', label: 'Connected' };
+      if (row.lookup?.ok && !row.lookup.previousEspnId && !row.previousEspnId) {
+        return { cls: 'is-ok', label: 'Connected' };
+      }
+      if (row.lookup?.ok && (row.lookup.previousEspnId || row.previousEspnId)) {
+        return { cls: 'is-warn', label: 'Previous ID' };
+      }
       if (row.lookup?.error) return { cls: 'is-error', label: 'Not found' };
+      if (row.previousEspnId) return { cls: 'is-warn', label: 'Previous ID' };
       if (row.espnLeagueId) return { cls: 'is-warn', label: 'Saved' };
       return { cls: '', label: 'No ID' };
     }
 
     function espnBindMeta(row) {
       const lookup = row.lookup;
+      if (lookup?.ok && (lookup.previousEspnId || row.previousEspnId)) {
+        return `That’s last year’s ESPN ID (${esc(String(lookup.espnLeagueId || row.espnLeagueId))}). Paste this year’s league office URL, then look up.`;
+      }
       if (lookup?.ok) {
         const size = lookup.size != null ? ` · ${lookup.size} teams` : '';
         return `On ESPN: ${esc(lookup.name || 'league')}${size}`;
       }
       if (lookup?.error) return esc(lookup.error);
+      if (row.previousEspnId) {
+        return `Saved ID ${esc(String(row.espnLeagueId))} is from the previous ESPN league. Paste the new 2026 /league/_/leagueId/ URL.`;
+      }
       if (row.espnLeagueId) return `Saved ID ${esc(String(row.espnLeagueId))} — look up to confirm the ESPN league`;
-      return 'Paste a league ID or ESPN settings URL';
+      return 'Paste this year’s league office URL or league ID';
+    }
+
+    function espnBindLinksHtml(row) {
+      const settings = row.settingsUrl || row.lookup?.settingsUrl || '';
+      const league = row.leagueUrl || row.lookup?.leagueUrl || '';
+      const previous = Boolean(row.previousEspnId || row.lookup?.previousEspnId);
+      if (!settings && !league) {
+        return `<p class="espn-bind-links" data-espn-settings-slot="${esc(row.key)}"></p>`;
+      }
+      const officeLabel = previous ? 'Open previous ESPN league' : 'Open ESPN league';
+      const settingsLabel = previous ? 'Previous settings' : 'Open ESPN settings';
+      return `<p class="espn-bind-links" data-espn-settings-slot="${esc(row.key)}">${
+        league ? `<a href="${esc(league)}" target="_blank" rel="noopener">${esc(officeLabel)}</a>` : ''
+      }${league && settings ? ' · ' : ''}${
+        settings ? `<a href="${esc(settings)}" target="_blank" rel="noopener">${esc(settingsLabel)}</a>` : ''
+      }</p>`;
     }
 
     function renderEspnBindings(data) {
@@ -1831,7 +1868,6 @@
           : '';
         const tone = ['detail', 'overtime', 'aaa'].includes(row.key) ? row.key : 'league';
         const status = espnBindStatus(row);
-        const settings = row.settingsUrl || row.lookup?.settingsUrl || '';
         return `<article class="espn-bind-card is-${esc(tone)}">
           <header class="espn-bind-head">
             ${logo}
@@ -1841,15 +1877,13 @@
             </div>
             <span class="espn-bind-status ${status.cls}">${esc(status.label)}</span>
           </header>
-          <label for="espn-id-${esc(row.key)}">League ID or ESPN URL</label>
+          <label for="espn-id-${esc(row.key)}">This year’s league ID or ESPN URL</label>
           <div class="espn-bind-idrow">
-            <input class="field" id="espn-id-${esc(row.key)}" data-espn-key="${esc(row.key)}" inputmode="numeric" value="${esc(id)}" placeholder="559054421 or paste settings URL" autocomplete="off" spellcheck="false" />
+            <input class="field" id="espn-id-${esc(row.key)}" data-espn-key="${esc(row.key)}" inputmode="numeric" value="${esc(id)}" placeholder="…/league/_/leagueId/123456789" autocomplete="off" spellcheck="false" />
             <button type="button" class="btn btn-secondary" data-espn-peek="${esc(row.key)}">Look up</button>
           </div>
           <p class="espn-bind-meta${err ? ' is-error' : ''}" data-espn-meta="${esc(row.key)}">${espnBindMeta(row)}</p>
-          ${settings
-            ? `<p class="espn-bind-links"><a href="${esc(settings)}" target="_blank" rel="noopener">Open ESPN settings</a></p>`
-            : `<p class="espn-bind-links" data-espn-settings-slot="${esc(row.key)}"></p>`}
+          ${espnBindLinksHtml(row)}
           <details class="espn-bind-names">
             <summary>Name on this site</summary>
             <div class="espn-bind-names-grid">
@@ -1914,7 +1948,7 @@
       const id = Number(normalizeEspnIdInput(input));
       if (!Number.isFinite(id) || id <= 0) {
         if (meta) {
-          meta.textContent = 'Enter a league ID or paste an ESPN settings URL';
+          meta.textContent = 'Paste this year’s league office URL (…/league/_/leagueId/…) or the numeric ID';
           meta.classList.add('is-error');
         }
         if (status) {
@@ -1939,24 +1973,37 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || 'Look up failed');
+        if (input && data.espnLeagueId) input.value = String(data.espnLeagueId);
         if (meta) {
-          const size = data.size != null ? ` · ${data.size} teams` : '';
-          meta.textContent = `On ESPN: ${data.name || 'league'}${size}`;
-          meta.classList.remove('is-error');
-        }
-        if (status) {
-          status.textContent = 'Connected';
-          status.className = 'espn-bind-status is-ok';
-        }
-        if (data.settingsUrl) {
-          applyEspnLinks({ [key]: data.settingsUrl });
-          const slot = card?.querySelector(`[data-espn-settings-slot="${CSS.escape(key)}"]`)
-            || card?.querySelector('.espn-bind-links');
-          if (slot) {
-            slot.innerHTML = `<a href="${esc(data.settingsUrl)}" target="_blank" rel="noopener">Open ESPN settings</a>`;
+          if (data.previousEspnId) {
+            meta.textContent = `That’s last year’s ESPN ID (${data.espnLeagueId}). Paste this year’s league office URL, then look up.`;
+            meta.classList.add('is-error');
+          } else {
+            const size = data.size != null ? ` · ${data.size} teams` : '';
+            meta.textContent = `On ESPN: ${data.name || 'league'}${size}`;
+            meta.classList.remove('is-error');
           }
         }
-        return true;
+        if (status) {
+          status.textContent = data.previousEspnId ? 'Previous ID' : 'Connected';
+          status.className = `espn-bind-status ${data.previousEspnId ? 'is-warn' : 'is-ok'}`;
+        }
+        const settings = data.settingsUrl || '';
+        const league = data.leagueUrl || '';
+        applyEspnLinks({ [key]: settings || league });
+        const slot = card?.querySelector(`[data-espn-settings-slot="${CSS.escape(key)}"]`)
+          || card?.querySelector('.espn-bind-links');
+        if (slot && (settings || league)) {
+          const previous = Boolean(data.previousEspnId);
+          const officeLabel = previous ? 'Open previous ESPN league' : 'Open ESPN league';
+          const settingsLabel = previous ? 'Previous settings' : 'Open ESPN settings';
+          slot.innerHTML = `${
+            league ? `<a href="${esc(league)}" target="_blank" rel="noopener">${esc(officeLabel)}</a>` : ''
+          }${league && settings ? ' · ' : ''}${
+            settings ? `<a href="${esc(settings)}" target="_blank" rel="noopener">${esc(settingsLabel)}</a>` : ''
+          }`;
+        }
+        return !data.previousEspnId;
       } catch (err) {
         if (meta) {
           meta.textContent = err.message;
@@ -2686,6 +2733,7 @@
               <th>Conference</th>
               <th>Lounge</th>
               <th>Dues</th>
+              <th>Remove</th>
             </tr>
           </thead>
           <tbody>
@@ -2750,6 +2798,11 @@
                     <input type="checkbox" data-dues-paid="${esc(u.id)}" ${u.duesPaid ? 'checked' : ''} />
                     Paid
                   </label>
+                </td>
+                <td>
+                  ${u.siteOwner || u.id === toolsUser?.id
+                    ? `<span class="muted-sm">${u.siteOwner ? 'Owner' : 'You'}</span>`
+                    : `<button type="button" class="link-action is-danger" data-remove-member="${esc(u.id)}" data-remove-name="${esc(u.name || u.loginName || 'this member')}">Remove from league</button>`}
                 </td>
               </tr>`).join('')}
           </tbody>
@@ -3078,6 +3131,27 @@
             await loadMembers();
           } catch (err) {
             showMembersMsg(err.message, false);
+          }
+        });
+      });
+
+      document.getElementById('members-list').querySelectorAll('[data-remove-member]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const userId = btn.getAttribute('data-remove-member');
+          const name = btn.getAttribute('data-remove-name') || 'this member';
+          if (!confirm(`Remove ${name} from the league?\n\nThis deletes their account, frees their franchise, and they will need a new invite to join again.`)) {
+            return;
+          }
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/remove`, { method: 'POST' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not remove member');
+            showMembersMsg(`Removed ${name} and deleted their account.`, true);
+            await loadMembers();
+          } catch (err) {
+            showMembersMsg(err.message, false);
+            btn.disabled = false;
           }
         });
       });

@@ -71,8 +71,11 @@
   const ON_CLOCK_AUDIO_URL = '/assets/lounge/nfl-draft-on-clock.wav?v=2';
   const WELCOME_AUDIO_URL = '/assets/lounge/nfl-draft-welcome.mp3?v=2';
   const COMPLETE_AUDIO_URL = '/assets/lounge/nfl-draft-complete.mp3?v=1';
-  const COUNTDOWN_TICK_AUDIO_URL = '/assets/lounge/nfl-draft-countdown-tick.mp3?v=2';
-  const PICK_AUDIO_URL = '/assets/lounge/nfl-draft-pick.wav?v=1';
+  const COUNTDOWN_TICK_AUDIO_URL = '/assets/lounge/nfl-draft-countdown-10.mp3?v=1';
+  /** File is silent until 1.24s, then speaks 10…1 on exact 1s beats. */
+  const COUNTDOWN_FIRST_BEAT = 1.24;
+  const COUNTDOWN_START_AT = 10;
+  const PICK_AUDIO_URL = '/assets/lounge/nfl-draft-pick.mp3?v=3';
   let cpuAnimRunning = false;
   let justPickedSeat = null;
   let justPickedTimer = null;
@@ -209,6 +212,16 @@
     return `${mm}:${ss}`;
   }
 
+  function stopCountdownAudio() {
+    if (!countdownTickAudio) return;
+    try {
+      countdownTickAudio.pause();
+      countdownTickAudio.currentTime = 0;
+    } catch {
+      /* ignore */
+    }
+  }
+
   function stopPickTimer() {
     if (pickTimerId) {
       clearInterval(pickTimerId);
@@ -216,6 +229,7 @@
     }
     pickDeadline = null;
     lastCountdownBeep = null;
+    stopCountdownAudio();
     document.getElementById('mock-pick-timer')?.classList.remove('is-ok', 'is-warn', 'is-low', 'is-urgent');
   }
 
@@ -581,6 +595,7 @@
       pickTimerId = null;
     }
     lastCountdownBeep = null;
+    stopCountdownAudio();
     document.getElementById('mock-pick-timer')?.classList.remove('is-ok', 'is-warn', 'is-low', 'is-urgent');
     if (!draftLive || !mock) {
       pickDeadline = null;
@@ -1052,6 +1067,7 @@
     } else if (newPicks.length) {
       const last = newPicks[newPicks.length - 1];
       if (last && Number.isFinite(Number(last.teamIndex))) {
+        if (Number(last.teamIndex) !== Number(mock.seatIndex)) playPickSound();
         scrollToSeat(last.teamIndex);
         flashSeatPick(last.teamIndex);
         lastFocusSeat = last.teamIndex;
@@ -1805,6 +1821,7 @@
       card.classList.remove('is-draft-glow', 'is-draft-fly');
       card.style.removeProperty('--pick-fly-x');
       card.style.removeProperty('--pick-fly-y');
+      card.dataset.pos = posKey(player.position);
     }
     if (cancelBtn) cancelBtn.disabled = false;
     if (closeBtn) closeBtn.disabled = false;
@@ -2502,6 +2519,31 @@
     return posKey(findPlayer(pick.playerId)?.position);
   }
 
+  function pickNflMeta(pick) {
+    const player = findPlayer(pick?.playerId);
+    const byeRaw = pick?.byeWeek ?? player?.byeWeek;
+    const bye = byeRaw != null && String(byeRaw).trim() !== '' ? String(byeRaw) : '';
+    return {
+      pos: pickPos(pick),
+      logo: pick?.teamLogo || player?.teamLogo || '',
+      bye,
+      nfl: String(pick?.nflTeam || player?.team || '').toUpperCase()
+    };
+  }
+
+  function lastPickMagnetHtml(pick) {
+    const bits = splitPlayerName(pick.playerName);
+    const meta = pickNflMeta(pick);
+    const team = meta.logo
+      ? `<img class="pick-nfl-logo" src="${esc(meta.logo)}" alt="${esc(meta.nfl)}" width="16" height="16" loading="lazy" referrerpolicy="no-referrer" />`
+      : (meta.nfl ? `<span class="pick-nfl-abbr">${esc(meta.nfl)}</span>` : '<span class="pick-nfl-abbr"></span>');
+    const first = bits.first
+      ? `<span class="pick-first">${esc(bits.first)}</span>`
+      : '<span class="pick-first"></span>';
+    const bye = meta.bye ? `<span class="pick-bye">Bye ${esc(meta.bye)}</span>` : '';
+    return `<span class="last" data-pos="${esc(meta.pos)}"><span class="pick-meta"><span class="pick-pos">${esc(meta.pos)}</span>${first}${team}</span><span class="pick-last">${esc(bits.last)}</span>${bye}</span>`;
+  }
+
   function posBadge(pos) {
     const p = posKey(pos);
     return `<span class="mock-pos-badge" data-pos="${esc(p)}">${esc(p)}</span>`;
@@ -2614,7 +2656,7 @@
       if (!countdownTickAudio) {
         countdownTickAudio = new Audio(COUNTDOWN_TICK_AUDIO_URL);
         countdownTickAudio.preload = 'auto';
-        countdownTickAudio.volume = 0.9;
+        countdownTickAudio.volume = 0.95;
       }
       const tickBusy = !countdownTickAudio.paused && !countdownTickAudio.muted;
       if (!tickBusy) {
@@ -2684,7 +2726,7 @@
     }
   }
 
-  function playUserDraftSound() {
+  function playPickSound() {
     try {
       if (!pickAudio) {
         pickAudio = new Audio(PICK_AUDIO_URL);
@@ -2700,6 +2742,10 @@
       playTone({ freq: 659.25, duration: 0.14, type: 'triangle', gain: 0.08, when: 0.1 });
       playTone({ freq: 783.99, duration: 0.2, type: 'triangle', gain: 0.09, when: 0.22 });
     }
+  }
+
+  function playUserDraftSound() {
+    playPickSound();
   }
 
   function animatePickModalToTeam() {
@@ -2832,55 +2878,54 @@
     }
   }
 
-  function playCountdownTick(secondsLeft) {
-    const urgent = secondsLeft <= 3;
-    // One short click only — dual WebAudio+mp3 was drifting off the displayed second.
+  function ensureCountdownAudio() {
+    if (countdownTickAudio) return countdownTickAudio;
+    countdownTickAudio = new Audio(COUNTDOWN_TICK_AUDIO_URL);
+    countdownTickAudio.preload = 'auto';
+    countdownTickAudio.volume = 0.95;
+    return countdownTickAudio;
+  }
+
+  function countdownAudioTime(leftExact) {
+    return COUNTDOWN_FIRST_BEAT + (COUNTDOWN_START_AT - leftExact);
+  }
+
+  function playSyncedCountdown(leftExact) {
+    const audio = ensureCountdownAudio();
+    const target = countdownAudioTime(leftExact);
+    const dur = Number(audio.duration);
+    if (target < 0) return;
+    if (Number.isFinite(dur) && dur > 0 && target >= dur - 0.02) return;
+    audio.muted = false;
+    audio.volume = 0.95;
+    const playing = !audio.paused && !audio.ended;
+    const drift = Math.abs((Number(audio.currentTime) || 0) - target);
     try {
-      if (audioCtx?.state === 'suspended') audioCtx.resume().catch(() => {});
-      playTone({
-        freq: urgent ? 1080 : secondsLeft <= 6 ? 900 : 760,
-        duration: urgent ? 0.08 : 0.055,
-        type: 'square',
-        gain: urgent ? 0.085 : 0.055
-      });
-      return;
-    } catch {
-      /* fall through to file tick */
-    }
-    try {
-      if (!countdownTickAudio) {
-        countdownTickAudio = new Audio(COUNTDOWN_TICK_AUDIO_URL);
-        countdownTickAudio.preload = 'auto';
+      if (!playing) {
+        audio.currentTime = Math.max(0, target);
+        const play = audio.play();
+        if (play && typeof play.catch === 'function') play.catch(() => {});
+        return;
       }
-      countdownTickAudio.volume = urgent ? 1 : 0.85;
-      countdownTickAudio.muted = false;
-      audioWarmEpoch += 1;
-      countdownTickAudio.pause();
-      countdownTickAudio.currentTime = 0;
-      const play = countdownTickAudio.play();
-      if (play && typeof play.catch === 'function') play.catch(() => {});
+      if (drift > 0.12) audio.currentTime = Math.max(0, target);
     } catch {
       /* ignore */
     }
   }
 
   function maybePlayCountdownBeeps(leftOverride) {
-    // Tick once when the on-screen second flips into 10 → 1.
-    if (!draftLive || !canUserDraftNow()) {
+    if (!draftLive || !canUserDraftNow() || !pickDeadline) {
+      stopCountdownAudio();
       lastCountdownBeep = null;
       return;
     }
-    const left = leftOverride == null ? secondsLeftOnClock() : leftOverride;
-    if (left == null || left > 10 || left < 1) {
-      if (left == null || left > 10) lastCountdownBeep = null;
+    const leftExact = (pickDeadline - Date.now()) / 1000;
+    if (leftExact > 10.30 || leftExact <= 0) {
+      if (leftExact > 10.30) stopCountdownAudio();
+      lastCountdownBeep = null;
       return;
     }
-    if (lastCountdownBeep === left) return;
-    lastCountdownBeep = left;
-    if (audioCtx?.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
-    playCountdownTick(left);
+    playSyncedCountdown(leftExact);
   }
 
   function sleep(ms) {
@@ -2942,6 +2987,7 @@
       card.classList.remove('is-pop', 'is-fly');
       card.style.removeProperty('--cpu-fly-x');
       card.style.removeProperty('--cpu-fly-y');
+      card.removeAttribute('data-pos');
       card.innerHTML = '';
     }
     if (wrap) wrap.hidden = true;
@@ -2949,21 +2995,21 @@
 
   function cpuPickAnnounceHtml(pick) {
     const player = findPlayer(pick.playerId);
-    const pos = pickPos(pick);
+    const meta = pickNflMeta(pick);
     const name = pick.playerName || player?.name || 'Player';
-    const nfl = String(pick.nflTeam || player?.team || '').toUpperCase();
-    const logo = pick.teamLogo || player?.teamLogo || '';
     const club = seatBoardLabel(pick.teamIndex);
-    const teamMark = logo
-      ? `<img class="cpu-team-logo" src="${esc(logo)}" alt="" width="28" height="28" />`
+    const teamMark = meta.logo
+      ? `<img class="cpu-team-logo" src="${esc(meta.logo)}" alt="" width="28" height="28" />`
       : '';
+    const bye = meta.bye ? `<span class="cpu-bye">Bye ${esc(meta.bye)}</span>` : '';
     return `
       <p class="cpu-kicker">${esc(club)} selects</p>
       <strong class="cpu-name">${esc(name)}</strong>
       <div class="cpu-meta">
         ${teamMark}
-        ${nfl ? `<span class="cpu-team">${esc(nfl)}</span>` : ''}
-        ${posBadge(pos)}
+        ${meta.nfl ? `<span class="cpu-team">${esc(meta.nfl)}</span>` : ''}
+        ${posBadge(meta.pos)}
+        ${bye}
       </div>`;
   }
 
@@ -2973,6 +3019,7 @@
     if (!wrap || !card || !pick) return Promise.resolve();
     const epoch = ++cpuAnnounceEpoch;
     card.innerHTML = cpuPickAnnounceHtml(pick);
+    card.dataset.pos = pickNflMeta(pick).pos;
     card.classList.remove('is-pop', 'is-fly');
     card.style.removeProperty('--cpu-fly-x');
     card.style.removeProperty('--cpu-fly-y');
@@ -3050,6 +3097,7 @@
     scrollToSeat(pick.teamIndex);
     renderOrder();
     renderOtherTeams();
+    playPickSound();
     const done = playCpuPickAnnounce(pick);
     pickRevealTimer = setTimeout(() => {
       if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
@@ -3218,11 +3266,7 @@
             : (you && (phase === 'setup' || roomStatus === 'lobby')
               ? (canDrag ? 'DRAG TO MOVE' : 'YOUR SEAT')
               : '')));
-      const lastPos = last ? pickPos(last) : '';
-      const bits = last ? splitPlayerName(last.playerName) : null;
-      const lastHtml = last
-        ? `<span class="last" data-pos="${esc(lastPos)}"><span class="pick-last">${esc(bits.last)}</span><span class="pick-line">${bits.first ? `<span class="pick-first">${esc(bits.first)}</span>` : ''}<span class="pick-pos">${esc(lastPos)}</span></span></span>`
-        : '<span class="last is-empty"></span>';
+      const lastHtml = last ? lastPickMagnetHtml(last) : '<span class="last is-empty"></span>';
       const label = boardLabel;
       return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} ${you && draftLive && !isDraftComplete() ? 'data-drop-player="1"' : ''} title="${esc(title)}">
         <span class="n">${String(i + 1).padStart(2, '0')}</span>
