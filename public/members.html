@@ -3910,7 +3910,7 @@
       column-gap: 5px;
       row-gap: 0;
       margin: 0 0 0.85rem;
-      padding: 0.28rem;
+      padding: 0.28rem 0.28rem 0.72rem;
       width: 100%;
       overflow-x: auto;
       overflow-y: hidden;
@@ -4005,6 +4005,17 @@
       text-transform: uppercase;
       color: color-mix(in srgb, var(--pick-ink) 70%, #e8eef8);
     }
+    .mock-cpu-announce-card.is-round {
+      --pick-ink: var(--mo-gold);
+      min-width: min(24rem, 92vw);
+      padding: 1.25rem 1.7rem 1.35rem;
+    }
+    .mock-cpu-announce-card.is-round .cpu-name {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: clamp(2.8rem, 8vw, 4.4rem);
+      letter-spacing: 0.06em;
+      color: var(--mo-gold);
+    }
     .mock-cpu-announce-card.is-pop {
       animation: mock-cpu-announce-pop 0.42s cubic-bezier(0.22, 1.18, 0.36, 1);
     }
@@ -4041,8 +4052,8 @@
       min-width: 0;
       min-height: 8.15rem;
       width: 100%;
-      padding: 0.28rem 0.16rem 0.32rem;
-      overflow: hidden;
+      padding: 0.28rem 0.16rem 0.42rem;
+      overflow: visible;
       border: 0;
       border-radius: 0;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
@@ -4128,23 +4139,34 @@
       grid-template-rows: auto 1fr auto;
       align-items: stretch;
       justify-items: stretch;
-      gap: 0.04rem;
-      overflow: hidden;
+      gap: 0.06rem;
+      overflow: visible;
       width: 100%;
       max-width: 100%;
-      min-height: 3.45rem;
-      margin: 0;
+      min-height: 3.55rem;
+      margin: 0.08rem 0 0.18rem;
       padding: 0;
-      color: #111;
+      color: #0b0d12;
       text-align: center;
     }
     .mock-order .mock-seat-chip .last:not(.is-empty) {
-      padding: 0.22rem 0.28rem 0.2rem;
-      background: var(--pick-ink);
+      padding: 0.28rem 0.32rem 0.28rem;
+      border-radius: 0.22rem;
+      border: 1px solid rgba(0, 0, 0, 0.38);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0.08) 22%, transparent 48%),
+        linear-gradient(180deg,
+          color-mix(in srgb, #fff 18%, var(--pick-ink)) 0%,
+          var(--pick-ink) 52%,
+          color-mix(in srgb, #000 24%, var(--pick-ink)) 100%);
       box-shadow:
-        inset 1px 0 0 rgba(0, 0, 0, 0.14),
-        inset -1px 0 0 rgba(0, 0, 0, 0.14),
-        0 2px 0 rgba(0, 0, 0, 0.32);
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -3px 5px rgba(0, 0, 0, 0.28),
+        0 1px 0 rgba(255, 255, 255, 0.18),
+        0 2px 0 #1c1c1c,
+        0 4px 0 #111,
+        0 6px 0 #0a0a0a,
+        0 10px 16px rgba(0, 0, 0, 0.5);
     }
     .mock-order .mock-seat-chip .last[data-pos="QB"] { --pick-ink: var(--mock-qb); }
     .mock-order .mock-seat-chip .last[data-pos="RB"] { --pick-ink: var(--mock-rb); }
@@ -4162,13 +4184,14 @@
     }
     .mock-order .mock-seat-chip .last .pick-pos {
       font-family: "Oswald", sans-serif;
-      font-size: 0.58rem;
+      font-size: 0.64rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       line-height: 1;
       text-transform: uppercase;
-      color: #111;
+      color: #0b0d12;
       text-align: left;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
     }
     .mock-order .mock-seat-chip .last .pick-first {
       min-width: 0;
@@ -4176,55 +4199,62 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       font-family: "Oswald", sans-serif;
-      font-size: 0.58rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
       line-height: 1;
       text-transform: none;
-      color: #111;
+      color: #0b0d12;
       text-align: center;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
     }
     .mock-order .mock-seat-chip .last .pick-nfl-logo {
       display: block;
-      width: 1rem;
-      height: 1rem;
+      width: 1.05rem;
+      height: 1.05rem;
       object-fit: contain;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
     }
     .mock-order .mock-seat-chip .last .pick-nfl-abbr {
       font-family: "Oswald", sans-serif;
-      font-size: 0.58rem;
+      font-size: 0.64rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       line-height: 1;
       text-transform: uppercase;
-      color: #111;
+      color: #0b0d12;
       text-align: right;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
     }
     .mock-order .mock-seat-chip .last .pick-last {
       display: block;
       overflow: hidden;
       min-width: 0;
       align-self: center;
-      font-family: "Oswald", "Bebas Neue", sans-serif;
-      font-size: 1.08rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      line-height: 1.02;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: 1.34rem;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      line-height: 0.92;
       text-transform: uppercase;
-      color: #111;
+      color: #05070b;
       text-align: center;
       white-space: nowrap;
       text-overflow: ellipsis;
+      -webkit-font-smoothing: auto;
+      text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.5),
+        0 1px 2px rgba(0, 0, 0, 0.45);
     }
     .mock-order .mock-seat-chip .last .pick-bye {
       font-family: "Oswald", sans-serif;
-      font-size: 0.5rem;
+      font-size: 0.56rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       line-height: 1;
       text-transform: uppercase;
-      color: #111;
-      opacity: 0.78;
+      color: #0b0d12;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
     }
     .mock-order .mock-seat-chip:has(.last.is-name-in) {
       z-index: 8;
@@ -4240,6 +4270,7 @@
     .mock-order .mock-seat-chip .last.is-empty {
       background: none;
       border: 0;
+      border-radius: 0;
       box-shadow: none;
       color: transparent;
     }
@@ -8832,7 +8863,7 @@
     html[data-theme="day"] .mock-order .mock-seat-chip .last .pick-first,
     html[data-theme="day"] .mock-order .mock-seat-chip .last .pick-bye,
     html[data-theme="day"] .mock-order .mock-seat-chip .last .pick-nfl-abbr {
-      color: #111;
+      color: #07090d;
     }
     html[data-theme="day"] .mock-other-team .ot-name > span:first-child {
       color: #0f172a;
@@ -9440,7 +9471,7 @@
   </footer>
   <script src="/js/nav.js?v=157"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=85"></script>
+  <script src="/js/lounge-desk.js?v=88"></script>
   <script src="/js/lounge-games.js?v=38"></script>
   <script>
     const esc = (v = '') => String(v)

@@ -65,6 +65,8 @@
   let completeAudio = null;
   let countdownTickAudio = null;
   let pickAudio = null;
+  let roundAudio = null;
+  let roundAudioRound = null;
   /** Bumped when a real cue plays so muted unlock warms don't pause mid-sting. */
   let audioWarmEpoch = 0;
   let lastCountdownBeep = null;
@@ -76,6 +78,12 @@
   const COUNTDOWN_FIRST_BEAT = 1.24;
   const COUNTDOWN_START_AT = 10;
   const PICK_AUDIO_URL = '/assets/lounge/nfl-draft-pick.mp3?v=3';
+  const ROUND_AUDIO_V = 1;
+  const ROUND_AUDIO_WORDS = [
+    'one', 'two', 'three', 'four', 'five',
+    'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen'
+  ];
   let cpuAnimRunning = false;
   let justPickedSeat = null;
   let justPickedTimer = null;
@@ -86,6 +94,8 @@
   let pickRevealTimer = null;
   let cpuAnnounceEpoch = 0;
   let lastOrderHtml = '';
+  let boardRound = 1;
+  let lastAnnouncedRound = 0;
 
   function isMultiplayer() {
     return Boolean(roomId);
@@ -124,6 +134,7 @@
     stopRoomPoll();
     stopLobbyPaint();
     stopWelcomeAudio();
+    stopRoundAudio();
     roomId = null;
     roomSeats = null;
     roomStatus = null;
@@ -291,6 +302,8 @@
     }
     mockCompleteShown = false;
     lastOrderHtml = '';
+    boardRound = 1;
+    lastAnnouncedRound = 0;
     clearPersistedMock();
     if (!silent) {
       history.replaceState(null, '', '#mock-draft');
@@ -530,6 +543,7 @@
       renderMock();
       return 0;
     }
+    await maybePlayRoundBreak();
     const filled = await runCpuUntilUserPick();
     const slot = currentSlot();
     if (!slot) {
@@ -565,6 +579,7 @@
         return;
       }
       if (!makePick(player.id, { silent: true, cpu: false, auto: true })) return;
+      playPickSound();
       setMockStatus(`Time’s up — auto-drafted ${player.name}`, true);
       afterUserTurn().catch(() => {});
     } finally {
@@ -638,6 +653,7 @@
     mockCompleteShown = false;
     closeMockCompleteScreen();
     hideCpuPickAnnounce();
+    stopRoundAudio();
     if (!awaitingSeatClaim) leaveRoomLocal();
     setDraftLive(false);
   }
@@ -691,6 +707,7 @@
     if (!dialog || !board) return;
     mockCompleteShown = true;
     stopWelcomeAudio();
+    stopRoundAudio();
     playDraftCompleteSound();
     const draftNum = nextMockDraftNumber();
     const totalSlots = rosterPlan.starters.length + rosterPlan.bench;
@@ -946,7 +963,10 @@
 
     draftLive = true;
     setDraftLive(true);
+    boardRound = 1;
+    lastAnnouncedRound = 0;
     playDraftStartSound({ key: `local:${Date.now()}` });
+    await maybePlayOpeningRound();
     const filled = await runCpuUntilUserPick();
     const slot = currentSlot();
     if (!slot) {
@@ -974,6 +994,7 @@
     const prevPickCount = mock.picks?.length || 0;
     const prevPositionsLocked = positionsLocked;
     const prevLobbyEndsAt = lobbyEndsAt;
+    const prevStatus = roomStatus;
     const nextSig = roomBoardSignature(room);
     const boardChanged = nextSig !== lastRoomBoardSig;
     lastRoomBoardSig = nextSig;
@@ -1059,11 +1080,15 @@
       maybePlayTurnCues();
       renderDraftChat();
     }
+    const wentLive = room.status === 'live' && prevStatus !== 'live';
+    const opening = wentLive || (room.status === 'live' && lastAnnouncedRound < 1)
+      ? maybePlayOpeningRound()
+      : Promise.resolve(false);
     if (latestCpuPick && Number.isFinite(Number(latestCpuPick.teamIndex))) {
       const team = mock.teamNames[latestCpuPick.teamIndex] || `Team ${latestCpuPick.teamIndex + 1}`;
       setMockStatus(`CPU · ${team} selected ${latestCpuPick.playerName}`, true);
       lastFocusSeat = latestCpuPick.teamIndex;
-      beginCpuPickReveal(latestCpuPick);
+      opening.then(() => beginCpuPickReveal(latestCpuPick)).then(() => maybePlayRoundBreak());
     } else if (newPicks.length) {
       const last = newPicks[newPicks.length - 1];
       if (last && Number.isFinite(Number(last.teamIndex))) {
@@ -1072,7 +1097,11 @@
         flashSeatPick(last.teamIndex);
         lastFocusSeat = last.teamIndex;
       }
+      opening.then(() => maybePlayRoundBreak());
+    } else {
+      opening.catch(() => {});
     }
+    syncBoardRound();
     const onClock = currentSlot();
     if (onClock && draftLive && room.status === 'live' && onClock.teamIndex !== lastFocusSeat) {
       scrollToSeat(onClock.teamIndex);
@@ -1955,10 +1984,9 @@
     if (cancelBtn) cancelBtn.disabled = true;
     if (closeBtn) closeBtn.disabled = true;
     unlockDraftAudio();
-    playUserDraftSound();
     await animatePickModalToTeam();
     closePickModal();
-    return executeUserPick(id, { skipSound: true });
+    return executeUserPick(id);
   }
 
   async function executeUserPick(playerId, opts = {}) {
@@ -2385,6 +2413,8 @@
     draftLive = false;
     mockCompleteShown = false;
     targetIds = [];
+    boardRound = 1;
+    lastAnnouncedRound = 0;
   }
 
   function applyTeamCount(count) {
@@ -2691,6 +2721,17 @@
     } catch {
       /* ignore */
     }
+    try {
+      const url = roundAudioUrl(1);
+      if (url && (!roundAudio || roundAudioRound !== 1)) {
+        roundAudio = new Audio(url);
+        roundAudio.preload = 'auto';
+        roundAudio.volume = 0.95;
+        roundAudioRound = 1;
+      }
+    } catch {
+      /* ignore */
+    }
     return audioCtx;
   }
 
@@ -2741,6 +2782,48 @@
       playTone({ freq: 523.25, duration: 0.12, type: 'triangle', gain: 0.08, when: 0 });
       playTone({ freq: 659.25, duration: 0.14, type: 'triangle', gain: 0.08, when: 0.1 });
       playTone({ freq: 783.99, duration: 0.2, type: 'triangle', gain: 0.09, when: 0.22 });
+    }
+  }
+
+  function roundAudioUrl(round) {
+    const word = ROUND_AUDIO_WORDS[Number(round) - 1];
+    if (!word) return null;
+    return `/assets/lounge/nfl-draft-round-${word}.mp3?v=${ROUND_AUDIO_V}`;
+  }
+
+  function stopRoundAudio() {
+    if (!roundAudio) return;
+    try {
+      roundAudio.pause();
+      roundAudio.currentTime = 0;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function playRoundAudio(round) {
+    const url = roundAudioUrl(round);
+    if (!url) return;
+    try {
+      const n = Number(round);
+      if (!roundAudio || roundAudioRound !== n) {
+        roundAudio = new Audio(url);
+        roundAudio.preload = 'auto';
+        roundAudio.volume = 0.95;
+        roundAudioRound = n;
+      }
+      roundAudio.muted = false;
+      roundAudio.pause();
+      roundAudio.currentTime = 0;
+      const play = roundAudio.play();
+      if (play && typeof play.catch === 'function') play.catch(() => {});
+      const nextUrl = roundAudioUrl(n + 1);
+      if (nextUrl) {
+        const warm = new Audio(nextUrl);
+        warm.preload = 'auto';
+      }
+    } catch {
+      /* ignore missing round files until they are dropped in */
     }
   }
 
@@ -2981,10 +3064,11 @@
 
   function hideCpuPickAnnounce() {
     cpuAnnounceEpoch += 1;
+    stopRoundAudio();
     const wrap = document.getElementById('mock-cpu-announce');
     const card = document.getElementById('mock-cpu-announce-card');
     if (card) {
-      card.classList.remove('is-pop', 'is-fly');
+      card.classList.remove('is-pop', 'is-fly', 'is-round');
       card.style.removeProperty('--cpu-fly-x');
       card.style.removeProperty('--cpu-fly-y');
       card.removeAttribute('data-pos');
@@ -3049,6 +3133,7 @@
       }
       renderOrder();
       renderOtherTeams();
+      playPickSound();
       flashSeatPick(pick.teamIndex);
     };
 
@@ -3060,7 +3145,7 @@
         card.removeEventListener('animationend', onEnd);
         if (epoch === cpuAnnounceEpoch) {
           wrap.hidden = true;
-          card.classList.remove('is-pop', 'is-fly');
+          card.classList.remove('is-pop', 'is-fly', 'is-round');
           card.style.removeProperty('--cpu-fly-x');
           card.style.removeProperty('--cpu-fly-y');
         }
@@ -3097,7 +3182,6 @@
     scrollToSeat(pick.teamIndex);
     renderOrder();
     renderOtherTeams();
-    playPickSound();
     const done = playCpuPickAnnounce(pick);
     pickRevealTimer = setTimeout(() => {
       if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
@@ -3179,6 +3263,143 @@
     /* Draft drop zone removed — double-click only */
   }
 
+  function pickForTeamInRound(teamIndex, round) {
+    return (mock?.picks || []).find((p) => Number(p.teamIndex) === Number(teamIndex) && Number(p.round) === Number(round)) || null;
+  }
+
+  function nextRoundAfterComplete() {
+    if (!mock?.picks?.length) return null;
+    const last = mock.picks[mock.picks.length - 1];
+    const round = Number(last.round);
+    if (!Number.isFinite(round)) return null;
+    const teams = mock.teamNames.length;
+    const inRound = mock.picks.filter((p) => Number(p.round) === round).length;
+    if (inRound < teams) return null;
+    const next = round + 1;
+    if (next > mock.rounds) return null;
+    return next;
+  }
+
+  function syncBoardRound() {
+    const next = nextRoundAfterComplete();
+    if (next && lastAnnouncedRound > 0 && lastAnnouncedRound < next) return;
+    const slot = currentSlot();
+    if (slot) {
+      boardRound = slot.round;
+      if (lastAnnouncedRound === 0) {
+        if (draftLive && slot.round > 1) lastAnnouncedRound = slot.round;
+      } else if (lastAnnouncedRound < slot.round) {
+        lastAnnouncedRound = slot.round;
+      }
+    } else if (mock?.picks?.length) {
+      boardRound = Number(mock.picks[mock.picks.length - 1].round) || boardRound;
+    }
+  }
+
+  function roundAnnounceHtml(round) {
+    return `
+      <p class="cpu-kicker">Now entering</p>
+      <strong class="cpu-name">Round ${esc(String(round))}</strong>
+      <div class="cpu-meta"><span class="cpu-team">Snake draft</span></div>`;
+  }
+
+  function playRoundAnnounce(round) {
+    const wrap = document.getElementById('mock-cpu-announce');
+    const card = document.getElementById('mock-cpu-announce-card');
+    if (!wrap || !card) return Promise.resolve();
+    const epoch = ++cpuAnnounceEpoch;
+    card.classList.remove('is-pop', 'is-fly');
+    card.style.removeProperty('--cpu-fly-x');
+    card.style.removeProperty('--cpu-fly-y');
+    card.removeAttribute('data-pos');
+    card.classList.add('is-round');
+    card.innerHTML = roundAnnounceHtml(round);
+    wrap.hidden = false;
+    void card.offsetWidth;
+    card.classList.add('is-pop');
+    paintMockStartBar();
+    playRoundAudio(round);
+
+    const flyAway = () => {
+      if (epoch !== cpuAnnounceEpoch) return;
+      const target = document.querySelector('#mock-start-copy strong') || document.getElementById('mock-start-copy');
+      const cardRect = card.getBoundingClientRect();
+      let dx = 0;
+      let dy = -120;
+      if (target) {
+        const t = target.getBoundingClientRect();
+        dx = (t.left + t.width / 2) - (cardRect.left + cardRect.width / 2);
+        dy = (t.top + t.height / 2) - (cardRect.top + cardRect.height / 2);
+      }
+      card.style.setProperty('--cpu-fly-x', `${Math.round(dx)}px`);
+      card.style.setProperty('--cpu-fly-y', `${Math.round(dy)}px`);
+      card.classList.remove('is-pop');
+      void card.offsetWidth;
+      card.classList.add('is-fly');
+    };
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        card.removeEventListener('animationend', onEnd);
+        if (epoch === cpuAnnounceEpoch) {
+          wrap.hidden = true;
+          card.classList.remove('is-pop', 'is-fly', 'is-round');
+          card.style.removeProperty('--cpu-fly-x');
+          card.style.removeProperty('--cpu-fly-y');
+        }
+        resolve();
+      };
+      const onEnd = (e) => {
+        if (e.target !== card) return;
+        if (e.animationName !== 'mock-cpu-announce-fly') return;
+        finish();
+      };
+      card.addEventListener('animationend', onEnd);
+      window.setTimeout(() => {
+        if (epoch !== cpuAnnounceEpoch) {
+          finish();
+          return;
+        }
+        flyAway();
+      }, 1800);
+      window.setTimeout(finish, 2600);
+    });
+  }
+
+  async function maybePlayOpeningRound() {
+    if (lastAnnouncedRound >= 1) return false;
+    if (!draftLive) return false;
+    const slot = currentSlot();
+    const round = Number(slot?.round || 1);
+    if (round !== 1) {
+      lastAnnouncedRound = round;
+      return false;
+    }
+    lastAnnouncedRound = 1;
+    boardRound = 1;
+    lastOrderHtml = '';
+    renderOrder();
+    setMockStatus('Round 1', true);
+    await playRoundAnnounce(1);
+    return true;
+  }
+
+  async function maybePlayRoundBreak() {
+    const next = nextRoundAfterComplete();
+    if (!next || lastAnnouncedRound >= next) return false;
+    lastAnnouncedRound = next;
+    await sleep(420);
+    boardRound = next;
+    lastOrderHtml = '';
+    renderOrder();
+    setMockStatus(`Round ${next}`, true);
+    await playRoundAnnounce(next);
+    return true;
+  }
+
   function lastPickForTeam(teamIndex) {
     if (!mock?.picks?.length) return null;
     for (let i = mock.picks.length - 1; i >= 0; i -= 1) {
@@ -3187,17 +3408,16 @@
     return null;
   }
 
-  /** Hide the pick on the board until the CPU card flies down onto the seat. */
+  /** Current-round magnet only; hide until a CPU card flies onto the seat. */
   function visibleLastPickForTeam(teamIndex) {
-    const last = lastPickForTeam(teamIndex);
+    const last = pickForTeamInRound(teamIndex, boardRound);
     if (!last || !pickReveal) return last;
     if (
       pickReveal.phase === 'holding'
       && Number(pickReveal.teamIndex) === Number(teamIndex)
       && Number(last.overall) === Number(pickReveal.overall)
     ) {
-      const picks = picksForTeam(teamIndex);
-      return picks.length > 1 ? picks[picks.length - 2] : null;
+      return null;
     }
     return last;
   }
@@ -4321,6 +4541,7 @@
         if (!autoPickOne({ silent: true })) break;
         n += 1;
       }
+      syncBoardRound();
       if (n > 0 || opts.forceRender) renderMock();
       return Promise.resolve(n);
     }
@@ -4355,6 +4576,7 @@
         if (pick && mock.picks.length > before) {
           setMockStatus(`CPU · ${teamName} selected ${pick.playerName}`, true);
           await beginCpuPickReveal(pick);
+          await maybePlayRoundBreak();
         } else {
           renderMock();
           await sleep(250);
@@ -5013,6 +5235,8 @@
       if (!mock.picks.length) return;
       stopPickTimer();
       const removed = mock.picks.pop();
+      lastAnnouncedRound = currentSlot()?.round || 1;
+      syncBoardRound();
       setMockStatus(`Undid ${removed.playerName}`, true);
       if (draftLive) {
         await runCpuUntilUserPick({ instant: true });
