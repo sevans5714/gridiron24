@@ -93,6 +93,8 @@
   let pickReveal = null; // { teamIndex, overall, phase: 'holding'|'show' }
   let pickRevealTimer = null;
   let cpuAnnounceEpoch = 0;
+  let boardAnnounceGen = 0;
+  let boardAnnounceTail = Promise.resolve();
   let lastOrderHtml = '';
   let boardRound = 1;
   let lastAnnouncedRound = 0;
@@ -135,6 +137,7 @@
     stopLobbyPaint();
     stopWelcomeAudio();
     stopRoundAudio();
+    resetBoardAnnounce();
     roomId = null;
     roomSeats = null;
     roomStatus = null;
@@ -966,7 +969,7 @@
     boardRound = 1;
     lastAnnouncedRound = 0;
     playDraftStartSound({ key: `local:${Date.now()}` });
-    await maybePlayOpeningRound();
+    await maybePlayRoundBreak();
     const filled = await runCpuUntilUserPick();
     const slot = currentSlot();
     if (!slot) {
@@ -1071,6 +1074,7 @@
     if (joinWindowOpened) {
       playDraftStartSound({ key: `lobby:${room.id}:${lobbyEndsAt}` });
     }
+    syncBoardRound();
     if (boardChanged || latestCpuPick) {
       renderMock();
     } else {
@@ -1081,27 +1085,27 @@
       renderDraftChat();
     }
     const wentLive = room.status === 'live' && prevStatus !== 'live';
-    const opening = wentLive || (room.status === 'live' && lastAnnouncedRound < 1)
-      ? maybePlayOpeningRound()
-      : Promise.resolve(false);
-    if (latestCpuPick && Number.isFinite(Number(latestCpuPick.teamIndex))) {
-      const team = mock.teamNames[latestCpuPick.teamIndex] || `Team ${latestCpuPick.teamIndex + 1}`;
-      setMockStatus(`CPU · ${team} selected ${latestCpuPick.playerName}`, true);
-      lastFocusSeat = latestCpuPick.teamIndex;
-      opening.then(() => beginCpuPickReveal(latestCpuPick)).then(() => maybePlayRoundBreak());
-    } else if (newPicks.length) {
-      const last = newPicks[newPicks.length - 1];
-      if (last && Number.isFinite(Number(last.teamIndex))) {
-        if (Number(last.teamIndex) !== Number(mock.seatIndex) && !last.cpu) playPickSound();
-        scrollToSeat(last.teamIndex);
-        flashSeatPick(last.teamIndex);
-        lastFocusSeat = last.teamIndex;
-      }
-      opening.then(() => maybePlayRoundBreak());
-    } else {
-      opening.catch(() => {});
+    if (wentLive || newPicks.length) {
+      const cpuPick = latestCpuPick && Number.isFinite(Number(latestCpuPick.teamIndex))
+        ? latestCpuPick
+        : null;
+      const humanLast = !cpuPick && newPicks.length ? newPicks[newPicks.length - 1] : null;
+      queueBoardAnnounce(async () => {
+        if (lastAnnouncedRound < 1) await maybePlayRoundBreak();
+        if (cpuPick) {
+          const team = mock.teamNames[cpuPick.teamIndex] || `Team ${cpuPick.teamIndex + 1}`;
+          setMockStatus(`CPU · ${team} selected ${cpuPick.playerName}`, true);
+          lastFocusSeat = cpuPick.teamIndex;
+          await beginCpuPickReveal(cpuPick);
+        } else if (humanLast && Number.isFinite(Number(humanLast.teamIndex))) {
+          if (Number(humanLast.teamIndex) !== Number(mock.seatIndex) && !humanLast.cpu) playPickSound();
+          scrollToSeat(humanLast.teamIndex);
+          flashSeatPick(humanLast.teamIndex);
+          lastFocusSeat = humanLast.teamIndex;
+        }
+        await maybePlayRoundBreak();
+      });
     }
-    syncBoardRound();
     const onClock = currentSlot();
     if (onClock && draftLive && room.status === 'live' && onClock.teamIndex !== lastFocusSeat) {
       scrollToSeat(onClock.teamIndex);
@@ -2415,6 +2419,7 @@
     targetIds = [];
     boardRound = 1;
     lastAnnouncedRound = 0;
+    resetBoardAnnounce();
   }
 
   function applyTeamCount(count) {
@@ -3266,33 +3271,46 @@
     return (mock?.picks || []).find((p) => Number(p.teamIndex) === Number(teamIndex) && Number(p.round) === Number(round)) || null;
   }
 
-  function nextRoundAfterComplete() {
-    if (!mock?.picks?.length) return null;
-    const last = mock.picks[mock.picks.length - 1];
-    const round = Number(last.round);
-    if (!Number.isFinite(round)) return null;
+  function pendingRoundAnnounce() {
+    if (!draftLive || !mock) return null;
+    const maxRound = Number(mock.rounds) || 0;
+    if (lastAnnouncedRound < 1) return 1;
+    const next = lastAnnouncedRound + 1;
+    if (!maxRound || next > maxRound) return null;
     const teams = mock.teamNames.length;
-    const inRound = mock.picks.filter((p) => Number(p.round) === round).length;
-    if (inRound < teams) return null;
-    const next = round + 1;
-    if (next > mock.rounds) return null;
-    return next;
+    if (!teams) return null;
+    const completed = (mock.picks || []).filter((p) => Number(p.round) === lastAnnouncedRound).length;
+    if (completed >= teams) return next;
+    return null;
   }
 
   function syncBoardRound() {
-    const next = nextRoundAfterComplete();
-    if (next && lastAnnouncedRound > 0 && lastAnnouncedRound < next) return;
+    const pending = pendingRoundAnnounce();
+    if (pending) {
+      boardRound = pending === 1 ? 1 : Math.max(1, lastAnnouncedRound);
+      return;
+    }
     const slot = currentSlot();
     if (slot) {
       boardRound = slot.round;
-      if (lastAnnouncedRound === 0) {
-        if (draftLive && slot.round > 1) lastAnnouncedRound = slot.round;
-      } else if (lastAnnouncedRound < slot.round) {
-        lastAnnouncedRound = slot.round;
-      }
     } else if (mock?.picks?.length) {
       boardRound = Number(mock.picks[mock.picks.length - 1].round) || boardRound;
     }
+  }
+
+  function queueBoardAnnounce(task) {
+    const gen = boardAnnounceGen;
+    boardAnnounceTail = boardAnnounceTail.then(async () => {
+      if (gen !== boardAnnounceGen) return;
+      await task();
+    }).catch(() => {});
+    return boardAnnounceTail;
+  }
+
+  function resetBoardAnnounce() {
+    boardAnnounceGen += 1;
+    boardAnnounceTail = Promise.resolve();
+    hideCpuPickAnnounce();
   }
 
   function roundAnnounceHtml(round) {
@@ -3363,40 +3381,25 @@
           return;
         }
         flyAway();
-      }, 1800);
-      window.setTimeout(finish, 2600);
+      }, 2000);
+      window.setTimeout(finish, 2800);
     });
   }
 
-  async function maybePlayOpeningRound() {
-    if (lastAnnouncedRound >= 1) return false;
-    if (!draftLive) return false;
-    const slot = currentSlot();
-    const round = Number(slot?.round || 1);
-    if (round !== 1) {
-      lastAnnouncedRound = round;
-      return false;
-    }
-    lastAnnouncedRound = 1;
-    boardRound = 1;
-    lastOrderHtml = '';
-    renderOrder();
-    setMockStatus('Round 1', true);
-    await playRoundAnnounce(1);
-    return true;
-  }
-
   async function maybePlayRoundBreak() {
-    const next = nextRoundAfterComplete();
-    if (!next || lastAnnouncedRound >= next) return false;
-    lastAnnouncedRound = next;
-    await sleep(420);
-    boardRound = next;
-    lastOrderHtml = '';
-    renderOrder();
-    setMockStatus(`Round ${next}`, true);
-    await playRoundAnnounce(next);
-    return true;
+    let played = false;
+    while (true) {
+      const next = pendingRoundAnnounce();
+      if (!next) return played;
+      lastAnnouncedRound = next;
+      if (next > 1) await sleep(420);
+      boardRound = next;
+      lastOrderHtml = '';
+      renderOrder();
+      setMockStatus(`Round ${next}`, true);
+      await playRoundAnnounce(next);
+      played = true;
+    }
   }
 
   function lastPickForTeam(teamIndex) {
