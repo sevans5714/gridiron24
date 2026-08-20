@@ -136,6 +136,14 @@ function publicUser(user) {
   if (!membershipLeague && !loungeOnly && (siteOwner || role === ROLES.COMMISSIONER)) {
     membershipLeague = 'gridiron';
   }
+  let hqConference = null;
+  if (!loungeOnly && membershipLeague === 'gridiron') {
+    if (role === ROLES.CONFERENCE_ADMIN) {
+      const adminConf = normalizeConference(user.conference);
+      if (adminConf === 'detail' || adminConf === 'overtime') hqConference = adminConf;
+    }
+    if (!hqConference) hqConference = normalizeHqConference(user.hqConference);
+  }
   return {
     id: user.id,
     name: user.name,
@@ -155,6 +163,7 @@ function publicUser(user) {
     accountType: loungeOnly ? 'social' : 'member',
     theme: normalizeTheme(user.theme),
     membershipLeague,
+    hqConference,
     duesPaid: Boolean(user.duesPaid),
     duesPaidAt: user.duesPaidAt || null,
     createdAt: user.createdAt || null,
@@ -233,6 +242,41 @@ const LEAGUE_MEMBERSHIP_CAPS = {
   aaa: 12
 };
 
+const GRIDIRON_CONFERENCE_CAP = 12;
+const GRIDIRON_CONFERENCE_KEYS = new Set(['detail', 'overtime']);
+
+function normalizeHqConference(value) {
+  const key = String(value || '').trim().toLowerCase();
+  return GRIDIRON_CONFERENCE_KEYS.has(key) ? key : null;
+}
+
+/** Detail / Overtime assignment for a GridIron 24 member. */
+function hqConferenceOf(user) {
+  if (!user || user.approved === false) return null;
+  if (isLoungeOnly(user)) return null;
+  if (hqMembershipOf(user) !== 'gridiron') return null;
+  if (normalizeRole(user.role) === ROLES.CONFERENCE_ADMIN) {
+    const adminConf = normalizeConference(user.conference);
+    if (GRIDIRON_CONFERENCE_KEYS.has(adminConf)) return adminConf;
+  }
+  return normalizeHqConference(user.hqConference);
+}
+
+function countHqConference(store, conferenceKey, exceptUserId = null) {
+  const key = normalizeHqConference(conferenceKey);
+  if (!key) return 0;
+  return store.users.filter((u) => {
+    if (exceptUserId && u.id === exceptUserId) return false;
+    return hqConferenceOf(u) === key;
+  }).length;
+}
+
+function hqConferenceLabel(key) {
+  if (key === 'detail') return 'Detail';
+  if (key === 'overtime') return 'Overtime';
+  return null;
+}
+
 function membershipCap(league) {
   return LEAGUE_MEMBERSHIP_CAPS[normalizeMembershipLeague(league)] || 0;
 }
@@ -281,10 +325,35 @@ function setLeagueMembership(userId, patch = {}) {
       }
     }
     user.membershipLeague = nextLeague;
+    if (!nextLeague || nextLeague === 'aaa') {
+      user.hqConference = null;
+    }
     if (!nextLeague) {
       user.duesPaid = false;
       user.duesPaidAt = null;
     }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'hqConference')) {
+    const nextConf = patch.hqConference === '' || patch.hqConference == null
+      ? null
+      : normalizeHqConference(patch.hqConference);
+    if (patch.hqConference != null && patch.hqConference !== '' && !nextConf) {
+      throw Object.assign(new Error('Conference must be Detail or Overtime'), { status: 400 });
+    }
+    if (nextConf && hqMembershipOf(user) !== 'gridiron') {
+      throw Object.assign(new Error('Assign GridIron 24 membership before a conference'), { status: 400 });
+    }
+    if (nextConf) {
+      const current = hqConferenceOf(user);
+      if (current !== nextConf && countHqConference(store, nextConf, userId) >= GRIDIRON_CONFERENCE_CAP) {
+        throw Object.assign(
+          new Error(`${hqConferenceLabel(nextConf)} Conference is full (${GRIDIRON_CONFERENCE_CAP} members).`),
+          { status: 409 }
+        );
+      }
+    }
+    user.hqConference = nextConf;
   }
 
   if (typeof patch.name === 'string') {
@@ -308,6 +377,23 @@ function setLeagueMembership(userId, patch = {}) {
 
   writeStore(store);
   return publicUser(user);
+}
+
+function syncHqConferenceFromClaims(claims) {
+  const store = readStore();
+  let changed = false;
+  const byUser = new Map((claims || []).map((c) => [c.userId, c]));
+  for (const user of store.users) {
+    if (hqMembershipOf(user) !== 'gridiron') continue;
+    const claim = byUser.get(user.id);
+    const fromClaim = normalizeHqConference(claim?.conferenceKey);
+    if (fromClaim && user.hqConference !== fromClaim) {
+      user.hqConference = fromClaim;
+      changed = true;
+    }
+  }
+  if (changed) writeStore(store);
+  return changed;
 }
 
 function preferRollMember(a, b) {
@@ -632,6 +718,7 @@ function setLoungeOnly(userId, loungeOnly, actorId = null) {
     store.users[idx].approved = true;
     store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
     store.users[idx].membershipLeague = null;
+    store.users[idx].hqConference = null;
   }
   writeStore(store);
   return publicUser(store.users[idx]);
@@ -1118,6 +1205,7 @@ module.exports = {
   ROLES,
   CONFERENCE_KEYS,
   LEAGUE_MEMBERSHIP_CAPS,
+  GRIDIRON_CONFERENCE_CAP,
   setAllowedConferenceKeys,
   getAllowedConferenceKeys,
   createUser,
@@ -1152,6 +1240,10 @@ module.exports = {
   normalizeMembershipKind,
   membershipKindOf,
   hqMembershipOf,
+  hqConferenceOf,
+  normalizeHqConference,
+  hqConferenceLabel,
+  syncHqConferenceFromClaims,
   membershipKindLabel,
   migrateApprovalFlags,
   ensureCommissionerFromEnv,

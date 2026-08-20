@@ -7,7 +7,7 @@
 
   function splitColumns(slots) {
     const list = Array.isArray(slots) ? slots : [];
-    if (list.length <= 12) return [list];
+    if (list.length <= 8) return [list];
     const mid = Math.ceil(list.length / 2);
     return [list.slice(0, mid), list.slice(mid)];
   }
@@ -29,24 +29,36 @@
     </div>`;
   }
 
-  function boardHtml(league, currentUserId) {
-    const cols = splitColumns(league.slots || []);
+  function spotsLine(league) {
     const assigned = Number(league.assigned != null ? league.assigned : league.filled || 0);
     const invited = Number(league.invited || 0);
     const total = Number(league.slotCount || (league.slots || []).length || 0);
-    const meta = invited
-      ? `${assigned} of ${total} registered · ${invited} invited`
-      : `${assigned} of ${total} registered`;
+    const inviteBit = invited ? ` · ${invited} invited` : '';
+    if (league.holding) {
+      const n = assigned + invited;
+      const noun = n === 1 ? 'player' : 'players';
+      return `${n} ${noun} waiting for Detail or Overtime`;
+    }
+    const open = Math.max(0, Number(total) - Number(assigned));
+    if (open === 0) return `FULL · ${assigned} of ${total} registered${inviteBit}`;
+    const noun = open === 1 ? 'spot' : 'spots';
+    return `${open} ${noun} left · ${assigned} of ${total} registered${inviteBit}`;
+  }
+
+  function boardHtml(league, currentUserId) {
+    const cols = splitColumns(league.slots || []);
     const logo = league.logo
       ? `<img src="${esc(league.logo)}" alt="" width="64" height="64" decoding="async">`
       : '';
-    const tone = league.key === 'aaa' ? 'aaa' : 'gridiron';
+    const tone = ['aaa', 'detail', 'overtime', 'unassigned'].includes(league.key)
+      ? league.key
+      : 'gridiron';
     return `<article class="gi-roster-board is-${tone}">
       <header class="gi-roster-head">
         ${logo}
         <div>
           <h3>${esc(league.name || league.shortName || 'League')}</h3>
-          <p class="meta">${esc(meta)}</p>
+          <p class="meta">${esc(spotsLine(league))}</p>
         </div>
       </header>
       <div class="gi-roster-grid${cols.length === 1 ? ' is-single' : ''}">

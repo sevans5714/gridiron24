@@ -5,7 +5,11 @@
   align-items: start;
 }
 .gi-roster.is-wide {
-  grid-template-columns: 1.15fr 0.85fr;
+  grid-template-columns: 1fr 1fr;
+}
+.gi-roster-board.is-aaa,
+.gi-roster-board.is-unassigned {
+  grid-column: 1 / -1;
 }
 .gi-roster-board {
   border: 1px solid rgba(47, 109, 255, 0.28);
@@ -15,6 +19,8 @@
   overflow: hidden;
 }
 .gi-roster-board.is-gridiron { border-left: 4px solid var(--blue); }
+.gi-roster-board.is-detail { border-left: 4px solid var(--detail, #ff7a18); }
+.gi-roster-board.is-overtime { border-left: 4px solid var(--overtime, #e2232a); }
 .gi-roster-board.is-aaa { border-left: 4px solid var(--detail, #ff7a18); }
 .gi-roster-head {
   display: flex;
@@ -52,6 +58,18 @@ html[data-theme="day"] .gi-roster-head {
   line-height: 1.15;
 }
 .gi-roster-board.is-gridiron .gi-roster-head h3 { color: var(--blue); }
+.gi-roster-board.is-detail .gi-roster-head h3 { color: var(--detail, #ff7a18); }
+.gi-roster-board.is-overtime .gi-roster-head h3 { color: var(--overtime, #e2232a); }
+.gi-roster-board.is-detail .gi-roster-head {
+  background:
+    radial-gradient(ellipse 80% 120% at 8% 0%, rgba(255, 122, 24, 0.18), transparent 55%),
+    linear-gradient(180deg, rgba(255, 122, 24, 0.1), rgba(255, 122, 24, 0.03));
+}
+.gi-roster-board.is-overtime .gi-roster-head {
+  background:
+    radial-gradient(ellipse 80% 120% at 8% 0%, rgba(226, 35, 42, 0.18), transparent 55%),
+    linear-gradient(180deg, rgba(226, 35, 42, 0.1), rgba(226, 35, 42, 0.03));
+}
 .gi-roster-board.is-aaa .gi-roster-head h3 { color: var(--detail, #ff7a18); }
 .gi-roster-head .meta {
   margin: 0.2rem 0 0;

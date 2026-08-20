@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=122" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=154" />
-  <link rel="stylesheet" href="/css/league-roster.css?v=5" />
+  <link rel="stylesheet" href="/css/league-roster.css?v=8" />
   <style>
     .roster-lead {
       margin: 0 0 1.25rem;
@@ -34,16 +34,27 @@
     <h1>League Roster</h1>
   </section>
   <main class="page-main shell">
-    <p class="roster-lead" id="roster-lead">Names assigned in GridIron 24 — 24 GridIron slots, then 12 AAA.</p>
+    <p class="roster-lead" id="roster-lead">GridIron 24 is Detail and Overtime — 12 each — then AAA.</p>
     <div id="boards"><div class="msg">Loading roster…</div></div>
   </main>
   <footer class="shell site-footer">
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=156"></script>
-  <script src="/js/league-roster-ui.js?v=5"></script>
+  <script src="/js/nav.js?v=157"></script>
+  <script src="/js/league-roster-ui.js?v=8"></script>
   <script>
+    function spotsLead(league, label) {
+      const assigned = Number(league.assigned || 0);
+      const cap = Number(league.slotCount || 0);
+      const invited = Number(league.invited || 0);
+      if (league.holding) return `${label}: ${assigned} waiting`;
+      const open = Math.max(0, cap - assigned);
+      const inviteBit = invited ? ` · ${invited} invited` : '';
+      if (open === 0) return `${label}: FULL (${assigned} of ${cap}${inviteBit})`;
+      const noun = open === 1 ? 'spot' : 'spots';
+      return `${label}: ${open} ${noun} left (${assigned} of ${cap}${inviteBit})`;
+    }
     (async () => {
       const auth = await (window.GridIronNav?.authReady || Promise.resolve({ user: null }));
       const el = document.getElementById('boards');
@@ -51,12 +62,14 @@
         const res = await fetch('/api/league-roster', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
-        const gi = (data.leagues || []).find((l) => l.key === 'gridiron');
+        const detail = (data.leagues || []).find((l) => l.key === 'detail');
+        const overtime = (data.leagues || []).find((l) => l.key === 'overtime');
         const aaa = (data.leagues || []).find((l) => l.key === 'aaa');
         const lead = document.getElementById('roster-lead');
-        if (lead && gi && aaa) {
-          lead.innerHTML = `<strong>GridIron 24: ${Number(gi.assigned || 0)} of ${Number(gi.slotCount || 24)} registered</strong>
-            · <strong>AAA: ${Number(aaa.assigned || 0)} of ${Number(aaa.slotCount || 12)} registered</strong>`;
+        if (lead && detail && overtime && aaa) {
+          lead.innerHTML = `<strong>${spotsLead(detail, 'Detail')}</strong>
+            · <strong>${spotsLead(overtime, 'Overtime')}</strong>
+            · <strong>${spotsLead(aaa, 'AAA')}</strong>`;
         }
         window.GridIronRoster.render(el, data, auth.user?.id, { wide: true });
         window.GridIronNav?.setSync(`${data.season || 2026} roster`);

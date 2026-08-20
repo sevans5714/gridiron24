@@ -625,48 +625,9 @@
     return 'Member';
   }
 
-  function isStaffUser(user) {
-    return Boolean(
-      user?.siteOwner
-      || user?.canSwitchLeagues
-      || user?.role === 'commissioner'
-      || user?.role === 'conference_admin'
-    );
-  }
-
-  function toolsDeskLabel(user) {
-    return (user?.siteOwner || user?.canSwitchLeagues) ? 'Owner Tools' : 'League Tools';
-  }
-
-  function ensureToolsMount() {
-    let el = document.getElementById('tools-btn');
-    if (el) return el;
-    const topbarInner = document.querySelector('.topbar-inner');
-    if (!topbarInner) return null;
-    let right = topbarInner.querySelector('.topbar-right');
-    if (!right) {
-      right = document.createElement('div');
-      right.className = 'topbar-right';
-      topbarInner.appendChild(right);
-    }
-    el = document.createElement('a');
-    el.id = 'tools-btn';
-    el.className = 'inbox-btn tools-btn';
-    el.href = '/league-tools.html';
-    el.title = 'Owner Tools';
-    el.setAttribute('aria-label', 'Owner Tools');
-    el.innerHTML = `
-      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-      </svg>`;
-    const inbox = document.getElementById('inbox-btn');
-    const switcher = document.getElementById('league-switch');
-    const menu = document.getElementById('user-menu');
-    if (inbox) right.insertBefore(el, inbox);
-    else if (switcher) right.insertBefore(el, switcher);
-    else if (menu) right.insertBefore(el, menu);
-    else right.appendChild(el);
-    return el;
+  function hideHeaderToolsBtn() {
+    const el = document.getElementById('tools-btn');
+    if (el) el.remove();
   }
 
   function ensureUiModeMount() {
@@ -764,18 +725,10 @@
                 <span class="user-menu-role">${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
               </span>
             </a>`}
-        ${(!user.loungeOnly || isStaffUser(user))
+        ${!user.loungeOnly
           ? `<div class="user-menu-section">
           <span class="user-menu-label">Account</span>
-          ${user.loungeOnly
-            ? ''
-            : `<a class="user-menu-action" href="/profile.html" role="menuitem">Settings</a>`}
-          ${isStaffUser(user)
-            ? `<a class="user-menu-action" href="/league-tools.html" role="menuitem">${esc(toolsDeskLabel(user))}</a>
-               ${(user.siteOwner || user.canSwitchLeagues || user.role === 'commissioner')
-                 ? `<a class="user-menu-action" href="/league-tools.html#members" role="menuitem">Registered Players</a>`
-                 : ''}`
-            : ''}
+          <a class="user-menu-action" href="/profile.html" role="menuitem">Settings</a>
         </div>`
           : ''}
         <div class="user-menu-section">
@@ -1148,15 +1101,7 @@
       renderLeagueSwitcher(user, leagueScope);
       renderUiModeSwitch();
       if (user && !user.loungeOnly) {
-        const toolsBtn = ensureToolsMount();
-        if (toolsBtn) {
-          const staff = isStaffUser(user);
-          toolsBtn.hidden = !staff;
-          const desk = toolsDeskLabel(user);
-          toolsBtn.title = desk;
-          toolsBtn.setAttribute('aria-label', desk);
-          toolsBtn.classList.toggle('is-active', active === 'league-tools' || active === 'commissioner');
-        }
+        hideHeaderToolsBtn();
         ensureInboxMount();
         refreshInboxBadge();
         heartbeatPresence();
@@ -1165,8 +1110,7 @@
           loadTicker();
         }
       } else if (user?.loungeOnly) {
-        const toolsBtn = document.getElementById('tools-btn');
-        if (toolsBtn) toolsBtn.hidden = true;
+        hideHeaderToolsBtn();
         const inboxBtn = document.getElementById('inbox-btn');
         if (inboxBtn) inboxBtn.hidden = true;
         const ticker = document.getElementById('site-ticker');
@@ -1186,8 +1130,7 @@
       renderLeagueSwitcher(null, leagueScope);
       renderUiModeSwitch();
       renderRuleProposalButton(false);
-      const toolsBtn = document.getElementById('tools-btn');
-      if (toolsBtn) toolsBtn.hidden = true;
+      hideHeaderToolsBtn();
       const inboxBtn = document.getElementById('inbox-btn');
       if (inboxBtn) inboxBtn.hidden = true;
       document.dispatchEvent(new CustomEvent('gi:auth', { detail: authState }));

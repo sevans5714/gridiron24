@@ -2903,6 +2903,27 @@ function espnSettingsUrl(leagueId, season) {
   return `https://fantasy.espn.com/football/league/settings?leagueId=${id}&seasonId=${yr}`;
 }
 
+function parseEspnLeagueId(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  const fromQuery = text.match(/[?&]leagueId=(\d+)/i);
+  if (fromQuery) return Number(fromQuery[1]);
+  const fromPath = text.match(/\/leagues\/(\d+)/i);
+  if (fromPath) return Number(fromPath[1]);
+  if (/^\d{4,}$/.test(text)) return Number(text);
+  const any = text.match(/(\d{6,})/);
+  if (any) return Number(any[1]);
+  return null;
+}
+
+function espnBindingLogo(row) {
+  if (row?.logo) return row.logo;
+  if (row?.key === 'detail') return '/assets/detail-conference.png';
+  if (row?.key === 'overtime') return '/assets/overtime-conference.png';
+  if (row?.key === 'aaa') return '/assets/aaa-league.png?v=7';
+  return null;
+}
+
 function listEspnLeagueBindings() {
   const season = Number(config.season);
   const conferences = (config.conferences || []).map((c) => ({
@@ -2910,6 +2931,7 @@ function listEspnLeagueBindings() {
     kind: 'conference',
     name: c.name,
     shortName: c.shortName,
+    logo: espnBindingLogo(c),
     espnLeagueId: Number(c.espnLeagueId) > 0 ? Number(c.espnLeagueId) : null,
     settingsUrl: espnSettingsUrl(c.espnLeagueId, season)
   }));
@@ -2918,6 +2940,7 @@ function listEspnLeagueBindings() {
     kind: 'affiliate',
     name: l.name,
     shortName: l.shortName,
+    logo: espnBindingLogo(l),
     espnLeagueId: Number(l.espnLeagueId) > 0 ? Number(l.espnLeagueId) : null,
     settingsUrl: espnSettingsUrl(l.espnLeagueId, season)
   }));
@@ -3334,23 +3357,72 @@ function inviteHqMembership(invite) {
   return users.normalizeMembershipLeague(invite.membershipLeague) || 'gridiron';
 }
 
+function rosterToken(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function rosterMemberKeys(name, email) {
+  const keys = new Set();
+  const display = rosterToken(name);
+  if (display) keys.add(`name:${display}`);
+  const mail = rosterToken(email);
+  if (mail) keys.add(`email:${mail}`);
+  return keys;
+}
+
+function rosterInviteKeys(name, email) {
+  const keys = rosterMemberKeys(name, email);
+  const display = rosterToken(name);
+  const mail = rosterToken(email) || display;
+  const local = mail.includes('@') ? mail.split('@')[0] : mail;
+  const pretty = local.replace(/[._+-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (pretty) keys.add(`name:${pretty}`);
+  const lastFromName = display.split(/\s+/).filter(Boolean).pop();
+  if (lastFromName && lastFromName.length >= 4) keys.add(`last:${lastFromName}`);
+  const lastFromEmail = pretty.split(/\s+/).filter(Boolean).pop();
+  if (lastFromEmail && lastFromEmail.length >= 4) keys.add(`last:${lastFromEmail}`);
+  if (local && lastFromName && lastFromName.length >= 4 && local.includes(lastFromName)) {
+    keys.add(`last:${lastFromName}`);
+  }
+  return keys;
+}
+
+function preferRosterMember(a, b) {
+  const rank = (u) => {
+    if (u?.siteOwner) return 0;
+    if (u?.role === 'commissioner') return 1;
+    if (u?.role === 'conference_admin') return 2;
+    return 3;
+  };
+  const ra = rank(a);
+  const rb = rank(b);
+  if (ra !== rb) return ra < rb ? a : b;
+  return String(a?.loginName || '').localeCompare(String(b?.loginName || '')) <= 0 ? a : b;
+}
+
 function padLeagueRosterSlots(entries, slotCount) {
   const seen = new Set();
   const names = [];
-  for (const entry of entries) {
+  function take(entry) {
     const invited = Boolean(entry.invited);
     const name = String(entry?.name || '').trim();
-    if (!name) continue;
-    const key = invited
-      ? `invite:${entry.inviteId || name.toLowerCase()}`
-      : name.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (!name) return;
+    const email = entry.email || (invited ? name : '');
+    const matchKeys = invited ? rosterInviteKeys(name, email) : rosterMemberKeys(name, email);
+    if ([...matchKeys].some((key) => seen.has(key))) return;
+    const storeKeys = invited ? matchKeys : rosterInviteKeys(name, email);
+    for (const key of storeKeys) seen.add(key);
     names.push({
       name,
       userId: invited ? null : (entry.userId || null),
       invited
     });
+  }
+  for (const entry of entries) {
+    if (!entry?.invited) take(entry);
+  }
+  for (const entry of entries) {
+    if (entry?.invited) take(entry);
   }
   const count = Math.max(Number(slotCount) || 0, names.length);
   const slots = [];
@@ -3368,6 +3440,11 @@ function padLeagueRosterSlots(entries, slotCount) {
 }
 
 function loadLeagueRoster() {
+  try {
+    users.syncHqConferenceFromClaims(logos.listClaims());
+  } catch (err) {
+    console.warn('[league-roster] conference sync failed', err.message || err);
+  }
   const allUsers = users.listUsers();
   const members = allUsers.filter((u) => u.approved !== false && !u.loungeOnly);
   const emailsWithAccounts = new Set(
@@ -3379,64 +3456,113 @@ function loadLeagueRoster() {
     return !emailsWithAccounts.has(String(inv.email || '').trim().toLowerCase());
   });
 
-  function entriesFor(leagueKey) {
-    const assigned = members
-      .filter((u) => users.hqMembershipOf(u) === leagueKey)
+  function memberMatchesBoard(u, leagueKey) {
+    const membership = users.hqMembershipOf(u);
+    if (leagueKey === 'aaa') return membership === 'aaa';
+    if (leagueKey === 'detail' || leagueKey === 'overtime') {
+      return membership === 'gridiron' && users.hqConferenceOf(u) === leagueKey;
+    }
+    if (leagueKey === 'unassigned') {
+      return membership === 'gridiron' && !users.hqConferenceOf(u);
+    }
+    return membership === leagueKey;
+  }
+
+  function assignedEntries(leagueKey) {
+    const byName = new Map();
+    for (const u of members.filter((row) => memberMatchesBoard(row, leagueKey))) {
+      const name = leagueRosterDisplayName(u);
+      if (!name) continue;
+      const key = rosterToken(name);
+      const prev = byName.get(key);
+      byName.set(key, prev ? preferRosterMember(prev, u) : u);
+    }
+    return [...byName.values()]
       .map((u) => ({
         name: leagueRosterDisplayName(u),
         userId: u.id,
+        email: String(u.email || '').trim().toLowerCase(),
         invited: false
       }))
-      .filter((row) => row.name)
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-    const invited = pendingInvites
-      .filter((inv) => inviteHqMembership(inv) === leagueKey)
+  }
+
+  function invitedEntries(leagueKey) {
+    const inviteLeague = leagueKey === 'unassigned' ? 'gridiron' : leagueKey;
+    if (leagueKey === 'detail' || leagueKey === 'overtime') return [];
+    return pendingInvites
+      .filter((inv) => inviteHqMembership(inv) === inviteLeague)
       .map((inv) => ({
         name: String(inv.email || '').trim().toLowerCase(),
+        email: String(inv.email || '').trim().toLowerCase(),
         userId: null,
         invited: true,
         inviteId: inv.id
       }))
       .filter((row) => row.name)
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-    return [...assigned, ...invited];
   }
 
-  function leaguePayload(key, slotCount, meta) {
-    const slots = padLeagueRosterSlots(entriesFor(key), slotCount);
+  function entriesFor(leagueKey) {
+    return [...assignedEntries(leagueKey), ...invitedEntries(leagueKey)];
+  }
+
+  function leaguePayload(key, slotCount, meta, opts = {}) {
+    const cap = Number(slotCount) || 0;
+    const slots = padLeagueRosterSlots(entriesFor(key), cap);
     const assigned = slots.filter((s) => !s.vacant && !s.invited).length;
     const invited = slots.filter((s) => s.invited).length;
+    const holding = Boolean(opts.holding);
     return {
       key,
       name: meta.name,
       shortName: meta.shortName,
       logo: meta.logo,
-      slotCount,
+      slotCount: holding ? assigned + invited : cap,
       assigned,
       invited,
+      open: holding ? 0 : Math.max(0, cap - assigned),
       filled: assigned,
+      holding,
       slots
     };
   }
 
   const aaa = getAffiliatedLeague('aaa');
+  const detail = (config.conferences || []).find((c) => c.key === 'detail') || {};
+  const overtime = (config.conferences || []).find((c) => c.key === 'overtime') || {};
+  const confCap = users.GRIDIRON_CONFERENCE_CAP || 12;
+  const leagues = [
+    leaguePayload('detail', confCap, {
+      name: detail.name || 'Detail Conference',
+      shortName: detail.shortName || 'DETAIL',
+      logo: detail.logo || '/assets/detail-conference.png'
+    }),
+    leaguePayload('overtime', confCap, {
+      name: overtime.name || 'Overtime Conference',
+      shortName: overtime.shortName || 'OVERTIME',
+      logo: overtime.logo || '/assets/overtime-conference.png'
+    })
+  ];
+  const unassigned = leaguePayload('unassigned', 0, {
+    name: 'GridIron 24 — no conference yet',
+    shortName: 'OPEN',
+    logo: config.brand?.logo || '/assets/gridiron24-league.png?v=8'
+  }, { holding: true });
+  if ((unassigned.assigned || 0) + (unassigned.invited || 0) > 0) {
+    leagues.push(unassigned);
+  }
+  leagues.push(leaguePayload('aaa', users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12, {
+    name: aaa?.name || 'AAA',
+    shortName: aaa?.shortName || 'AAA',
+    logo: aaa?.logo || '/assets/aaa-league.png?v=7'
+  }));
   return {
     ok: true,
     season: config.season,
     brand: config.brand,
     source: 'app',
-    leagues: [
-      leaguePayload('gridiron', users.LEAGUE_MEMBERSHIP_CAPS.gridiron || 24, {
-        name: config.brand?.name || 'GridIron 24',
-        shortName: 'GI24',
-        logo: config.brand?.logo || '/assets/gridiron24-league.png?v=8'
-      }),
-      leaguePayload('aaa', users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12, {
-        name: aaa?.name || 'AAA',
-        shortName: aaa?.shortName || 'AAA',
-        logo: aaa?.logo || '/assets/aaa-league.png?v=7'
-      })
-    ],
+    leagues,
     generatedAt: new Date().toISOString()
   };
 }
@@ -7837,6 +7963,10 @@ const server = http.createServer(async (req, res) => {
         for (const league of leagues) teamsByConference[league.key] = league;
       } catch { /* ignore */ }
 
+      try {
+        users.syncHqConferenceFromClaims(claims);
+      } catch { /* ignore */ }
+
       return sendJson(res, 200, {
         ok: true,
         users: users.listUsers().map((u) => ({
@@ -7889,9 +8019,60 @@ const server = http.createServer(async (req, res) => {
           } catch { /* ignore */ }
         }
         const claim = logos.assignTeam(userId, conferenceKey, teamId, teamName, admin.id);
-        return sendJson(res, 200, { ok: true, claim, user: users.publicUser(target) });
+        if (conferenceKey === 'detail' || conferenceKey === 'overtime') {
+          try {
+            if (users.hqMembershipOf(target) !== 'gridiron') {
+              users.setLeagueMembership(userId, { league: 'gridiron' });
+            }
+            users.setLeagueMembership(userId, { hqConference: conferenceKey });
+          } catch (confErr) {
+            try { logos.unassignTeam(userId); } catch { /* ignore */ }
+            throw confErr;
+          }
+        }
+        return sendJson(res, 200, { ok: true, claim, user: users.findById(userId) });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not assign team' });
+      }
+    }
+
+    if (pathname.startsWith('/api/users/') && pathname.endsWith('/hq-conference') && req.method === 'POST') {
+      const admin = requireCommissioner(req, res);
+      if (!admin) return;
+      const userId = pathname.slice('/api/users/'.length, -'/hq-conference'.length);
+      let body = {};
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        body = {};
+      }
+      try {
+        const target = users.findById(userId);
+        if (!target) return sendJson(res, 404, { ok: false, error: 'User not found' });
+        const raw = Object.prototype.hasOwnProperty.call(body, 'conference')
+          ? body.conference
+          : body.hqConference;
+        const next = raw === '' || raw == null || body.clear ? null : String(raw).trim().toLowerCase();
+        const claim = logos.getClaimForUser(userId);
+        const claimConf = claim?.conferenceKey === 'detail' || claim?.conferenceKey === 'overtime'
+          ? claim.conferenceKey
+          : null;
+        if (claimConf && claimConf !== next) {
+          logos.unassignTeam(userId);
+        }
+        const updated = users.setLeagueMembership(userId, { hqConference: next });
+        return sendJson(res, 200, {
+          ok: true,
+          user: updated,
+          conference: updated.hqConference,
+          conferenceLabel: users.hqConferenceLabel(updated.hqConference),
+          claim: logos.getClaimForUser(userId)
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not assign conference'
+        });
       }
     }
 
@@ -8194,6 +8375,12 @@ const server = http.createServer(async (req, res) => {
           updated = users.setLeagueMembership(userId, {
             league: kind === 'aaa' ? 'aaa' : 'gridiron'
           });
+          if (kind === 'aaa') {
+            const claim = logos.getClaimForUser(userId);
+            if (claim && (claim.conferenceKey === 'detail' || claim.conferenceKey === 'overtime')) {
+              try { logos.unassignTeam(userId); } catch { /* ignore */ }
+            }
+          }
         }
         let mail = { sent: false, method: 'none' };
         const shouldWelcome = Boolean(before)
@@ -9767,7 +9954,7 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
       }
       try {
-        const lookup = await peekEspnLeagueById(body.espnLeagueId, body.season);
+        const lookup = await peekEspnLeagueById(parseEspnLeagueId(body.espnLeagueId) || body.espnLeagueId, body.season);
         return sendJson(res, 200, lookup);
       } catch (err) {
         return sendJson(res, err.status || 400, {
@@ -9792,8 +9979,9 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         for (const row of rows) {
-          const id = Number(row.espnLeagueId);
-          if (!Number.isFinite(id) || id <= 0) continue;
+          const id = parseEspnLeagueId(row.espnLeagueId);
+          if (!id) continue;
+          row.espnLeagueId = id;
           await peekEspnLeagueById(id, body.season);
         }
         const leagueId = config.leagueId || leagues.getActiveLeagueId();
