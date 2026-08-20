@@ -91,7 +91,10 @@ let espnNewsCache = { at: 0, items: [], source: null };
 function espnAuthHeaders() {
   const headers = {
     Accept: 'application/json,text/plain,*/*',
-    'User-Agent': 'GridIron24/0.1 (+local proof-of-concept)'
+    'User-Agent': 'GridIron24/0.1 (+local proof-of-concept)',
+    Referer: 'https://fantasy.espn.com/',
+    Origin: 'https://fantasy.espn.com',
+    'X-Fantasy-Source': 'kona'
   };
   const swid = String(process.env.ESPN_SWID || '').trim();
   const s2 = String(process.env.ESPN_S2 || '').trim();
@@ -857,7 +860,9 @@ async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}, sea
     return hit.data;
   } catch (err) {
     if (err.status === 401) {
-      err.message = 'ESPN league is private for that season — make it publicly viewable in ESPN settings';
+      err.message = espnAuthHeaders().Cookie
+        ? 'ESPN league exists but is private — this ESPN login cannot view it. In ESPN: League settings → make it viewable to anyone (invite-only to join).'
+        : 'ESPN league exists but is private. In ESPN: League settings → anyone can view, invite-only to join — then look up again.';
     } else if (err.status === 404) {
       err.message = 'No ESPN league found for that season / league ID';
     } else if (!err.message || /Upstream|All ESPN/.test(err.message)) {
@@ -10034,7 +10039,15 @@ const server = http.createServer(async (req, res) => {
         try {
           return { ...row, lookup: await peekEspnLeagueById(row.espnLeagueId, bindings.season) };
         } catch (err) {
-          return { ...row, lookup: { ok: false, error: err.message || 'ESPN lookup failed' } };
+          return {
+            ...row,
+            lookup: {
+              ok: false,
+              espnLeagueId: row.espnLeagueId,
+              error: err.message || 'ESPN lookup failed',
+              private: Number(err.status) === 401
+            }
+          };
         }
       }));
       return sendJson(res, 200, { ok: true, season: bindings.season, leagues });
@@ -10052,9 +10065,11 @@ const server = http.createServer(async (req, res) => {
         const lookup = await peekEspnLeagueById(parseEspnLeagueId(body.espnLeagueId) || body.espnLeagueId, body.season);
         return sendJson(res, 200, lookup);
       } catch (err) {
-        return sendJson(res, err.status || 400, {
+        return sendJson(res, err.status && err.status < 500 ? err.status : 400, {
           ok: false,
-          error: err.message || 'Could not look up ESPN league'
+          espnLeagueId: parseEspnLeagueId(body.espnLeagueId) || body.espnLeagueId || null,
+          error: err.message || 'Could not look up ESPN league',
+          private: Number(err.status) === 401
         });
       }
     }
@@ -10073,11 +10088,24 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { ok: false, error: 'No ESPN league IDs to save' });
       }
       try {
+        const lookups = [];
         for (const row of rows) {
           const id = parseEspnLeagueId(row.espnLeagueId);
           if (!id) continue;
           row.espnLeagueId = id;
-          await peekEspnLeagueById(id, body.season);
+          try {
+            lookups.push({ key: row.key, lookup: await peekEspnLeagueById(id, body.season) });
+          } catch (err) {
+            lookups.push({
+              key: row.key,
+              lookup: {
+                ok: false,
+                espnLeagueId: id,
+                error: err.message || 'Could not look up ESPN league',
+                private: Number(err.status) === 401
+              }
+            });
+          }
         }
         const leagueId = config.leagueId || leagues.getActiveLeagueId();
         const updated = leagues.setEspnLeagueBindings(leagueId, rows);
@@ -10086,7 +10114,8 @@ const server = http.createServer(async (req, res) => {
           ok: true,
           leagues: bindings.leagues,
           season: bindings.season,
-          updatedAt: updated.updatedAt || null
+          updatedAt: updated.updatedAt || null,
+          lookups
         });
       } catch (err) {
         return sendJson(res, err.status || 400, {

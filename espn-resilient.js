@@ -69,8 +69,16 @@ async function fetchOnce(url, { headers, timeoutMs, signal } = {}) {
   try {
     const response = await fetch(url, {
       headers: headers || { Accept: 'application/json' },
-      signal: controller.signal
+      signal: controller.signal,
+      redirect: 'manual'
     });
+    const statusCode = Number(response.status) || 0;
+    if (statusCode >= 300 && statusCode < 400) {
+      const err = new Error(`Upstream ${statusCode}`);
+      err.status = statusCode;
+      err.url = url;
+      throw err;
+    }
     const text = await response.text();
     if (!response.ok) {
       const err = new Error(`Upstream ${response.status}`);
@@ -150,7 +158,15 @@ async function fetchJsonResilient(opts) {
         };
       } catch (err) {
         errors.push(`${url}#${attempt + 1}: ${err.message || err}`);
-        if (err.status === 401 || err.status === 404) break;
+        // 401/404 from ESPN is the answer — don't try a host that redirects to login HTML.
+        if (err.status === 401 || err.status === 404) {
+          markStatus(lane, {
+            mode: 'down',
+            source: url,
+            error: err.message || String(err.status)
+          });
+          throw err;
+        }
       }
     }
   }

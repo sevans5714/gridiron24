@@ -1803,6 +1803,12 @@
       return 'ESPN league';
     }
 
+    function espnLookupIsPrivate(rowOrLookup) {
+      const lookup = rowOrLookup?.lookup || rowOrLookup;
+      const err = String(lookup?.error || '');
+      return Boolean(lookup?.private) || /private|not authorized/i.test(err);
+    }
+
     function espnBindStatus(row) {
       if (row.lookup?.ok && !row.lookup.previousEspnId && !row.previousEspnId) {
         return { cls: 'is-ok', label: 'Connected' };
@@ -1810,6 +1816,7 @@
       if (row.lookup?.ok && (row.lookup.previousEspnId || row.previousEspnId)) {
         return { cls: 'is-warn', label: 'Previous ID' };
       }
+      if (espnLookupIsPrivate(row)) return { cls: 'is-warn', label: 'Private' };
       if (row.lookup?.error) return { cls: 'is-error', label: 'Not found' };
       if (row.previousEspnId) return { cls: 'is-warn', label: 'Previous ID' };
       if (row.espnLeagueId) return { cls: 'is-warn', label: 'Saved' };
@@ -1824,6 +1831,9 @@
       if (lookup?.ok) {
         const size = lookup.size != null ? ` · ${lookup.size} teams` : '';
         return `On ESPN: ${esc(lookup.name || 'league')}${size}`;
+      }
+      if (espnLookupIsPrivate(row)) {
+        return `${esc(lookup?.error || 'ESPN league exists but is private.')} ID ${esc(String(row.espnLeagueId || lookup?.espnLeagueId || ''))} is saved — make the league viewable in ESPN (anyone can view, invite-only to join), then look up again.`;
       }
       if (lookup?.error) return esc(lookup.error);
       if (row.previousEspnId) {
@@ -1972,7 +1982,13 @@
           body: JSON.stringify({ espnLeagueId: id })
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) throw new Error(data.error || 'Look up failed');
+        if (!res.ok || !data.ok) {
+          const privateLeague = Boolean(data.private) || /private|not authorized/i.test(String(data.error || ''));
+          const err = new Error(data.error || 'Look up failed');
+          err.private = privateLeague;
+          err.espnLeagueId = data.espnLeagueId || id;
+          throw err;
+        }
         if (input && data.espnLeagueId) input.value = String(data.espnLeagueId);
         if (meta) {
           if (data.previousEspnId) {
@@ -2006,12 +2022,15 @@
         return !data.previousEspnId;
       } catch (err) {
         if (meta) {
-          meta.textContent = err.message;
+          const idLabel = err.espnLeagueId || id;
+          meta.textContent = err.private
+            ? `${err.message} The ID ${idLabel} is valid. Save it, then in ESPN set the league to viewable by anyone (invite-only to join).`
+            : err.message;
           meta.classList.add('is-error');
         }
         if (status) {
-          status.textContent = 'Not found';
-          status.className = 'espn-bind-status is-error';
+          status.textContent = err.private ? 'Private' : 'Not found';
+          status.className = `espn-bind-status ${err.private ? 'is-warn' : 'is-error'}`;
         }
         return false;
       }
@@ -2039,9 +2058,15 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
+        const privateCount = (data.lookups || []).filter((row) => row?.lookup?.private || /private/i.test(row?.lookup?.error || '')).length;
         showEspnLeaguesMsg('Saved. Confirming ESPN leagues…', true);
         await loadEspnBindings({ peek: true });
-        showEspnLeaguesMsg('Saved and connected. This site uses your names; ESPN is only for live data.', true);
+        showEspnLeaguesMsg(
+          privateCount
+            ? `Saved ${data.leagues?.length || ''} ID${(data.leagues || []).length === 1 ? '' : 's'}. ${privateCount} ESPN league${privateCount === 1 ? ' is' : 's are'} private — make ${privateCount === 1 ? 'it' : 'them'} viewable in ESPN, then Look up.`
+            : 'Saved and connected. This site uses your names; ESPN is only for live data.',
+          true
+        );
       } catch (err) {
         showEspnLeaguesMsg(err.message, false);
       } finally {
