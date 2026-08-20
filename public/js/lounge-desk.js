@@ -99,6 +99,7 @@
   let boardRound = 1;
   let lastAnnouncedRound = 0;
   let roundBreakHold = null;
+  let revealedOverall = 0;
 
   function isMultiplayer() {
     return Boolean(roomId);
@@ -308,6 +309,7 @@
     lastOrderHtml = '';
     boardRound = 1;
     lastAnnouncedRound = 0;
+    revealedOverall = 0;
     clearPersistedMock();
     if (!silent) {
       history.replaceState(null, '', '#mock-draft');
@@ -972,6 +974,7 @@
     setDraftLive(true);
     boardRound = 1;
     lastAnnouncedRound = 0;
+    revealedOverall = 0;
     playDraftStartSound({ key: `local:${Date.now()}` });
     await maybePlayRoundBreak();
     const filled = await runCpuUntilUserPick();
@@ -1044,21 +1047,12 @@
     const newPicks = mock.picks.length > prevPickCount
       ? mock.picks.slice(prevPickCount)
       : [];
-    const latestCpuPick = [...newPicks].reverse().find((p) => p && p.cpu);
-    if (latestCpuPick && Number.isFinite(Number(latestCpuPick.teamIndex))) {
-      // Suppress the name under the seat until after the highlight beat.
-      pickReveal = {
-        teamIndex: Number(latestCpuPick.teamIndex),
-        overall: Number(latestCpuPick.overall),
-        phase: 'holding'
-      };
-    }
     setDraftLive(draftLive);
     if (room.status === 'lobby') startLobbyPaint();
     else stopLobbyPaint();
     if (draftLive && room.status === 'live') {
       // Only (re)start the interval when the board changes — polls must not wipe countdown state.
-      if (boardChanged || latestCpuPick || !pickTimerId) {
+      if (boardChanged || newPicks.length || !pickTimerId) {
         startPickTimer(room.pickDeadline || null);
       } else {
         paintPickTimer();
@@ -1079,7 +1073,7 @@
       playDraftStartSound({ key: `lobby:${room.id}:${lobbyEndsAt}` });
     }
     syncBoardRound();
-    if (boardChanged || latestCpuPick) {
+    if (boardChanged || newPicks.length) {
       renderMock();
     } else {
       // Poll heartbeat — refresh clock/cues only so the player pool keeps hover state.
@@ -1089,29 +1083,55 @@
       renderDraftChat();
     }
     const wentLive = room.status === 'live' && prevStatus !== 'live';
-    if (wentLive || newPicks.length) {
-      const cpuPick = latestCpuPick && Number.isFinite(Number(latestCpuPick.teamIndex))
-        ? latestCpuPick
-        : null;
-      const humanLast = !cpuPick && newPicks.length ? newPicks[newPicks.length - 1] : null;
+    const catchUpSilent = room.status === 'live'
+      && prevPickCount === 0
+      && mock.picks.length > 1
+      && prevStatus !== 'lobby';
+    if (catchUpSilent) {
+      revealedOverall = mock.picks.length;
+      const slot = currentSlot();
+      lastAnnouncedRound = slot?.round || Number(mock.picks[mock.picks.length - 1]?.round) || 1;
+      boardRound = lastAnnouncedRound;
+      roundBreakHold = null;
+    } else if (wentLive || newPicks.length) {
+      const incoming = newPicks
+        .filter((p) => p && Number.isFinite(Number(p.overall)))
+        .slice()
+        .sort((a, b) => Number(a.overall) - Number(b.overall));
       queueBoardAnnounce(async () => {
         if (lastAnnouncedRound < 1) await maybePlayRoundBreak();
-        if (cpuPick) {
-          const team = mock.teamNames[cpuPick.teamIndex] || `Team ${cpuPick.teamIndex + 1}`;
-          setMockStatus(`CPU · ${team} selected ${cpuPick.playerName}`, true);
-          lastFocusSeat = cpuPick.teamIndex;
-          await beginCpuPickReveal(cpuPick);
-        } else if (humanLast && Number.isFinite(Number(humanLast.teamIndex))) {
-          if (Number(humanLast.teamIndex) !== Number(mock.seatIndex) && !humanLast.cpu) playPickSound();
-          scrollToSeat(humanLast.teamIndex);
-          flashSeatPick(humanLast.teamIndex);
-          lastFocusSeat = humanLast.teamIndex;
+        for (const pick of incoming) {
+          if (Number(pick.overall) <= revealedOverall) continue;
+          if (pick.cpu) {
+            const team = mock.teamNames[pick.teamIndex] || `Team ${pick.teamIndex + 1}`;
+            setMockStatus(`CPU · ${team} selected ${pick.playerName}`, true);
+            lastFocusSeat = pick.teamIndex;
+            await beginCpuPickReveal(pick);
+          } else if (Number(pick.teamIndex) !== Number(mock.seatIndex)) {
+            playPickSound();
+            scrollToSeat(pick.teamIndex);
+            flashSeatPick(pick.teamIndex);
+            lastFocusSeat = pick.teamIndex;
+          } else {
+            flashSeatPick(pick.teamIndex);
+            lastFocusSeat = pick.teamIndex;
+          }
+          revealedOverall = Math.max(revealedOverall, Number(pick.overall) || 0);
+          lastOrderHtml = '';
+          renderOrder();
+          await maybePlayRoundBreak();
         }
-        await maybePlayRoundBreak();
       });
     }
     const onClock = currentSlot();
-    if (onClock && draftLive && room.status === 'live' && onClock.teamIndex !== lastFocusSeat) {
+    if (
+      onClock
+      && draftLive
+      && room.status === 'live'
+      && !roundBreakHold
+      && revealedOverall >= (mock.picks || []).length
+      && onClock.teamIndex !== lastFocusSeat
+    ) {
       scrollToSeat(onClock.teamIndex);
       lastFocusSeat = onClock.teamIndex;
     }
@@ -1650,6 +1670,12 @@
   function currentSlot() {
     if (!mock) return null;
     return pickSlot(mock.teamNames.length, mock.rounds, 'snake', mock.picks.length);
+  }
+
+  function visualNextSlot() {
+    if (!mock) return null;
+    const shown = Math.max(0, Number(revealedOverall) || 0);
+    return pickSlot(mock.teamNames.length, mock.rounds, 'snake', shown);
   }
 
   function isDraftComplete() {
@@ -2422,6 +2448,7 @@
     targetIds = [];
     boardRound = 1;
     lastAnnouncedRound = 0;
+    revealedOverall = 0;
     resetBoardAnnounce();
   }
 
@@ -3142,6 +3169,7 @@
       if (pickReveal && Number(pickReveal.overall) === Number(pick.overall)) {
         pickReveal.phase = 'show';
       }
+      revealedOverall = Math.max(revealedOverall, Number(pick.overall) || 0);
       renderOrder();
       renderOtherTeams();
       flashSeatPick(pick.teamIndex);
@@ -3206,7 +3234,8 @@
   }
 
   function seatSelecting(teamIndex) {
-    const next = currentSlot();
+    if (roundBreakHold) return false;
+    const next = visualNextSlot();
     if (draftLive && next && next.teamIndex === teamIndex && !seatIsHuman(teamIndex)) {
       return true;
     }
@@ -3214,10 +3243,11 @@
   }
 
   function maybePlayTurnCues() {
-    if (!draftLive || !mock || awaitingSeatClaim) {
+    if (!draftLive || !mock || awaitingSeatClaim || roundBreakHold) {
       turnCueKey = null;
       return;
     }
+    if (revealedOverall < (mock.picks || []).length) return;
     const next = currentSlot();
     if (!next) {
       turnCueKey = null;
@@ -3486,6 +3516,7 @@
         renderOrder();
         paintMockStartBar();
         setMockStatus(`Round ${next}`, true);
+        await sleep(700);
       } else {
         lastAnnouncedRound = next;
         boardRound = next;
@@ -3507,12 +3538,14 @@
     return null;
   }
 
-  /** Current-round magnet only; hide until a CPU card flies onto the seat. */
+  /** Current-round magnet only; hide until revealed, and until a CPU card flies onto the seat. */
   function visibleLastPickForTeam(teamIndex) {
     const last = pickForTeamInRound(teamIndex, boardRound);
-    if (!last || !pickReveal) return last;
+    if (!last) return null;
+    if (Number(last.overall) > Number(revealedOverall || 0)) return null;
     if (
-      pickReveal.phase === 'holding'
+      pickReveal
+      && pickReveal.phase === 'holding'
       && Number(pickReveal.teamIndex) === Number(teamIndex)
       && Number(last.overall) === Number(pickReveal.overall)
     ) {
@@ -3525,9 +3558,17 @@
     const el = document.getElementById('mock-order');
     if (!el || !mock) return;
     const phase = draftPhase();
-    const next = phase === 'setup' ? null : currentSlot();
+    const catchingUp = draftLive && revealedOverall < (mock.picks || []).length;
+    const next = phase === 'setup' || roundBreakHold
+      ? null
+      : (catchingUp ? visualNextSlot() : currentSlot());
     const following = next
-      ? pickSlot(mock.teamNames.length, mock.rounds, 'snake', mock.picks.length + 1)
+      ? pickSlot(
+        mock.teamNames.length,
+        mock.rounds,
+        'snake',
+        catchingUp ? revealedOverall + 1 : mock.picks.length + 1
+      )
       : null;
     const canDrag = canDragSeat();
     el.style.setProperty('--mock-seats', String(mock.teamNames.length));
@@ -4569,6 +4610,7 @@
       cpu: opts.cpu === true
     });
     if (starting) announceMockStart(player);
+    revealedOverall = Math.max(revealedOverall, Number(slot.overall) || mock.picks.length);
     if (!silent) {
       setMockStatus(`Picked ${player.name} for YOU`, true);
       renderMock();
@@ -5335,6 +5377,7 @@
       stopPickTimer();
       const removed = mock.picks.pop();
       lastAnnouncedRound = currentSlot()?.round || 1;
+      revealedOverall = mock.picks.length;
       syncBoardRound();
       setMockStatus(`Undid ${removed.playerName}`, true);
       if (draftLive) {
