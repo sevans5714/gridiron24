@@ -19,7 +19,7 @@ module.exports = {
       key: 'overtime',
       name: 'Overtime Conference',
       shortName: 'OVERTIME',
-      espnLeagueId: 236438046,
+      espnLeagueId: 952732392,
       logo: '/assets/overtime-conference.png'
     }
   ],

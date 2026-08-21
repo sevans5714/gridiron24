@@ -1328,8 +1328,12 @@ function ensureSystemLeague(seed) {
         const match = seed.conferences.find((s) => s.key === row.key);
         const rowEspn = Number(row.espnLeagueId);
         const seedEspn = Number(match?.espnLeagueId);
-        // Recreated 2026 Detail league — replace the retired ESPN ID in place.
+        // Recreated 2026 Detail / Overtime leagues — replace retired ESPN IDs in place.
         if (row.key === 'detail' && rowEspn === 559054421 && seedEspn === 1444967743) {
+          dirty = true;
+          return { ...row, espnLeagueId: seedEspn };
+        }
+        if (row.key === 'overtime' && rowEspn === 236438046 && seedEspn === 952732392) {
           dirty = true;
           return { ...row, espnLeagueId: seedEspn };
         }
