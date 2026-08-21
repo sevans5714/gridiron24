@@ -12,11 +12,13 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'mock-draft-rooms.json');
 
 const TEAM_COUNTS = new Set([10, 12, 14]);
+const TEAM_NAME_MAX = 32;
 const ROUND_OPTIONS = new Set([8, 10, 12, 15, 16, 18]);
 const PICK_SECONDS_OPTIONS = new Set([60, 120, 180, 240, 300]);
 const SCORING_OPTIONS = new Set(['ppr', 'half-ppr', 'standard']);
 const JOIN_LOBBY_SECONDS = 240; // 4:00 for others to join after positions lock
 const CPU_PICK_GAP_MS = 2500;
+const HUMAN_PICK_GAP_MS = CPU_PICK_GAP_MS + 900;
 const MAX_ROOMS = 12;
 const ROOM_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -76,7 +78,10 @@ function clampPickSeconds(n) {
 }
 
 function padTeamNames(names, count) {
-  const list = (Array.isArray(names) ? names : []).map((n) => String(n || '').trim()).filter(Boolean).slice(0, count);
+  const list = (Array.isArray(names) ? names : [])
+    .map((n) => String(n || '').replace(/\s+/g, ' ').trim().slice(0, TEAM_NAME_MAX))
+    .filter(Boolean)
+    .slice(0, count);
   while (list.length < count) list.push(`Team ${list.length + 1}`);
   return list;
 }
@@ -146,6 +151,7 @@ function publicRoom(room, viewerId = null) {
     seats: room.seats.map((s) => publicSeat(s, viewerId)),
     picks: room.picks.slice(),
     pickDeadline: room.pickDeadline || null,
+    cpuReadyAt: room.cpuReadyAt || null,
     onClock: onClock
       ? {
           teamIndex: slot.teamIndex,
@@ -251,21 +257,15 @@ function advanceRoom(room, pool) {
   let guard = 0;
   const max = room.teamCount * room.rounds + 4;
 
-  function armNextClock() {
+  function armNextClock({ afterHuman = false } = {}) {
     const next = currentSlot(room);
     if (!next) {
       room.cpuReadyAt = null;
       room.pickDeadline = null;
       return;
     }
-    const nextHuman = Boolean(room.seats[next.teamIndex]?.userId);
-    if (nextHuman) {
-      room.cpuReadyAt = null;
-      room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
-    } else {
-      room.pickDeadline = null;
-      room.cpuReadyAt = new Date(Date.now() + CPU_PICK_GAP_MS).toISOString();
-    }
+    room.pickDeadline = null;
+    room.cpuReadyAt = new Date(Date.now() + (afterHuman ? HUMAN_PICK_GAP_MS : CPU_PICK_GAP_MS)).toISOString();
   }
 
   while (guard < max) {
@@ -299,6 +299,8 @@ function advanceRoom(room, pool) {
       changed = true;
       break;
     }
+    const revealAt = room.cpuReadyAt ? Date.parse(room.cpuReadyAt) : 0;
+    if (Number.isFinite(revealAt) && Date.now() < revealAt) break;
     // Human on clock — ensure deadline set
     if (!room.pickDeadline) {
       room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
@@ -327,7 +329,7 @@ function createRoom({ user, teamCount, rounds, pickSeconds, scoring, seatIndex, 
     }
   }
   const names = padTeamNames(teamNames, count);
-  const hostLabel = String(hostTeamName || '').trim();
+  const hostLabel = String(hostTeamName || '').replace(/\s+/g, ' ').trim().slice(0, TEAM_NAME_MAX);
   if (hostLabel) names[seat] = hostLabel;
   const seats = Array.from({ length: count }, (_, i) => ({
     index: i,
@@ -488,7 +490,7 @@ function joinSeat({ roomId, user, seatIndex, teamName }) {
   seat.userId = user.id;
   seat.userName = user.name || user.loginName || 'Member';
   seat.isCpu = false;
-  const label = String(teamName || '').trim();
+  const label = String(teamName || '').replace(/\s+/g, ' ').trim().slice(0, TEAM_NAME_MAX);
   if (label && Array.isArray(room.teamNames) && room.teamNames.length > idx) {
     room.teamNames[idx] = label;
   }
@@ -524,19 +526,20 @@ function humanPick({ roomId, user, playerId, pool }) {
   if (!seat?.userId || seat.userId !== user.id) {
     throw err(403, 'Not your turn');
   }
+  const readyAt = room.cpuReadyAt ? Date.parse(room.cpuReadyAt) : 0;
+  if (Number.isFinite(readyAt) && Date.now() < readyAt) {
+    throw err(400, 'Wait for the next pick');
+  }
   const player = (pool || []).find((p) => playerKey(p?.id) === playerKey(playerId));
   if (!player) throw err(400, 'Player not in pool');
   applyPick(room, player, { cpu: false });
   const next = currentSlot(room);
-  if (next && room.seats[next.teamIndex]?.userId) {
-    room.cpuReadyAt = null;
-    room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
-  } else if (next) {
+  if (!next) {
     room.pickDeadline = null;
-    room.cpuReadyAt = new Date(Date.now() + CPU_PICK_GAP_MS).toISOString();
+    room.cpuReadyAt = null;
   } else {
     room.pickDeadline = null;
-    room.cpuReadyAt = null;
+    room.cpuReadyAt = new Date(Date.now() + HUMAN_PICK_GAP_MS).toISOString();
   }
   advanceRoom(room, pool);
   return saveRoom(room);

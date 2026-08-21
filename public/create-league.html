@@ -8,12 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=123" />
-  <link rel="icon" href="/favicon.ico?v=123" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=123" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=123" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=124" />
+  <link rel="icon" href="/favicon.ico?v=124" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=124" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=124" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=154" />
+  <link rel="stylesheet" href="/css/site.css?v=157" />
   <style>
     body.league-reg {
       min-height: 100vh;
@@ -100,6 +100,7 @@
     .slot-grid .slot-field[data-pos="K"] { --slot-color: var(--mock-k); }
     .slot-grid .slot-field[data-pos="BN"] { --slot-color: var(--mock-bn); }
     .slot-grid .slot-field[data-pos="IR"] { --slot-color: var(--mock-ir); }
+    .slot-grid .slot-field[data-pos="TAXI"] { --slot-color: #7c5cbf; }
     .slot-grid .slot-field .field-label {
       margin: 0 0 0.25rem;
       color: var(--text);
@@ -334,6 +335,10 @@
               <option value="reverse-standings">Reverse standings</option>
             </select>
           </div>
+          <div>
+            <label class="field-label" for="faabBudget">FAAB budget</label>
+            <input class="field" id="faabBudget" type="number" min="0" max="1000" value="100" />
+          </div>
         </div>
         <label class="field-label" for="scoringPreset">Scoring starting point</label>
         <select class="field" id="scoringPreset" style="max-width:18rem;">
@@ -353,37 +358,68 @@
           <div class="slot-field" data-pos="K"><label class="field-label" for="slotK">K</label><input class="field" id="slotK" type="number" min="0" max="4" placeholder="0" /></div>
           <div class="slot-field" data-pos="BN"><label class="field-label" for="slotBN">BN</label><input class="field" id="slotBN" type="number" min="0" max="30" placeholder="0" /></div>
           <div class="slot-field" data-pos="IR"><label class="field-label" for="slotIR">IR</label><input class="field" id="slotIR" type="number" min="0" max="10" placeholder="0" /></div>
+          <div class="slot-field" data-pos="TAXI"><label class="field-label" for="slotTAXI">Taxi</label><input class="field" id="slotTAXI" type="number" min="0" max="10" placeholder="0" /></div>
         </div>
         <div class="grid-2" style="margin-top:0.85rem;">
           <div>
-            <label class="field-label" for="keeperCount">Keepers per team</label>
-            <input class="field" id="keeperCount" type="number" min="0" max="8" value="0" />
+            <label class="field-label" for="leagueFormat">League type</label>
+            <select class="field" id="leagueFormat">
+              <option value="redraft">Redraft</option>
+              <option value="dynasty">Dynasty (keep entire roster)</option>
+            </select>
           </div>
           <div>
-            <label class="field-label" for="keeperMaxSeasons">Max keeper seasons</label>
-            <input class="field" id="keeperMaxSeasons" type="number" min="1" max="8" value="1" />
+            <label class="field-label" for="keepersEnabled">Keepers</label>
+            <select class="field" id="keepersEnabled">
+              <option value="0" selected>Off</option>
+              <option value="1">On</option>
+            </select>
+          </div>
+        </div>
+        <div id="keeper-fields" hidden style="margin-top:0.85rem;">
+          <p class="help">Optional. Off means a full redraft next year. On lets each team keep players with the cost rule you pick.</p>
+          <div class="grid-2">
+            <div>
+              <label class="field-label" for="keeperCount">Keepers per team</label>
+              <input class="field" id="keeperCount" type="number" min="1" max="40" value="1" />
+            </div>
+            <div>
+              <label class="field-label" for="keeperMaxSeasons">Max keeper seasons</label>
+              <input class="field" id="keeperMaxSeasons" type="number" min="1" max="20" value="3" />
+            </div>
+          </div>
+          <div style="margin-top:0.75rem;">
+            <label class="field-label" for="keeperCost">Keeper pick cost</label>
+            <select class="field" id="keeperCost">
+              <option value="none">No pick cost — still draft that round</option>
+              <option value="round">Lose that round’s pick next year</option>
+              <option value="round-minus-one">Lose that round, one round earlier each year</option>
+            </select>
           </div>
         </div>
       </section>
 
       <section class="step" data-step="3" hidden>
         <h2>Championship</h2>
-        <label class="field-label" for="bowlName">Championship / Bowl name</label>
-        <input class="field" id="bowlName" type="text" placeholder="e.g. Metro Bowl" required />
+        <p class="help" style="margin:0 0 0.75rem;">Optional. Leave blank if you have not named a title game yet — we will not invent a Bowl or consolation game for you.</p>
+        <label class="field-label" for="bowlName">Championship name</label>
+        <input class="field" id="bowlName" type="text" placeholder="e.g. Metro Cup" />
         <div class="grid-2">
           <div>
             <label class="field-label" for="titleWeek">Conference title week</label>
-            <input class="field" id="titleWeek" type="number" min="1" max="18" value="16" />
+            <input class="field" id="titleWeek" type="number" min="1" max="18" />
           </div>
           <div>
-            <label class="field-label" for="bowlWeek">Bowl / Super Bowl week</label>
-            <input class="field" id="bowlWeek" type="number" min="1" max="18" value="17" />
+            <label class="field-label" for="bowlWeek">Championship week</label>
+            <input class="field" id="bowlWeek" type="number" min="1" max="18" />
           </div>
         </div>
         <label class="field-label" class="field-check" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.75rem;text-transform:none;letter-spacing:0;font-weight:600;">
           <input type="checkbox" id="survivalEnabled" />
-          Include Mayor's Cup–style survival game (last place each conference, Week 17)
+          Optional last-place / consolation game
         </label>
+        <label class="field-label" for="survivalName">Consolation name</label>
+        <input class="field" id="survivalName" type="text" placeholder="Optional" />
         <label class="field-label">Championship logo</label>
         <div class="upload-row" data-asset="championshipLogo">
           <img alt="" hidden />
@@ -423,7 +459,7 @@
     </div>
 
     <p class="legal">
-      Independent fantasy football headquarters. Not affiliated with the NFL, ESPN, or GridIron 24’s live ESPN leagues.
+      Independent fantasy football headquarters. Not affiliated with the NFL or ESPN.
       You are responsible for rights to any logos you upload.
       <a href="/enter">Sign in</a>
     </p>
@@ -437,14 +473,8 @@
     let setupLeague = null;
     const assets = {};
     const DEFAULT_PRIZES = [
-      { place: 1, label: 'League Champion', amount: 1000 },
-      { place: 2, label: 'Bowl Runner-Up', amount: 500 },
-      { place: 3, label: 'Conference 2nd Place A', amount: 250 },
-      { place: 4, label: 'Conference 2nd Place B', amount: 250 },
-      { place: 5, label: 'Third Place A', amount: 100 },
-      { place: 6, label: 'Third Place B', amount: 100 },
-      { place: 7, label: 'Most Points A', amount: 100 },
-      { place: 8, label: 'Most Points B', amount: 100 }
+      { place: 1, label: 'League Champion', amount: 0 },
+      { place: 2, label: 'Runner-Up', amount: 0 }
     ];
 
     const errEl = document.getElementById('err');
@@ -483,12 +513,14 @@
       const mark = document.getElementById('page-mark');
       const title = document.getElementById('page-title');
       if (mode === 'setup') {
+        mark.hidden = false;
         mark.textContent = '3';
         title.textContent = 'Set up your league';
       } else if (mode === 'waiting') {
-        mark.textContent = '2';
+        mark.hidden = true;
         title.textContent = 'Request sent';
       } else {
+        mark.hidden = false;
         mark.textContent = '1';
         title.textContent = 'Register a league';
       }
@@ -735,16 +767,25 @@
           playoffTeamsPerConference: playoff,
           playoffTeamCount: confN === 1 ? playoff : playoff * 2,
           playoffWeeks: [],
-          regularSeasonEndWeek: 0,
+          regularSeasonEndWeek: 13,
           playoffFormat: confN === 1 ? 'league-bracket' : 'conference-brackets'
         },
         settings: {
           scoringPreset: document.getElementById('scoringPreset').value,
           draftScope: confN === 1 ? 'league' : (document.getElementById('draftScope')?.value || 'conference'),
           waiverType: document.getElementById('waiverType')?.value || 'FAAB',
-          keepersEnabled: slotNum('keeperCount') > 0,
-          keeperCount: slotNum('keeperCount'),
-          keeperMaxSeasons: slotNum('keeperMaxSeasons') || 1,
+          faabBudget: Number(document.getElementById('faabBudget')?.value) || 100,
+          keepersEnabled: document.getElementById('leagueFormat')?.value !== 'dynasty'
+            && document.getElementById('keepersEnabled')?.value === '1',
+          keeperCount: slotNum('keeperCount') || 1,
+          keeperMaxSeasons: slotNum('keeperMaxSeasons') || 3,
+          leagueFormat: document.getElementById('leagueFormat')?.value === 'dynasty'
+            ? 'dynasty'
+            : (document.getElementById('keepersEnabled')?.value === '1' ? 'keeper' : 'redraft'),
+          keeperCost: document.getElementById('keepersEnabled')?.value === '1'
+            ? (document.getElementById('keeperCost')?.value || 'none')
+            : 'none',
+          draftPool: document.getElementById('leagueFormat')?.value === 'dynasty' ? 'rookies' : 'all',
           rosterSlots: {
             QB: slotNum('slotQB'),
             RB: slotNum('slotRB'),
@@ -754,13 +795,18 @@
             DST: slotNum('slotDST'),
             K: slotNum('slotK'),
             BN: slotNum('slotBN'),
-            IR: slotNum('slotIR')
+            IR: slotNum('slotIR'),
+            TAXI: slotNum('slotTAXI')
           }
         },
         survival: {
           enabled: Boolean(document.getElementById('survivalEnabled')?.checked),
-          week: document.getElementById('survivalEnabled')?.checked ? 17 : null,
-          name: document.getElementById('survivalEnabled')?.checked ? "Mayor's Cup" : ''
+          week: document.getElementById('survivalEnabled')?.checked
+            ? (Number(document.getElementById('bowlWeek')?.value) || null)
+            : null,
+          name: document.getElementById('survivalEnabled')?.checked
+            ? String(document.getElementById('survivalName')?.value || '').trim()
+            : ''
         },
         payouts: {
           seasonLabel: document.getElementById('seasonLabel').value.trim(),
@@ -787,7 +833,7 @@
         const starters = slots.QB + slots.RB + slots.WR + slots.TE + slots.FLEX + slots.DST + slots.K;
         if (starters < 1) return 'Set at least one starter roster slot.';
       }
-      if (n === 3 && !payload().championship.name) return 'Championship name is required.';
+      if (n === 3) return '';
       return '';
     }
 
@@ -801,9 +847,16 @@
           <dt>Season</dt><dd>${esc(String(p.season))}</dd>
           <dt>Conferences</dt><dd>${esc(confNames)} (${p.structure.conferenceCount})</dd>
           <dt>Structure</dt><dd>${p.structure.totalTeams} teams · ${p.structure.playoffTeamCount} playoff · ${esc(p.settings.draftScope)} draft</dd>
-          <dt>Roster</dt><dd>QB${slots.QB} RB${slots.RB} WR${slots.WR} TE${slots.TE} FLEX${slots.FLEX} D/ST${slots.DST} K${slots.K} BN${slots.BN} IR${slots.IR}</dd>
-          <dt>Scoring</dt><dd>${esc(p.settings.scoringPreset)}${p.settings.keepersEnabled ? ` · keepers ${p.settings.keeperCount}` : ''}</dd>
-          <dt>Championship</dt><dd>${esc(p.championship.name)}</dd>
+          <dt>Roster</dt><dd>QB${slots.QB} RB${slots.RB} WR${slots.WR} TE${slots.TE} FLEX${slots.FLEX} D/ST${slots.DST} K${slots.K} BN${slots.BN} IR${slots.IR}${slots.TAXI ? ` Taxi${slots.TAXI}` : ''}</dd>
+          <dt>Keepers</dt><dd>${p.settings.leagueFormat === 'dynasty'
+            ? 'Dynasty — entire roster carries over (keepers off)'
+            : (p.settings.keepersEnabled
+              ? `On · ${p.settings.keeperCount} per team · max ${p.settings.keeperMaxSeasons} seasons · ${
+                p.settings.keeperCost === 'round' ? 'lose that round’s pick' : p.settings.keeperCost === 'round-minus-one' ? 'round minus one each year' : 'no pick cost'
+              }`
+              : 'Off')}</dd>
+          <dt>Scoring</dt><dd>${esc(p.settings.scoringPreset)}</dd>
+          <dt>Championship</dt><dd>${esc(p.championship.name || 'Not named yet')}</dd>
           <dt>Buy-in</dt><dd>${p.payouts.buyInPerTeam} · ${esc(p.payouts.seasonLabel || '')}</dd>
         </dl>`;
     }
@@ -838,24 +891,54 @@
       if (playoff) document.getElementById('playoffTeams').value = playoff;
       if (league.settings?.draftScope) document.getElementById('draftScope').value = league.settings.draftScope;
       if (league.settings?.waiverType) document.getElementById('waiverType').value = league.settings.waiverType;
+      if (league.settings?.faabBudget != null && document.getElementById('faabBudget')) {
+        document.getElementById('faabBudget').value = league.settings.faabBudget;
+      }
       if (league.settings?.scoringPreset) document.getElementById('scoringPreset').value = league.settings.scoringPreset;
       const slots = league.settings?.rosterSlots || {};
-      ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K', 'BN', 'IR'].forEach((pos) => {
+      ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K', 'BN', 'IR', 'TAXI'].forEach((pos) => {
         const el = document.getElementById(`slot${pos}`);
         if (el && slots[pos] != null) el.value = slots[pos];
       });
+      if (league.settings?.leagueFormat === 'dynasty') {
+        document.getElementById('leagueFormat').value = 'dynasty';
+        document.getElementById('keepersEnabled').value = '0';
+      } else {
+        document.getElementById('leagueFormat').value = 'redraft';
+        document.getElementById('keepersEnabled').value = league.settings?.keepersEnabled || league.settings?.leagueFormat === 'keeper' ? '1' : '0';
+      }
+      if (league.settings?.keeperCost) document.getElementById('keeperCost').value = league.settings.keeperCost;
       if (league.settings?.keeperCount != null) document.getElementById('keeperCount').value = league.settings.keeperCount;
       if (league.settings?.keeperMaxSeasons != null) document.getElementById('keeperMaxSeasons').value = league.settings.keeperMaxSeasons;
+      syncKeeperFields();
       if (league.championship?.name) document.getElementById('bowlName').value = league.championship.name;
-      else document.getElementById('bowlName').value = `${league.brand?.name || 'League'} Bowl`;
+      else document.getElementById('bowlName').value = '';
       if (league.championship?.titleWeek) document.getElementById('titleWeek').value = league.championship.titleWeek;
+      else document.getElementById('titleWeek').value = '';
       if (league.championship?.bowlWeek) document.getElementById('bowlWeek').value = league.championship.bowlWeek;
+      else document.getElementById('bowlWeek').value = '';
       document.getElementById('survivalEnabled').checked = Boolean(league.survival?.enabled);
+      if (document.getElementById('survivalName')) {
+        document.getElementById('survivalName').value = league.survival?.enabled ? (league.survival?.name || '') : '';
+      }
       if (league.payouts?.buyInPerTeam != null) document.getElementById('buyIn').value = league.payouts.buyInPerTeam;
       if (league.payouts?.seasonLabel) document.getElementById('seasonLabel').value = league.payouts.seasonLabel;
       if (league.payouts?.notes) document.getElementById('payoutNotes').value = league.payouts.notes;
       syncConferenceUi();
     }
+
+    function syncKeeperFields() {
+      const dynasty = document.getElementById('leagueFormat')?.value === 'dynasty';
+      const on = !dynasty && document.getElementById('keepersEnabled')?.value === '1';
+      const fields = document.getElementById('keeper-fields');
+      const toggle = document.getElementById('keepersEnabled');
+      if (toggle) toggle.disabled = dynasty;
+      if (fields) fields.hidden = !on;
+    }
+
+    document.getElementById('leagueFormat')?.addEventListener('change', syncKeeperFields);
+    document.getElementById('keepersEnabled')?.addEventListener('change', syncKeeperFields);
+    syncKeeperFields();
 
     stepper.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-go]');

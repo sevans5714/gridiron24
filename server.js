@@ -62,6 +62,9 @@ const deathPoolNews = require('./death-pool-news');
 const mockDraftRooms = require('./mock-draft-rooms-store');
 const independentDraft = require('./independent-draft-store');
 const independentScoreboard = require('./independent-scoreboard');
+const independentWire = require('./independent-wire');
+const independentPlayoffs = require('./independent-playoffs');
+const independentKeepers = require('./independent-keepers');
 const customPools = require('./custom-pool-store');
 const futuresMarkets = require('./futures-markets');
 const matchupDisplayWeek = require('./matchup-display-week');
@@ -275,18 +278,97 @@ function getSessionUser(req) {
 }
 
 /** Fantasy franchise name for lounge mock draft seats (display override → custom ESPN name → owner). */
-function fantasyTeamNameForUser(user) {
-  if (!user?.id) return null;
+function personKey(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function independentFranchiseForUser(user) {
+  if (!user?.id || !user.leagueId) return null;
+  try {
+    const league = leagues.findById(user.leagueId);
+    if (!league) return null;
+    return (league.franchises || []).find((f) => f.managerUserId === user.id) || null;
+  } catch {
+    return null;
+  }
+}
+
+function chipFranchiseForUser(user) {
+  if (!user?.id || user.loungeOnly) return null;
   try {
     const claim = logos.getClaimForUser(user.id);
-    if (!claim) return null;
-    const nameEntry = logos.getDisplayName(claim.conferenceKey, claim.teamId);
-    const override = String(nameEntry?.displayName || '').trim();
-    if (override) return override;
-    const claimed = String(claim.teamName || '').trim();
-    if (claimed && !espnDisplayNameLooksDefault(claimed)) return claimed;
-    const owner = String(user?.name || user?.loginName || '').trim();
-    return owner || claimed || null;
+    if (claim) {
+      const nameEntry = logos.getDisplayName(claim.conferenceKey, claim.teamId);
+      const name = String(nameEntry?.displayName || claim.teamName || '').trim();
+      const conf = listAdminLeagues().find((c) => c.key === claim.conferenceKey);
+      return {
+        name: name || null,
+        teamId: claim.teamId,
+        conferenceKey: claim.conferenceKey,
+        conferenceName: conf?.name || null,
+        source: 'claim',
+        claim
+      };
+    }
+  } catch { /* ignore */ }
+  try {
+    const franchise = independentFranchiseForUser(user);
+    if (franchise) {
+      const name = String(franchise.name || franchise.teamName || '').trim();
+      return {
+        name: name || null,
+        teamId: franchise.id,
+        conferenceKey: franchise.conferenceKey || franchise.conference || null,
+        conferenceName: null,
+        source: 'independent',
+        claim: {
+          teamId: franchise.id,
+          teamName: name,
+          conferenceKey: franchise.conferenceKey || franchise.conference || null,
+          independent: true
+        }
+      };
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function fantasyTeamNameForUser(user) {
+  if (!user?.id) return null;
+  const chip = chipFranchiseForUser(user);
+  const named = String(chip?.name || '').trim();
+  if (named) return named;
+  const owner = String(user?.name || user?.loginName || '').trim();
+  return owner || null;
+}
+
+async function maybeLinkEspnFranchise(user) {
+  if (!user?.id || user.loungeOnly) return null;
+  if (logos.getClaimForUser(user.id)) return logos.getClaimForUser(user.id);
+  const needle = personKey(user.name);
+  const login = personKey(user.loginName);
+  if (!needle && !login) return null;
+  const hits = [];
+  for (const conf of listAdminLeagues()) {
+    if (!(Number(conf.espnLeagueId) > 0)) continue;
+    try {
+      const league = await fetchEspnLeague(conf);
+      for (const t of league.teams || []) {
+        const owner = personKey(t.owner);
+        if (!owner) continue;
+        if (owner !== needle && owner !== login) continue;
+        const taken = logos.getClaimForTeam(conf.key, t.id);
+        if (taken && taken.userId !== user.id) continue;
+        hits.push({ conf, team: t });
+      }
+    } catch { /* ignore */ }
+  }
+  if (hits.length !== 1) return null;
+  const hit = hits[0];
+  const existing = logos.getClaimForTeam(hit.conf.key, hit.team.id);
+  if (existing) return existing.userId === user.id ? existing : null;
+  try {
+    return logos.assignTeam(user.id, hit.conf.key, hit.team.id, hit.team.name, user.id);
   } catch {
     return null;
   }
@@ -479,6 +561,124 @@ function requireSiteOwner(req, res) {
   return user;
 }
 
+function siteHqRoleLabel(u) {
+  if (!u) return 'Member';
+  if (users.isSiteOwner(u)) return 'Site owner';
+  if (u.leagueOwner) return 'League owner';
+  if (u.role === 'commissioner') return 'Commissioner';
+  if (u.role === 'conference_admin') {
+    return u.conference === 'aaa' ? 'AAA admin' : 'Conference admin';
+  }
+  if (u.loungeOnly) return 'Social';
+  return 'Member';
+}
+
+function siteHqLeagueLabel(u) {
+  if (!u) return null;
+  if (u.leagueId) {
+    try {
+      const linked = leagues.findById(u.leagueId);
+      if (linked?.brand?.name || linked?.slug) return linked.brand?.name || linked.slug;
+    } catch { /* ignore */ }
+  }
+  if (u.membershipLeague === 'aaa') return 'AAA';
+  if (u.loungeOnly) return 'Lounge';
+  return 'GridIron 24';
+}
+
+function buildSiteHqPayload(viewer) {
+  try { presence.touch(users.publicUser(viewer)); } catch { /* ignore */ }
+  const allUsers = users.listUsers();
+  const pendingAccounts = allUsers.filter((u) => u.approved === false);
+  const independent = leagues.listIndependentLeagues();
+  const pendingLeagues = independent.filter((l) => l.status === 'pending_approval');
+  const byId = new Map(allUsers.map((u) => [u.id, u]));
+  const online = presence.listOnline().map((row) => {
+    const u = byId.get(row.id);
+    return {
+      id: row.id,
+      name: u?.name || row.name,
+      loginName: u?.loginName || row.loginName,
+      email: u?.email || null,
+      role: siteHqRoleLabel(u),
+      league: u ? siteHqLeagueLabel(u) : null,
+      lastSeen: row.lastSeen
+    };
+  });
+  const espn = listEspnLeagueBindings();
+  const mail = mailConfig();
+  const upstream = upstreamMeta();
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    counts: {
+      online: online.length,
+      accounts: allUsers.filter((u) => u.approved !== false).length,
+      pendingAccounts: pendingAccounts.length,
+      pendingLeagues: pendingLeagues.length,
+      independentLeagues: independent.length,
+      independentLive: independent.filter((l) => l.status === 'approved' && l.setupComplete !== false).length
+    },
+    online,
+    pendingAccounts: pendingAccounts.map((u) => ({
+      id: u.id,
+      name: u.name,
+      loginName: u.loginName,
+      email: u.email,
+      loungeOnly: Boolean(u.loungeOnly),
+      membershipLeague: u.membershipLeague || null,
+      createdAt: u.createdAt || null
+    })),
+    pendingLeagues: pendingLeagues.map((l) => ({
+      id: l.id,
+      name: l.brand?.name || l.slug,
+      slug: l.slug,
+      ownerName: l.ownerName,
+      ownerEmail: l.ownerEmail,
+      teamCount: l.structure?.totalTeams || null,
+      submittedAt: l.submittedAt || l.createdAt,
+      homePath: l.homePath || null
+    })),
+    leagues: {
+      platform: {
+        name: config.brand?.name || 'GridIron 24',
+        season: config.season,
+        conferences: (espn.leagues || []).map((row) => ({
+          key: row.key,
+          name: row.name,
+          kind: row.kind,
+          espnLeagueId: row.espnLeagueId || null
+        }))
+      },
+      independent: independent.map((l) => ({
+        id: l.id,
+        name: l.brand?.name || l.slug,
+        slug: l.slug,
+        status: l.status,
+        setupComplete: l.setupComplete !== false,
+        ownerName: l.ownerName,
+        ownerEmail: l.ownerEmail,
+        teamCount: l.structure?.totalTeams || null,
+        submittedAt: l.submittedAt || l.createdAt,
+        approvedAt: l.approvedAt || null,
+        homePath: l.homePath || null
+      }))
+    },
+    health: {
+      app: config.brand?.name || 'GridIron 24',
+      version: buildInfo.version,
+      build: buildInfo.build,
+      season: config.season,
+      mail: {
+        configured: Boolean(mail.configured),
+        provider: mail.provider || null,
+        from: mail.from || null
+      },
+      upstream
+    }
+  };
+}
+
 function staffRecipients() {
   return users.listUsers().filter((u) => users.isStaff(u) && u.approved !== false);
 }
@@ -658,6 +858,48 @@ async function loadConferenceOwnerRoster(conferenceKey) {
 
 function canAccessCommissionerPage(user) {
   return users.isStaff(user);
+}
+
+function isIndependentLeagueOwner(user) {
+  if (!user?.leagueOwner || !user.leagueId || users.isSiteOwner(user)) return false;
+  try {
+    const owned = leagues.findById(user.leagueId);
+    return Boolean(owned && owned.platform === 'independent');
+  } catch {
+    return false;
+  }
+}
+
+function isConferenceAdminOnly(user) {
+  return Boolean(
+    user
+    && users.isStaff(user)
+    && !users.isCommissioner(user)
+    && !user.canSwitchLeagues
+    && !user.leagueOwner
+    && String(user.role || '') === 'conference_admin'
+  );
+}
+
+function ownerDashboardPath(user) {
+  if (isIndependentLeagueOwner(user)) {
+    try {
+      const owned = leagues.findById(user.leagueId);
+      return leagues.independentSectionPath(owned, 'settings') || leagues.independentHomePath(owned);
+    } catch {
+      return '/my-league.html';
+    }
+  }
+  if (!canAccessCommissionerPage(user) && !user?.leagueOwner) return '/profile.html';
+  return isConferenceAdminOnly(user) ? '/admin.html' : '/owner.html';
+}
+
+function staffDashboardPath(user) {
+  return ownerDashboardPath(user);
+}
+
+function sendLeagueToolsPage(res) {
+  return sendFile(res, path.join(PUBLIC_DIR, 'league-tools.html'));
 }
 
 function sendFile(res, filePath) {
@@ -3516,14 +3758,27 @@ function padLeagueRosterSlots(entries, slotCount) {
     const name = String(entry?.name || '').trim();
     if (!name) return;
     const email = entry.email || (invited ? name : '');
-    const matchKeys = invited ? rosterInviteKeys(name, email) : rosterMemberKeys(name, email);
+    // Invites must not collapse against member last names / email local-parts.
+    // Only skip an invite when that exact email is already on the board.
+    if (invited) {
+      const mail = rosterToken(email);
+      if (!mail || seen.has(`email:${mail}`)) return;
+      seen.add(`email:${mail}`);
+      names.push({
+        name,
+        userId: entry.userId || null,
+        invited: true,
+        pendingApproval: Boolean(entry.pendingApproval)
+      });
+      return;
+    }
+    const matchKeys = rosterMemberKeys(name, email);
     if ([...matchKeys].some((key) => seen.has(key))) return;
-    const storeKeys = invited ? matchKeys : rosterInviteKeys(name, email);
-    for (const key of storeKeys) seen.add(key);
+    for (const key of rosterInviteKeys(name, email)) seen.add(key);
     names.push({
       name,
-      userId: invited ? null : (entry.userId || null),
-      invited
+      userId: entry.userId || null,
+      invited: false
     });
   }
   for (const entry of entries) {
@@ -3541,6 +3796,7 @@ function padLeagueRosterSlots(entries, slotCount) {
       name: member?.name || null,
       userId: member?.userId || null,
       invited: Boolean(member?.invited),
+      pendingApproval: Boolean(member?.pendingApproval),
       vacant: !member
     });
   }
@@ -3558,11 +3814,26 @@ function loadLeagueRoster() {
   const emailsWithAccounts = new Set(
     allUsers.map((u) => String(u.email || '').trim().toLowerCase()).filter(Boolean)
   );
+  const acceptedByEmail = new Map();
+  for (const inv of invites.listInvites()) {
+    if (inv.status !== 'accepted') continue;
+    const mail = String(inv.email || '').trim().toLowerCase();
+    if (mail) acceptedByEmail.set(mail, inv);
+  }
   const pendingInvites = invites.listInvites().filter((inv) => {
     if (inv.status !== 'pending') return false;
     if (!inviteHqMembership(inv)) return false;
     return !emailsWithAccounts.has(String(inv.email || '').trim().toLowerCase());
   });
+
+  function intendedMembership(u) {
+    if (!u || u.loungeOnly) return null;
+    if (u.approved !== false) return users.hqMembershipOf(u);
+    const explicit = users.normalizeMembershipLeague(u.membershipLeague);
+    if (explicit) return explicit;
+    const inv = acceptedByEmail.get(String(u.email || '').trim().toLowerCase());
+    return inviteHqMembership(inv);
+  }
 
   function memberMatchesBoard(u, leagueKey) {
     const membership = users.hqMembershipOf(u);
@@ -3595,6 +3866,23 @@ function loadLeagueRoster() {
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }
 
+  function waitingEntries(leagueKey) {
+    const inviteLeague = leagueKey === 'unassigned' ? 'gridiron' : leagueKey;
+    if (leagueKey === 'detail' || leagueKey === 'overtime') return [];
+    return allUsers
+      .filter((u) => u.approved === false && !u.loungeOnly)
+      .filter((u) => intendedMembership(u) === inviteLeague)
+      .map((u) => ({
+        name: leagueRosterDisplayName(u) || String(u.email || '').trim().toLowerCase(),
+        email: String(u.email || '').trim().toLowerCase(),
+        userId: u.id,
+        invited: true,
+        pendingApproval: true
+      }))
+      .filter((row) => row.name)
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  }
+
   function invitedEntries(leagueKey) {
     const inviteLeague = leagueKey === 'unassigned' ? 'gridiron' : leagueKey;
     if (leagueKey === 'detail' || leagueKey === 'overtime') return [];
@@ -3605,14 +3893,14 @@ function loadLeagueRoster() {
         email: String(inv.email || '').trim().toLowerCase(),
         userId: null,
         invited: true,
-        inviteId: inv.id
+        pendingApproval: false
       }))
       .filter((row) => row.name)
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }
 
   function entriesFor(leagueKey) {
-    return [...assignedEntries(leagueKey), ...invitedEntries(leagueKey)];
+    return [...assignedEntries(leagueKey), ...waitingEntries(leagueKey), ...invitedEntries(leagueKey)];
   }
 
   function leaguePayload(key, slotCount, meta, opts = {}) {
@@ -3658,6 +3946,10 @@ function loadLeagueRoster() {
     logo: config.brand?.logo || '/assets/gridiron24-league.png?v=8'
   }, { holding: true });
   if ((unassigned.assigned || 0) + (unassigned.invited || 0) > 0) {
+    if (!(unassigned.assigned) && unassigned.invited) {
+      unassigned.name = 'Invited / waiting';
+      unassigned.shortName = 'INVITED';
+    }
     leagues.push(unassigned);
   }
   leagues.push(leaguePayload('aaa', users.LEAGUE_MEMBERSHIP_CAPS.aaa || 12, {
@@ -4127,7 +4419,7 @@ function homePathForUser(user, req = null) {
 const INDEPENDENT_HQ_SECTIONS = new Set([
   'standings', 'schedules', 'my-roster', 'team-rosters', 'rankings', 'draft',
   'transactions', 'playoffs', 'calendar', 'rulebook', 'scoreboard', 'payouts',
-  'settings', 'manage', 'team'
+  'settings', 'manage', 'team', 'keepers'
 ]);
 
 function parseIndependentHqPath(pathname) {
@@ -4171,6 +4463,8 @@ function independentLeagueScope(league) {
     slug,
     homePath,
     scoreboardPath: leagues.independentSectionPath(league, 'scoreboard'),
+    settingsPath: leagues.independentSectionPath(league, 'settings'),
+    ownerDashboardPath: leagues.independentSectionPath(league, 'settings'),
     label: league.brand?.name || slug,
     logo: league.brand?.logo || league.brand?.crest || null,
     canSwitchLeagues: false,
@@ -4191,10 +4485,21 @@ function deliverWelcomeInboxIfNeeded(user) {
   } catch { /* continue */ }
   if (!users.claimWelcomeInbox(user.id)) return null;
   try {
-    const kind = users.membershipKindOf(user);
+    let kind = users.membershipKindOf(user);
+    let leagueName = '';
+    let href = '';
+    if (user.leagueOwner && user.leagueId) {
+      const owned = leagues.findById(user.leagueId);
+      if (owned?.platform === 'independent') {
+        kind = 'independent';
+        leagueName = owned.brand?.name || owned.slug || '';
+        href = leagues.independentHomePath(owned);
+      }
+    }
     const msg = welcomeMessage.buildWelcome({
       name: user.name || user.loginName,
-      kind
+      kind,
+      leagueName
     });
     return inbox.sendMessage({
       toUserId: user.id,
@@ -4202,7 +4507,12 @@ function deliverWelcomeInboxIfNeeded(user) {
       subject: msg.subject,
       body: msg.body,
       type: msg.type || 'welcome',
-      meta: { kind: 'first_login_welcome', membershipKind: kind }
+      meta: {
+        kind: 'first_login_welcome',
+        membershipKind: kind,
+        href: href || undefined,
+        hrefLabel: href ? 'Open League HQ' : undefined
+      }
     });
   } catch (err) {
     console.warn('[welcome-inbox] failed', err.message || err);
@@ -4243,7 +4553,7 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
         ? 'Waiting for commissioner approval. They cannot sign in yet.'
         : 'They can sign in now.',
       '',
-      'Open League Tools → Requests → Account Requests to approve or deny.'
+      'Open Owner Dashboard → Players → Approve.'
     ].join('\n');
 
     if (!commsSettings.isEnabled('inbox.account_created')) return;
@@ -4257,8 +4567,8 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
         type: 'account_created',
         relatedId: user.id,
         meta: {
-          href: '/league-tools.html#account-requests',
-          hrefLabel: 'Open League Tools',
+          href: '/owner.html#account-requests',
+          hrefLabel: 'Open Owner Dashboard',
           userId: user.id,
           source,
           pendingApprovals: true
@@ -4307,13 +4617,13 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
           '',
           pendingNames,
           '',
-          'Open League Tools → Requests → Account Requests to approve or deny.'
+          'Open Owner Dashboard → Players → Approve.'
         ].join('\n')
         : null,
       meta: {
         digest: true,
-        href: '/league-tools.html#account-requests',
-        hrefLabel: 'Open League Tools',
+        href: '/owner.html#account-requests',
+        hrefLabel: 'Open Owner Dashboard',
         count: pendingUsers.length,
         pendingApprovals: true
       }
@@ -4339,13 +4649,13 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
             '',
             leagueLines,
             '',
-            'Open League Tools → Requests → League Requests to review these registrations.'
+            'Open Owner Dashboard → Players → League requests.'
           ].join('\n')
           : null,
         meta: {
           digest: true,
-          href: '/league-tools.html#league-requests',
-          hrefLabel: 'Open League Tools',
+          href: '/owner.html#league-requests',
+          hrefLabel: 'Open Owner Dashboard',
           count: pendingLeagues.length,
           pendingLeagueApprovals: true
         }
@@ -4373,12 +4683,12 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
           violationLines,
           openViolations.length > 12 ? `…and ${openViolations.length - 12} more.` : '',
           '',
-          'Open League Tools → Roster Violations to review.'
+          'Open Owner Dashboard → ESPN → Roster patrol.'
         ].filter(Boolean).join('\n')
         : null,
       meta: {
         digest: true,
-        href: '/league-tools.html',
+        href: '/owner.html#roster-violations',
         count: openViolations.length,
         rosterViolations: true
       }
@@ -4486,6 +4796,74 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
   } catch (err) {
     console.warn('[pending-inbox] sync failed', err.message || err);
   }
+}
+
+function menuLeaguesForUser(user, req = null) {
+  if (!user || users.isLoungeOnly(user)) return [];
+  const current = leagueScopeForUser(user, req);
+  const siteOwner = users.isSiteOwner(user);
+  const independentOnly = Boolean(user.leagueOwner && user.leagueId && !siteOwner);
+  const items = [];
+
+  if (!independentOnly) {
+    let claimKey = null;
+    try {
+      claimKey = String(logos.getClaimForUser(user.id)?.conferenceKey || '').toLowerCase() || null;
+    } catch { /* ignore */ }
+    const membership = users.normalizeMembershipLeague(user.membershipLeague);
+    const aaaOnly = membership === 'aaa'
+      || claimKey === 'aaa'
+      || (user.role === 'conference_admin' && String(user.conference || '').toLowerCase() === 'aaa');
+    if (siteOwner || !aaaOnly) {
+      items.push({
+        id: 'gridiron',
+        kind: 'gridiron',
+        label: 'GridIron 24',
+        homePath: '/home.html',
+        logo: '/assets/gridiron24-league.png?v=8',
+        current: current.scope === 'gridiron' && current.platform !== 'independent'
+      });
+    }
+    if (siteOwner || aaaOnly) {
+      const affiliate = getAffiliatedLeague('aaa');
+      items.push({
+        id: 'aaa',
+        kind: 'aaa',
+        label: affiliate?.name || 'AAA League',
+        homePath: '/aaa.html',
+        logo: affiliate?.logo || '/assets/aaa-league.png?v=7',
+        current: current.scope === 'aaa' && current.platform !== 'independent'
+      });
+    }
+  }
+
+  const seen = new Set();
+  const addIndependent = (league) => {
+    const raw = league?.id ? (leagues.findById(league.id) || league) : league;
+    if (!raw || raw.platform !== 'independent' || seen.has(raw.id)) return;
+    if (raw.status === 'rejected' || raw.status === 'pending_approval') return;
+    seen.add(raw.id);
+    const pub = leagues.publicLeague(raw);
+    items.push({
+      id: pub.id,
+      kind: 'independent',
+      label: pub.brand?.name || pub.slug || 'League',
+      homePath: pub.homePath || leagues.independentHomePath(raw),
+      logo: pub.brand?.logo || pub.brand?.crest || null,
+      current: current.leagueId === pub.id || current.slug === pub.slug
+    });
+  };
+
+  if (siteOwner) {
+    for (const row of leagues.listIndependentLeagues()) addIndependent(row);
+  } else {
+    for (const row of leagues.listIndependentLeaguesForOwner(user.id)) addIndependent(row);
+    for (const row of leagues.listIndependentLeagues()) {
+      const raw = leagues.findById(row.id) || row;
+      if (canViewIndependentLeague(user, raw)) addIndependent(raw);
+    }
+  }
+  return items;
 }
 
 /**
@@ -5548,8 +5926,10 @@ const server = http.createServer(async (req, res) => {
         authenticated: Boolean(user),
         authConfigured: true,
         user,
+        franchise: user ? chipFranchiseForUser(user) : null,
         homePath: homePathForUser(user, req),
         leagueScope: leagueScopeForUser(user, req),
+        leagues: user ? menuLeaguesForUser(user, req) : [],
         loungeOpen: users.isLoungeOpenToMembers(),
         loungeAccess: users.hasLoungeAccess(user)
       });
@@ -5608,11 +5988,11 @@ const server = http.createServer(async (req, res) => {
         if (!invite) {
           return sendJson(res, 400, { ok: false, error: 'Invite link is invalid or was revoked' });
         }
-        inviteEmail = invite.email;
-        if (body.email && String(body.email).trim().toLowerCase() !== inviteEmail) {
+        inviteEmail = users.normalizeEmail(invite.email);
+        if (body.email && users.normalizeEmail(body.email) !== inviteEmail) {
           return sendJson(res, 400, { ok: false, error: 'Use the email address this invite was sent to' });
         }
-        body.email = body.email || inviteEmail;
+        body.email = inviteEmail;
       } else if (existingUsers.length > 0) {
         return sendJson(res, 403, {
           ok: false,
@@ -5622,6 +6002,13 @@ const server = http.createServer(async (req, res) => {
       // Empty league: allow the first bootstrap account without an invite.
       if (body.password !== body.confirmPassword) {
         return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
+      }
+      if (users.findByEmail(body.email)) {
+        return sendJson(res, 409, {
+          ok: false,
+          code: 'email_taken',
+          error: users.EMAIL_TAKEN_MESSAGE
+        });
       }
       try {
         const bootstrap = existingUsers.length === 0 && !inviteToken;
@@ -6111,6 +6498,7 @@ const server = http.createServer(async (req, res) => {
         if (owner.password !== owner.confirmPassword) {
           return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
         }
+        users.assertEmailAvailable(owner.email);
         const draftId = String(body.draftId || '').trim() || crypto.randomUUID();
         const uploadedAssets = leagues.listDraftAssets(draftId);
 
@@ -6262,6 +6650,7 @@ const server = http.createServer(async (req, res) => {
           if (owner.password !== owner.confirmPassword) {
             return sendJson(res, 400, { ok: false, error: 'Passwords do not match' });
           }
+          users.assertEmailAvailable(owner.email);
           user = users.createUser({
             name: owner.name,
             email: owner.email,
@@ -6325,13 +6714,13 @@ const server = http.createServer(async (req, res) => {
                 `Teams: ${league.structure?.totalTeams || '?'}`,
                 `Type: ${conferenceCount === 2 ? 'Two conferences' : 'One conference'}`,
                 '',
-                '1. Review in League Tools → Requests → League Requests.',
+                '1. Review in Owner Dashboard → Players → League requests.',
                 '2. After approval, the owner sets up the league on /create-league.'
               ].join('\n'),
               type: 'league_request',
               meta: {
-                href: '/league-tools.html#league-requests',
-                hrefLabel: 'Open League Tools',
+                href: '/owner.html#league-requests',
+                hrefLabel: 'Open Owner Dashboard',
                 leagueId: league.id
               }
             });
@@ -6437,6 +6826,7 @@ const server = http.createServer(async (req, res) => {
           rulebook: leagues.independentSectionPath(league, 'rulebook'),
           scoreboard: leagues.independentSectionPath(league, 'scoreboard'),
           payouts: leagues.independentSectionPath(league, 'payouts'),
+          keepers: leagues.independentSectionPath(league, 'keepers'),
           settings: leagues.independentSectionPath(league, 'settings'),
           manage: leagues.independentSectionPath(league, 'manage'),
           team: leagues.independentSectionPath(league, 'team')
@@ -6591,9 +6981,10 @@ const server = http.createServer(async (req, res) => {
               to: created.invite.email,
               inviteUrl,
               invitedByName: user.name || user.loginName,
-              leagueName: league.brand?.name || config.brand.name,
+              leagueName: league.brand?.name || 'your league',
               baseUrl: requestOrigin(req),
-              loungeOnly: false
+              loungeOnly: false,
+              independent: true
             });
           } catch (mailErr) {
             mailResult = {
@@ -6637,9 +7028,10 @@ const server = http.createServer(async (req, res) => {
               to: refreshed.invite.email,
               inviteUrl,
               invitedByName: user.name || user.loginName,
-              leagueName: league.brand?.name || config.brand.name,
+              leagueName: league.brand?.name || 'your league',
               baseUrl: requestOrigin(req),
-              loungeOnly: false
+              loungeOnly: false,
+              independent: true
             });
           } catch (mailErr) {
             mailResult = { sent: false, method: 'error', error: mailErr.message || 'Email send failed' };
@@ -6693,6 +7085,162 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
+      if (parts.length === 3 && parts[2] === 'lineup') {
+        try {
+          const poolPayload = await nflverseDraft.loadDraftPool(draftPoolOpts(league));
+          const injuries = independentKeepers.injuryMapFromPool(poolPayload.players || []);
+          const updated = leagues.setIndependentLineup(leagueId, body.franchiseId, body.lineup, {
+            userId: user.id,
+            id: user.id,
+            name: user.name || user.loginName,
+            loginName: user.loginName,
+            isSiteOwner: users.isSiteOwner(user),
+            injuries
+          });
+          return sendJson(res, 200, { ok: true, league: updated });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save lineup' });
+        }
+      }
+
+      if (parts.length === 3 && parts[2] === 'wire') {
+        if (!canViewIndependentLeague(user, league)) {
+          return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+        }
+        const actor = {
+          id: user.id,
+          userId: user.id,
+          name: user.name || user.loginName,
+          loginName: user.loginName,
+          isSiteOwner: users.isSiteOwner(user)
+        };
+        const action = String(body.action || '').toLowerCase();
+        try {
+          if (action === 'add') {
+            const poolPayload = await nflverseDraft.loadDraftPool(draftPoolOpts(league));
+            const poolPlayer = (poolPayload.players || []).find((p) =>
+              String(p.id) === String(body.playerId) || String(p.playerId) === String(body.playerId)
+            );
+            if (!poolPlayer) return sendJson(res, 404, { ok: false, error: 'Player not found in the pool' });
+            const result = independentWire.addFreeAgent(leagueId, {
+              franchiseId: body.franchiseId,
+              player: poolPlayer,
+              dropPlayerId: body.dropPlayerId || null,
+              actor
+            });
+            return sendJson(res, 200, result);
+          }
+          if (action === 'drop') {
+            const result = independentWire.dropPlayer(leagueId, {
+              franchiseId: body.franchiseId,
+              playerId: body.playerId,
+              actor
+            });
+            return sendJson(res, 200, result);
+          }
+          if (action === 'claim') {
+            const result = independentWire.claimWaiver(leagueId, {
+              franchiseId: body.franchiseId,
+              playerId: body.playerId,
+              dropPlayerId: body.dropPlayerId || null,
+              bid: body.bid,
+              actor
+            });
+            return sendJson(res, 200, result);
+          }
+          if (action === 'cancel-claim') {
+            const result = independentWire.cancelClaim(leagueId, { claimId: body.claimId, actor });
+            return sendJson(res, 200, result);
+          }
+          if (action === 'process') {
+            const result = independentWire.processWaivers(leagueId, { force: true, actor });
+            return sendJson(res, 200, result);
+          }
+          if (action === 'propose-trade') {
+            const result = independentWire.proposeTrade(leagueId, body, actor);
+            return sendJson(res, 200, result);
+          }
+          if (action === 'trade') {
+            const result = independentWire.respondTrade(leagueId, {
+              tradeId: body.tradeId,
+              action: body.tradeAction || body.response,
+              actor
+            });
+            return sendJson(res, 200, result);
+          }
+          return sendJson(res, 400, { ok: false, error: 'Unknown wire action' });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Wire request failed' });
+        }
+      }
+
+      if (parts.length === 3 && parts[2] === 'playoffs') {
+        if (!canViewIndependentLeague(user, league)) {
+          return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+        }
+        const actor = {
+          id: user.id,
+          userId: user.id,
+          isSiteOwner: users.isSiteOwner(user)
+        };
+        const action = String(body.action || '').toLowerCase();
+        try {
+          if (action === 'lock') {
+            return sendJson(res, 200, independentPlayoffs.lockPlayoffs(leagueId, actor));
+          }
+          if (action === 'reseed') {
+            return sendJson(res, 200, independentPlayoffs.reseedPlayoffs(leagueId, actor));
+          }
+          if (action === 'set-winner') {
+            return sendJson(res, 200, independentPlayoffs.setWinner(leagueId, {
+              gameId: body.gameId,
+              winnerId: body.winnerId,
+              actor
+            }));
+          }
+          return sendJson(res, 400, { ok: false, error: 'Unknown playoff action' });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Playoff request failed' });
+        }
+      }
+
+      if (parts.length === 3 && parts[2] === 'keepers') {
+        if (!canViewIndependentLeague(user, league)) {
+          return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+        }
+        const actor = {
+          id: user.id,
+          userId: user.id,
+          isSiteOwner: users.isSiteOwner(user)
+        };
+        const action = String(body.action || '').toLowerCase();
+        try {
+          if (action === 'declare') {
+            return sendJson(res, 200, independentKeepers.declareKeeper(leagueId, {
+              franchiseId: body.franchiseId,
+              playerId: body.playerId,
+              actor
+            }));
+          }
+          if (action === 'undeclare') {
+            return sendJson(res, 200, independentKeepers.undeclareKeeper(leagueId, {
+              franchiseId: body.franchiseId,
+              playerId: body.playerId,
+              actor
+            }));
+          }
+          if (action === 'lock') {
+            return sendJson(res, 200, independentKeepers.lockKeepers(leagueId, actor));
+          }
+          if (action === 'rollover') {
+            return sendJson(res, 200, independentKeepers.rolloverSeason(leagueId, actor));
+          }
+          return sendJson(res, 400, { ok: false, error: 'Unknown keeper action' });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Keeper request failed' });
+        }
+      }
+
       return sendJson(res, 404, { ok: false, error: 'Not found' });
     }
 
@@ -6707,7 +7255,7 @@ const server = http.createServer(async (req, res) => {
           /* fall through below only for invites/members */
         }
       }
-      if (parts.length === 3 && (parts[2] === 'invites' || parts[2] === 'members' || parts[2] === 'scoreboard')) {
+      if (parts.length === 3 && (parts[2] === 'invites' || parts[2] === 'members' || parts[2] === 'scoreboard' || parts[2] === 'wire' || parts[2] === 'playoffs' || parts[2] === 'keepers')) {
         const leagueId = parts[1];
         const league = leagues.findById(leagueId);
         if (!league || league.platform !== 'independent') {
@@ -6718,9 +7266,11 @@ const server = http.createServer(async (req, res) => {
             return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
           }
           try {
+            try { leagues.ensureIndependentSchedule(leagueId); } catch { /* schedule optional */ }
+            const fresh = leagues.findById(leagueId);
             const week = Number(requestUrl.searchParams.get('week')) || 0;
             const scored = await independentScoreboard.scoreLeagueWeek(
-              leagues.publicLeague(league),
+              leagues.publicLeague(fresh || league),
               week || undefined
             );
             return sendJson(res, 200, scored);
@@ -6728,6 +7278,64 @@ const server = http.createServer(async (req, res) => {
             return sendJson(res, err.status || 500, {
               ok: false,
               error: err.message || 'Could not score week'
+            });
+          }
+        }
+        if (parts[2] === 'wire') {
+          if (!canViewIndependentLeague(user, league)) {
+            return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+          }
+          try {
+            const poolPayload = await nflverseDraft.loadDraftPool(draftPoolOpts(league));
+            const payload = independentWire.getWire(leagueId, {
+              id: user.id,
+              userId: user.id,
+              name: user.name || user.loginName,
+              loginName: user.loginName,
+              isSiteOwner: users.isSiteOwner(user)
+            }, poolPayload.players || [], {
+              q: requestUrl.searchParams.get('q') || '',
+              pos: requestUrl.searchParams.get('pos') || '',
+              limit: Number(requestUrl.searchParams.get('limit')) || 60
+            });
+            return sendJson(res, 200, payload);
+          } catch (err) {
+            return sendJson(res, err.status || 500, {
+              ok: false,
+              error: err.message || 'Could not load the wire'
+            });
+          }
+        }
+        if (parts[2] === 'playoffs') {
+          if (!canViewIndependentLeague(user, league)) {
+            return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+          }
+          try {
+            const week = Number(requestUrl.searchParams.get('week')) || 0;
+            const payload = independentPlayoffs.getPlayoffs(leagueId, { week: week || undefined });
+            return sendJson(res, 200, payload);
+          } catch (err) {
+            return sendJson(res, err.status || 500, {
+              ok: false,
+              error: err.message || 'Could not load playoffs'
+            });
+          }
+        }
+        if (parts[2] === 'keepers') {
+          if (!canViewIndependentLeague(user, league)) {
+            return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+          }
+          try {
+            const payload = independentKeepers.getKeepers(leagueId, {
+              id: user.id,
+              userId: user.id,
+              isSiteOwner: users.isSiteOwner(user)
+            });
+            return sendJson(res, 200, payload);
+          } catch (err) {
+            return sendJson(res, err.status || 500, {
+              ok: false,
+              error: err.message || 'Could not load keepers'
             });
           }
         }
@@ -6801,7 +7409,7 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const poolPayload = await nflverseDraft.loadDraftPool(draftPoolOpts(league));
-        const pool = poolPayload.players || [];
+        const pool = independentKeepers.filterDraftPool(league, poolPayload.players || []);
         const tick = independentDraft.tickLeague(leagueId, pool, user.id) || {
           league: leagues.publicLeague(league),
           rooms: []
@@ -6809,23 +7417,55 @@ const server = http.createServer(async (req, res) => {
         const taken = new Set(
           (tick.rooms || []).flatMap((r) => (r.picks || []).map((p) => String(p.playerId)))
         );
-        const available = pool
-          .filter((p) => p?.id && !taken.has(String(p.id)))
-          .slice(0, 250)
-          .map((p) => ({
-            id: p.id,
-            name: p.name || p.fullName,
-            position: p.position,
-            team: p.team || p.nflTeam,
-            headshot: p.headshot || null,
-            adp: p.adp ?? null,
-            overallRank: p.overallRank ?? null
-          }));
+        const serializePlayer = (p) => ({
+          id: p.id,
+          gsisId: p.gsisId || null,
+          espnId: p.espnId || null,
+          sleeperId: p.sleeperId || null,
+          name: p.name || p.fullName,
+          position: p.position,
+          team: p.team || p.nflTeam,
+          jersey: p.jersey || null,
+          headshot: p.headshot || null,
+          teamLogo: p.teamLogo || null,
+          adp: p.adp ?? null,
+          adpFfc: p.adpFfc ?? null,
+          adpSleeper: p.adpSleeper ?? null,
+          adpSource: p.adpSource || null,
+          overallRank: p.overallRank ?? null,
+          posRank: p.posRank ?? null,
+          rankScore: p.rankScore ?? null,
+          rankInputs: p.rankInputs || null,
+          vorp: p.vorp ?? null,
+          fantasyPoints2025: p.fantasyPoints2025 ?? null,
+          projectedPoints2026: p.projectedPoints2026 ?? null,
+          avgPpg: p.avgPpg ?? null,
+          games: p.games ?? null,
+          delta: p.delta ?? null,
+          injuryStatus: p.injuryStatus || null,
+          injuryBodyPart: p.injuryBodyPart || null,
+          injuryNotes: p.injuryNotes || null,
+          practiceStatus: p.practiceStatus || null,
+          practiceDescription: p.practiceDescription || null,
+          byeWeek: p.byeWeek ?? null,
+          stats: p.stats || null,
+          projStats: p.projStats || null,
+          sources: p.sources || null
+        });
+        const players = pool.filter((p) => p?.id).map(serializePlayer);
+        const available = players.filter((p) => !taken.has(String(p.id)));
         return sendJson(res, 200, {
           ok: true,
           league: tick.league,
           rooms: tick.rooms || [],
+          players,
           available,
+          poolMeta: {
+            statsSeason: poolPayload.statsSeason || poolPayload.meta?.statsSeason || null,
+            projectionSeason: poolPayload.projectionSeason || poolPayload.meta?.projectionSeason || null,
+            scoring: poolPayload.scoring || poolPayload.meta?.scoring || null,
+            scoringLabel: poolPayload.scoringLabel || poolPayload.meta?.scoringLabel || null
+          },
           viewer: {
             id: user.id,
             isOwner: Boolean(league.ownerUserId && league.ownerUserId === user.id),
@@ -6863,7 +7503,7 @@ const server = http.createServer(async (req, res) => {
       const action = String(body.action || 'tick').toLowerCase();
       try {
         const poolPayload = await nflverseDraft.loadDraftPool(draftPoolOpts(league));
-        const pool = poolPayload.players || [];
+        const pool = independentKeepers.filterDraftPool(league, poolPayload.players || []);
         const actor = { ...users.publicUser(user), siteOwner: users.isSiteOwner(user) };
 
         if (action === 'claim') {
@@ -6879,9 +7519,32 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 200, {
             ok: true,
             league: tick?.league || started.league,
-            rooms: (tick?.rooms || started.rooms || []).map((r) =>
-              r.picks ? r : independentDraft.publicRoom(r, user.id)
-            )
+            rooms: tick?.rooms || (started.rooms || []).map((r) => independentDraft.publicRoom(r, user.id))
+          });
+        }
+        if (action === 'join') {
+          const joined = independentDraft.joinDraftSeat(
+            leagueId,
+            body.roomId,
+            actor,
+            body.seatIndex
+          );
+          const tick = independentDraft.tickLeague(leagueId, pool, user.id);
+          return sendJson(res, 200, {
+            ok: true,
+            room: joined,
+            league: tick?.league || leagues.publicLeague(leagues.findById(leagueId)),
+            rooms: tick?.rooms || [joined]
+          });
+        }
+        if (action === 'skip-join' || action === 'skip-join-window') {
+          const skipped = independentDraft.skipJoinWindow(leagueId, body.roomId, actor);
+          const tick = independentDraft.tickLeague(leagueId, pool, user.id);
+          return sendJson(res, 200, {
+            ok: true,
+            room: skipped,
+            league: tick?.league || leagues.publicLeague(leagues.findById(leagueId)),
+            rooms: tick?.rooms || [skipped]
           });
         }
         if (action === 'pick') {
@@ -6898,6 +7561,22 @@ const server = http.createServer(async (req, res) => {
             room,
             league: tick?.league || leagues.publicLeague(leagues.findById(leagueId)),
             rooms: tick?.rooms || [room]
+          });
+        }
+        if (action === 'chat') {
+          const sent = independentDraft.addChatMessage({
+            leagueId,
+            roomId: body.roomId,
+            user: actor,
+            body: body.body
+          });
+          const tick = independentDraft.tickLeague(leagueId, pool, user.id);
+          return sendJson(res, 200, {
+            ok: true,
+            room: sent.room,
+            message: sent.message,
+            league: tick?.league || leagues.publicLeague(leagues.findById(leagueId)),
+            rooms: tick?.rooms || [sent.room]
           });
         }
         // tick (default)
@@ -6935,7 +7614,7 @@ const server = http.createServer(async (req, res) => {
               body: [
                 `Your league “${league.brand?.name || league.slug}” was approved.`,
                 '',
-                'Next: open /create-league and set up the league (brand, conferences, roster, scoring, championship, payouts).',
+                'Next: open /create-league and finish setup (brand, conferences, roster, scoring, payouts). Championship names stay blank until you set them.',
                 '',
                 `HQ opens after setup: ${leagues.independentHomePath(league)}`
               ].join('\n'),
@@ -7023,7 +7702,8 @@ const server = http.createServer(async (req, res) => {
         invitedByName: invite.invitedByName || null,
         expiresAt: invite.expiresAt,
         loungeOnly: Boolean(invite.loungeOnly),
-        accountType: invite.loungeOnly ? 'social' : 'member'
+        accountType: invite.loungeOnly ? 'social' : 'member',
+        accountExists: Boolean(users.findByEmail(invite.email))
       });
     }
 
@@ -7980,6 +8660,9 @@ const server = http.createServer(async (req, res) => {
             conferenceLogo = '/assets/gridiron24-league-sm.png?v=8';
             conferenceLabel = 'GridIron 24';
           }
+          const display = claim
+            ? (logos.getDisplayName(claim.conferenceKey, claim.teamId)?.displayName || claim.teamName || null)
+            : null;
           const avatar = logos.resolveLogoForUser(m.id);
           const avatarUrl = (avatar?.type === 'icon' || avatar?.type === 'upload') ? avatar.url : null;
           return {
@@ -7987,7 +8670,7 @@ const server = http.createServer(async (req, res) => {
             conferenceKey,
             conferenceLogo,
             conferenceLabel,
-            teamName: claim?.teamName || null,
+            teamName: display,
             avatarUrl
           };
         };
@@ -8050,6 +8733,12 @@ const server = http.createServer(async (req, res) => {
           code: err.code || null
         });
       }
+    }
+
+    if (pathname === '/api/site-hq' && req.method === 'GET') {
+      const owner = requireSiteOwner(req, res);
+      if (!owner) return;
+      return sendJson(res, 200, buildSiteHqPayload(owner));
     }
 
     if (pathname === '/api/users/pending' && req.method === 'GET') {
@@ -9063,9 +9752,28 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/invites' && req.method === 'GET') {
       if (!requireStaff(req, res)) return;
+      const byEmail = new Map();
+      for (const u of users.listUsers()) {
+        const key = String(u.email || '').trim().toLowerCase();
+        if (key) byEmail.set(key, u);
+      }
+      const listed = invites.listInvites().map((inv) => {
+        const u = byEmail.get(String(inv.email || '').trim().toLowerCase());
+        return {
+          ...inv,
+          account: u
+            ? {
+                id: u.id,
+                name: u.name || u.loginName || null,
+                approved: u.approved !== false,
+                loungeOnly: Boolean(u.loungeOnly)
+              }
+            : null
+        };
+      });
       return sendJson(res, 200, {
         ok: true,
-        invites: invites.listInvites(),
+        invites: listed,
         mail: mailConfig()
       });
     }
@@ -9112,8 +9820,8 @@ const server = http.createServer(async (req, res) => {
           if (users.findByEmail(email)) {
             results.push({
               ok: false,
-              email: String(email).trim().toLowerCase(),
-              error: 'That email already has an account'
+              email: users.normalizeEmail(email),
+              error: 'That email already has an account. They should sign in instead of registering again.'
             });
             continue;
           }
@@ -10022,14 +10730,71 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    if (pathname === '/commissioner.html' || pathname === '/admin.html') {
+    if (pathname === '/commissioner.html' || pathname === '/commissioner') {
       const user = getSessionUser(req);
       if (!canAccessCommissionerPage(user)) {
         res.writeHead(302, { Location: homePathForUser(user, req) || '/hq' });
         return res.end();
       }
-      res.writeHead(302, { Location: '/league-tools.html' });
+      res.writeHead(302, { Location: staffDashboardPath(user) });
       return res.end();
+    }
+
+    if (pathname === '/dashboard.html' || pathname === '/dashboard') {
+      const user = getSessionUser(req);
+      if (!user) {
+        res.writeHead(302, { Location: '/enter?next=' + encodeURIComponent('/dashboard.html') });
+        return res.end();
+      }
+      res.writeHead(302, { Location: staffDashboardPath(user) });
+      return res.end();
+    }
+
+    if (pathname === '/site.html' || pathname === '/site') {
+      const user = getSessionUser(req);
+      if (!user) {
+        res.writeHead(302, { Location: '/enter?next=' + encodeURIComponent('/site.html') });
+        return res.end();
+      }
+      if (!users.isSiteOwner(user)) {
+        res.writeHead(302, { Location: ownerDashboardPath(user) });
+        return res.end();
+      }
+      return sendFile(res, path.join(PUBLIC_DIR, 'site.html'));
+    }
+
+    if (pathname === '/owner.html' || pathname === '/owner') {
+      const user = getSessionUser(req);
+      if (!user) {
+        res.writeHead(302, { Location: '/enter?next=' + encodeURIComponent('/owner.html') });
+        return res.end();
+      }
+      if (isIndependentLeagueOwner(user)) {
+        res.writeHead(302, { Location: ownerDashboardPath(user) });
+        return res.end();
+      }
+      if (!canAccessCommissionerPage(user) && !user.leagueOwner) {
+        res.writeHead(302, { Location: '/profile.html' });
+        return res.end();
+      }
+      if (isConferenceAdminOnly(user)) {
+        res.writeHead(302, { Location: '/admin.html' });
+        return res.end();
+      }
+      return sendLeagueToolsPage(res);
+    }
+
+    if (pathname === '/admin.html' || pathname === '/admin') {
+      const user = getSessionUser(req);
+      if (!canAccessCommissionerPage(user)) {
+        res.writeHead(302, { Location: user ? '/profile.html' : '/enter?next=' + encodeURIComponent('/admin.html') });
+        return res.end();
+      }
+      if (!isConferenceAdminOnly(user)) {
+        res.writeHead(302, { Location: '/owner.html' });
+        return res.end();
+      }
+      return sendLeagueToolsPage(res);
     }
 
     if (pathname === '/scoring.html' || pathname === '/scoring') {
@@ -10063,11 +10828,15 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/league-tools.html' || pathname === '/league-tools') {
       const user = getSessionUser(req);
+      if (isIndependentLeagueOwner(user)) {
+        res.writeHead(302, { Location: ownerDashboardPath(user) });
+        return res.end();
+      }
       if (!canAccessCommissionerPage(user)) {
         res.writeHead(302, { Location: user ? '/profile.html' : '/enter?next=' + encodeURIComponent('/league-tools.html') });
         return res.end();
       }
-      return sendFile(res, path.join(PUBLIC_DIR, 'league-tools.html'));
+      return sendLeagueToolsPage(res);
     }
 
     if (pathname === '/api/leagues') {
@@ -10265,10 +11034,23 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/my-team' && req.method === 'GET') {
       const user = getSessionUser(req);
-      const claim = logos.getClaimForUser(user.id);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      let claim = logos.getClaimForUser(user.id);
+      if (!claim) {
+        try { claim = await maybeLinkEspnFranchise(user); } catch { /* keep unlinked */ }
+      }
+      const chip = chipFranchiseForUser(user);
       const logo = logos.resolveLogoForUser(user.id);
       const keeperWindow = keepers.getKeeperWindow(calendar.listEvents(), config.season);
-      let team = null;
+      let team = chip
+        ? {
+          id: chip.teamId,
+          name: chip.name || null,
+          conferenceKey: chip.conferenceKey,
+          conferenceName: chip.conferenceName,
+          logo: logo?.url || null
+        }
+        : null;
       let roster = [];
       let lineup = [];
       let bench = [];
@@ -10365,9 +11147,12 @@ const server = http.createServer(async (req, res) => {
         }
         keeper = keepers.getKeeper(claim.conferenceKey, claim.teamId, keeperWindow.forSeason);
       }
+      if (team && !team.name) {
+        team.name = chip?.name || claim?.teamName || null;
+      }
       return sendJson(res, 200, {
         ok: true,
-        claim,
+        claim: claim || chip?.claim || null,
         logo,
         team,
         roster,
@@ -10900,6 +11685,7 @@ server.listen(PORT, '0.0.0.0', () => {
     nflverseDraft.loadDraftPool({ activeOnly: true })
       .then((payload) => {
         independentDraft.tickAll(payload.players || []);
+        try { independentWire.processDueLeagues(); } catch { /* ignore */ }
       })
       .catch((err) => {
         console.warn('[independent-draft] tick failed', err.message || err);

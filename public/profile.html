@@ -3,24 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Settings · GridIron 24</title>
+  <title>User Dashboard · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=123" />
-  <link rel="icon" href="/favicon.ico?v=123" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=123" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=123" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=124" />
+  <link rel="icon" href="/favicon.ico?v=124" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=124" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=124" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=154" />
+  <link rel="stylesheet" href="/css/site.css?v=156" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
       padding-bottom: 1.15rem;
-    }
-    body[data-page="profile"] .page-hero::before,
-    body[data-page="profile"] .page-hero::after {
-      display: none;
     }
     body[data-page="profile"] .page-main {
       padding-top: 0.85rem;
@@ -43,7 +39,22 @@
       color: var(--muted);
       text-decoration: none;
     }
-    .profile-jump a:hover { color: var(--nav-hover); }
+    .profile-jump a.is-active { color: var(--text); }
+    .dash-page[hidden] { display: none !important; }
+    .user-back {
+      display: inline-block;
+      margin: 0 0 1.25rem;
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .user-back:hover { color: var(--nav-hover); }
+    .user-back[hidden] { display: none !important; }
+    body:not([data-user-page="home"]) .desk-crosslinks { display: none; }
     .profile-card {
       margin: 0 0 1.35rem;
       padding: 1.15rem 1.2rem 1.3rem;
@@ -145,6 +156,18 @@
       text-transform: uppercase;
       color: var(--gold);
     }
+    .settings-group {
+      margin: 0 0 1.75rem;
+    }
+    .settings-group > .settings-kicker {
+      margin: 0 0 0.65rem;
+      font-family: var(--display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
     .tools-card {
       border-color: color-mix(in srgb, var(--blue) 35%, var(--line));
       background:
@@ -155,40 +178,17 @@
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
-      margin-top: 0.35rem;
+      margin-top: 0;
     }
-    .tools-card .tools-menu {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.65rem 1rem;
-      margin: 0.35rem 0 1rem;
-    }
-    .tools-card .tools-menu a {
-      display: grid;
-      gap: 0.15rem;
-      padding: 0.55rem 0;
-      border-bottom: 1px solid color-mix(in srgb, var(--blue) 22%, transparent);
-      text-decoration: none;
-      color: inherit;
-      min-width: 0;
-    }
-    .tools-card .tools-menu a:hover { border-bottom-color: color-mix(in srgb, var(--blue) 70%, transparent); }
-    .tools-card .tools-menu a[hidden] { display: none !important; }
-    .tools-card .tools-menu strong {
+    .portal-links summary {
+      cursor: pointer;
       font-family: var(--display);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--blue);
-    }
-    .tools-card .tools-menu span {
       color: var(--muted);
-      font-size: 0.84rem;
-      line-height: 1.35;
-    }
-    @media (max-width: 560px) {
-      .tools-card .tools-menu { grid-template-columns: 1fr; }
+      margin-bottom: 0.75rem;
     }
     .tools-card .btn-tools {
       display: inline-flex;
@@ -619,157 +619,31 @@
   </header>
 
   <section class="page-hero shell">
-    <p class="eyebrow">Account</p>
-    <h1>Settings</h1>
+    <p class="eyebrow" id="user-eyebrow">User Dashboard</p>
+    <h1 id="user-title">Your pages</h1>
+    <div class="desk-crosslinks" id="user-crosslinks" hidden></div>
   </section>
 
   <main class="page-main shell">
-    <nav class="profile-jump" aria-label="Settings sections">
-      <a href="#account">Account</a>
-      <a href="#tools" id="jump-tools" hidden>Owner Tools</a>
-      <a href="#inbox">Inbox</a>
-      <a href="#appearance">Appearance</a>
-      <a href="#franchise">Franchise</a>
-      <a href="#career">Career</a>
-      <a href="#keeper">Keeper</a>
-      <a href="#logo">Avatar / Logo</a>
-      <a href="#password">Password</a>
-    </nav>
+    <a class="user-back" id="user-back" href="#home" hidden>← Dashboard</a>
+    <div id="user-home" class="desk-home desk-palette" aria-label="User tools"></div>
 
+    <div class="dash-page" id="page-account" hidden>
     <section class="profile-card" id="account">
       <div class="section-head">
         <div class="section-head-block">
           <h2>Account</h2>
-          <p>Your member identity and shareable portal links.</p>
+          <p>Your name, login, and password.</p>
         </div>
       </div>
       <div id="account-body"><div class="msg">Loading…</div></div>
-    </section>
-
-    <section class="profile-card tools-card" id="tools" hidden>
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2 id="tools-card-title">Owner Tools</h2>
-          <p id="tools-card-blurb">Staff controls for this HQ — jump to a section or open the full desk.</p>
-        </div>
-      </div>
-      <div class="tools-menu" aria-label="Owner Tools sections" id="tools-card-menu">
-        <a href="/league-tools.html#group-requests" id="profile-tools-requests" hidden>
-          <strong>Requests</strong>
-          <span>Approve accounts and independent leagues</span>
-        </a>
-        <a href="/league-tools.html#members" id="profile-tools-accounts">
-          <strong>Registered Players</strong>
-          <span>How many in GridIron 24 and AAA</span>
-        </a>
-        <a href="/league-tools.html#group-communications" id="profile-tools-comms" hidden>
-          <strong>Communications</strong>
-          <span>Auto emails, digests, brand look</span>
-        </a>
-        <a href="/league-tools.html#group-espn">
-          <strong>Sync</strong>
-          <span>Rules, playoffs, roster patrol</span>
-        </a>
-        <a href="/league-tools.html#invites" id="profile-tools-people">
-          <strong>Invites</strong>
-          <span>Send invites and email owners</span>
-        </a>
-        <a href="/league-tools.html#group-comms">
-          <strong>Broadcast</strong>
-          <span>News, polls, ticker</span>
-        </a>
-        <a href="/league-tools.html#group-season" id="profile-tools-season" hidden>
-          <strong>Season</strong>
-          <span>Calendar, rankings preview, archive</span>
-        </a>
-      </div>
-      <div class="tools-actions">
-        <a class="btn-tools" id="tools-card-open" href="/league-tools.html">Open Owner Tools</a>
-      </div>
-    </section>
-
-    <section class="profile-card" id="inbox">
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2>Inbox</h2>
-          <p>Rule proposals, league votes, and messages from league staff.</p>
-        </div>
-        <div class="btn-row">
-          <button type="button" class="btn btn-ghost" id="profile-inbox-mark-all">Mark all read</button>
-          <a class="btn btn-ghost" href="/inbox.html">Open inbox</a>
-        </div>
-      </div>
-      <div id="profile-inbox-list"><div class="msg">Loading inbox…</div></div>
-    </section>
-
-    <section class="profile-card" id="appearance">
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2>Appearance</h2>
-          <p>Day or night mode for your account across GridIron 24.</p>
-        </div>
-      </div>
-      <div class="theme-pref" id="appearance-body">
-        <label class="theme-switch" for="theme-switch">
-          <span class="theme-switch-side" data-side="night">Night</span>
-          <span class="theme-switch-control">
-            <input type="checkbox" id="theme-switch" role="switch" aria-checked="false" aria-label="Day mode" />
-            <span class="theme-switch-track" aria-hidden="true">
-              <span class="theme-switch-thumb"></span>
-            </span>
-          </span>
-          <span class="theme-switch-side" data-side="day">Day</span>
-        </label>
-        <p class="theme-switch-hint">Off = night · On = day. Saved to your account.</p>
-        <p class="profile-note" id="appearance-status" role="status"></p>
-      </div>
-    </section>
-
-    <section class="profile-card" id="franchise">
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2>Franchise</h2>
-          <p>Team assignment, record, and display name.</p>
-        </div>
-      </div>
-      <div id="franchise-body"><div class="msg">Loading…</div></div>
-    </section>
-
-    <section class="profile-card" id="career">
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2>Career</h2>
-          <p>Prior seasons linked to your account by the commissioner as you join GridIron 24.</p>
-        </div>
-      </div>
-      <div id="career-body"><div class="msg">Loading…</div></div>
-    </section>
-
-    <section class="profile-card" id="keeper">
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2>Keeper</h2>
-          <p>Choose one player to keep for next season. You forfeit the matching draft round (§3.03–§3.04).</p>
-        </div>
-      </div>
-      <div id="keeper-body"><div class="msg">Loading…</div></div>
-    </section>
-
-    <section class="profile-card" id="logo">
-      <div class="section-head">
-        <div class="section-head-block">
-          <h2>Avatar / Logo</h2>
-          <p>Pick from the icon pack or upload a custom square logo. Used in the top-right header and on your franchise once assigned.</p>
-        </div>
-      </div>
-      <div id="logo-body"><div class="msg">Loading…</div></div>
     </section>
 
     <section class="profile-card" id="password">
       <div class="section-head">
         <div class="section-head-block">
           <h2>Password</h2>
-          <p>Update the password you use to sign in.</p>
+          <p>Change the password you use to sign in.</p>
         </div>
       </div>
       <form class="password-form" id="password-form" autocomplete="off">
@@ -789,6 +663,74 @@
         <p class="profile-note" id="password-status" role="status"></p>
       </form>
     </section>
+    </div>
+
+    <div class="dash-page" id="page-look" hidden>
+    <section class="profile-card" id="appearance">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Appearance</h2>
+          <p>Day or night.</p>
+        </div>
+      </div>
+      <div class="theme-pref" id="appearance-body">
+        <label class="theme-switch" for="theme-switch">
+          <span class="theme-switch-side" data-side="night">Night</span>
+          <span class="theme-switch-control">
+            <input type="checkbox" id="theme-switch" role="switch" aria-checked="false" aria-label="Day mode" />
+            <span class="theme-switch-track" aria-hidden="true">
+              <span class="theme-switch-thumb"></span>
+            </span>
+          </span>
+          <span class="theme-switch-side" data-side="day">Day</span>
+        </label>
+        <p class="theme-switch-hint">Off = night · On = day. Saved to your account.</p>
+        <p class="profile-note" id="appearance-status" role="status"></p>
+      </div>
+    </section>
+
+    <section class="profile-card" id="logo">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Avatar</h2>
+          <p>Used in the header and on your franchise.</p>
+        </div>
+      </div>
+      <div id="logo-body"><div class="msg">Loading…</div></div>
+    </section>
+    </div>
+
+    <div class="dash-page" id="page-team" hidden>
+    <section class="profile-card" id="franchise">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Franchise</h2>
+          <p>Team assignment, record, and display name.</p>
+        </div>
+      </div>
+      <div id="franchise-body"><div class="msg">Loading…</div></div>
+    </section>
+
+    <section class="profile-card" id="keeper">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Keeper</h2>
+          <p>One player for next season. You forfeit the matching draft round.</p>
+        </div>
+      </div>
+      <div id="keeper-body"><div class="msg">Loading…</div></div>
+    </section>
+
+    <section class="profile-card" id="career">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Career</h2>
+          <p>Prior seasons linked to your account.</p>
+        </div>
+      </div>
+      <div id="career-body"><div class="msg">Loading…</div></div>
+    </section>
+    </div>
 
     <section class="profile-actions">
       <button type="button" class="btn btn-secondary" id="profile-logout">Log Out</button>
@@ -799,8 +741,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=157"></script>
-  <script src="/js/inbox-ui.js?v=17"></script>
+  <script src="/js/nav.js?v=163"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -815,6 +756,7 @@
 
     function accessLabel(user) {
       if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner';
+      if (user?.leagueOwner) return 'League Owner';
       if (user?.role === 'conference_admin' && user.conference === 'aaa') return 'AAA League Admin';
       return ROLE_LABELS_P[user?.role] || user?.role || 'Member';
     }
@@ -861,6 +803,7 @@
         return Boolean(
           userOrRole.siteOwner
           || userOrRole.canSwitchLeagues
+          || userOrRole.leagueOwner
           || userOrRole.role === 'commissioner'
           || userOrRole.role === 'conference_admin'
         );
@@ -921,42 +864,67 @@
       });
     }
 
+    function staffDesk(user) {
+      if (!isStaffRole(user)) return null;
+      const scope = window.GridIronNav?.getLeagueScope?.() || {};
+      const independent = Boolean(user.leagueOwner && scope.platform === 'independent' && !user.siteOwner);
+      if (independent) {
+        return {
+          href: scope.ownerDashboardPath || scope.settingsPath || scope.homePath || '/my-league.html',
+          title: 'Owner Dashboard',
+          blurb: 'You created this league — run settings, invites, and operations.'
+        };
+      }
+      const admin = user.role === 'conference_admin' && !user.siteOwner && !user.canSwitchLeagues && !user.leagueOwner;
+      return admin
+        ? { href: '/admin.html', title: 'Admin Dashboard', blurb: 'Invite, broadcast, and ESPN for your conference.' }
+        : { href: '/owner.html', title: 'Owner Dashboard', blurb: 'You own this league — players, messages, ESPN, and season.' };
+    }
+
+    function renderUserHome(user) {
+      const home = document.getElementById('user-home');
+      if (!home) return;
+      const desk = staffDesk(user);
+      const cards = [];
+      if (user?.siteOwner) {
+        cards.push({ href: '/site.html', title: 'Site Headquarters', kicker: 'Platform', blurb: 'Who’s signed on, leagues, registrations, and API health.', tone: 'gold' });
+      }
+      if (desk) {
+        cards.push({ href: desk.href, title: desk.title, kicker: 'League', blurb: desk.blurb, tone: 'gold' });
+      }
+      cards.push(
+        { href: '#account', title: 'Account', kicker: 'You', blurb: 'Name, login, and password.', tone: 'blue' },
+        { href: '#look', title: 'Look', kicker: 'You', blurb: 'Day or night, and your avatar.', tone: 'detail' },
+        { href: '#team', title: 'Team', kicker: 'Franchise', blurb: 'Franchise, keeper, and career.', tone: 'overtime' },
+        { href: '/inbox.html', title: 'Inbox', kicker: 'Mail', blurb: 'Messages from the league.', tone: 'good' }
+      );
+      home.innerHTML = cards.map((c) => `
+        <a class="desk-tile" data-tone="${escP(c.tone)}" href="${escP(c.href)}">
+          <p class="desk-tile-kicker">${escP(c.kicker)}</p>
+          <strong>${escP(c.title)}</strong>
+          <span>${escP(c.blurb)}</span>
+          <em class="desk-tile-go">Open</em>
+        </a>`).join('');
+      const cross = document.getElementById('user-crosslinks');
+      if (cross) {
+        const links = [];
+        if (user?.siteOwner) links.push(`<a class="desk-crosslink" href="/site.html">Site Headquarters →</a>`);
+        if (desk) links.push(`<a class="desk-crosslink" href="${escP(desk.href)}">${escP(desk.title)} →</a>`);
+        if (links.length) {
+          cross.hidden = false;
+          cross.innerHTML = links.join('');
+        } else {
+          cross.hidden = true;
+          cross.innerHTML = '';
+        }
+      }
+    }
+
     function renderAccount(data) {
       const user = data.user || {};
       const logoUrl = isChosenLogo(data.logo) ? data.logo.url : '';
       const staff = isStaffRole(user);
-      const toolsCard = document.getElementById('tools');
-      const jumpTools = document.getElementById('jump-tools');
-      if (toolsCard) toolsCard.hidden = !staff;
-      if (jumpTools) jumpTools.hidden = !staff;
-      const seasonLink = document.getElementById('profile-tools-season');
-      const requestsLink = document.getElementById('profile-tools-requests');
-      const commsLink = document.getElementById('profile-tools-comms');
-      const blurb = document.getElementById('tools-card-blurb');
-      const toolsTitle = document.getElementById('tools-card-title');
-      const toolsOpen = document.getElementById('tools-card-open');
-      const toolsMenu = document.getElementById('tools-card-menu');
-      const isOwner = Boolean(user.siteOwner || user.canSwitchLeagues);
-      const isOwnerOrComm = Boolean(
-        isOwner || user.role === 'commissioner'
-      );
-      const deskLabel = isOwner ? 'Owner Tools' : 'League Tools';
-      if (jumpTools) jumpTools.textContent = deskLabel;
-      if (toolsTitle) toolsTitle.textContent = deskLabel;
-      if (toolsOpen) toolsOpen.textContent = `Open ${deskLabel}`;
-      if (toolsMenu) toolsMenu.setAttribute('aria-label', `${deskLabel} sections`);
-      if (seasonLink) seasonLink.hidden = !isOwnerOrComm;
-      if (requestsLink) requestsLink.hidden = !isOwnerOrComm;
-      if (commsLink) commsLink.hidden = !isOwner;
-      if (blurb) {
-        blurb.textContent = isOwner
-          ? 'Owner desk — Active Accounts, Requests, Communications, Sync, Broadcast, and Season.'
-          : isOwnerOrComm
-            ? 'Commissioner desk — Active Accounts, Requests, Sync, Broadcast, and Season.'
-            : 'Conference admin desk — Sync, invites, owner email, and Broadcast.';
-      }
-      const accountsLink = document.getElementById('profile-tools-accounts');
-      if (accountsLink) accountsLink.hidden = !isOwnerOrComm;
+      renderUserHome(user);
       const urls = portalUrls();
       const accountBody = document.getElementById('account-body');
       accountBody.innerHTML = `
@@ -972,14 +940,60 @@
             </div>
           </div>
         </div>
-        <div class="portal-links" aria-label="Shareable portal links">
-          <h3>Portal links</h3>
+        ${staff ? `<details class="portal-links" aria-label="Shareable portal links">
+          <summary>Shareable links</summary>
           ${portalRowHtml('Portal URL', urls.portal)}
           ${portalRowHtml('Customer URL', urls.customer)}
           ${portalRowHtml('Mobile App', urls.app)}
-          <p class="profile-note">Portal URL opens League HQ. Customer URL is the general sign-in page.</p>
-        </div>`;
+        </details>` : ''}`;
       bindPortalCopy(accountBody);
+    }
+
+    function showUserPage(page) {
+      const key = ['account', 'look', 'team'].includes(page) ? page : 'home';
+      const home = document.getElementById('user-home');
+      const account = document.getElementById('page-account');
+      const look = document.getElementById('page-look');
+      const team = document.getElementById('page-team');
+      const back = document.getElementById('user-back');
+      const title = document.getElementById('user-title');
+      if (home) home.hidden = key !== 'home';
+      if (account) account.hidden = key !== 'account';
+      if (look) look.hidden = key !== 'look';
+      if (team) team.hidden = key !== 'team';
+      if (back) back.hidden = key === 'home';
+      if (title) {
+        title.textContent = key === 'home' ? 'Your pages' : (key === 'look' ? 'Look' : (key === 'team' ? 'Team' : 'Account'));
+      }
+      document.body.dataset.userPage = key;
+      if (key === 'home') window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    }
+
+    function applyUserHash() {
+      const h = String(location.hash || '#home').replace(/^#/, '');
+      if (h === 'inbox') {
+        window.location.replace('/inbox.html');
+        return;
+      }
+      if (h === 'tools' || h === 'tools-card' || h === 'profile-admin' || h === 'admin') {
+        window.location.replace('/dashboard.html');
+        return;
+      }
+      if (!h || h === 'home') {
+        showUserPage('home');
+        return;
+      }
+      if (h === 'look' || h === 'logo' || h === 'appearance') {
+        showUserPage('look');
+      } else if (h === 'team' || h === 'franchise' || h === 'career' || h === 'keeper') {
+        showUserPage('team');
+      } else {
+        showUserPage('account');
+      }
+      const el = document.getElementById(h);
+      if (el && (h === 'logo' || h === 'password' || h === 'appearance' || h === 'franchise' || h === 'career' || h === 'keeper')) {
+        window.setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+      }
     }
 
     function renderFranchise(data) {
@@ -992,7 +1006,7 @@
 
       if (!claim) {
         document.getElementById('franchise-body').innerHTML = `
-          <p class="profile-note">No franchise is linked to your account yet. Your commissioner assigns teams from League Tools. After you are assigned, your avatar attaches to that franchise across the site.</p>`;
+          <p class="profile-note">No franchise is linked to your account yet. After you are assigned, your avatar attaches to that franchise across the site.</p>`;
         return;
       }
 
@@ -1528,37 +1542,14 @@
         window.location.replace('/enter?next=' + encodeURIComponent('/profile.html'));
         return;
       }
-      const staff = isStaffRole(user);
       renderAppearance(user.theme || 'night');
       wireAppearance();
-      const inboxMount = document.getElementById('profile-inbox-list');
-      window.GridIronInbox?.wireInbox(inboxMount, {
-        onChange: () => window.GridIronNav?.refreshInboxBadge?.()
-      });
-      document.getElementById('profile-inbox-mark-all')?.addEventListener('click', async () => {
-        await fetch('/api/inbox/read-all', { method: 'POST' });
-        await window.GridIronInbox?.renderInbox(inboxMount);
-        window.GridIronNav?.refreshInboxBadge?.();
-      });
+      renderUserHome(user);
       try {
-        await Promise.all([
-          loadProfile(),
-          window.GridIronInbox?.renderInbox(inboxMount)
-        ]);
+        await loadProfile();
         wirePasswordForm();
-        if (location.hash === '#logo') {
-          document.getElementById('logo')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (location.hash === '#franchise' || location.hash === '#career' || location.hash === '#keeper' || location.hash === '#account' || location.hash === '#appearance' || location.hash === '#inbox') {
-          document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' });
-        } else if (location.hash === '#password') {
-          document.getElementById('password')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (location.hash === '#tools' || location.hash === '#tools-card' || location.hash === '#profile-admin' || location.hash === '#admin') {
-          if (staff) {
-            document.getElementById('tools')?.scrollIntoView({ behavior: 'smooth' });
-          } else {
-            window.location.replace('/profile.html');
-          }
-        }
+        applyUserHash();
+        window.addEventListener('hashchange', applyUserHash);
       } catch (err) {
         const msg = `<div class="msg"><strong>Error</strong>${escP(err.message)}</div>`;
         document.getElementById('franchise-body').innerHTML = msg;

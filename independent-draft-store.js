@@ -1,17 +1,20 @@
 /**
  * Official live draft for independent leagues only.
+ * Owner schedules a time → lobby opens with live franchise slots → managers join → picks start.
  * Reuses mock-draft clock/CPU/snake mechanics; rooms are league-scoped and never TTL-pruned.
- * GridIron 24 / ESPN drafts are not touched here.
  */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const MockDraftCpu = require('./public/js/mock-draft-cpu');
 const leagues = require('./leagues-store');
+const keepers = require('./independent-keepers');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'independent-draft-rooms.json');
 const CPU_PICK_GAP_MS = 2500;
+const HUMAN_PICK_GAP_MS = CPU_PICK_GAP_MS + 900;
+const JOIN_LOBBY_SECONDS = 240;
 
 function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -51,15 +54,18 @@ function snakeTeamIndex(overallZeroBased, teamCount) {
 
 function currentSlot(room) {
   const total = room.teamCount * room.rounds;
-  const i = room.picks.length;
-  if (i >= total) return null;
-  const teamIndex = snakeTeamIndex(i, room.teamCount);
-  return {
-    overall: i + 1,
-    round: Math.floor(i / room.teamCount) + 1,
-    pick: (i % room.teamCount) + 1,
-    teamIndex
-  };
+  const taken = new Set((room.picks || []).map((p) => Number(p.overall)));
+  for (let i = 0; i < total; i += 1) {
+    if (taken.has(i + 1)) continue;
+    const teamIndex = snakeTeamIndex(i, room.teamCount);
+    return {
+      overall: i + 1,
+      round: Math.floor(i / room.teamCount) + 1,
+      pick: (i % room.teamCount) + 1,
+      teamIndex
+    };
+  }
+  return null;
 }
 
 function playerKey(id) {
@@ -67,11 +73,15 @@ function playerKey(id) {
 }
 
 function takenIds(room) {
-  return new Set(
+  const set = new Set(
     (room.picks || [])
       .map((p) => playerKey(p.playerId))
       .filter(Boolean)
   );
+  for (const id of room.reservedPlayerIds || []) {
+    if (id) set.add(String(id));
+  }
+  return set;
 }
 
 function startersFromSettings(settings) {
@@ -131,6 +141,8 @@ function applyPick(room, player, { cpu = false, timeout = false } = {}) {
     playerName: player.name || player.fullName || `Player ${id}`,
     position: player.position || '',
     nflTeam: player.team || player.nflTeam || '',
+    espnId: player.espnId || null,
+    gsisId: player.gsisId || null,
     headshot: player.headshot || null,
     teamLogo: player.teamLogo || null,
     byeWeek: player.byeWeek ?? null,
@@ -139,7 +151,7 @@ function applyPick(room, player, { cpu = false, timeout = false } = {}) {
     pickedAt: new Date().toISOString()
   });
   room.updatedAt = new Date().toISOString();
-  if (room.picks.length >= room.teamCount * room.rounds) {
+  if (!currentSlot(room)) {
     room.status = 'done';
     room.pickDeadline = null;
     room.cpuReadyAt = null;
@@ -153,21 +165,15 @@ function advanceRoom(room, pool, settings) {
   let guard = 0;
   const max = room.teamCount * room.rounds + 4;
 
-  function armNextClock() {
+  function armNextClock({ afterHuman = false } = {}) {
     const next = currentSlot(room);
     if (!next) {
       room.cpuReadyAt = null;
       room.pickDeadline = null;
       return;
     }
-    const nextHuman = Boolean(room.seats[next.teamIndex]?.userId);
-    if (nextHuman) {
-      room.cpuReadyAt = null;
-      room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
-    } else {
-      room.pickDeadline = null;
-      room.cpuReadyAt = new Date(Date.now() + CPU_PICK_GAP_MS).toISOString();
-    }
+    room.pickDeadline = null;
+    room.cpuReadyAt = new Date(Date.now() + (afterHuman ? HUMAN_PICK_GAP_MS : CPU_PICK_GAP_MS)).toISOString();
   }
 
   while (guard < max) {
@@ -192,6 +198,8 @@ function advanceRoom(room, pool, settings) {
       changed = true;
       break;
     }
+    const revealAt = room.cpuReadyAt ? Date.parse(room.cpuReadyAt) : 0;
+    if (Number.isFinite(revealAt) && Date.now() < revealAt) break;
     // Claimed seat: manager can pick until the clock expires; then CPU autopicks.
     const deadline = room.pickDeadline ? Date.parse(room.pickDeadline) : NaN;
     if (Number.isFinite(deadline) && Date.now() >= deadline) {
@@ -214,11 +222,12 @@ function advanceRoom(room, pool, settings) {
 
 function publicRoom(room, viewerId = null) {
   if (!room) return null;
-  const slot = currentSlot(room);
+  const slot = room.status === 'live' ? currentSlot(room) : null;
   const onClock = slot ? room.seats[slot.teamIndex] : null;
   const mySeat = viewerId
-    ? room.seats.find((s) => s.userId === viewerId)
+    ? room.seats.find((s) => s.userId === viewerId || s.managerUserId === viewerId)
     : null;
+  const lobbyMs = room.lobbyEndsAt ? Date.parse(room.lobbyEndsAt) - Date.now() : null;
   return {
     id: room.id,
     mode: 'official',
@@ -230,16 +239,38 @@ function publicRoom(room, viewerId = null) {
     pickSeconds: room.pickSeconds,
     teamNames: room.teamNames.slice(),
     franchiseIds: room.franchiseIds.slice(),
-    seats: room.seats.map((s) => ({
-      index: s.index,
-      franchiseId: s.franchiseId,
-      userId: s.userId || null,
-      userName: s.userName || null,
-      isCpu: Boolean(s.isCpu || !s.userId),
-      isMe: Boolean(viewerId && s.userId && s.userId === viewerId)
-    })),
+    seats: room.seats.map((s) => {
+      const assigned = Boolean(s.managerUserId);
+      const present = Boolean(s.present && s.userId);
+      const canJoin = Boolean(
+        viewerId
+        && !present
+        && (room.status === 'lobby' || room.status === 'live')
+        && (!assigned || s.managerUserId === viewerId)
+        && !(room.seats || []).some((other) => other !== s && other.userId === viewerId)
+      );
+      return {
+        index: s.index,
+        franchiseId: s.franchiseId,
+        userId: s.userId || null,
+        userName: s.userName || s.managerName || null,
+        managerUserId: s.managerUserId || null,
+        managerName: s.managerName || null,
+        present,
+        open: !assigned,
+        canJoin,
+        isCpu: Boolean(s.isCpu || !s.userId),
+        isMe: Boolean(viewerId && (s.userId === viewerId || s.managerUserId === viewerId))
+      };
+    }),
     picks: room.picks.slice(),
+    messages: Array.isArray(room.messages) ? room.messages.slice(-80) : [],
     pickDeadline: room.pickDeadline || null,
+    cpuReadyAt: room.cpuReadyAt || null,
+    lobbyEndsAt: room.lobbyEndsAt || null,
+    lobbySecondsRemaining: Number.isFinite(lobbyMs)
+      ? Math.max(0, Math.ceil(lobbyMs / 1000))
+      : null,
     secondsRemaining: (() => {
       if (!room.pickDeadline) return null;
       const ms = Date.parse(room.pickDeadline) - Date.now();
@@ -257,11 +288,11 @@ function publicRoom(room, viewerId = null) {
           isMe: Boolean(viewerId && onClock.userId === viewerId),
           overall: slot.overall,
           round: slot.round,
-          // Manager can pick while connected; CPU fills only after the clock hits zero.
           awaitsHuman: Boolean(onClock.userId)
         }
       : null,
     mySeatIndex: mySeat ? mySeat.index : null,
+    joinedCount: (room.seats || []).filter((s) => s.present && s.userId).length,
     createdAt: room.createdAt,
     updatedAt: room.updatedAt
   };
@@ -334,31 +365,68 @@ function buildRoomFromFranchises({ league, franchises, conferenceKey = null }) {
     };
   });
   const now = new Date().toISOString();
-  const firstHuman = Boolean(seats[0]?.userId);
-  // Human managers get a full pick clock (they pick while connected; CPU autopicks only when it expires).
-  // Unclaimed CPU seats use a short gap between picks.
-  return {
+  const room = {
     id: crypto.randomUUID(),
     mode: 'official',
     leagueId: league.id,
     conferenceKey,
-    status: 'live',
+    status: 'lobby',
     teamCount: ordered.length,
     rounds: settings.draftRounds,
     pickSeconds: settings.draftSecondsPerPick,
     teamNames: ordered.map((f) => f.name),
     franchiseIds: ordered.map((f) => f.id),
-    seats,
+    seats: seats.map((s) => ({
+      ...s,
+      present: false,
+      managerUserId: s.userId || null,
+      managerName: s.userName || null,
+      userId: null,
+      userName: s.userName || null,
+      isCpu: true
+    })),
     picks: [],
-    pickDeadline: firstHuman
-      ? new Date(Date.now() + settings.draftSecondsPerPick * 1000).toISOString()
-      : null,
-    cpuReadyAt: firstHuman
-      ? null
-      : new Date(Date.now() + CPU_PICK_GAP_MS).toISOString(),
+    messages: [],
+    pickDeadline: null,
+    cpuReadyAt: null,
+    lobbyEndsAt: new Date(Date.now() + JOIN_LOBBY_SECONDS * 1000).toISOString(),
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
+    reservedPlayerIds: [...keepers.rosteredPlayerIds(league)]
   };
+  keepers.seedKeeperPicks(room, league);
+  return room;
+}
+
+function beginLivePicks(room) {
+  if (!room || room.status !== 'lobby') return false;
+  room.status = 'live';
+  room.lobbyEndsAt = null;
+  for (const seat of room.seats || []) {
+    if (seat.present && seat.userId) {
+      seat.isCpu = false;
+    } else {
+      seat.present = false;
+      seat.userId = null;
+      seat.isCpu = true;
+    }
+  }
+  const first = currentSlot(room);
+  if (!first) {
+    room.status = 'done';
+    room.pickDeadline = null;
+    room.cpuReadyAt = null;
+    room.updatedAt = new Date().toISOString();
+    return true;
+  } else if (room.seats[first.teamIndex]?.userId) {
+    room.cpuReadyAt = null;
+    room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
+  } else {
+    room.pickDeadline = null;
+    room.cpuReadyAt = new Date(Date.now() + CPU_PICK_GAP_MS).toISOString();
+  }
+  room.updatedAt = new Date().toISOString();
+  return true;
 }
 
 function managersReady(league) {
@@ -375,8 +443,11 @@ function startOfficialDraft(leagueId, { force = false } = {}) {
   }
   const draft = leagues.defaultIndependentDraft(league.draft || {});
   if (draft.status === 'complete') throw err(400, 'Draft already complete');
-  if (draft.status === 'live' && draft.roomIds?.length) {
-    return { league: leagues.publicLeague(league), rooms: draft.roomIds.map(getRoom).filter(Boolean) };
+  if (draft.roomIds?.length) {
+    const existing = draft.roomIds.map(getRoom).filter(Boolean);
+        if (existing.length) {
+          return { league: leagues.publicLeague(leagues.findById(leagueId)), rooms: existing };
+        }
   }
   const settings = leagues.defaultIndependentSettings(league.settings || {});
   if (!force) {
@@ -441,6 +512,8 @@ function finalizeIfDone(leagueId) {
       if (!fid) continue;
       const row = {
         playerId: pick.playerId,
+        espnId: pick.espnId || null,
+        gsisId: pick.gsisId || null,
         name: pick.playerName,
         position: pick.position,
         nflTeam: pick.nflTeam,
@@ -464,6 +537,7 @@ function tickLeague(leagueId, pool, viewerId = null) {
   const league = leagues.findById(leagueId);
   if (!league || league.platform !== 'independent') return null;
   const settings = leagues.defaultIndependentSettings(league.settings || {});
+  pool = keepers.filterDraftPool(league, pool);
   let draft = leagues.defaultIndependentDraft(league.draft || {});
 
   if (draft.status === 'scheduled' || !draft.status) {
@@ -477,18 +551,18 @@ function tickLeague(leagueId, pool, viewerId = null) {
     }
   }
 
-  if (draft.status !== 'live') {
-    return {
-      league: leagues.publicLeague(leagues.findById(leagueId)),
-      rooms: (draft.roomIds || []).map(getRoom).filter(Boolean).map((r) => publicRoom(r, viewerId))
-    };
-  }
-
   const store = readStore();
   let changed = false;
   for (const room of store.rooms) {
     if (room.leagueId !== leagueId) continue;
-    if (advanceRoom(room, pool, settings)) changed = true;
+    if (room.status === 'lobby') {
+      const ends = room.lobbyEndsAt ? Date.parse(room.lobbyEndsAt) : 0;
+      if (Number.isFinite(ends) && Date.now() >= ends) {
+        if (beginLivePicks(room)) changed = true;
+      }
+      continue;
+    }
+    if (room.status === 'live' && advanceRoom(room, pool, settings)) changed = true;
   }
   if (changed) writeStore(store);
 
@@ -532,21 +606,22 @@ function humanPick(leagueId, roomId, user, playerId, pool) {
   if (!seat?.userId || (seat.userId !== user.id && !isOwner)) {
     throw err(403, 'It is not your turn to pick');
   }
+  const readyAt = room.cpuReadyAt ? Date.parse(room.cpuReadyAt) : 0;
+  if (Number.isFinite(readyAt) && Date.now() < readyAt) {
+    throw err(400, 'Wait for the next pick');
+  }
   const id = playerKey(playerId);
   const player = (pool || []).find((p) => playerKey(p.id) === id);
   if (!player) throw err(404, 'Player not found in the pool');
   applyPick(room, player, { cpu: false });
   const settings = leagues.defaultIndependentSettings(league.settings || {});
   const next = currentSlot(room);
-  if (next) {
-    const nextHuman = Boolean(room.seats[next.teamIndex]?.userId);
-    if (nextHuman) {
-      room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
-      room.cpuReadyAt = null;
-    } else {
-      room.pickDeadline = null;
-      room.cpuReadyAt = new Date(Date.now() + CPU_PICK_GAP_MS).toISOString();
-    }
+  if (!next) {
+    room.pickDeadline = null;
+    room.cpuReadyAt = null;
+  } else {
+    room.pickDeadline = null;
+    room.cpuReadyAt = new Date(Date.now() + HUMAN_PICK_GAP_MS).toISOString();
   }
   advanceRoom(room, pool, settings);
   saveRoom(room);
@@ -558,8 +633,8 @@ function claimSeat(leagueId, franchiseId, user) {
   const league = leagues.findById(leagueId);
   if (!league || league.platform !== 'independent') throw err(400, 'Independent league required');
   const draft = leagues.defaultIndependentDraft(league.draft || {});
-  if (draft.status === 'live' || draft.status === 'complete') {
-    throw err(400, 'Cannot claim a franchise after the draft starts');
+  if (draft.status === 'complete') {
+    throw err(400, 'Cannot claim a franchise after the draft is complete');
   }
   const fid = String(franchiseId || '');
   const franchise = (league.franchises || []).find((f) => String(f.id) === fid);
@@ -584,12 +659,113 @@ function claimSeat(leagueId, franchiseId, user) {
   return leagues.updateIndependentFranchises(leagueId, nextFranchises);
 }
 
+function joinDraftSeat(leagueId, roomId, user, seatIndex) {
+  if (!user?.id) throw err(401, 'Sign in required');
+  const league = leagues.findById(leagueId);
+  if (!league || league.platform !== 'independent') throw err(400, 'Independent league required');
+  const room = getRoom(roomId);
+  if (!room || room.leagueId !== leagueId) throw err(404, 'Draft room not found');
+  if (room.status !== 'lobby' && room.status !== 'live') {
+    throw err(400, 'This draft is not taking seats');
+  }
+  const idx = Number(seatIndex);
+  if (!Number.isFinite(idx) || idx < 0 || idx >= room.teamCount) {
+    throw err(400, 'Choose a slot');
+  }
+  const seat = room.seats[idx];
+  if (!seat) throw err(400, 'Choose a slot');
+  const fid = String(seat.franchiseId || '');
+  const franchise = (league.franchises || []).find((f) => String(f.id) === fid);
+  if (!franchise) throw err(404, 'Franchise not found');
+  if (franchise.managerUserId && franchise.managerUserId !== user.id) {
+    throw err(403, 'That franchise already has a manager');
+  }
+  if (seat.present && seat.userId && seat.userId !== user.id) {
+    throw err(409, 'That slot is already live');
+  }
+  if (!franchise.managerUserId) {
+    claimSeat(leagueId, fid, user);
+  }
+  for (const other of room.seats) {
+    if (other === seat) continue;
+    if (other.userId === user.id) {
+      other.present = false;
+      other.userId = null;
+      other.isCpu = true;
+    }
+  }
+  const name = user.name || user.loginName || 'Manager';
+  seat.present = true;
+  seat.userId = user.id;
+  seat.userName = name;
+  seat.managerUserId = user.id;
+  seat.managerName = name;
+  seat.isCpu = false;
+  if (room.status === 'live') {
+    const slot = currentSlot(room);
+    if (slot && slot.teamIndex === idx) {
+      room.cpuReadyAt = null;
+      room.pickDeadline = new Date(Date.now() + room.pickSeconds * 1000).toISOString();
+    }
+  }
+  room.updatedAt = new Date().toISOString();
+  saveRoom(room);
+  return publicRoom(getRoom(roomId), user.id);
+}
+
+function skipJoinWindow(leagueId, roomId, user) {
+  const league = leagues.findById(leagueId);
+  if (!league || league.platform !== 'independent') throw err(400, 'Independent league required');
+  if (!leagues.canManageIndependentLeague(user, league)) {
+    throw err(403, 'Only the league owner can skip the join window');
+  }
+  const room = getRoom(roomId);
+  if (!room || room.leagueId !== leagueId) throw err(404, 'Draft room not found');
+  if (room.status !== 'lobby') throw err(400, 'Join window is not open');
+  beginLivePicks(room);
+  saveRoom(room);
+  return publicRoom(getRoom(roomId), user.id);
+}
+
+function addChatMessage({ leagueId, roomId, user, body }) {
+  if (!user?.id) throw err(401, 'Sign in required');
+  const text = String(body || '').trim().replace(/\s+/g, ' ');
+  if (!text) throw err(400, 'Message required');
+  if (text.length > 240) throw err(400, 'Keep messages under 240 characters');
+  const league = leagues.findById(leagueId);
+  if (!league || league.platform !== 'independent') throw err(400, 'Independent league required');
+  const room = getRoom(roomId);
+  if (!room || room.leagueId !== leagueId) throw err(404, 'Draft room not found');
+  if (room.status !== 'live' && room.status !== 'done' && room.status !== 'lobby') {
+    throw err(400, 'Draft chat is closed');
+  }
+  const seated = (room.seats || []).some((s) => s.userId === user.id || s.managerUserId === user.id);
+  const isOwner = leagues.canManageIndependentLeague(user, league);
+  if (!seated && !isOwner) throw err(403, 'Claim a franchise to chat');
+  if (!Array.isArray(room.messages)) room.messages = [];
+  const msg = {
+    id: crypto.randomUUID(),
+    body: text,
+    authorId: user.id,
+    authorName: user.name || user.loginName || 'Member',
+    createdAt: new Date().toISOString()
+  };
+  room.messages.push(msg);
+  if (room.messages.length > 120) room.messages = room.messages.slice(-120);
+  room.updatedAt = msg.createdAt;
+  saveRoom(room);
+  return { room: publicRoom(room, user.id), message: msg };
+}
+
 module.exports = {
   startOfficialDraft,
   tickLeague,
   tickAll,
   humanPick,
   claimSeat,
+  joinDraftSeat,
+  skipJoinWindow,
+  addChatMessage,
   getRoom,
   publicRoom,
   roomsForLeague,

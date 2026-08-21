@@ -65,7 +65,8 @@
       { href: `${base}/draft.html`, label: 'Draft' },
       { href: `${base}/manage.html`, label: 'Manage' },
       { href: `${base}/settings.html`, label: 'Settings' },
-      { href: `${base}/transactions.html`, label: 'Transactions' }
+      { href: `${base}/transactions.html`, label: 'Transactions' },
+      { href: `${base}/keepers.html`, label: 'Keepers' }
     ];
   }
 
@@ -616,6 +617,7 @@
 
   function roleLabel(role, conference, user = null) {
     if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner';
+    if (user?.leagueOwner) return 'League Owner';
     if (user?.loungeOnly) return 'Social';
     if (role === 'commissioner') return 'Commissioner';
     if (role === 'conference_admin') {
@@ -623,6 +625,52 @@
       return 'Conference Admin';
     }
     return 'Member';
+  }
+
+  function ownerDeskHref(user) {
+    if (!user) return '/owner.html';
+    if (user.leagueOwner && leagueScope?.platform === 'independent' && !user.siteOwner) {
+      return leagueScope.ownerDashboardPath || leagueScope.settingsPath || leagueScope.homePath || '/my-league.html';
+    }
+    return '/owner.html';
+  }
+
+  function toolsMenuLinks(user) {
+    if (!user || user.loungeOnly) return '';
+    const owner = Boolean(user.siteOwner || user.canSwitchLeagues || user.leagueOwner || user.role === 'commissioner');
+    const admin = user.role === 'conference_admin' && !owner;
+    const items = [];
+    if (owner) {
+      items.push(`<a class="user-menu-action" href="${esc(ownerDeskHref(user))}" role="menuitem">Owner tools</a>`);
+    } else if (admin) {
+      items.push(`<a class="user-menu-action" href="/admin.html" role="menuitem">Admin tools</a>`);
+    }
+    if (user.siteOwner) {
+      items.push(`<a class="user-menu-action" href="/site.html" role="menuitem">Overall tools</a>`);
+    }
+    items.push(`<a class="user-menu-action" href="/profile.html" role="menuitem">User Dashboard</a>`);
+    return `<div class="user-menu-section">
+          <span class="user-menu-label">Tools</span>
+          ${items.join('')}
+        </div>`;
+  }
+
+  function leagueMenuLinks(leagues) {
+    const list = Array.isArray(leagues) ? leagues : [];
+    if (!list.length) return '';
+    const items = list.map((row) => {
+      const current = Boolean(row.current);
+      const logo = row.logo
+        ? `<img src="${esc(row.logo)}" alt="" width="22" height="22" />`
+        : '';
+      return `<button type="button" class="user-menu-action user-menu-league${current ? ' is-current' : ''}" role="menuitem" data-switch-league="${esc(row.id)}" data-kind="${esc(row.kind)}" data-href="${esc(row.homePath)}"${current ? ' aria-current="true"' : ''}>
+            ${logo}<span>${esc(row.label)}${current ? ' · On' : ''}</span>
+          </button>`;
+    }).join('');
+    return `<div class="user-menu-section">
+          <span class="user-menu-label">Leagues</span>
+          ${items}
+        </div>`;
   }
 
   function hideHeaderToolsBtn() {
@@ -668,6 +716,15 @@
     };
   }
 
+  function headerTeamName(user, myTeam) {
+    const live = String(myTeam?.team?.name || myTeam?.claim?.teamName || '').trim();
+    if (live) return live;
+    const saved = String(authState?.franchise?.name || '').trim();
+    if (saved) return saved;
+    if (myTeam?.claim || authState?.franchise) return 'My Team';
+    return 'Unassigned';
+  }
+
   function renderUserMenu(user, myTeam = null) {
     const mount = ensureUserMenuMount();
     if (!mount) return;
@@ -687,7 +744,7 @@
     mount.classList.remove('is-open');
     const teamName = user.loungeOnly
       ? 'Members Lounge'
-      : (myTeam?.team?.name || myTeam?.claim?.teamName || 'Unassigned');
+      : headerTeamName(user, myTeam);
     const ownerName = user.name || 'Owner';
     const access = roleLabel(user.role, user.conference, user);
     const onProfile = active === 'profile';
@@ -701,9 +758,11 @@
 
     mount.innerHTML = `
       <button type="button" class="${chipClass}" title="${esc(chipTitle)}" aria-haspopup="menu" aria-expanded="false" id="user-menu-toggle">
-        <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
         <span class="user-chip-text">
-          <span class="user-chip-team">${esc(teamName)}</span>
+          <span class="user-chip-team-row">
+            <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
+            <span class="user-chip-team">${esc(teamName)}</span>
+          </span>
           <span class="user-chip-owner">${esc(ownerName)}</span>
           <span class="user-chip-access">${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
         </span>
@@ -721,16 +780,12 @@
           : `<a class="user-menu-head${needsLogo ? ' needs-logo' : ''}" href="${profileHref}" role="menuitem">
               <span class="user-menu-preview">${avatarHtml(myTeam, user)}</span>
               <span>
-                <span class="user-menu-name">${esc(ownerName)}</span>
-                <span class="user-menu-role">${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
+                <span class="user-menu-name">${esc(teamName)}</span>
+                <span class="user-menu-role">${esc(ownerName)} · ${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
               </span>
             </a>`}
-        ${!user.loungeOnly
-          ? `<div class="user-menu-section">
-          <span class="user-menu-label">Account</span>
-          <a class="user-menu-action" href="/profile.html" role="menuitem">Settings</a>
-        </div>`
-          : ''}
+        ${leagueMenuLinks(authState?.leagues)}
+        ${toolsMenuLinks(user)}
         <div class="user-menu-section">
           <span class="user-menu-label">Appearance</span>
           <label class="theme-switch user-menu-theme${isDay ? ' is-day' : ''}" for="user-menu-theme-switch">
@@ -806,6 +861,18 @@
       }
     });
 
+    mount.querySelectorAll('[data-switch-league]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        switchLeague({
+          id: btn.getAttribute('data-switch-league'),
+          kind: btn.getAttribute('data-kind'),
+          homePath: btn.getAttribute('data-href')
+        });
+      });
+    });
+
     const logoutBtn = mount.querySelector('.user-menu-logout');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async (e) => {
@@ -869,53 +936,40 @@
     return el;
   }
 
-  async function switchLeague(league) {
+  async function switchLeague(item) {
+    const kind = typeof item === 'string' ? item : String(item?.kind || '');
+    const href = (typeof item === 'object' && item?.homePath)
+      || (kind === 'aaa' ? '/aaa.html' : '/home.html');
     try {
-      const res = await fetch('/api/preferred-league', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ league })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not switch league');
-      window.location.href = data.homePath || (league === 'aaa' ? '/aaa.html' : '/home.html');
+      if (kind === 'aaa' || kind === 'gridiron') {
+        const res = await fetch('/api/preferred-league', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ league: kind === 'aaa' ? 'aaa' : 'gridiron' })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          window.location.href = data.homePath || href;
+          return;
+        }
+        if (res.status !== 403) {
+          throw new Error(data.error || 'Could not switch league');
+        }
+      }
+      window.location.href = href;
     } catch (err) {
       console.error(err);
       window.alert(err.message || 'Could not switch league');
     }
   }
 
-  function renderLeagueSwitcher(user, scope) {
-    // Remove any legacy public AAA crest links — only the owner switcher is allowed.
+  function renderLeagueSwitcher() {
     document.querySelectorAll('a.aaa-portal').forEach((node) => node.remove());
-    const el = ensureLeagueSwitchMount();
+    const el = document.getElementById('league-switch');
     if (!el) return;
-    const canSwitch = Boolean(user?.siteOwner || user?.canSwitchLeagues || scope?.canSwitchLeagues);
-    if (!canSwitch) {
-      el.hidden = true;
-      el.onclick = null;
-      el.innerHTML = '';
-      return;
-    }
-    const onAaa = scope?.scope === 'aaa' || scope?.preferredLeague === 'aaa';
-    el.hidden = false;
-    if (onAaa) {
-      el.title = 'Switch to GridIron 24';
-      el.setAttribute('aria-label', 'Switch to GridIron 24');
-      el.innerHTML = `<img src="/assets/gridiron24-league-sm.png?v=8" alt="" width="44" height="44" decoding="async" />`;
-      el.onclick = (e) => {
-        e.preventDefault();
-        switchLeague('gridiron');
-      };
-    } else {
-      el.title = 'Switch to AAA League';
-      el.setAttribute('aria-label', 'Switch to AAA League');
-      el.innerHTML = `<img src="/assets/aaa-league-sm.png?v=7" alt="" width="44" height="44" decoding="async" />`;
-      el.onclick = (e) => {
-        e.preventDefault();
-        switchLeague('aaa');
-      };
-    }
+    el.hidden = true;
+    el.onclick = null;
+    el.innerHTML = '';
   }
 
   function closeUserMenuOnOutside(e) {
@@ -999,7 +1053,23 @@
     }
   }
 
-  let authState = { user: null, authenticated: false, myTeam: null, leagueScope };
+  let authState = { user: null, authenticated: false, myTeam: null, leagueScope, leagues: [] };
+
+  function markCurrentLeagues() {
+    const list = Array.isArray(authState?.leagues) ? authState.leagues : [];
+    const independent = leagueScope?.platform === 'independent' || leagueScope?.scope === 'independent';
+    for (const row of list) {
+      if (row.kind === 'independent') {
+        row.current = Boolean(
+          independent && (leagueScope.leagueId === row.id || leagueScope.slug === row.slug)
+        );
+      } else if (row.kind === 'aaa') {
+        row.current = !independent && leagueScope?.scope === 'aaa';
+      } else {
+        row.current = !independent && leagueScope?.scope === 'gridiron';
+      }
+    }
+  }
 
   function applyLeagueScope(next) {
     if (!next || typeof next !== 'object') return;
@@ -1018,10 +1088,15 @@
       platform: next.platform || null,
       status: next.status || null,
       canSwitchLeagues: Boolean(next.canSwitchLeagues),
-      preferredLeague: next.preferredLeague || null
+      preferredLeague: next.preferredLeague || null,
+      settingsPath: next.settingsPath || null,
+      ownerDashboardPath: next.ownerDashboardPath || null
     };
     if (leagueScope.homePath) homePath = leagueScope.homePath;
+    if (authState) authState.leagueScope = leagueScope;
+    markCurrentLeagues();
     renderNav(authState?.user || null);
+    if (authState?.user) renderUserMenu(authState.user, authState.myTeam);
   }
 
   async function refreshAuth() {
@@ -1064,16 +1139,21 @@
         }
       }
       if (data.homePath) homePath = data.homePath;
+      const franchise = data.franchise || null;
       authState = {
         user,
         authenticated: Boolean(user),
         myTeam: null,
+        franchise,
         homePath,
         leagueScope,
+        leagues: Array.isArray(data.leagues) ? data.leagues : [],
         loungeOpen: Boolean(data.loungeOpen),
         loungeAccess: Boolean(data.loungeAccess)
       };
+      markCurrentLeagues();
       renderNav(user);
+      renderUserMenu(user, null);
       let myTeam = null;
       if (user && !user.loungeOnly) {
         try {
@@ -1091,14 +1171,19 @@
         user,
         authenticated: Boolean(user),
         myTeam,
+        franchise: myTeam?.claim
+          ? { name: myTeam.team?.name || myTeam.claim.teamName || franchise?.name || null, claim: myTeam.claim, source: 'claim' }
+          : franchise,
         homePath,
         leagueScope,
+        leagues: Array.isArray(data.leagues) ? data.leagues : (authState.leagues || []),
         loungeOpen: Boolean(data.loungeOpen),
         loungeAccess: Boolean(data.loungeAccess)
       };
+      markCurrentLeagues();
       syncThemeFromUser(user);
       renderUserMenu(user, myTeam);
-      renderLeagueSwitcher(user, leagueScope);
+      renderLeagueSwitcher();
       renderUiModeSwitch();
       if (user && !user.loungeOnly) {
         hideHeaderToolsBtn();
@@ -1125,9 +1210,9 @@
       document.dispatchEvent(new CustomEvent('gi:auth', { detail: authState }));
       return authState;
     } catch {
-      authState = { user: null, authenticated: false, myTeam: null, homePath, leagueScope };
+      authState = { user: null, authenticated: false, myTeam: null, homePath, leagueScope, leagues: [] };
       renderUserMenu(null);
-      renderLeagueSwitcher(null, leagueScope);
+      renderLeagueSwitcher();
       renderUiModeSwitch();
       renderRuleProposalButton(false);
       hideHeaderToolsBtn();

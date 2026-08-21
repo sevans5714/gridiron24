@@ -1606,11 +1606,11 @@ html[data-theme="day"] .league-switch img {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
   width: 100%;
   max-width: 100%;
   min-height: 2.55rem;
-  padding: 0.1rem 0.35rem 0.1rem 0.45rem;
+  padding: 0.1rem 0.35rem 0.1rem 0.35rem;
   border: 0;
   border-left: 1px solid var(--chip-border);
   border-radius: 0;
@@ -1621,6 +1621,7 @@ html[data-theme="day"] .league-switch img {
   cursor: pointer;
   font: inherit;
   text-align: left;
+  --chip-avatar-size: 2rem;
 }
 
 .user-chip:hover,
@@ -1631,9 +1632,9 @@ html[data-theme="day"] .league-switch img {
 }
 
 .user-chip-avatar {
-  width: 2rem;
-  height: 2rem;
-  flex: 0 0 2rem;
+  width: var(--chip-avatar-size, 2rem);
+  height: var(--chip-avatar-size, 2rem);
+  flex: 0 0 var(--chip-avatar-size, 2rem);
   border-radius: 0;
   overflow: hidden;
   display: grid;
@@ -1655,14 +1656,16 @@ html[data-theme="day"] .league-switch img {
   gap: 0.04rem;
   min-width: 0;
   flex: 1 1 auto;
-  padding: 0.05rem 0.1rem 0.05rem 0.45rem;
-  border-left: 1px solid var(--chip-border);
+  padding: 0.05rem 0.1rem 0.05rem 0;
+  border-left: 0;
 }
 
-.user-chip:hover .user-chip-text,
-.user-chip.is-active .user-chip-text,
-.user-menu.is-open .user-chip-text {
-  border-left-color: var(--chip-border-active);
+.user-chip-team-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .user-chip-caret {
@@ -1721,6 +1724,7 @@ html[data-theme="day"] .user-chip-team {
   text-overflow: ellipsis;
   line-height: 1.2;
   max-width: 100%;
+  padding-left: calc(var(--chip-avatar-size, 2rem) + 0.4rem);
 }
 
 .user-chip-access {
@@ -1736,6 +1740,7 @@ html[data-theme="day"] .user-chip-team {
   line-height: 1.2;
   max-width: 100%;
   opacity: 0.9;
+  padding-left: calc(var(--chip-avatar-size, 2rem) + 0.4rem);
 }
 
 .user-chip.needs-logo .user-chip-access {
@@ -1926,9 +1931,22 @@ a.user-chip {
   font-family: var(--body);
 }
 
-.user-menu-action.is-secondary:hover,
-.user-menu-action.is-secondary:focus-visible {
-  color: var(--text);
+.user-menu-action.is-current {
+  color: #efd782;
+}
+.user-menu-league {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.user-menu-league img {
+  width: 1.35rem;
+  height: 1.35rem;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+html[data-theme="day"] .user-menu-action.is-current {
+  color: #8a6a12;
 }
 
 .user-menu-row {
@@ -3350,9 +3368,10 @@ body.has-install-sheet {
     display: none;
   }
   .user-chip-avatar {
-    width: 1.85rem;
-    height: 1.85rem;
-    flex-basis: 1.85rem;
+    --chip-avatar-size: 1.85rem;
+    width: var(--chip-avatar-size);
+    height: var(--chip-avatar-size);
+    flex-basis: var(--chip-avatar-size);
   }
 
   .topbar-inner {
@@ -3423,16 +3442,23 @@ body.has-install-sheet {
     width: auto;
     max-width: none;
     min-height: 2.5rem;
-    padding-left: 0.55rem;
-    gap: 0.35rem;
+    padding-left: 0.45rem;
+    gap: 0.3rem;
   }
   .user-chip-text {
+    display: flex;
+  }
+  .user-chip-owner,
+  .user-chip-access {
     display: none;
   }
   .user-chip-avatar {
-    width: 2rem;
-    height: 2rem;
-    flex-basis: 2rem;
+    width: 1.7rem;
+    height: 1.7rem;
+    flex-basis: 1.7rem;
+  }
+  .user-chip-team {
+    font-size: 0.82rem;
   }
   .user-chip-caret {
     margin-right: 0.2rem;
@@ -3464,4 +3490,154 @@ body.has-install-sheet {
     width: clamp(2.88rem, 14.4vw, 3.82rem);
     height: auto;
   }
+}
+
+/* Dashboard tool palettes — Owner, Admin, User */
+.desk-palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15.25rem, 1fr));
+  gap: 0.85rem;
+  max-width: 52rem;
+}
+.desk-palette[hidden] { display: none !important; }
+.desk-tile {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  min-height: 8.75rem;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--blue) 12%, transparent), transparent 52%),
+    var(--panel);
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  min-width: 0;
+  box-shadow: var(--logo-lift);
+}
+.desk-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--blue);
+}
+.desk-tile[data-tone="gold"] {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--gold) 14%, transparent), transparent 52%),
+    var(--panel);
+}
+.desk-tile[data-tone="gold"]::before { background: var(--gold); }
+.desk-tile[data-tone="detail"] {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--detail) 14%, transparent), transparent 52%),
+    var(--panel);
+}
+.desk-tile[data-tone="detail"]::before { background: var(--detail); }
+.desk-tile[data-tone="overtime"] {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--overtime) 14%, transparent), transparent 52%),
+    var(--panel);
+}
+.desk-tile[data-tone="overtime"]::before { background: var(--overtime); }
+.desk-tile[data-tone="good"] {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--good) 14%, transparent), transparent 52%),
+    var(--panel);
+}
+.desk-tile[data-tone="good"]::before { background: var(--good); }
+.desk-tile:hover {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--blue) 18%, transparent), transparent 58%),
+    var(--panel);
+  border-color: color-mix(in srgb, var(--blue) 45%, var(--line));
+}
+.desk-tile[data-tone="gold"]:hover {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--gold) 20%, transparent), transparent 58%),
+    var(--panel);
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+}
+.desk-tile[data-tone="detail"]:hover {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--detail) 20%, transparent), transparent 58%),
+    var(--panel);
+  border-color: color-mix(in srgb, var(--detail) 45%, var(--line));
+}
+.desk-tile[data-tone="overtime"]:hover {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--overtime) 20%, transparent), transparent 58%),
+    var(--panel);
+  border-color: color-mix(in srgb, var(--overtime) 45%, var(--line));
+}
+.desk-tile[data-tone="good"]:hover {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--good) 20%, transparent), transparent 58%),
+    var(--panel);
+  border-color: color-mix(in srgb, var(--good) 45%, var(--line));
+}
+.desk-tile-kicker {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--chip-team);
+}
+.desk-tile[data-tone="gold"] .desk-tile-kicker { color: var(--gold); }
+.desk-tile[data-tone="detail"] .desk-tile-kicker { color: var(--detail); }
+.desk-tile[data-tone="overtime"] .desk-tile-kicker { color: var(--overtime); }
+.desk-tile[data-tone="good"] .desk-tile-kicker { color: var(--good); }
+.desk-tile strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-family: var(--page-title);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.desk-tile > span {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.desk-tile-go {
+  margin-top: auto;
+  padding-top: 0.55rem;
+  font-family: var(--display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--chip-team);
+}
+.desk-crosslinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+  margin: 0 0 1.15rem;
+}
+.desk-crosslink {
+  font-family: var(--display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--chip-team);
+  text-decoration: none;
+}
+.desk-crosslink:hover { color: var(--nav-hover); }
+html[data-theme="day"] .desk-tile {
+  box-shadow: 0 2px 10px rgba(20, 24, 31, 0.06);
+}
+@media (max-width: 640px) {
+  .desk-palette { grid-template-columns: 1fr; }
 }

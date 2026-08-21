@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Site Headquarters · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=124" />
+  <link rel="icon" href="/favicon.ico?v=124" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=124" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=124" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=156" />
+  <style>
+    body[data-page="site-hq"] .page-hero {
+      padding-top: 1.5rem;
+      padding-bottom: 1.15rem;
+    }
+    body[data-page="site-hq"] .page-main {
+      padding-top: 0.85rem;
+      padding-bottom: 3rem;
+    }
+    .hq-page[hidden] { display: none !important; }
+    .hq-back {
+      display: inline-block;
+      margin: 0 0 1.25rem;
+      font-family: var(--display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .hq-back:hover { color: var(--nav-hover); }
+    .hq-back[hidden] { display: none !important; }
+    body:not([data-hq-page="home"]) .desk-crosslinks { display: none; }
+    .hq-panel {
+      margin: 0 0 1.35rem;
+      padding: 1.15rem 1.2rem 1.3rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .hq-panel h2 {
+      margin: 0 0 0.85rem;
+      font-family: var(--page-title), Oswald, sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .hq-help {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+      max-width: 42rem;
+    }
+    .hq-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+      gap: 0.65rem;
+      margin: 0 0 1.25rem;
+      max-width: 52rem;
+    }
+    .hq-stat {
+      padding: 0.85rem 0.95rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .hq-stat strong {
+      display: block;
+      font-family: var(--page-title), Oswald, sans-serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .hq-stat span {
+      display: block;
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .hq-pill {
+      display: inline-block;
+      padding: 0.12rem 0.45rem;
+      border: 1px solid var(--line);
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .hq-pill.is-ok { color: var(--status-ok-text, #8fd49a); border-color: currentColor; }
+    .hq-pill.is-warn { color: var(--gold, #efd782); border-color: currentColor; }
+    .hq-pill.is-err { color: var(--status-err-text, #ff8e8e); border-color: currentColor; }
+    .hq-empty { margin: 0; color: var(--muted); }
+    .hq-note { margin: 0.75rem 0 0; font-size: 0.88rem; color: var(--muted); }
+    .hq-note.err { color: var(--status-err-text, #ff8e8e); }
+    .hq-note.ok { color: var(--status-ok-text, #8fd49a); }
+    .tools-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.35rem;
+      height: 1.2rem;
+      padding: 0 0.35rem;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--detail, #ff7a18) 85%, #000);
+      color: #fff;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      vertical-align: 0.12em;
+    }
+  </style>
+</head>
+<body data-page="site-hq" data-hq-page="home">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Loading…</div>
+    </div>
+  </header>
+
+  <section class="page-hero shell">
+    <p class="eyebrow">Platform</p>
+    <h1 id="hq-title">Site Headquarters</h1>
+    <p id="hq-lead">Who’s on the site, every league, pending registrations, and API health. Same login as the rest of GridIron 24 — this desk is only for the site owner.</p>
+    <div class="desk-crosslinks">
+      <a class="desk-crosslink" href="/owner.html">Owner Dashboard →</a>
+      <a class="desk-crosslink" href="/profile.html">User Dashboard →</a>
+    </div>
+  </section>
+
+  <main class="page-main shell">
+    <a class="hq-back" id="hq-back" href="#home" hidden>← Site Headquarters</a>
+    <div id="hq-msg" class="hq-note" hidden></div>
+
+    <div id="hq-home" class="hq-page desk-palette" aria-label="Site headquarters"></div>
+
+    <div id="hq-online" class="hq-page hq-panel" hidden>
+      <h2>Signed on now</h2>
+      <p class="hq-help">Anyone with a live page open in the last 90 seconds. This is presence, not a second password system.</p>
+      <div id="hq-online-body"></div>
+    </div>
+
+    <div id="hq-leagues" class="hq-page hq-panel" hidden>
+      <h2>Leagues</h2>
+      <p class="hq-help">GridIron 24 plus every independent league registered on this platform.</p>
+      <div id="hq-leagues-body"></div>
+    </div>
+
+    <div id="hq-registrations" class="hq-page hq-panel" hidden>
+      <h2>Registrations</h2>
+      <p class="hq-help">New accounts and new independent leagues waiting on you. Approve membership from Owner Dashboard when you need the membership picker.</p>
+      <div id="hq-registrations-body"></div>
+    </div>
+
+    <div id="hq-health" class="hq-page hq-panel" hidden>
+      <h2>APIs &amp; mail</h2>
+      <p class="hq-help">Live status from this server. ESPN health is the last known upstream state — open Owner Dashboard → ESPN to re-check league IDs.</p>
+      <div id="hq-health-body"></div>
+    </div>
+  </main>
+
+  <script src="/js/nav.js?v=163"></script>
+  <script>
+    (function () {
+      const PAGES = ['home', 'online', 'leagues', 'registrations', 'health'];
+      let snapshot = null;
+
+      function esc(value) {
+        return String(value ?? '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;');
+      }
+
+      function when(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return '—';
+        return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      }
+
+      function showMsg(text, ok) {
+        const el = document.getElementById('hq-msg');
+        if (!el) return;
+        if (!text) {
+          el.hidden = true;
+          el.textContent = '';
+          return;
+        }
+        el.hidden = false;
+        el.textContent = text;
+        el.className = 'hq-note ' + (ok ? 'ok' : 'err');
+      }
+
+      function currentPage() {
+        const id = String(location.hash || '#home').replace(/^#/, '') || 'home';
+        return PAGES.includes(id) ? id : 'home';
+      }
+
+      function pill(ok, warn, label) {
+        const cls = ok ? 'is-ok' : (warn ? 'is-warn' : 'is-err');
+        return `<span class="hq-pill ${cls}">${esc(label)}</span>`;
+      }
+
+      function tile(c) {
+        const badge = Number(c.badge) > 0
+          ? ` <span class="tools-badge">${Number(c.badge)}</span>`
+          : '';
+        return `
+          <a class="desk-tile" data-tone="${esc(c.tone || 'blue')}" href="${esc(c.href)}">
+            <p class="desk-tile-kicker">${esc(c.kicker || 'HQ')}</p>
+            <strong>${esc(c.title)}${badge}</strong>
+            <span>${esc(c.blurb)}</span>
+            <em class="desk-tile-go">Open</em>
+          </a>`;
+      }
+
+      function renderHome(data) {
+        const c = data.counts || {};
+        const home = document.getElementById('hq-home');
+        const pending = (c.pendingAccounts || 0) + (c.pendingLeagues || 0);
+        home.innerHTML = [
+          { href: '#online', title: 'Signed on', kicker: 'Now', blurb: 'Who has a live session on the site.', tone: 'good', badge: c.online },
+          { href: '#leagues', title: 'Leagues', kicker: 'Platform', blurb: 'GridIron 24, AAA, and independent leagues.', tone: 'blue', badge: c.independentLeagues },
+          { href: '#registrations', title: 'Registrations', kicker: 'Inbox', blurb: 'Account approvals and league requests.', tone: 'gold', badge: pending },
+          { href: '#health', title: 'APIs', kicker: 'Health', blurb: 'ESPN upstream, mail, and this server.', tone: 'detail' },
+          { href: '/owner.html', title: 'Owner Dashboard', kicker: 'GridIron 24', blurb: 'Players, messages, ESPN, and season tools.', tone: 'overtime' },
+          { href: '/profile.html', title: 'User Dashboard', kicker: 'You', blurb: 'Your account, look, and franchise.', tone: 'blue' }
+        ].map(tile).join('');
+      }
+
+      function renderOnline(data) {
+        const rows = data.online || [];
+        const el = document.getElementById('hq-online-body');
+        if (!rows.length) {
+          el.innerHTML = '<p class="hq-empty">Nobody has a live page open right now.</p>';
+          return;
+        }
+        el.innerHTML = `
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Login</th><th>Email</th><th>Role</th><th>League</th><th>Last seen</th></tr></thead>
+            <tbody>
+              ${rows.map((u) => `
+                <tr>
+                  <td><strong>${esc(u.name)}</strong></td>
+                  <td>${esc(u.loginName || '—')}</td>
+                  <td>${esc(u.email || '—')}</td>
+                  <td>${esc(u.role || 'Member')}</td>
+                  <td>${esc(u.league || '—')}</td>
+                  <td class="muted-sm">${esc(when(u.lastSeen))}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>`;
+      }
+
+      function leagueStatus(l) {
+        if (l.status === 'pending_approval') return pill(false, true, 'Pending');
+        if (l.status === 'rejected') return pill(false, false, 'Rejected');
+        if (l.status === 'approved' && l.setupComplete === false) return pill(false, true, 'Setup');
+        return pill(true, false, 'Live');
+      }
+
+      function renderLeagues(data) {
+        const el = document.getElementById('hq-leagues-body');
+        const platform = data.leagues?.platform || {};
+        const independent = data.leagues?.independent || [];
+        const confRows = (platform.conferences || []).map((c) => `
+          <tr>
+            <td><strong>${esc(c.name)}</strong></td>
+            <td>${esc(c.kind === 'affiliate' ? 'Affiliate' : 'Conference')}</td>
+            <td>${esc(c.espnLeagueId || '—')}</td>
+            <td>${pill(Boolean(c.espnLeagueId), false, c.espnLeagueId ? 'ID set' : 'No ID')}</td>
+          </tr>`).join('');
+        const indRows = independent.length
+          ? independent.map((l) => `
+            <tr>
+              <td><strong>${esc(l.name)}</strong><br><span class="muted-sm">${esc(l.slug)}</span></td>
+              <td>${leagueStatus(l)}</td>
+              <td>${esc(l.ownerName || '—')}<br><span class="muted-sm">${esc(l.ownerEmail || '')}</span></td>
+              <td>${esc(l.teamCount || '—')}</td>
+              <td>${l.homePath ? `<a href="${esc(l.homePath)}">HQ</a>` : '—'}</td>
+            </tr>`).join('')
+          : `<tr><td colspan="5" class="muted-sm">No independent leagues yet.</td></tr>`;
+        el.innerHTML = `
+          <h3 style="margin:0 0 0.55rem;font-size:1rem;">${esc(platform.name || 'GridIron 24')} · ${esc(platform.season || '')}</h3>
+          <table class="data-table">
+            <thead><tr><th>Conference</th><th>Kind</th><th>ESPN ID</th><th>Status</th></tr></thead>
+            <tbody>${confRows || '<tr><td colspan="4">No conferences configured.</td></tr>'}</tbody>
+          </table>
+          <h3 style="margin:1.35rem 0 0.55rem;font-size:1rem;">Independent leagues</h3>
+          <table class="data-table">
+            <thead><tr><th>League</th><th>Status</th><th>Owner</th><th>Teams</th><th></th></tr></thead>
+            <tbody>${indRows}</tbody>
+          </table>`;
+      }
+
+      function renderRegistrations(data) {
+        const el = document.getElementById('hq-registrations-body');
+        const accounts = data.pendingAccounts || [];
+        const leagues = data.pendingLeagues || [];
+        const acctRows = accounts.length
+          ? accounts.map((u) => `
+            <tr>
+              <td><strong>${esc(u.name || u.loginName)}</strong><br><span class="muted-sm">${esc(u.loginName)} · ${esc(u.email || '')}</span></td>
+              <td>${esc(u.loungeOnly ? 'Social' : (u.membershipLeague === 'aaa' ? 'AAA' : 'GridIron 24'))}</td>
+              <td class="muted-sm">${esc(when(u.createdAt))}</td>
+            </tr>`).join('')
+          : '<tr><td colspan="3" class="muted-sm">No account requests waiting.</td></tr>';
+        const leagueRows = leagues.length
+          ? leagues.map((l) => `
+            <tr>
+              <td><strong>${esc(l.name)}</strong></td>
+              <td>${esc(l.ownerName || '—')}<br><span class="muted-sm">${esc(l.ownerEmail || '')}</span></td>
+              <td>${esc(l.teamCount || '—')}</td>
+              <td class="muted-sm">${esc(when(l.submittedAt))}</td>
+              <td>
+                <button type="button" class="btn" data-approve-league="${esc(l.id)}">Approve</button>
+                <button type="button" class="link-action" data-reject-league="${esc(l.id)}">Reject</button>
+              </td>
+            </tr>`).join('')
+          : '<tr><td colspan="5" class="muted-sm">No league requests waiting.</td></tr>';
+        el.innerHTML = `
+          <p class="hq-help" style="margin-top:0;"><a href="/owner.html#account-requests">Approve accounts in Owner Dashboard</a></p>
+          <h3 style="margin:0 0 0.55rem;font-size:1rem;">Account requests</h3>
+          <table class="data-table">
+            <thead><tr><th>Applicant</th><th>Asked for</th><th>Submitted</th></tr></thead>
+            <tbody>${acctRows}</tbody>
+          </table>
+          <h3 style="margin:1.35rem 0 0.55rem;font-size:1rem;">League requests</h3>
+          <table class="data-table">
+            <thead><tr><th>League</th><th>Owner</th><th>Teams</th><th>Submitted</th><th></th></tr></thead>
+            <tbody>${leagueRows}</tbody>
+          </table>`;
+        el.querySelectorAll('[data-approve-league]').forEach((btn) => {
+          btn.addEventListener('click', () => actLeague(btn.getAttribute('data-approve-league'), 'approve'));
+        });
+        el.querySelectorAll('[data-reject-league]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            if (!confirm('Reject this league request?')) return;
+            actLeague(btn.getAttribute('data-reject-league'), 'reject');
+          });
+        });
+      }
+
+      async function actLeague(id, action) {
+        showMsg('');
+        try {
+          const res = await fetch(`/api/leagues/${encodeURIComponent(id)}/${action}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: action === 'reject' ? JSON.stringify({ reason: 'Not approved' }) : '{}'
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
+          showMsg(action === 'approve' ? 'League approved.' : 'League rejected.', true);
+          await load();
+        } catch (err) {
+          showMsg(err.message || 'Request failed', false);
+        }
+      }
+
+      function upstreamRow(label, node) {
+        const mode = String(node?.mode || 'unknown');
+        const ok = mode === 'live' || mode === 'ok' || mode === 'up';
+        const warn = mode === 'unknown' || mode === 'degraded' || mode === 'cache';
+        const detail = node?.error || node?.source || node?.at || '—';
+        return `<tr>
+          <td>${esc(label)}</td>
+          <td>${pill(ok, warn, mode)}</td>
+          <td class="muted-sm">${esc(detail)}</td>
+        </tr>`;
+      }
+
+      function renderHealth(data) {
+        const el = document.getElementById('hq-health-body');
+        const h = data.health || {};
+        const mail = h.mail || {};
+        const up = h.upstream || {};
+        el.innerHTML = `
+          <div class="hq-stats">
+            <div class="hq-stat"><strong>${esc(h.season || '—')}</strong><span>Season</span></div>
+            <div class="hq-stat"><strong>${esc(h.version || '—')}</strong><span>Version</span></div>
+            <div class="hq-stat"><strong>${mail.configured ? 'On' : 'Off'}</strong><span>Mail</span></div>
+            <div class="hq-stat"><strong>${up.degraded ? 'Warn' : 'OK'}</strong><span>Upstream</span></div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Service</th><th>Status</th><th>Detail</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>This app</td>
+                <td>${pill(true, false, 'Up')}</td>
+                <td class="muted-sm">${esc(h.app || '')} · build ${esc(h.build || '—')}</td>
+              </tr>
+              <tr>
+                <td>Mail (${esc(mail.provider || 'none')})</td>
+                <td>${pill(Boolean(mail.configured), false, mail.configured ? 'Configured' : 'Not set')}</td>
+                <td class="muted-sm">${esc(mail.from || 'Set MAIL_FROM and RESEND_API_KEY')}</td>
+              </tr>
+              ${upstreamRow('ESPN fantasy', up.fantasy)}
+              ${upstreamRow('ESPN site', up.site)}
+              ${upstreamRow('News', up.news)}
+            </tbody>
+          </table>
+          <p class="hq-note">Counts: ${esc(data.counts?.accounts || 0)} approved accounts · ${esc(data.counts?.online || 0)} signed on · ${esc(data.counts?.independentLive || 0)} live independent leagues.</p>`;
+      }
+
+      function showPage(page) {
+        document.body.dataset.hqPage = page;
+        document.getElementById('hq-home').hidden = page !== 'home';
+        document.getElementById('hq-online').hidden = page !== 'online';
+        document.getElementById('hq-leagues').hidden = page !== 'leagues';
+        document.getElementById('hq-registrations').hidden = page !== 'registrations';
+        document.getElementById('hq-health').hidden = page !== 'health';
+        const back = document.getElementById('hq-back');
+        back.hidden = page === 'home';
+        const titles = {
+          home: 'Site Headquarters',
+          online: 'Signed on now',
+          leagues: 'Leagues',
+          registrations: 'Registrations',
+          health: 'APIs & mail'
+        };
+        document.getElementById('hq-title').textContent = titles[page] || 'Site Headquarters';
+        document.getElementById('hq-lead').hidden = page !== 'home';
+      }
+
+      function paint(data) {
+        snapshot = data;
+        renderHome(data);
+        renderOnline(data);
+        renderLeagues(data);
+        renderRegistrations(data);
+        renderHealth(data);
+        showPage(currentPage());
+        window.GridIronNav?.setSync?.(`${data.counts?.online || 0} signed on`, true);
+      }
+
+      async function load() {
+        const res = await fetch('/api/site-hq', { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          window.location.href = '/enter?next=' + encodeURIComponent('/site.html');
+          return;
+        }
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load headquarters');
+        paint(data);
+      }
+
+      window.addEventListener('hashchange', () => {
+        if (snapshot) showPage(currentPage());
+      });
+
+      load().catch((err) => {
+        showMsg(err.message || 'Could not load headquarters', false);
+        document.getElementById('hq-home').innerHTML = `<p class="hq-empty">${esc(err.message)}</p>`;
+      });
+      setInterval(() => { load().catch(() => {}); }, 30000);
+    })();
+  </script>
+</body>
+</html>

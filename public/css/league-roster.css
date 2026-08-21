@@ -129,6 +129,19 @@ html[data-theme="day"] .gi-roster-row {
   color: var(--muted);
   font-style: italic;
 }
+.gi-roster-row.is-invited .inv-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold, #efd782);
+}
+.gi-roster-row.is-waiting .inv-tag {
+  color: var(--detail, #ff7a18);
+}
 .gi-roster-row.is-you {
   background: rgba(47, 109, 255, 0.14);
 }

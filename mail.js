@@ -278,7 +278,8 @@ function buildInviteEmail({
   invitedByName,
   leagueName,
   baseUrl,
-  loungeOnly
+  loungeOnly,
+  independent
 }) {
   const inviteCopy = require('./invite-email-message');
   const assets = brandedAssets(baseUrl);
@@ -288,7 +289,8 @@ function buildInviteEmail({
     invitedByName,
     leagueName,
     homeUrl,
-    loungeOnly
+    loungeOnly,
+    independent
   });
 
   const featureLines = (c.features || [])
@@ -310,7 +312,7 @@ function buildInviteEmail({
       `Create your account here:\n${inviteUrl}\n\n` +
       `${c.textExtra}\n\n` +
       `${c.alreadyHaveAccount}\n\n` +
-      `GridIron 24 HQ · Fantasy Football\n` +
+      `${independent ? `${c.league || leagueName || 'League'} HQ\n` : 'GridIron 24 HQ · Fantasy Football\n'}` +
       `${c.footerIgnore}\n`;
 
   const bodyHtml = c.loungeOnly
@@ -330,7 +332,7 @@ function buildInviteEmail({
     headline: c.headline,
     bodyHtml,
     midHtml: c.loungeOnly ? loungeInviteMidHtml(c, assets) : '',
-    showConferences: !c.loungeOnly,
+    showConferences: !c.loungeOnly && !independent,
     ctaLabel: c.ctaLabel,
     ctaUrl: inviteUrl,
     noteHtml:
@@ -339,7 +341,9 @@ function buildInviteEmail({
         `<a href="${escapeHtml(homeUrl)}" style="color:#8eb6ff;text-decoration:underline;">${escapeHtml(c.homeHost)}</a>`
       ),
     linkFallbackUrl: inviteUrl,
-    footerExtra: `${escapeHtml(c.footerIgnore)}<br />GridIron 24 created by S.Evans`,
+    footerExtra: independent
+      ? escapeHtml(c.footerIgnore)
+      : `${escapeHtml(c.footerIgnore)}<br />GridIron 24 created by S.Evans`,
     baseUrl
   });
 
@@ -411,7 +415,7 @@ async function sendPasswordResetEmail({ to, resetUrl, name, baseUrl, leagueName 
   return { sent: false, method: 'log', resetUrl, previewHtml: content.html };
 }
 
-async function sendInviteEmail({ to, inviteUrl, invitedByName, leagueName, baseUrl, loungeOnly }) {
+async function sendInviteEmail({ to, inviteUrl, invitedByName, leagueName, baseUrl, loungeOnly, independent }) {
   try {
     const id = loungeOnly ? 'email.invite_social' : 'email.invite';
     if (!require('./comms-settings-store').isEnabled(id)) {
@@ -425,7 +429,8 @@ async function sendInviteEmail({ to, inviteUrl, invitedByName, leagueName, baseU
     invitedByName,
     leagueName,
     baseUrl,
-    loungeOnly
+    loungeOnly,
+    independent
   });
 
   if (configured) {
@@ -443,7 +448,7 @@ async function sendInviteEmail({ to, inviteUrl, invitedByName, leagueName, baseU
   return { sent: false, method: 'log', inviteUrl, previewHtml: content.html };
 }
 
-function buildAccountApprovedEmail({ name, leagueName, signInUrl, baseUrl, membershipKind }) {
+function buildAccountApprovedEmail({ name, leagueName, signInUrl, baseUrl, membershipKind, hqPath }) {
   const who = name || 'there';
   const kind = String(membershipKind || 'gridiron').toLowerCase();
   const { enterUrl, aaaLogo, gridironLeagueLogo } = brandedAssets(baseUrl);
@@ -501,6 +506,25 @@ function buildAccountApprovedEmail({ name, leagueName, signInUrl, baseUrl, membe
       ctaPath: '/home.html',
       badge: `<img src="${escapeHtml(gridironLeagueLogo)}" width="72" height="72" alt="GridIron 24" style="display:block;width:72px;height:72px;object-fit:contain;border:0;margin:0 auto 8px;" />
               <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#efd782;">GridIron 24</div>`
+    },
+    independent: {
+      label: leagueName || 'Your league',
+      eyebrow: leagueName || 'League owner',
+      headline: 'Your league HQ is ready',
+      subject: leagueName ? `Welcome to ${leagueName}` : 'Your league HQ is ready',
+      preheader: leagueName
+        ? `You’re the owner of ${leagueName}. Sign in and open your headquarters.`
+        : 'You’re the league owner. Sign in and open your headquarters.',
+      textLine: leagueName
+        ? `You’re the owner of ${leagueName}. Sign in, open League HQ, and set up your season — playoffs and titles stay blank until you name them.`
+        : 'You’re the league owner. Sign in, open League HQ, and set up your season.',
+      bodyHtml:
+        `Hi <strong style="color:#ffffff;">${escapeHtml(who)}</strong> — you’re the owner` +
+        (leagueName ? ` of <strong style="color:#efd782;">${escapeHtml(leagueName)}</strong>` : '') +
+        `. Open League HQ to invite managers, set rules, and schedule your draft.`,
+      ctaLabel: 'Open League HQ',
+      ctaPath: hqPath || '/create-league',
+      badge: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#efd782;">League owner</div>`
     }
   };
   const profile = profiles[kind] || profiles.gridiron;
@@ -511,7 +535,7 @@ function buildAccountApprovedEmail({ name, leagueName, signInUrl, baseUrl, membe
     `Hi ${who},\n\n` +
     `${profile.textLine}\n\n` +
     `Sign in: ${homeUrl}\n\n` +
-    `GridIron 24 HQ\n`;
+    `${kind === 'independent' ? (leagueName || 'League HQ') : 'GridIron 24 HQ'}\n`;
 
   const html = brandedEmailHtml({
     title: profile.subject,
@@ -538,7 +562,7 @@ function buildAccountApprovedEmail({ name, leagueName, signInUrl, baseUrl, membe
   };
 }
 
-async function sendAccountApprovedEmail({ to, name, leagueName, baseUrl, membershipKind }) {
+async function sendAccountApprovedEmail({ to, name, leagueName, baseUrl, membershipKind, hqPath }) {
   try {
     if (!require('./comms-settings-store').isEnabled('email.account_approved')) {
       return { sent: false, method: 'disabled', skipped: true };
@@ -552,7 +576,8 @@ async function sendAccountApprovedEmail({ to, name, leagueName, baseUrl, members
     leagueName,
     signInUrl: `${origin}/enter`,
     baseUrl: origin,
-    membershipKind
+    membershipKind,
+    hqPath
   });
 
   if (configured) {

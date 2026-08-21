@@ -7,39 +7,534 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=123" />
-  <link rel="icon" href="/favicon.ico?v=123" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=123" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=123" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=124" />
+  <link rel="icon" href="/favicon.ico?v=124" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=124" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=124" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=154" />
+  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/draft-desk.css?v=9" />
   <style>
+    body[data-page="league-hq"] .topbar {
+      border-bottom: 1px solid color-mix(in srgb, var(--il-c1) 42%, rgba(142, 182, 255, 0.42));
+    }
+    body[data-page="league-hq"] {
+      --il-c1: var(--blue);
+      --il-c2: var(--gold);
+      background:
+        radial-gradient(ellipse 85% 55% at 50% -8%, color-mix(in srgb, var(--il-c1) 22%, transparent), transparent 58%),
+        radial-gradient(ellipse 42% 38% at 8% 72%, color-mix(in srgb, var(--il-c1) 12%, transparent), transparent 52%),
+        radial-gradient(ellipse 42% 38% at 92% 68%, color-mix(in srgb, var(--il-c2) 11%, transparent), transparent 52%),
+        linear-gradient(180deg, #0b1220 0%, #070b14 32%, #05070e 100%);
+    }
+    html[data-theme="day"] body[data-page="league-hq"] {
+      background:
+        radial-gradient(ellipse 85% 55% at 50% -8%, color-mix(in srgb, var(--il-c1) 14%, transparent), transparent 58%),
+        radial-gradient(ellipse 42% 38% at 8% 72%, color-mix(in srgb, var(--il-c1) 8%, transparent), transparent 52%),
+        radial-gradient(ellipse 42% 38% at 92% 68%, color-mix(in srgb, var(--il-c2) 7%, transparent), transparent 52%),
+        linear-gradient(180deg, #eef2f8 0%, #e8ecf1 100%);
+    }
+    body[data-page="league-hq"] .page-main {
+      padding-top: 0.35rem;
+    }
     body[data-page="league-hq"] .page-hero {
       padding-top: 1.35rem;
       padding-bottom: 1rem;
     }
     body[data-page="league-hq"] .page-hero::before,
     body[data-page="league-hq"] .page-hero::after { display: none; }
-    .il-hero {
-      display: grid;
-      justify-items: center;
-      gap: 0.75rem;
+
+    .il-hq-hero {
+      position: relative;
+      z-index: 5;
       text-align: center;
-      margin: 0 0 1.35rem;
+      margin: 0 0 0.35rem;
+      padding: 0.85rem 0 1.5rem;
+      overflow: visible;
+      border-bottom: 1px solid color-mix(in srgb, var(--il-c1) 40%, transparent);
+      background:
+        radial-gradient(ellipse 75% 90% at 50% 28%, color-mix(in srgb, var(--il-c1) 22%, transparent), transparent 62%),
+        radial-gradient(ellipse 50% 60% at 18% 90%, color-mix(in srgb, var(--il-c1) 10%, transparent), transparent 55%),
+        radial-gradient(ellipse 50% 60% at 82% 90%, color-mix(in srgb, var(--il-c2) 10%, transparent), transparent 55%),
+        transparent;
     }
-    .il-hero img {
-      width: min(11rem, 52vw);
+    .il-hq-hero img,
+    .il-lettermark {
+      width: min(14rem, 52vw);
       height: auto;
-      filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
+      display: block;
+      margin: 0 auto;
+      position: relative;
+      z-index: 6;
+      filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.78));
     }
-    .il-hero .tag {
+    html[data-theme="day"] .il-hq-hero img,
+    html[data-theme="day"] .il-lettermark {
+      filter: drop-shadow(0 12px 24px rgba(20, 24, 31, 0.2));
+    }
+    .il-lettermark {
+      width: min(9.5rem, 42vw);
+      height: min(9.5rem, 42vw);
+      display: grid;
+      place-items: center;
+      border: 2px solid color-mix(in srgb, var(--gold) 70%, transparent);
+      background:
+        radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--il-c1) 28%, transparent), transparent 62%),
+        linear-gradient(180deg, #152238, #0a1220);
+      font-family: var(--display);
+      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      letter-spacing: 0.06em;
+      color: var(--gold);
+    }
+    html[data-theme="day"] .il-lettermark {
+      background:
+        radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--il-c1) 16%, transparent), transparent 62%),
+        linear-gradient(180deg, #ffffff, #eef2f8);
+      border-color: color-mix(in srgb, var(--il-c1) 45%, var(--line));
+    }
+    .il-hq-name {
+      margin: 1.05rem 0 0;
+      font-family: var(--page-title);
+      font-size: clamp(2rem, 5.5vw, 3.1rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 0.95;
+      color: var(--text);
+    }
+    .il-hq-hero .tag {
+      margin: 1.15rem 0 0;
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 3.8vw, 1.95rem);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.25;
+      color: var(--text);
+    }
+    .il-hq-hero .tag .t { color: var(--il-c1); }
+    .il-hq-hero .tag .d { color: var(--gold); }
+    .il-hq-hero .tag .c { color: var(--text); }
+    html[data-theme="day"] .il-hq-hero .tag .d { color: var(--il-c2); }
+    .il-hq-hero .tag .sep { color: var(--muted-2); margin: 0 0.35em; }
+    .il-hq-hero.is-live .tag .t {
+      color: #4dff9a;
+      text-shadow: 0 0 18px rgba(77, 255, 154, 0.55);
+    }
+    .il-live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.12rem 0.45rem;
+      border: 1px solid rgba(77, 255, 154, 0.55);
+      background: rgba(77, 255, 154, 0.12);
+      color: #4dff9a;
+      font-family: var(--display);
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      line-height: 1;
+    }
+    .il-live-pill::before {
+      content: "";
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 50%;
+      background: #4dff9a;
+      box-shadow: 0 0 8px #4dff9a;
+      animation: il-live-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes il-live-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.72); }
+    }
+
+    #il-root .page-hero {
+      margin-bottom: 1.25rem;
+      border-bottom-color: color-mix(in srgb, var(--il-c1, var(--blue)) 28%, transparent);
+      background:
+        radial-gradient(ellipse 80% 120% at 12% 0%, color-mix(in srgb, var(--il-c1, var(--blue)) 24%, transparent), transparent 55%),
+        linear-gradient(180deg, color-mix(in srgb, var(--il-c1, var(--blue)) 14%, transparent), color-mix(in srgb, var(--il-c1, var(--blue)) 3%, transparent) 70%, transparent);
+    }
+    #il-root .page-hero::before {
+      background: var(--il-c1, var(--blue));
+    }
+    #il-root .page-hero .eyebrow {
+      color: var(--il-c1, var(--blue));
+    }
+
+    .il-hq-board {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(17rem, 0.78fr);
+      gap: 1.75rem 2rem;
+      align-items: start;
+      margin: 1.5rem 0 2.25rem;
+    }
+    @media (max-width: 900px) {
+      .il-hq-board { grid-template-columns: 1fr; }
+    }
+    .il-hq-board .il-card {
+      margin: 0;
+      padding: 0 0 1.25rem;
+      border: 1px solid color-mix(in srgb, var(--il-c1) 22%, var(--line));
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 42%), var(--panel);
+      overflow: hidden;
+    }
+    .il-card-head {
+      margin: 0 0 0.9rem;
+      min-height: 2.85rem;
+      padding: 0.55rem 1.2rem;
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(ellipse 80% 120% at 8% 0%, color-mix(in srgb, var(--il-c1) 16%, transparent), transparent 55%),
+        linear-gradient(180deg, color-mix(in srgb, var(--il-c1) 12%, transparent), color-mix(in srgb, var(--il-c1) 4%, transparent));
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .il-card-head::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--il-c1);
+    }
+    .il-card-head h2 {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      font-family: var(--display);
+      font-size: clamp(1.45rem, 3vw, 1.85rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text);
+      line-height: 1.1;
+    }
+    .il-card-head a {
+      color: #9ec0ff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    html[data-theme="day"] .il-card-head a { color: var(--blue); }
+    .il-card-head a:hover { color: var(--nav-hover); }
+    .il-card > :not(.il-card-head) {
+      padding-left: 1.2rem;
+      padding-right: 1.2rem;
+    }
+    .il-hq-side {
+      display: grid;
+      gap: 1.35rem;
+    }
+    .il-hq-side .il-card-head h2 {
+      font-size: clamp(1.05rem, 2.2vw, 1.28rem);
+    }
+
+    .il-standings {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.35rem 1.5rem;
+    }
+    .il-standings.is-one { grid-template-columns: 1fr; }
+    @media (max-width: 640px) {
+      .il-standings { grid-template-columns: 1fr; }
+    }
+    @media (min-width: 641px) {
+      .il-standings:not(.is-one) .il-conf:last-child {
+        padding-left: 1.15rem;
+        border-left: 1px solid var(--line);
+      }
+    }
+    .il-conf-head {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 0.7rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 2px solid color-mix(in srgb, var(--conf, var(--il-c1)) 55%, var(--line));
+    }
+    .il-conf-head img {
+      width: clamp(2.35rem, 6vw, 3.25rem);
+      height: auto;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+    }
+    .il-conf-head h3 {
       margin: 0;
       font-family: var(--display);
-      font-size: clamp(1.05rem, 3.5vw, 1.35rem);
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      line-height: 1.1;
+      color: var(--conf, var(--text));
+    }
+    .il-mini {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.05rem;
+    }
+    .il-mini th {
+      padding: 0.4rem 0.35rem 0.5rem;
+      text-align: left;
+      font-size: 0.78rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--line);
+    }
+    .il-mini td {
+      padding: 0.42rem 0.35rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+      color: var(--text);
+    }
+    .il-mini tr:last-child td { border-bottom: 0; }
+    .il-mini .rank {
+      width: 1.35rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .il-mini .team {
+      font-weight: 600;
+      min-width: 0;
+    }
+    .il-mini .mgr {
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+    .il-mini th.num,
+    .il-mini td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      padding-left: 0.55rem;
+      width: 3.4rem;
+    }
+    html[data-theme="day"] .il-mini th.num,
+    html[data-theme="day"] .il-mini td.num {
+      border-left-color: rgba(20, 28, 40, 0.14);
+    }
+    .il-mini .team a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      max-width: 100%;
+    }
+    .il-mini .team-logo-sm {
+      width: 1.75rem;
+      height: 1.75rem;
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+
+    .il-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+    .il-stat {
+      display: grid;
+      gap: 0.2rem;
+      min-width: 0;
+      padding: 0.75rem 0.85rem 0.85rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+    .il-stat span {
+      font-size: 0.72rem;
+      font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
     }
+    .il-stat strong {
+      font-family: var(--display);
+      font-size: clamp(1.35rem, 3vw, 1.7rem);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.05;
+      color: var(--text);
+    }
+    .il-stat strong.is-gold { color: var(--gold); }
+
+    .il-desk-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 520px) {
+      .il-desk-links { grid-template-columns: 1fr; }
+    }
+    .il-desk-links a {
+      position: relative;
+      display: grid;
+      gap: 0.2rem;
+      min-height: 4.6rem;
+      padding: 0.85rem 0.95rem 0.95rem;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--il-c1) 12%, transparent), transparent 58%),
+        var(--panel-2);
+      text-decoration: none;
+      color: inherit;
+      overflow: hidden;
+    }
+    .il-desk-links a::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: var(--tile, var(--il-c1));
+    }
+    .il-desk-links a:hover {
+      border-color: color-mix(in srgb, var(--tile, var(--il-c1)) 45%, var(--line));
+    }
+    .il-desk-links a em {
+      font-style: normal;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--tile, var(--gold));
+    }
+    .il-desk-links a strong {
+      font-family: var(--page-title);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .il-motw-col {
+      display: grid;
+      gap: 1.15rem;
+    }
+    .il-motw {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.45rem;
+      align-items: center;
+      padding: 0.2rem 0 0;
+    }
+    .il-motw-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      text-align: center;
+      min-width: 0;
+    }
+    .il-motw-side img {
+      width: 4.25rem;
+      height: 4.25rem;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
+    }
+    .il-motw-side .nm {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.25;
+      max-width: 100%;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .il-motw-mid {
+      text-align: center;
+      font-family: var(--display);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .il-motw-mid .vs {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 0.2rem;
+    }
+    .il-motw-mid .score {
+      font-size: 1.45rem;
+      font-weight: 600;
+      color: var(--gold);
+      font-variant-numeric: tabular-nums;
+    }
+    .il-motw-mid .live-note {
+      margin-top: 0.25rem;
+      color: #4dff9a;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+    }
+    .il-hotnot {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.1rem 1.25rem;
+    }
+    @media (max-width: 520px) {
+      .il-hotnot { grid-template-columns: 1fr; }
+    }
+    .il-hotnot-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      min-width: 0;
+      padding-left: 0.75rem;
+    }
+    .il-hotnot-col .label {
+      font-family: var(--display);
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .il-hotnot-col.hot {
+      border-left: 3px solid #ef4444;
+    }
+    .il-hotnot-col.hot .label {
+      color: #ef4444;
+    }
+    .il-hotnot-col.cold {
+      border-left: 3px solid var(--blue);
+    }
+    .il-hotnot-col.cold .label {
+      color: var(--blue);
+    }
+    .il-hotnot-team {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      min-width: 0;
+    }
+    .il-hotnot-team img {
+      width: 2.6rem;
+      height: 2.6rem;
+      object-fit: contain;
+    }
+    .il-hotnot-team .nm {
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .il-hotnot-team .sub {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    .il-matchup.is-live {
+      border-color: color-mix(in srgb, #4dff9a 40%, var(--line));
+      box-shadow: inset 3px 0 0 #4dff9a;
+    }
+    .il-matchup .live-flag {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: 0.15rem;
+    }
+
     .il-banner {
       margin: 0 0 1.15rem;
       padding: 0.85rem 1rem;
@@ -53,30 +548,44 @@
       border-color: color-mix(in srgb, var(--detail, #ff7a18) 45%, var(--line));
       background: color-mix(in srgb, var(--detail, #ff7a18) 10%, var(--panel));
     }
-    .il-banner.is-ok {
-      border-color: color-mix(in srgb, var(--good, #3dcf8a) 40%, var(--line));
-      background: color-mix(in srgb, var(--good, #3dcf8a) 10%, var(--panel));
-    }
     .il-grid {
       display: grid;
       gap: 1.15rem;
     }
     .il-panel {
       margin: 0;
-      padding: 1.05rem 1.1rem 1.2rem;
+      padding: 0 0 1.2rem;
       border: 1px solid var(--line);
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--blue) 6%, transparent), transparent 42%),
+        linear-gradient(180deg, color-mix(in srgb, var(--il-c1, var(--blue)) 8%, transparent), transparent 42%),
         var(--panel);
+      overflow: hidden;
     }
     .il-panel h2 {
-      margin: 0 0 0.65rem;
-      padding-bottom: 0.5rem;
+      margin: 0 0 0.95rem;
+      padding: 0.7rem 1.15rem;
       border-bottom: 1px solid var(--line);
-      font-family: var(--display);
-      font-size: 1rem;
-      letter-spacing: 0.06em;
+      background:
+        radial-gradient(ellipse 80% 120% at 8% 0%, color-mix(in srgb, var(--il-c1, var(--blue)) 16%, transparent), transparent 55%),
+        linear-gradient(180deg, color-mix(in srgb, var(--il-c1, var(--blue)) 12%, transparent), color-mix(in srgb, var(--il-c1, var(--blue)) 4%, transparent));
+      position: relative;
+      font-family: var(--page-title);
+      font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
+      line-height: 1.15;
+    }
+    .il-panel h2::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--il-c1, var(--blue));
+    }
+    .il-panel > :not(h2) {
+      margin-left: 1.15rem;
+      margin-right: 1.15rem;
     }
     .il-split {
       display: grid;
@@ -88,8 +597,17 @@
     }
     .il-meta {
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       line-height: 1.5;
+    }
+    #il-root > h1.page-title {
+      margin: 0 0 1rem;
+      font-family: var(--page-title);
+      font-size: var(--fs-xl);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: var(--lh-tight);
     }
     .il-meta strong { color: var(--text); }
     .il-empty {
@@ -211,15 +729,17 @@
       align-items: center;
       padding: 0.85rem 0.95rem;
       border: 1px solid var(--line);
-      background: var(--panel-2);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--il-c1, var(--blue)) 8%, transparent), transparent 55%),
+        var(--panel-2);
     }
     .il-matchup .side { min-width: 0; }
     .il-matchup .side.is-right { text-align: right; }
     .il-matchup .score {
       font-family: var(--display), Bebas Neue, sans-serif;
-      font-size: 1.55rem;
+      font-size: 1.85rem;
       letter-spacing: 0.04em;
-      color: #efd782;
+      color: var(--gold);
     }
     .il-matchup .vs {
       text-align: center;
@@ -227,6 +747,190 @@
       font-size: 0.75rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+    }
+    .il-mu-card {
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--il-c1, var(--blue)) 8%, transparent), transparent 40%),
+        var(--panel-2);
+      overflow: hidden;
+    }
+    .il-mu-card.is-live { border-color: color-mix(in srgb, #4dff9a 45%, var(--line)); }
+    .il-mu-head {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.85rem 0.95rem 0.7rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .il-mu-head .score {
+      font-family: var(--display), Bebas Neue, sans-serif;
+      font-size: 1.85rem;
+      letter-spacing: 0.04em;
+      color: var(--gold);
+    }
+    .il-mu-head .vs {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .il-mu-head .side.is-right { text-align: right; }
+    .il-mu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .il-mu-col { padding: 0.35rem 0.65rem 0.55rem; min-width: 0; }
+    .il-mu-col + .il-mu-col { border-left: 1px solid var(--line); }
+    .il-mu-player {
+      display: grid;
+      grid-template-columns: 2.4rem minmax(0, 1fr) 2.6rem;
+      gap: 0.35rem;
+      align-items: center;
+      padding: 0.28rem 0;
+      font-size: 0.82rem;
+    }
+    .il-mu-player .slot {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .il-mu-player .nm { min-width: 0; }
+    .il-mu-player .nm .pro {
+      display: block;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+    .il-mu-player .pts { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .il-mu-player.is-live .pts { color: #4dff9a; }
+    .il-mu-player.is-empty { opacity: 0.55; }
+    .il-nfl-slate {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0 0 1rem;
+    }
+    .il-nfl-game {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      padding: 0.4rem 0.55rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      font-size: 0.78rem;
+      min-width: 8.5rem;
+    }
+    .il-nfl-game.is-live { border-color: color-mix(in srgb, #4dff9a 50%, var(--line)); }
+    .il-nfl-game .st { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    .il-nfl-game.is-live .st { color: #4dff9a; }
+    .il-leaders { list-style: none; margin: 0; padding: 0; }
+    .il-leaders li {
+      display: grid;
+      grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+    }
+    .il-leaders .rk { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .il-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin: 0 0 1rem;
+    }
+    .il-tab {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 0.4rem 0.75rem;
+      font: inherit;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .il-tab.is-on {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .il-wire-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .il-wire-table th,
+    .il-wire-table td {
+      text-align: left;
+      padding: 0.4rem 0.35rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+      vertical-align: middle;
+    }
+    .il-wire-table th { color: var(--muted); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .il-wire-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .il-check-list {
+      display: grid;
+      gap: 0.25rem;
+      max-height: 14rem;
+      overflow: auto;
+      margin: 0.35rem 0 0.65rem;
+    }
+    .il-check-list label { display: flex; gap: 0.4rem; align-items: center; font-weight: 600; text-transform: none; letter-spacing: 0; }
+    .il-bracket {
+      display: flex;
+      gap: 1rem;
+      overflow-x: auto;
+      padding: 0.25rem 0 0.5rem;
+      align-items: stretch;
+    }
+    .il-bracket-round {
+      min-width: 12.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      justify-content: space-around;
+    }
+    .il-bracket-round h3 {
+      margin: 0;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .il-pgame {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      padding: 0.55rem 0.65rem;
+      font-size: 0.88rem;
+    }
+    .il-pgame.is-bye { opacity: 0.72; }
+    .il-pgame .pg-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      align-items: baseline;
+      padding: 0.18rem 0;
+    }
+    .il-pgame .pg-row.is-win { color: var(--gold); font-weight: 700; }
+    .il-pgame .seed {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      margin-right: 0.35rem;
+    }
+    .il-pgame .pts { font-variant-numeric: tabular-nums; }
+    .il-final-game {
+      max-width: 28rem;
+      margin: 1rem auto 0;
+    }
+    @media (max-width: 720px) {
+      .il-mu-grid { grid-template-columns: 1fr; }
+      .il-mu-col + .il-mu-col { border-left: 0; border-top: 1px solid var(--line); }
     }
     .il-week-bar {
       display: flex;
@@ -240,7 +944,7 @@
     }
     .il-pts {
       font-variant-numeric: tabular-nums;
-      color: #efd782;
+      color: var(--gold);
       font-weight: 700;
     }
     .il-slot-roster {
@@ -298,6 +1002,7 @@
     .il-slot-roster-row .slot[data-pos="FLEX"] { background: var(--mock-flex); }
     .il-slot-roster-row .slot[data-pos="BN"],
     .il-slot-roster-row .slot[data-pos="IR"] { background: var(--mock-bn); color: #e8eef8; }
+    .il-slot-roster-row .slot[data-pos="TAXI"] { background: var(--mock-bn); color: #d7c4ff; }
     .il-slot-roster-row .nm { min-width: 0; font-weight: 600; }
     .il-slot-roster-row .nm .pro {
       display: block;
@@ -309,18 +1014,23 @@
       text-align: right;
       font-variant-numeric: tabular-nums;
       font-weight: 700;
-      color: #efd782;
+      color: var(--gold);
     }
     .il-slot-roster-row.is-empty .nm { color: var(--muted); font-weight: 500; }
-    .il-slot-roster-row.is-selected {
-      background: color-mix(in srgb, rgba(239, 215, 130, 0.12) 70%, transparent);
+    .il-slot-roster-row.is-live .nums {
+      color: #4dff9a;
+    }
+    .il-slot-roster-row.is-live .pro::after {
+      content: " · LIVE";
+      color: #4dff9a;
+      letter-spacing: 0.08em;
     }
     .il-team-link {
       color: inherit;
       text-decoration: none;
-      border-bottom: 1px solid color-mix(in srgb, #efd782 45%, transparent);
+      border-bottom: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
     }
-    .il-team-link:hover { color: #efd782; }
+    .il-team-link:hover { color: var(--gold); }
     .il-rule-article {
       margin: 0 0 1.25rem;
       padding-bottom: 1rem;
@@ -360,6 +1070,22 @@
     @media (max-width: 720px) {
       .il-form-grid.is-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
+    .il-toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem 1.25rem;
+      align-items: center;
+      margin: 0.35rem 0 0.75rem;
+    }
+    .il-toggle-row label {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 650;
+    }
+    .il-keeper-fields[hidden] { display: none !important; }
     .il-slot-grid {
       --mock-qb: #ff6b6b;
       --mock-rb: #3dd68c;
@@ -393,6 +1119,7 @@
     .il-slot-field[data-pos="K"] { --slot-color: var(--mock-k); }
     .il-slot-field[data-pos="BN"] { --slot-color: var(--mock-bn); }
     .il-slot-field[data-pos="IR"] { --slot-color: var(--mock-ir); }
+    .il-slot-field[data-pos="TAXI"] { --slot-color: #7c5cbf; }
     .il-slot-field label {
       color: var(--text);
       font-weight: 700;
@@ -429,6 +1156,9 @@
     }
     .il-btn {
       appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border: 1px solid var(--btn-border, var(--text));
       background: var(--btn-bg, var(--text));
       color: var(--btn-text, var(--bg));
@@ -436,6 +1166,7 @@
       font-size: 0.78rem;
       letter-spacing: 0.06em;
       text-transform: uppercase;
+      text-decoration: none;
       padding: 0.55rem 0.9rem;
       cursor: pointer;
     }
@@ -484,6 +1215,114 @@
     }
     .il-pool button:hover { border-color: var(--blue); }
     .il-pool button:disabled { opacity: 0.4; cursor: default; }
+    .il-draft-live { display: grid; gap: 1rem; }
+    .il-clock-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .il-clock-timer {
+      font-family: var(--display), Bebas Neue, sans-serif;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      letter-spacing: 0.04em;
+      line-height: 0.95;
+      font-variant-numeric: tabular-nums;
+      color: #efd782;
+    }
+    .il-clock-timer.is-ok { color: #8fd49a; }
+    .il-clock-timer.is-warn { color: #efd782; }
+    .il-clock-timer.is-urgent { color: #ff8e8e; }
+    .il-clock-timer.is-mine { color: #8fd49a; }
+    .il-draft-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin: 0.55rem 0 0.45rem;
+    }
+    .il-draft-filters button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--muted);
+      font-family: var(--display);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.55rem;
+      cursor: pointer;
+    }
+    .il-draft-filters button.is-on { color: var(--text); border-color: var(--blue); background: rgba(47,109,255,0.12); }
+    .il-draft-search { width: min(100%, 18rem); }
+    .il-pool-row {
+      display: grid;
+      grid-template-columns: 2rem 2.4rem minmax(0, 1fr) 3.2rem 3.2rem 3.4rem;
+      gap: 0.4rem;
+      align-items: center;
+      width: 100%;
+    }
+    .il-pool-row img, .il-pool-head {
+      width: 2rem; height: 2rem; object-fit: cover; border-radius: 0.2rem; background: #111;
+    }
+    .il-pool-head.is-blank { display: inline-block; }
+    .il-inj {
+      display: inline-block;
+      margin-left: 0.3rem;
+      padding: 0 0.28rem;
+      border: 1px solid #ff8e8e;
+      color: #ff8e8e;
+      font-size: 0.65rem;
+      letter-spacing: 0.04em;
+    }
+    .il-snake {
+      overflow: auto;
+      border: 1px solid var(--line);
+      max-height: min(42vh, 520px);
+    }
+    .il-snake-board {
+      display: grid;
+      row-gap: 1px;
+      column-gap: 4px;
+      min-width: max-content;
+      padding: 4px;
+      background: #121212;
+    }
+    .il-snake-head, .il-snake-round, .il-snake-cell {
+      background: var(--panel);
+      min-width: 6.6rem;
+      max-width: 7.4rem;
+      padding: 0.35rem 0.3rem;
+      font-size: 0.72rem;
+    }
+    .il-snake-round {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      min-width: 2rem;
+      max-width: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--display);
+      font-weight: 700;
+    }
+    .il-snake-head {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      font-family: var(--display);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .il-snake-cell { min-height: 2.8rem; }
+    .il-snake-cell.pos-QB { background: #e85d5d; color: #111; }
+    .il-snake-cell.pos-RB { background: #5fbf6a; color: #111; }
+    .il-snake-cell.pos-WR { background: #5aa8e8; color: #111; }
+    .il-snake-cell.pos-TE { background: #f0b24a; color: #111; }
+    .il-snake-cell.pos-K { background: #c9a0e8; color: #111; }
+    .il-snake-cell.pos-DST { background: #8a9aa8; color: #111; }
+    .il-snake-cell.empty { background: color-mix(in srgb, var(--panel) 80%, #000); color: var(--muted); }
     .il-picks {
       display: grid;
       gap: 0.25rem;
@@ -532,7 +1371,8 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=101"></script>
+  <script src="/js/nav.js?v=164"></script>
+  <script src="/js/official-draft-ui.js?v=11"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -547,6 +1387,212 @@
       return { slug: '', section: 'home' };
     }
 
+    function confColor(conf, index = 0) {
+      const raw = String(conf?.color || '').trim();
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw)) return raw;
+      return index === 0 ? '#2f6dff' : '#efd782';
+    }
+
+    function applyLeagueTheme(league) {
+      const confs = league?.conferences || [];
+      const c1 = confColor(confs[0], 0);
+      const c2 = confs[1] ? confColor(confs[1], 1) : c1;
+      const body = document.body;
+      body.style.setProperty('--il-c1', c1);
+      body.style.setProperty('--il-c2', c2);
+    }
+
+    function pageHead(title, league, sub = '') {
+      return `<header class="page-hero">
+        <p class="eyebrow">${esc(league.brand?.name || league.slug)}</p>
+        <h1>${esc(title)}</h1>
+        ${sub ? `<p>${sub}</p>` : ''}
+      </header>${statusBanner(league)}`;
+    }
+
+    function franchiseLogo(franchise) {
+      const src = franchise?.logo || franchise?.crest || '/assets/team-logo-placeholder.svg';
+      return `<img src="${esc(src)}" alt="" width="72" height="72" decoding="async" />`;
+    }
+
+    function franchiseById(id) {
+      return (hqState.league?.franchises || []).find((f) => f.id === id) || null;
+    }
+
+    function heroTagline(league, board) {
+      if (board?.live) {
+        const n = Number(board.liveGames) || 0;
+        const games = n === 1 ? '1 NFL game' : `${n} NFL games`;
+        return `<span class="t">LIVE</span><span class="sep">·</span><span class="d">Week ${esc(String(board.week || ''))}</span><span class="sep">·</span><span class="c">Play by Play · ${esc(games)}</span>`;
+      }
+      const confs = league.conferences || [];
+      const nTeams = Number(league.structure?.totalTeams || (league.franchises || []).length || 0);
+      const confLabel = confs.length === 2 ? 'Two Conferences' : (confs.length === 1 ? 'One Conference' : `${confs.length || '—'} Conferences`);
+      const champ = league.championship?.name || '';
+      if (league.brand?.tagline) return `<span class="c">${esc(league.brand.tagline)}</span>`;
+      return `<span class="t">${esc(nTeams || '—')} Teams</span><span class="sep">·</span><span class="d">${esc(confLabel)}</span>${
+        champ ? `<span class="sep">·</span><span class="c">${esc(champ)}</span>` : ''
+      }`;
+    }
+
+    function liveStatusLine(board) {
+      if (!board) return 'Connecting live scoring…';
+      if (board.live) {
+        const n = Number(board.liveGames) || 0;
+        return `LIVE play-by-play · ${n} NFL ${n === 1 ? 'game' : 'games'} in progress`;
+      }
+      if (Number(board.finalGames) > 0) return `Week ${esc(String(board.week))} · final`;
+      return `Week ${esc(String(board.week))} · live scoring from kickoff, play by play`;
+    }
+
+    function setLiveSync() {
+      const b = hqState.weekBoard;
+      const name = hqState.league?.brand?.name || 'League HQ';
+      if (b?.live) {
+        const t = b.statsFetchedAt
+          ? new Date(b.statsFetchedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })
+          : '';
+        window.GridIronNav?.setSync(`LIVE · ${b.liveGames || 0} NFL · ${t}`.trim(), true);
+        return;
+      }
+      window.GridIronNav?.setSync(name, true);
+    }
+
+    function pickMatchupOfWeek(matchups) {
+      const list = matchups || [];
+      if (!list.length) return null;
+      return list.slice().sort((a, b) => {
+        const aLive = Number(a.homeScore || a.home?.total || 0) + Number(a.awayScore || a.away?.total || 0);
+        const bLive = Number(b.homeScore || b.home?.total || 0) + Number(b.awayScore || b.away?.total || 0);
+        return bLive - aLive;
+      })[0];
+    }
+
+    function motwBlock(conf, matchup, board) {
+      const title = conf?.shortName || conf?.name || 'League';
+      const color = confColor(conf, 0);
+      if (!matchup) {
+        return `<div class="il-motw-block">
+          <div class="il-conf-head" style="--conf:${esc(color)}"><h3>${esc(title)}</h3></div>
+          <p class="il-empty">Matchups lock after the draft.</p>
+        </div>`;
+      }
+      const awayF = franchiseById(matchup.away?.franchiseId);
+      const homeF = franchiseById(matchup.home?.franchiseId);
+      const awayScore = Number(matchup.awayScore || matchup.away?.total || 0).toFixed(1);
+      const homeScore = Number(matchup.homeScore || matchup.home?.total || 0).toFixed(1);
+      return `<div class="il-motw-block">
+        <div class="il-conf-head" style="--conf:${esc(color)}"><h3>${esc(title)}</h3></div>
+        <div class="il-motw">
+          <div class="il-motw-side">
+            ${franchiseLogo(awayF || matchup.away)}
+            <div class="nm" title="${esc(matchup.away?.name || '')}">${esc(matchup.away?.name || 'Away')}</div>
+          </div>
+          <div class="il-motw-mid">
+            <div class="vs">VS</div>
+            <div class="score">${esc(awayScore)} – ${esc(homeScore)}</div>
+            ${board?.live ? '<div class="live-note">LIVE</div>' : ''}
+          </div>
+          <div class="il-motw-side">
+            ${franchiseLogo(homeF || matchup.home)}
+            <div class="nm" title="${esc(matchup.home?.name || '')}">${esc(matchup.home?.name || 'Home')}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function motwHtml(league, board) {
+      const groups = franchisesByConf(league);
+      const matchups = board?.matchups || [];
+      if (!groups.length) return `<p class="il-empty">Franchises show here after setup.</p>`;
+      const blocks = groups.map(({ conf }) => {
+        const slice = matchups.filter((m) => {
+          const key = conf.key;
+          if (!key || groups.length < 2) return true;
+          return m.home?.conferenceKey === key || m.away?.conferenceKey === key;
+        });
+        return motwBlock(conf, pickMatchupOfWeek(slice.length ? slice : matchups), board);
+      });
+      return `<div class="il-motw-col">${blocks.join('')}</div>`;
+    }
+
+    function hotNotHtml(league, board) {
+      const groups = franchisesByConf(league);
+      const byId = new Map((board?.standings || []).map((s) => [s.franchiseId, s]));
+      if (!groups.length) return '';
+      return groups.map(({ conf, teams }, gi) => {
+        const ranked = [...teams].map((t) => {
+          const s = byId.get(t.id);
+          return {
+            ...t,
+            wins: s?.wins || 0,
+            losses: s?.losses || 0,
+            pointsFor: Number(s?.pointsFor || s?.total || 0),
+            total: Number(s?.total || 0)
+          };
+        }).sort((a, b) => {
+          if (board?.live) return (b.total - a.total) || (b.pointsFor - a.pointsFor);
+          return (b.wins - a.wins) || (b.pointsFor - a.pointsFor);
+        });
+        const hot = ranked[0];
+        const cold = ranked.length > 1 ? ranked[ranked.length - 1] : null;
+        const color = confColor(conf, gi);
+        const rec = (t) => {
+          if (!t) return '';
+          if (board?.live) return `${Number(t.total || t.pointsFor || 0).toFixed(1)} this week`;
+          return `${t.wins}-${t.losses} · ${Number(t.pointsFor || 0).toFixed(1)} PF`;
+        };
+        return `<div class="il-motw-block">
+          <div class="il-conf-head" style="--conf:${esc(color)}"><h3>${esc(conf.shortName || conf.name || conf.key)}</h3></div>
+          <div class="il-hotnot">
+            <div class="il-hotnot-col hot">
+              <div class="label">Who’s Hot</div>
+              ${hot ? `<div class="il-hotnot-team">${franchiseLogo(hot)}<div style="min-width:0"><div class="nm">${esc(hot.name)}</div><div class="sub">${esc(rec(hot))}</div></div></div>` : ''}
+            </div>
+            <div class="il-hotnot-col cold">
+              <div class="label">Who’s Not</div>
+              ${cold ? `<div class="il-hotnot-team">${franchiseLogo(cold)}<div style="min-width:0"><div class="nm">${esc(cold.name)}</div><div class="sub">${esc(rec(cold))}</div></div></div>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function paintHomeLive() {
+      const league = hqState.league;
+      const board = hqState.weekBoard;
+      if (!league) return;
+      const hero = document.getElementById('il-hq-hero');
+      const tag = document.getElementById('il-hero-tag');
+      hero?.classList.toggle('is-live', Boolean(board?.live));
+      if (tag) tag.innerHTML = heroTagline(league, board);
+      const standings = document.getElementById('il-home-standings');
+      if (standings) standings.innerHTML = standingsHtml(league, board, { compact: true });
+      const motw = document.getElementById('il-home-motw');
+      if (motw) motw.innerHTML = motwHtml(league, board);
+      const hot = document.getElementById('il-home-hotnot');
+      if (hot) hot.innerHTML = hotNotHtml(league, board);
+    }
+
+    function leagueCrestHtml(league) {
+      const name = league.brand?.name || league.slug;
+      const src = league.brand?.logo || league.brand?.crest;
+      if (src) {
+        return `<img src="${esc(src)}" alt="${esc(name)}" width="320" height="320" decoding="async" />`;
+      }
+      const initials = String(name).split(/\s+/).filter(Boolean).slice(0, 2)
+        .map((w) => w[0]).join('').toUpperCase() || 'L';
+      return `<div class="il-lettermark" aria-hidden="true">${esc(initials)}</div>`;
+    }
+
+    function draftStatusLabel(league) {
+      const s = String(league.draft?.status || 'scheduled').toLowerCase();
+      if (s === 'lobby') return 'Lobby';
+      if (s === 'live') return 'Live';
+      if (s === 'complete') return 'Complete';
+      return 'Scheduled';
+    }
+
     function statusBanner(league) {
       if (league.status === 'pending_approval') {
         return `<div class="il-banner is-pending"><strong>Pending approval.</strong> After the site owner approves, open <a href="/create-league">Create a League</a> to set up the league.</div>`;
@@ -557,7 +1603,7 @@
       if (league.status === 'rejected') {
         return `<div class="il-banner"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
       }
-      return `<div class="il-banner is-ok"><strong>Independent league HQ.</strong> Not affiliated with GridIron 24 or AAA. Homepage: <span class="il-url">${esc(league.homePath || location.pathname)}</span></div>`;
+      return '';
     }
 
     function franchisesByConf(league) {
@@ -571,11 +1617,11 @@
       return [...map.values()];
     }
 
-    function standingsHtml(league, weekBoard = null) {
+    function standingsHtml(league, weekBoard = null, { compact = false } = {}) {
       const groups = franchisesByConf(league);
-      if (!groups.length) return `<p class="il-empty">No franchises yet.</p>`;
+      if (!groups.length) return `<p class="il-empty">Franchises show here after league setup.</p>`;
       const byId = new Map((weekBoard?.standings || []).map((s) => [s.franchiseId, s]));
-      return `<div class="il-split">${groups.map(({ conf, teams }) => {
+      return `<div class="il-standings${groups.length < 2 ? ' is-one' : ''}">${groups.map(({ conf, teams }, gi) => {
         const ranked = [...teams].sort((a, b) => {
           const sa = byId.get(a.id);
           const sb = byId.get(b.id);
@@ -584,23 +1630,49 @@
           if (!sb) return -1;
           return (sb.wins - sa.wins) || (sb.pointsFor - sa.pointsFor);
         });
+        const color = confColor(conf, gi);
         return `
-        <section class="il-panel">
-          <h2>${esc(conf.name || conf.key)} Standings</h2>
-          <ul class="il-team-list">
-            ${ranked.map((t, i) => {
-              const s = byId.get(t.id);
-              const record = s
-                ? `${s.wins}-${s.losses}${s.ties ? `-${s.ties}` : ''} · ${Number(s.pointsFor || 0).toFixed(1)} PF`
-                : '0-0';
-              return `
-              <li>
-                <span>${i + 1}. <a class="il-team-link" href="${esc(teamPath(t.id, weekBoard?.week))}">${esc(t.name || t.teamName || `Team ${i + 1}`)}</a></span>
-                <span class="il-meta">${esc(t.managerName || t.ownerName || 'Unclaimed')} · ${esc(record)}</span>
-              </li>`;
-            }).join('') || '<li class="il-empty">No teams</li>'}
-          </ul>
-        </section>`;
+        <div class="il-conf" style="--conf:${esc(color)}">
+          <div class="il-conf-head">
+            ${conf.logo ? `<img src="${esc(conf.logo)}" alt="" width="64" height="64" decoding="async" />` : ''}
+            <h3>${esc(conf.shortName || conf.name || conf.key)}</h3>
+          </div>
+          <table class="il-mini">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Team</th>
+                ${compact ? '' : '<th>Mgr</th>'}
+                <th class="num">W-L</th>
+                <th class="num">PF</th>
+                ${compact ? '' : '<th class="num">PA</th>'}
+              </tr>
+            </thead>
+            <tbody>
+              ${ranked.map((t, i) => {
+                const s = byId.get(t.id);
+                const record = s
+                  ? `${s.wins}-${s.losses}${s.ties ? `-${s.ties}` : ''}`
+                  : '0-0';
+                const pf = s ? Number(s.pointsFor || 0).toFixed(1) : '0.0';
+                const logo = t.logo || t.crest || '';
+                return `
+                <tr>
+                  <td class="rank">${i + 1}</td>
+                  <td class="team">
+                    <a class="il-team-link" href="${esc(teamPath(t.id, weekBoard?.week))}">${
+                      logo ? `<img class="team-logo-sm" src="${esc(logo)}" alt="" width="28" height="28" />` : ''
+                    }${esc(t.name || t.teamName || `Team ${i + 1}`)}</a>
+                  </td>
+                  ${compact ? '' : `<td class="mgr">${esc(t.managerName || t.ownerName || 'Open')}</td>`}
+                  <td class="num">${esc(record)}</td>
+                  <td class="num">${esc(pf)}</td>
+                  ${compact ? '' : `<td class="num">${esc(s ? Number(s.pointsAgainst || 0).toFixed(1) : '0.0')}</td>`}
+                </tr>`;
+              }).join('') || `<tr><td colspan="${compact ? 4 : 6}" class="il-empty">No teams</td></tr>`}
+            </tbody>
+          </table>
+        </div>`;
       }).join('')}</div>`;
     }
 
@@ -639,7 +1711,7 @@
           ${settingsBlock}
           <section class="il-panel" style="margin-top:1rem;">
             <h2>House rules</h2>
-            <p class="il-meta">You write these. Managers see them on the Rule Book with the settings articles above. Not GridIron 24 / AAA.</p>
+            <p class="il-meta">You write these. Managers see them here with the settings articles above.</p>
             <form class="il-rule-editor" id="il-rulebook-form" style="margin-top:0.85rem;">
               ${ownerArticles.map((a, i) => `
                 <div class="il-rule-block">
@@ -684,6 +1756,70 @@
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
+    function keepersAreOn(settings = {}) {
+      return settings.keepersEnabled === true && settings.leagueFormat !== 'dynasty';
+    }
+
+    function keeperToggleHtml(s = {}, opts = {}) {
+      const dynasty = s.leagueFormat === 'dynasty';
+      const on = !dynasty && keepersAreOn(s);
+      const prefix = opts.namePrefix || '';
+      return `
+        <fieldset class="il-toggle-row" ${dynasty ? 'disabled' : ''}>
+          <legend class="il-meta" style="padding:0;margin:0 0.5rem 0 0;">Keepers</legend>
+          <label><input type="radio" name="${prefix}keepersEnabled" value="0" data-keeper-toggle ${on ? '' : 'checked'} /> Off</label>
+          <label><input type="radio" name="${prefix}keepersEnabled" value="1" data-keeper-toggle ${on ? 'checked' : ''} /> On</label>
+        </fieldset>
+        ${dynasty ? '<p class="il-meta">Dynasty keeps the entire roster. Turn league format back to Redraft if you want optional keepers instead.</p>' : ''}
+        <div class="il-keeper-fields" ${on ? '' : 'hidden'}>
+          <div class="il-form-grid">
+            <label>Keepers per team
+              <input type="number" name="${prefix}keeperCount" min="1" max="40" value="${esc(s.keeperCount > 0 ? s.keeperCount : 1)}" />
+            </label>
+            <label>Max seasons you can keep the same player
+              <input type="number" name="${prefix}keeperMaxSeasons" min="1" max="20" value="${esc(s.keeperMaxSeasons ?? 3)}" />
+            </label>
+          </div>
+          <label>Keeper draft cost
+            <select name="${prefix}keeperCost">
+              <option value="none" ${s.keeperCost === 'none' || !s.keeperCost ? 'selected' : ''}>No pick cost — keep the player and still draft that round</option>
+              <option value="round" ${s.keeperCost === 'round' ? 'selected' : ''}>Lose that round’s pick next year</option>
+              <option value="round-minus-one" ${s.keeperCost === 'round-minus-one' ? 'selected' : ''}>Lose that round, one round earlier each year they are kept</option>
+            </select>
+          </label>
+          <p class="il-meta">“Lose that round” skips that franchise’s pick in that round of next year’s draft. Undrafted keepers cost the last round when a pick cost is on.</p>
+        </div>`;
+    }
+
+    function wireKeeperToggle(root = document) {
+      root.querySelectorAll('[data-keeper-toggle]').forEach((input) => {
+        input.addEventListener('change', () => {
+          const form = input.closest('form');
+          const fields = form?.querySelector('.il-keeper-fields');
+          if (fields) fields.hidden = input.value !== '1' || !input.checked;
+          if (input.checked && input.value === '0') {
+            const hide = form?.querySelector('.il-keeper-fields');
+            if (hide) hide.hidden = true;
+          }
+          if (input.checked && input.value === '1') {
+            const show = form?.querySelector('.il-keeper-fields');
+            if (show) show.hidden = false;
+          }
+        });
+      });
+    }
+
+    function keeperSettingsFromForm(form) {
+      const fd = new FormData(form);
+      const on = fd.get('keepersEnabled') === '1';
+      return {
+        keepersEnabled: on,
+        keeperCount: Number(fd.get('keeperCount')) || 0,
+        keeperMaxSeasons: Number(fd.get('keeperMaxSeasons')) || 1,
+        keeperCost: on ? (fd.get('keeperCost') || 'none') : 'none'
+      };
+    }
+
     function settingsHtml(league, viewer) {
       const s = league.settings || {};
       const st = league.structure || {};
@@ -691,21 +1827,21 @@
       const pendingLock = league.status === 'pending_approval' || league.status === 'rejected';
       const locked = pendingLock || ['live', 'complete'].includes(String(league.draft?.status || ''));
       if (!viewer?.isOwner && !viewer?.isSiteOwner) {
-        return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+        return `${pageHead('Settings', league)}
           <section class="il-panel"><h2>League settings</h2>
           <p class="il-empty">Only the league owner can edit settings.</p>
           <p class="il-meta" style="margin-top:0.75rem;">Open the <strong>Rule Book</strong> page to read league rules.</p>
           </section>`;
       }
       if (league.status === 'pending_approval') {
-        return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+        return `${pageHead('Settings', league)}
           <section class="il-panel">
             <h2>Waiting for approval</h2>
             <p class="il-meta">You submitted <strong>${esc(league.brand?.name || league.slug)}</strong> — <strong>${esc(String(league.structure?.totalTeams || '—'))}</strong> teams · ${esc((league.leagueType === 'two-conferences' || (league.conferences || []).length === 2) ? 'two conferences' : 'one conference')}. After approval, set up the league on <a href="/create-league">Create a League</a>.</p>
           </section>`;
       }
       if (league.status === 'approved' && league.setupComplete === false) {
-        return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+        return `${pageHead('Settings', league)}
           <section class="il-panel">
             <h2>Set up your league</h2>
             <p class="il-meta">Approved. Complete setup on <a href="/create-league">Create a League</a> before Settings unlock here.</p>
@@ -713,12 +1849,12 @@
           </section>`;
       }
       if (league.status === 'rejected') {
-        return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+        return `${pageHead('Settings', league)}
           <section class="il-panel"><h2>League not approved</h2>
           <p class="il-empty">Settings stay locked for rejected leagues.</p>
           </section>`;
       }
-      return `<h1 class="page-title">Settings</h1>${statusBanner(league)}
+      return `${pageHead('Settings', league)}
         <section class="il-panel">
           <h2>Brand &amp; logos</h2>
           <p class="il-meta">League logo appears on your HQ home. Conference logos show when you run two conferences.</p>
@@ -760,7 +1896,7 @@
         </section>
         <section class="il-panel" style="margin-top:1rem;">
           <h2>Official draft</h2>
-          <p class="il-meta">GridIron 24 stays on ESPN. This draft is local to your league and starts automatically at the time you set. Managers who are on the board make their own pick; if the clock hits zero, CPU autopicks for them.</p>
+          <p class="il-meta">This is a live draft at the date and time you set. The room opens then with a live slot for each franchise. Managers join their seats, then the clock starts. Unjoined seats and expired clocks get a CPU pick.</p>
           <p class="il-meta" style="margin-top:0.55rem;">Everything here is owner-controlled. Structure, roster, scoring, draft, and playoffs feed the Rule Book. House rules live on the <a href="${esc((hqState.pages && hqState.pages.rulebook) || '#')}">Rule Book</a> page.</p>
           <form class="il-form" id="il-settings-form" style="margin-top:0.85rem;">
             <label>Draft date &amp; time
@@ -772,7 +1908,7 @@
                 <option value="league" ${s.draftScope === 'league' ? 'selected' : ''}>One snake — whole league</option>
               </select>
             </label>
-            <p class="il-meta">With separate drafts, each conference fills its own roster pool; they still meet in the Super Bowl.</p>
+            <p class="il-meta">With separate drafts, each conference fills its own roster pool. You name the title game in playoffs below — nothing is copied from GridIron 24.</p>
             <label>Rounds
               <input type="number" name="draftRounds" min="5" max="25" value="${esc(s.draftRounds || 15)}" ${locked ? 'disabled' : ''} />
             </label>
@@ -842,27 +1978,27 @@
                 <input type="text" name="playoffWeeks" value="${esc((st.playoffWeeks || []).join(', '))}" placeholder="14, 15, 16" />
               </label>
             </div>
-            <label>Super Bowl / championship name
-              <input type="text" name="championshipName" maxlength="80" value="${esc(ch.name || '')}" />
+            <label>Championship name
+              <input type="text" name="championshipName" maxlength="80" value="${esc(ch.name || '')}" placeholder="Optional — your title game" />
             </label>
             <div class="il-form-grid">
               <label>Conference title week
-                <input type="number" name="titleWeek" min="1" max="18" value="${esc(ch.titleWeek ?? 16)}" />
+                <input type="number" name="titleWeek" min="1" max="18" value="${esc(ch.titleWeek ?? '')}" />
               </label>
-              <label>Super Bowl week
-                <input type="number" name="bowlWeek" min="1" max="18" value="${esc(ch.bowlWeek ?? 17)}" />
+              <label>Championship week
+                <input type="number" name="bowlWeek" min="1" max="18" value="${esc(ch.bowlWeek ?? '')}" />
               </label>
             </div>
             <label style="margin-top:0.35rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
-              <input type="checkbox" name="survivalEnabled" value="1" ${league.survival?.enabled !== false ? 'checked' : ''} />
-              Mayor's Cup–style survival (last place each conference)
+              <input type="checkbox" name="survivalEnabled" value="1" ${league.survival?.enabled === true ? 'checked' : ''} />
+              Last-place / consolation game (optional)
             </label>
             <div class="il-form-grid">
-              <label>Survival name
-                <input type="text" name="survivalName" maxlength="80" value="${esc(league.survival?.name || "Mayor's Cup")}" />
+              <label>Consolation name
+                <input type="text" name="survivalName" maxlength="80" value="${esc(league.survival?.enabled ? (league.survival?.name || '') : '')}" placeholder="Optional" />
               </label>
-              <label>Survival week
-                <input type="number" name="survivalWeek" min="1" max="18" value="${esc(league.survival?.week ?? 17)}" />
+              <label>Consolation week
+                <input type="number" name="survivalWeek" min="1" max="18" value="${esc(league.survival?.enabled ? (league.survival?.week ?? '') : '')}" />
               </label>
             </div>
             <div class="il-actions">
@@ -876,7 +2012,7 @@
           <p class="il-meta">Owner-defined — e.g. 2 QB, 3 RB, 5 WR, 2 FLEX, multiple IR. Colors match the draft / roster position badges.</p>
           <form class="il-form is-wide" id="il-roster-form" style="margin-top:0.85rem;">
             <div class="il-slot-grid">
-              ${[['QB',8],['RB',12],['WR',12],['TE',8],['FLEX',8],['DST',4],['K',4],['BN',30],['IR',10]].map(([pos, max]) => `
+              ${[['QB',8],['RB',12],['WR',12],['TE',8],['FLEX',8],['DST',4],['K',4],['BN',30],['IR',10],['TAXI',10]].map(([pos, max]) => `
                 <div class="il-slot-field" data-pos="${pos}">
                   <label>${esc(pos)}
                     <input type="number" name="slot-${pos}" min="0" max="${max}" step="1" value="${esc(s.rosterSlots?.[pos] ?? 0)}" />
@@ -884,20 +2020,67 @@
                 </div>`).join('')}
             </div>
             <div class="il-form-grid" style="margin-top:0.75rem;">
-              <label>Keepers per team
-                <input type="number" name="keeperCount" min="0" max="5" value="${esc(s.keeperCount ?? 1)}" />
+              <label>League format
+                <select name="leagueFormat">
+                  <option value="redraft" ${s.leagueFormat !== 'dynasty' ? 'selected' : ''}>Redraft (draft a new roster each year)</option>
+                  <option value="dynasty" ${s.leagueFormat === 'dynasty' ? 'selected' : ''}>Dynasty (entire roster carries over)</option>
+                </select>
               </label>
-              <label>Max keeper seasons
-                <input type="number" name="keeperMaxSeasons" min="1" max="5" value="${esc(s.keeperMaxSeasons ?? 3)}" />
+              <label>Draft pool
+                <select name="draftPool">
+                  <option value="all" ${s.draftPool !== 'rookies' ? 'selected' : ''}>Full player pool</option>
+                  <option value="rookies" ${s.draftPool === 'rookies' || s.leagueFormat === 'dynasty' ? 'selected' : ''}>Rookies only</option>
+                </select>
               </label>
             </div>
             <label style="margin-top:0.55rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
-              <input type="checkbox" name="keepersEnabled" value="1" ${s.keepersEnabled !== false ? 'checked' : ''} />
-              Keepers enabled (GridIron 24–style)
+              <input type="checkbox" name="irOpen" value="1" ${s.irOpen === true ? 'checked' : ''} />
+              Allow anyone on IR (off = Out / IR / PUP / Doubtful only)
             </label>
+            <label style="margin-top:0.35rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
+              <input type="checkbox" name="taxiRookieOnly" value="1" ${s.taxiRookieOnly !== false ? 'checked' : ''} />
+              Taxi is rookies / first-year draftees only
+            </label>
+            <p class="il-meta">IR does not score and does not count against the active roster. Taxi is for dynasty. Keepers are configured in the Keepers section below — they can be off.</p>
             <div class="il-actions">
               <button type="submit" class="il-btn">Save roster slots</button>
               <span class="il-status" id="il-roster-status" role="status"></span>
+            </div>
+          </form>
+        </section>
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>Keepers</h2>
+          <p class="il-meta">Keepers are optional. Off = everyone goes back into the draft next year. On = each team keeps a set number of players, with the cost rules you choose. Dynasty (above) keeps the whole roster and does not use these declarations.</p>
+          <form class="il-form is-wide" id="il-keepers-settings-form" style="margin-top:0.85rem;">
+            ${keeperToggleHtml(s)}
+            <div class="il-actions">
+              <button type="submit" class="il-btn">Save keeper settings</button>
+              <span class="il-status" id="il-keepers-settings-status" role="status"></span>
+            </div>
+          </form>
+        </section>
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>Waivers &amp; trades</h2>
+          <p class="il-meta">This league’s wire — not ESPN’s. Dropped players sit on waivers, then become free agents. Trades complete when the other manager accepts; you can veto.</p>
+          <form class="il-form is-wide" id="il-wire-settings-form" style="margin-top:0.85rem;">
+            <label>Waiver type
+              <select name="waiverType">
+                <option value="FAAB" ${s.waiverType === 'FAAB' || !s.waiverType ? 'selected' : ''}>FAAB</option>
+                <option value="rolling" ${s.waiverType === 'rolling' ? 'selected' : ''}>Rolling priority</option>
+                <option value="reverse-standings" ${s.waiverType === 'reverse-standings' ? 'selected' : ''}>Reverse standings</option>
+              </select>
+            </label>
+            <div class="il-form-grid">
+              <label>FAAB budget
+                <input type="number" name="faabBudget" min="0" max="1000" value="${esc(s.faabBudget ?? 100)}" />
+              </label>
+              <label>Hours on waivers after a drop
+                <input type="number" name="waiverHoldHours" min="0" max="168" value="${esc(s.waiverHoldHours ?? 48)}" />
+              </label>
+            </div>
+            <div class="il-actions">
+              <button type="submit" class="il-btn">Save wire settings</button>
+              <span class="il-status" id="il-wire-settings-status" role="status"></span>
             </div>
           </form>
         </section>
@@ -922,7 +2105,7 @@
         </section>
         <section class="il-panel" style="margin-top:1rem;">
           <h2>Franchises</h2>
-          <p class="il-meta">Managers claim a franchise before draft day. CPU fills empty seats if you allow it above.</p>
+          <p class="il-meta">Managers claim a franchise before draft day. At the scheduled time they still join their live slot. CPU fills seats that stay empty if you allow it above.</p>
           <ul class="il-team-list" id="il-franchise-claim">
             ${(league.franchises || []).map((f) => `
               <li>
@@ -938,7 +2121,7 @@
     function manageHtml(league, viewer = {}) {
       const canManage = Boolean(viewer?.isOwner || viewer?.isSiteOwner);
       if (!canManage) {
-        return `<h1 class="page-title">Manage</h1>${statusBanner(league)}
+        return `${pageHead('Manage', league)}
           <section class="il-panel">
             <h2>League management</h2>
             <p class="il-empty">Only the league owner can invite players and assign franchises.</p>
@@ -946,14 +2129,14 @@
           </section>`;
       }
       if (league.setupComplete === false) {
-        return `<h1 class="page-title">Manage</h1>${statusBanner(league)}
+        return `${pageHead('Manage', league)}
           <section class="il-panel">
             <h2>Finish setup first</h2>
             <p class="il-meta">Complete the <a href="/create-league">Create a League</a> wizard before inviting managers.</p>
           </section>`;
       }
       const confs = league.conferences || [];
-      return `<h1 class="page-title">Manage</h1>${statusBanner(league)}
+      return `${pageHead('Manage', league)}
         <div class="il-manage-grid">
           <section class="il-panel">
             <h2>Invite players</h2>
@@ -994,7 +2177,7 @@
                     </span>
                   </div>
                   <div class="il-form" style="display:grid;grid-template-columns:1fr auto;gap:0.4rem;margin:0;">
-                    <input type="text" data-rename-name="${esc(f.id)}" value="${esc(f.name)}" maxlength="48" />
+                    <input type="text" data-rename-name="${esc(f.id)}" value="${esc(f.name)}" maxlength="32" />
                     <button type="button" class="il-btn is-ghost" data-rename="${esc(f.id)}">Rename</button>
                   </div>
                   <label class="il-meta" style="display:grid;gap:0.25rem;text-transform:none;letter-spacing:0;font-weight:500;">
@@ -1078,31 +2261,27 @@
       return q ? `${base}?${q}` : base;
     }
 
+    function canEditLineup(franchise) {
+      const v = hqState.viewer || {};
+      if (!franchise) return false;
+      if (v.isOwner || v.isSiteOwner) return true;
+      return Boolean(franchise.managerUserId && v.id && franchise.managerUserId === v.id);
+    }
+
     function posBadge(slot, position) {
       const s = String(slot || position || 'BN').toUpperCase();
       if (s === 'D/ST') return 'DST';
       return s;
     }
 
-    function slotRosterHtml(scoredFranchise, franchise, rosterSlots = {}) {
+    function slotRosterHtml(scoredFranchise, franchise, rosterSlots = {}, opts = {}) {
       const starters = Array.isArray(scoredFranchise?.starters) ? scoredFranchise.starters : [];
       const bench = Array.isArray(scoredFranchise?.bench) ? scoredFranchise.bench : [];
       const rawRoster = Array.isArray(franchise?.roster) ? franchise.roster : [];
+      const editable = Boolean(opts.editable) && rawRoster.length > 0;
 
-      // If no scored lineup yet, show raw roster as unselected pool.
-      if (!starters.length && !bench.length) {
-        if (!rawRoster.length) return `<p class="il-empty">No drafted players yet.</p>`;
-        return `<ul class="il-slot-roster" role="list">
-          <li class="il-slot-roster-divider">Roster</li>
-          ${rawRoster.map((p) => `
-            <li class="il-slot-roster-row">
-              <span class="slot" data-pos="${esc(posBadge(p.position))}">${esc(posBadge(p.position))}</span>
-              <span class="nm">${esc(p.name || p.playerName || 'Player')}
-                <span class="pro">${esc(p.nflTeam || p.team || '')}${p.round != null ? ` · Rd ${esc(p.round)}` : ''}</span>
-              </span>
-              <span class="nums">—</span>
-            </li>`).join('')}
-        </ul>`;
+      if (!starters.length && !bench.length && !rawRoster.length) {
+        return `<p class="il-empty">No drafted players yet.</p>`;
       }
 
       const slots = rosterSlots || {};
@@ -1117,7 +2296,7 @@
         filled.push({
           slot,
           position: slot,
-          name: 'Empty',
+          name: '',
           weekPoints: null,
           isStarter: true,
           empty: true
@@ -1125,26 +2304,90 @@
       }
 
       const total = scoredFranchise?.total != null ? Number(scoredFranchise.total).toFixed(1) : null;
-      return `
-        ${total != null ? `<p class="il-meta" style="margin:0 0 0.55rem;">Selected lineup · week total <span class="il-pts">${esc(total)}</span></p>` : ''}
+      if (!editable) {
+        return `
+        ${total != null ? `<p class="il-meta" style="margin:0 0 0.55rem;">Starting lineup · week total <span class="il-pts">${esc(total)}</span></p>` : ''}
         <ul class="il-slot-roster" role="list">
           ${filled.map((p) => `
-            <li class="il-slot-roster-row ${p.empty ? 'is-empty' : 'is-selected'}">
+            <li class="il-slot-roster-row ${p.empty ? 'is-empty' : 'is-selected'}${p.live ? ' is-live' : ''}">
               <span class="slot" data-pos="${esc(posBadge(p.slot || p.position))}">${esc(posBadge(p.slot || p.position))}</span>
               <span class="nm">${esc(p.empty ? '—' : (p.name || p.playerName || 'Player'))}
-                <span class="pro">${p.empty ? 'Open slot' : `${esc(p.nflTeam || p.team || p.position || '')}${p.isStarter !== false ? ' · selected' : ''}`}</span>
+                <span class="pro">${p.empty ? 'Open slot' : `${esc(p.nflTeam || p.team || p.position || '')}${p.gameClock ? ` · ${esc(p.gameClock)}` : ''}`}</span>
               </span>
               <span class="nums">${p.weekPoints != null ? Number(p.weekPoints).toFixed(1) : '—'}</span>
             </li>`).join('')}
-          ${bench.length ? `<li class="il-slot-roster-divider" aria-hidden="true">Bench</li>${bench.map((p) => `
-            <li class="il-slot-roster-row">
-              <span class="slot" data-pos="BN">BN</span>
+          ${bench.length ? `<li class="il-slot-roster-divider" aria-hidden="true">Bench / IR / Taxi</li>${bench.map((p) => `
+            <li class="il-slot-roster-row${p.live ? ' is-live' : ''}">
+              <span class="slot" data-pos="${esc(p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN')}">${esc(p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN')}</span>
               <span class="nm">${esc(p.name || p.playerName || 'Player')}
-                <span class="pro">${esc(p.nflTeam || p.team || p.position || '')} · not started</span>
+                <span class="pro">${esc(p.nflTeam || p.team || p.position || '')}${p.injuryStatus ? ` · ${esc(p.injuryStatus)}` : ''}${p.gameClock ? ` · ${esc(p.gameClock)}` : ''}</span>
               </span>
               <span class="nums">${p.weekPoints != null ? Number(p.weekPoints).toFixed(1) : '—'}</span>
             </li>`).join('')}` : ''}
         </ul>`;
+      }
+
+      const pool = rawRoster.map((p) => ({
+        playerId: String(p.playerId || p.id || ''),
+        name: p.name || p.playerName || 'Player',
+        position: String(p.position || '').toUpperCase(),
+        team: p.nflTeam || p.team || '',
+        slot: String(p.slot || 'BN').toUpperCase()
+      })).filter((p) => p.playerId);
+
+      function eligible(pos, slot) {
+        const p = pos === 'D/ST' || pos === 'DEF' ? 'DST' : pos;
+        if (slot === 'FLEX') return p === 'RB' || p === 'WR' || p === 'TE';
+        if (slot === 'DST') return p === 'DST';
+        return p === slot;
+      }
+
+      const slotRows = filled.map((row, i) => {
+        const slot = needed[i] || row.slot;
+        const current = row.empty ? '' : String(row.playerId || '');
+        const options = pool.filter((p) => eligible(p.position, slot));
+        return `
+          <li class="il-slot-roster-row il-lineup-row">
+            <span class="slot" data-pos="${esc(slot)}">${esc(slot)}</span>
+            <span class="nm">
+              <select data-lineup-slot="${esc(slot)}" data-lineup-index="${i}">
+                <option value="">— Open —</option>
+                ${options.map((p) => `<option value="${esc(p.playerId)}" ${p.playerId === current ? 'selected' : ''}>${esc(p.name)} (${esc(p.position)} ${esc(p.team)})</option>`).join('')}
+              </select>
+            </span>
+            <span class="nums">${row.weekPoints != null ? Number(row.weekPoints).toFixed(1) : '—'}</span>
+          </li>`;
+      }).join('');
+
+      const starterIds = new Set(filled.filter((p) => !p.empty && p.playerId).map((p) => String(p.playerId)));
+      const reserveChoices = ['BN'];
+      if (Number(slots.IR) > 0) reserveChoices.push('IR');
+      if (Number(slots.TAXI) > 0) reserveChoices.push('TAXI');
+      const reservePlayers = pool.filter((p) => !starterIds.has(p.playerId));
+      const reserveRows = reservePlayers.map((p) => `
+        <li class="il-slot-roster-row il-lineup-row">
+          <span class="slot" data-pos="${esc(p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN')}">${esc(p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN')}</span>
+          <span class="nm">${esc(p.name)} <span class="pro">${esc(p.position)} ${esc(p.team)}</span>
+            <select data-lineup-slot-reserve="1" data-player="${esc(p.playerId)}">
+              ${reserveChoices.map((s) => `<option value="${s}" ${p.slot === s || (!['IR','TAXI'].includes(p.slot) && s === 'BN') ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </span>
+          <span class="nums"></span>
+        </li>`).join('');
+
+      return `
+        ${total != null ? `<p class="il-meta" style="margin:0 0 0.55rem;">Starting lineup · week total <span class="il-pts">${esc(total)}</span></p>` : ''}
+        <form id="il-lineup-form" data-franchise="${esc(franchise.id)}">
+          <ul class="il-slot-roster" role="list">
+            ${slotRows}
+            ${reserveRows ? `<li class="il-slot-roster-divider">Bench / IR / Taxi</li>${reserveRows}` : ''}
+          </ul>
+          <p class="il-meta">IR only for Out / IR / PUP / Doubtful unless the owner opened IR. Taxi is dynasty rookies. IR and taxi do not score.</p>
+          <div class="il-actions" style="margin-top:0.85rem;">
+            <button type="submit" class="il-btn">Save lineup</button>
+            <span class="il-status" id="il-lineup-status" role="status"></span>
+          </div>
+        </form>`;
     }
 
     function rosterPanel(franchise, scoredFranchise = null, opts = {}) {
@@ -1220,8 +2463,8 @@
         </div>
         <section class="il-panel">
           <h2>${esc(franchise.name)}</h2>
-          <p class="il-meta" style="margin:0 0 0.75rem;">Selected starters count toward the scoreboard. Bench players are owned but not started this week.</p>
-          ${slotRosterHtml(scored, franchise, league.settings?.rosterSlots || {})}
+          <p class="il-meta" style="margin:0 0 0.75rem;">Set your starters. Only the starting lineup scores. Points update as NFL games go.</p>
+          ${slotRosterHtml(scored, franchise, league.settings?.rosterSlots || {}, { editable: canEditLineup(franchise) })}
         </section>`;
     }
 
@@ -1234,7 +2477,7 @@
       }
       const franchise = (league.franchises || []).find((f) => f.id === franchiseId) || null;
       if (!franchise) {
-        return `<h1 class="page-title">Team</h1>${statusBanner(league)}
+        return `${pageHead('Team', league)}
           <section class="il-panel">
             <h2>Pick a team</h2>
             <ul class="il-team-list">
@@ -1247,8 +2490,98 @@
           </section>`;
       }
       const scored = (weekBoard?.franchises || []).find((f) => f.franchiseId === franchise.id) || null;
-      return `<h1 class="page-title">${esc(franchise.name)}</h1>${statusBanner(league)}
+      return `${pageHead(franchise.name, league)}
         <div id="il-week-scored">${teamPageBody(league, franchise, scored, weekBoard?.week)}</div>`;
+    }
+
+    function muPlayerHtml(p) {
+      if (p.empty || !p.playerId) {
+        return `<div class="il-mu-player is-empty"><span class="slot">${esc(p.slot || '')}</span><span class="nm">—</span><span class="pts">—</span></div>`;
+      }
+      return `<div class="il-mu-player${p.live ? ' is-live' : ''}">
+        <span class="slot" data-pos="${esc(posBadge(p.slot || p.position))}">${esc(posBadge(p.slot || p.position))}</span>
+        <span class="nm">${esc(p.name || p.playerName || 'Player')}
+          <span class="pro">${esc(p.nflTeam || p.team || '')}${p.gameClock ? ` · ${esc(p.gameClock)}` : ''}</span>
+        </span>
+        <span class="pts">${Number(p.weekPoints || 0).toFixed(1)}</span>
+      </div>`;
+    }
+
+    function nflSlateHtml(games) {
+      if (!Array.isArray(games) || !games.length) return '';
+      return `<div class="il-nfl-slate" aria-label="NFL games">
+        ${games.map((g) => `
+          <div class="il-nfl-game is-${esc(g.status?.bucket || 'upcoming')}">
+            <span>${esc(g.away?.abbr || '')} ${g.away?.score != null ? esc(String(g.away.score)) : ''} @ ${esc(g.home?.abbr || '')} ${g.home?.score != null ? esc(String(g.home.score)) : ''}</span>
+            <span class="st">${esc(g.status?.detail || g.status?.bucket || '')}</span>
+          </div>`).join('')}
+      </div>`;
+    }
+
+    function leadersHtml(leaders) {
+      if (!Array.isArray(leaders) || !leaders.length) return '';
+      return `<section class="il-panel" style="margin-top:1rem;">
+        <h2>Week leaders</h2>
+        <ul class="il-leaders">
+          ${leaders.map((p, i) => `
+            <li>
+              <span class="rk">${i + 1}</span>
+              <span><strong>${esc(p.name)}</strong>
+                <span class="il-meta"> ${esc(p.position || '')} ${esc(p.nflTeam || '')} · ${esc(p.franchiseName || '')}</span>
+              </span>
+              <span class="il-pts">${Number(p.points || 0).toFixed(1)}${p.live ? ' <span class="il-live-pill">LIVE</span>' : ''}</span>
+            </li>`).join('')}
+        </ul>
+      </section>`;
+    }
+
+    function matchupBoardHtml(weekBoard) {
+      const week = weekBoard?.week;
+      const matchups = weekBoard?.matchups || [];
+      if (!matchups.length) {
+        return weekBoard?.phase === 'playoff'
+          ? '<p class="il-empty">No playoff games this week. Byes advance automatically.</p>'
+          : '<p class="il-empty">Matchups post after the draft. Live scoring starts at kickoff.</p>';
+      }
+      return matchups.map((m) => {
+        const live = Boolean(weekBoard?.live) || (m.home?.starters || []).some((p) => p.live)
+          || (m.away?.starters || []).some((p) => p.live);
+        return `
+        <article class="il-mu-card${live ? ' is-live' : ''}">
+          ${m.label ? `<p class="il-meta" style="margin:0 0 0.45rem;">${esc(m.label)}${m.homeSeed ? ` · #${esc(String(m.homeSeed))} vs #${esc(String(m.awaySeed || ''))}` : ''}</p>` : ''}
+          <header class="il-mu-head">
+            <div class="side">
+              <div><a class="il-team-link" href="${esc(teamPath(m.home?.franchiseId, week))}"><strong>${esc(m.home?.name || 'Home')}</strong></a></div>
+              <div class="il-meta">${esc(m.home?.managerName || '')}</div>
+              <div class="score">${Number(m.homeScore || m.home?.total || 0).toFixed(1)}</div>
+            </div>
+            <div class="vs">${live ? '<span class="il-live-pill">LIVE</span>' : 'vs'}</div>
+            <div class="side is-right">
+              <div><a class="il-team-link" href="${esc(teamPath(m.away?.franchiseId, week))}"><strong>${esc(m.away?.name || 'Away')}</strong></a></div>
+              <div class="il-meta">${esc(m.away?.managerName || '')}</div>
+              <div class="score">${Number(m.awayScore || m.away?.total || 0).toFixed(1)}</div>
+            </div>
+          </header>
+          <div class="il-mu-grid">
+            <div class="il-mu-col">${(m.home?.starters || []).map(muPlayerHtml).join('') || '<p class="il-empty">No lineup</p>'}</div>
+            <div class="il-mu-col">${(m.away?.starters || []).map(muPlayerHtml).join('') || '<p class="il-empty">No lineup</p>'}</div>
+          </div>
+        </article>`;
+      }).join('');
+    }
+
+    function paintScoreboardLive() {
+      const board = hqState.weekBoard;
+      const meta = document.getElementById('il-score-meta');
+      if (meta) {
+        meta.innerHTML = `${board?.live ? '<span class="il-live-pill">LIVE</span> ' : ''}${liveStatusLine(board)}`;
+      }
+      const slate = document.getElementById('il-score-slate');
+      if (slate) slate.innerHTML = nflSlateHtml(board?.nflGames);
+      const mount = document.getElementById('il-score-board');
+      if (mount) mount.innerHTML = matchupBoardHtml(board);
+      const leaders = document.getElementById('il-score-leaders');
+      if (leaders) leaders.innerHTML = leadersHtml(board?.leaders);
     }
 
     function scoreboardShell(league, weekBoard = null) {
@@ -1256,9 +2589,9 @@
         ? weekBoard.availableWeeks
         : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
       const week = weekBoard?.week || weeks[weeks.length - 1] || 1;
-      const matchups = weekBoard?.matchups || [];
+      const live = Boolean(weekBoard?.live);
       return `
-        <h1 class="page-title">Scoreboard</h1>${statusBanner(league)}
+        ${pageHead('Scoreboard', league)}
         <div class="il-week-bar">
           <label class="il-meta" style="display:flex;gap:0.4rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
             Week
@@ -1267,135 +2600,52 @@
             </select>
           </label>
           <span class="il-meta" id="il-score-meta">
-            ${weekBoard
-              ? (weekBoard.statsReady
-                ? `NFL ${esc(String(weekBoard.sourceSeason))} · ${esc(String(weekBoard.playerStatCount))} player rows · ${esc(weekBoard.scoringPreset || 'custom')} scoring`
-                : 'Waiting on weekly NFL stats for this season.')
-              : 'Loading week scores…'}
+            ${live ? '<span class="il-live-pill">LIVE</span> ' : ''}${liveStatusLine(weekBoard)}
           </span>
         </div>
+        <div id="il-score-slate">${nflSlateHtml(weekBoard?.nflGames)}</div>
         <section class="il-panel">
+          <h2>${weekBoard?.phase === 'playoff'
+            ? esc((weekBoard.matchups || []).find((m) => m.label)?.label || `Playoffs · Week ${week}`)
+            : (live ? 'Live scoring' : `Week ${esc(String(week))}`)}</h2>
           <div class="il-score-board" id="il-score-board">
-            ${matchups.length ? matchups.map((m) => `
-              <article class="il-matchup">
-                <div class="side">
-                  <div><a class="il-team-link" href="${esc(teamPath(m.home?.franchiseId, week))}"><strong>${esc(m.home?.name || 'Home')}</strong></a></div>
-                  <div class="il-meta">${esc(m.home?.managerName || '')}</div>
-                  <div class="score">${Number(m.homeScore || 0).toFixed(1)}</div>
-                </div>
-                <div class="vs">vs</div>
-                <div class="side is-right">
-                  <div><a class="il-team-link" href="${esc(teamPath(m.away?.franchiseId, week))}"><strong>${esc(m.away?.name || 'Away')}</strong></a></div>
-                  <div class="il-meta">${esc(m.away?.managerName || '')}</div>
-                  <div class="score">${Number(m.awayScore || 0).toFixed(1)}</div>
-                </div>
-              </article>`).join('') : '<p class="il-empty">No matchups yet — draft franchises first.</p>'}
+            ${matchupBoardHtml(weekBoard)}
           </div>
-        </section>`;
-    }
-
-    function draftResultsHtml(league) {
-      const picks = Array.isArray(league.draft?.picks) ? league.draft.picks : [];
-      if (!picks.length) return `<p class="il-empty">No picks yet.</p>`;
-      return `<div class="il-picks">${picks.slice().sort((a, b) => (a.draftOverall || 0) - (b.draftOverall || 0)).map((p) => `
-        <div class="row">
-          <span>${esc(p.draftOverall ?? p.overall ?? '')}</span>
-          <span><strong>${esc(p.name || p.playerName || '')}</strong> · ${esc(p.teamName || p.franchiseId || '')}</span>
-          <span class="il-meta">${esc(p.position || '')}</span>
-        </div>`).join('')}</div>`;
-    }
-
-    function draftRoomBoard(room, available) {
-      if (!room) return '';
-      const onClock = room.onClock;
-      const confLabel = room.conferenceKey ? ` · ${room.conferenceKey}` : '';
-      const secs = room.secondsRemaining;
-      const clockLabel = onClock?.awaitsHuman
-        ? (secs != null
-          ? `${secs}s left · pick now or CPU autopicks`
-          : 'On the clock · pick now or CPU autopicks when time is up')
-        : (room.status === 'done' ? 'Board complete' : 'CPU picking…');
-      const heading = onClock?.isMe
-        ? 'You are on the clock — make your pick'
-        : (onClock?.awaitsHuman ? 'Waiting on manager' : 'On the clock');
-      return `
-        <section class="il-panel" style="margin-top:1rem;">
-          <h2>${esc(heading)}${esc(confLabel)}</h2>
-          <p class="il-draft-clock">${esc(onClock?.teamName || '—')} · Round ${esc(onClock?.round || '—')} · Pick ${esc(onClock?.overall || '—')}</p>
-          <p class="il-meta" data-deadline="${esc(room.pickDeadline || '')}">${esc(clockLabel)}</p>
         </section>
-        <div class="il-pick-grid" style="margin-top:1rem;" data-room-board="${esc(room.id)}">
-          <section class="il-panel">
-            <h2>Available${esc(confLabel)}</h2>
-            <div class="il-pool">
-              ${available.slice(0, 120).map((p) => `
-                <button type="button" data-pick="${esc(p.id)}" data-room="${esc(room.id)}" ${onClock?.isMe && room.status === 'live' ? '' : 'disabled'}>
-                  <strong>${esc(p.position || '')}</strong> ${esc(p.name || '')}
-                  <span class="il-meta"> · ${esc(p.team || '')}${p.adp != null ? ` · ADP ${esc(p.adp)}` : ''}</span>
-                </button>`).join('') || '<p class="il-empty">Pool loading…</p>'}
-            </div>
-          </section>
-          <section class="il-panel">
-            <h2>Picks${esc(confLabel)}</h2>
-            <div class="il-picks">
-              ${(room.picks || []).slice().reverse().slice(0, 40).map((p) => `
-                <div class="row">
-                  <span>${esc(p.overall)}</span>
-                  <span><strong>${esc(p.playerName)}</strong> · ${esc(p.teamName)}${p.timeout ? ' · auto' : (p.cpu ? ' · CPU' : '')}</span>
-                  <span class="il-meta">${esc(p.position || '')}</span>
-                </div>`).join('') || '<p class="il-empty">No picks yet.</p>'}
-            </div>
-          </section>
-        </div>`;
+        <div id="il-score-leaders">${leadersHtml(weekBoard?.leaders)}</div>`;
     }
 
-    function draftLiveHtml(payload) {
-      const league = payload.league || {};
-      const rooms = Array.isArray(payload.rooms) ? payload.rooms : [];
-      const available = Array.isArray(payload.available) ? payload.available : [];
-      const status = league.draft?.status || 'scheduled';
-      const settings = league.settings || {};
-      const liveRooms = rooms.filter((r) => r && r.status !== 'done');
-      const room = liveRooms[0] || rooms[0] || null;
+    let hqState = { league: null, viewer: null, pages: {}, slug: '', weekBoard: null, draft: null };
+    let livePollTimer = null;
+    const LIVE_POLL_MS = 12000;
+    const IDLE_POLL_MS = 45000;
 
-      if (status === 'complete') {
-        return `<h1 class="page-title">Draft</h1>${statusBanner(league)}
-          <section class="il-panel"><h2>Draft complete</h2>${draftResultsHtml(league)}</section>`;
+    function stopLivePoll() {
+      if (livePollTimer) {
+        clearTimeout(livePollTimer);
+        livePollTimer = null;
       }
-
-      if (status === 'scheduled' || !room) {
-        const at = settings.draftAt ? new Date(settings.draftAt) : null;
-        const label = at && Number.isFinite(at.getTime()) ? at.toLocaleString() : 'Not scheduled';
-        return `<h1 class="page-title">Draft</h1>${statusBanner(league)}
-          <section class="il-panel">
-            <h2>Scheduled</h2>
-            <p class="il-meta">Starts automatically at the time set in Settings.</p>
-            <p class="il-draft-clock" id="il-countdown">${esc(label)}</p>
-            <p class="il-meta">
-              ${esc(settings.draftScope || 'league')} · ${esc(settings.draftRounds || '—')} rounds
-              · ${esc(settings.draftSecondsPerPick || '—')}s · empty seats: ${esc(settings.draftFillEmptySeats || 'cpu')}
-            </p>
-            <div class="il-actions" style="margin-top:0.85rem;">
-              <button type="button" class="il-btn is-ghost" id="il-draft-refresh">Refresh</button>
-              ${payload.viewer?.isOwner || payload.viewer?.isSiteOwner
-                ? `<button type="button" class="il-btn" id="il-draft-force">Start now</button>`
-                : ''}
-              <span class="il-status" id="il-draft-status" role="status"></span>
-            </div>
-          </section>`;
-      }
-
-      return `<h1 class="page-title">Draft · Live</h1>${statusBanner(league)}
-        <div class="il-actions" style="margin-bottom:0.75rem;">
-          <button type="button" class="il-btn is-ghost" id="il-draft-refresh">Refresh</button>
-          <span class="il-status" id="il-draft-status" role="status"></span>
-        </div>
-        ${rooms.map((r) => draftRoomBoard(r, available)).join('')}`;
     }
 
-    let draftPollTimer = null;
-    let draftClockTimer = null;
-    let hqState = { league: null, viewer: null, pages: {}, slug: '', weekBoard: null };
+    function startLivePoll() {
+      stopLivePoll();
+      const section = parsePath().section;
+      if (!['home', 'scoreboard', 'standings', 'team-rosters', 'my-roster', 'team', 'schedules', 'rankings', 'playoffs'].includes(section)) return;
+      const live = Boolean(hqState.weekBoard?.live);
+      livePollTimer = setTimeout(async () => {
+        try {
+          await loadWeekBoard(hqState.weekBoard?.week);
+          if (section === 'home') paintHomeLive();
+          else if (section === 'scoreboard') paintScoreboardLive();
+          else if (section === 'playoffs') paintPlayoffsLive();
+          else if ((section === 'my-roster' || section === 'team') && document.getElementById('il-lineup-form')) {
+            /* keep the lineup editor; scores refresh after save */
+          } else renderWeekSection(section);
+          setLiveSync();
+        } catch { /* keep polling */ }
+        startLivePoll();
+      }, live ? LIVE_POLL_MS : IDLE_POLL_MS);
+    }
 
     async function loadWeekBoard(week) {
       const league = hqState.league;
@@ -1423,6 +2673,11 @@
         root.innerHTML = standingsHtml(league, hqState.weekBoard);
         return;
       }
+      if (section === 'schedules' || section === 'rankings' || section === 'playoffs') {
+        const host = document.getElementById('il-root');
+        if (host) host.innerHTML = sectionHtml(section, league, hqState.pages || {}, hqState.viewer);
+        return;
+      }
       if (section === 'team-rosters') {
         root.innerHTML = teamRostersHtml(league, hqState.weekBoard);
         return;
@@ -1430,6 +2685,7 @@
       if (section === 'my-roster') {
         root.innerHTML = myRosterHtml(league, hqState.viewer?.id, hqState.weekBoard);
         wireTeamWeekUi();
+        wireLineupUi();
         return;
       }
       if (section === 'team') {
@@ -1443,7 +2699,53 @@
         const scored = (hqState.weekBoard?.franchises || []).find((f) => f.franchiseId === franchise.id) || null;
         root.innerHTML = teamPageBody(league, franchise, scored, hqState.weekBoard?.week);
         wireTeamWeekUi();
+        wireLineupUi();
       }
+    }
+
+    function wireLineupUi() {
+      const form = document.getElementById('il-lineup-form');
+      form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-lineup-status');
+        const franchiseId = form.getAttribute('data-franchise');
+        const selects = [...form.querySelectorAll('[data-lineup-slot]')];
+        const lineup = [];
+        const seen = new Set();
+        for (const sel of selects) {
+          const pid = String(sel.value || '').trim();
+          if (!pid) continue;
+          if (seen.has(pid)) {
+            if (status) status.textContent = 'A player can only start in one slot';
+            return;
+          }
+          seen.add(pid);
+          lineup.push({ playerId: pid, slot: sel.getAttribute('data-lineup-slot') });
+        }
+        for (const sel of form.querySelectorAll('[data-lineup-slot-reserve]')) {
+          const pid = String(sel.getAttribute('data-player') || '').trim();
+          if (!pid || seen.has(pid)) continue;
+          seen.add(pid);
+          lineup.push({ playerId: pid, slot: sel.value || 'BN' });
+        }
+        try {
+          if (status) status.textContent = 'Saving…';
+          const res = await fetch(`/api/independent-leagues/${encodeURIComponent(hqState.league.id)}/lineup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ franchiseId, lineup })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save lineup');
+          hqState.league = data.league;
+          await loadWeekBoard(hqState.weekBoard?.week);
+          const section = parsePath().section;
+          renderWeekSection(section === 'my-roster' ? 'my-roster' : 'team');
+        } catch (err) {
+          if (status) status.textContent = err.message || 'Could not save';
+        }
+      });
     }
 
     function wireTeamWeekUi() {
@@ -1474,8 +2776,708 @@
           if (meta) meta.textContent = 'Loading…';
           await loadWeekBoard(sel.value);
           renderWeekSection('scoreboard');
+          startLivePoll();
         } catch (err) {
           if (meta) meta.textContent = err.message || 'Could not load week';
+        }
+      });
+    }
+
+    function wireHashTab() {
+      const h = String(location.hash || '').replace('#', '');
+      if (['agents', 'waivers', 'trades', 'activity'].includes(h)) return h;
+      return 'agents';
+    }
+
+    async function loadWire(extra = {}) {
+      const league = hqState.league;
+      if (!league?.id) return null;
+      const params = new URLSearchParams();
+      if (extra.q) params.set('q', extra.q);
+      if (extra.pos) params.set('pos', extra.pos);
+      const qs = params.toString();
+      const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/wire${qs ? `?${qs}` : ''}`, {
+        cache: 'no-store'
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load the wire');
+      hqState.wire = data;
+      hqState.wire.faQuery = extra.q || '';
+      hqState.wire.faPos = extra.pos || '';
+      if (data.league) hqState.league = data.league;
+      return data;
+    }
+
+    async function postWire(body) {
+      const league = hqState.league;
+      const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/wire`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
+      hqState.wire = { ...hqState.wire, ...data };
+      if (data.league) hqState.league = data.league;
+      return data;
+    }
+
+    function dropOptions(roster, selected) {
+      return `<option value="">No drop</option>${(roster || []).map((p) => `
+        <option value="${esc(p.playerId || p.id)}" ${String(p.playerId || p.id) === String(selected || '') ? 'selected' : ''}>${esc(p.name || p.playerName)} (${esc(p.position || '')})</option>
+      `).join('')}`;
+    }
+
+    function transactionsHtml(league, viewer, wire) {
+      const tab = wireHashTab();
+      const w = wire || {};
+      const mine = w.myFranchise;
+      const settings = w.settings || league.settings || {};
+      const type = settings.waiverType || 'FAAB';
+      const fa = Array.isArray(w.freeAgents) ? w.freeAgents : [];
+      const waivers = Array.isArray(w.waivers) ? w.waivers : [];
+      const claims = Array.isArray(w.claims) ? w.claims : [];
+      const trades = Array.isArray(w.trades) ? w.trades : [];
+      const activity = Array.isArray(league.transactions) ? league.transactions : [];
+      const others = (w.franchises || league.franchises || []).filter((f) => mine && f.id !== mine.id);
+      const meta = mine
+        ? `${type === 'FAAB' ? `FAAB $${mine.faab} remaining` : `Waiver #${mine.waiverRank}`}`
+        : 'Claim a franchise to add, drop, and trade.';
+      const tabs = [['agents', 'Free agents'], ['waivers', 'Waivers'], ['trades', 'Trades'], ['activity', 'Activity']];
+
+      const agentsPanel = `
+        <div class="il-week-bar">
+          <input type="search" id="il-fa-q" placeholder="Search players" value="${esc(w.faQuery || '')}" style="max-width:16rem;" />
+          <select id="il-fa-pos">
+            ${['ALL', 'QB', 'RB', 'WR', 'TE', 'DST', 'K'].map((p) => `<option value="${p}" ${String(w.faPos || 'ALL') === p ? 'selected' : ''}>${p}</option>`).join('')}
+          </select>
+          <button type="button" class="il-btn" id="il-fa-search">Search</button>
+        </div>
+        ${!mine ? '<p class="il-empty">You need a franchise to pick up players.</p>' : `
+        <table class="il-wire-table">
+          <thead><tr><th>Player</th><th>Pos</th><th>NFL</th><th class="num">Rank</th><th></th></tr></thead>
+          <tbody>
+            ${fa.map((p) => `
+              <tr>
+                <td>${esc(p.name)}</td>
+                <td>${esc(p.position)}</td>
+                <td>${esc(p.nflTeam)}</td>
+                <td class="num">${p.overallRank != null ? esc(String(p.overallRank)) : '—'}</td>
+                <td>
+                  <button type="button" class="il-btn" data-add="${esc(p.playerId)}">Add</button>
+                </td>
+              </tr>`).join('') || '<tr><td colspan="5" class="il-empty">No free agents match.</td></tr>'}
+          </tbody>
+        </table>
+        <p class="il-meta" style="margin-top:0.65rem;">If your roster is full, choose a drop when you add.</p>
+        <label class="il-meta">Drop (if full)
+          <select id="il-fa-drop">${dropOptions(mine.roster)}</select>
+        </label>
+        <div class="il-actions" style="margin-top:0.75rem;">
+          <button type="button" class="il-btn" id="il-fa-drop-only">Drop selected to waivers</button>
+        </div>`}`;
+
+      const pending = claims.filter((c) => c.status === 'pending');
+      const waiversPanel = `
+        <p class="il-meta">Dropped players stay on waivers ${esc(String(settings.waiverHoldHours ?? 48))} hours. ${type === 'FAAB' ? 'Highest bid wins.' : type === 'rolling' ? 'Priority order wins; a successful claim goes to the end.' : 'Worst record wins.'}</p>
+        ${viewer?.isOwner || viewer?.isSiteOwner ? `<div class="il-actions" style="margin:0.5rem 0 1rem;"><button type="button" class="il-btn" id="il-waivers-run">Process waivers now</button></div>` : ''}
+        <h3 style="margin:0.5rem 0;font-size:1rem;">On waivers</h3>
+        <table class="il-wire-table">
+          <thead><tr><th>Player</th><th>Clears</th><th></th></tr></thead>
+          <tbody>
+            ${waivers.map((p) => `
+              <tr>
+                <td>${esc(p.name)} <span class="il-meta">${esc(p.position)} ${esc(p.nflTeam)}</span></td>
+                <td>${p.clearsAt ? esc(new Date(p.clearsAt).toLocaleString()) : '—'}</td>
+                <td>${mine ? `
+                  ${type === 'FAAB' ? `<input type="number" min="0" max="${esc(String(mine.faab || 0))}" value="0" data-bid="${esc(p.playerId)}" style="width:4.5rem;" />` : ''}
+                  <select data-claim-drop="${esc(p.playerId)}">${dropOptions(mine.roster)}</select>
+                  <button type="button" class="il-btn" data-claim="${esc(p.playerId)}">Claim</button>
+                ` : ''}</td>
+              </tr>`).join('') || '<tr><td colspan="3" class="il-empty">Nobody on waivers. Drops land here.</td></tr>'}
+          </tbody>
+        </table>
+        <h3 style="margin:1rem 0 0.35rem;font-size:1rem;">Pending claims</h3>
+        <ul class="il-team-list">
+          ${pending.map((c) => `
+            <li>
+              <span>${esc(c.franchiseName || '')} → ${esc(c.playerName)}${type === 'FAAB' ? ` · $${esc(String(c.bid))}` : ''}</span>
+              ${mine && c.franchiseId === mine.id ? `<button type="button" class="il-btn" data-cancel-claim="${esc(c.id)}">Cancel</button>` : ''}
+            </li>`).join('') || '<li class="il-empty">No pending claims.</li>'}
+        </ul>
+        <h3 style="margin:1rem 0 0.35rem;font-size:1rem;">Priority</h3>
+        <ol class="il-team-list">
+          ${(w.waiverOrder || []).map((row) => `<li><span>${esc(row.rank)}. ${esc(row.name)}</span>${type === 'FAAB' ? `<span class="il-meta">$${esc(String(row.faab))}</span>` : ''}</li>`).join('') || '<li class="il-empty">—</li>'}
+        </ol>`;
+
+      const openTrades = trades.filter((t) => t.status === 'proposed');
+      const recentTrades = trades.filter((t) => t.status !== 'proposed');
+      const tradesPanel = `
+        ${mine ? `
+        <form id="il-trade-form" class="il-form is-wide">
+          <h3 style="margin:0 0 0.5rem;font-size:1rem;">Propose a trade</h3>
+          <label>With
+            <select name="toFranchiseId" required>
+              ${others.map((f) => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('') || '<option value="">No other teams</option>'}
+            </select>
+          </label>
+          <div class="il-split">
+            <div>
+              <p class="il-meta">You send</p>
+              <div class="il-check-list">
+                ${(mine.roster || []).map((p) => `<label><input type="checkbox" name="send" value="${esc(p.playerId || p.id)}" /> ${esc(p.name)} (${esc(p.position)})</label>`).join('') || '—'}
+              </div>
+              ${type === 'FAAB' ? `<label>FAAB you send <input type="number" name="sendFaab" min="0" max="${esc(String(mine.faab || 0))}" value="0" /></label>` : ''}
+            </div>
+            <div>
+              <p class="il-meta">You receive</p>
+              <div class="il-check-list" id="il-trade-receive">
+                <p class="il-empty">Pick a team.</p>
+              </div>
+              ${type === 'FAAB' ? `<label>FAAB you receive <input type="number" name="receiveFaab" min="0" value="0" /></label>` : ''}
+            </div>
+          </div>
+          <div class="il-actions">
+            <button type="submit" class="il-btn">Send offer</button>
+            <span class="il-status" id="il-trade-status" role="status"></span>
+          </div>
+        </form>` : '<p class="il-empty">Claim a franchise to propose trades.</p>'}
+        <h3 style="margin:1.1rem 0 0.35rem;font-size:1rem;">Open offers</h3>
+        <ul class="il-team-list">
+          ${openTrades.map((t) => {
+            const send = (t.send || []).map((p) => p.name).join(', ') || '—';
+            const recv = (t.receive || []).map((p) => p.name).join(', ') || '—';
+            const canAccept = mine && t.toId === mine.id;
+            const canCancel = mine && t.fromId === mine.id;
+            return `<li style="flex-wrap:wrap;gap:0.5rem;">
+              <span>${esc(t.fromName)} sends ${esc(send)}${t.sendFaab ? ` + $${t.sendFaab}` : ''} → ${esc(t.toName)} sends ${esc(recv)}${t.receiveFaab ? ` + $${t.receiveFaab}` : ''}</span>
+              <span>
+                ${canAccept ? `<button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="accept">Accept</button>` : ''}
+                ${canAccept ? `<button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="reject">Reject</button>` : ''}
+                ${canCancel ? `<button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="cancel">Cancel</button>` : ''}
+                ${viewer?.isOwner || viewer?.isSiteOwner ? `<button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="veto">Veto</button> <button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="force">Force</button>` : ''}
+              </span>
+            </li>`;
+          }).join('') || '<li class="il-empty">No open offers.</li>'}
+        </ul>
+        ${recentTrades.length ? `<h3 style="margin:1.1rem 0 0.35rem;font-size:1rem;">Recent</h3>
+          <ul class="il-team-list">${recentTrades.map((t) => `<li><span>${esc(t.fromName)} ⇄ ${esc(t.toName)}</span><span class="il-meta">${esc(t.status)}</span></li>`).join('')}</ul>` : ''}`;
+
+      const activityPanel = `
+        <ul class="il-team-list">
+          ${activity.map((t) => `
+            <li>
+              <span>${esc(t.summary || t.type || 'Update')}${t.franchiseName ? ` · ${esc(t.franchiseName)}` : ''}</span>
+              <span class="il-meta">${t.at ? esc(new Date(t.at).toLocaleString()) : ''}</span>
+            </li>`).join('') || '<li class="il-empty">No transactions yet.</li>'}
+        </ul>`;
+
+      return `
+        <p class="il-meta" style="margin:0 0 0.75rem;">${esc(meta)}</p>
+        <div class="il-tabs" role="tablist">
+          ${tabs.map(([id, label]) => `<button type="button" class="il-tab${tab === id ? ' is-on' : ''}" data-tab="${id}">${esc(label)}</button>`).join('')}
+        </div>
+        <section class="il-panel" data-wire-panel="agents" ${tab === 'agents' ? '' : 'hidden'}>${agentsPanel}</section>
+        <section class="il-panel" data-wire-panel="waivers" ${tab === 'waivers' ? '' : 'hidden'}>${waiversPanel}</section>
+        <section class="il-panel" data-wire-panel="trades" ${tab === 'trades' ? '' : 'hidden'}>${tradesPanel}</section>
+        <section class="il-panel" data-wire-panel="activity" ${tab === 'activity' ? '' : 'hidden'}>${activityPanel}</section>
+        <p class="il-status" id="il-wire-status" role="status"></p>`;
+    }
+
+    function paintWireDesk() {
+      const mount = document.getElementById('il-wire-root');
+      if (!mount) return;
+      mount.innerHTML = transactionsHtml(hqState.league, hqState.viewer, hqState.wire);
+      wireWireUi();
+    }
+
+    function wireWireUi() {
+      const league = hqState.league;
+      const wire = hqState.wire || {};
+      const mine = wire.myFranchise;
+      const setStatus = (msg, ok) => {
+        const el = document.getElementById('il-wire-status');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.className = `il-status${ok ? ' is-ok' : (msg ? ' is-err' : '')}`;
+      };
+      document.querySelectorAll('[data-tab]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          history.replaceState({}, '', `${location.pathname}${location.search}#${btn.getAttribute('data-tab')}`);
+          paintWireDesk();
+        });
+      });
+      document.getElementById('il-fa-search')?.addEventListener('click', async () => {
+        try {
+          setStatus('Searching…', true);
+          await loadWire({
+            q: document.getElementById('il-fa-q')?.value || '',
+            pos: document.getElementById('il-fa-pos')?.value || ''
+          });
+          paintWireDesk();
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+      document.getElementById('il-fa-q')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('il-fa-search')?.click();
+      });
+      document.querySelectorAll('[data-add]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!mine) return;
+          try {
+            setStatus('Adding…', true);
+            await postWire({
+              action: 'add',
+              franchiseId: mine.id,
+              playerId: btn.getAttribute('data-add'),
+              dropPlayerId: document.getElementById('il-fa-drop')?.value || null
+            });
+            await loadWire();
+            paintWireDesk();
+            setStatus('Added.', true);
+          } catch (err) {
+            setStatus(err.message);
+          }
+        });
+      });
+      document.getElementById('il-fa-drop-only')?.addEventListener('click', async () => {
+        if (!mine) return;
+        const playerId = document.getElementById('il-fa-drop')?.value;
+        if (!playerId) {
+          setStatus('Choose a player to drop');
+          return;
+        }
+        try {
+          setStatus('Dropping…', true);
+          await postWire({ action: 'drop', franchiseId: mine.id, playerId });
+          await loadWire();
+          paintWireDesk();
+          setStatus('Dropped to waivers.', true);
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+      document.getElementById('il-waivers-run')?.addEventListener('click', async () => {
+        try {
+          setStatus('Processing…', true);
+          await postWire({ action: 'process' });
+          await loadWire();
+          paintWireDesk();
+          setStatus('Waivers processed.', true);
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+      document.querySelectorAll('[data-claim]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!mine) return;
+          const pid = btn.getAttribute('data-claim');
+          const bidEl = document.querySelector(`[data-bid="${CSS.escape(pid)}"]`);
+          const dropEl = document.querySelector(`[data-claim-drop="${CSS.escape(pid)}"]`);
+          try {
+            setStatus('Filing claim…', true);
+            await postWire({
+              action: 'claim',
+              franchiseId: mine.id,
+              playerId: pid,
+              dropPlayerId: dropEl?.value || null,
+              bid: bidEl ? Number(bidEl.value) : 0
+            });
+            await loadWire();
+            paintWireDesk();
+            setStatus('Claim filed.', true);
+          } catch (err) {
+            setStatus(err.message);
+          }
+        });
+      });
+      document.querySelectorAll('[data-cancel-claim]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            await postWire({ action: 'cancel-claim', claimId: btn.getAttribute('data-cancel-claim') });
+            await loadWire();
+            paintWireDesk();
+          } catch (err) {
+            setStatus(err.message);
+          }
+        });
+      });
+      const tradeTo = document.querySelector('#il-trade-form [name="toFranchiseId"]');
+      const fillReceive = () => {
+        const box = document.getElementById('il-trade-receive');
+        if (!box) return;
+        const other = (wire.franchises || []).find((f) => f.id === tradeTo?.value);
+        box.innerHTML = (other?.roster || []).map((p) =>
+          `<label><input type="checkbox" name="receive" value="${esc(p.playerId || p.id)}" /> ${esc(p.name)} (${esc(p.position)})</label>`
+        ).join('') || '<p class="il-empty">No roster.</p>';
+      };
+      tradeTo?.addEventListener('change', fillReceive);
+      fillReceive();
+      document.getElementById('il-trade-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!mine) return;
+        const fd = new FormData(e.target);
+        const status = document.getElementById('il-trade-status');
+        try {
+          await postWire({
+            action: 'propose-trade',
+            fromFranchiseId: mine.id,
+            toFranchiseId: fd.get('toFranchiseId'),
+            send: fd.getAll('send'),
+            receive: fd.getAll('receive'),
+            sendFaab: fd.get('sendFaab'),
+            receiveFaab: fd.get('receiveFaab')
+          });
+          await loadWire();
+          history.replaceState({}, '', `${location.pathname}${location.search}#trades`);
+          paintWireDesk();
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+      document.querySelectorAll('[data-trade]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            setStatus('Updating trade…', true);
+            await postWire({
+              action: 'trade',
+              tradeId: btn.getAttribute('data-trade'),
+              tradeAction: btn.getAttribute('data-trade-action')
+            });
+            await loadWire();
+            paintWireDesk();
+          } catch (err) {
+            setStatus(err.message);
+          }
+        });
+      });
+    }
+
+    function playoffSideHtml(side, score, winnerId) {
+      if (!side) return `<div class="pg-row"><span class="il-meta">TBD</span></div>`;
+      if (side.bye) return `<div class="pg-row"><span>BYE</span></div>`;
+      const win = winnerId && String(winnerId) === String(side.franchiseId);
+      const pts = score != null && Number.isFinite(Number(score)) ? Number(score).toFixed(1) : '';
+      return `<div class="pg-row${win ? ' is-win' : ''}">
+        <span><span class="seed">${side.seed != null ? `#${esc(String(side.seed))}` : ''}</span>${esc(side.name || 'Team')}</span>
+        <span class="pts">${esc(pts)}</span>
+      </div>`;
+    }
+
+    function playoffGameCard(g, viewer) {
+      const owner = viewer?.isOwner || viewer?.isSiteOwner;
+      const canPick = owner && g.home?.franchiseId && g.away?.franchiseId && !g.away?.bye;
+      return `<div class="il-pgame${g.bye ? ' is-bye' : ''}" data-game="${esc(g.id)}">
+        <p class="il-meta" style="margin:0 0 0.25rem;">Week ${esc(String(g.week || '—'))}${g.tiebreak === 'seed' ? ' · tie → higher seed' : ''}</p>
+        ${playoffSideHtml(g.home, g.homeScore, g.winnerId)}
+        ${playoffSideHtml(g.away, g.awayScore, g.winnerId)}
+        ${canPick ? `<div class="il-actions" style="margin-top:0.4rem;">
+          <button type="button" class="il-btn" data-set-winner="${esc(g.id)}" data-winner="${esc(g.home.franchiseId)}">${esc(g.home.name)}</button>
+          <button type="button" class="il-btn" data-set-winner="${esc(g.id)}" data-winner="${esc(g.away.franchiseId)}">${esc(g.away.name)}</button>
+        </div>` : ''}
+      </div>`;
+    }
+
+    function playoffTreeHtml(games, viewer) {
+      if (!games.length) return '<p class="il-empty">Not enough playoff teams set in Settings.</p>';
+      const rounds = [...new Set(games.map((g) => g.round))].sort((a, b) => a - b);
+      return `<div class="il-bracket">${rounds.map((r) => {
+        const roundGames = games.filter((g) => g.round === r);
+        const label = roundGames[0]?.label || `Round ${r + 1}`;
+        return `<div class="il-bracket-round"><h3>${esc(label)}</h3>${roundGames.map((g) => playoffGameCard(g, viewer)).join('')}</div>`;
+      }).join('')}</div>`;
+    }
+
+    function playoffsHtml(league, viewer, weekBoard = null) {
+      const playoffs = weekBoard?.playoffs || league.playoffs || null;
+      const games = Array.isArray(playoffs?.games) ? playoffs.games : [];
+      const st = league.structure || {};
+      const ch = league.championship || {};
+      const champName = playoffs?.champName || ch.name || `${league.brand?.name || 'League'} Championship`;
+      const format = playoffs?.format || st.playoffFormat || 'league-bracket';
+      const locked = Boolean(playoffs?.locked);
+      const owner = viewer?.isOwner || viewer?.isSiteOwner;
+      const confs = league.conferences || [];
+      const trees = format === 'conference-brackets' && confs.length >= 2
+        ? confs.slice(0, 2).map((conf) => ({
+            conf,
+            games: games.filter((g) => String(g.conferenceKey) === String(conf.key) && !g.final && !g.consolation)
+          }))
+        : [{ conf: null, games: games.filter((g) => !g.consolation && (format === 'league-bracket' || g.final)) }];
+      const finals = games.filter((g) => g.final);
+      const consolation = games.filter((g) => g.consolation);
+      const seeds = playoffs?.seeds || [];
+      return `
+        <p class="il-meta" style="margin:0 0 0.85rem;">
+          ${esc(champName)} · ${format === 'conference-brackets' ? 'Conference brackets, then title game' : 'One league bracket'}
+          · Regular season through week ${esc(String(st.regularSeasonEndWeek || playoffs?.regularSeasonEndWeek || '—'))}
+          · ${locked ? 'Bracket locked' : 'Projected seeds — bracket locks when the playoffs start'}
+        </p>
+        ${owner ? `<div class="il-actions" style="margin:0 0 1rem;">
+          ${locked ? '' : '<button type="button" class="il-btn" id="il-po-lock">Lock bracket</button>'}
+          <button type="button" class="il-btn" id="il-po-reseed">Reseed from standings</button>
+          <span class="il-status" id="il-po-status" role="status"></span>
+        </div>` : ''}
+        ${format === 'conference-brackets' && trees.length === 2
+          ? `<div class="il-split">${trees.map(({ conf, games: gs }) => `
+              <section class="il-panel">
+                <h2>${esc(conf?.name || 'Conference')}</h2>
+                ${playoffTreeHtml(gs, viewer)}
+              </section>`).join('')}</div>
+              ${finals.map((g) => `<section class="il-panel" style="margin-top:1rem;">
+                <h2>${esc(g.label || champName)}</h2>
+                <div class="il-final-game">${playoffGameCard(g, viewer)}</div>
+              </section>`).join('')}`
+          : `<section class="il-panel">
+              <h2>${esc(champName)}</h2>
+              ${playoffTreeHtml(trees[0]?.games || games.filter((g) => !g.consolation), viewer)}
+            </section>`}
+        ${consolation.length ? `<section class="il-panel" style="margin-top:1rem;">
+          <h2>${esc(consolation[0].label || 'Consolation')}</h2>
+          ${consolation.map((g) => playoffGameCard(g, viewer)).join('')}
+        </section>` : ''}
+        ${seeds.length ? `<section class="il-panel" style="margin-top:1rem;">
+          <h2>Seeds</h2>
+          <ol class="il-team-list">${seeds.map((s) => `<li><span>#${esc(String(s.seed))} ${esc(s.name)}</span><span class="il-meta">${esc(s.record || '')}</span></li>`).join('')}</ol>
+        </section>` : ''}`;
+    }
+
+    function paintPlayoffsLive() {
+      const mount = document.getElementById('il-playoff-root');
+      if (!mount) return;
+      mount.innerHTML = playoffsHtml(hqState.league, hqState.viewer, hqState.weekBoard);
+      wirePlayoffUi();
+    }
+
+    async function postPlayoff(body) {
+      const league = hqState.league;
+      const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/playoffs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
+      if (data.playoffs && hqState.weekBoard) hqState.weekBoard.playoffs = data.playoffs;
+      if (data.league) hqState.league = data.league;
+      return data;
+    }
+
+    function wirePlayoffUi() {
+      const setStatus = (msg, ok) => {
+        const el = document.getElementById('il-po-status');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.className = `il-status${ok ? ' is-ok' : (msg ? ' is-err' : '')}`;
+      };
+      document.getElementById('il-po-lock')?.addEventListener('click', async () => {
+        try {
+          setStatus('Locking…', true);
+          await postPlayoff({ action: 'lock' });
+          await loadWeekBoard(hqState.weekBoard?.week);
+          paintPlayoffsLive();
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+      document.getElementById('il-po-reseed')?.addEventListener('click', async () => {
+        try {
+          setStatus('Reseeding…', true);
+          await postPlayoff({ action: 'reseed' });
+          await loadWeekBoard(hqState.weekBoard?.week);
+          paintPlayoffsLive();
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+      document.querySelectorAll('[data-set-winner]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            setStatus('Saving winner…', true);
+            await postPlayoff({
+              action: 'set-winner',
+              gameId: btn.getAttribute('data-set-winner'),
+              winnerId: btn.getAttribute('data-winner')
+            });
+            await loadWeekBoard(hqState.weekBoard?.week);
+            paintPlayoffsLive();
+          } catch (err) {
+            setStatus(err.message);
+          }
+        });
+      });
+    }
+
+    function keepersHtml(league, viewer, data) {
+      const s = { ...(league.settings || {}), ...(data.settings || {}) };
+      const format = s.leagueFormat || 'redraft';
+      const mine = data.myFranchise;
+      const decls = data.declarations || [];
+      const owner = viewer?.isOwner || viewer?.isSiteOwner;
+      const on = keepersAreOn(s);
+      const ownerForm = owner ? `<section class="il-panel">
+          <h2>Keeper settings</h2>
+          <p class="il-meta">Turn keepers off for a full redraft, or on and choose how many and whether they cost a draft pick.</p>
+          <form class="il-form is-wide" id="il-keepers-page-form" style="margin-top:0.75rem;">
+            ${keeperToggleHtml({ ...league.settings, ...s })}
+            <div class="il-actions">
+              <button type="submit" class="il-btn">Save keeper settings</button>
+              <span class="il-status" id="il-keep-status" role="status"></span>
+            </div>
+          </form>
+        </section>` : '';
+      if (format === 'dynasty') {
+        return `${ownerForm}
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>Dynasty</h2>
+          <p class="il-meta">The whole roster carries into ${esc(String((league.season || new Date().getFullYear()) + 1))}. The next draft is rookies only. Taxi is for first-year players. IR is for injured players and does not score. Keepers stay off — everyone is retained.</p>
+          ${owner ? `<div class="il-actions" style="margin-top:1rem;">
+            <button type="button" class="il-btn" id="il-keep-rollover">Start next season</button>
+          </div>
+          <p class="il-meta">Rollover clears the regular-season scoreboard, resets FAAB, and opens a rookie draft. Rosters stay.</p>` : ''}
+        </section>`;
+      }
+      if (!on) {
+        return `${ownerForm}
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>Keepers are off</h2>
+          <p class="il-empty">This league redrafts. ${owner ? 'Turn keepers on above to let teams keep players into next season.' : 'The league owner can turn keepers on in Settings.'}</p>
+        </section>`;
+      }
+      const costLabel = s.keeperCost === 'round'
+        ? 'Keeping a player uses that franchise’s pick in that round next draft.'
+        : s.keeperCost === 'round-minus-one'
+          ? 'Keeping a player uses that round’s pick, one round earlier each year they are kept. Undrafted keepers cost the last round.'
+          : 'Keepers do not cost a draft pick. You still have a full draft.';
+      return `
+        ${ownerForm}
+        <p class="il-meta" style="margin-top:1rem;">${esc(costLabel)} ${esc(String(s.keeperCount || 0))} per team · max ${esc(String(s.keeperMaxSeasons || 1))} seasons. Status: ${esc(data.status || 'open')}.</p>
+        ${owner ? `<div class="il-actions" style="margin:0 0 1rem;">
+          ${data.status === 'locked' ? '' : '<button type="button" class="il-btn" id="il-keep-lock">Lock keepers</button>'}
+          <button type="button" class="il-btn" id="il-keep-rollover">Start next season (apply keepers)</button>
+        </div>` : ''}
+        ${mine ? `<section class="il-panel">
+          <h2>${esc(mine.name)}</h2>
+          <ul class="il-team-list">
+            ${(mine.roster || []).map((p) => `
+              <li>
+                <span>${esc(p.name)} <span class="il-meta">${esc(p.position || '')} · rd ${esc(String(p.acquiredRound || 'FA'))}${p.costRound ? ` · costs rd ${esc(String(p.costRound))}` : ''}</span></span>
+                ${data.status === 'locked' ? `<span class="il-meta">${p.declared ? 'Kept' : ''}</span>` : `
+                <button type="button" class="il-btn" data-keep="${esc(p.playerId || p.id)}" data-keep-on="${p.declared ? '0' : '1'}">${p.declared ? 'Drop keeper' : 'Keep'}</button>`}
+              </li>`).join('') || '<li class="il-empty">No roster yet.</li>'}
+          </ul>
+        </section>` : '<p class="il-empty">Claim a franchise to declare keepers.</p>'}
+        <section class="il-panel" style="margin-top:1rem;">
+          <h2>Declared</h2>
+          <ul class="il-team-list">
+            ${decls.map((d) => `<li><span>${esc(d.franchiseName)} · ${esc(d.playerName)}</span><span class="il-meta">${d.costRound ? `rd ${esc(String(d.costRound))}` : 'no pick cost'}</span></li>`).join('') || '<li class="il-empty">No keepers declared yet.</li>'}
+          </ul>
+        </section>`;
+    }
+
+    async function loadKeepers() {
+      const league = hqState.league;
+      const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/keepers`, { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load keepers');
+      hqState.keepers = data;
+      if (data.league) hqState.league = data.league;
+      return data;
+    }
+
+    async function postKeepers(body) {
+      const league = hqState.league;
+      const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/keepers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
+      hqState.keepers = data;
+      if (data.league) hqState.league = data.league;
+      return data;
+    }
+
+    function wireKeepersUi() {
+      const mine = hqState.keepers?.myFranchise;
+      const setStatus = (msg, ok) => {
+        const el = document.getElementById('il-keep-status');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.className = `il-status${ok ? ' is-ok' : (msg ? ' is-err' : '')}`;
+      };
+      const paint = () => {
+        const mount = document.getElementById('il-keepers-root');
+        if (!mount) return;
+        mount.innerHTML = keepersHtml(hqState.league, hqState.viewer, hqState.keepers);
+        wireKeepersUi();
+      };
+      document.querySelectorAll('[data-keep]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!mine) return;
+          try {
+            const on = btn.getAttribute('data-keep-on') === '1';
+            await postKeepers({
+              action: on ? 'declare' : 'undeclare',
+              franchiseId: mine.id,
+              playerId: btn.getAttribute('data-keep')
+            });
+            paint();
+          } catch (err) {
+            setStatus(err.message);
+          }
+        });
+      });
+      document.getElementById('il-keep-lock')?.addEventListener('click', async () => {
+        try {
+          await postKeepers({ action: 'lock' });
+          paint();
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+      document.getElementById('il-keep-rollover')?.addEventListener('click', async () => {
+        if (!confirm('Start next season? Non-kept players (keeper leagues) leave the roster. Dynasty keeps everyone. The draft resets.')) return;
+        try {
+          await postKeepers({ action: 'rollover' });
+          paint();
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+      wireKeeperToggle();
+      document.getElementById('il-keepers-page-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const patch = keeperSettingsFromForm(e.target);
+        if ((hqState.league?.settings?.leagueFormat || hqState.keepers?.settings?.leagueFormat) === 'dynasty') {
+          patch.keepersEnabled = false;
+          patch.leagueFormat = 'dynasty';
+          patch.keeperCost = 'none';
+        } else {
+          patch.leagueFormat = patch.keepersEnabled ? 'keeper' : 'redraft';
+        }
+        try {
+          setStatus('Saving…');
+          const res = await fetch(`/api/independent-leagues/${encodeURIComponent(hqState.league.id)}/settings`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patch)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
+          if (data.league) hqState.league = data.league;
+          await loadKeepers();
+          paint();
+        } catch (err) {
+          setStatus(err.message);
         }
       });
     }
@@ -1483,38 +3485,38 @@
     function sectionHtml(section, league, pages, viewer = {}) {
       const name = league.brand?.name || league.slug;
       if (section === 'home') {
-        const draftAt = league.settings?.draftAt
-          ? new Date(league.settings.draftAt).toLocaleString()
-          : 'Not scheduled';
+        const board = hqState.weekBoard;
+        const hasCrest = Boolean(league.brand?.logo || league.brand?.crest);
         return `
-          <div class="il-hero">
-            ${league.brand?.logo || league.brand?.crest
-              ? `<img src="${esc(league.brand.logo || league.brand.crest)}" alt="${esc(name)}" width="320" height="320" decoding="async" />`
-              : ''}
-            <h1 class="page-title" style="margin:0;">${esc(name)}</h1>
-            <p class="tag">${esc(league.brand?.tagline || `${league.structure?.totalTeams || '—'} teams`)}</p>
-          </div>
+          <section class="il-hq-hero${board?.live ? ' is-live' : ''}" id="il-hq-hero">
+            ${leagueCrestHtml(league)}
+            ${hasCrest ? '' : `<h1 class="il-hq-name">${esc(name)}</h1>`}
+            <p class="tag" id="il-hero-tag">${heroTagline(league, board)}</p>
+          </section>
           ${statusBanner(league)}
-          <div class="il-grid">
-            ${standingsHtml(league, hqState.weekBoard)}
-            <section class="il-panel">
-              <h2>League overview</h2>
-              <p class="il-meta">
-                Season <strong>${esc(league.season)}</strong><br/>
-                ${esc(league.structure?.totalTeams || '—')} teams
-                (${esc(league.structure?.teamsPerConference || '—')} per conference)<br/>
-                Playoffs: ${esc((league.structure?.playoffWeeks || []).join(', ') || '—')}
-                · ${esc(league.championship?.name || 'Super Bowl')} week ${esc(league.championship?.bowlWeek ?? '—')}<br/>
-                Buy-in: ${esc(league.payouts?.buyInPerTeam != null ? `$${league.payouts.buyInPerTeam}` : '—')}<br/>
-                Draft: <strong>${esc(league.draft?.status || 'scheduled')}</strong> · ${esc(draftAt)}
-              </p>
-              <p class="il-meta" style="margin-top:0.75rem;">
-                <a href="${esc(pages.scoreboard || '#')}">Scoreboard</a>
-                · <a href="${esc(pages.settings || '#')}">League settings</a>
-                · <a href="${esc(pages.manage || '#')}">Manage</a>
-                · <a href="${esc(pages.draft || '#')}">Draft board</a>
-              </p>
-            </section>
+          <div class="il-hq-board">
+            <div class="il-hq-main">
+              <section class="il-card">
+                <div class="il-card-head">
+                  <h2>Standings</h2>
+                  <a href="${esc(pages.standings || '#')}">Full board</a>
+                </div>
+                <div id="il-home-standings">${standingsHtml(league, board, { compact: true })}</div>
+              </section>
+            </div>
+            <aside class="il-hq-side">
+              <section class="il-card">
+                <div class="il-card-head">
+                  <h2>Matchup of the Week</h2>
+                  <a href="${esc(pages.scoreboard || '#')}">Scoreboard</a>
+                </div>
+                <div id="il-home-motw">${motwHtml(league, board)}</div>
+              </section>
+              <section class="il-card">
+                <div class="il-card-head"><h2>Who’s Hot / Who’s Not</h2></div>
+                <div id="il-home-hotnot">${hotNotHtml(league, board)}</div>
+              </section>
+            </aside>
           </div>`;
       }
 
@@ -1529,6 +3531,7 @@
         settings: 'Settings',
         manage: 'Manage',
         transactions: 'Transactions',
+        keepers: 'Keepers',
         playoffs: 'Playoff Bracket',
         calendar: 'Calendar',
         rulebook: 'Rule Book',
@@ -1538,15 +3541,15 @@
       const title = titles[section] || section;
 
       if (section === 'standings') {
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+        return `${pageHead(title, league)}
           <div id="il-week-scored">${standingsHtml(league, hqState.weekBoard)}</div>`;
       }
       if (section === 'team-rosters') {
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+        return `${pageHead(title, league)}
           <div id="il-week-scored">${teamRostersHtml(league, hqState.weekBoard)}</div>`;
       }
       if (section === 'my-roster') {
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+        return `${pageHead(title, league)}
           <div id="il-week-scored">${myRosterHtml(league, viewer.id, hqState.weekBoard)}</div>`;
       }
       if (section === 'team') {
@@ -1562,11 +3565,11 @@
         return manageHtml(league, viewer);
       }
       if (section === 'rulebook') {
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}${rulebookHtml(league, viewer)}`;
+        return `${pageHead(title, league)}${rulebookHtml(league, viewer)}`;
       }
       if (section === 'payouts') {
         const prizes = (league.payouts?.prizes || []).map((p) => `<li>${esc(p.label || p.name || 'Prize')}: ${esc(p.amount != null ? `$${p.amount}` : '—')}</li>`).join('');
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+        return `${pageHead(title, league)}
           <section class="il-panel">
             <h2>Payouts</h2>
             <p class="il-meta">Buy-in ${esc(league.payouts?.buyInPerTeam != null ? `$${league.payouts.buyInPerTeam}` : '—')} · ${esc(league.payouts?.seasonLabel || '')}</p>
@@ -1576,53 +3579,111 @@
       }
       if (section === 'calendar') {
         const rows = (league.calendarDefaults || []).map((e) => `<li><span>${esc(e.title || e.label || 'Event')}</span><span class="il-meta">${esc(e.date || e.type || '')}</span></li>`).join('');
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+        return `${pageHead(title, league)}
           <section class="il-panel"><h2>League calendar</h2>
           <ul class="il-team-list">${rows || '<li class="il-empty">No calendar events yet — add them as the season takes shape.</li>'}</ul>
           </section>`;
       }
       if (section === 'playoffs') {
-        const st = league.structure || {};
-        const ch = league.championship || {};
-        const confs = league.conferences || [];
-        const per = st.playoffTeamsPerConference || Math.ceil((st.playoffTeamCount || 6) / 2);
-        return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+        return `${pageHead(title, league)}
+          <div id="il-playoff-root">${playoffsHtml(league, viewer, hqState.weekBoard)}</div>`;
+      }
+
+      if (section === 'schedules') {
+        const weeks = Array.isArray(league.schedule?.weeks) && league.schedule.weeks.length
+          ? league.schedule.weeks
+          : (hqState.weekBoard?.matchups?.length
+            ? [{ week: hqState.weekBoard.week, matchups: hqState.weekBoard.matchups.map((m) => ({
+                homeId: m.home?.franchiseId, awayId: m.away?.franchiseId,
+                homeScore: m.homeScore, awayScore: m.awayScore, result: m.result
+              })) }]
+            : []);
+        const liveWeek = Number(hqState.weekBoard?.week);
+        const nameOf = (id) => (league.franchises || []).find((f) => f.id === id)?.name || 'Team';
+        const poGames = hqState.weekBoard?.playoffs?.games || league.playoffs?.games || [];
+        const poByWeek = new Map();
+        for (const g of poGames) {
+          if (g.bye || !g.week) continue;
+          const list = poByWeek.get(g.week) || [];
+          list.push(g);
+          poByWeek.set(g.week, list);
+        }
+        const poWeekHtml = [...poByWeek.keys()].sort((a, b) => a - b).map((w) => {
+          const rows = (poByWeek.get(w) || []).map((g) => {
+            const home = g.home?.bye ? 'BYE' : (g.home?.name || 'TBD');
+            const away = g.away?.bye ? 'BYE' : (g.away?.name || 'TBD');
+            const score = g.homeScore != null && g.awayScore != null
+              ? `${Number(g.homeScore).toFixed(1)} – ${Number(g.awayScore).toFixed(1)}`
+              : 'vs';
+            return `<li><span>${esc(g.label || 'Playoff')} · ${esc(home)} <span class="il-meta">${esc(score)}</span> ${esc(away)}</span></li>`;
+          }).join('');
+          return `<h3 style="margin:1rem 0 0.35rem;font-size:0.95rem;">Week ${esc(String(w))} · playoffs${Number(w) === liveWeek ? ' · live' : ''}</h3>
+            <ul class="il-team-list">${rows}</ul>`;
+        }).join('');
+        return `${pageHead(title, league)}
           <section class="il-panel">
-            <h2>${esc(ch.name || 'Super Bowl')}</h2>
-            <p class="il-meta">
-              ${st.playoffFormat === 'league-bracket'
-                ? `League-wide bracket · ${esc(st.playoffTeamCount || '—')} teams`
-                : `Conference brackets · ${esc(per)} teams each (${esc(st.playoffTeamCount || per * 2)} total)`}<br/>
-              Playoff weeks ${(st.playoffWeeks || []).map(esc).join(', ') || '—'}
-              · Regular season through week ${esc(st.regularSeasonEndWeek ?? '—')}<br/>
-              Conference titles week ${esc(ch.titleWeek ?? '—')} · ${esc(ch.name || 'Super Bowl')} week ${esc(ch.bowlWeek ?? '—')}
-            </p>
-            ${st.playoffFormat !== 'league-bracket' ? `
-              <div class="il-split" style="margin-top:1rem;">
-                ${confs.slice(0, 2).map((c) => `
-                  <div>
-                    <h3 style="margin:0 0 0.35rem;font-size:1rem;">${esc(c.name || c.key)}</h3>
-                    <p class="il-meta">${esc(per)} playoff teams → conference champion</p>
-                  </div>`).join('')}
-              </div>
-              <p class="il-meta" style="margin-top:1rem;">
-                <strong>${esc(confs[0]?.shortName || confs[0]?.name || 'Conf 1')}</strong> champion
-                vs
-                <strong>${esc(confs[1]?.shortName || confs[1]?.name || 'Conf 2')}</strong> champion
-                in the <strong>${esc(ch.name || 'Super Bowl')}</strong>.
-              </p>` : ''}
-            <p class="il-empty" style="margin-top:0.85rem;">Bracket board fills in when the season reaches the playoffs. Owner sets this structure in Settings.</p>
+            <h2>Season schedule</h2>
+            <p class="il-meta">Regular season through week ${esc(league.structure?.regularSeasonEndWeek || weeks.length || '—')}. Playoff weeks follow this league’s bracket — they do not reuse the regular-season slate.</p>
+            ${weeks.map((w) => {
+              const isLive = Number(w.week) === liveWeek;
+              const rows = (w.matchups || []).map((m, i) => {
+                const live = isLive && hqState.weekBoard?.phase !== 'playoff' ? (hqState.weekBoard?.matchups || [])[i] : null;
+                const home = live?.home?.name || nameOf(m.homeId);
+                const away = live?.away?.name || nameOf(m.awayId);
+                const hs = live ? live.homeScore : m.homeScore;
+                const as = live ? live.awayScore : m.awayScore;
+                const score = hs != null && as != null ? `${Number(hs).toFixed(1)} – ${Number(as).toFixed(1)}` : 'vs';
+                return `<li><span>${esc(home)} <span class="il-meta">${esc(score)}</span> ${esc(away)}</span></li>`;
+              }).join('');
+              return `<h3 style="margin:1rem 0 0.35rem;font-size:0.95rem;">Week ${esc(String(w.week))}${isLive && hqState.weekBoard?.phase !== 'playoff' ? ' · live' : ''}</h3>
+                <ul class="il-team-list">${rows || '<li class="il-empty">No matchups</li>'}</ul>`;
+            }).join('') || '<p class="il-empty">Schedule posts after franchises are set.</p>'}
+            ${poWeekHtml}
           </section>`;
       }
 
-      return `<h1 class="page-title">${esc(title)}</h1>${statusBanner(league)}
+      if (section === 'rankings') {
+        const rows = [...(hqState.weekBoard?.standings || [])]
+          .sort((a, b) => (Number(b.pointsFor) || 0) - (Number(a.pointsFor) || 0));
+        return `${pageHead(title, league)}
+          <section class="il-panel">
+            <h2>Power rankings</h2>
+            <p class="il-meta">Ordered by points for, then record. Updates with live scoring.</p>
+            <ol class="il-team-list">
+              ${rows.map((s, i) => `
+                <li>
+                  <span>${i + 1}. <a class="il-team-link" href="${esc(teamPath(s.franchiseId, hqState.weekBoard?.week))}">${esc(s.name)}</a>
+                    <span class="il-meta">${esc(`${s.wins}-${s.losses}${s.ties ? `-${s.ties}` : ''}`)}</span></span>
+                  <span class="il-pts">${Number(s.pointsFor || 0).toFixed(1)}</span>
+                </li>`).join('') || '<li class="il-empty">Rankings fill in as weeks are scored.</li>'}
+            </ol>
+          </section>`;
+      }
+
+      if (section === 'keepers') {
+        return `${pageHead(title, league)}
+          <div id="il-keepers-root">${hqState.keepers
+            ? keepersHtml(league, viewer, hqState.keepers)
+            : '<p class="il-empty">Loading keepers…</p>'}</div>`;
+      }
+
+      if (section === 'transactions') {
+        return `${pageHead(title, league)}
+          <section>
+            <h2>Transactions</h2>
+            <p class="il-meta">Free agents, waivers, and trades for this league.</p>
+            <div id="il-wire-root">${hqState.wireError
+              ? `<p class="il-empty">${esc(hqState.wireError)}</p>`
+              : hqState.wire
+                ? transactionsHtml(league, viewer, hqState.wire)
+                : '<p class="il-empty">Loading the wire…</p>'}</div>
+          </section>`;
+      }
+
+      return `${pageHead(title, league)}
         <section class="il-panel">
           <h2>${esc(title)}</h2>
-          <p class="il-empty">
-            Live ${esc(title.toLowerCase())} for ${esc(name)} unlocks as your independent season is set up —
-            it never pulls from GridIron 24 or AAA.
-          </p>
-          <p class="il-meta" style="margin-top:0.85rem;">Home: <a class="il-url" href="${esc(pages.home)}">${esc(pages.home)}</a></p>
+          <p class="il-empty">${esc(title)} for ${esc(name)}.</p>
         </section>`;
     }
 
@@ -1633,86 +3694,20 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load draft');
       hqState.league = data.league;
+      hqState.draft = data;
+      const payload = { ...data, viewer: { ...hqState.viewer, ...data.viewer } };
       const root = document.getElementById('il-root');
-      root.innerHTML = draftLiveHtml({ ...data, viewer: { ...hqState.viewer, ...data.viewer } });
-      wireDraftUi();
-    }
-
-    function wireDraftUi() {
-      clearInterval(draftPollTimer);
-      clearInterval(draftClockTimer);
-      const league = hqState.league;
-      document.getElementById('il-draft-refresh')?.addEventListener('click', () => {
-        loadDraftBoard().catch((err) => {
-          const el = document.getElementById('il-draft-status');
-          if (el) {
-            el.textContent = err.message;
-            el.className = 'il-status is-err';
-          }
-        });
-      });
-      document.getElementById('il-draft-force')?.addEventListener('click', async () => {
-        const el = document.getElementById('il-draft-status');
-        try {
-          const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/draft`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'start', force: true })
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not start');
-          await loadDraftBoard();
-        } catch (err) {
-          if (el) {
-            el.textContent = err.message;
-            el.className = 'il-status is-err';
-          }
-        }
-      });
-      document.querySelectorAll('[data-pick]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          try {
-            const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/draft`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'pick',
-                roomId: btn.getAttribute('data-room'),
-                playerId: btn.getAttribute('data-pick')
-              })
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok || !data.ok) throw new Error(data.error || 'Pick failed');
-            await loadDraftBoard();
-          } catch (err) {
-            alert(err.message);
-          }
-        });
-      });
-
-      // Live countdown: managers pick while connected; at 0 the server CPU-autopicks.
-      const deadlineEls = document.querySelectorAll('[data-deadline]');
-      if (deadlineEls.length) {
-        draftClockTimer = setInterval(() => {
-          deadlineEls.forEach((el) => {
-            const raw = el.getAttribute('data-deadline');
-            if (!raw) return;
-            const ms = Date.parse(raw) - Date.now();
-            if (!Number.isFinite(ms)) return;
-            const secs = Math.max(0, Math.ceil(ms / 1000));
-            el.textContent = secs > 0
-              ? `${secs}s left · pick now or CPU autopicks`
-              : 'Time up · CPU autopicking…';
-          });
-        }, 250);
+      if (document.getElementById('mock-draft') && window.OfficialDraftUi) {
+        window.OfficialDraftUi.update(payload);
+        return;
       }
-
-      const status = league?.draft?.status;
-      if (status === 'live' || status === 'scheduled') {
-        draftPollTimer = setInterval(() => {
-          loadDraftBoard().catch(() => {});
-        }, status === 'live' ? 2500 : 8000);
-      }
+      window.OfficialDraftUi?.unmount();
+      root.innerHTML = window.OfficialDraftUi.pageHtml({
+        league: payload.league,
+        viewer: payload.viewer,
+        bannerHtml: statusBanner(payload.league)
+      });
+      window.OfficialDraftUi.mount(payload);
     }
 
     function wireRulebookUi() {
@@ -1741,7 +3736,7 @@
           if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
           hqState.league = data.league;
           document.getElementById('il-root').innerHTML =
-            `<h1 class="page-title">Rule Book</h1>${statusBanner(data.league)}${rulebookHtml(data.league, hqState.viewer)}`;
+            `<header class="page-hero"><p class="eyebrow">${esc(data.league.brand?.name || data.league.slug)}</p><h1>Rule Book</h1></header>${statusBanner(data.league)}${rulebookHtml(data.league, hqState.viewer)}`;
           wireRulebookUi();
           const ok = document.getElementById('il-rulebook-status');
           if (ok) {
@@ -1890,8 +3885,8 @@
             },
             survival: {
               enabled: fd.get('survivalEnabled') === '1',
-              name: fd.get('survivalName'),
-              week: Number(fd.get('survivalWeek')) || null
+              name: fd.get('survivalEnabled') === '1' ? String(fd.get('survivalName') || '').trim() : '',
+              week: fd.get('survivalEnabled') === '1' ? (Number(fd.get('survivalWeek')) || null) : null
             }
           }, status);
           document.getElementById('il-root').innerHTML = settingsHtml(updated, hqState.viewer);
@@ -1914,19 +3909,77 @@
         const status = document.getElementById('il-roster-status');
         const fd = new FormData(e.target);
         const rosterSlots = {};
-        for (const pos of ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K', 'BN', 'IR']) {
+        for (const pos of ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K', 'BN', 'IR', 'TAXI']) {
           rosterSlots[pos] = Number(fd.get(`slot-${pos}`));
         }
         try {
           const updated = await patchSettings({
             rosterSlots,
-            keepersEnabled: fd.get('keepersEnabled') === '1',
-            keeperCount: Number(fd.get('keeperCount')),
-            keeperMaxSeasons: Number(fd.get('keeperMaxSeasons'))
+            leagueFormat: fd.get('leagueFormat') === 'dynasty' ? 'dynasty' : (hqState.league?.settings?.keepersEnabled ? 'keeper' : 'redraft'),
+            draftPool: fd.get('draftPool'),
+            irOpen: fd.get('irOpen') === '1',
+            taxiRookieOnly: fd.get('taxiRookieOnly') === '1'
           }, status);
           document.getElementById('il-root').innerHTML = settingsHtml(updated, hqState.viewer);
           wireSettingsUi();
           const ok = document.getElementById('il-roster-status');
+          if (ok) {
+            ok.textContent = 'Saved.';
+            ok.className = 'il-status is-ok';
+          }
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+
+      document.getElementById('il-keepers-settings-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-keepers-settings-status');
+        const patch = keeperSettingsFromForm(e.target);
+        const dynasty = hqState.league?.settings?.leagueFormat === 'dynasty'
+          || document.querySelector('#il-roster-form [name="leagueFormat"]')?.value === 'dynasty';
+        if (dynasty) {
+          patch.keepersEnabled = false;
+          patch.leagueFormat = 'dynasty';
+          patch.keeperCost = 'none';
+        } else {
+          patch.leagueFormat = patch.keepersEnabled ? 'keeper' : 'redraft';
+        }
+        try {
+          const updated = await patchSettings(patch, status);
+          document.getElementById('il-root').innerHTML = settingsHtml(updated, hqState.viewer);
+          wireSettingsUi();
+          const ok = document.getElementById('il-keepers-settings-status');
+          if (ok) {
+            ok.textContent = 'Saved.';
+            ok.className = 'il-status is-ok';
+          }
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+
+      wireKeeperToggle();
+
+      document.getElementById('il-wire-settings-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-wire-settings-status');
+        const fd = new FormData(e.target);
+        try {
+          const updated = await patchSettings({
+            waiverType: fd.get('waiverType'),
+            faabBudget: Number(fd.get('faabBudget')),
+            waiverHoldHours: Number(fd.get('waiverHoldHours'))
+          }, status);
+          document.getElementById('il-root').innerHTML = settingsHtml(updated, hqState.viewer);
+          wireSettingsUi();
+          const ok = document.getElementById('il-wire-settings-status');
           if (ok) {
             ok.textContent = 'Saved.';
             ok.className = 'il-status is-ok';
@@ -2211,6 +4264,7 @@
 
         document.title = `${league.brand?.name || league.slug} · League HQ`;
         document.body.dataset.page = section === 'home' ? 'league-hq' : section;
+        applyLeagueTheme(league);
         if (data.leagueScope && window.GridIronNav?.applyLeagueScope) {
           window.GridIronNav.applyLeagueScope(data.leagueScope);
         }
@@ -2218,7 +4272,8 @@
         if (section === 'draft') {
           await loadDraftBoard();
         } else {
-          const needsScores = ['home', 'scoreboard', 'standings', 'team-rosters', 'my-roster', 'team'].includes(section);
+          window.OfficialDraftUi?.unmount();
+          const needsScores = ['home', 'scoreboard', 'standings', 'team-rosters', 'my-roster', 'team', 'schedules', 'rankings', 'playoffs'].includes(section);
           if (needsScores) {
             try {
               const weekParam = new URLSearchParams(location.search || '').get('week');
@@ -2227,14 +4282,39 @@
               console.warn('[independent] week score', scoreErr.message || scoreErr);
             }
           }
-          root.innerHTML = sectionHtml(section === 'home' ? 'home' : section, league, data.pages || {}, hqState.viewer);
+          if (section === 'transactions') {
+            try {
+              await loadWire();
+            } catch (wireErr) {
+              hqState.wireError = wireErr.message || 'Could not load the wire';
+            }
+          }
+          if (section === 'keepers') {
+            try {
+              await loadKeepers();
+            } catch (keepErr) {
+              hqState.keepers = { ok: false, error: keepErr.message, settings: {}, declarations: [] };
+            }
+          }
+          root.innerHTML = sectionHtml(section === 'home' ? 'home' : section, hqState.league, data.pages || {}, hqState.viewer);
           if (section === 'settings') wireSettingsUi();
           if (section === 'manage') wireManageUi();
           if (section === 'rulebook') wireRulebookUi();
           if (section === 'scoreboard') wireScoreboardUi();
-          if (section === 'team' || section === 'my-roster') wireTeamWeekUi();
+          if (section === 'playoffs') wirePlayoffUi();
+          if (section === 'keepers') wireKeepersUi();
+          if (section === 'transactions') wireWireUi();
+          if (section === 'team' || section === 'my-roster') {
+            wireTeamWeekUi();
+            wireLineupUi();
+          }
+          if (['home', 'scoreboard', 'standings', 'team-rosters', 'my-roster', 'team', 'schedules', 'rankings', 'playoffs'].includes(section)) {
+            setLiveSync();
+            startLivePoll();
+          } else {
+            window.GridIronNav?.setSync(league.brand?.name || 'League HQ', true);
+          }
         }
-        window.GridIronNav?.setSync(league.brand?.name || 'League HQ', true);
       } catch (err) {
         root.innerHTML = `<div class="msg"><strong>Error</strong> ${esc(err.message)}</div>`;
       }

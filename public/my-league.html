@@ -8,12 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=123" />
-  <link rel="icon" href="/favicon.ico?v=123" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=123" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=123" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=124" />
+  <link rel="icon" href="/favicon.ico?v=124" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=124" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=124" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=154" />
+  <link rel="stylesheet" href="/css/site.css?v=157" />
   <style>
     body.my-league {
       min-height: 100vh;
@@ -130,7 +130,7 @@
       } else if (league.status === 'rejected') {
         banner = `<div class="banner bad"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
       } else if (league.status === 'approved') {
-        banner = `<div class="banner" style="border-color:rgba(157,255,196,0.35);background:rgba(157,255,196,0.08);">Approved. This is your independent HQ outline — separate from GridIron 24’s ESPN leagues. Invite tools and scoring come next as we expand the platform.</div>`;
+        banner = `<div class="banner" style="border-color:rgba(157,255,196,0.35);background:rgba(157,255,196,0.08);">Approved. This is your league headquarters on GridIron. Invite tools and scoring live in HQ.</div>`;
       }
 
       const confHtml = confs.map((c) => {
@@ -163,7 +163,11 @@
               ? '<br/>Conferences, playoffs, and championship details are set in HQ after approval.'
               : `<br/>${esc(String(league.structure?.teamsPerConference || '—'))} per conference<br/>
             Playoffs: ${esc(String(league.structure?.playoffTeamCount || '—'))} teams · Weeks ${(league.structure?.playoffWeeks || []).join(', ') || '—'}<br/>
-            ${esc(league.championship?.name || 'Championship')} · weeks ${esc(String(league.championship?.titleWeek || '—'))} / ${esc(String(league.championship?.bowlWeek || '—'))}`}</p>
+            ${league.championship?.name
+              ? `${esc(league.championship.name)}${league.championship.titleWeek || league.championship.bowlWeek
+                ? ` · weeks ${esc(String(league.championship.titleWeek || '—'))} / ${esc(String(league.championship.bowlWeek || '—'))}`
+                : ''}`
+              : 'Championship not named yet.'}`}</p>
           </div>
           <div class="meta-card">
             <h3>Roster &amp; scoring</h3>
@@ -185,7 +189,7 @@
             <h3>Platform</h3>
             <p>Independent HQ · season ${esc(String(league.season))}<br/>
             Slug: <code>${esc(league.slug)}</code><br/>
-            Not connected to ESPN, GridIron 24 Detail/Overtime, or AAA.</p>
+            Your league on GridIron — not Detail, Overtime, or AAA.</p>
           </div>
         </div>`;
     }

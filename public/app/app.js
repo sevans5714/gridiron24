@@ -362,6 +362,10 @@
       '/team.html',
       '/calendar.html',
       '/league-tools.html',
+      '/owner.html',
+      '/admin.html',
+      '/site.html',
+      '/dashboard.html',
       '/home.html',
       '/inbox.html'
     ]);

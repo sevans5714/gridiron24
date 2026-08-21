@@ -47,7 +47,8 @@ function normalizeAbbr(raw) {
     STL: 'LAR',
     SD: 'LAC',
     OAK: 'LV',
-    JAC: 'JAX'
+    JAC: 'JAX',
+    ARZ: 'ARI'
   };
   const key = aliases[a] || a;
   return BY_ABBR.has(key) ? key : null;
@@ -58,8 +59,19 @@ function teamName(abbr) {
   return key ? BY_ABBR.get(key).name : null;
 }
 
+/** ESPN CDN slug (Washington is wsh, Arizona is ari). */
+const ESPN_LOGO_SLUG = { WAS: 'wsh', WSH: 'wsh', ARZ: 'ari' };
+
+function espnLogoUrl(raw) {
+  const key = normalizeAbbr(raw) || String(raw || '').trim().toUpperCase();
+  if (!key) return null;
+  const slug = ESPN_LOGO_SLUG[key] || key.toLowerCase();
+  return `https://a.espncdn.com/i/teamlogos/nfl/500/${slug}.png`;
+}
+
 module.exports = {
   NFL_TEAMS,
   normalizeAbbr,
-  teamName
+  teamName,
+  espnLogoUrl
 };

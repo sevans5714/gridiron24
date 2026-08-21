@@ -110,86 +110,173 @@ function scoreDstStats(teamStats = {}, scoring = {}) {
 }
 
 const FLEX_ELIGIBLE = new Set(['RB', 'WR', 'TE']);
+const STARTER_KEYS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K'];
+
+function normalizePos(pos) {
+  const p = String(pos || '').toUpperCase();
+  if (p === 'D/ST' || p === 'DEF' || p === 'D ST') return 'DST';
+  return p;
+}
+
+function normalizeSlot(slot) {
+  const s = String(slot || '').toUpperCase();
+  if (s === 'D/ST' || s === 'DEF' || s === 'D ST') return 'DST';
+  if (s === 'BENCH') return 'BN';
+  return s;
+}
+
+function slotEligible(pos, slot) {
+  const p = normalizePos(pos);
+  const s = normalizeSlot(slot);
+  if (s === 'BN' || s === 'IR' || s === 'TAXI') return true;
+  if (s === 'FLEX') return FLEX_ELIGIBLE.has(p);
+  if (s === 'DST') return p === 'DST';
+  return p === s;
+}
+
+function neededStarterSlots(rosterSlots = {}) {
+  const needed = [];
+  for (const key of STARTER_KEYS) {
+    const n = Number(rosterSlots[key]) || 0;
+    for (let i = 0; i < n; i += 1) needed.push(key);
+  }
+  return needed;
+}
+
+/** First-time / draft default: fill starter slots by position, roster order — not by points. */
+function assignDefaultSlots(roster = [], rosterSlots = {}) {
+  const needed = neededStarterSlots(rosterSlots);
+  const used = new Set();
+  const byId = new Map();
+  const players = (Array.isArray(roster) ? roster : []).map((p) => ({
+    ...p,
+    playerId: String(p.playerId || p.id || ''),
+    position: normalizePos(p.position)
+  }));
+  for (const slot of needed) {
+    const hit = players.find((p) => p.playerId && !used.has(p.playerId)
+      && slotEligible(p.position, slot)
+      && normalizeSlot(p.slot) !== 'IR'
+      && normalizeSlot(p.slot) !== 'TAXI');
+    if (!hit) continue;
+    used.add(hit.playerId);
+    byId.set(hit.playerId, slot);
+  }
+  return players.map((p) => ({
+    ...p,
+    slot: byId.get(p.playerId) || (['IR', 'TAXI'].includes(normalizeSlot(p.slot)) ? normalizeSlot(p.slot) : 'BN')
+  }));
+}
 
 /**
- * Auto-start a franchise roster for the week using rosterSlots + scored points.
- * Returns { starters, bench, total }
+ * Build the week's scored lineup from saved slots.
+ * Does not auto-start the highest scorers — managers set the lineup.
+ * If nobody has a starter slot yet, fill by position (draft default).
  */
 function buildLineup(roster = [], scoredById = new Map(), rosterSlots = {}) {
-  const slots = {
-    QB: Number(rosterSlots.QB) || 0,
-    RB: Number(rosterSlots.RB) || 0,
-    WR: Number(rosterSlots.WR) || 0,
-    TE: Number(rosterSlots.TE) || 0,
-    FLEX: Number(rosterSlots.FLEX) || 0,
-    DST: Number(rosterSlots.DST) || 0,
-    K: Number(rosterSlots.K) || 0,
-    BN: Number(rosterSlots.BN) || 0,
-    IR: Number(rosterSlots.IR) || 0
-  };
-
+  const needed = neededStarterSlots(rosterSlots);
   const players = (Array.isArray(roster) ? roster : []).map((p) => {
     const id = String(p.playerId || p.id || '');
-    const pos = String(p.position || '').toUpperCase();
-    const scored = scoredById.get(id) || { points: 0 };
+    const pos = normalizePos(p.position);
+    const teamKey = String(p.nflTeam || p.team || '').trim().toUpperCase();
+    const scored = scoredById.get(id)
+      || (teamKey ? scoredById.get(teamKey) : null)
+      || { points: 0 };
     return {
       ...p,
       playerId: id,
       position: pos,
+      slot: normalizeSlot(p.slot),
       weekPoints: round1(scored.points),
+      live: Boolean(scored.live),
+      gameStatus: scored.gameStatus || null,
+      gameClock: scored.gameClock || null,
       breakdown: scored.breakdown || null
     };
-  }).sort((a, b) => (b.weekPoints || 0) - (a.weekPoints || 0));
+  });
 
+  if (!needed.length && players.length) {
+    const starters = players.map((p) => ({ ...p, slot: p.position || 'BN', isStarter: true }));
+    return {
+      starters,
+      bench: [],
+      total: round1(starters.reduce((sum, p) => sum + num(p.weekPoints), 0)),
+      players: starters
+    };
+  }
+
+  const hasSavedStarters = players.some((p) => STARTER_KEYS.includes(p.slot));
   const used = new Set();
-  const starters = [];
+  const picked = [];
+  const cap = {};
+  for (const key of STARTER_KEYS) cap[key] = Number(rosterSlots[key]) || 0;
+  const filled = {};
+  for (const key of STARTER_KEYS) filled[key] = 0;
 
-  function take(pos, count) {
-    if (count <= 0) return;
-    const pool = players.filter((p) => !used.has(p.playerId) && p.position === pos);
-    for (const p of pool.slice(0, count)) {
-      used.add(p.playerId);
-      starters.push({ ...p, slot: pos, isStarter: true });
-    }
-  }
-
-  take('QB', slots.QB);
-  take('RB', slots.RB);
-  take('WR', slots.WR);
-  take('TE', slots.TE);
-  take('DST', slots.DST);
-  take('K', slots.K);
-
-  if (slots.FLEX > 0) {
-    const flexPool = players.filter(
-      (p) => !used.has(p.playerId) && FLEX_ELIGIBLE.has(p.position)
-    );
-    for (const p of flexPool.slice(0, slots.FLEX)) {
-      used.add(p.playerId);
-      starters.push({ ...p, slot: 'FLEX', isStarter: true });
-    }
-  }
-
-  // If no slots configured, count everyone as a starter so points still show.
-  if (!starters.length && players.length) {
+  if (hasSavedStarters) {
     for (const p of players) {
+      if (!STARTER_KEYS.includes(p.slot)) continue;
+      if (p.slot === 'IR' || p.slot === 'TAXI') continue;
+      if (!slotEligible(p.position, p.slot)) continue;
+      if (filled[p.slot] >= cap[p.slot]) continue;
+      filled[p.slot] += 1;
       used.add(p.playerId);
-      starters.push({ ...p, slot: p.position || 'BN', isStarter: true });
+      picked.push({ ...p, isStarter: true });
+    }
+  } else {
+    for (const slot of needed) {
+      if (filled[slot] >= cap[slot]) continue;
+      const hit = players.find((p) => p.playerId && !used.has(p.playerId)
+        && slotEligible(p.position, slot) && p.slot !== 'IR' && p.slot !== 'TAXI');
+      if (!hit) continue;
+      filled[slot] += 1;
+      used.add(hit.playerId);
+      picked.push({ ...hit, slot, isStarter: true });
+    }
+  }
+
+  const starters = [];
+  const taken = new Set();
+  for (const slot of needed) {
+    const hit = picked.find((p) => p.slot === slot && !taken.has(p.playerId));
+    if (hit) {
+      taken.add(hit.playerId);
+      starters.push(hit);
+    } else {
+      starters.push({
+        slot,
+        position: slot,
+        name: '',
+        playerId: '',
+        weekPoints: 0,
+        isStarter: true,
+        empty: true
+      });
     }
   }
 
   const bench = players
     .filter((p) => !used.has(p.playerId))
-    .map((p) => ({ ...p, slot: 'BN', isStarter: false }));
+    .map((p) => ({
+      ...p,
+      slot: p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN',
+      isStarter: false
+    }));
 
-  const total = round1(starters.reduce((sum, p) => sum + num(p.weekPoints), 0));
-  return { starters, bench, total, players: [...starters, ...bench] };
+  const total = round1(starters.reduce((sum, p) => sum + (p.empty ? 0 : num(p.weekPoints)), 0));
+  return { starters, bench, total, players: [...starters.filter((p) => !p.empty), ...bench] };
 }
 
 module.exports = {
   scorePlayerStats,
   scoreDstStats,
   buildLineup,
+  assignDefaultSlots,
+  slotEligible,
+  normalizeSlot,
+  normalizePos,
+  STARTER_KEYS,
+  neededStarterSlots,
   round1,
   yardsPoints
 };

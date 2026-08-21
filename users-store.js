@@ -52,8 +52,28 @@ function writeStore(data) {
   fs.renameSync(tmp, USERS_FILE);
 }
 
+const EMAIL_TAKEN_MESSAGE = 'That email already has an account. Sign in instead.';
+
 function normalizeEmail(email) {
-  return String(email || '').trim().toLowerCase();
+  return String(email || '')
+    .normalize('NFC')
+    .trim()
+    .replace(/\s+/g, '')
+    .toLowerCase();
+}
+
+function emailTaken(email, exceptUserId = null) {
+  const key = normalizeEmail(email);
+  if (!key) return false;
+  return readStore().users.some(
+    (u) => normalizeEmail(u.email) === key && (!exceptUserId || u.id !== exceptUserId)
+  );
+}
+
+function assertEmailAvailable(email, exceptUserId = null) {
+  if (emailTaken(email, exceptUserId)) {
+    throw Object.assign(new Error(EMAIL_TAKEN_MESSAGE), { status: 409, code: 'email_taken' });
+  }
 }
 
 function normalizeLoginName(loginName) {
@@ -568,7 +588,7 @@ function createUser({ name, email, loginName, password, role, conference, approv
     throw Object.assign(new Error('Password must be at least 6 characters'), { status: 400 });
   }
   if (store.users.some((u) => normalizeEmail(u.email) === emailKey)) {
-    throw Object.assign(new Error('An account with that email already exists'), { status: 409 });
+    throw Object.assign(new Error(EMAIL_TAKEN_MESSAGE), { status: 409, code: 'email_taken' });
   }
   if (store.users.some((u) => normalizeLoginName(u.loginName) === loginKey)) {
     throw Object.assign(new Error('That login name is already taken'), { status: 409 });
@@ -1211,6 +1231,10 @@ module.exports = {
   GRIDIRON_CONFERENCE_CAP,
   setAllowedConferenceKeys,
   getAllowedConferenceKeys,
+  EMAIL_TAKEN_MESSAGE,
+  normalizeEmail,
+  emailTaken,
+  assertEmailAvailable,
   createUser,
   authenticate,
   createResetToken,

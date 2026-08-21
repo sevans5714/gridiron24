@@ -99,10 +99,11 @@ function buildInviteCopy({
   invitedByName,
   leagueName,
   homeUrl,
-  loungeOnly
+  loungeOnly,
+  independent
 } = {}) {
   const who = invitedByName || 'Your commissioner';
-  const league = leagueName || 'GridIron 24';
+  const league = leagueName || (independent ? 'your league' : 'GridIron 24');
   const enter = homeUrl || 'https://www.gridiron24.com/enter';
   const homeHost = String(enter).replace(/^https?:\/\//, '');
   const vars = {
@@ -121,6 +122,11 @@ function buildInviteCopy({
     overrides = {};
   }
   const src = { ...base, ...overrides };
+  if (independent && !loungeOnly) {
+    src.eyebrow = src.eyebrow && src.eyebrow !== copy.eyebrow
+      ? src.eyebrow
+      : '{{league}}';
+  }
 
   return {
     subject: fill(src.subject, vars),

@@ -4,6 +4,7 @@
  * projections (Sleeper), multi-source GridIron ranks (FFC ADP, Sleeper ADP,
  * ESPN, VORP, prior-season scoring), bye week, team logos.
  */
+const { espnLogoUrl } = require('./nfl-teams');
 const fs = require('fs');
 const path = require('path');
 
@@ -115,7 +116,8 @@ const TEAM_ALIASES = {
   LV: 'LV',
   SD: 'LAC',
   LAC: 'LAC',
-  STL: 'LAR'
+  STL: 'LAR',
+  ARZ: 'ARI'
 };
 
 /** ESPN fantasy proTeamId → NFL abbr (for matching expert ranks). */
@@ -342,25 +344,35 @@ function buildByeMap(scheduleRows, season) {
 function buildTeamLogoMap(teamRows) {
   const map = new Map();
   for (const row of teamRows) {
-    const abbr = String(row.team_abbr || '').trim().toUpperCase();
+    const abbr = canonTeam(row.team_abbr) || String(row.team_abbr || '').trim().toUpperCase();
     if (!abbr) continue;
-    const logo = String(row.team_logo_espn || row.team_logo_squared || '').trim();
+    const logo = espnLogoUrl(abbr)
+      || String(row.team_logo_espn || row.team_logo_squared || '').trim();
     if (logo) map.set(abbr, logo);
   }
+  for (const abbr of CURRENT_NFL_TEAMS) {
+    map.set(abbr, espnLogoUrl(abbr));
+  }
+  map.set('ARZ', map.get('ARI'));
   return map;
 }
 
 function buildTeamMetaMap(teamRows) {
   const map = new Map();
   for (const row of teamRows) {
-    const abbr = String(row.team_abbr || '').trim().toUpperCase();
+    const abbr = canonTeam(row.team_abbr) || String(row.team_abbr || '').trim().toUpperCase();
     if (!abbr) continue;
     map.set(abbr, {
       abbr,
       name: String(row.team_name || '').trim() || null,
       nick: String(row.team_nick || '').trim() || null,
-      logo: String(row.team_logo_espn || row.team_logo_squared || '').trim() || null
+      logo: espnLogoUrl(abbr) || String(row.team_logo_espn || row.team_logo_squared || '').trim() || null
     });
+  }
+  for (const abbr of CURRENT_NFL_TEAMS) {
+    const cur = map.get(abbr) || { abbr, name: null, nick: null, logo: null };
+    cur.logo = espnLogoUrl(abbr);
+    map.set(abbr, cur);
   }
   return map;
 }
@@ -785,7 +797,7 @@ function buildDefenseUnits({ sleeper, ffcAdp, espnRanks, byeMap, teamMeta, seaso
       draftClub: null,
       season: Number(season),
       byeWeek: byeMap.get(canonTeam(team) || team) || ffcHit?.byeWeek || null,
-      teamLogo: meta.logo || null,
+      teamLogo: espnLogoUrl(team) || meta.logo || null,
       fantasyPoints2025: null,
       projectedPoints2026: sleeperHit?.projectedPoints2026 ?? null,
       avgPpg: null,
@@ -829,7 +841,7 @@ async function loadDraftPool({ season, activeOnly = true, force = false, scoring
   const yearGuess = Number(season) || new Date().getFullYear();
   const scoringKey = normalizeScoring(scoring);
   const teamKey = clampAdpTeams(teams);
-  const key = `${yearGuess}:${activeOnly ? 'active' : 'all'}:${scoringKey}:${teamKey}:v10-composite`;
+  const key = `${yearGuess}:${activeOnly ? 'active' : 'all'}:${scoringKey}:${teamKey}:v11-espn-logos`;
   const cached = poolCaches.get(key);
   const cacheAge = Date.now() - (cached?.at || 0);
   const cacheMs = cached?.meta?.cacheMs || POOL_CACHE_MS;
@@ -912,7 +924,7 @@ async function loadDraftPool({ season, activeOnly = true, force = false, scoring
     return {
       ...p,
       byeWeek: (p.team && byeMap.get(canonTeam(p.team) || p.team)) || ffcHit?.byeWeek || null,
-      teamLogo: (p.team && (logoMap.get(canonTeam(p.team) || p.team) || logoMap.get(p.team))) || null,
+      teamLogo: espnLogoUrl(p.team) || (p.team && (logoMap.get(canonTeam(p.team) || p.team) || logoMap.get(p.team))) || null,
       fantasyPoints2025,
       projectedPoints2026,
       avgPpg: stats?.avgPpg ?? null,

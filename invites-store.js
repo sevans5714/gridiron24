@@ -31,7 +31,11 @@ function writeStore(data) {
 }
 
 function normalizeEmail(email) {
-  return String(email || '').trim().toLowerCase();
+  return String(email || '')
+    .normalize('NFC')
+    .trim()
+    .replace(/\s+/g, '')
+    .toLowerCase();
 }
 
 function makeToken() {
@@ -111,6 +115,14 @@ function createInvite({ email, invitedBy, loungeOnly, leagueId = null, franchise
     throw err;
   }
 
+  const users = require('./users-store');
+  if (users.findByEmail(emailKey)) {
+    const err = new Error('That email already has an account. They should sign in instead of registering again.');
+    err.status = 409;
+    err.code = 'email_taken';
+    throw err;
+  }
+
   const social = Boolean(loungeOnly);
   const leagueKey = leagueId ? String(leagueId).trim() : null;
   const franchiseKey = franchiseId ? String(franchiseId).trim() : null;
@@ -119,7 +131,7 @@ function createInvite({ email, invitedBy, loungeOnly, leagueId = null, franchise
   const store = readStore();
   const existingOpen = store.invites.find(
     (i) =>
-      i.email === emailKey
+      normalizeEmail(i.email) === emailKey
       && (i.status === 'pending' || i.status === 'expired')
       && String(i.leagueId || '') === String(leagueKey || '')
   );
@@ -132,7 +144,7 @@ function createInvite({ email, invitedBy, loungeOnly, leagueId = null, franchise
   }
   const alreadyAccepted = store.invites.find(
     (i) =>
-      i.email === emailKey
+      normalizeEmail(i.email) === emailKey
       && i.status === 'accepted'
       && String(i.leagueId || '') === String(leagueKey || '')
   );
@@ -196,7 +208,7 @@ function acceptInvite(token, email) {
     throw err;
   }
   const emailKey = normalizeEmail(email);
-  if (emailKey && emailKey !== invite.email) {
+  if (emailKey && emailKey !== normalizeEmail(invite.email)) {
     const err = new Error('Use the email address this invite was sent to');
     err.status = 400;
     throw err;

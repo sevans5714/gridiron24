@@ -288,7 +288,7 @@
           chunks.push(`<p class="inbox-section">${esc(trimmed)}</p>`);
         } else if (trimmed.startsWith('— ')) {
           chunks.push(`<p class="inbox-signoff">${esc(trimmed)}</p>`);
-        } else if (/^(Open League Tools|Use the button below)/i.test(trimmed)) {
+        } else if (/^(Open League Tools|Open Owner Dashboard|Use the button below)/i.test(trimmed)) {
           continue;
         } else {
           chunks.push(`<p class="inbox-p">${esc(trimmed)}</p>`);
@@ -326,21 +326,22 @@
 
     let href = String(msg.meta?.href || msg.meta?.link || '').trim();
     if (!href && (msg.type === 'account_created' || msg.type === 'pending_approvals' || msg.meta?.pendingApprovals)) {
-      href = '/league-tools.html#account-requests';
+      href = '/owner.html#account-requests';
     }
     if (!href && (msg.type === 'league_request' || msg.type === 'pending_league_approvals' || msg.meta?.pendingLeagueApprovals)) {
-      href = '/league-tools.html#league-requests';
+      href = '/owner.html#league-requests';
     }
     if (!href) return '';
+    href = href.replace(/\/league-tools\.html/g, '/owner.html');
 
     let label = '';
     let blurb = '';
     if (msg.type === 'account_created' || msg.type === 'pending_approvals' || msg.meta?.pendingApprovals) {
-      label = 'Open League Tools';
-      blurb = 'Go to Requests → Account Requests to approve or deny.';
+      label = 'Open Owner Dashboard';
+      blurb = 'Open Players → Approve.';
     } else if (msg.type === 'league_request' || msg.type === 'pending_league_approvals' || msg.meta?.pendingLeagueApprovals) {
-      label = 'Open League Tools';
-      blurb = 'Go to Requests → League Requests to review this registration.';
+      label = 'Open Owner Dashboard';
+      blurb = 'Open Players → League requests.';
     } else if (msg.type === 'roster_violations') {
       label = msg.meta?.linkLabel || msg.meta?.hrefLabel || 'Open Roster Violations';
     } else if (msg.meta?.featureRequests || msg.meta?.ruleProposals) {

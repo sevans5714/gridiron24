@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=123" />
-  <link rel="icon" href="/favicon.ico?v=123" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=123" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=123" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=124" />
+  <link rel="icon" href="/favicon.ico?v=124" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=124" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=124" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=154" />
+  <link rel="stylesheet" href="/css/site.css?v=157" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -3276,28 +3276,35 @@
       display: flex;
       flex-direction: column;
       gap: 0.4rem;
-      padding: 3.35rem 0.45rem 0.5rem;
+      padding: 0.5rem 0.45rem 0.5rem;
       background: rgba(3, 7, 14, 0.92);
     }
     .mock-board-view[hidden] { display: none !important; }
     .mock-board-view-bar {
+      position: absolute;
+      top: 0.7rem;
+      right: 0.7rem;
+      z-index: 3;
       display: flex;
       justify-content: flex-end;
-      flex: 0 0 auto;
+      pointer-events: none;
     }
     .mock-board-view-close {
       appearance: none;
-      height: 2.15rem;
-      padding: 0 0.95rem;
-      border-radius: 0.5rem;
+      pointer-events: auto;
+      width: 2.35rem;
+      height: 2.35rem;
+      padding: 0;
+      border-radius: 0.35rem;
       border: 1px solid color-mix(in srgb, var(--mo-gold) 55%, var(--mo-line));
       background: color-mix(in srgb, var(--mo-gold) 22%, var(--mo-surface));
       color: #fff8e8;
-      font-family: "Oswald", sans-serif;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+      font-family: inherit;
+      font-size: 1.65rem;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: 0;
+      text-transform: none;
       cursor: pointer;
     }
     .mock-board-view-close:hover {
@@ -3309,7 +3316,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.4rem;
-      padding: 0.55rem 0.55rem 0.6rem;
+      padding: 2.55rem 0.55rem 0.6rem;
       border-radius: 0.55rem;
       overflow: hidden;
       background: linear-gradient(180deg, #1a1c22 0%, #0d1016 100%);
@@ -3605,6 +3612,29 @@
       font-size: 1.05rem;
       letter-spacing: 0.05em;
       text-transform: uppercase;
+      color: var(--mo-text);
+    }
+    .mock-start-copy.is-round {
+      justify-items: center;
+      text-align: center;
+    }
+    .mock-start-copy.is-round strong {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      line-height: 1;
+      color: var(--mo-muted);
+    }
+    .mock-start-copy.is-round b {
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: clamp(2.4rem, 5.2vw, 3.2rem);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      line-height: 0.85;
       color: var(--mo-text);
     }
     .mock-start-copy span {
@@ -4251,7 +4281,7 @@
     }
     .cpu-recap-row {
       display: grid;
-      grid-template-columns: 1.85rem repeat(var(--mock-seats, 12), minmax(0, 1fr)) 1.85rem;
+      grid-template-columns: 1.85rem repeat(var(--mock-seats, 12), minmax(0, 1fr));
       column-gap: 5px;
       align-items: stretch;
     }
@@ -4266,26 +4296,27 @@
       z-index: 3;
       padding: 5px 4px;
       margin: 3px 0;
-      border-radius: 0.28rem;
+      border-radius: 0.35rem;
       background: color-mix(in srgb, var(--mo-gold) 12%, transparent);
-      outline: 2px solid var(--mo-gold);
-      outline-offset: 0;
       box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--mo-gold) 40%, #000),
-        0 0 16px color-mix(in srgb, var(--mo-gold) 32%, transparent);
+        0 0 0 2px var(--mo-gold),
+        0 0 0 5px color-mix(in srgb, var(--mo-gold) 35%, transparent),
+        0 0 22px color-mix(in srgb, var(--mo-gold) 48%, transparent);
+      animation: cpu-recap-round-glow 1.8s ease-in-out infinite;
     }
-    .cpu-recap-row.is-now .last:not(.is-empty) {
-      outline: 2px solid #fff8e4;
-      outline-offset: 1px;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.72),
-        inset 0 -3px 5px rgba(0, 0, 0, 0.28),
-        0 1px 0 rgba(255, 255, 255, 0.18),
-        0 2px 0 #1c1c1c,
-        0 4px 0 #111,
-        0 6px 0 #0a0a0a,
-        0 0 0 3px var(--mo-gold),
-        0 10px 16px rgba(0, 0, 0, 0.5);
+    @keyframes cpu-recap-round-glow {
+      0%, 100% {
+        box-shadow:
+          0 0 0 2px var(--mo-gold),
+          0 0 0 4px color-mix(in srgb, var(--mo-gold) 28%, transparent),
+          0 0 14px color-mix(in srgb, var(--mo-gold) 32%, transparent);
+      }
+      50% {
+        box-shadow:
+          0 0 0 2px var(--mo-gold),
+          0 0 0 6px color-mix(in srgb, var(--mo-gold) 48%, transparent),
+          0 0 28px color-mix(in srgb, var(--mo-gold) 58%, transparent);
+      }
     }
     .cpu-recap-rn {
       display: grid;
@@ -4325,6 +4356,17 @@
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
+      color: #16181d;
+    }
+    .cpu-recap-head .cpu-recap-avatar {
+      width: 1.55rem;
+      height: 1.55rem;
+    }
+    .cpu-recap-num {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
       color: #16181d;
     }
     .cpu-recap-avatar,
@@ -4429,6 +4471,10 @@
       width: 1.05rem;
       height: 1.05rem;
       object-fit: contain;
+      background: #fff;
+      border-radius: 0.14rem;
+      padding: 0.05rem;
+      box-sizing: content-box;
     }
     .cpu-recap-board .last .pick-nfl-abbr {
       font-family: "Oswald", sans-serif;
@@ -4465,7 +4511,7 @@
     }
     @media (max-width: 720px) {
       .cpu-recap-row {
-        grid-template-columns: 1.45rem repeat(var(--mock-seats, 12), minmax(4.4rem, 1fr)) 1.45rem;
+        grid-template-columns: 1.45rem repeat(var(--mock-seats, 12), minmax(4.4rem, 1fr));
         min-width: calc(2.9rem + (var(--mock-seats, 12) * 4.65rem));
       }
     }
@@ -4483,29 +4529,137 @@
     html[data-theme="day"] .cpu-recap-head.is-you { background: #fff4d4; }
     html[data-theme="day"] .cpu-recap-row.is-now {
       background: rgba(161, 98, 7, 0.12);
-      outline-color: #a16207;
-    }
-    html[data-theme="day"] .cpu-recap-row.is-now .last:not(.is-empty) {
-      outline-color: #fff;
       box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.72),
-        inset 0 -3px 5px rgba(0, 0, 0, 0.28),
-        0 1px 0 rgba(255, 255, 255, 0.18),
-        0 2px 0 #1c1c1c,
-        0 4px 0 #111,
-        0 6px 0 #0a0a0a,
-        0 0 0 3px #a16207,
-        0 10px 16px rgba(0, 0, 0, 0.5);
+        0 0 0 2px #a16207,
+        0 0 0 5px rgba(161, 98, 7, 0.28),
+        0 0 22px rgba(161, 98, 7, 0.32);
     }
     html[data-theme="day"] .cpu-recap-board .last.is-empty {
       background: rgba(20, 24, 31, 0.08);
       border-color: rgba(20, 24, 31, 0.14);
+    }
+    .mock-cpu-announce-card.is-magnet {
+      min-width: 0;
+      max-width: none;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+    }
+    .cpu-announce-magnet {
+      width: min(28rem, 84vw);
+    }
+    .cpu-announce-magnet .last {
+      --pick-ink: #8b97a8;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      align-items: stretch;
+      justify-items: stretch;
+      gap: 0.22rem;
+      width: 100%;
+      min-height: 16.5rem;
+      margin: 0;
+      padding: 1.15rem 1.2rem 1.2rem;
+      border-radius: 0.65rem;
+      border: 1px solid rgba(0, 0, 0, 0.38);
+      color: #0b0d12;
+      text-align: center;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0.08) 22%, transparent 48%),
+        linear-gradient(180deg,
+          color-mix(in srgb, #fff 18%, var(--pick-ink)) 0%,
+          var(--pick-ink) 52%,
+          color-mix(in srgb, #000 24%, var(--pick-ink)) 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -6px 10px rgba(0, 0, 0, 0.28),
+        0 1px 0 rgba(255, 255, 255, 0.18),
+        0 4px 0 #1c1c1c,
+        0 8px 0 #111,
+        0 12px 0 #0a0a0a,
+        0 22px 28px rgba(0, 0, 0, 0.55);
+    }
+    .cpu-announce-magnet .last[data-pos="QB"] { --pick-ink: var(--mock-qb); }
+    .cpu-announce-magnet .last[data-pos="RB"] { --pick-ink: var(--mock-rb); }
+    .cpu-announce-magnet .last[data-pos="WR"] { --pick-ink: var(--mock-wr); }
+    .cpu-announce-magnet .last[data-pos="TE"] { --pick-ink: var(--mock-te); }
+    .cpu-announce-magnet .last[data-pos="K"] { --pick-ink: var(--mock-k); }
+    .cpu-announce-magnet .last[data-pos="D/ST"],
+    .cpu-announce-magnet .last[data-pos="DST"] { --pick-ink: var(--mock-dst); }
+    .cpu-announce-magnet .last .pick-meta {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.4rem;
+      min-width: 0;
+    }
+    .cpu-announce-magnet .last .pick-pos,
+    .cpu-announce-magnet .last .pick-first,
+    .cpu-announce-magnet .last .pick-nfl-abbr {
+      font-family: "Oswald", sans-serif;
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      text-transform: uppercase;
+      color: #0b0d12;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+    .cpu-announce-magnet .last .pick-first {
+      text-transform: none;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cpu-announce-magnet .last .pick-pos { text-align: left; }
+    .cpu-announce-magnet .last .pick-nfl-abbr { text-align: right; }
+    .cpu-announce-magnet .last .pick-nfl-logo {
+      display: block;
+      width: 3.1rem;
+      height: 3.1rem;
+      object-fit: contain;
+      background: #fff;
+      border-radius: 0.28rem;
+      padding: 0.12rem;
+      box-sizing: content-box;
+      filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+    }
+    .cpu-announce-magnet .last .pick-last {
+      display: block;
+      overflow: hidden;
+      font-family: "Bebas Neue", "Oswald", sans-serif;
+      font-size: clamp(4.4rem, 12vw, 7rem);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      line-height: 0.9;
+      text-transform: uppercase;
+      color: #05070b;
+      text-align: center;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.45);
+    }
+    .cpu-announce-magnet .last .pick-bye {
+      font-family: "Oswald", sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #0b0d12;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
     }
     .mock-cpu-announce-card.is-pop {
       animation: mock-cpu-announce-pop 0.42s cubic-bezier(0.22, 1.18, 0.36, 1);
     }
     .mock-cpu-announce-card.is-fly {
       animation: mock-cpu-announce-fly 0.62s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+    }
+    .mock-cpu-announce-card.is-magnet.is-fly {
+      animation-name: mock-cpu-announce-fly-magnet;
     }
     .mock-cpu-announce-card.is-fade {
       animation: mock-cpu-announce-fade 0.45s ease forwards;
@@ -4522,6 +4676,13 @@
         opacity: 0;
       }
     }
+    @keyframes mock-cpu-announce-fly-magnet {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% {
+        transform: translate(var(--cpu-fly-x, 0px), var(--cpu-fly-y, 140px)) scale(0.22);
+        opacity: 0;
+      }
+    }
     @keyframes mock-cpu-announce-fade {
       0% { transform: scale(1); opacity: 1; }
       100% { transform: scale(0.985); opacity: 0; }
@@ -4532,6 +4693,11 @@
         color-mix(in srgb, var(--pick-ink) 16%, #fff);
       border-color: color-mix(in srgb, var(--pick-ink) 45%, #d6d3d1);
       box-shadow: 0 16px 36px rgba(20, 24, 31, 0.12);
+    }
+    html[data-theme="day"] .mock-cpu-announce-card.is-magnet {
+      background: none;
+      border: 0;
+      box-shadow: none;
     }
     html[data-theme="day"] .mock-cpu-announce-card .cpu-team { color: #0f172a; }
     html[data-theme="day"] .mock-cpu-announce-card .cpu-bye { color: #1c2330; }
@@ -4581,32 +4747,32 @@
     }
     .mock-order .mock-seat-chip .nm {
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: 1.22rem;
+      font-size: clamp(0.68rem, 1.05vw, 0.9rem);
       font-weight: 400;
-      line-height: 0.92;
+      line-height: 1.12;
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.28rem;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
       width: 100%;
       max-width: 100%;
       min-width: 0;
-      min-height: 1.7rem;
-      padding: 0.08rem 0.06rem 0.28rem;
+      max-height: 2.5rem;
+      min-height: 1.25rem;
+      padding: 0.08rem 0.12rem 0.22rem;
       margin-bottom: 0.12rem;
       color: #fff;
       letter-spacing: 0.03em;
       text-transform: uppercase;
       text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
       border-bottom: 2px solid rgba(232, 196, 92, 0.42);
+      white-space: normal;
+      word-break: break-word;
     }
     .mock-order .mock-seat-chip .nm-text {
       min-width: 0;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
+      max-width: 100%;
+      white-space: inherit;
     }
     .mock-order .mock-seat-chip .seat-chip-avatar {
       width: 1.15rem;
@@ -4717,6 +4883,10 @@
       width: 1.05rem;
       height: 1.05rem;
       object-fit: contain;
+      background: #fff;
+      border-radius: 0.14rem;
+      padding: 0.05rem;
+      box-sizing: content-box;
       filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
     }
     .mock-order .mock-seat-chip .last .pick-nfl-abbr {
@@ -5393,10 +5563,12 @@
       height: 0.95rem;
       border-radius: 0.15rem;
       object-fit: contain;
-      background: transparent;
+      background: #fff;
       box-shadow: none;
       vertical-align: -0.1rem;
       margin-right: 0.2rem;
+      padding: 0.05rem;
+      box-sizing: content-box;
     }
     .mock-head.is-blank,
     .mock-team.is-blank {
@@ -5491,6 +5663,46 @@
     .mock-injury:focus-visible {
       outline: 2px solid #f87171;
       outline-offset: 2px;
+    }
+    .mock-injury-hover {
+      position: fixed;
+      z-index: 240;
+      transform: translate(-50%, -100%);
+      min-width: 8.5rem;
+      max-width: min(22rem, calc(100vw - 1.5rem));
+      padding: 0.45rem 0.62rem 0.5rem;
+      border-radius: 0.4rem;
+      border: 1px solid color-mix(in srgb, var(--mo-gold) 40%, var(--mo-line));
+      background: color-mix(in srgb, var(--mo-surface) 94%, #111);
+      color: var(--mo-text);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      text-align: left;
+    }
+    .mock-injury-hover[hidden] { display: none !important; }
+    .mock-injury-hover.is-below { transform: translate(-50%, 0); }
+    .mock-injury-hover strong {
+      display: block;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #f87171;
+    }
+    .mock-injury-hover span {
+      display: block;
+      margin-top: 0.12rem;
+      font-family: "Oswald", sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--mo-text);
+    }
+    .mock-injury-hover p {
+      margin: 0.28rem 0 0;
+      font-size: 0.78rem;
+      line-height: 1.35;
+      color: var(--mo-muted);
     }
     .mock-injury-cross {
       width: 0.72rem;
@@ -6134,21 +6346,15 @@
       font-family: "Oswald", sans-serif;
       font-size: 0.74rem;
       font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      min-width: 0;
-    }
-    .mock-complete-team-head .complete-team-avatar {
-      width: 1.15rem;
-      height: 1.15rem;
-    }
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      display: block;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .mock-complete-team-head .complete-team-avatar {
+      width: 1.15rem;
+      height: 1.15rem;
     }
     .mock-complete-team-head span {
       flex: 0 0 auto;
@@ -7098,13 +7304,13 @@
     }
     .mock-other-team .ot-name > span:first-child {
       min-width: 0;
+      max-width: 100%;
+      flex: 1 1 auto;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       color: #f4f7ff;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
+      display: block;
     }
     .mock-other-team .ot-avatar {
       width: 1.05rem;
@@ -10011,7 +10217,7 @@
         </div>
         <div class="mock-board-view" id="mock-board-view" hidden>
           <div class="mock-board-view-bar">
-            <button type="button" class="mock-board-view-close" id="mock-board-view-close">Back to draft</button>
+            <button type="button" class="mock-board-view-close" id="mock-board-view-close" aria-label="Close">×</button>
           </div>
           <div class="mock-board-view-card" id="mock-board-view-card"></div>
         </div>
@@ -10306,9 +10512,9 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=157"></script>
+  <script src="/js/nav.js?v=163"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=102"></script>
+  <script src="/js/lounge-desk.js?v=111"></script>
   <script src="/js/lounge-games.js?v=44"></script>
   <script>
     const esc = (v = '') => String(v)

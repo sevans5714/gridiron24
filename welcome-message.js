@@ -2,7 +2,7 @@
  * First-login welcome inbox message.
  *
  * Sent automatically the first time an approved user signs in.
- * Copy varies by membership: gridiron | aaa | social.
+ * Copy varies by membership: gridiron | aaa | social | independent.
  */
 
 const fromName = 'GridIron 24 HQ';
@@ -23,6 +23,28 @@ function bodyFor(name = 'Member', opts = {}) {
     }
   }
   if (overrideBody.trim()) return overrideBody;
+
+  if (membership === 'independent') {
+    const league = String(opts.leagueName || '').trim();
+    return [
+      `Hey ${who} —`,
+      '',
+      league
+        ? `You’re the owner of ${league}. Your headquarters is live.`
+        : 'You’re the league owner. Your headquarters is live.',
+      '',
+      'WHAT TO DO NEXT',
+      '• Open League HQ — that’s your desk',
+      '• Name franchises and invite managers',
+      '• Set roster, scoring, draft time, and playoffs yourself',
+      '',
+      'Playoffs, consolation games, and titles stay blank until you name them.',
+      '',
+      'Build it, then draft.',
+      '',
+      '— League HQ'
+    ].join('\n');
+  }
 
   if (membership === 'social') {
     return [
@@ -105,15 +127,16 @@ function subjectFor(kind = 'gridiron', { allowOverride = true } = {}) {
   }
   if (membership === 'social') return 'Welcome to the Members Lounge';
   if (membership === 'aaa') return 'Welcome to AAA League';
+  if (membership === 'independent') return 'Your league HQ is ready';
   return 'Welcome to GridIron 24';
 }
 
-function buildWelcome({ name, kind } = {}) {
+function buildWelcome({ name, kind, leagueName } = {}) {
   const membershipKind = String(kind || 'gridiron').toLowerCase();
   return {
     subject: subjectFor(membershipKind),
-    fromName,
-    body: bodyFor(name, { kind: membershipKind }),
+    fromName: membershipKind === 'independent' ? 'League HQ' : fromName,
+    body: bodyFor(name, { kind: membershipKind, leagueName }),
     type: 'welcome',
     membershipKind
   };

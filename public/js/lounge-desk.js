@@ -80,6 +80,9 @@
   const COUNTDOWN_FIRST_BEAT = 1.24;
   const COUNTDOWN_START_AT = 10;
   const PICK_AUDIO_URL = '/assets/lounge/nfl-draft-pick.mp3?v=3';
+  const CPU_MAGNET_HOLD_MS = 900;
+  const HUMAN_MAGNET_HOLD_MS = 1800;
+  const MAGNET_FLY_MS = 620;
   const ROUND_AUDIO_V = 1;
   const ROUND_AUDIO_WORDS = [
     'one', 'two', 'three', 'four', 'five',
@@ -425,11 +428,12 @@
     if (copy) {
       const slot = draftLive && !done ? currentSlot() : null;
       const headlineRound = roundBreakHold || (draftLive && !done ? boardRound : null);
-      if (headlineRound) {
-        copy.innerHTML = `<strong>Round ${esc(String(headlineRound))}</strong>`;
-      } else if (slot) {
-        copy.innerHTML = `<strong>Round ${esc(String(slot.round))}</strong>`;
+      const roundNum = headlineRound || slot?.round;
+      if (roundNum) {
+        copy.classList.add('is-round');
+        copy.innerHTML = `<strong>Round <b>${esc(String(roundNum))}</b></strong>`;
       } else {
+        copy.classList.remove('is-round');
         let headline = 'Start Draft';
         if (waitingSeat) headline = 'Join in progress';
         else if (done) headline = 'Board is final';
@@ -1121,6 +1125,10 @@
             setMockStatus(`CPU · ${team} selected ${pick.playerName}`, true);
             lastFocusSeat = pick.teamIndex;
             await beginCpuPickReveal(pick);
+          } else if (isMultiplayer()) {
+            playPickSound();
+            lastFocusSeat = pick.teamIndex;
+            await beginCpuPickReveal(pick);
           } else if (Number(pick.teamIndex) !== Number(mock.seatIndex)) {
             playPickSound();
             scrollToSeat(pick.teamIndex);
@@ -1429,7 +1437,7 @@
     const seasons = (payload.seasonsScanned || []).join(', ');
     const note = seasons
       ? `Built from ${esc(String(payload.gamesScanned || 0))} decided games · seasons ${esc(seasons)}. Add prior years in League Tools → Season Archive to expand the book.`
-      : 'Records refresh from ESPN matchups. Categories stay open until a mark is set.';
+      : 'Records refresh from weekly matchups. Categories stay open until a mark is set.';
 
     return `
       <div class="records-book">${cards}</div>
@@ -1909,8 +1917,9 @@
 
   function playerTeamMarkHtml(player, { size = 40 } = {}) {
     const abbr = esc(player?.team || 'FA');
-    const logo = player?.teamLogo
-      ? `<img class="mock-profile-team-logo" src="${esc(player.teamLogo)}" alt="" width="${size}" height="${size}" loading="lazy" referrerpolicy="no-referrer" />`
+    const logoSrc = nflLogoSrc(player?.team, player?.teamLogo);
+    const logo = logoSrc
+      ? `<img class="mock-profile-team-logo" src="${esc(logoSrc)}" alt="" width="${size}" height="${size}" loading="lazy" referrerpolicy="no-referrer" />`
       : `<span class="mock-profile-team-fallback" aria-hidden="true">${abbr}</span>`;
     return `<div class="mock-profile-team-mark" title="${abbr}">
       ${logo}
@@ -2116,6 +2125,14 @@
     });
   }
 
+  function nflLogoSrc(team, existing) {
+    const abbr = String(team || '').trim().toUpperCase();
+    const canon = abbr === 'ARZ' ? 'ARI' : (abbr === 'WSH' || abbr === 'WASH' ? 'WAS' : abbr);
+    if (!canon || canon === 'FA' || canon.length > 3) return existing || '';
+    const slug = canon === 'WAS' ? 'wsh' : canon.toLowerCase();
+    return `https://a.espncdn.com/i/teamlogos/nfl/500/${slug}.png`;
+  }
+
   function injuryLabel(player) {
     const raw = String(player?.injuryStatus || '').trim();
     if (!raw) return null;
@@ -2141,10 +2158,54 @@
     const label = injuryLabel(player);
     if (!label) return '';
     const code = injuryAbbrev(label);
-    const part = player.injuryBodyPart ? ` · ${player.injuryBodyPart}` : '';
-    return `<button type="button" class="mock-injury" data-injury-id="${esc(player.id)}" data-status="${esc(code)}" title="${esc(label)}${esc(part)} — open injury news" aria-label="Injury: ${esc(label)}${esc(part)}">
+    const part = String(player.injuryBodyPart || '').trim();
+    const notes = String(player.injuryNotes || '').trim();
+    return `<button type="button" class="mock-injury" data-injury-id="${esc(player.id)}" data-status="${esc(code)}" data-injury-status="${esc(label)}" data-injury-part="${esc(part)}" data-injury-notes="${esc(notes)}" aria-label="Injury: ${esc(label)}${part ? ` · ${esc(part)}` : ''}">
       <span class="mock-injury-cross" aria-hidden="true"></span>
     </button>`;
+  }
+
+  function injuryHoverEl() {
+    let el = document.getElementById('mock-injury-hover');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'mock-injury-hover';
+      el.className = 'mock-injury-hover';
+      el.hidden = true;
+      el.setAttribute('role', 'tooltip');
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function hideInjuryHover() {
+    const el = document.getElementById('mock-injury-hover');
+    if (el) el.hidden = true;
+  }
+
+  function showInjuryHover(btn) {
+    if (!btn) return;
+    const status = btn.getAttribute('data-injury-status') || 'Injured';
+    const part = btn.getAttribute('data-injury-part') || '';
+    const notes = btn.getAttribute('data-injury-notes') || '';
+    const el = injuryHoverEl();
+    el.innerHTML = `<strong>${esc(status)}</strong>${part ? `<span>${esc(part)}</span>` : ''}${notes ? `<p>${esc(notes)}</p>` : ''}`;
+    el.hidden = false;
+    el.classList.remove('is-below');
+    const r = btn.getBoundingClientRect();
+    el.style.left = `${Math.round(r.left + r.width / 2)}px`;
+    el.style.top = `${Math.round(r.top - 8)}px`;
+    requestAnimationFrame(() => {
+      const tip = el.getBoundingClientRect();
+      if (tip.top < 8) {
+        el.classList.add('is-below');
+        el.style.top = `${Math.round(r.bottom + 8)}px`;
+      }
+      let left = r.left + r.width / 2;
+      if (tip.left < 8) left += (8 - tip.left);
+      if (tip.right > window.innerWidth - 8) left -= (tip.right - (window.innerWidth - 8));
+      el.style.left = `${Math.round(left)}px`;
+    });
   }
 
   function injuryDetailHtml(player) {
@@ -2192,6 +2253,7 @@
     const title = document.getElementById('mock-injury-title');
     const body = document.getElementById('mock-injury-body');
     if (!player || !dialog || !body) return;
+    hideInjuryHover();
     if (title) title.textContent = `${shortPlayerName(player.name)} · Injury`;
     const meta = [player.position, player.team || 'FA', player.byeWeek != null ? `Bye ${player.byeWeek}` : '']
       .filter(Boolean)
@@ -2200,7 +2262,7 @@
       <p class="mock-injury-meta">${esc(meta)}</p>
       <div class="mock-news-injury">${injuryDetailHtml(player)}</div>
       <div class="mock-injury-news" data-injury-news>
-        <p class="mock-profile-note">Loading ESPN headlines…</p>
+        <p class="mock-profile-note">Loading headlines…</p>
       </div>
       ${playerSourcesHtml(player, { news: true })}
     `;
@@ -2213,12 +2275,12 @@
       if (!newsMount.isConnected) return;
       if (!items.length) {
         newsMount.innerHTML = injuryLabel(player)
-          ? `<p class="mock-profile-note">No recent ESPN headlines — Sleeper status above is the latest injury report.</p>`
+          ? `<p class="mock-profile-note">No recent headlines — injury status above is the latest report.</p>`
           : `<p class="mock-profile-note">No recent injury headlines.</p>`;
         return;
       }
       newsMount.innerHTML = `
-        <p class="mock-news-label">ESPN player news</p>
+        <p class="mock-news-label">Player news</p>
         ${injuryNewsItemsHtml(items)}
       `;
     } catch (err) {
@@ -2314,7 +2376,7 @@
 
       <section class="mock-profile-section mock-profile-news-section" aria-label="Headlines">
         <p class="mock-profile-section-label">Headlines</p>
-        <div id="mock-profile-news"><p class="mock-profile-note">Loading ESPN headlines…</p></div>
+        <div id="mock-profile-news"><p class="mock-profile-note">Loading headlines…</p></div>
       </section>
 
       ${taken ? '<p class="mock-profile-banner">Already drafted</p>' : ''}
@@ -2644,11 +2706,12 @@
     const player = findPlayer(pick?.playerId);
     const byeRaw = pick?.byeWeek ?? player?.byeWeek;
     const bye = byeRaw != null && String(byeRaw).trim() !== '' ? String(byeRaw) : '';
+    const nfl = String(pick?.nflTeam || player?.team || '').toUpperCase();
     return {
       pos: pickPos(pick),
-      logo: pick?.teamLogo || player?.teamLogo || '',
+      logo: nflLogoSrc(nfl, pick?.teamLogo || player?.teamLogo),
       bye,
-      nfl: String(pick?.nflTeam || player?.team || '').toUpperCase()
+      nfl
     };
   }
 
@@ -3159,7 +3222,7 @@
     const wrap = document.getElementById('mock-cpu-announce');
     const card = document.getElementById('mock-cpu-announce-card');
     if (card) {
-      card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in');
+      card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in', 'is-magnet');
       card.style.removeProperty('--cpu-fly-x');
       card.style.removeProperty('--cpu-fly-y');
       card.removeAttribute('data-pos');
@@ -3171,24 +3234,12 @@
     }
   }
 
+  function pickMagnetHoldMs(pick) {
+    return pick?.cpu ? CPU_MAGNET_HOLD_MS : HUMAN_MAGNET_HOLD_MS;
+  }
+
   function cpuPickAnnounceHtml(pick) {
-    const player = findPlayer(pick.playerId);
-    const meta = pickNflMeta(pick);
-    const name = pick.playerName || player?.name || 'Player';
-    const club = seatBoardLabel(pick.teamIndex);
-    const teamMark = meta.logo
-      ? `<img class="cpu-team-logo" src="${esc(meta.logo)}" alt="" width="28" height="28" />`
-      : '';
-    const bye = meta.bye ? `<span class="cpu-bye">Bye ${esc(meta.bye)}</span>` : '';
-    return `
-      <p class="cpu-kicker">${esc(club)} selects</p>
-      <strong class="cpu-name">${esc(name)}</strong>
-      <div class="cpu-meta">
-        ${teamMark}
-        ${meta.nfl ? `<span class="cpu-team">${esc(meta.nfl)}</span>` : ''}
-        ${posBadge(meta.pos)}
-        ${bye}
-      </div>`;
+    return `<div class="cpu-announce-magnet">${lastPickMagnetHtml(pick)}</div>`;
   }
 
   function playCpuPickAnnounce(pick) {
@@ -3196,15 +3247,16 @@
     const card = document.getElementById('mock-cpu-announce-card');
     if (!wrap || !card || !pick) return Promise.resolve();
     const epoch = ++cpuAnnounceEpoch;
+    const holdMs = pickMagnetHoldMs(pick);
     card.innerHTML = cpuPickAnnounceHtml(pick);
-    card.dataset.pos = pickNflMeta(pick).pos;
-    card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in');
+    card.removeAttribute('data-pos');
+    card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in', 'is-magnet');
     card.style.removeProperty('--cpu-fly-x');
     card.style.removeProperty('--cpu-fly-y');
     wrap.classList.remove('is-recap-board');
     wrap.hidden = false;
     void card.offsetWidth;
-    card.classList.add('is-pop');
+    card.classList.add('is-magnet', 'is-pop');
 
     const flyToSeat = () => {
       if (epoch !== cpuAnnounceEpoch) return;
@@ -3244,7 +3296,7 @@
         if (epoch === cpuAnnounceEpoch) {
           landMagnet();
           wrap.hidden = true;
-          card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap');
+          card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-magnet');
           card.style.removeProperty('--cpu-fly-x');
           card.style.removeProperty('--cpu-fly-y');
         }
@@ -3252,7 +3304,7 @@
       };
       const onEnd = (e) => {
         if (e.target !== card) return;
-        if (e.animationName !== 'mock-cpu-announce-fly') return;
+        if (e.animationName !== 'mock-cpu-announce-fly' && e.animationName !== 'mock-cpu-announce-fly-magnet') return;
         finish();
       };
       card.addEventListener('animationend', onEnd);
@@ -3262,8 +3314,8 @@
           return;
         }
         flyToSeat();
-      }, 700);
-      window.setTimeout(finish, 1500);
+      }, holdMs);
+      window.setTimeout(finish, holdMs + MAGNET_FLY_MS + 80);
     });
   }
 
@@ -3290,7 +3342,7 @@
       clearNamePops();
       renderOrder();
       renderOtherTeams();
-    }, 1600);
+    }, pickMagnetHoldMs(pick) + MAGNET_FLY_MS + 80);
     return done;
   }
 
@@ -3347,13 +3399,13 @@
     return Number(teamIndex) === Number(mock.seatIndex);
   }
 
-  /** Board label: YOU for yourself, real franchise name for other humans, celebrity/CPU otherwise. */
+  /** Board label: real franchise name for humans, celebrity/CPU otherwise. */
   function seatBoardLabel(teamIndex) {
     if (!mock) return `Team ${Number(teamIndex) + 1}`;
     const i = Number(teamIndex);
     const you = !awaitingSeatClaim && i === Number(mock.seatIndex);
-    if (you) return 'YOU';
     const stored = String(mock.teamNames?.[i] || '').trim();
+    if (you) return stored || myFantasyTeamName || 'YOU';
     if (seatIsHuman(i)) {
       const seat = roomSeats?.[i];
       return stored || seat?.userName || `Team ${i + 1}`;
@@ -3451,7 +3503,8 @@
     const heads = teams.map((_, i) => {
       const you = !awaitingSeatClaim && i === Number(mock.seatIndex);
       const label = seatBoardLabel(i);
-      return `<div class="cpu-recap-head${you ? ' is-you' : ''}${i % 2 ? ' is-alt' : ''}" title="${esc(label)}">${seatAvatarHtml(i, 'cpu-recap-avatar')}<span class="nm">${esc(label)}</span></div>`;
+      const mark = `<span class="cpu-recap-num">${i + 1}</span>`;
+      return `<div class="cpu-recap-head${you ? ' is-you' : ''}${i % 2 ? ' is-alt' : ''}" title="${esc(label)}">${mark}</div>`;
     }).join('');
     const rows = [];
     for (let r = 1; r <= totalRounds; r += 1) {
@@ -3463,7 +3516,7 @@
       }).join('');
       const rn = `<div class="cpu-recap-rn">${r}</div>`;
       rows.push(
-        `<div class="cpu-recap-row${now ? ' is-now' : ''}">${rn}${cells}${rn}</div>`
+        `<div class="cpu-recap-row${now ? ' is-now' : ''}">${rn}${cells}</div>`
       );
     }
     return `
@@ -3472,7 +3525,6 @@
         <div class="cpu-recap-row is-head">
           <div class="cpu-recap-rn" aria-hidden="true"></div>
           ${heads}
-          <div class="cpu-recap-rn" aria-hidden="true"></div>
         </div>
         ${rows.join('')}
       </div>`;
@@ -3492,7 +3544,7 @@
     if (btn) {
       btn.hidden = !mock;
       btn.setAttribute('aria-pressed', open ? 'true' : 'false');
-      btn.textContent = open ? 'Close' : 'Board';
+      btn.textContent = 'Board';
     }
     if (!open || !card || !mock) return;
     card.innerHTML = draftBoardHtml();
@@ -3523,7 +3575,7 @@
     if (!wrap || !card) return Promise.resolve();
     const epoch = ++cpuAnnounceEpoch;
     const shouldFade = recap || fadeOut;
-    card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in');
+    card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in', 'is-magnet');
     card.style.removeProperty('--cpu-fly-x');
     card.style.removeProperty('--cpu-fly-y');
     card.removeAttribute('data-pos');
@@ -3571,7 +3623,7 @@
         if (epoch === cpuAnnounceEpoch) {
           wrap.hidden = true;
           wrap.classList.remove('is-recap-board');
-          card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in');
+          card.classList.remove('is-pop', 'is-fly', 'is-round', 'is-recap', 'is-fade', 'is-recap-in', 'is-magnet');
           card.style.removeProperty('--cpu-fly-x');
           card.style.removeProperty('--cpu-fly-y');
         }
@@ -3772,7 +3824,7 @@
       const label = boardLabel;
       return `<button type="button" class="${cls}" data-seat="${i}" ${canClick || draggable || dropTarget ? '' : 'disabled'} ${draggable ? 'draggable="true"' : ''} ${you && draftLive && !isDraftComplete() ? 'data-drop-player="1"' : ''} title="${esc(title)}">
         <span class="n">${String(i + 1).padStart(2, '0')}</span>
-        <span class="nm">${seatAvatarHtml(i, 'seat-chip-avatar')}<span class="nm-text">${esc(label)}</span></span>
+        <span class="nm"><span class="nm-text">${esc(label)}</span></span>
         ${lastHtml}
         <span class="st${status ? '' : ' is-idle'}">${status || ''}</span>
       </button>`;
@@ -3900,7 +3952,7 @@
       chips.push('<span class="mock-source-chip" title="Mock-draft market ADP">FFC market</span>');
     }
     if (news) {
-      chips.push('<span class="mock-source-chip" title="Athlete headlines">ESPN news</span>');
+      chips.push('<span class="mock-source-chip" title="Player headlines">News</span>');
     }
     if (!chips.length) return '';
     return `<p class="mock-sources" aria-label="Data sources"><span class="mock-sources-label">Sources</span>${chips.join('')}</p>`;
@@ -4362,9 +4414,10 @@
       const head = p.headshot
         ? `<img class="mock-head" src="${esc(p.headshot)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />`
         : `<span class="mock-head is-blank" aria-hidden="true"></span>`;
-      const logo = p.teamLogo
-        ? `<img class="mock-team" src="${esc(p.teamLogo)}" alt="" width="16" height="16" loading="lazy" referrerpolicy="no-referrer" />`
-        : '';
+    const logoSrc = nflLogoSrc(p.team, p.teamLogo);
+    const logo = logoSrc
+      ? `<img class="mock-team" src="${esc(logoSrc)}" alt="" width="16" height="16" loading="lazy" referrerpolicy="no-referrer" />`
+      : '';
       const delta = Number(p.delta);
       const deltaCls = Number.isFinite(delta)
         ? (delta > 1 ? ' is-up' : delta < -1 ? ' is-down' : '')
@@ -4580,7 +4633,7 @@
         : (chips || `<div class="ot-empty">Waiting…</div>`);
       return `<div class="mock-other-team${onClock ? ' is-clock' : ''}${selecting ? ' is-selecting' : ''}">
         <div class="ot-name">
-          <span>${seatAvatarHtml(t.i, 'ot-avatar')}${esc(t.i + 1)}. ${esc(t.name)}</span>
+          <span>${esc(t.i + 1)}. ${esc(t.name)}</span>
           ${onClock ? `<span class="tag">${selecting ? 'Selecting' : 'On the clock'}</span>` : `<span class="tag">${t.picks.length}</span>`}
         </div>
         <div class="ot-picks">${body}</div>
@@ -5067,6 +5120,26 @@
       paintSettingsSummary();
       paintMockStartBar();
     });
+    document.addEventListener('pointerover', (e) => {
+      const btn = e.target.closest?.('.mock-injury');
+      if (btn) showInjuryHover(btn);
+    });
+    document.addEventListener('pointerout', (e) => {
+      const btn = e.target.closest?.('.mock-injury');
+      if (!btn) return;
+      const next = e.relatedTarget;
+      if (next && (btn.contains(next) || next.closest?.('#mock-injury-hover'))) return;
+      hideInjuryHover();
+    });
+    document.addEventListener('focusin', (e) => {
+      const btn = e.target.closest?.('.mock-injury');
+      if (btn) showInjuryHover(btn);
+    });
+    document.addEventListener('focusout', (e) => {
+      if (e.target.closest?.('.mock-injury')) hideInjuryHover();
+    });
+    document.getElementById('mock-pool-list')?.addEventListener('scroll', hideInjuryHover, { passive: true });
+    window.addEventListener('scroll', hideInjuryHover, { passive: true });
     document.getElementById('mock-pool-list')?.addEventListener('click', (e) => {
       const targetBtn = e.target.closest('[data-target-id]');
       if (targetBtn) {

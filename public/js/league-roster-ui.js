@@ -14,18 +14,26 @@
 
   function rowHtml(slot, currentUserId) {
     const you = currentUserId && slot.userId === currentUserId;
-    const invited = Boolean(slot.invited) && !slot.vacant;
+    const waiting = Boolean(slot.pendingApproval) && !slot.vacant;
+    const invited = Boolean(slot.invited) && !slot.vacant && !waiting;
     const name = slot.vacant ? 'Open' : slot.name;
     const num = String(slot.slot).padStart(2, '0');
+    const tag = waiting ? 'Waiting' : invited ? 'Invited' : '';
+    const title = waiting
+      ? 'Signed up — waiting for approval'
+      : invited
+        ? 'Invited but not joined'
+        : '';
     const cls = [
       'gi-roster-row',
       slot.vacant ? 'is-open' : '',
-      invited ? 'is-invited' : '',
+      invited || waiting ? 'is-invited' : '',
+      waiting ? 'is-waiting' : '',
       you ? 'is-you' : ''
     ].filter(Boolean).join(' ');
-    return `<div class="${cls}"${invited ? ' title="Invited but not joined"' : ''}>
+    return `<div class="${cls}"${title ? ` title="${esc(title)}"` : ''}>
       <span class="num">${esc(num)}</span>
-      <span class="nm">${esc(name)}</span>
+      <span class="nm">${esc(name)}${tag ? ` <em class="inv-tag">${esc(tag)}</em>` : ''}</span>
     </div>`;
   }
 

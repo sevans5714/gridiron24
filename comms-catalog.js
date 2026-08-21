@@ -31,7 +31,7 @@ const CATALOG = [
     group: 'Onboarding',
     when: 'Owner approves a join request with membership, or assigns membership later.',
     editable: ['subject', 'preheader', 'eyebrow', 'headline', 'textLine'],
-    variants: ['gridiron', 'aaa', 'social'],
+    variants: ['gridiron', 'aaa', 'social', 'independent'],
     placeholders: ['who', 'league'],
     preview: '/api/mail/preview-approved?kind=gridiron'
   },
@@ -91,7 +91,7 @@ const CATALOG = [
     group: 'Onboarding',
     when: 'First successful sign-in after approval (once per account).',
     editable: ['subject', 'body'],
-    variants: ['gridiron', 'aaa', 'social'],
+    variants: ['gridiron', 'aaa', 'social', 'independent'],
     placeholders: ['who']
   },
   {
