@@ -158,13 +158,8 @@ async function fetchJsonResilient(opts) {
         };
       } catch (err) {
         errors.push(`${url}#${attempt + 1}: ${err.message || err}`);
-        // 401/404 from ESPN is the answer — don't try a host that redirects to login HTML.
+        // 401/404 is a league answer (private / deleted), not the fantasy API dying.
         if (err.status === 401 || err.status === 404) {
-          markStatus(lane, {
-            mode: 'down',
-            source: url,
-            error: err.message || String(err.status)
-          });
           throw err;
         }
       }

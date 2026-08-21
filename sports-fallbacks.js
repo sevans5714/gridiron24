@@ -16,6 +16,31 @@
 const CACHE_MS = 25_000;
 const cache = new Map(); // key -> { at, games }
 
+/** NHL's /scoreboard/now jumps to next season's opener in the summer. */
+const FALLBACK_UPCOMING_MAX_MS = 7 * 24 * 60 * 60 * 1000;
+const FALLBACK_PAST_MAX_MS = 36 * 60 * 60 * 1000;
+
+function isNearTermIso(iso, now = Date.now()) {
+  const t = Date.parse(iso || '');
+  if (!Number.isFinite(t)) return false;
+  return t >= now - FALLBACK_PAST_MAX_MS && t <= now + FALLBACK_UPCOMING_MAX_MS;
+}
+
+function clipFallbackGames(games) {
+  return (games || []).filter((g) => {
+    if (g?.status?.bucket === 'live') return true;
+    return isNearTermIso(g?.date);
+  });
+}
+
+function clipFallbackResult(result) {
+  if (!result) return result;
+  if (Array.isArray(result.games)) {
+    return { ...result, games: clipFallbackGames(result.games) };
+  }
+  return result;
+}
+
 function sportsDbKey() {
   return String(process.env.THESPORTSDB_KEY || process.env.THE_SPORTS_DB_KEY || '123').trim() || '123';
 }
@@ -207,8 +232,13 @@ async function fetchNhlGames() {
   return cached('nhl', async () => {
     const raw = await fetchJson('https://api-web.nhle.com/v1/scoreboard/now');
     const games = [];
+    const now = Date.now();
     for (const day of raw.gamesByDate || []) {
+      const dayStamp = String(day.date || day.gameDate || '');
+      if (dayStamp && !isNearTermIso(`${dayStamp}T12:00:00Z`, now)) continue;
       for (const g of day.games || []) {
+        const startIso = g.startTimeUTC || g.gameDate || null;
+        if (!isNearTermIso(startIso, now)) continue;
         const bucket = nhlBucket(g.gameState);
         const away = g.awayTeam || {};
         const home = g.homeTeam || {};
@@ -499,75 +529,84 @@ async function fetchCfbdScoreboard() {
 async function fetchFallbackBoard(leagueId) {
   const id = String(leagueId || '').toLowerCase();
   try {
+    let result = null;
     if (id === 'nfl') {
       const nfl = await fetchNflFallbackGames();
-      if (nfl?.games) return nfl;
-      return null;
-    }
-    if (id === 'mlb') {
-      const games = await fetchMlbGames();
-      return { source: 'mlb-statsapi', provider: 'MLB Stats API', games };
-    }
-    if (id === 'nhl') {
-      const games = await fetchNhlGames();
-      return { source: 'nhl-web-api', provider: 'NHL Web API', games };
-    }
-    if (id === 'mls') {
-      const games = await fetchSportsDbDay('Soccer', { leagueFilter: /major league soccer|\bmls\b/i, leagueId: 'mls' });
-      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
-    }
-    if (id === 'nba') {
-      const games = await fetchSportsDbDay('Basketball', { leagueFilter: /\bnba\b/i, leagueId: 'nba' });
-      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
-    }
-    if (id === 'wnba') {
-      const games = await fetchSportsDbDay('Basketball', { leagueFilter: /wnba/i, leagueId: 'wnba' });
-      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
-    }
-    if (id === 'ncaam') {
-      const games = await fetchSportsDbDay('Basketball', {
-        leagueFilter: /ncaa|college|ncaab/i,
-        leagueId: 'ncaam'
-      });
-      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
-    }
-    if (id === 'ncaaw') {
-      const games = await fetchSportsDbDay('Basketball', {
-        leagueFilter: /ncaa.*women|women.*ncaa|wncaa|college/i,
-        leagueId: 'ncaaw'
-      });
-      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
-    }
-    if (id === 'ncaaf') {
+      result = nfl?.games ? nfl : null;
+    } else if (id === 'mlb') {
+      result = { source: 'mlb-statsapi', provider: 'MLB Stats API', games: await fetchMlbGames() };
+    } else if (id === 'nhl') {
+      result = { source: 'nhl-web-api', provider: 'NHL Web API', games: await fetchNhlGames() };
+    } else if (id === 'mls') {
+      result = {
+        source: 'thesportsdb',
+        provider: 'TheSportsDB',
+        games: await fetchSportsDbDay('Soccer', { leagueFilter: /major league soccer|\bmls\b/i, leagueId: 'mls' })
+      };
+    } else if (id === 'nba') {
+      result = {
+        source: 'thesportsdb',
+        provider: 'TheSportsDB',
+        games: await fetchSportsDbDay('Basketball', { leagueFilter: /\bnba\b/i, leagueId: 'nba' })
+      };
+    } else if (id === 'wnba') {
+      result = {
+        source: 'thesportsdb',
+        provider: 'TheSportsDB',
+        games: await fetchSportsDbDay('Basketball', { leagueFilter: /wnba/i, leagueId: 'wnba' })
+      };
+    } else if (id === 'ncaam') {
+      result = {
+        source: 'thesportsdb',
+        provider: 'TheSportsDB',
+        games: await fetchSportsDbDay('Basketball', {
+          leagueFilter: /ncaa|college|ncaab/i,
+          leagueId: 'ncaam'
+        })
+      };
+    } else if (id === 'ncaaw') {
+      result = {
+        source: 'thesportsdb',
+        provider: 'TheSportsDB',
+        games: await fetchSportsDbDay('Basketball', {
+          leagueFilter: /ncaa.*women|women.*ncaa|wncaa|college/i,
+          leagueId: 'ncaaw'
+        })
+      };
+    } else if (id === 'ncaaf') {
       const cfbd = await fetchCfbdScoreboard();
-      if (cfbd) return { source: 'collegefootballdata', provider: 'CollegeFootballData', games: cfbd };
-      const games = await fetchSportsDbDay('American Football', {
-        leagueFilter: /ncaa|college/i,
-        leagueId: 'ncaaf'
-      });
-      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
+      if (cfbd) {
+        result = { source: 'collegefootballdata', provider: 'CollegeFootballData', games: cfbd };
+      } else {
+        result = {
+          source: 'thesportsdb',
+          provider: 'TheSportsDB',
+          games: await fetchSportsDbDay('American Football', {
+            leagueFilter: /ncaa|college/i,
+            leagueId: 'ncaaf'
+          })
+        };
+      }
+    } else if (id === 'llws' || id === 'cbase' || id === 'csoft') {
+      result = {
+        source: 'thesportsdb',
+        provider: 'TheSportsDB',
+        games: await fetchSportsDbDay('Baseball', {
+          leagueFilter:
+            id === 'llws'
+              ? /little league/i
+              : id === 'csoft'
+                ? /softball|ncaa/i
+                : /college|ncaa/i,
+          leagueId: id
+        })
+      };
     }
-    if (id === 'llws' || id === 'cbase' || id === 'csoft') {
-      const games = await fetchSportsDbDay('Baseball', {
-        leagueFilter:
-          id === 'llws'
-            ? /little league/i
-            : id === 'csoft'
-              ? /softball|ncaa/i
-              : /college|ncaa/i,
-        leagueId: id
-      });
-      return { source: 'thesportsdb', provider: 'TheSportsDB', games };
-    }
-    if (id === 'golf') {
-      // No reliable free live golf leaderboard without a key — skip.
-      return null;
-    }
+    return clipFallbackResult(result);
   } catch (err) {
     console.warn(`Sports fallback failed for ${id}:`, err.message || err);
     return null;
   }
-  return null;
 }
 
 module.exports = {

@@ -646,7 +646,7 @@
       items.push(`<a class="user-menu-action" href="/admin.html" role="menuitem">Admin tools</a>`);
     }
     if (user.siteOwner) {
-      items.push(`<a class="user-menu-action" href="/site.html" role="menuitem">Overall tools</a>`);
+      items.push(`<a class="user-menu-action" href="/site.html" role="menuitem">Site Tools</a>`);
     }
     items.push(`<a class="user-menu-action" href="/profile.html" role="menuitem">User Dashboard</a>`);
     return `<div class="user-menu-section">

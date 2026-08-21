@@ -3,50 +3,58 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Site Headquarters · GridIron 24</title>
+  <title>Site Tools · GridIron 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=124" />
-  <link rel="icon" href="/favicon.ico?v=124" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=124" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=124" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
+  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=156" />
+  <link rel="stylesheet" href="/css/site.css?v=158" />
   <style>
     body[data-page="site-hq"] .page-hero {
       padding-top: 1.5rem;
-      padding-bottom: 1.15rem;
+      padding-bottom: 1rem;
     }
     body[data-page="site-hq"] .page-main {
-      padding-top: 0.85rem;
-      padding-bottom: 3rem;
+      padding-top: 0.5rem;
+      padding-bottom: 3.5rem;
     }
-    .hq-page[hidden] { display: none !important; }
-    .hq-back {
-      display: inline-block;
-      margin: 0 0 1.25rem;
+    .hq-jump {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.85rem;
+      margin: 0 0 1.35rem;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      background: var(--bg);
+    }
+    .hq-jump a {
       font-family: var(--display);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
       text-decoration: none;
     }
-    .hq-back:hover { color: var(--nav-hover); }
-    .hq-back[hidden] { display: none !important; }
-    body:not([data-hq-page="home"]) .desk-crosslinks { display: none; }
-    .hq-panel {
-      margin: 0 0 1.35rem;
-      padding: 1.15rem 1.2rem 1.3rem;
+    .hq-jump a:hover,
+    .hq-jump a.is-on { color: var(--nav-hover, var(--gold)); }
+    .hq-section {
+      margin: 0 0 2rem;
+      padding: 1.2rem 1.25rem 1.35rem;
       border: 1px solid var(--line);
       background: var(--panel);
     }
-    .hq-panel h2 {
-      margin: 0 0 0.85rem;
+    .hq-section h2 {
+      margin: 0 0 0.35rem;
       font-family: var(--page-title), Oswald, sans-serif;
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 700;
       text-transform: uppercase;
     }
@@ -55,24 +63,23 @@
       color: var(--muted);
       font-size: 0.92rem;
       line-height: 1.45;
-      max-width: 42rem;
+      max-width: 46rem;
     }
     .hq-stats {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
       gap: 0.65rem;
-      margin: 0 0 1.25rem;
-      max-width: 52rem;
+      margin: 0;
     }
     .hq-stat {
       padding: 0.85rem 0.95rem;
       border: 1px solid var(--line);
-      background: var(--panel);
+      background: color-mix(in srgb, var(--bg) 55%, var(--panel));
     }
     .hq-stat strong {
       display: block;
       font-family: var(--page-title), Oswald, sans-serif;
-      font-size: 1.55rem;
+      font-size: 1.45rem;
       font-weight: 700;
       line-height: 1;
     }
@@ -80,7 +87,7 @@
       display: block;
       margin-top: 0.35rem;
       color: var(--muted);
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
@@ -96,28 +103,68 @@
     .hq-pill.is-warn { color: var(--gold, #efd782); border-color: currentColor; }
     .hq-pill.is-err { color: var(--status-err-text, #ff8e8e); border-color: currentColor; }
     .hq-empty { margin: 0; color: var(--muted); }
-    .hq-note { margin: 0.75rem 0 0; font-size: 0.88rem; color: var(--muted); }
+    .hq-note { margin: 0.85rem 0 0; font-size: 0.88rem; color: var(--muted); }
     .hq-note.err { color: var(--status-err-text, #ff8e8e); }
     .hq-note.ok { color: var(--status-ok-text, #8fd49a); }
-    .tools-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 1.35rem;
-      height: 1.2rem;
-      padding: 0 0.35rem;
-      border-radius: 999px;
-      background: color-mix(in srgb, var(--detail, #ff7a18) 85%, #000);
-      color: #fff;
-      font-family: var(--display);
-      font-size: 0.68rem;
-      font-weight: 700;
+    .hq-espn-list { display: grid; gap: 0.85rem; }
+    .hq-espn-card {
+      padding: 0.95rem 1rem 1.05rem;
+      border: 1px solid var(--line);
+    }
+    .hq-espn-card header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.55rem;
+    }
+    .hq-espn-card h3 {
+      margin: 0;
+      font-size: 1rem;
+      text-transform: none;
+    }
+    .hq-espn-card .kind {
+      margin: 0.15rem 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .hq-espn-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem;
+    }
+    .hq-espn-card label {
+      display: block;
+      margin: 0 0 0.3rem;
+      font-size: 0.78rem;
       letter-spacing: 0.04em;
-      vertical-align: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hq-espn-meta { margin: 0.5rem 0 0; font-size: 0.86rem; color: var(--muted); }
+    .hq-espn-meta.is-err { color: var(--status-err-text, #ff8e8e); }
+    .hq-espn-links { margin: 0.45rem 0 0; font-size: 0.86rem; }
+    .hq-espn-links a { margin-right: 0.85rem; }
+    .hq-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0 0;
+    }
+    .hq-subhead {
+      margin: 1.25rem 0 0.5rem;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .hq-subhead:first-child { margin-top: 0; }
+    .data-table { width: 100%; }
+    @media (max-width: 640px) {
+      .hq-espn-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
-<body data-page="site-hq" data-hq-page="home">
+<body data-page="site-hq">
   <header class="topbar">
     <div class="shell topbar-inner">
       <nav class="nav" id="site-nav" aria-label="Primary"></nav>
@@ -127,50 +174,74 @@
 
   <section class="page-hero shell">
     <p class="eyebrow">Platform</p>
-    <h1 id="hq-title">Site Headquarters</h1>
-    <p id="hq-lead">Who’s on the site, every league, pending registrations, and API health. Same login as the rest of GridIron 24 — this desk is only for the site owner.</p>
-    <div class="desk-crosslinks">
-      <a class="desk-crosslink" href="/owner.html">Owner Dashboard →</a>
-      <a class="desk-crosslink" href="/profile.html">User Dashboard →</a>
-    </div>
+    <h1>Site Tools</h1>
+    <p>Settings for this website: ESPN league IDs, who’s on, every league on the platform, and join requests. GridIron 24 league ops (news, invites, calendar) stay on Owner Tools.</p>
   </section>
 
   <main class="page-main shell">
-    <a class="hq-back" id="hq-back" href="#home" hidden>← Site Headquarters</a>
     <div id="hq-msg" class="hq-note" hidden></div>
+    <nav class="hq-jump" aria-label="On this page">
+      <a href="#overview">Overview</a>
+      <a href="#espn">ESPN</a>
+      <a href="#online">Signed on</a>
+      <a href="#leagues">Leagues</a>
+      <a href="#approvals">Approvals</a>
+      <a href="#server">Server</a>
+    </nav>
 
-    <div id="hq-home" class="hq-page desk-palette" aria-label="Site headquarters"></div>
+    <section class="hq-section" id="overview">
+      <h2>Overview</h2>
+      <p class="hq-help">What’s happening on the site right now. ESPN status below is per league — a deleted AAA ID is not the fantasy API going down.</p>
+      <div class="hq-stats" id="hq-overview-stats"></div>
+    </section>
 
-    <div id="hq-online" class="hq-page hq-panel" hidden>
-      <h2>Signed on now</h2>
-      <p class="hq-help">Anyone with a live page open in the last 90 seconds. This is presence, not a second password system.</p>
+    <section class="hq-section" id="espn">
+      <h2>ESPN</h2>
+      <p class="hq-help">Paste this year’s ESPN league office URL or ID, then Look up. These three IDs are how GridIron 24 reads Detail, Overtime, and AAA. Last year’s settings URL will not work. <a href="https://fantasy.espn.com/football/" target="_blank" rel="noopener">Open ESPN Fantasy</a> · <a href="/espn-setup.html">How to create a league</a>.</p>
+      <div id="hq-espn-body"><p class="hq-empty">Loading ESPN IDs…</p></div>
+      <div class="hq-actions">
+        <button type="button" class="btn" id="hq-espn-save">Save league IDs</button>
+        <button type="button" class="btn btn-secondary" id="hq-espn-peek">Look up all</button>
+      </div>
+      <p class="hq-note" id="hq-espn-msg" hidden></p>
+    </section>
+
+    <section class="hq-section" id="online">
+      <h2>Signed on</h2>
+      <p class="hq-help">Anyone with a live page open in the last 90 seconds.</p>
       <div id="hq-online-body"></div>
-    </div>
+    </section>
 
-    <div id="hq-leagues" class="hq-page hq-panel" hidden>
+    <section class="hq-section" id="leagues">
       <h2>Leagues</h2>
-      <p class="hq-help">GridIron 24 plus every independent league registered on this platform.</p>
+      <p class="hq-help">Independent leagues on this platform. GridIron 24 conferences are bound under ESPN above.</p>
       <div id="hq-leagues-body"></div>
-    </div>
+    </section>
 
-    <div id="hq-registrations" class="hq-page hq-panel" hidden>
-      <h2>Registrations</h2>
-      <p class="hq-help">New accounts and new independent leagues waiting on you. Approve membership from Owner Dashboard when you need the membership picker.</p>
-      <div id="hq-registrations-body"></div>
-    </div>
+    <section class="hq-section" id="approvals">
+      <h2>Approvals</h2>
+      <p class="hq-help">New accounts and independent-league requests. Pick membership, then approve or deny here.</p>
+      <div id="hq-approvals-body"></div>
+    </section>
 
-    <div id="hq-health" class="hq-page hq-panel" hidden>
-      <h2>APIs &amp; mail</h2>
-      <p class="hq-help">Live status from this server. ESPN health is the last known upstream state — open Owner Dashboard → ESPN to re-check league IDs.</p>
-      <div id="hq-health-body"></div>
-    </div>
+    <section class="hq-section" id="server">
+      <h2>Server</h2>
+      <p class="hq-help">This app, mail, and ESPN site/news hosts. Fantasy health is only “down” when ESPN’s read API itself fails — not when one league ID 404s.</p>
+      <div id="hq-server-body"></div>
+    </section>
   </main>
 
-  <script src="/js/nav.js?v=163"></script>
+  <script src="/js/nav.js?v=165"></script>
   <script>
     (function () {
-      const PAGES = ['home', 'online', 'leagues', 'registrations', 'health'];
+      const HASH_ALIAS = {
+        home: 'overview',
+        health: 'espn',
+        registrations: 'approvals',
+        'apis': 'server'
+      };
       let snapshot = null;
+      let espnRows = [];
 
       function esc(value) {
         return String(value ?? '')
@@ -187,22 +258,17 @@
         return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
       }
 
-      function showMsg(text, ok) {
-        const el = document.getElementById('hq-msg');
-        if (!el) return;
+      function showMsg(el, text, ok) {
+        const node = typeof el === 'string' ? document.getElementById(el) : el;
+        if (!node) return;
         if (!text) {
-          el.hidden = true;
-          el.textContent = '';
+          node.hidden = true;
+          node.textContent = '';
           return;
         }
-        el.hidden = false;
-        el.textContent = text;
-        el.className = 'hq-note ' + (ok ? 'ok' : 'err');
-      }
-
-      function currentPage() {
-        const id = String(location.hash || '#home').replace(/^#/, '') || 'home';
-        return PAGES.includes(id) ? id : 'home';
+        node.hidden = false;
+        node.textContent = text;
+        node.className = 'hq-note ' + (ok ? 'ok' : 'err');
       }
 
       function pill(ok, warn, label) {
@@ -210,31 +276,205 @@
         return `<span class="hq-pill ${cls}">${esc(label)}</span>`;
       }
 
-      function tile(c) {
-        const badge = Number(c.badge) > 0
-          ? ` <span class="tools-badge">${Number(c.badge)}</span>`
-          : '';
-        return `
-          <a class="desk-tile" data-tone="${esc(c.tone || 'blue')}" href="${esc(c.href)}">
-            <p class="desk-tile-kicker">${esc(c.kicker || 'HQ')}</p>
-            <strong>${esc(c.title)}${badge}</strong>
-            <span>${esc(c.blurb)}</span>
-            <em class="desk-tile-go">Open</em>
-          </a>`;
+      function parseEspnLeagueId(raw) {
+        const text = String(raw || '').trim();
+        if (!text) return '';
+        const fromQuery = text.match(/[?&#]leagueId=(\d+)/i);
+        if (fromQuery) return fromQuery[1];
+        const fromPathKey = text.match(/\/(?:leagueId)\/(\d+)/i);
+        if (fromPathKey) return fromPathKey[1];
+        const fromIdSegment = text.match(/\/_\/id\/(\d+)/i);
+        if (fromIdSegment) return fromIdSegment[1];
+        const fromLeagues = text.match(/\/leagues\/(\d+)/i);
+        if (fromLeagues) return fromLeagues[1];
+        if (/^\d{4,}$/.test(text)) return text;
+        const matches = [...text.matchAll(/(\d{6,})/g)].map((m) => m[1]).filter((n) => {
+          const num = Number(n);
+          return num < 1990 || num > 2100;
+        });
+        return matches[0] || '';
       }
 
-      function renderHome(data) {
-        const c = data.counts || {};
-        const home = document.getElementById('hq-home');
+      function kindLabel(row) {
+        if (row.key === 'aaa' || row.kind === 'affiliate') return 'AAA feeder';
+        if (row.key === 'detail') return 'GridIron 24 · Detail';
+        if (row.key === 'overtime') return 'GridIron 24 · Overtime';
+        return row.kind === 'affiliate' ? 'Affiliate' : 'Conference';
+      }
+
+      function espnStatus(row) {
+        const lookup = row.lookup;
+        if (lookup?.ok && !lookup.previousEspnId && !row.previousEspnId) {
+          return { ok: true, warn: false, label: 'Connected' };
+        }
+        if (lookup?.ok) return { ok: false, warn: true, label: 'Last year’s ID' };
+        const err = String(lookup?.error || '');
+        if (/deleted/i.test(err)) return { ok: false, warn: false, label: 'Deleted on ESPN' };
+        if (lookup?.private || /private|not authorized/i.test(err)) {
+          return { ok: false, warn: true, label: 'Private' };
+        }
+        if (lookup?.error) return { ok: false, warn: false, label: 'Not found' };
+        if (row.espnLeagueId) return { ok: false, warn: true, label: 'Saved — not checked' };
+        return { ok: false, warn: true, label: 'No ID' };
+      }
+
+      function espnMeta(row) {
+        const lookup = row.lookup;
+        if (lookup?.ok && (lookup.previousEspnId || row.previousEspnId)) {
+          return `That’s last year’s ESPN ID. Paste this year’s league office URL, then look up.`;
+        }
+        if (lookup?.ok) {
+          const size = lookup.size != null ? ` · ${lookup.size} teams` : '';
+          return `On ESPN: ${lookup.name || 'league'}${size}`;
+        }
+        if (lookup?.error) return lookup.error;
+        if (row.espnLeagueId) return `Saved ID ${row.espnLeagueId} — look up to confirm it still exists.`;
+        return 'Paste this year’s league office URL or league ID.';
+      }
+
+      function collectEspnRows() {
+        return espnRows.map((row) => {
+          const input = document.querySelector(`[data-espn-key="${row.key}"]`);
+          const id = parseEspnLeagueId(input?.value);
+          if (input && id && id !== String(input.value || '').trim()) input.value = id;
+          return { ...row, espnLeagueId: id ? Number(id) : null };
+        });
+      }
+
+      function renderEspn() {
+        const el = document.getElementById('hq-espn-body');
+        if (!espnRows.length) {
+          el.innerHTML = '<p class="hq-empty">No ESPN leagues are configured.</p>';
+          return;
+        }
+        el.innerHTML = `<div class="hq-espn-list">${espnRows.map((row) => {
+          const id = row.espnLeagueId ? String(row.espnLeagueId) : '';
+          const st = espnStatus(row);
+          const metaErr = Boolean(row.lookup && row.lookup.ok === false);
+          const league = row.leagueUrl || row.lookup?.leagueUrl || '';
+          const settings = row.settingsUrl || row.lookup?.settingsUrl || '';
+          return `<article class="hq-espn-card">
+            <header>
+              <div>
+                <h3>${esc(row.name || row.shortName || row.key)}</h3>
+                <p class="kind">${esc(kindLabel(row))}</p>
+              </div>
+              ${pill(st.ok, st.warn, st.label)}
+            </header>
+            <label for="espn-id-${esc(row.key)}">League ID or ESPN URL</label>
+            <div class="hq-espn-row">
+              <input class="field" id="espn-id-${esc(row.key)}" data-espn-key="${esc(row.key)}" value="${esc(id)}" placeholder="…/league/_/leagueId/123456789" autocomplete="off" spellcheck="false" />
+              <button type="button" class="btn btn-secondary" data-espn-peek="${esc(row.key)}">Look up</button>
+            </div>
+            <p class="hq-espn-meta${metaErr ? ' is-err' : ''}" data-espn-meta="${esc(row.key)}">${esc(espnMeta(row))}</p>
+            ${league || settings ? `<p class="hq-espn-links">${league ? `<a href="${esc(league)}" target="_blank" rel="noopener">League office</a>` : ''}${settings ? `<a href="${esc(settings)}" target="_blank" rel="noopener">ESPN settings</a>` : ''}</p>` : ''}
+          </article>`;
+        }).join('')}</div>`;
+        el.querySelectorAll('[data-espn-peek]').forEach((btn) => {
+          btn.addEventListener('click', () => peekOne(btn.getAttribute('data-espn-peek')));
+        });
+      }
+
+      async function peekOne(key) {
+        const input = document.querySelector(`[data-espn-key="${key}"]`);
+        const id = parseEspnLeagueId(input?.value);
+        if (input && id) input.value = id;
+        if (!id) {
+          showMsg('hq-espn-msg', 'Paste a league URL or ID first.', false);
+          return;
+        }
+        showMsg('hq-espn-msg', 'Looking up…', true);
+        try {
+          const res = await fetch('/api/espn-leagues/peek', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ espnLeagueId: id })
+          });
+          const data = await res.json().catch(() => ({}));
+          const row = espnRows.find((r) => r.key === key);
+          if (row) {
+            row.espnLeagueId = Number(id);
+            row.lookup = data.ok === false || !res.ok
+              ? {
+                  ok: false,
+                  espnLeagueId: Number(id),
+                  error: data.error || `ESPN ${res.status}`,
+                  private: Boolean(data.private) || res.status === 401
+                }
+              : data;
+            if (data.leagueUrl) row.leagueUrl = data.leagueUrl;
+            if (data.settingsUrl) row.settingsUrl = data.settingsUrl;
+          }
+          renderEspn();
+          renderOverview(snapshot);
+          showMsg('hq-espn-msg', data.ok ? `Found ${data.name || id}.` : (data.error || 'Not found on ESPN.'), Boolean(data.ok));
+        } catch (err) {
+          showMsg('hq-espn-msg', err.message || 'Look up failed', false);
+        }
+      }
+
+      async function peekAll() {
+        showMsg('hq-espn-msg', 'Looking up all leagues…', true);
+        try {
+          const res = await fetch('/api/espn-leagues?peek=1', { cache: 'no-store' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not look up ESPN leagues');
+          espnRows = data.leagues || espnRows;
+          renderEspn();
+          renderOverview(snapshot);
+          showMsg('hq-espn-msg', 'Lookup finished.', true);
+        } catch (err) {
+          showMsg('hq-espn-msg', err.message || 'Look up failed', false);
+        }
+      }
+
+      async function saveEspn() {
+        const rows = collectEspnRows().filter((r) => r.espnLeagueId);
+        if (!rows.length) {
+          showMsg('hq-espn-msg', 'Enter at least one league ID.', false);
+          return;
+        }
+        showMsg('hq-espn-msg', 'Saving…', true);
+        try {
+          const res = await fetch('/api/espn-leagues', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              season: snapshot?.espn?.season || snapshot?.health?.season,
+              leagues: rows.map((r) => ({ key: r.key, espnLeagueId: r.espnLeagueId }))
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save');
+          const lookups = new Map((data.lookups || []).map((x) => [x.key, x.lookup]));
+          espnRows = (data.leagues || rows).map((row) => ({
+            ...row,
+            lookup: lookups.get(row.key) || row.lookup
+          }));
+          renderEspn();
+          renderOverview(snapshot);
+          showMsg('hq-espn-msg', 'League IDs saved.', true);
+        } catch (err) {
+          showMsg('hq-espn-msg', err.message || 'Save failed', false);
+        }
+      }
+
+      function connectedCount() {
+        return espnRows.filter((r) => r.lookup?.ok && !r.lookup.previousEspnId && !r.previousEspnId).length;
+      }
+
+      function renderOverview(data) {
+        const c = data?.counts || {};
         const pending = (c.pendingAccounts || 0) + (c.pendingLeagues || 0);
-        home.innerHTML = [
-          { href: '#online', title: 'Signed on', kicker: 'Now', blurb: 'Who has a live session on the site.', tone: 'good', badge: c.online },
-          { href: '#leagues', title: 'Leagues', kicker: 'Platform', blurb: 'GridIron 24, AAA, and independent leagues.', tone: 'blue', badge: c.independentLeagues },
-          { href: '#registrations', title: 'Registrations', kicker: 'Inbox', blurb: 'Account approvals and league requests.', tone: 'gold', badge: pending },
-          { href: '#health', title: 'APIs', kicker: 'Health', blurb: 'ESPN upstream, mail, and this server.', tone: 'detail' },
-          { href: '/owner.html', title: 'Owner Dashboard', kicker: 'GridIron 24', blurb: 'Players, messages, ESPN, and season tools.', tone: 'overtime' },
-          { href: '/profile.html', title: 'User Dashboard', kicker: 'You', blurb: 'Your account, look, and franchise.', tone: 'blue' }
-        ].map(tile).join('');
+        const espnN = espnRows.length;
+        const live = connectedCount();
+        const espnLabel = espnN ? `${live}/${espnN} live` : '—';
+        const espnWarn = espnN > 0 && live < espnN;
+        document.getElementById('hq-overview-stats').innerHTML = `
+          <div class="hq-stat"><strong>${esc(c.online || 0)}</strong><span>Signed on</span></div>
+          <div class="hq-stat"><strong>${esc(pending)}</strong><span>Waiting approval</span></div>
+          <div class="hq-stat"><strong>${esc(c.independentLive || 0)}</strong><span>Independent live</span></div>
+          <div class="hq-stat"><strong>${esc(espnLabel)}</strong><span>${espnWarn ? 'ESPN leagues — fix below' : 'ESPN leagues'}</span></div>`;
       }
 
       function renderOnline(data) {
@@ -270,15 +510,8 @@
 
       function renderLeagues(data) {
         const el = document.getElementById('hq-leagues-body');
-        const platform = data.leagues?.platform || {};
         const independent = data.leagues?.independent || [];
-        const confRows = (platform.conferences || []).map((c) => `
-          <tr>
-            <td><strong>${esc(c.name)}</strong></td>
-            <td>${esc(c.kind === 'affiliate' ? 'Affiliate' : 'Conference')}</td>
-            <td>${esc(c.espnLeagueId || '—')}</td>
-            <td>${pill(Boolean(c.espnLeagueId), false, c.espnLeagueId ? 'ID set' : 'No ID')}</td>
-          </tr>`).join('');
+        const platform = data.leagues?.platform || {};
         const indRows = independent.length
           ? independent.map((l) => `
             <tr>
@@ -290,30 +523,42 @@
             </tr>`).join('')
           : `<tr><td colspan="5" class="muted-sm">No independent leagues yet.</td></tr>`;
         el.innerHTML = `
-          <h3 style="margin:0 0 0.55rem;font-size:1rem;">${esc(platform.name || 'GridIron 24')} · ${esc(platform.season || '')}</h3>
-          <table class="data-table">
-            <thead><tr><th>Conference</th><th>Kind</th><th>ESPN ID</th><th>Status</th></tr></thead>
-            <tbody>${confRows || '<tr><td colspan="4">No conferences configured.</td></tr>'}</tbody>
-          </table>
-          <h3 style="margin:1.35rem 0 0.55rem;font-size:1rem;">Independent leagues</h3>
+          <p class="hq-note" style="margin:0 0 0.85rem;">${esc(platform.name || 'GridIron 24')} · ${esc(platform.season || '')} conferences are the ESPN IDs in the section above.</p>
+          <h3 class="hq-subhead">Independent</h3>
           <table class="data-table">
             <thead><tr><th>League</th><th>Status</th><th>Owner</th><th>Teams</th><th></th></tr></thead>
             <tbody>${indRows}</tbody>
           </table>`;
       }
 
-      function renderRegistrations(data) {
-        const el = document.getElementById('hq-registrations-body');
+      function askedFor(u) {
+        if (u.loungeOnly) return 'Social';
+        if (u.membershipLeague === 'aaa') return 'AAA';
+        return 'GridIron 24';
+      }
+
+      function renderApprovals(data) {
+        const el = document.getElementById('hq-approvals-body');
         const accounts = data.pendingAccounts || [];
         const leagues = data.pendingLeagues || [];
         const acctRows = accounts.length
           ? accounts.map((u) => `
             <tr>
               <td><strong>${esc(u.name || u.loginName)}</strong><br><span class="muted-sm">${esc(u.loginName)} · ${esc(u.email || '')}</span></td>
-              <td>${esc(u.loungeOnly ? 'Social' : (u.membershipLeague === 'aaa' ? 'AAA' : 'GridIron 24'))}</td>
               <td class="muted-sm">${esc(when(u.createdAt))}</td>
+              <td>
+                <select class="field" data-pending-membership="${esc(u.id)}" aria-label="Membership" style="max-width:13rem;">
+                  <option value="gridiron" ${!u.loungeOnly && u.membershipLeague !== 'aaa' ? 'selected' : ''}>GridIron 24</option>
+                  <option value="aaa" ${u.membershipLeague === 'aaa' ? 'selected' : ''}>AAA League</option>
+                  <option value="social" ${u.loungeOnly ? 'selected' : ''}>Social</option>
+                </select>
+              </td>
+              <td>
+                <button type="button" class="btn" data-approve-account="${esc(u.id)}">Approve</button>
+                <button type="button" class="link-action" data-deny-account="${esc(u.id)}">Deny</button>
+              </td>
             </tr>`).join('')
-          : '<tr><td colspan="3" class="muted-sm">No account requests waiting.</td></tr>';
+          : '<tr><td colspan="4" class="muted-sm">No account requests waiting.</td></tr>';
         const leagueRows = leagues.length
           ? leagues.map((l) => `
             <tr>
@@ -328,17 +573,22 @@
             </tr>`).join('')
           : '<tr><td colspan="5" class="muted-sm">No league requests waiting.</td></tr>';
         el.innerHTML = `
-          <p class="hq-help" style="margin-top:0;"><a href="/owner.html#account-requests">Approve accounts in Owner Dashboard</a></p>
-          <h3 style="margin:0 0 0.55rem;font-size:1rem;">Account requests</h3>
+          <h3 class="hq-subhead">Accounts</h3>
           <table class="data-table">
-            <thead><tr><th>Applicant</th><th>Asked for</th><th>Submitted</th></tr></thead>
+            <thead><tr><th>Applicant</th><th>Submitted</th><th>Membership</th><th></th></tr></thead>
             <tbody>${acctRows}</tbody>
           </table>
-          <h3 style="margin:1.35rem 0 0.55rem;font-size:1rem;">League requests</h3>
+          <h3 class="hq-subhead">Independent leagues</h3>
           <table class="data-table">
             <thead><tr><th>League</th><th>Owner</th><th>Teams</th><th>Submitted</th><th></th></tr></thead>
             <tbody>${leagueRows}</tbody>
           </table>`;
+        el.querySelectorAll('[data-approve-account]').forEach((btn) => {
+          btn.addEventListener('click', () => approveAccount(btn.getAttribute('data-approve-account')));
+        });
+        el.querySelectorAll('[data-deny-account]').forEach((btn) => {
+          btn.addEventListener('click', () => denyAccount(btn.getAttribute('data-deny-account')));
+        });
         el.querySelectorAll('[data-approve-league]').forEach((btn) => {
           btn.addEventListener('click', () => actLeague(btn.getAttribute('data-approve-league'), 'approve'));
         });
@@ -350,8 +600,40 @@
         });
       }
 
+      async function approveAccount(id) {
+        const membership = document.querySelector(`[data-pending-membership="${CSS.escape(id)}"]`)?.value || 'gridiron';
+        showMsg('hq-msg', '');
+        try {
+          const res = await fetch(`/api/users/${encodeURIComponent(id)}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ approved: true, membership })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not approve');
+          showMsg('hq-msg', `Approved ${data.user?.loginName || 'account'}.`, true);
+          await load({ skipEspn: true });
+        } catch (err) {
+          showMsg('hq-msg', err.message || 'Could not approve', false);
+        }
+      }
+
+      async function denyAccount(id) {
+        if (!confirm('Deny and delete this join request?')) return;
+        showMsg('hq-msg', '');
+        try {
+          const res = await fetch(`/api/users/${encodeURIComponent(id)}/reject`, { method: 'POST' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not deny');
+          showMsg('hq-msg', `Denied ${data.user?.loginName || 'account'}.`, true);
+          await load({ skipEspn: true });
+        } catch (err) {
+          showMsg('hq-msg', err.message || 'Could not deny', false);
+        }
+      }
+
       async function actLeague(id, action) {
-        showMsg('');
+        showMsg('hq-msg', '');
         try {
           const res = await fetch(`/api/leagues/${encodeURIComponent(id)}/${action}`, {
             method: 'POST',
@@ -360,10 +642,10 @@
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
-          showMsg(action === 'approve' ? 'League approved.' : 'League rejected.', true);
-          await load();
+          showMsg('hq-msg', action === 'approve' ? 'League approved.' : 'League rejected.', true);
+          await load({ skipEspn: true });
         } catch (err) {
-          showMsg(err.message || 'Request failed', false);
+          showMsg('hq-msg', err.message || 'Request failed', false);
         }
       }
 
@@ -379,90 +661,85 @@
         </tr>`;
       }
 
-      function renderHealth(data) {
-        const el = document.getElementById('hq-health-body');
+      function renderServer(data) {
+        const el = document.getElementById('hq-server-body');
         const h = data.health || {};
         const mail = h.mail || {};
         const up = h.upstream || {};
         el.innerHTML = `
-          <div class="hq-stats">
-            <div class="hq-stat"><strong>${esc(h.season || '—')}</strong><span>Season</span></div>
-            <div class="hq-stat"><strong>${esc(h.version || '—')}</strong><span>Version</span></div>
-            <div class="hq-stat"><strong>${mail.configured ? 'On' : 'Off'}</strong><span>Mail</span></div>
-            <div class="hq-stat"><strong>${up.degraded ? 'Warn' : 'OK'}</strong><span>Upstream</span></div>
-          </div>
           <table class="data-table">
             <thead><tr><th>Service</th><th>Status</th><th>Detail</th></tr></thead>
             <tbody>
               <tr>
                 <td>This app</td>
                 <td>${pill(true, false, 'Up')}</td>
-                <td class="muted-sm">${esc(h.app || '')} · build ${esc(h.build || '—')}</td>
+                <td class="muted-sm">${esc(h.app || '')} · ${esc(h.season || '')} · build ${esc(h.build || '—')}</td>
               </tr>
               <tr>
-                <td>Mail (${esc(mail.provider || 'none')})</td>
-                <td>${pill(Boolean(mail.configured), false, mail.configured ? 'Configured' : 'Not set')}</td>
+                <td>Mail</td>
+                <td>${pill(Boolean(mail.configured), false, mail.configured ? (mail.provider || 'On') : 'Not set')}</td>
                 <td class="muted-sm">${esc(mail.from || 'Set MAIL_FROM and RESEND_API_KEY')}</td>
               </tr>
-              ${upstreamRow('ESPN fantasy', up.fantasy)}
-              ${upstreamRow('ESPN site', up.site)}
-              ${upstreamRow('News', up.news)}
+              ${upstreamRow('ESPN site scores', up.site)}
+              ${upstreamRow('ESPN news', up.news)}
             </tbody>
           </table>
-          <p class="hq-note">Counts: ${esc(data.counts?.accounts || 0)} approved accounts · ${esc(data.counts?.online || 0)} signed on · ${esc(data.counts?.independentLive || 0)} live independent leagues.</p>`;
+          <p class="hq-note">${esc(data.counts?.accounts || 0)} approved accounts · ${esc(data.counts?.online || 0)} signed on · ${esc(data.counts?.independentLive || 0)} live independent leagues.</p>`;
       }
 
-      function showPage(page) {
-        document.body.dataset.hqPage = page;
-        document.getElementById('hq-home').hidden = page !== 'home';
-        document.getElementById('hq-online').hidden = page !== 'online';
-        document.getElementById('hq-leagues').hidden = page !== 'leagues';
-        document.getElementById('hq-registrations').hidden = page !== 'registrations';
-        document.getElementById('hq-health').hidden = page !== 'health';
-        const back = document.getElementById('hq-back');
-        back.hidden = page === 'home';
-        const titles = {
-          home: 'Site Headquarters',
-          online: 'Signed on now',
-          leagues: 'Leagues',
-          registrations: 'Registrations',
-          health: 'APIs & mail'
-        };
-        document.getElementById('hq-title').textContent = titles[page] || 'Site Headquarters';
-        document.getElementById('hq-lead').hidden = page !== 'home';
+      function markJump() {
+        const id = String(location.hash || '#overview').replace(/^#/, '');
+        document.querySelectorAll('.hq-jump a').forEach((a) => {
+          a.classList.toggle('is-on', a.getAttribute('href') === `#${id}`);
+        });
       }
 
-      function paint(data) {
+      function jumpFromHash() {
+        const raw = String(location.hash || '#overview').replace(/^#/, '') || 'overview';
+        const id = HASH_ALIAS[raw] || raw;
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ block: 'start' });
+        markJump();
+      }
+
+      function paint(data, { skipEspn, skipForms } = {}) {
         snapshot = data;
-        renderHome(data);
+        if (!espnRows.length) espnRows = JSON.parse(JSON.stringify(data.espn?.leagues || []));
+        renderOverview(data);
+        if (!skipEspn) renderEspn();
         renderOnline(data);
         renderLeagues(data);
-        renderRegistrations(data);
-        renderHealth(data);
-        showPage(currentPage());
+        if (!skipForms) renderApprovals(data);
+        renderServer(data);
         window.GridIronNav?.setSync?.(`${data.counts?.online || 0} signed on`, true);
       }
 
-      async function load() {
+      async function load({ skipEspn, skipForms } = {}) {
         const res = await fetch('/api/site-hq', { cache: 'no-store' });
         const data = await res.json().catch(() => ({}));
         if (res.status === 401) {
           window.location.href = '/enter?next=' + encodeURIComponent('/site.html');
           return;
         }
-        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load headquarters');
-        paint(data);
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load Site Tools');
+        if (!skipEspn) espnRows = JSON.parse(JSON.stringify(data.espn?.leagues || []));
+        paint(data, { skipEspn, skipForms });
+        if (!skipEspn && espnRows.some((r) => r.espnLeagueId)) {
+          peekAll().catch(() => {});
+        }
       }
 
-      window.addEventListener('hashchange', () => {
-        if (snapshot) showPage(currentPage());
-      });
+      document.getElementById('hq-espn-save')?.addEventListener('click', saveEspn);
+      document.getElementById('hq-espn-peek')?.addEventListener('click', peekAll);
+      window.addEventListener('hashchange', jumpFromHash);
 
-      load().catch((err) => {
-        showMsg(err.message || 'Could not load headquarters', false);
-        document.getElementById('hq-home').innerHTML = `<p class="hq-empty">${esc(err.message)}</p>`;
+      load().then(() => {
+        if (location.hash) jumpFromHash();
+        else markJump();
+      }).catch((err) => {
+        showMsg('hq-msg', err.message || 'Could not load Site Tools', false);
       });
-      setInterval(() => { load().catch(() => {}); }, 30000);
+      setInterval(() => { load({ skipEspn: true, skipForms: true }).catch(() => {}); }, 30000);
     })();
   </script>
 </body>

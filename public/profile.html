@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=124" />
-  <link rel="icon" href="/favicon.ico?v=124" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=124" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=124" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
+  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=156" />
   <style>
@@ -741,7 +741,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=163"></script>
+  <script src="/js/nav.js?v=165"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -887,7 +887,7 @@
       const desk = staffDesk(user);
       const cards = [];
       if (user?.siteOwner) {
-        cards.push({ href: '/site.html', title: 'Site Headquarters', kicker: 'Platform', blurb: 'Who’s signed on, leagues, registrations, and API health.', tone: 'gold' });
+        cards.push({ href: '/site.html', title: 'Site Tools', kicker: 'Platform', blurb: 'ESPN IDs, who’s signed on, leagues, and approvals.', tone: 'gold' });
       }
       if (desk) {
         cards.push({ href: desk.href, title: desk.title, kicker: 'League', blurb: desk.blurb, tone: 'gold' });
@@ -908,7 +908,7 @@
       const cross = document.getElementById('user-crosslinks');
       if (cross) {
         const links = [];
-        if (user?.siteOwner) links.push(`<a class="desk-crosslink" href="/site.html">Site Headquarters →</a>`);
+        if (user?.siteOwner) links.push(`<a class="desk-crosslink" href="/site.html">Site Tools →</a>`);
         if (desk) links.push(`<a class="desk-crosslink" href="${escP(desk.href)}">${escP(desk.title)} →</a>`);
         if (links.length) {
           cross.hidden = false;

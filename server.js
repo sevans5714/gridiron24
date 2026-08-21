@@ -639,6 +639,10 @@ function buildSiteHqPayload(viewer) {
       submittedAt: l.submittedAt || l.createdAt,
       homePath: l.homePath || null
     })),
+    espn: {
+      season: espn.season,
+      leagues: espn.leagues || []
+    },
     leagues: {
       platform: {
         name: config.brand?.name || 'GridIron 24',
@@ -7784,12 +7788,12 @@ const server = http.createServer(async (req, res) => {
         const leagues = requestUrl.searchParams.get('leagues');
         // Default lounge pull includes fantasy boards; explicit ?leagues=nfl (etc.) skips them.
         const extraBoards = leagues ? [] : await loadFantasySportsBoards();
-        // Short date window for day-based leagues so ESPN doesn't return
-        // far-future openers (e.g. NHL in September) on the lounge board.
+        // One week of day-based slates so preseason can show without
+        // next month's openers.
         const payload = await sportsScoreboard.getSportsScores({
           leagues,
           extraBoards,
-          daysAhead: 2
+          daysAhead: 7
         });
         return sendJson(res, 200, payload);
       } catch (err) {

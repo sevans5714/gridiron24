@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=124" />
-  <link rel="icon" href="/favicon.ico?v=124" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=124" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=124" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
+  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=157" />
   <style>
@@ -10512,7 +10512,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=163"></script>
+  <script src="/js/nav.js?v=165"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
   <script src="/js/lounge-desk.js?v=111"></script>
   <script src="/js/lounge-games.js?v=44"></script>
@@ -10953,15 +10953,24 @@
       return Math.max(1, Math.ceil(games.length / slot));
     }
 
+    function sportsBoardVisible(b) {
+      if (!b?.id) return false;
+      const isFantasy = Boolean(b.fantasy) || b.id === 'gi24' || b.id === 'aaa';
+      if (isFantasy) return (b.games || []).length > 0;
+      if (b.inSeason) return true;
+      return (b.games || []).some((g) => {
+        const bucket = g?.status?.bucket;
+        return bucket === 'live' || bucket === 'upcoming' || bucket === 'final';
+      });
+    }
+
     function sportsRotateIds() {
       const boards = Array.isArray(sportsData?.leagues) ? sportsData.leagues : [];
       const isFantasy = (b) => Boolean(b.fantasy) || b.id === 'gi24' || b.id === 'aaa';
-      // In-season sports stay in the cycle as soon as the calendar season starts,
-      // even if today’s slate is empty. Off-season boards only appear with games.
-      const inSeasonReal = boards.filter((b) => b?.id && !isFantasy(b) && b.inSeason);
-      const fantasy = boards.filter((b) => b?.id && isFantasy(b) && (b.games || []).length);
-      const rest = boards.filter((b) => b?.id && !isFantasy(b) && !b.inSeason && (b.games || []).length);
-      return [...inSeasonReal, ...fantasy, ...rest].map((b) => b.id);
+      const inSeasonReal = boards.filter((b) => sportsBoardVisible(b) && !isFantasy(b) && b.inSeason);
+      const fantasy = boards.filter((b) => isFantasy(b) && (b.games || []).length);
+      const liveOffseason = boards.filter((b) => sportsBoardVisible(b) && !isFantasy(b) && !b.inSeason);
+      return [...inSeasonReal, ...fantasy, ...liveOffseason].map((b) => b.id);
     }
 
     function markSportsTabs() {
@@ -11039,7 +11048,7 @@
       if (!root) return;
       const boards = Array.isArray(sportsData?.leagues) ? sportsData.leagues : [];
       const tabs = boards
-        .filter((b) => b?.id && (b.inSeason || (b.games || []).length))
+        .filter(sportsBoardVisible)
         .map((b) => ({
         id: b.id,
         label: b.label,

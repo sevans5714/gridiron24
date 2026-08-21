@@ -420,13 +420,24 @@
     }
   }
 
+  function sportsBoardVisible(b) {
+    if (!b?.id) return false;
+    const isFantasy = Boolean(b.fantasy) || b.id === 'gi24' || b.id === 'aaa';
+    if (isFantasy) return (b.games || []).length > 0;
+    if (b.inSeason) return true;
+    return (b.games || []).some((g) => {
+      const bucket = g?.status?.bucket;
+      return bucket === 'live' || bucket === 'upcoming' || bucket === 'final';
+    });
+  }
+
   function sportsRotateIds() {
     const boards = Array.isArray(state.sports?.leagues) ? state.sports.leagues : [];
     const isFantasy = (b) => Boolean(b.fantasy) || b.id === 'gi24' || b.id === 'aaa';
-    const inSeasonReal = boards.filter((b) => b?.id && !isFantasy(b) && b.inSeason);
-    const fantasy = boards.filter((b) => b?.id && isFantasy(b) && (b.games || []).length);
-    const rest = boards.filter((b) => b?.id && !isFantasy(b) && !b.inSeason && (b.games || []).length);
-    return [...inSeasonReal, ...fantasy, ...rest].map((b) => b.id);
+    const inSeasonReal = boards.filter((b) => sportsBoardVisible(b) && !isFantasy(b) && b.inSeason);
+    const fantasy = boards.filter((b) => isFantasy(b) && (b.games || []).length);
+    const liveOffseason = boards.filter((b) => sportsBoardVisible(b) && !isFantasy(b) && !b.inSeason);
+    return [...inSeasonReal, ...fantasy, ...liveOffseason].map((b) => b.id);
   }
 
   function sportsGamesForFilter() {
@@ -571,7 +582,7 @@
 
     if (tabs) {
       const boards = Array.isArray(state.sports?.leagues) ? state.sports.leagues : [];
-      const tabBoards = boards.filter((b) => b?.id && (b.inSeason || (b.games || []).length));
+      const tabBoards = boards.filter(sportsBoardVisible);
       tabs.innerHTML = tabBoards.map((b) => `
         <button type="button" class="wire-tab${b.id === state.sportsFilter ? ' is-on' : ''}" data-wire="${esc(b.id)}" role="tab" aria-selected="${b.id === state.sportsFilter ? 'true' : 'false'}">
           ${b.logo ? `<img src="${esc(b.logo)}" alt="" width="16" height="16" loading="lazy" decoding="async" referrerpolicy="no-referrer" />` : ''}
