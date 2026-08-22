@@ -3,7 +3,7 @@ const CACHE = 'gi24-app-v132';
 const SHELL = [
   '/app/',
   '/app/index.html',
-  '/app/app.css?v=132',
+  '/app/app.css?v=133',
   '/app/app.js?v=132',
   '/manifest.webmanifest?v=132',
   '/assets/pwa/icon-192.png?v=132',

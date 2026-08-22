@@ -624,8 +624,10 @@ a {
   padding-right: 0.2rem;
 }
 .s-row .num.col-pf {
+  text-align: center;
   border-left-color: rgba(255, 255, 255, 0.16);
-  padding-left: 0.55rem;
+  padding-left: 0.28rem;
+  padding-right: 0.28rem;
 }
 html[data-theme="day"] .s-row .num {
   border-left-color: rgba(20, 28, 40, 0.12);
