@@ -191,38 +191,8 @@
     return 'sm';
   }
 
-  function fitFranchiseTitle(title) {
-    if (!(title instanceof Element) || !title.classList.contains('franchise-title')) return;
-    if (title.closest('.user-menu-panel, .user-menu-name')) return;
-    const box = title.parentElement;
-    if (!box) return;
-    const avail = box.clientWidth;
-    if (avail < 8) return;
-    const key = titleSizeKey(title);
-    const maxPx = TITLE_MAX[key];
-    const minPx = TITLE_MIN[key];
-    const prev = {
-      width: title.style.width,
-      flex: title.style.flex,
-      maxWidth: title.style.maxWidth,
-      whiteSpace: title.style.whiteSpace,
-      overflow: title.style.overflow
-    };
-    title.style.width = 'max-content';
-    title.style.maxWidth = 'none';
-    title.style.flex = '0 0 auto';
-    title.style.whiteSpace = 'nowrap';
-    title.style.overflow = 'visible';
-    title.style.fontSize = `${maxPx}px`;
-    const used = Math.ceil(title.scrollWidth || title.getBoundingClientRect().width);
-    title.style.width = prev.width;
-    title.style.flex = prev.flex;
-    title.style.maxWidth = prev.maxWidth;
-    title.style.whiteSpace = prev.whiteSpace;
-    title.style.overflow = prev.overflow;
-    if (used > avail && used > 0) {
-      title.style.fontSize = `${Math.max(minPx, maxPx * (avail / used)).toFixed(2)}px`;
-    }
+  function fitFranchiseTitle() {
+    /* Names wrap in display type; do not compress them to fit a column. */
   }
 
   function fitAllFranchiseTitles(scope) {

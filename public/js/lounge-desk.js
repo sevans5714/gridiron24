@@ -1463,7 +1463,7 @@
           <span class="rank">${i + 1}</span>
           <div class="records-team">
             <div>
-              ${window.GridIronTitle.html(t.name, { size: 'sm', inline: true, owner: t.owner })}
+              ${window.GridIronTitle.html(t.name, { size: 'sm', inline: true })}
               <span>${t.playoffSeed ? `Seed ${esc(String(t.playoffSeed))}` : ''}${t.playoffSeed ? ' · ' : ''}${esc(streakLabel(t))}</span>
             </div>
           </div>

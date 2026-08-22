@@ -3647,22 +3647,28 @@ html[data-theme="day"] .desk-tile {
   .desk-palette { grid-template-columns: 1fr; }
 }
 
-/* Franchise identity is the name — one font, one size, one color. */
+/* Franchise identity is the name — one dramatic display face. */
 .franchise-title {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   min-width: 0;
   width: 100%;
   max-width: 100%;
+  overflow: hidden;
   font-family: var(--display);
   font-weight: 400;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  line-height: 1.05;
+  line-height: 0.9;
   color: inherit;
   text-align: inherit;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+html[data-theme="night"] .franchise-title {
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 0 16px rgba(142, 182, 255, 0.14);
 }
 .franchise-title-lead,
 .franchise-title-mark {
@@ -3671,10 +3677,10 @@ html[data-theme="day"] .desk-tile {
   text-transform: inherit;
   color: inherit;
 }
-.franchise-title.is-sm { font-size: 1.05rem; }
-.franchise-title.is-md { font-size: 1.25rem; }
-.franchise-title.is-lg { font-size: 1.65rem; }
-.franchise-title.is-xl { font-size: clamp(1.85rem, 4.5vw, 2.85rem); }
+.franchise-title.is-sm { font-size: 1.32rem; }
+.franchise-title.is-md { font-size: 1.55rem; }
+.franchise-title.is-lg { font-size: 1.95rem; }
+.franchise-title.is-xl { font-size: clamp(2.15rem, 5vw, 3.15rem); }
 .franchise-block {
   display: flex;
   flex-direction: column;
@@ -3731,10 +3737,15 @@ html[data-theme="day"] .desk-tile {
   text-align: right;
 }
 .user-chip .franchise-title {
+  display: block;
+  -webkit-line-clamp: 1;
   width: 100%;
   max-width: 100%;
   font-size: 1.02rem;
   color: var(--chip-team);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 .user-menu-name .franchise-title {
   width: auto;

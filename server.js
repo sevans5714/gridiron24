@@ -1025,6 +1025,19 @@ function resolveEspnTeamIdentity(conferenceKey, team, membersById) {
   return { espnName, name, owner, abbreviation };
 }
 
+function teamHighPoints(raw, teamId) {
+  let high = 0;
+  for (const m of raw?.schedule || []) {
+    if (Number(m.home?.teamId) === Number(teamId)) {
+      high = Math.max(high, Number(m.home?.totalPoints || 0));
+    }
+    if (Number(m.away?.teamId) === Number(teamId)) {
+      high = Math.max(high, Number(m.away?.totalPoints || 0));
+    }
+  }
+  return high;
+}
+
 function conferenceAdminName(conferenceKey) {
   const key = String(conferenceKey || '').trim().toLowerCase();
   if (!key) return null;
@@ -1070,6 +1083,7 @@ function normalizeLeague(raw, conference) {
       pointsPerGame: gamesPlayed > 0 ? pointsFor / gamesPlayed : 0,
       streakType,
       streakLength,
+      highPoints: teamHighPoints(raw, team.id),
       playoffSeed: Number(team.playoffSeed || 0),
       waiverRank: Number(team.waiverRank || 0)
     };
@@ -1736,7 +1750,7 @@ async function loadSystemPowerRankings() {
 }
 
 async function fetchEspnLeague(conference) {
-  const raw = await fetchEspnRaw(conference, ['mTeam', 'mSettings', 'mStatus'], 'league');
+  const raw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mSettings', 'mStatus'], 'league');
   return normalizeLeague(raw, conference);
 }
 
@@ -5266,7 +5280,8 @@ function teamHeatIndex(t) {
   const lossStreak = t.streakType === 'LOSS' ? Number(t.streakLength || 0) : 0;
   const ppg = Number(t.pointsPerGame || 0);
   const pf = Number(t.pointsFor || 0);
-  return winStreak * 55 + ppg * 2.2 + pf * 0.08 - lossStreak * 40;
+  const high = Number(t.highPoints || 0);
+  return winStreak * 55 + ppg * 2.2 + pf * 0.08 + high * 0.12 - lossStreak * 40;
 }
 
 function teamColdIndex(t) {
@@ -5291,7 +5306,8 @@ function pickHotCold(teams) {
         streakLength: t.streakLength,
         pointsFor: t.pointsFor,
         pointsPerGame: t.pointsPerGame,
-        gamesPlayed: t.gamesPlayed
+        gamesPlayed: t.gamesPlayed,
+        highPoints: t.highPoints
       }
     : null);
   if (list.length < 2) {

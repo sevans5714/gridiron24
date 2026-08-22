@@ -22,41 +22,8 @@
   const TITLE_MAX = { sm: 23, md: 30, lg: 38, xl: 56 };
   const TITLE_MIN = { sm: 11, md: 12, lg: 16, xl: 18 };
 
-  function fitFranchiseTitle(title) {
-    if (!(title instanceof Element) || !title.classList.contains('franchise-title')) return;
-    if (title.closest('.user-chip, .user-menu, .user-menu-panel')) return;
-    const box = title.parentElement;
-    if (!box) return;
-    const avail = box.clientWidth;
-    if (avail < 8) return;
-    const key = title.classList.contains('is-xl') ? 'xl'
-      : title.classList.contains('is-lg') ? 'lg'
-      : title.classList.contains('is-md') ? 'md'
-      : 'sm';
-    const maxPx = TITLE_MAX[key];
-    const minPx = TITLE_MIN[key];
-    const prev = {
-      width: title.style.width,
-      flex: title.style.flex,
-      maxWidth: title.style.maxWidth,
-      whiteSpace: title.style.whiteSpace,
-      overflow: title.style.overflow
-    };
-    title.style.width = 'max-content';
-    title.style.maxWidth = 'none';
-    title.style.flex = '0 0 auto';
-    title.style.whiteSpace = 'nowrap';
-    title.style.overflow = 'visible';
-    title.style.fontSize = `${maxPx}px`;
-    const used = Math.ceil(title.scrollWidth || title.getBoundingClientRect().width);
-    title.style.width = prev.width;
-    title.style.flex = prev.flex;
-    title.style.maxWidth = prev.maxWidth;
-    title.style.whiteSpace = prev.whiteSpace;
-    title.style.overflow = prev.overflow;
-    if (used > avail && used > 0) {
-      title.style.fontSize = `${Math.max(minPx, maxPx * (avail / used)).toFixed(2)}px`;
-    }
+  function fitFranchiseTitle() {
+    /* Names wrap in display type; do not compress them to fit a column. */
   }
 
   function fitAllFranchiseTitles(scope) {
@@ -590,7 +557,7 @@
         pts = `<span class="pts is-blank">—</span>`;
       }
       const name = fantasy
-        ? franchiseTitleHtml(t.name || t.abbreviation || t.shortName || 'TBD', { size: 'sm', inline: true, owner: t.owner })
+        ? franchiseTitleHtml(t.name || t.abbreviation || t.shortName || 'TBD', { size: 'sm', inline: true })
         : `<span class="namecell"><span class="abbr">${esc(t.abbreviation || t.shortName || '?')}</span></span>`;
       return `<div class="wire-side${win ? ' is-winner' : ''}${fantasy ? ' is-title' : ''}">${logo}${name}${pts}</div>`;
     };
@@ -1195,7 +1162,7 @@
         <div class="s-row body ${zone}">
           <div class="rank">${rank}</div>
           <div class="team">
-            ${franchiseTitleHtml(team.name, { size: 'sm', inline: true, owner: team.owner })}${mine ? '<span class="you-tag"> · you</span>' : ''}
+            ${franchiseTitleHtml(team.name, { size: 'sm', inline: true })}${mine ? '<span class="you-tag"> · you</span>' : ''}
           </div>
           <div class="num col-w">${team.wins || 0}</div>
           <div class="num col-l">${team.losses || 0}</div>
@@ -1241,7 +1208,7 @@
       <article class="mu-card${statusCls === 'live' ? ' is-live' : ''}${decided ? ' is-final' : ''}">
         <div class="mu-side is-away ${awayCls}">
           <div class="mu-meta">
-            ${franchiseTitleHtml(m.away?.name || 'TBD', { size: 'sm', owner: m.away?.owner })}
+            ${franchiseTitleHtml(m.away?.name || 'TBD', { size: 'sm' })}
           </div>
           <div class="mu-score-stack">
             <div class="mu-score">${fmtScore(m.away?.score)}</div>
@@ -1257,7 +1224,7 @@
             <div class="mu-proj">Proj ${fmtScore(m.home?.projected)}</div>
           </div>
           <div class="mu-meta">
-            ${franchiseTitleHtml(m.home?.name || 'TBD', { size: 'sm', owner: m.home?.owner })}
+            ${franchiseTitleHtml(m.home?.name || 'TBD', { size: 'sm' })}
           </div>
         </div>
       </article>`;

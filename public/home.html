@@ -8,12 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=128" />
-  <link rel="icon" href="/favicon.ico?v=128" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=128" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=128" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=129" />
+  <link rel="icon" href="/favicon.ico?v=129" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=129" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=129" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=172" />
+  <link rel="stylesheet" href="/css/site.css?v=173" />
   <style>
     .aaa-portal {
       display: inline-flex;
@@ -451,7 +451,7 @@
       font-weight: 600;
     }
     .mini-table .team {
-      width: 100%;
+      width: auto;
       overflow: hidden;
       color: var(--text);
       font-weight: 600;
@@ -480,11 +480,14 @@
     }
     .mini-table th.num.wl,
     .mini-table td.num.wl {
-      width: 5.6rem;
+      width: 3.55rem;
+      text-align: center;
+      padding-left: 0.2rem;
+      padding-right: 0.2rem;
     }
     .mini-table th.num.pf,
     .mini-table td.num.pf {
-      width: 6.35rem;
+      width: 4.85rem;
     }
     .mini-table .out td { opacity: 0.72; }
     .mini-table tr.cut-line td {
@@ -617,8 +620,9 @@
     }
     .hotnot-team {
       display: flex;
-      align-items: center;
-      gap: 0.7rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.28rem;
       min-width: 0;
     }
     .hotnot-team img {
@@ -643,9 +647,11 @@
       word-break: break-word;
     }
     .hotnot-team .sub {
-      margin-top: 0.2rem;
-      font-size: 0.8rem;
+      margin: 0;
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
       color: var(--muted);
+      line-height: 1.35;
     }
 
     .bottom-stack {
@@ -939,9 +945,9 @@
       .hq-hero img { width: min(11rem, 58vw); }
       .hq-hero .tag { font-size: clamp(1.2rem, 5.2vw, 1.55rem); }
       .mini-table th.num.wl,
-      .mini-table td.num.wl { width: 4.9rem; }
+      .mini-table td.num.wl { width: 3.4rem; }
       .mini-table th.num.pf,
-      .mini-table td.num.pf { width: 5.6rem; }
+      .mini-table td.num.pf { width: 4.6rem; }
     }
   </style>
 </head>
@@ -1024,7 +1030,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=171"></script>
+  <script src="/js/nav.js?v=173"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -1166,7 +1172,7 @@
           ${motwHead(conf)}
           <div class="motw">
             <div class="motw-side">
-              ${window.GridIronTitle.html(m.away.name, { size: 'sm', owner: m.away.owner })}
+              ${window.GridIronTitle.html(m.away.name, { size: 'sm' })}
             </div>
             <div class="motw-mid">
               <div class="vs">VS</div>
@@ -1174,7 +1180,7 @@
               <div class="proj">Proj ${Number(m.away.projected || 0).toFixed(1)}–${Number(m.home.projected || 0).toFixed(1)}</div>
             </div>
             <div class="motw-side">
-              ${window.GridIronTitle.html(m.home.name, { size: 'sm', owner: m.home.owner })}
+              ${window.GridIronTitle.html(m.home.name, { size: 'sm' })}
             </div>
           </div>
         </div>`;
@@ -1188,28 +1194,31 @@
       return null;
     }
 
-    function formSub(t) {
-      const parts = [];
+    function formStatsHtml(t) {
+      const rec = record(t);
       const streak = streakText(t);
-      if (streak) parts.push(streak);
       const games = Number(t.gamesPlayed || (t.wins || 0) + (t.losses || 0) + (t.ties || 0));
       const pf = Number(t.pointsFor || 0);
-      if (games > 0) {
-        const ppg = Number(t.pointsPerGame != null ? t.pointsPerGame : pf / games);
-        parts.push(`${ppg.toFixed(1)} PPG`);
-        parts.push(`${pf.toFixed(1)} PF`);
-      } else {
-        parts.push(record(t));
-      }
-      return parts.join(' · ');
+      const high = Number(t.highPoints || 0);
+      const ppg = games > 0
+        ? Number(t.pointsPerGame != null ? t.pointsPerGame : pf / games)
+        : 0;
+      const lines = [streak ? `${rec} · ${streak}` : rec];
+      const bits = [];
+      if (high > 0) bits.push(`High ${high.toFixed(1)}`);
+      if (games > 0) bits.push(`${ppg.toFixed(1)} PPG`);
+      bits.push(`${pf.toFixed(1)} PF`);
+      lines.push(bits.join(' · '));
+      return lines.map((line) => `<div class="sub">${esc(line)}</div>`).join('');
     }
 
     function heatIndex(t) {
       const winStreak = t.streakType === 'WIN' ? Number(t.streakLength || 0) : 0;
       const lossStreak = t.streakType === 'LOSS' ? Number(t.streakLength || 0) : 0;
       const ppg = Number(t.pointsPerGame || 0);
+      const high = Number(t.highPoints || 0);
       const pf = Number(t.pointsFor || 0);
-      return winStreak * 55 + ppg * 2.2 + pf * 0.08 - lossStreak * 40;
+      return winStreak * 55 + ppg * 2.2 + pf * 0.08 + high * 0.12 - lossStreak * 40;
     }
 
     function coldIndex(t) {
@@ -1250,15 +1259,15 @@
             <div class="hotnot-col hot">
               <div class="label">Who’s Hot</div>
               <div class="hotnot-team">
-                ${window.GridIronTitle.html(pick.hot.name, { size: 'sm', owner: pick.hot.owner })}
-                <div class="sub">${esc(formSub(pick.hot))}</div>
+                ${window.GridIronTitle.html(pick.hot.name, { size: 'sm' })}
+                ${formStatsHtml(pick.hot)}
               </div>
             </div>
             <div class="hotnot-col cold">
               <div class="label">Who’s Not</div>
               <div class="hotnot-team">
-                ${window.GridIronTitle.html(pick.cold.name, { size: 'sm', owner: pick.cold.owner })}
-                <div class="sub">${esc(formSub(pick.cold))}</div>
+                ${window.GridIronTitle.html(pick.cold.name, { size: 'sm' })}
+                ${formStatsHtml(pick.cold)}
               </div>
             </div>
           </div>
