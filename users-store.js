@@ -1181,6 +1181,21 @@ function adminSetCredentials(userId, { loginName, password } = {}) {
   return publicUser(user);
 }
 
+function detachUsersFromLeague(leagueId) {
+  const id = String(leagueId || '').trim();
+  if (!id) return 0;
+  const store = readStore();
+  let n = 0;
+  for (const user of store.users) {
+    if (String(user.leagueId || '') !== id) continue;
+    user.leagueId = null;
+    user.leagueOwner = false;
+    n += 1;
+  }
+  if (n) writeStore(store);
+  return n;
+}
+
 function setUserLeagueOwner(userId, leagueId, isOwner = true) {
   const store = readStore();
   const idx = store.users.findIndex((u) => u.id === userId);
@@ -1268,6 +1283,7 @@ module.exports = {
   updatePreferences,
   updateProfile,
   setUserLeagueOwner,
+  detachUsersFromLeague,
   claimWelcomeInbox,
   hasReceivedWelcomeInbox,
   findById,

@@ -271,6 +271,8 @@ function publicLeague(league) {
     submittedAt: league.submittedAt || null,
     approvedAt: league.approvedAt || null,
     approvedBy: league.approvedBy || null,
+    renewedAt: league.renewedAt || null,
+    archivedAt: league.archivedAt || null,
     createdAt: league.createdAt,
     activatedAt: league.activatedAt || null
   };
@@ -1683,7 +1685,7 @@ function listIndependentMembershipsForUser(userId) {
   if (!uid) return [];
   const out = [];
   for (const l of readStore().leagues || []) {
-    if (l.platform !== 'independent' || l.status === 'rejected') continue;
+    if (l.platform !== 'independent' || l.status === 'rejected' || l.status === 'archived') continue;
     const isOwner = String(l.ownerUserId || '') === uid;
     const franchise = (l.franchises || []).find((f) => f.managerUserId && String(f.managerUserId) === uid) || null;
     if (!isOwner && !franchise) continue;
@@ -1935,6 +1937,102 @@ function rejectIndependentLeague(leagueId, reason, actorUserId) {
   return publicLeague(league);
 }
 
+function assertIndependentNotSystem(league) {
+  if (!league || league.platform !== 'independent') {
+    throw Object.assign(new Error('Only independent leagues can be managed here'), { status: 400 });
+  }
+  if (league.isSystem) {
+    throw Object.assign(new Error('Cannot change the system league'), { status: 400 });
+  }
+}
+
+function archiveIndependentLeague(leagueId) {
+  const store = readStore();
+  const league = store.leagues.find((l) => l.id === leagueId);
+  if (!league) throw Object.assign(new Error('League not found'), { status: 404 });
+  assertIndependentNotSystem(league);
+  if (league.status === 'pending_approval') {
+    throw Object.assign(new Error('Approve or reject this request first'), { status: 400 });
+  }
+  if (league.status === 'rejected') {
+    throw Object.assign(new Error('Rejected leagues cannot be archived — delete them instead'), { status: 400 });
+  }
+  if (league.status === 'archived') {
+    throw Object.assign(new Error('This league is already archived'), { status: 400 });
+  }
+  league.status = 'archived';
+  league.archivedAt = new Date().toISOString();
+  league.updatedAt = league.archivedAt;
+  writeStore(store);
+  return publicLeague(league);
+}
+
+function restoreIndependentLeague(leagueId) {
+  const store = readStore();
+  const league = store.leagues.find((l) => l.id === leagueId);
+  if (!league) throw Object.assign(new Error('League not found'), { status: 404 });
+  assertIndependentNotSystem(league);
+  if (league.status !== 'archived') {
+    throw Object.assign(new Error('Only archived leagues can be restored'), { status: 400 });
+  }
+  league.status = 'approved';
+  league.archivedAt = null;
+  league.updatedAt = new Date().toISOString();
+  writeStore(store);
+  return publicLeague(league);
+}
+
+function renewIndependentLeague(leagueId, { season } = {}) {
+  const store = readStore();
+  const league = store.leagues.find((l) => l.id === leagueId);
+  if (!league) throw Object.assign(new Error('League not found'), { status: 404 });
+  assertIndependentNotSystem(league);
+  if (league.status === 'pending_approval' || league.status === 'rejected') {
+    throw Object.assign(new Error('Only an approved league can be renewed'), { status: 400 });
+  }
+  const current = Number(league.season) || new Date().getFullYear();
+  const nextSeason = Number(season) || current + 1;
+  if (!(nextSeason > current)) {
+    throw Object.assign(new Error(`Renewal season must be after ${current}`), { status: 400 });
+  }
+  const format = String(league.settings?.leagueFormat || 'redraft').toLowerCase();
+  league.season = nextSeason;
+  league.status = 'approved';
+  league.archivedAt = null;
+  league.draft = defaultIndependentDraft({ status: 'scheduled' });
+  league.weekResults = {};
+  league.schedule = null;
+  league.playoffs = {
+    locked: false,
+    format: league.playoffs?.format || null,
+    champName: league.playoffs?.champName || league.championship?.name || null,
+    weeks: [],
+    seeds: []
+  };
+  league.transactions = [];
+  if (format !== 'dynasty' && Array.isArray(league.franchises)) {
+    league.franchises = league.franchises.map((f) => ({ ...f, roster: [] }));
+  }
+  if (league.keepers && typeof league.keepers === 'object') {
+    league.keepers = { season: nextSeason, status: 'open', declarations: [] };
+  }
+  league.renewedAt = new Date().toISOString();
+  league.updatedAt = league.renewedAt;
+  writeStore(store);
+  return publicLeague(league);
+}
+
+function deleteIndependentLeague(leagueId) {
+  const store = readStore();
+  const idx = store.leagues.findIndex((l) => l.id === leagueId);
+  if (idx === -1) throw Object.assign(new Error('League not found'), { status: 404 });
+  const league = store.leagues[idx];
+  assertIndependentNotSystem(league);
+  store.leagues.splice(idx, 1);
+  writeStore(store);
+  return publicLeague(league);
+}
+
 function updateIndependentFranchises(leagueId, franchises) {
   const store = readStore();
   const league = store.leagues.find((l) => l.id === leagueId);
@@ -1996,6 +2094,9 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
   }
   if (league.status === 'rejected') {
     throw Object.assign(new Error('This league was not approved'), { status: 403 });
+  }
+  if (league.status === 'archived') {
+    throw Object.assign(new Error('This league is archived. Restore it in Site Tools first.'), { status: 403 });
   }
   if (league.setupComplete === false) {
     throw Object.assign(
@@ -2415,7 +2516,11 @@ function independentWeekResults(league) {
 }
 
 function listIndependentLeaguesForDraftTick() {
-  return readStore().leagues.filter((l) => l.platform === 'independent' && !l.isSystem);
+  return readStore().leagues.filter((l) =>
+    l.platform === 'independent'
+    && !l.isSystem
+    && l.status === 'approved'
+  );
 }
 
 function attachOwner(leagueId, userId) {
@@ -2478,6 +2583,10 @@ module.exports = {
   RESERVED_LEAGUE_SLUGS,
   approveIndependentLeague,
   rejectIndependentLeague,
+  archiveIndependentLeague,
+  restoreIndependentLeague,
+  renewIndependentLeague,
+  deleteIndependentLeague,
   updateIndependentFranchises,
   updateIndependentSettings,
   setIndependentDraftState,

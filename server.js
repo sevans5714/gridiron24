@@ -663,12 +663,17 @@ function buildSiteHqPayload(viewer) {
         name: l.brand?.name || l.slug,
         slug: l.slug,
         status: l.status,
+        season: l.season || null,
+        format: l.settings?.leagueFormat || 'redraft',
+        draftStatus: l.draft?.status || null,
         setupComplete: l.setupComplete !== false,
         ownerName: l.ownerName,
         ownerEmail: l.ownerEmail,
         teamCount: l.structure?.totalTeams || null,
         submittedAt: l.submittedAt || l.createdAt,
         approvedAt: l.approvedAt || null,
+        renewedAt: l.renewedAt || null,
+        archivedAt: l.archivedAt || null,
         homePath: l.homePath || null
       }))
     },
@@ -4517,6 +4522,7 @@ function canViewIndependentLeague(user, league) {
   if (!league || league.platform !== 'independent') return false;
   if (!user) return false;
   if (users.isSiteOwner(user)) return true;
+  if (league.status === 'archived' || league.status === 'rejected') return false;
   if (league.ownerUserId && league.ownerUserId === user.id) return true;
   if (user.leagueId && user.leagueId === league.id) return true;
   if ((league.franchises || []).some((f) => f.managerUserId && f.managerUserId === user.id)) {
@@ -8990,6 +8996,60 @@ const server = http.createServer(async (req, res) => {
       const owner = requireSiteOwner(req, res);
       if (!owner) return;
       return sendJson(res, 200, buildSiteHqPayload(owner));
+    }
+
+    {
+      const manage = pathname.match(/^\/api\/site-hq\/leagues\/([^/]+)\/(renew|archive|restore|delete)$/);
+      if (manage && req.method === 'POST') {
+        const owner = requireSiteOwner(req, res);
+        if (!owner) return;
+        const leagueId = decodeURIComponent(manage[1]);
+        const action = manage[2];
+        let body = {};
+        try { body = await readJsonBody(req); } catch { body = {}; }
+        try {
+          let league;
+          if (action === 'renew') {
+            league = leagues.renewIndependentLeague(leagueId, { season: body.season });
+            independentDraft.deleteRoomsForLeague(leagueId);
+          } else if (action === 'archive') {
+            league = leagues.archiveIndependentLeague(leagueId);
+          } else if (action === 'restore') {
+            league = leagues.restoreIndependentLeague(leagueId);
+          } else {
+            const existing = leagues.findById(leagueId);
+            const expected = String(existing?.brand?.name || existing?.slug || '').trim();
+            const typed = String(body.confirmName || body.name || '').trim();
+            if (!expected || typed.toLowerCase() !== expected.toLowerCase()) {
+              return sendJson(res, 400, {
+                ok: false,
+                error: `Type the league name (${expected || 'the league'}) to delete it`
+              });
+            }
+            league = leagues.deleteIndependentLeague(leagueId);
+            independentDraft.deleteRoomsForLeague(leagueId);
+            invites.revokeInvitesForLeague(leagueId);
+            users.detachUsersFromLeague(leagueId);
+          }
+          return sendJson(res, 200, {
+            ok: true,
+            action,
+            league: {
+              id: league.id,
+              name: league.brand?.name || league.slug,
+              slug: league.slug,
+              status: league.status,
+              season: league.season
+            },
+            hq: buildSiteHqPayload(owner)
+          });
+        } catch (err) {
+          return sendJson(res, err.status || 400, {
+            ok: false,
+            error: err.message || 'Could not update league'
+          });
+        }
+      }
     }
 
     if (pathname === '/api/users/pending' && req.method === 'GET') {

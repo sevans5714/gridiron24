@@ -157,7 +157,14 @@
       text-transform: uppercase;
       letter-spacing: 0.06em;
     }
-    .hq-subhead:first-child { margin-top: 0; }
+    .hq-league-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.55rem;
+      justify-content: flex-end;
+    }
+    .hq-league-actions .btn { padding: 0.28rem 0.55rem; font-size: 0.78rem; }
+    .link-action.is-danger { color: var(--status-err-text, #ff8e8e); }
     .data-table { width: 100%; }
     @media (max-width: 640px) {
       .hq-espn-row { grid-template-columns: 1fr; }
@@ -175,7 +182,7 @@
   <section class="page-hero shell">
     <p class="eyebrow">Platform</p>
     <h1>Site Tools</h1>
-    <p>Settings for this website: ESPN league IDs, who’s on, every league on the platform, and join requests. GridIron 24 league ops (news, invites, calendar) stay on Owner Tools.</p>
+    <p>Settings for this website: ESPN league IDs, who’s on, league management, and join requests. GridIron 24 league ops (news, invites, calendar) stay on Owner Tools.</p>
   </section>
 
   <main class="page-main shell">
@@ -184,7 +191,7 @@
       <a href="#overview">Overview</a>
       <a href="#espn">ESPN</a>
       <a href="#online">Signed on</a>
-      <a href="#leagues">Leagues</a>
+      <a href="#leagues">League management</a>
       <a href="#approvals">Approvals</a>
       <a href="#server">Server</a>
     </nav>
@@ -213,8 +220,8 @@
     </section>
 
     <section class="hq-section" id="leagues">
-      <h2>Leagues</h2>
-      <p class="hq-help">Independent leagues on this platform. GridIron 24 conferences are bound under ESPN above.</p>
+      <h2>League management</h2>
+      <p class="hq-help">Independent leagues only. Renew starts the next season on the same franchises and managers. Archive hides the league without deleting it. Delete is permanent — accounts stay. GridIron 24 and AAA cannot be deleted; they stay bound to ESPN above.</p>
       <div id="hq-leagues-body"></div>
     </section>
 
@@ -504,31 +511,106 @@
       function leagueStatus(l) {
         if (l.status === 'pending_approval') return pill(false, true, 'Pending');
         if (l.status === 'rejected') return pill(false, false, 'Rejected');
+        if (l.status === 'archived') return pill(false, true, 'Archived');
         if (l.status === 'approved' && l.setupComplete === false) return pill(false, true, 'Setup');
         return pill(true, false, 'Live');
+      }
+
+      function leagueActions(l) {
+        const bits = [];
+        if (l.homePath && l.status !== 'rejected') {
+          bits.push(`<a class="link-action" href="${esc(l.homePath)}">Open HQ</a>`);
+        }
+        if (l.status === 'approved' || l.status === 'archived') {
+          bits.push(`<button type="button" class="btn btn-secondary" data-league-act="renew" data-league-id="${esc(l.id)}" data-league-name="${esc(l.name)}" data-league-season="${esc(String(l.season || ''))}">Renew</button>`);
+        }
+        if (l.status === 'approved' && l.setupComplete !== false) {
+          bits.push(`<button type="button" class="link-action" data-league-act="archive" data-league-id="${esc(l.id)}" data-league-name="${esc(l.name)}">Archive</button>`);
+        }
+        if (l.status === 'archived') {
+          bits.push(`<button type="button" class="btn" data-league-act="restore" data-league-id="${esc(l.id)}" data-league-name="${esc(l.name)}">Restore</button>`);
+        }
+        bits.push(`<button type="button" class="link-action is-danger" data-league-act="delete" data-league-id="${esc(l.id)}" data-league-name="${esc(l.name)}">Delete</button>`);
+        return `<div class="hq-league-actions">${bits.join('')}</div>`;
       }
 
       function renderLeagues(data) {
         const el = document.getElementById('hq-leagues-body');
         const independent = data.leagues?.independent || [];
         const platform = data.leagues?.platform || {};
+        const espnBits = (platform.conferences || []).map((c) =>
+          `${c.name}${c.espnLeagueId ? ` · ${c.espnLeagueId}` : ' · no ID'}`
+        ).join(' · ');
         const indRows = independent.length
           ? independent.map((l) => `
             <tr>
-              <td><strong>${esc(l.name)}</strong><br><span class="muted-sm">${esc(l.slug)}</span></td>
+              <td><strong>${esc(l.name)}</strong><br><span class="muted-sm">${esc(l.slug)}${l.format ? ` · ${esc(l.format)}` : ''}</span></td>
+              <td>${esc(l.season || '—')}</td>
               <td>${leagueStatus(l)}</td>
               <td>${esc(l.ownerName || '—')}<br><span class="muted-sm">${esc(l.ownerEmail || '')}</span></td>
               <td>${esc(l.teamCount || '—')}</td>
-              <td>${l.homePath ? `<a href="${esc(l.homePath)}">HQ</a>` : '—'}</td>
+              <td class="muted-sm">${esc(l.draftStatus || '—')}</td>
+              <td>${leagueActions(l)}</td>
             </tr>`).join('')
-          : `<tr><td colspan="5" class="muted-sm">No independent leagues yet.</td></tr>`;
+          : `<tr><td colspan="7" class="muted-sm">No independent leagues yet.</td></tr>`;
         el.innerHTML = `
-          <p class="hq-note" style="margin:0 0 0.85rem;">${esc(platform.name || 'GridIron 24')} · ${esc(platform.season || '')} conferences are the ESPN IDs in the section above.</p>
+          <p class="hq-note" style="margin:0 0 0.85rem;">${esc(platform.name || 'GridIron 24')} ${esc(platform.season || '')}${espnBits ? ` — ${esc(espnBits)}` : ''}. Those IDs are edited in ESPN, not deleted here.</p>
           <h3 class="hq-subhead">Independent</h3>
           <table class="data-table">
-            <thead><tr><th>League</th><th>Status</th><th>Owner</th><th>Teams</th><th></th></tr></thead>
+            <thead><tr><th>League</th><th>Season</th><th>Status</th><th>Owner</th><th>Teams</th><th>Draft</th><th></th></tr></thead>
             <tbody>${indRows}</tbody>
-          </table>`;
+          </table>
+          <p class="hq-note" id="hq-leagues-msg" hidden></p>`;
+        el.querySelectorAll('[data-league-act]').forEach((btn) => {
+          btn.addEventListener('click', () => runLeagueAction(btn));
+        });
+      }
+
+      async function runLeagueAction(btn) {
+        const id = btn.getAttribute('data-league-id');
+        const name = btn.getAttribute('data-league-name') || 'this league';
+        const act = btn.getAttribute('data-league-act');
+        const season = Number(btn.getAttribute('data-league-season')) || new Date().getFullYear();
+        let body = {};
+        if (act === 'renew') {
+          const next = season + 1;
+          if (!confirm(`Renew ${name} for ${next}? The draft board and scores reset. Franchises and managers stay. Dynasty keeps rosters; redraft does not.`)) return;
+          body = { season: next };
+        } else if (act === 'archive') {
+          if (!confirm(`Archive ${name}? Managers will not see HQ until you restore it.`)) return;
+        } else if (act === 'restore') {
+          if (!confirm(`Restore ${name} to live?`)) return;
+        } else if (act === 'delete') {
+          const typed = window.prompt(`Type the league name to delete it forever.\n\n${name}`);
+          if (typed == null) return;
+          body = { confirmName: typed };
+        } else return;
+        showMsg('hq-leagues-msg', '');
+        showMsg('hq-msg', '');
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/api/site-hq/leagues/${encodeURIComponent(id)}/${act}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update league');
+          const done = act === 'delete'
+            ? `Deleted ${data.league?.name || name}.`
+            : act === 'renew'
+              ? `Renewed ${data.league?.name || name} for ${data.league?.season || ''}.`
+              : act === 'archive'
+                ? `Archived ${data.league?.name || name}.`
+                : `Restored ${data.league?.name || name}.`;
+          showMsg('hq-msg', done, true);
+          await load({ skipEspn: true });
+        } catch (err) {
+          showMsg('hq-leagues-msg', err.message || 'Could not update league', false);
+          showMsg('hq-msg', err.message || 'Could not update league', false);
+        } finally {
+          btn.disabled = false;
+        }
       }
 
       function askedFor(u) {

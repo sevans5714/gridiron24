@@ -757,6 +757,17 @@ function addChatMessage({ leagueId, roomId, user, body }) {
   return { room: publicRoom(room, user.id), message: msg };
 }
 
+function deleteRoomsForLeague(leagueId) {
+  const id = String(leagueId || '').trim();
+  if (!id) return 0;
+  const store = readStore();
+  const before = store.rooms.length;
+  store.rooms = store.rooms.filter((r) => String(r.leagueId || '') !== id);
+  const removed = before - store.rooms.length;
+  if (removed) writeStore(store);
+  return removed;
+}
+
 module.exports = {
   startOfficialDraft,
   tickLeague,
@@ -769,6 +780,7 @@ module.exports = {
   getRoom,
   publicRoom,
   roomsForLeague,
+  deleteRoomsForLeague,
   finalizeIfDone,
   managersReady,
   currentSlot
