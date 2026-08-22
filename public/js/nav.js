@@ -289,7 +289,6 @@
   }
 
   let ruleProposalVisible = false;
-  let featureRequestVisible = false;
 
   function renderSubmenu(link) {
     const items = Array.isArray(link.menu) ? link.menu : [];
@@ -476,28 +475,16 @@
   function placeProposalActionsInNav() {
     if (!nav) return;
     const slot = ensureProposalActionsMount();
-    const showSlot = ruleProposalVisible || featureRequestVisible;
-    if (!showSlot) {
+    if (!ruleProposalVisible) {
       slot.hidden = true;
       slot.innerHTML = '';
       slot.remove();
       return;
     }
 
-    const bits = [];
-    if (ruleProposalVisible) {
-      bits.push('<button type="button" class="rule-proposal-btn" id="rule-proposal-btn">Rule Change Proposal</button>');
-    }
-    if (ruleProposalVisible && featureRequestVisible) {
-      bits.push('<span class="feature-request-divider" aria-hidden="true"></span>');
-    }
-    if (featureRequestVisible) {
-      bits.push('<button type="button" class="feature-request-btn" id="feature-request-btn">Feature Request</button>');
-    }
-    slot.innerHTML = bits.join('');
+    slot.innerHTML = '<button type="button" class="rule-proposal-btn" id="rule-proposal-btn">Rule Change Proposal</button>';
     slot.hidden = false;
     slot.querySelector('#rule-proposal-btn')?.addEventListener('click', openRuleProposalModal);
-    slot.querySelector('#feature-request-btn')?.addEventListener('click', openFeatureRequestModal);
 
     const rulebook = [...nav.querySelectorAll('a.nav-link')].find((a) =>
       /rulebook/i.test(a.getAttribute('href') || '')
@@ -509,59 +496,6 @@
 
   function closeRuleProposalModal() {
     document.getElementById('rule-proposal-modal')?.remove();
-  }
-
-  function closeFeatureRequestModal() {
-    document.getElementById('feature-request-modal')?.remove();
-  }
-
-  function openFeatureRequestModal() {
-    closeFeatureRequestModal();
-    const backdrop = document.createElement('div');
-    backdrop.id = 'feature-request-modal';
-    backdrop.className = 'gi-modal-backdrop';
-    backdrop.innerHTML = `
-      <div class="gi-modal" role="dialog" aria-modal="true" aria-labelledby="feature-request-title">
-        <h2 id="feature-request-title">Feature Request</h2>
-        <p class="gi-modal-help">Tell us what you want on the platform. Requests go to the site owner’s inbox only.</p>
-        <div class="gi-modal-err" id="feature-request-err"></div>
-        <label class="field-label" for="feature-request-text">Your idea</label>
-        <textarea id="feature-request-text" maxlength="4000" placeholder="Describe the feature you want…"></textarea>
-        <div class="btn-row">
-          <button type="button" class="btn" id="feature-request-submit">Submit Request</button>
-          <button type="button" class="btn btn-ghost" id="feature-request-cancel">Cancel</button>
-        </div>
-      </div>`;
-    document.body.appendChild(backdrop);
-    const err = backdrop.querySelector('#feature-request-err');
-    const area = backdrop.querySelector('#feature-request-text');
-    area?.focus();
-
-    backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) closeFeatureRequestModal();
-    });
-    backdrop.querySelector('#feature-request-cancel')?.addEventListener('click', closeFeatureRequestModal);
-    backdrop.querySelector('#feature-request-submit')?.addEventListener('click', async () => {
-      const btn = backdrop.querySelector('#feature-request-submit');
-      err.classList.remove('show');
-      btn.disabled = true;
-      try {
-        const res = await fetch('/api/feature-requests', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: area.value })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not submit request');
-        closeFeatureRequestModal();
-        await refreshInboxBadge();
-        window.alert('Feature request submitted. The site owner will see it in their inbox.');
-      } catch (e) {
-        err.textContent = e.message || 'Could not submit';
-        err.classList.add('show');
-        btn.disabled = false;
-      }
-    });
   }
 
   function openRuleProposalModal() {
@@ -618,34 +552,11 @@
     placeProposalActionsInNav();
   }
 
-  function featureRequestsAreOpen() {
-    // Hidden in-season. Returns June 1, 2027 (America/New_York).
-    try {
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: 'numeric'
-      }).formatToParts(new Date());
-      const year = Number(parts.find((p) => p.type === 'year')?.value);
-      const month = Number(parts.find((p) => p.type === 'month')?.value);
-      return year > 2027 || (year === 2027 && month >= 6);
-    } catch {
-      return Date.now() >= Date.UTC(2027, 5, 1);
-    }
-  }
-
-  function renderFeatureRequestButton(show) {
-    featureRequestVisible = Boolean(show) && featureRequestsAreOpen();
-    placeProposalActionsInNav();
-  }
-
   async function refreshRuleProposalGate(user) {
     if (!user || user.loungeOnly) {
       renderRuleProposalButton(false);
-      renderFeatureRequestButton(false);
       return;
     }
-    renderFeatureRequestButton(true);
     try {
       const res = await fetch('/api/rule-proposals/status', { cache: 'no-store' });
       const data = await res.json().catch(() => ({}));

@@ -425,21 +425,6 @@ html[data-theme="day"] .nav > .rule-proposal-slot::before {
   background: rgba(31, 94, 240, 0.28);
   box-shadow: none;
 }
-.feature-request-divider {
-  display: inline-block;
-  width: 1px;
-  height: 1.35rem;
-  margin: 0 0.4rem;
-  flex: 0 0 auto;
-  align-self: center;
-  background: rgba(142, 182, 255, 0.32);
-  box-shadow: 0 0 6px rgba(47, 109, 255, 0.12);
-}
-html[data-theme="day"] .feature-request-divider {
-  background: rgba(31, 94, 240, 0.22);
-  box-shadow: none;
-}
-
 .rule-proposal-btn {
   appearance: none;
   display: inline-flex;
@@ -483,59 +468,6 @@ html[data-theme="day"] .feature-request-divider {
       0 0 18px rgba(47, 109, 255, 0.7),
       0 0 34px rgba(47, 109, 255, 0.35);
   }
-}
-
-.feature-request-btn {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid rgba(255, 210, 70, 0.9);
-  background: linear-gradient(180deg, rgba(255, 196, 40, 0.48), rgba(210, 140, 10, 0.22));
-  color: #fff4c2;
-  font-family: var(--display);
-  font-size: clamp(0.82rem, 1.55vw, 1rem);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow:
-    0 0 0 1px rgba(255, 196, 40, 0.4),
-    0 0 14px rgba(255, 196, 40, 0.55),
-    0 0 28px rgba(255, 170, 20, 0.28);
-  animation: feature-request-glow 2.4s ease-in-out infinite;
-}
-.feature-request-btn:hover {
-  color: #fff;
-  border-color: #ffe08a;
-  box-shadow:
-    0 0 0 1px rgba(255, 224, 120, 0.6),
-    0 0 18px rgba(255, 196, 40, 0.8),
-    0 0 36px rgba(255, 170, 20, 0.4);
-}
-@keyframes feature-request-glow {
-  0%, 100% {
-    box-shadow:
-      0 0 0 1px rgba(255, 196, 40, 0.35),
-      0 0 12px rgba(255, 196, 40, 0.45),
-      0 0 24px rgba(255, 170, 20, 0.22);
-  }
-  50% {
-    box-shadow:
-      0 0 0 1px rgba(255, 220, 90, 0.6),
-      0 0 18px rgba(255, 196, 40, 0.75),
-      0 0 34px rgba(255, 170, 20, 0.4);
-  }
-}
-html[data-theme="day"] .feature-request-btn {
-  color: #5c4100;
-  border-color: rgba(202, 138, 4, 0.7);
-  background: linear-gradient(180deg, rgba(250, 204, 21, 0.55), rgba(234, 179, 8, 0.28));
-}
-html[data-theme="day"] .feature-request-btn:hover {
-  color: #3f2e00;
 }
 
 .inbox-btn {
@@ -1402,8 +1334,7 @@ html[data-theme="day"] .inbox-vote-counts .is-no { color: #b91c1c; }
 }
 
 @media (max-width: 900px) {
-  .rule-proposal-btn,
-  .feature-request-btn {
+  .rule-proposal-btn {
     padding: 0.45rem 0.65rem;
     font-size: 0.74rem;
     letter-spacing: 0.06em;
