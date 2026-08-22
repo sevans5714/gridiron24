@@ -191,8 +191,8 @@ body {
 
 .shell {
   width: 100%;
-  padding-left: clamp(1.15rem, 5vw, 5rem);
-  padding-right: clamp(1.15rem, 5vw, 5rem);
+  padding-left: clamp(1.15rem, 3.2vw, 3.25rem);
+  padding-right: clamp(1.15rem, 3.2vw, 3.25rem);
 }
 
 .topbar .shell {

@@ -8,12 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=127" />
-  <link rel="icon" href="/favicon.ico?v=127" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=127" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=127" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=128" />
+  <link rel="icon" href="/favicon.ico?v=128" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=128" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=128" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=171" />
+  <link rel="stylesheet" href="/css/site.css?v=172" />
   <style>
     body[data-page="aaa"] {
       background:
@@ -386,6 +386,7 @@
 
     .mini-table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       font-size: 1rem;
     }
@@ -452,10 +453,10 @@
       flex: 0 0 auto;
       border-radius: 0.4rem;
     }
-    .mini-table th.num,
-    .mini-table td.num { width: 2.9rem; }
-    .mini-table th:nth-child(3),
-    .mini-table td.num:nth-child(3) { width: 3.8rem; }
+    .mini-table th.num.wl,
+    .mini-table td.num.wl { width: 5.6rem; }
+    .mini-table th.num.pf,
+    .mini-table td.num.pf { width: 6.35rem; }
     .mini-table .out td { opacity: 0.72; }
     .mini-table tr.cut-line td {
       padding: 0.45rem 0.35rem;
@@ -908,6 +909,10 @@
       .hq-main { font-size: 1.12rem; }
       .hq-hero img { width: min(14rem, 68vw); }
       .hq-hero .tag { font-size: clamp(1.2rem, 5.2vw, 1.55rem); }
+      .mini-table th.num.wl,
+      .mini-table td.num.wl { width: 4.9rem; }
+      .mini-table th.num.pf,
+      .mini-table td.num.pf { width: 5.6rem; }
     }
 
     body[data-page="aaa"] .standings-preview {
@@ -1096,8 +1101,8 @@
               ${window.GridIronTitle.html(t.name, { size: 'sm', inline: true, owner: t.owner })}
             </a>
           </td>
-          <td class="num">${esc(record(t))}</td>
-          <td class="num">${Number(t.pointsFor || 0).toFixed(0)}</td>
+          <td class="num wl">${esc(record(t))}</td>
+          <td class="num pf">${Number(t.pointsFor || 0).toFixed(1)}</td>
         </tr>`);
       });
       return `
@@ -1108,8 +1113,8 @@
               <tr>
                 <th></th>
                 <th>Team</th>
-                <th class="num">W-L</th>
-                <th class="num">PF</th>
+                <th class="num wl">W-L</th>
+                <th class="num pf">PF</th>
               </tr>
             </thead>
             <tbody>${rows.join('')}</tbody>
