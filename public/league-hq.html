@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=130" />
-  <link rel="icon" href="/favicon.ico?v=130" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=130" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=130" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=131" />
+  <link rel="icon" href="/favicon.ico?v=131" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=131" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=131" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=174" />
+  <link rel="stylesheet" href="/css/site.css?v=177" />
   <link rel="stylesheet" href="/css/draft-desk.css?v=11" />
   <style>
     body[data-page="league-hq"] .topbar {
@@ -1491,7 +1491,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=175"></script>
+  <script src="/js/nav.js?v=177"></script>
   <script src="/js/official-draft-ui.js?v=14"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1600,7 +1600,7 @@
         <div class="il-conf-head" style="--conf:${esc(color)}"><h3>${esc(title)}</h3></div>
         <div class="il-motw">
           <div class="il-motw-side">
-            ${window.GridIronTitle.html(matchup.away?.name || 'Away', { size: 'sm' })}
+            ${window.GridIronTitle.html(matchup.away?.name || 'Away', { size: 'sm', inline: true })}
           </div>
           <div class="il-motw-mid">
             <div class="vs">VS</div>
@@ -1608,7 +1608,7 @@
             ${board?.live ? '<div class="live-note">LIVE</div>' : ''}
           </div>
           <div class="il-motw-side">
-            ${window.GridIronTitle.html(matchup.home?.name || 'Home', { size: 'sm' })}
+            ${window.GridIronTitle.html(matchup.home?.name || 'Home', { size: 'sm', inline: true })}
           </div>
         </div>
       </div>`;
@@ -1695,7 +1695,7 @@
           return '';
         };
         const card = (t) => t
-          ? `<div class="il-hotnot-team">${window.GridIronTitle.html(t.name, { size: 'sm' })}${streakHtml(t)}<div class="sub">${esc(rec(t))}</div></div>`
+          ? `<div class="il-hotnot-team">${window.GridIronTitle.html(t.name, { size: 'sm', inline: true })}${streakHtml(t)}<div class="sub">${esc(rec(t))}</div></div>`
           : '';
         return `<div class="il-motw-block">
           <div class="il-conf-head" style="--conf:${esc(color)}"><h3>${esc(conf.shortName || conf.name || conf.key)}</h3></div>

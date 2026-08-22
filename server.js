@@ -11774,9 +11774,6 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/calendar' && req.method === 'GET') {
-      try {
-        calendar.ensureDefaults(config.calendarDefaults || []);
-      } catch { /* ignore */ }
       return sendJson(res, 200, {
         ok: true,
         events: calendar.listEvents(),

@@ -7,39 +7,18 @@
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
-  const TITLE_SOLO_LEAD = new Set(['the', 'a', 'an', 'el', 'la', 'los', 'las', 'san', 'st', 'saint', 'fc', 'sc', 'of']);
-
-  function splitFranchiseName(name) {
-    const text = String(name || '').replace(/\s+/g, ' ').trim() || 'TBD';
-    const parts = text.split(' ');
-    if (parts.length < 2) return { lead: '', mark: text };
-    let cut = parts.length - 1;
-    if (parts[cut].length === 1 && parts.length > 2) cut -= 1;
-    const lead = parts.slice(0, cut).join(' ');
-    const mark = parts.slice(cut).join(' ');
-    if (!lead || TITLE_SOLO_LEAD.has(lead.toLowerCase())) return { lead: '', mark: text };
-    return { lead, mark };
-  }
-
   function franchiseTitleHtml(name, opts = {}) {
     if (window.GridIronTitle?.html) return window.GridIronTitle.html(name, opts);
     const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
     const extra = opts.className ? ` ${String(opts.className)}` : '';
     const inline = Boolean(opts.inline);
     const text = String(name || '').replace(/\s+/g, ' ').trim() || 'TBD';
-    const { lead, mark } = splitFranchiseName(text);
-    const inner = lead
-      ? `<span class="franchise-title-lead">${esc(lead)}</span><span class="franchise-title-mark">${esc(mark)}</span>`
-      : `<span class="franchise-title-mark">${esc(mark)}</span>`;
     const owner = String(opts.owner || '').trim().toLowerCase();
-    const title = `<span class="franchise-title is-${size}${inline ? ' is-inline' : ''}${lead ? '' : ' is-solo'}${extra}" title="${esc(text)}">${inner}</span>`;
+    const title = `<span class="franchise-title is-${size}${inline ? ' is-inline' : ''} is-solo${extra}">${esc(text)}</span>`;
     const ownerOk = owner && owner !== '—' && owner !== '-' && owner !== 'unassigned' && owner !== 'owner pending' && owner !== 'pending';
     if (!ownerOk) return title;
-    return `<span class="franchise-block" title="${esc(`${text} · ${opts.owner}`)}">${title}<span class="franchise-owner">${esc(String(opts.owner || '').trim())}</span></span>`;
+    return `<span class="franchise-block">${title}<span class="franchise-owner">${esc(String(opts.owner || '').trim())}</span></span>`;
   }
-
-  const TITLE_MAX = { sm: 23, md: 30, lg: 38, xl: 56 };
-  const TITLE_MIN = { sm: 11, md: 12, lg: 16, xl: 18 };
 
   function fitFranchiseTitle() {
     /* Names wrap in display type; do not compress them to fit a column. */

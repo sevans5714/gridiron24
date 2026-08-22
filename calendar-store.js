@@ -18,16 +18,30 @@ function readStore() {
   ensureStore();
   try {
     const data = JSON.parse(fs.readFileSync(FILE, 'utf8'));
-    return { events: Array.isArray(data.events) ? data.events : [] };
+    return {
+      events: Array.isArray(data.events) ? data.events : [],
+      removedKeys: Array.isArray(data.removedKeys) ? data.removedKeys : [],
+      seeded: Boolean(data.seeded)
+    };
   } catch {
-    return { events: [] };
+    return { events: [], removedKeys: [], seeded: false };
   }
+}
+
+function eventKey(ev) {
+  const type = String(ev?.type || 'event').trim().toLowerCase();
+  const title = String(ev?.title || '').trim().toLowerCase();
+  return `${type}:${title}`;
 }
 
 function writeStore(data) {
   ensureStore();
   const tmp = `${FILE}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify({
+    seeded: Boolean(data.seeded) || (Array.isArray(data.events) && data.events.length > 0),
+    removedKeys: Array.isArray(data.removedKeys) ? data.removedKeys : [],
+    events: Array.isArray(data.events) ? data.events : []
+  }, null, 2));
   fs.renameSync(tmp, FILE);
 }
 
@@ -70,8 +84,11 @@ function migrateLegacyEvents(store) {
 
 function seedIfEmpty(defaults = []) {
   const store = readStore();
-  if (store.events.length) return store.events;
+  if (store.events.length || store.seeded || (store.removedKeys || []).length) {
+    return store.events;
+  }
   if (!defaults.length) return [];
+  store.seeded = true;
   store.events = defaults.map((e) => ({
     id: crypto.randomUUID(),
     title: e.title,
@@ -85,19 +102,19 @@ function seedIfEmpty(defaults = []) {
   return store.events;
 }
 
-/** Add any default events that are missing (by type or title), without replacing existing ones. */
+/** Add any default events that are missing (by type+title), without replacing existing ones. */
 function ensureDefaults(defaults = []) {
   if (!Array.isArray(defaults) || !defaults.length) return listEvents();
   seedIfEmpty(defaults);
   const store = readStore();
+  const removed = new Set(store.removedKeys || []);
   let dirty = migrateLegacyEvents(store);
   for (const e of defaults) {
     const type = TYPES.has(e.type) ? e.type : 'event';
     const title = String(e.title || '').trim();
-    const exists = store.events.some((ev) => {
-      if (type !== 'event' && type !== 'aaa' && ev.type === type) return true;
-      return title && String(ev.title || '').toLowerCase() === title.toLowerCase();
-    });
+    const key = eventKey({ type, title });
+    if (removed.has(key)) continue;
+    const exists = store.events.some((ev) => eventKey(ev) === key);
     if (exists) continue;
     store.events.push({
       id: crypto.randomUUID(),
@@ -110,7 +127,10 @@ function ensureDefaults(defaults = []) {
     });
     dirty = true;
   }
-  if (dirty) writeStore(store);
+  if (dirty) {
+    store.seeded = true;
+    writeStore(store);
+  }
   return listEvents();
 }
 
@@ -164,6 +184,10 @@ function deleteEvent(id) {
   const store = readStore();
   const idx = store.events.findIndex((e) => e.id === id);
   if (idx === -1) throw Object.assign(new Error('Event not found'), { status: 404 });
+  const removed = new Set(store.removedKeys || []);
+  removed.add(eventKey(store.events[idx]));
+  store.removedKeys = [...removed];
+  store.seeded = true;
   store.events.splice(idx, 1);
   writeStore(store);
   return true;

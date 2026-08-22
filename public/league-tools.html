@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=130" />
-  <link rel="icon" href="/favicon.ico?v=130" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=130" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=130" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=131" />
+  <link rel="icon" href="/favicon.ico?v=131" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=131" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=131" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=174" />
+  <link rel="stylesheet" href="/css/site.css?v=177" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -459,8 +459,9 @@
     .conf-tag.detail { color: var(--detail); border-color: rgba(255,122,24,0.45); }
     .conf-tag.overtime { color: var(--overtime); border-color: rgba(226,35,42,0.45); }
     .btn.small {
-      padding: 0.35rem 0.65rem;
-      font-size: 0.75rem;
+      min-height: 2.15rem;
+      padding: 0 0.85rem;
+      font-size: 0.88rem;
     }
 
     .status-bar {
@@ -1335,8 +1336,8 @@
       <p class="tools-role-scope" id="tools-role-scope">Loading your access…</p>
     </div>
     <div class="desk-crosslinks" id="desk-crosslinks">
-      <a class="desk-crosslink" href="/site.html" id="jump-site-hq" hidden>Site Tools →</a>
-      <a class="desk-crosslink" href="/profile.html">User Dashboard →</a>
+      <a class="desk-crosslink" href="/site.html" id="jump-site-hq" hidden>Site Tools</a>
+      <a class="desk-crosslink" href="/profile.html">User Dashboard</a>
     </div>
   </section>
 
@@ -1794,7 +1795,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=175"></script>
+  <script src="/js/nav.js?v=177"></script>
   <script src="/js/conference-diff.js?v=5"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -4402,7 +4403,7 @@
       const events = data.events || [];
       list.innerHTML = events.length ? `<table class="data-table"><thead><tr><th>Date</th><th>Event</th><th></th></tr></thead><tbody>
         ${events.map((e) => `<tr><td>${esc(e.date || 'TBD')}</td><td><strong>${esc(e.title)}</strong> · ${esc(e.type)}</td>
-          <td><button type="button" class="link-action" data-del-cal="${esc(e.id)}">Delete</button></td></tr>`).join('')}
+          <td><button type="button" class="btn" data-del-cal="${esc(e.id)}">Delete</button></td></tr>`).join('')}
       </tbody></table>` : `<div class="msg">No events.</div>`;
     }
 
@@ -4431,11 +4432,21 @@
         }
       });
       document.getElementById('calendar-list').addEventListener('click', async (e) => {
-        const id = e.target?.dataset?.delCal;
+        const btn = e.target.closest('[data-del-cal]');
+        const id = btn?.getAttribute('data-del-cal');
         if (!id) return;
         if (!confirm('Delete this event?')) return;
-        await fetch(`/api/calendar/${encodeURIComponent(id)}`, { method: 'DELETE' });
-        await loadCalendarAdmin();
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/api/calendar/${encodeURIComponent(id)}`, { method: 'DELETE' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not delete event');
+          showCalMsg('Event deleted.', true);
+          await loadCalendarAdmin();
+        } catch (err) {
+          btn.disabled = false;
+          showCalMsg(err.message, false);
+        }
       });
     }
 

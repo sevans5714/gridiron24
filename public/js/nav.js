@@ -169,68 +169,22 @@
     return Boolean(n) && n !== '—' && n !== '-' && n !== 'unassigned' && n !== 'owner pending' && n !== 'pending';
   }
 
-  const TITLE_SOLO_LEAD = new Set(['the', 'a', 'an', 'el', 'la', 'los', 'las', 'san', 'st', 'saint', 'fc', 'sc', 'of']);
-
-  function splitFranchiseName(name) {
-    const text = String(name || '').replace(/\s+/g, ' ').trim() || 'TBD';
-    const parts = text.split(' ');
-    if (parts.length < 2) return { lead: '', mark: text };
-    let cut = parts.length - 1;
-    if (parts[cut].length === 1 && parts.length > 2) cut -= 1;
-    const lead = parts.slice(0, cut).join(' ');
-    const mark = parts.slice(cut).join(' ');
-    if (!lead || TITLE_SOLO_LEAD.has(lead.toLowerCase())) return { lead: '', mark: text };
-    return { lead, mark };
-  }
-
   function franchiseTitleHtml(name, opts = {}) {
     const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
     const extra = opts.className ? ` ${String(opts.className)}` : '';
     const inline = Boolean(opts.inline);
     const text = String(name || '').replace(/\s+/g, ' ').trim() || 'TBD';
-    const { lead, mark } = splitFranchiseName(text);
-    const inner = lead
-      ? `<span class="franchise-title-lead">${esc(lead)}</span><span class="franchise-title-mark">${esc(mark)}</span>`
-      : `<span class="franchise-title-mark">${esc(mark)}</span>`;
     const owner = String(opts.owner || '').trim();
-    const title = `<span class="franchise-title is-${size}${inline ? ' is-inline' : ''}${lead ? '' : ' is-solo'}${extra}" title="${esc(text)}">${inner}</span>`;
+    const title = `<span class="franchise-title is-${size}${inline ? ' is-inline' : ''} is-solo${extra}">${esc(text)}</span>`;
     if (!ownerLineOk(owner)) return title;
-    return `<span class="franchise-block" title="${esc(`${text} · ${owner}`)}">${title}<span class="franchise-owner">${esc(owner)}</span></span>`;
+    return `<span class="franchise-block">${title}<span class="franchise-owner">${esc(owner)}</span></span>`;
   }
 
   window.GridIronTitle = { html: franchiseTitleHtml, fit: fitAllFranchiseTitles };
 
-  const TITLE_MAX = { sm: 23, md: 30, lg: 38, xl: 56 };
-  const TITLE_MIN = { sm: 11, md: 12, lg: 16, xl: 18 };
-
-  function titleSizeKey(title) {
-    if (title.classList.contains('is-xl')) return 'xl';
-    if (title.classList.contains('is-lg')) return 'lg';
-    if (title.classList.contains('is-md')) return 'md';
-    return 'sm';
-  }
-
   function fitFranchiseTitle(title) {
-    if (!title || !title.classList) return;
-    const compact = title.classList.contains('is-inline')
-      || Boolean(title.closest('.mu-row, .mu-name, .pg-team, .pg-row, .bowl-side, .po-side, .mini-table, .il-mini, .il-pgame, .user-chip'));
-    if (!compact) {
-      title.style.fontSize = '';
-      return;
-    }
-    if (title.clientWidth < 8) {
-      title.style.fontSize = '';
-      return;
-    }
-    const key = titleSizeKey(title);
-    const max = TITLE_MAX[key] || 18;
-    const min = TITLE_MIN[key] || 10;
-    title.style.fontSize = `${max}px`;
-    let size = max;
-    while (size > min && title.scrollWidth > title.clientWidth + 1) {
-      size -= 1;
-      title.style.fontSize = `${size}px`;
-    }
+    if (!title || !title.style) return;
+    title.style.fontSize = '';
   }
 
   function fitAllFranchiseTitles(scope) {
