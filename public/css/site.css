@@ -3565,14 +3565,37 @@ html[data-theme="day"] .desk-tile {
 .bowl-side .nm > .franchise-title,
 .po-side .franchise-title,
 .mini-table .franchise-title,
-.il-mini .franchise-title,
-.motw-side .franchise-title,
-.hotnot-team .franchise-title,
-.il-motw-side .franchise-title,
-.il-hotnot-team .franchise-title {
+.il-mini .franchise-title {
   font-size: 1.05rem;
   letter-spacing: 0.03em;
   line-height: 1.15;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  word-break: break-word;
+  text-shadow: none;
+  overflow: hidden;
+}
+.motw-side .franchise-title,
+.motw-side .franchise-title.is-sm,
+.motw-side .franchise-title.is-md,
+.motw-side .franchise-title.is-inline,
+.hotnot-team .franchise-title,
+.hotnot-team .franchise-title.is-sm,
+.hotnot-team .franchise-title.is-md,
+.hotnot-team .franchise-title.is-inline,
+.il-motw-side .franchise-title,
+.il-motw-side .franchise-title.is-sm,
+.il-motw-side .franchise-title.is-md,
+.il-motw-side .franchise-title.is-inline,
+.il-hotnot-team .franchise-title,
+.il-hotnot-team .franchise-title.is-sm,
+.il-hotnot-team .franchise-title.is-md,
+.il-hotnot-team .franchise-title.is-inline {
+  font-size: 1.55rem;
+  letter-spacing: 0.04em;
+  line-height: 1.08;
   white-space: normal;
   display: -webkit-box;
   -webkit-box-orient: vertical;
