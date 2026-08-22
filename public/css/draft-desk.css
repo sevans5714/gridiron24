@@ -1,5 +1,5 @@
-/* Shared draft-room board — ported from Members Lounge mock draft. */
-/* Independent / future-league official drafts. Not used by ESPN draft.html. */
+/* Shared draft-room board — ported from Members Lounge mock draft.
+   Independent live drafts and League → Draft Results (GI24 / AAA after ESPN). */
 
 .official-draft-desk {
       --mo-blue: #2f7bff;
@@ -280,6 +280,25 @@ html[data-theme="day"] .official-draft-desk.lounge-section {
       background: linear-gradient(180deg, #ece7dc 0%, #d8d2c6 100%);
       border-color: rgba(20, 24, 31, 0.18);
     }
+    .lounge-section.is-mock.is-done .mock-board-view-close,
+    .lounge-section.is-mock.is-done .mock-board-btn {
+      display: none !important;
+    }
+
+body[data-page="draft"] .page-main.shell {
+  max-width: min(112rem, calc(100vw - 1.25rem));
+}
+.draft-results-page.lounge-section.is-mock {
+  min-height: min(78vh, 920px);
+  display: flex;
+  flex-direction: column;
+  padding: 0.65rem 0.55rem 0.75rem;
+  overflow: hidden;
+}
+.draft-results-page .cpu-recap-board {
+  flex: 1;
+  min-height: min(68vh, 820px);
+}
     .mock-start-bar {
       display: grid;
       grid-template-columns: minmax(16rem, 1.2fr) minmax(0, 1fr) auto;

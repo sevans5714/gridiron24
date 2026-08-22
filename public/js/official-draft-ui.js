@@ -1168,7 +1168,14 @@
     bar?.classList.toggle('is-my-clock', mine);
     bar?.classList.toggle('is-lobby', lobby);
     document.getElementById('mock-draft')?.classList.toggle('is-scheduled', scheduled);
-    if (kicker) kicker.textContent = 'Live Draft';
+    document.getElementById('mock-draft')?.classList.toggle('is-done', done);
+    const heading = document.querySelector('#mock-draft h2');
+    if (heading) heading.textContent = done ? 'Draft Results' : 'Live Draft';
+    const pageTitle = document.querySelector('header.page-hero h1');
+    if (pageTitle && document.getElementById('mock-draft')) {
+      pageTitle.textContent = done ? 'Draft Results' : 'Draft';
+    }
+    if (kicker) kicker.textContent = done ? 'Draft Results' : 'Live Draft';
     if (joinWindow) {
       const showJoin = lobby && lobbyLeft != null && lobbyLeft > 0;
       joinWindow.hidden = !showJoin;
@@ -1708,6 +1715,7 @@
   }
 
   function paintAll() {
+    if (isDone()) boardViewOpen = true;
     renderRoomTabs();
     paintStartBar();
     renderOrder();
@@ -2283,9 +2291,9 @@
       completeShown = false;
       wired = false;
       wireOnce();
+      if (isDone() && (room?.picks || []).length) completeShown = true;
       paintAll();
       startTimers();
-      if (isDone() && (room?.picks || []).length) showComplete();
       return;
     }
     maybeAnnounce(prevPicks, prevRound, prevMine);
