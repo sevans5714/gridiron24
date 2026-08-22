@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
     :root {
       --mock-qb: #ff6b6b;
@@ -66,7 +66,7 @@
     }
     .team-btn {
       display: grid;
-      grid-template-columns: 2rem 1fr auto;
+      grid-template-columns: 1fr auto;
       gap: 0.55rem;
       align-items: center;
       width: 100%;
@@ -85,27 +85,10 @@
       background: rgba(142, 182, 255, 0.08);
       box-shadow: inset 3px 0 0 #8eb6ff;
     }
-    .team-btn img {
-      width: 2rem;
-      height: 2rem;
-      object-fit: contain;
-      box-shadow: var(--logo-lift);
-    }
-    .team-btn .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .team-btn .rec { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.85rem; }
     .detail-panel { min-width: 0; }
     .team-hero {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
       margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
-    .team-hero img {
-      width: 4.5rem;
-      height: 4.5rem;
-      object-fit: contain;
-      box-shadow: var(--logo-lift);
     }
     .team-hero h2 {
       margin: 0;
@@ -234,7 +217,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     function record(t) {
@@ -336,17 +319,15 @@
           <div class="team-list" role="listbox" aria-label="Teams">
             ${teams.map((t) => `
               <button type="button" class="team-btn ${Number(t.id) === Number(team.id) ? 'active' : ''}" data-team="${esc(String(t.id))}">
-                <img src="${esc(t.logo || '/assets/team-logo-placeholder.svg')}" alt="" />
-                <span class="nm">${esc(t.name)}</span>
+                ${window.GridIronTitle.html(t.name, { size: 'sm', inline: true, owner: t.owner })}
                 <span class="rec">${esc(record(t))}</span>
               </button>
             `).join('')}
           </div>
           <div class="detail-panel">
             <div class="team-hero">
-              <img src="${esc(team.logo || '/assets/team-logo-placeholder.svg')}" alt="" />
               <div>
-                <h2>${esc(team.name)}</h2>
+                <h2>${window.GridIronTitle.html(team.name, { size: 'lg' })}</h2>
                 <div class="meta">${esc(data.conference?.shortName || '')} · ${esc(record(team))} · PF ${fmt(team.pointsFor)}${team.playoffSeed ? ` · Seed #${esc(String(team.playoffSeed))}` : ''}</div>
                 <div class="meta">Manager: ${esc(team.owner || '—')} · <a class="open-link" href="/team.html?conference=${esc(data.conference.key)}&amp;teamId=${esc(String(team.id))}">Full team page</a></div>
               </div>

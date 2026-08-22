@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=156" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
     body[data-page="profile"] .page-hero {
       padding-top: 1.5rem;
@@ -244,6 +244,71 @@
       font-size: 1.35rem;
       font-weight: 600;
       color: var(--text);
+    }
+    .career-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.65rem;
+      margin: 0 0 1.15rem;
+    }
+    .career-season {
+      margin: 0 0 0.75rem;
+      padding: 0.75rem 0.85rem;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 88%, transparent);
+    }
+    .career-season .hd {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: baseline;
+    }
+    .career-season .nm { font-weight: 700; }
+    .career-season .sub { color: var(--muted); font-size: 0.88rem; margin-top: 0.2rem; }
+    .career-season .marks { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .career-chip {
+      font-family: var(--display);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #efd782;
+      border: 1px solid rgba(239, 215, 130, 0.45);
+      padding: 0.08rem 0.35rem;
+    }
+    .league-seat {
+      margin: 0 0 0.85rem;
+      padding: 0.75rem 0.85rem;
+      border: 1px solid var(--line);
+    }
+    .bio-field { min-height: 4.5rem; resize: vertical; }
+    .account-form { display: grid; gap: 0.75rem; max-width: 36rem; }
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+      gap: 0.75rem;
+    }
+    .tools-grid a {
+      display: grid;
+      gap: 0.25rem;
+      padding: 0.85rem 0.9rem;
+      border: 1px solid var(--line);
+      text-decoration: none;
+      color: inherit;
+      background: var(--panel);
+    }
+    .tools-grid a:hover { border-color: var(--blue); }
+    .tools-grid .kicker {
+      font-family: var(--display);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .tools-grid strong { font-size: 1.05rem; }
+    .tools-grid span { color: var(--muted); font-size: 0.88rem; }
+    @media (max-width: 720px) {
+      .career-summary { grid-template-columns: 1fr 1fr; }
     }
     .name-row {
       display: flex;
@@ -585,17 +650,6 @@
     }
     .password-form .field {
       width: 100%;
-      padding: 0.55rem 0;
-      border: 0;
-      border-bottom: 1px solid var(--line);
-      background: transparent;
-      color: var(--text);
-      font-family: var(--body);
-      font-size: 1rem;
-    }
-    .password-form .field:focus {
-      outline: 0;
-      border-bottom-color: var(--text);
     }
     .logo-locked {
       padding: 1rem 0 0.25rem;
@@ -705,17 +759,17 @@
       <div class="section-head">
         <div class="section-head-block">
           <h2>Franchise</h2>
-          <p>Team assignment, record, and display name.</p>
+          <p>Teams you run this season.</p>
         </div>
       </div>
       <div id="franchise-body"><div class="msg">Loading…</div></div>
     </section>
 
-    <section class="profile-card" id="keeper">
+    <section class="profile-card" id="keeper" hidden>
       <div class="section-head">
         <div class="section-head-block">
           <h2>Keeper</h2>
-          <p>One player for next season. You forfeit the matching draft round.</p>
+          <p>GridIron 24 / AAA only — one player for next season.</p>
         </div>
       </div>
       <div id="keeper-body"><div class="msg">Loading…</div></div>
@@ -725,10 +779,22 @@
       <div class="section-head">
         <div class="section-head-block">
           <h2>Career</h2>
-          <p>Prior seasons linked to your account.</p>
+          <p>This season and prior years, across every league on your account.</p>
         </div>
       </div>
       <div id="career-body"><div class="msg">Loading…</div></div>
+    </section>
+    </div>
+
+    <div class="dash-page" id="page-tools" hidden>
+    <section class="profile-card" id="tools">
+      <div class="section-head">
+        <div class="section-head-block">
+          <h2>Tools</h2>
+          <p>Shortcuts for your leagues, mail, and the lounge.</p>
+        </div>
+      </div>
+      <div id="tools-body"><div class="msg">Loading…</div></div>
     </section>
     </div>
 
@@ -741,7 +807,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -762,6 +828,7 @@
     }
 
     let myTeamData = null;
+    let selfUserId = null;
     let selectedIcon = null;
     const pack = window.GridIronIcons || { icons: [], categories: [] };
 
@@ -893,10 +960,10 @@
         cards.push({ href: desk.href, title: desk.title, kicker: 'League', blurb: desk.blurb, tone: 'gold' });
       }
       cards.push(
-        { href: '#account', title: 'Account', kicker: 'You', blurb: 'Name, login, and password.', tone: 'blue' },
+        { href: '#account', title: 'Account', kicker: 'You', blurb: 'Name, bio, login, and password.', tone: 'blue' },
         { href: '#look', title: 'Look', kicker: 'You', blurb: 'Day or night, and your avatar.', tone: 'detail' },
-        { href: '#team', title: 'Team', kicker: 'Franchise', blurb: 'Franchise, keeper, and career.', tone: 'overtime' },
-        { href: '/inbox.html', title: 'Inbox', kicker: 'Mail', blurb: 'Messages from the league.', tone: 'good' }
+        { href: '#team', title: 'Team', kicker: 'Franchise', blurb: 'This season’s seats and career history.', tone: 'overtime' },
+        { href: '#tools', title: 'Tools', kicker: 'Desk', blurb: 'My Team, inbox, lounge, and league shortcuts.', tone: 'good' }
       );
       home.innerHTML = cards.map((c) => `
         <a class="desk-tile" data-tone="${escP(c.tone)}" href="${escP(c.href)}">
@@ -935,35 +1002,77 @@
           <div class="profile-meta">
             <h3>${escP(user.name || user.loginName || 'Member')}</h3>
             <div class="sub">${escP(user.loginName || '')}${user.email ? ` · ${escP(user.email)}` : ''}</div>
+            ${user.bio ? `<div class="sub">${escP(user.bio)}</div>` : ''}
             <div class="access-row">
               <span class="pill">${escP(accessLabel(user))}</span>
+              ${user.createdAt ? `<span class="sub">Joined ${escP(String(user.createdAt).slice(0, 10))}</span>` : ''}
             </div>
           </div>
         </div>
-        ${staff ? `<details class="portal-links" aria-label="Shareable portal links">
+        ${data.readOnly ? '' : `<form class="account-form" id="profile-identity-form">
+          <div>
+            <label class="field-label" for="profile-name">Display name</label>
+            <input class="field" id="profile-name" name="name" maxlength="80" value="${escP(user.name || '')}" required />
+          </div>
+          <div>
+            <label class="field-label" for="profile-bio">Bio</label>
+            <textarea class="field bio-field" id="profile-bio" name="bio" maxlength="280" placeholder="Optional — a line other members can see.">${escP(user.bio || '')}</textarea>
+          </div>
+          <button type="submit" class="btn">Save profile</button>
+          <p class="profile-note" id="identity-status" role="status"></p>
+        </form>`}
+        ${staff && !data.readOnly ? `<details class="portal-links" aria-label="Shareable portal links">
           <summary>Shareable links</summary>
           ${portalRowHtml('Portal URL', urls.portal)}
           ${portalRowHtml('Customer URL', urls.customer)}
           ${portalRowHtml('Mobile App', urls.app)}
         </details>` : ''}`;
       bindPortalCopy(accountBody);
+      document.getElementById('profile-identity-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('identity-status');
+        try {
+          status.textContent = 'Saving…';
+          status.className = 'profile-note';
+          const res = await fetch('/api/profile', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              name: document.getElementById('profile-name')?.value || '',
+              bio: document.getElementById('profile-bio')?.value || ''
+            })
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok || !body.ok) throw new Error(body.error || 'Could not save');
+          status.textContent = 'Profile saved.';
+          status.className = 'profile-note ok';
+          await loadProfile();
+        } catch (err) {
+          status.textContent = err.message || 'Save failed';
+          status.className = 'profile-note err';
+        }
+      });
     }
 
     function showUserPage(page) {
-      const key = ['account', 'look', 'team'].includes(page) ? page : 'home';
+      const key = ['account', 'look', 'team', 'tools'].includes(page) ? page : 'home';
       const home = document.getElementById('user-home');
       const account = document.getElementById('page-account');
       const look = document.getElementById('page-look');
       const team = document.getElementById('page-team');
+      const tools = document.getElementById('page-tools');
       const back = document.getElementById('user-back');
       const title = document.getElementById('user-title');
       if (home) home.hidden = key !== 'home';
       if (account) account.hidden = key !== 'account';
       if (look) look.hidden = key !== 'look';
       if (team) team.hidden = key !== 'team';
+      if (tools) tools.hidden = key !== 'tools';
       if (back) back.hidden = key === 'home';
       if (title) {
-        title.textContent = key === 'home' ? 'Your pages' : (key === 'look' ? 'Look' : (key === 'team' ? 'Team' : 'Account'));
+        const titles = { home: 'Your pages', look: 'Look', team: 'Team', tools: 'Tools', account: 'Account' };
+        title.textContent = titles[key] || 'Account';
       }
       document.body.dataset.userPage = key;
       if (key === 'home') window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
@@ -975,7 +1084,11 @@
         window.location.replace('/inbox.html');
         return;
       }
-      if (h === 'tools' || h === 'tools-card' || h === 'profile-admin' || h === 'admin') {
+      if (h === 'tools' || h === 'tools-card') {
+        showUserPage('tools');
+        return;
+      }
+      if (h === 'profile-admin' || h === 'admin') {
         window.location.replace('/dashboard.html');
         return;
       }
@@ -996,41 +1109,61 @@
       }
     }
 
-    function renderFranchise(data) {
-      const user = data.user || {};
-      const team = data.team;
-      const claim = data.claim;
-      const logoUrl = isChosenLogo(data.logo) ? data.logo.url : (team ? '/assets/team-logo-placeholder.svg' : '');
-      const title = team?.name || claim?.teamName || 'No franchise assigned';
-      const conf = team?.conferenceName || (claim?.conferenceKey === 'detail' ? 'Detail Conference' : claim?.conferenceKey === 'overtime' ? 'Overtime Conference' : '');
+    function recLine(e) {
+      if (!e || e.wins == null) return '—';
+      return Number(e.ties || 0) > 0 ? `${e.wins}-${e.losses}-${e.ties}` : `${e.wins}-${e.losses}`;
+    }
 
-      if (!claim) {
-        document.getElementById('franchise-body').innerHTML = `
-          <p class="profile-note">No franchise is linked to your account yet. After you are assigned, your avatar attaches to that franchise across the site.</p>`;
+    function renderFranchise(data) {
+      const mount = document.getElementById('franchise-body');
+      if (!mount) return;
+      const memberships = Array.isArray(data.memberships) ? data.memberships : [];
+      const gi24 = data.team || data.claim;
+      const seats = [];
+      for (const m of memberships) {
+        const rec = m.franchise || {};
+        seats.push(`
+          <div class="league-seat">
+            <div class="career-season hd" style="margin:0;padding:0;border:0;background:transparent;">
+              <div>
+                <div class="nm">${escP(m.franchise?.name || m.name)}</div>
+                <div class="sub">${escP(m.name)} · ${escP(String(m.season || ''))}${m.isOwner ? ' · Owner' : ''}${m.format ? ` · ${escP(m.format)}` : ''}</div>
+              </div>
+              <strong>${escP(m.franchise ? recLine(rec) : '—')}</strong>
+            </div>
+            ${m.paths?.myRoster && !data.readOnly ? `<p class="profile-note" style="margin:0.55rem 0 0;"><a class="profile-link" href="${escP(m.paths.myRoster)}">Open My Team →</a></p>` : ''}
+          </div>`);
+      }
+      if (data.gi24Claim) {
+        const t = data.team || {};
+        const claim = data.claim || {};
+        const title = t.name || claim.teamName || 'Franchise';
+        const conf = t.conferenceName || '';
+        seats.push(`
+          <div class="league-seat">
+            <div class="nm">${escP(title)}</div>
+            <div class="sub">${escP(conf || 'GridIron 24')}${t.standingRank ? ` · #${escP(String(t.standingRank))}` : ''}</div>
+            <div class="stat-grid" style="margin-top:0.75rem;">
+              <div class="stat"><span>Record</span><strong>${escP(recordLine(t))}</strong></div>
+              <div class="stat"><span>Points For</span><strong>${t.pointsFor != null ? Number(t.pointsFor).toFixed(1) : '—'}</strong></div>
+              <div class="stat"><span>Standing</span><strong>${t.standingRank ? `#${t.standingRank}` : '—'}</strong></div>
+              <div class="stat"><span>Streak</span><strong>${escP(streakLine(t))}</strong></div>
+            </div>
+            ${data.readOnly ? '' : `<div class="name-row">
+              <input id="profile-team-name" type="text" maxlength="40" value="${escP(title)}" />
+              <button type="button" class="btn" id="profile-save-name">Save Name</button>
+            </div>
+            <p class="profile-note" id="franchise-status" role="status"></p>
+            <p class="profile-note"><a class="profile-link" href="/my-roster.html">Open My Roster →</a></p>`}
+          </div>`);
+      }
+      if (!seats.length) {
+        mount.innerHTML = `<p class="profile-note">${data.readOnly
+          ? 'No franchise is linked to this member yet.'
+          : 'No franchise is linked yet. Claim a team in your league, or wait for an owner to assign you.'}</p>`;
         return;
       }
-
-      document.getElementById('franchise-body').innerHTML = `
-        <div class="profile-hero-row">
-          <div class="profile-avatar">${logoUrl ? `<img src="${escP(logoUrl)}" alt="">` : `<span class="ph">${escP(title.slice(0,2).toUpperCase())}</span>`}</div>
-          <div class="profile-meta">
-            <h3>${escP(title)}</h3>
-            <div class="sub">${escP(conf)}${conf && user.name ? ' · ' : ''}${escP(user.name || '')}</div>
-          </div>
-        </div>
-        <div class="stat-grid">
-          <div class="stat"><span>Record</span><strong>${escP(recordLine(team))}</strong></div>
-          <div class="stat"><span>Points For</span><strong>${team ? Number(team.pointsFor || 0).toFixed(1) : '—'}</strong></div>
-          <div class="stat"><span>Standing</span><strong>${team?.standingRank ? `#${team.standingRank}` : '—'}</strong></div>
-          <div class="stat"><span>Streak</span><strong>${escP(streakLine(team))}</strong></div>
-        </div>
-        <div class="name-row">
-          <input id="profile-team-name" type="text" maxlength="40" value="${escP(title)}" />
-          <button type="button" class="btn" id="profile-save-name">Save Name</button>
-        </div>
-        <p class="profile-note" id="franchise-status" role="status"></p>
-        ${team ? `<p class="profile-note"><a class="profile-link" href="/my-roster.html">Open My Roster →</a></p>` : ''}`;
-
+      mount.innerHTML = seats.join('');
       document.getElementById('profile-save-name')?.addEventListener('click', async () => {
         const status = document.getElementById('franchise-status');
         const name = document.getElementById('profile-team-name')?.value?.trim() || '';
@@ -1065,52 +1198,67 @@
       const mount = document.getElementById('career-body');
       if (!mount) return;
       const rows = Array.isArray(data.career) ? data.career : [];
+      const sum = data.careerSummary || {};
+      const fmt = (n) => (n == null || n === '' || !Number.isFinite(Number(n)) ? '—' : Number(n).toFixed(1));
+      const pct = sum.winPct == null ? '—' : `${Math.round(Number(sum.winPct) * 1000) / 10}%`;
+      const summaryHtml = `
+        <div class="career-summary">
+          <div class="stat"><span>Seasons</span><strong>${escP(String(sum.seasons || 0))}</strong></div>
+          <div class="stat"><span>Career W-L</span><strong>${escP(recLine(sum))}</strong></div>
+          <div class="stat"><span>Win %</span><strong>${escP(pct)}</strong></div>
+          <div class="stat"><span>Titles</span><strong>${escP(String(sum.titles || 0))}</strong></div>
+        </div>`;
       if (!rows.length) {
-        mount.innerHTML = `<p class="profile-note">No prior seasons are linked yet. As you join GridIron 24, the commissioner can attach your Year 1–3 franchises here so your career stats stay on your profile.</p>`;
+        mount.innerHTML = `${summaryHtml}<p class="profile-note">No seasons on file yet. This year’s independent record appears as soon as you play a week. Prior GridIron 24 years can be attached by a commissioner.</p>`;
         return;
       }
-      const fmt = (n) => (n == null || n === '' || !Number.isFinite(Number(n)) ? '—' : Number(n).toFixed(1));
-      const rec = (e) => {
-        if (e.wins == null) return '—';
-        return Number(e.ties || 0) > 0 ? `${e.wins}-${e.losses}-${e.ties}` : `${e.wins}-${e.losses}`;
-      };
-      mount.innerHTML = `
-        <div class="table-scroll">
-        <table class="career-table">
-          <thead>
-            <tr>
-              <th>Season</th>
-              <th>Franchise</th>
-              <th class="num">W-L</th>
-              <th class="num">PF</th>
-              <th class="num">PA</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map((e) => `
-              <tr>
-                <td>
-                  <span class="nm">${escP(e.label || (e.yearNumber ? `Year ${e.yearNumber}` : String(e.season)))}</span>
-                  <span class="sub">${escP(String(e.season))}${e.playoffSeed ? ` · Seed ${escP(String(e.playoffSeed))}` : ''}</span>
-                </td>
-                <td>
-                  <span class="nm">${escP(e.teamName)}</span>
-                  ${e.ownerName ? `<span class="sub">${escP(e.ownerName)}</span>` : ''}
-                </td>
-                <td class="num">${escP(rec(e))}</td>
-                <td class="num">${escP(fmt(e.pointsFor))}</td>
-                <td class="num">${escP(fmt(e.pointsAgainst))}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        </div>
-        <p class="profile-note"><a class="profile-link" href="/members.html#record-book">Browse full league history →</a></p>`;
+      mount.innerHTML = `${summaryHtml}${rows.map((e) => `
+        <article class="career-season">
+          <div class="hd">
+            <div>
+              <div class="nm">${escP(e.label || (e.yearNumber ? `Year ${e.yearNumber}` : String(e.season)))}</div>
+              <div class="sub">${escP(e.leagueName || (e.platform === 'independent' ? 'Independent' : 'GridIron 24'))} · ${escP(e.teamName || 'Franchise')}${e.live ? ' · this season' : ''}</div>
+            </div>
+            <strong>${escP(recLine(e))}</strong>
+          </div>
+          <div class="sub">PF ${escP(fmt(e.pointsFor))} · PA ${escP(fmt(e.pointsAgainst))}${e.playoffSeed ? ` · Seed ${escP(String(e.playoffSeed))}` : ''}</div>
+          <div class="marks">
+            ${e.champion ? '<span class="career-chip">Champion</span>' : ''}
+            ${e.playoff && !e.champion ? '<span class="career-chip">Playoffs</span>' : ''}
+          </div>
+        </article>`).join('')}`;
+    }
+
+    function renderTools(data) {
+      const mount = document.getElementById('tools-body');
+      if (!mount) return;
+      const tools = Array.isArray(data.tools) ? data.tools : [];
+      if (data.readOnly) {
+        mount.innerHTML = `<p class="profile-note">Tools are only on your own dashboard.</p>`;
+        return;
+      }
+      if (!tools.length) {
+        mount.innerHTML = `<p class="profile-note">No shortcuts yet.</p>`;
+        return;
+      }
+      mount.innerHTML = `<div class="tools-grid">${tools.map((t) => `
+        <a href="${escP(t.href)}">
+          <p class="kicker">${escP(t.kicker || '')}</p>
+          <strong>${escP(t.title)}</strong>
+          <span>${escP(t.blurb || '')}</span>
+        </a>`).join('')}</div>
+        ${data.user?.id ? `<p class="profile-note" style="margin-top:1rem;">Share your profile: <a class="profile-link" href="/profile.html?u=${escP(data.user.id)}">/profile.html?u=${escP(data.user.id)}</a></p>` : ''}`;
     }
 
     function renderKeeper(data) {
+      const section = document.getElementById('keeper');
       const mount = document.getElementById('keeper-body');
       if (!mount) return;
+      if (!data.gi24Claim || data.readOnly) {
+        if (section) section.hidden = true;
+        return;
+      }
+      if (section) section.hidden = false;
       const claim = data.claim;
       const roster = data.roster || [];
       const keeper = data.keeper;
@@ -1486,17 +1634,69 @@
     }
 
     async function loadProfile(withSync = true) {
-      const res = await fetch('/api/my-team', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Could not load profile');
-      myTeamData = await res.json();
-      renderAccount(myTeamData);
-      renderAppearance(myTeamData.user?.theme || window.GridIronNav?.getTheme?.() || 'night');
-      renderFranchise(myTeamData);
-      renderCareer(myTeamData);
-      renderKeeper(myTeamData);
-      renderLogoSection(myTeamData);
+      const params = new URLSearchParams(location.search || '');
+      const viewId = String(params.get('u') || params.get('user') || '').trim();
+      let data;
+      if (viewId && viewId !== selfUserId) {
+        const res = await fetch(`/api/users/${encodeURIComponent(viewId)}/profile`, { cache: 'no-store' });
+        if (res.status === 401) {
+          window.location.replace('/enter?next=' + encodeURIComponent(location.pathname + location.search));
+          return;
+        }
+        data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load profile');
+        data.readOnly = true;
+        data.gi24Claim = Boolean(data.gi24Team);
+        data.claim = data.gi24Team ? { teamName: data.gi24Team.name } : null;
+        data.team = data.gi24Team || null;
+        data.tools = [];
+        data.memberships = (data.memberships || []).map((m) => ({
+          ...m,
+          franchise: m.franchiseName ? { name: m.franchiseName, ...(m.record || {}) } : null,
+          paths: {}
+        }));
+      } else {
+        const res = await fetch('/api/profile', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Could not load profile');
+        data = await res.json();
+        if (data.gi24Claim) {
+          try {
+            const teamRes = await fetch('/api/my-team', { cache: 'no-store' });
+            const teamData = await teamRes.json();
+            if (teamRes.ok && teamData.ok) {
+              data.claim = teamData.claim;
+              data.team = teamData.team;
+              data.roster = teamData.roster;
+              data.keeper = teamData.keeper;
+              data.keeperWindow = teamData.keeperWindow;
+              data.logo = teamData.logo || data.logo;
+              if (Array.isArray(teamData.career) && teamData.career.length && !data.career?.length) {
+                data.career = teamData.career;
+              }
+            }
+          } catch { /* independent profile still works */ }
+        }
+      }
+      myTeamData = data;
+      const look = document.getElementById('page-look');
+      const pw = document.getElementById('password');
+      const actions = document.querySelector('.profile-actions');
+      if (data.readOnly) {
+        if (look) look.hidden = true;
+        if (pw) pw.hidden = true;
+        if (actions) actions.hidden = true;
+        document.getElementById('user-title').textContent = data.user?.name || 'Member';
+        document.getElementById('user-eyebrow').textContent = 'Member profile';
+      }
+      renderAccount(data);
+      renderAppearance(data.user?.theme || window.GridIronNav?.getTheme?.() || 'night');
+      renderFranchise(data);
+      renderCareer(data);
+      renderKeeper(data);
+      renderTools(data);
+      if (!data.readOnly) renderLogoSection(data);
       if (withSync) {
-        const name = myTeamData.team?.name || myTeamData.user?.name || 'Profile';
+        const name = data.user?.name || data.team?.name || 'Profile';
         window.GridIronNav?.setSync(name, true);
       }
     }
@@ -1544,12 +1744,28 @@
       }
       renderAppearance(user.theme || 'night');
       wireAppearance();
+      selfUserId = user.id || null;
       renderUserHome(user);
       try {
         await loadProfile();
         wirePasswordForm();
-        applyUserHash();
-        window.addEventListener('hashchange', applyUserHash);
+        if (myTeamData?.readOnly) {
+          const home = document.getElementById('user-home');
+          const account = document.getElementById('page-account');
+          const team = document.getElementById('page-team');
+          const tools = document.getElementById('page-tools');
+          const look = document.getElementById('page-look');
+          const back = document.getElementById('user-back');
+          if (home) home.hidden = true;
+          if (account) account.hidden = false;
+          if (team) team.hidden = false;
+          if (tools) tools.hidden = true;
+          if (look) look.hidden = true;
+          if (back) back.hidden = true;
+        } else {
+          applyUserHash();
+          window.addEventListener('hashchange', applyUserHash);
+        }
       } catch (err) {
         const msg = `<div class="msg"><strong>Error</strong>${escP(err.message)}</div>`;
         document.getElementById('franchise-body').innerHTML = msg;

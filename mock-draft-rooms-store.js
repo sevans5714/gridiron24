@@ -7,6 +7,7 @@ const path = require('path');
 const crypto = require('crypto');
 const MockDraftCpu = require('./public/js/mock-draft-cpu');
 const logos = require('./logos-store');
+const CPU_GM_NAMES = require('./public/js/cpu-gm-names');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'mock-draft-rooms.json');
@@ -84,6 +85,63 @@ function padTeamNames(names, count) {
     .slice(0, count);
   while (list.length < count) list.push(`Team ${list.length + 1}`);
   return list;
+}
+
+function shuffleNames(list) {
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function nextUnusedCpuName(used) {
+  const pool = shuffleNames(CPU_GM_NAMES);
+  for (const cand of pool) {
+    const key = String(cand || '').trim().toLowerCase();
+    if (key && !used.has(key)) return String(cand).trim().slice(0, TEAM_NAME_MAX);
+  }
+  let n = used.size + 1;
+  let fallback = `CPU ${n}`;
+  while (used.has(fallback.toLowerCase())) {
+    n += 1;
+    fallback = `CPU ${n}`;
+  }
+  return fallback;
+}
+
+function uniquifyTeamNames(names, keepIndex, keepLabel) {
+  const count = (names || []).length;
+  const keep = Number(keepIndex);
+  const keepName = String(keepLabel || (Number.isFinite(keep) ? names[keep] : '') || '').trim().slice(0, TEAM_NAME_MAX);
+  const used = new Set();
+  if (keepName) used.add(keepName.toLowerCase());
+  const pool = shuffleNames(CPU_GM_NAMES);
+  let p = 0;
+  return Array.from({ length: count }, (_, i) => {
+    if (i === keep) return keepName || `Team ${i + 1}`;
+    const incoming = String(names[i] || '').trim().slice(0, TEAM_NAME_MAX);
+    if (incoming && !used.has(incoming.toLowerCase())) {
+      used.add(incoming.toLowerCase());
+      return incoming;
+    }
+    while (p < pool.length) {
+      const next = String(pool[p++] || '').trim();
+      if (next && !used.has(next.toLowerCase())) {
+        used.add(next.toLowerCase());
+        return next.slice(0, TEAM_NAME_MAX);
+      }
+    }
+    let n = i + 1;
+    let fallback = `CPU ${n}`;
+    while (used.has(fallback.toLowerCase())) {
+      n += 1;
+      fallback = `CPU ${n}`;
+    }
+    used.add(fallback.toLowerCase());
+    return fallback;
+  });
 }
 
 function snakeTeamIndex(overallZeroBased, teamCount) {
@@ -328,9 +386,8 @@ function createRoom({ user, teamCount, rounds, pickSeconds, scoring, seatIndex, 
       r.updatedAt = new Date().toISOString();
     }
   }
-  const names = padTeamNames(teamNames, count);
   const hostLabel = String(hostTeamName || '').replace(/\s+/g, ' ').trim().slice(0, TEAM_NAME_MAX);
-  if (hostLabel) names[seat] = hostLabel;
+  const names = uniquifyTeamNames(padTeamNames(teamNames, count), seat, hostLabel);
   const seats = Array.from({ length: count }, (_, i) => ({
     index: i,
     userId: i === seat ? user.id : null,
@@ -492,7 +549,21 @@ function joinSeat({ roomId, user, seatIndex, teamName }) {
   seat.isCpu = false;
   const label = String(teamName || '').replace(/\s+/g, ' ').trim().slice(0, TEAM_NAME_MAX);
   if (label && Array.isArray(room.teamNames) && room.teamNames.length > idx) {
-    room.teamNames[idx] = label;
+    const used = new Set(
+      room.teamNames
+        .map((n, i) => (i === idx ? '' : String(n || '').trim().toLowerCase()))
+        .filter(Boolean)
+    );
+    used.add(label.toLowerCase());
+    room.teamNames = room.teamNames.map((n, i) => {
+      if (i === idx) return label;
+      if (String(n || '').trim().toLowerCase() === label.toLowerCase()) {
+        const next = nextUnusedCpuName(used);
+        used.add(next.toLowerCase());
+        return next;
+      }
+      return n;
+    });
   }
   room.updatedAt = new Date().toISOString();
   // If this seat is currently on the clock during a live draft, reset deadline for the new human

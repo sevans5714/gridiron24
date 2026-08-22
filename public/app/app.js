@@ -7,6 +7,106 @@
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
+  function franchiseTitleHtml(name, opts = {}) {
+    if (window.GridIronTitle?.html) return window.GridIronTitle.html(name, opts);
+    const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
+    const extra = opts.className ? ` ${String(opts.className)}` : '';
+    const text = String(name || '').trim() || 'TBD';
+    const parts = text.split(/\s+/).filter(Boolean);
+    let lead = '';
+    let mark = text;
+    if (parts.length >= 2) {
+      mark = parts.pop();
+      lead = parts.join(' ');
+    }
+    const inline = opts.inline === true || (opts.inline !== false && size === 'sm');
+    const owner = String(opts.owner || '').trim();
+    const ownerOk = owner && owner !== '—' && owner.toLowerCase() !== 'unassigned';
+    const title = `<span class="franchise-title is-${size}${inline ? ' is-inline' : ''}${extra}" title="${esc(text)}">${
+      lead ? `<span class="franchise-title-lead">${esc(lead)}</span>` : ''
+    }<span class="franchise-title-mark">${esc(mark)}</span></span>`;
+    if (!ownerOk) return title;
+    return `<span class="franchise-block" title="${esc(`${text} · ${owner}`)}">${title}<span class="franchise-owner">${esc(owner)}</span></span>`;
+  }
+
+  const TITLE_MAX = { sm: 23, md: 30, lg: 38, xl: 56 };
+  const TITLE_MIN = { sm: 11, md: 12, lg: 16, xl: 18 };
+
+  function fitFranchiseTitle(title) {
+    if (!(title instanceof Element) || !title.classList.contains('franchise-title')) return;
+    if (title.closest('.user-chip, .user-menu, .user-menu-panel')) return;
+    const box = title.parentElement;
+    if (!box) return;
+    const avail = box.clientWidth;
+    if (avail < 8) return;
+    const key = title.classList.contains('is-xl') ? 'xl'
+      : title.classList.contains('is-lg') ? 'lg'
+      : title.classList.contains('is-md') ? 'md'
+      : 'sm';
+    const maxPx = TITLE_MAX[key];
+    const minPx = TITLE_MIN[key];
+    const prev = {
+      width: title.style.width,
+      flex: title.style.flex,
+      maxWidth: title.style.maxWidth,
+      whiteSpace: title.style.whiteSpace,
+      overflow: title.style.overflow
+    };
+    title.style.width = 'max-content';
+    title.style.maxWidth = 'none';
+    title.style.flex = '0 0 auto';
+    title.style.whiteSpace = 'nowrap';
+    title.style.overflow = 'visible';
+    title.style.fontSize = `${maxPx}px`;
+    const kids = title.querySelectorAll('.franchise-title-lead, .franchise-title-mark');
+    const kidPrev = [];
+    kids.forEach((el) => {
+      kidPrev.push([el, el.style.maxWidth, el.style.overflow]);
+      el.style.maxWidth = 'none';
+      el.style.overflow = 'visible';
+    });
+    const used = Math.ceil(title.scrollWidth || title.getBoundingClientRect().width);
+    kidPrev.forEach(([el, maxWidth, overflow]) => {
+      el.style.maxWidth = maxWidth;
+      el.style.overflow = overflow;
+    });
+    title.style.width = prev.width;
+    title.style.flex = prev.flex;
+    title.style.maxWidth = prev.maxWidth;
+    title.style.whiteSpace = prev.whiteSpace;
+    title.style.overflow = prev.overflow;
+    if (used > avail && used > 0) {
+      title.style.fontSize = `${Math.max(minPx, maxPx * (avail / used)).toFixed(2)}px`;
+    }
+  }
+
+  function fitAllFranchiseTitles(scope) {
+    if (window.GridIronTitle?.fit) {
+      window.GridIronTitle.fit(scope);
+      return;
+    }
+    const root = scope && scope.querySelectorAll ? scope : document;
+    root.querySelectorAll('.franchise-title').forEach(fitFranchiseTitle);
+  }
+
+  function watchFranchiseTitles() {
+    let scheduled = false;
+    const schedule = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        fitAllFranchiseTitles();
+      });
+    };
+    try {
+      new ResizeObserver(schedule).observe(document.documentElement);
+    } catch { /* ignore */ }
+    new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
+    window.addEventListener('resize', schedule);
+    schedule();
+  }
+
   const APP_VIEWS = new Set(['home', 'roster', 'matchup', 'league', 'book', 'account']);
 
   const state = {
@@ -499,9 +599,9 @@
     const showScore = bucket === 'live' || bucket === 'final' || fantasy;
     const side = (t, win) => {
       if (!t) return '';
-      const logo = t.logo
+      const logo = (!fantasy && t.logo)
         ? `<img src="${esc(t.logo)}" alt="" width="20" height="20" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`
-        : `<span class="ph" aria-hidden="true"></span>`;
+        : (fantasy ? '' : `<span class="ph" aria-hidden="true"></span>`);
       let pts;
       if (fantasy && bucket === 'upcoming') {
         pts = `<span class="pts is-blank" title="Projected">${esc(fmtWirePts(t.projected))}</span>`;
@@ -510,7 +610,10 @@
       } else {
         pts = `<span class="pts is-blank">—</span>`;
       }
-      return `<div class="wire-side${win ? ' is-winner' : ''}">${logo}<span class="namecell"><span class="abbr">${esc(t.abbreviation || t.shortName || '?')}</span>${fantasy && t.record ? `<span class="rec">${esc(String(t.record))}</span>` : ''}</span>${pts}</div>`;
+      const name = fantasy
+        ? franchiseTitleHtml(t.name || t.abbreviation || t.shortName || 'TBD', { size: 'sm', inline: true, owner: t.owner })
+        : `<span class="namecell"><span class="abbr">${esc(t.abbreviation || t.shortName || '?')}</span></span>`;
+      return `<div class="wire-side${win ? ' is-winner' : ''}${fantasy ? ' is-title' : ''}">${logo}${name}${pts}</div>`;
     };
     return `<article class="wire-game">
       <div class="wire-top">
@@ -1113,8 +1216,7 @@
         <div class="s-row body ${zone}">
           <div class="rank">${rank}</div>
           <div class="team">
-            <img src="${esc(team.logo || PLACEHOLDER)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
-            <div class="nm">${esc(team.name)}${mine ? ' · you' : ''}</div>
+            ${franchiseTitleHtml(team.name, { size: 'sm', inline: true, owner: team.owner })}${mine ? '<span class="you-tag"> · you</span>' : ''}
           </div>
           <div class="num col-w">${team.wins || 0}</div>
           <div class="num col-l">${team.losses || 0}</div>
@@ -1159,9 +1261,8 @@
     return `
       <article class="mu-card${statusCls === 'live' ? ' is-live' : ''}${decided ? ' is-final' : ''}">
         <div class="mu-side is-away ${awayCls}">
-          <img src="${esc(m.away?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
           <div class="mu-meta">
-            <div class="mu-name">${esc(m.away?.name || 'TBD')}</div>
+            ${franchiseTitleHtml(m.away?.name || 'TBD', { size: 'sm', owner: m.away?.owner })}
           </div>
           <div class="mu-score-stack">
             <div class="mu-score">${fmtScore(m.away?.score)}</div>
@@ -1177,9 +1278,8 @@
             <div class="mu-proj">Proj ${fmtScore(m.home?.projected)}</div>
           </div>
           <div class="mu-meta">
-            <div class="mu-name">${esc(m.home?.name || 'TBD')}</div>
+            ${franchiseTitleHtml(m.home?.name || 'TBD', { size: 'sm', owner: m.home?.owner })}
           </div>
-          <img src="${esc(m.home?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
         </div>
       </article>`;
   }
@@ -1784,12 +1884,6 @@
       mount.innerHTML = `<div class="msg">${esc(data.message || 'Power rankings unavailable.')}</div>`;
       return;
     }
-    const logoMap = new Map();
-    for (const conf of state.leagues?.conferences || []) {
-      for (const team of conf.teams || []) {
-        logoMap.set(`${conf.key}:${team.id}`, team.logo || PLACEHOLDER);
-      }
-    }
     const modeLabel = latest.mode === 'preseason'
       ? 'Preseason · Week 1 projections'
       : `Week ${esc(String(latest.week || '—'))}`;
@@ -1798,9 +1892,8 @@
       ${ranks.slice(0, 24).map((r, i) => `
         <div class="rank-row">
           <div class="num">${i + 1}</div>
-          <img src="${esc(r.logo || logoMap.get(`${r.conferenceKey}:${r.teamId}`) || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
           <div>
-            <div class="nm">${esc(r.teamName || r.name || 'Team')}</div>
+            ${franchiseTitleHtml(r.teamName || r.name || 'Team', { size: 'sm', inline: true })}
             ${r.note ? `<div class="note">${esc(r.note)}</div>` : ''}
           </div>
         </div>`).join('')}
@@ -3115,6 +3208,7 @@
 
   async function boot() {
     wireUi();
+    watchFranchiseTitles();
     wireInstall();
     registerSw();
     await loadAuth();

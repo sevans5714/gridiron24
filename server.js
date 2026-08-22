@@ -499,6 +499,10 @@ function isLoungeOnlyAllowedPath(pathname) {
   ]);
   if (exact.has(pathname)) return true;
   if (pathname.startsWith('/api/members-chat/')) return true;
+  if (pathname === '/profile' || pathname === '/profile.html') return true;
+  if (pathname === '/api/profile' || pathname === '/api/change-password') return true;
+  if (pathname === '/api/my-team' || pathname.startsWith('/api/my-team/')) return true;
+  if (/^\/api\/users\/[^/]+\/profile$/.test(pathname)) return true;
   return false;
 }
 
@@ -2376,6 +2380,7 @@ async function buildPlayoffsPayload() {
         id: t.id,
         name: t.name,
         logo: t.logo || null,
+        owner: t.owner || null,
         provisional: Boolean(t.provisional) || Number(t.playoffSeed || 0) === 0
       };
     };
@@ -4959,6 +4964,147 @@ function leagueScopeForUser(user, req = null) {
   };
 }
 
+function profileToolsForUser(user, req, memberships = []) {
+  const scope = leagueScopeForUser(user, req);
+  const independent = scope.platform === 'independent' || (memberships.length && !logos.getClaimForUser(user.id));
+  const tools = [];
+  const primary = memberships[0] || null;
+  if (primary?.paths?.myRoster) {
+    tools.push({
+      href: primary.paths.myRoster,
+      title: 'My Team',
+      kicker: primary.name,
+      blurb: 'Roster, IR, taxi, and keepers for this league.',
+      tone: 'overtime'
+    });
+  }
+  if (primary?.isOwner && primary.paths?.settings) {
+    tools.push({
+      href: primary.paths.settings,
+      title: 'Owner Dashboard',
+      kicker: primary.name,
+      blurb: 'Settings, invites, and operations.',
+      tone: 'gold'
+    });
+  }
+  if (primary?.paths?.draft) {
+    tools.push({
+      href: primary.paths.draft,
+      title: 'Draft',
+      kicker: primary.name,
+      blurb: 'Board and results for this league.',
+      tone: 'blue'
+    });
+  }
+  if (!independent && !users.isLoungeOnly(user)) {
+    tools.push({
+      href: '/my-roster.html',
+      title: 'My Team',
+      kicker: scope.label || 'League',
+      blurb: 'This week’s roster and matchup.',
+      tone: 'overtime'
+    });
+  }
+  tools.push(
+    { href: '/inbox.html', title: 'Inbox', kicker: 'Mail', blurb: 'Messages from the league.', tone: 'good' },
+    { href: '/members.html', title: 'Members Lounge', kicker: 'Clubhouse', blurb: 'Chat, pools, and the board.', tone: 'detail' },
+    { href: '/install-app.html', title: 'Install app', kicker: 'Phone', blurb: 'Add GridIron to your home screen.', tone: 'blue' }
+  );
+  return tools;
+}
+
+function liveIndependentCareerRows(memberships = []) {
+  return memberships
+    .filter((m) => m.franchise)
+    .map((m) => ({
+      id: `live:${m.leagueId}:${m.season}:${m.franchise.id}`,
+      platform: 'independent',
+      season: m.season,
+      label: `${m.name} ${m.season}`,
+      leagueId: m.leagueId,
+      leagueName: m.name,
+      teamName: m.franchise.name,
+      franchiseId: m.franchise.id,
+      wins: m.franchise.wins,
+      losses: m.franchise.losses,
+      ties: m.franchise.ties,
+      pointsFor: m.franchise.pointsFor,
+      pointsAgainst: m.franchise.pointsAgainst,
+      playoff: Boolean(m.franchise.playoff),
+      champion: Boolean(m.champion),
+      live: true
+    }));
+}
+
+function mergeCareerWithLive(stored, liveRows) {
+  const keys = new Set(
+    stored.map((e) => `ind:${e.leagueId}:${e.season}:${e.franchiseId || e.teamId}`)
+  );
+  const extra = liveRows.filter((row) => !keys.has(`ind:${row.leagueId}:${row.season}:${row.franchiseId}`));
+  return [...extra, ...stored].sort((a, b) => (Number(b.season) - Number(a.season))
+    || String(a.leagueName || '').localeCompare(String(b.leagueName || ''))
+    || String(a.teamName || '').localeCompare(String(b.teamName || '')));
+}
+
+function publicProfileCard(target, req = null) {
+  const user = users.publicUser(target);
+  const logo = logos.resolveLogoForUser(user.id);
+  const memberships = leagues.listIndependentMembershipsForUser(user.id);
+  const stored = career.listForUser(user.id);
+  const rows = mergeCareerWithLive(stored, liveIndependentCareerRows(memberships));
+  const claim = logos.getClaimForUser(user.id);
+  const chip = chipFranchiseForUser(target);
+  return {
+    ok: true,
+    user: {
+      id: user.id,
+      name: user.name,
+      loginName: user.loginName,
+      bio: user.bio || null,
+      role: user.role,
+      loungeOnly: user.loungeOnly,
+      leagueOwner: user.leagueOwner,
+      createdAt: user.createdAt || null
+    },
+    logo: (logo?.type === 'icon' || logo?.type === 'upload') ? { url: logo.url, type: logo.type } : null,
+    memberships: memberships.map((m) => ({
+      name: m.name,
+      slug: m.slug,
+      season: m.season,
+      isOwner: m.isOwner,
+      franchiseName: m.franchise?.name || null,
+      record: m.franchise
+        ? { wins: m.franchise.wins, losses: m.franchise.losses, ties: m.franchise.ties }
+        : null
+    })),
+    gi24Team: chip ? { name: chip.name, conferenceName: chip.conferenceName } : (claim ? { name: claim.teamName } : null),
+    career: rows,
+    careerSummary: career.summarize(rows)
+  };
+}
+
+function buildOwnProfile(user, req) {
+  const memberships = leagues.listIndependentMembershipsForUser(user.id);
+  const stored = career.listForUser(user.id);
+  const rows = mergeCareerWithLive(stored, liveIndependentCareerRows(memberships));
+  const claim = logos.getClaimForUser(user.id);
+  const logo = logos.resolveLogoForUser(user.id);
+  const scope = leagueScopeForUser(user, req);
+  return {
+    ok: true,
+    user: users.publicUser(user),
+    logo,
+    leagueScope: scope,
+    memberships,
+    gi24Claim: Boolean(claim),
+    career: rows,
+    careerSummary: career.summarize(rows),
+    tools: profileToolsForUser(user, req, memberships),
+    specs: logos.LOGO_SPECS,
+    homePath: homePathForUser(user, req)
+  };
+}
+
 /** Scoreboard pages can request a specific league via ?league=aaa|gridiron. */
 function resolveLeagueScope(user, req, requestedLeague) {
   const personal = leagueScopeForUser(user, req);
@@ -5430,6 +5576,7 @@ async function buildAaaPlayoffsPayload() {
         id: t.id,
         name: t.name,
         logo: t.logo || null,
+        owner: t.owner || null,
         provisional: Boolean(t.provisional) || Number(t.playoffSeed || 0) === 0
       };
     };
@@ -6220,6 +6367,36 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true, user });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save preferences' });
+      }
+    }
+
+    if (pathname === '/api/profile' && req.method === 'GET') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      try {
+        return sendJson(res, 200, buildOwnProfile(user, req));
+      } catch (err) {
+        return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Could not load profile' });
+      }
+    }
+
+    if (pathname === '/api/profile' && req.method === 'PATCH') {
+      const sessionUser = getSessionUser(req);
+      if (!sessionUser) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const patch = {};
+        if (Object.prototype.hasOwnProperty.call(body, 'name')) patch.name = body.name;
+        if (Object.prototype.hasOwnProperty.call(body, 'bio')) patch.bio = body.bio;
+        const user = users.updateProfile(sessionUser.id, patch);
+        return sendJson(res, 200, { ok: true, user });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not update profile' });
       }
     }
 
@@ -8912,6 +9089,21 @@ const server = http.createServer(async (req, res) => {
         user: users.publicUser(target),
         career: career.listForUser(userId)
       });
+    }
+
+    if (pathname.match(/^\/api\/users\/[^/]+\/profile$/) && req.method === 'GET') {
+      const viewer = getSessionUser(req);
+      if (!viewer) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const userId = pathname.slice('/api/users/'.length, -'/profile'.length);
+      const target = users.findById(userId);
+      if (!target || target.approved === false) {
+        return sendJson(res, 404, { ok: false, error: 'Member not found' });
+      }
+      try {
+        return sendJson(res, 200, publicProfileCard(target, req));
+      } catch (err) {
+        return sendJson(res, err.status || 500, { ok: false, error: err.message || 'Could not load profile' });
+      }
     }
 
     if (pathname.startsWith('/api/users/') && pathname.endsWith('/career') && req.method === 'POST') {

@@ -8,12 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
     :root,
     html[data-theme="night"] {
@@ -667,37 +667,14 @@
       min-width: 0;
     }
     .team.home { flex-direction: row-reverse; text-align: right; }
-    .team img {
-      width: 4.25rem;
-      height: 4.25rem;
-      object-fit: contain;
-      flex: 0 0 auto;
-      background: transparent;
-      border: 0;
-      border-radius: 0;
-      filter: none;
-      box-shadow: none;
-    }
-    .team .nm {
-      min-width: 0;
-      font-family: var(--display);
-      font-size: clamp(0.95rem, 1.7vw, 1.2rem);
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      line-height: 1.15;
+    .team .franchise-title {
       color: var(--sb-team);
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      word-break: break-word;
     }
-    .team.is-winner .nm {
+    .team.is-winner .franchise-title {
       color: var(--sb-team);
       text-shadow: 0 0 12px rgba(255, 184, 74, 0.35);
     }
-    html[data-theme="day"] .team.is-winner .nm {
+    html[data-theme="day"] .team.is-winner .franchise-title {
       text-shadow: none;
       color: var(--sb-score);
     }
@@ -784,7 +761,6 @@
       .sb-boards { grid-template-columns: 1fr; }
       .board.overtime { animation-delay: 0.05s; }
       .board-top img { width: 2.68rem; }
-      .team img { width: 3.85rem; height: 3.85rem; }
       .game {
         grid-template-columns: 1fr;
         gap: 0.5rem;
@@ -802,7 +778,6 @@
     }
     @media (max-width: 560px) {
       .sb-hero .brand-logo { width: min(11rem, 58vw); }
-      .team img { width: 4.5rem; height: 4.5rem; }
       .board-top img { width: 2.8rem; }
     }
   </style>
@@ -864,7 +839,7 @@
       document.body.dataset.league = isAaa ? 'aaa' : 'gridiron';
     })();
   </script>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
   <script>
     const REFRESH_MS = 30_000;
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
@@ -1235,11 +1210,9 @@
         won ? 'is-winner' : '',
         lost ? 'is-loser' : ''
       ].filter(Boolean).join(' ');
-      const src = team?.logo || PLACEHOLDER;
       return `
         <div class="${cls}">
-          <img src="${esc(src)}" alt="" width="68" height="68" loading="lazy" referrerpolicy="no-referrer" />
-          <div class="nm" title="${esc(team?.name || '')}">${esc(team?.name || 'TBD')}</div>
+          ${window.GridIronTitle.html(team?.name || 'TBD', { size: 'md', owner: team?.owner })}
         </div>`;
     }
 

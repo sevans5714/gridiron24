@@ -164,6 +164,108 @@
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
   }
 
+  function franchiseTitleHtml(name, opts = {}) {
+    const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
+    const extra = opts.className ? ` ${String(opts.className)}` : '';
+    const text = String(name || '').trim() || 'TBD';
+    const parts = text.split(/\s+/).filter(Boolean);
+    let lead = '';
+    let mark = text;
+    if (parts.length >= 2) {
+      mark = parts.pop();
+      lead = parts.join(' ');
+    }
+    const inline = opts.inline === true || (opts.inline !== false && size === 'sm');
+    const layout = inline ? ' is-inline' : '';
+    const owner = String(opts.owner || '').trim();
+    const ownerOk = owner && owner !== '—' && owner.toLowerCase() !== 'unassigned';
+    const title = `<span class="franchise-title is-${size}${layout}${extra}" title="${esc(text)}">${
+      lead ? `<span class="franchise-title-lead">${esc(lead)}</span>` : ''
+    }<span class="franchise-title-mark">${esc(mark)}</span></span>`;
+    if (!ownerOk) return title;
+    return `<span class="franchise-block" title="${esc(`${text} · ${owner}`)}">${title}<span class="franchise-owner">${esc(owner)}</span></span>`;
+  }
+
+  window.GridIronTitle = { html: franchiseTitleHtml, fit: fitAllFranchiseTitles };
+
+  const TITLE_MAX = { sm: 23, md: 30, lg: 38, xl: 56 };
+  const TITLE_MIN = { sm: 11, md: 12, lg: 16, xl: 18 };
+
+  function titleSizeKey(title) {
+    if (title.classList.contains('is-xl')) return 'xl';
+    if (title.classList.contains('is-lg')) return 'lg';
+    if (title.classList.contains('is-md')) return 'md';
+    return 'sm';
+  }
+
+  function fitFranchiseTitle(title) {
+    if (!(title instanceof Element) || !title.classList.contains('franchise-title')) return;
+    if (title.closest('.user-menu-panel, .user-menu-name')) return;
+    const box = title.parentElement;
+    if (!box) return;
+    const avail = box.clientWidth;
+    if (avail < 8) return;
+    const key = titleSizeKey(title);
+    const maxPx = TITLE_MAX[key];
+    const minPx = TITLE_MIN[key];
+    const prev = {
+      width: title.style.width,
+      flex: title.style.flex,
+      maxWidth: title.style.maxWidth,
+      whiteSpace: title.style.whiteSpace,
+      overflow: title.style.overflow
+    };
+    title.style.width = 'max-content';
+    title.style.maxWidth = 'none';
+    title.style.flex = '0 0 auto';
+    title.style.whiteSpace = 'nowrap';
+    title.style.overflow = 'visible';
+    title.style.fontSize = `${maxPx}px`;
+    const kids = title.querySelectorAll('.franchise-title-lead, .franchise-title-mark');
+    const kidPrev = [];
+    kids.forEach((el) => {
+      kidPrev.push([el, el.style.maxWidth, el.style.overflow]);
+      el.style.maxWidth = 'none';
+      el.style.overflow = 'visible';
+    });
+    const used = Math.ceil(title.scrollWidth || title.getBoundingClientRect().width);
+    kidPrev.forEach(([el, maxWidth, overflow]) => {
+      el.style.maxWidth = maxWidth;
+      el.style.overflow = overflow;
+    });
+    title.style.width = prev.width;
+    title.style.flex = prev.flex;
+    title.style.maxWidth = prev.maxWidth;
+    title.style.whiteSpace = prev.whiteSpace;
+    title.style.overflow = prev.overflow;
+    if (used > avail && used > 0) {
+      title.style.fontSize = `${Math.max(minPx, maxPx * (avail / used)).toFixed(2)}px`;
+    }
+  }
+
+  function fitAllFranchiseTitles(scope) {
+    const root = scope && scope.querySelectorAll ? scope : document;
+    root.querySelectorAll('.franchise-title').forEach(fitFranchiseTitle);
+  }
+
+  function watchFranchiseTitles() {
+    let scheduled = false;
+    const schedule = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        fitAllFranchiseTitles();
+      });
+    };
+    try {
+      new ResizeObserver(schedule).observe(document.documentElement);
+    } catch { /* ignore */ }
+    new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
+    window.addEventListener('resize', schedule);
+    schedule();
+  }
+
   function getTheme() {
     const attr = document.documentElement.getAttribute('data-theme');
     if (attr === 'day' || attr === 'night') return attr;
@@ -716,13 +818,23 @@
     };
   }
 
+  function isPlaceholderTeamName(name) {
+    const n = String(name || '').trim().toLowerCase();
+    return !n || n === 'unassigned' || n === '—' || n === '-' || n === 'tbd' || n === 'my team';
+  }
+
   function headerTeamName(user, myTeam) {
     const live = String(myTeam?.team?.name || myTeam?.claim?.teamName || '').trim();
-    if (live) return live;
+    if (!isPlaceholderTeamName(live)) return live;
     const saved = String(authState?.franchise?.name || '').trim();
-    if (saved) return saved;
-    if (myTeam?.claim || authState?.franchise) return 'My Team';
-    return 'Unassigned';
+    if (!isPlaceholderTeamName(saved)) return saved;
+    if (myTeam?.claim || authState?.franchise) {
+      const claimed = String(myTeam?.claim?.teamName || authState?.franchise?.name || '').trim();
+      if (!isPlaceholderTeamName(claimed)) return claimed;
+    }
+    if (user?.loungeOnly) return 'Members Lounge';
+    if (user?.siteOwner || user?.canSwitchLeagues) return 'GridIron 24';
+    return '';
   }
 
   function renderUserMenu(user, myTeam = null) {
@@ -742,29 +854,33 @@
     }
     mount.hidden = false;
     mount.classList.remove('is-open');
-    const teamName = user.loungeOnly
-      ? 'Members Lounge'
-      : headerTeamName(user, myTeam);
+    const teamName = headerTeamName(user, myTeam);
     const ownerName = user.name || 'Owner';
     const access = roleLabel(user.role, user.conference, user);
     const onProfile = active === 'profile';
-    const needsLogo = !user.loungeOnly && !hasChosenLogo(myTeam?.logo);
-    const chipTitle = `${teamName} · ${ownerName} · ${access}`;
-    const profileHref = needsLogo ? '/profile.html#logo' : '/profile.html';
-    const chipClass = `user-chip${onProfile ? ' is-active' : ''}${needsLogo ? ' needs-logo' : ''}`;
+    const hasFranchise = Boolean(teamName) && teamName !== ownerName;
+    const chipTitleName = hasFranchise ? teamName : ownerName;
+    const chipTitle = `${chipTitleName} · ${ownerName} · ${access}`;
+    const teamHtml = user.loungeOnly
+      ? esc(teamName || 'Members Lounge')
+      : (hasFranchise && teamName !== 'GridIron 24'
+        ? franchiseTitleHtml(teamName, { size: 'sm', inline: true })
+        : esc(chipTitleName));
+    const profileHref = '/profile.html';
+    const chipClass = `user-chip${onProfile ? ' is-active' : ''}`;
 
     const themeNow = getTheme();
     const isDay = themeNow === 'day';
 
     mount.innerHTML = `
       <button type="button" class="${chipClass}" title="${esc(chipTitle)}" aria-haspopup="menu" aria-expanded="false" id="user-menu-toggle">
+        <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
         <span class="user-chip-text">
           <span class="user-chip-team-row">
-            <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
-            <span class="user-chip-team">${esc(teamName)}</span>
+            <span class="user-chip-team">${teamHtml}</span>
           </span>
-          <span class="user-chip-owner">${esc(ownerName)}</span>
-          <span class="user-chip-access">${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
+          <span class="user-chip-owner">${hasFranchise ? esc(ownerName) : ''}</span>
+          <span class="user-chip-access">${esc(access)}</span>
         </span>
         <span class="user-chip-caret" aria-hidden="true"></span>
       </button>
@@ -777,11 +893,10 @@
                 <span class="user-menu-role">${esc(access)}</span>
               </span>
             </div>`
-          : `<a class="user-menu-head${needsLogo ? ' needs-logo' : ''}" href="${profileHref}" role="menuitem">
-              <span class="user-menu-preview">${avatarHtml(myTeam, user)}</span>
+          : `<a class="user-menu-head" href="${profileHref}" role="menuitem">
               <span>
-                <span class="user-menu-name">${esc(teamName)}</span>
-                <span class="user-menu-role">${esc(ownerName)} · ${esc(access)}${needsLogo ? ' · Set avatar' : ''}</span>
+                <span class="user-menu-name">${hasFranchise && teamName !== 'GridIron 24' ? franchiseTitleHtml(teamName, { size: 'md' }) : esc(chipTitleName)}</span>
+                <span class="user-menu-role">${esc(ownerName)} · ${esc(access)}</span>
               </span>
             </a>`}
         ${leagueMenuLinks(authState?.leagues)}
@@ -1257,6 +1372,7 @@
   renderNav();
   ensureTickerMount();
   ensureUserMenuMount();
+  watchFranchiseTitles();
   const earlyInbox = ensureInboxMount();
   if (earlyInbox) earlyInbox.hidden = true;
   ensureProposalActionsMount();
@@ -1298,6 +1414,8 @@
     syncThemeFromUser,
     conferenceLogoForTheme,
     syncConferenceLogos,
+    franchiseTitleHtml,
+    fitFranchiseTitles: fitAllFranchiseTitles,
     getLeagueScope: () => leagueScope
   };
 })();

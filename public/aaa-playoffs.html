@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
     .tree {
       display: flex;
@@ -223,7 +223,7 @@
 
     .mu-row {
       display: grid;
-      grid-template-columns: 1.35rem 1.7rem minmax(0, 1fr) auto;
+      grid-template-columns: 1.35rem minmax(0, 1fr) auto;
       gap: 0.4rem;
       align-items: center;
       min-height: 2.05rem;
@@ -566,7 +566,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const AAA_MARK = '/assets/aaa-league.png?v=7';
@@ -608,8 +608,7 @@
       return `
         <div class="${cls}">
           <span class="mu-seed">${seed ? `#${esc(seed)}` : '·'}</span>
-          <img class="mu-logo" src="${esc(side?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
-          <span class="mu-name">${esc(side?.name || opts.fallbackName || 'TBD')}</span>
+          ${window.GridIronTitle.html(side?.name || opts.fallbackName || 'TBD', { size: 'sm', inline: true, owner: side?.owner })}
           <span class="mu-score${hasScore ? '' : ' is-empty'}">${hasScore ? fmt(score) : '—'}</span>
         </div>`;
     }
@@ -753,14 +752,12 @@
             </header>
             <div class="bowl-scoreboard">
               <div class="bowl-side${awayLead ? ' is-lead' : ''}">
-                <img class="bowl-logo" src="${esc(away?.logo || PLACEHOLDER)}" alt="" />
-                <div class="nm">${esc(away?.name || 'Finalist')}</div>
+                <div class="nm">${window.GridIronTitle.html(away?.name || 'Finalist', { size: 'sm' })}</div>
                 <div class="pts">${scored ? fmt(aScore) : ''}</div>
               </div>
               <div class="bowl-mid"><div class="vs">${esc(statusLabel(status) === 'Upcoming' ? 'VS' : statusLabel(status))}</div></div>
               <div class="bowl-side${homeLead ? ' is-lead' : ''}">
-                <img class="bowl-logo" src="${esc(home?.logo || PLACEHOLDER)}" alt="" />
-                <div class="nm">${esc(home?.name || 'Finalist')}</div>
+                <div class="nm">${window.GridIronTitle.html(home?.name || 'Finalist', { size: 'sm' })}</div>
                 <div class="pts">${scored ? fmt(hScore) : ''}</div>
               </div>
             </div>

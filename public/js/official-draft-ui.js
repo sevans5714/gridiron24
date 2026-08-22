@@ -510,6 +510,32 @@
     return `<span class="last" data-pos="${esc(pos)}"><span class="pick-meta"><span class="pick-pos">${esc(pos)}</span>${first}${team}</span><span class="pick-last">${esc(bits.last)}</span>${byeHtml}</span>`;
   }
 
+  function fitMagnetLastName(root) {
+    const scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('.last:not(.is-empty) .pick-last').forEach((el) => {
+      el.style.fontSize = '';
+      el.style.letterSpacing = '';
+      el.style.transform = '';
+      const avail = el.clientWidth;
+      if (avail < 8) return;
+      const used = el.scrollWidth;
+      if (used <= avail) return;
+      const current = Number.parseFloat(getComputedStyle(el).fontSize) || 16;
+      const next = Math.max(9, current * ((avail - 2) / Math.max(used, 1)));
+      el.style.fontSize = `${next.toFixed(2)}px`;
+      el.style.letterSpacing = '0';
+      if (el.scrollWidth > avail) {
+        const squeeze = Math.max(0.62, avail / Math.max(el.scrollWidth, 1));
+        el.style.transform = `scaleX(${squeeze.toFixed(3)})`;
+        el.style.transformOrigin = 'center';
+      }
+    });
+  }
+
+  function scheduleFitMagnetNames(root) {
+    requestAnimationFrame(() => fitMagnetLastName(root || document));
+  }
+
   function isTargeted(id) {
     return targetIds.includes(String(id));
   }
@@ -990,6 +1016,7 @@
         ${lastHtml}
       </div>`;
     }).join('');
+    scheduleFitMagnetNames(el);
   }
 
   function renderChat() {
@@ -1076,6 +1103,7 @@
     }
     if (!open || !card || !room) return;
     card.innerHTML = draftBoardHtml();
+    scheduleFitMagnetNames(card);
   }
 
   function applyClockColor(el, left, totalSeconds) {
@@ -1510,7 +1538,7 @@
       const you = i === seat;
       return `<article class="mock-complete-team${you ? ' is-you' : ''}">
         <div class="mock-complete-team-head">
-          <strong>${seatAvatarHtml(i, 'complete-team-avatar')}${you ? '★ ' : ''}${esc(name)}</strong>
+          <strong>${you ? '★ ' : ''}${window.GridIronTitle.html(name, { size: 'sm', inline: true })}</strong>
           <span>${picks.length} / ${totalSlots}</span>
         </div>
         <div class="mock-complete-slots">
@@ -1571,6 +1599,7 @@
     renderOrder();
     void card.offsetWidth;
     card.classList.add('is-magnet', 'is-pop');
+    scheduleFitMagnetNames(card);
 
     const flyToSeat = () => {
       if (epoch !== cpuAnnounceEpoch) return;

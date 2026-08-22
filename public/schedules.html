@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
     .toolbar {
       display: flex;
@@ -301,35 +301,24 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
-    function teamLogo(team) {
-      const src = team?.logo || '/assets/team-logo-placeholder.svg';
-      return `<img class="team-logo" src="${esc(src)}" alt="" width="52" height="52" loading="lazy" referrerpolicy="no-referrer">`;
-    }
-
     function side(team, align) {
-      const logo = teamLogo(team);
-      const name = `<div class="nm" title="${esc(team.name)}">${esc(team.name)}</div>`;
-      if (align === 'home') {
-        return `<div class="side home">${name}${logo}</div>`;
-      }
-      return `<div class="side away">${logo}${name}</div>`;
+      const name = window.GridIronTitle.html(team?.name || 'TBD', { size: 'sm', owner: team?.owner });
+      return `<div class="side ${align}">${name}</div>`;
     }
 
     function mayorSide(side, align) {
-      if (!side) return `<div class="mayor-side ${align}"><div class="nm">TBD</div></div>`;
+      if (!side) return `<div class="mayor-side ${align}">${window.GridIronTitle.html('TBD', { size: 'sm' })}</div>`;
       const team = side.team || side.champion || {};
-      const logo = team.logo || '/assets/team-logo-placeholder.svg';
       const name = team.name || side.conferenceName || 'TBD';
       return `
         <div class="mayor-side ${align}">
-          <img src="${esc(logo)}" alt="" width="44" height="44" loading="lazy" referrerpolicy="no-referrer" />
-          <div class="nm" title="${esc(name)}">${esc(name)}</div>
+          ${window.GridIronTitle.html(name, { size: 'sm', owner: team.owner })}
         </div>`;
     }
 

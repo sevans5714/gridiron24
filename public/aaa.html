@@ -8,12 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
     body[data-page="aaa"] {
       background:
@@ -1010,7 +1010,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -1033,11 +1033,6 @@
       return ties > 0
         ? `${team.wins}-${team.losses}-${ties}`
         : `${team.wins}-${team.losses}`;
-    }
-
-    function teamLogo(team) {
-      const src = team?.logo || PLACEHOLDER;
-      return `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
     }
 
     function confHead(conf, { compact = false, showWeek = false } = {}) {
@@ -1098,8 +1093,7 @@
           <td class="rank">${rank}</td>
           <td class="team" title="${esc(t.name)}">
             <a class="team-cell" href="/team.html?conference=aaa&teamId=${esc(t.id)}" style="color:inherit;text-decoration:none;">
-              <img class="team-logo-sm" src="${esc(t.logo || PLACEHOLDER)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
-              <span class="team-name">${esc(t.name)}</span>
+              ${window.GridIronTitle.html(t.name, { size: 'sm', inline: true, owner: t.owner })}
             </a>
           </td>
           <td class="num">${esc(record(t))}</td>
@@ -1156,8 +1150,7 @@
           ${confHead(data, { compact: true, showWeek: true })}
           <div class="motw">
             <div class="motw-side">
-              ${teamLogo(m.away)}
-              <div class="nm" title="${esc(m.away.name)}">${esc(m.away.name)}</div>
+              ${window.GridIronTitle.html(m.away.name, { size: 'sm', owner: m.away.owner })}
             </div>
             <div class="motw-mid">
               <div class="vs">VS</div>
@@ -1165,8 +1158,7 @@
               <div class="proj">Proj ${Number(m.away.projected || 0).toFixed(1)}–${Number(m.home.projected || 0).toFixed(1)}</div>
             </div>
             <div class="motw-side">
-              ${teamLogo(m.home)}
-              <div class="nm" title="${esc(m.home.name)}">${esc(m.home.name)}</div>
+              ${window.GridIronTitle.html(m.home.name, { size: 'sm', owner: m.home.owner })}
             </div>
           </div>
         </div>`;
@@ -1212,21 +1204,15 @@
             <div class="hotnot-col hot">
               <div class="label">Who’s Hot</div>
               <div class="hotnot-team">
-                ${teamLogo(hot)}
-                <div style="min-width:0">
-                  <div class="nm" title="${esc(hot.name)}">${esc(hot.name)}</div>
-                  <div class="sub">${esc(formSub(hot))}</div>
-                </div>
+                ${window.GridIronTitle.html(hot.name, { size: 'sm', owner: hot.owner })}
+                <div class="sub">${esc(formSub(hot))}</div>
               </div>
             </div>
             <div class="hotnot-col cold">
               <div class="label">Who’s Not</div>
               <div class="hotnot-team">
-                ${teamLogo(cold)}
-                <div style="min-width:0">
-                  <div class="nm" title="${esc(cold.name)}">${esc(cold.name)}</div>
-                  <div class="sub">${esc(formSub(cold))}</div>
-                </div>
+                ${window.GridIronTitle.html(cold.name, { size: 'sm', owner: cold.owner })}
+                <div class="sub">${esc(formSub(cold))}</div>
               </div>
             </div>
           </div>

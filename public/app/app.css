@@ -703,20 +703,13 @@ html[data-theme="day"] .s-row .num.col-pf {
 
 .mu-side {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.4rem;
   align-items: center;
   min-width: 0;
 }
 .mu-side.is-home {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-}
-.mu-side img {
-  width: 2.35rem;
-  height: 2.35rem;
-  object-fit: contain;
-  flex: 0 0 auto;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+  grid-template-columns: auto minmax(0, 1fr);
 }
 .mu-meta {
   min-width: 0;
@@ -1892,7 +1885,7 @@ html[data-theme="day"] .s-row .num.col-pf {
 
 .rank-row {
   display: grid;
-  grid-template-columns: 2.1rem 2.1rem minmax(0, 1fr);
+  grid-template-columns: 2.1rem minmax(0, 1fr);
   gap: 0.6rem;
   align-items: center;
   min-height: 2.85rem;
@@ -3593,6 +3586,15 @@ html[data-theme="day"] .s-row .num.col-pf {
   align-items: center;
   min-height: 1.05rem;
 }
+.wire-side.is-title {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.wire-side.is-title .franchise-block,
+.wire-side.is-title > .franchise-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
 .wire-side + .wire-side { margin-top: 0.05rem; }
 .wire-side img,
 .wire-side .ph {
@@ -4045,4 +4047,80 @@ body.has-install-sheet { overflow: hidden; }
   .view.view-enter {
     animation: none !important;
   }
+}
+
+.franchise-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  line-height: 0.88;
+  color: inherit;
+  text-align: inherit;
+}
+.franchise-title.is-inline {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0.28em 0.38em;
+  line-height: 1;
+}
+.franchise-title-lead {
+  font-family: var(--body);
+  font-size: 0.42em;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  max-width: 100%;
+}
+.franchise-title.is-inline .franchise-title-lead {
+  font-size: 0.52em;
+  letter-spacing: 0.12em;
+}
+.franchise-title-mark {
+  font-family: var(--display);
+  font-size: 1em;
+  font-weight: 400;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  max-width: 100%;
+  color: inherit;
+}
+.franchise-title.is-sm { font-size: 1.15rem; }
+.franchise-title.is-md { font-size: 1.45rem; }
+.franchise-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  gap: 0.08rem;
+}
+.franchise-owner {
+  font-family: var(--body);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.mu-side.is-home .franchise-title,
+.mu-side.is-home .franchise-block {
+  align-items: flex-end;
+  text-align: right;
 }

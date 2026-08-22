@@ -396,9 +396,43 @@ function lockKeepers(leagueId, actor) {
   });
 }
 
+function persistManagersCareer(league) {
+  const career = require('./career-store');
+  const season = Number(league.season) || new Date().getFullYear();
+  const champId = leagues.independentChampionFranchiseId(league);
+  const leagueName = (league.brand && league.brand.name) || league.slug;
+  for (const f of league.franchises || []) {
+    if (!f.managerUserId) continue;
+    const rec = leagues.independentRecordForFranchise(league, f.id);
+    try {
+      career.assignPastTeam({
+        userId: f.managerUserId,
+        season,
+        platform: 'independent',
+        leagueId: league.id,
+        leagueName,
+        conferenceKey: f.conferenceKey,
+        franchiseId: f.id,
+        teamId: f.id,
+        teamName: f.name,
+        ownerName: f.managerName || null,
+        wins: rec.wins,
+        losses: rec.losses,
+        ties: rec.ties,
+        pointsFor: rec.pointsFor,
+        pointsAgainst: rec.pointsAgainst,
+        playoff: rec.playoff,
+        champion: Boolean(champId && String(f.id) === String(champId)),
+        assignedBy: 'rollover'
+      });
+    } catch { /* skip a bad seat */ }
+  }
+}
+
 function rolloverSeason(leagueId, actor) {
   return leagues.withIndependentLeague(leagueId, (league) => {
     if (!isOwnerActor(league, actor)) throw err(403, 'Only the league owner can start the next season');
+    persistManagersCareer(league);
     const settings = settingsOf(league);
     const format = settings.leagueFormat || 'redraft';
     const keepers = ensureKeepers(league);

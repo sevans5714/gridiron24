@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
     body[data-page="members"] {
       --mo-blue: #2f7bff;
@@ -819,6 +819,12 @@
     .sgame-row.has-line {
       grid-template-columns: 1.35rem minmax(0, 1fr) auto;
     }
+    .sgame-row.is-title {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .sgame-row.is-title.has-line {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
     .sgame-teamline {
       display: flex;
       align-items: center;
@@ -826,8 +832,10 @@
       min-width: 0;
     }
     .sgame-teamline > .sgame-abbr,
-    .sgame-teamline > .sgame-namecell {
-      flex: 0 1 auto;
+    .sgame-teamline > .sgame-namecell,
+    .sgame-teamline > .franchise-block,
+    .sgame-teamline > .franchise-title {
+      flex: 1 1 auto;
       min-width: 0;
     }
     .sgame-teamline > .sgame-score {
@@ -4489,14 +4497,16 @@
       display: block;
       overflow: hidden;
       min-width: 0;
+      width: 100%;
+      max-width: 100%;
       font-family: "Bebas Neue", "Oswald", sans-serif;
       font-size: 1.05rem;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
       line-height: 0.92;
       text-transform: uppercase;
       color: #05070b;
       white-space: nowrap;
-      text-overflow: ellipsis;
+      text-overflow: clip;
       text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
     }
     .cpu-recap-board .last .pick-bye {
@@ -4548,7 +4558,7 @@
       box-shadow: none;
     }
     .cpu-announce-magnet {
-      width: min(28rem, 84vw);
+      width: min(34rem, 92vw);
     }
     .cpu-announce-magnet .last {
       --pick-ink: #8b97a8;
@@ -4558,6 +4568,7 @@
       justify-items: stretch;
       gap: 0.22rem;
       width: 100%;
+      min-width: 0;
       min-height: 16.5rem;
       margin: 0;
       padding: 1.15rem 1.2rem 1.2rem;
@@ -4629,16 +4640,19 @@
     .cpu-announce-magnet .last .pick-last {
       display: block;
       overflow: hidden;
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
       font-family: "Bebas Neue", "Oswald", sans-serif;
-      font-size: clamp(4.4rem, 12vw, 7rem);
+      font-size: clamp(2.4rem, 9.5vw, 6.2rem);
       font-weight: 400;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
       line-height: 0.9;
       text-transform: uppercase;
       color: #05070b;
       text-align: center;
       white-space: nowrap;
-      text-overflow: ellipsis;
+      text-overflow: clip;
       text-shadow:
         0 1px 0 rgba(255, 255, 255, 0.5),
         0 2px 4px rgba(0, 0, 0, 0.45);
@@ -4904,17 +4918,19 @@
       display: block;
       overflow: hidden;
       min-width: 0;
+      width: 100%;
+      max-width: 100%;
       align-self: center;
       font-family: "Bebas Neue", "Oswald", sans-serif;
       font-size: 1.34rem;
       font-weight: 400;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.02em;
       line-height: 0.92;
       text-transform: uppercase;
       color: #05070b;
       text-align: center;
       white-space: nowrap;
-      text-overflow: ellipsis;
+      text-overflow: clip;
       -webkit-font-smoothing: auto;
       text-shadow:
         0 1px 0 rgba(255, 255, 255, 0.5),
@@ -10512,9 +10528,10 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
+  <script src="/js/cpu-gm-names.js?v=1"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=111"></script>
+  <script src="/js/lounge-desk.js?v=117"></script>
   <script src="/js/lounge-games.js?v=44"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -10856,17 +10873,21 @@
               ? `<span class="sgame-line is-blank" title="No projected line">—</span>`
               : '');
         }
-        const logo = t.logo
+        const logo = (!fantasy && t.logo)
           ? `<img class="sgame-logo" src="${esc(t.logo)}" alt="" width="28" height="28" loading="eager" decoding="async" referrerpolicy="no-referrer" />`
-          : `<span class="sgame-logo-fallback" aria-hidden="true"></span>`;
+          : (fantasy ? '' : `<span class="sgame-logo-fallback" aria-hidden="true"></span>`);
         const record = fantasy && t.record ? String(t.record) : '';
-        const nameCell = record
-          ? `<span class="sgame-namecell">
-              <span class="sgame-abbr" title="${esc(t.name || t.abbreviation || '')}">${esc(t.abbreviation || t.shortName || '?')}</span>
-              <span class="sgame-rec" title="Season record">${esc(record)}</span>
-            </span>`
-          : `<span class="sgame-abbr" title="${esc(t.name || t.abbreviation || '')}">${esc(t.abbreviation || t.shortName || '?')}</span>`;
-        return `<div class="sgame-row${showLineCol && lineHtml ? ' has-line' : ''}${win ? ' is-winner' : ''}">
+        const nameCell = fantasy
+          ? `${window.GridIronTitle.html(t.name || t.abbreviation || t.shortName || 'TBD', { size: 'sm', inline: true, owner: t.owner })}${
+              record ? `<span class="sgame-rec" title="Season record">${esc(record)}</span>` : ''
+            }`
+          : (record
+            ? `<span class="sgame-namecell">
+                <span class="sgame-abbr" title="${esc(t.name || t.abbreviation || '')}">${esc(t.abbreviation || t.shortName || '?')}</span>
+                <span class="sgame-rec" title="Season record">${esc(record)}</span>
+              </span>`
+            : `<span class="sgame-abbr" title="${esc(t.name || t.abbreviation || '')}">${esc(t.abbreviation || t.shortName || '?')}</span>`);
+        return `<div class="sgame-row${fantasy ? ' is-title' : ''}${showLineCol && lineHtml ? ' has-line' : ''}${win ? ' is-winner' : ''}">
           ${logo}
           <div class="sgame-teamline">
             ${nameCell}
@@ -11808,19 +11829,13 @@
       const isMe = state.viewer?.id === m.id;
       const team = String(m.teamName || '').trim();
       const who = String(m.name || '').trim() || 'Member';
-      const letters = initials(who);
-      const pic = m.avatarUrl
-        ? `<img class="member-avatar" src="${esc(m.avatarUrl)}" alt="" width="24" height="24" loading="lazy" decoding="async" />`
-        : `<span class="member-avatar is-fallback" aria-hidden="true">${esc(letters)}</span>`;
       const primary = team || who;
       const secondary = team && who && who.toLowerCase() !== team.toLowerCase() ? who : '';
       const title = [team || null, who, m.conferenceLabel].filter(Boolean).join(' · ');
       return `
         <div class="member-row${isMe ? ' is-you' : ''}" data-user-id="${esc(m.id)}" title="${esc(title)}">
-          ${pic}
           <div class="member-id">
-            <div class="team">${esc(primary)}</div>
-            ${secondary ? `<div class="name">${esc(secondary)}</div>` : ''}
+            <div class="team">${team ? window.GridIronTitle.html(primary, { size: 'sm', inline: true, owner: secondary }) : esc(primary)}</div>
           </div>
         </div>`;
     }

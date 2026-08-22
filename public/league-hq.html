@@ -7,13 +7,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
-  <link rel="stylesheet" href="/css/draft-desk.css?v=9" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
+  <link rel="stylesheet" href="/css/draft-desk.css?v=11" />
   <style>
     body[data-page="league-hq"] .topbar {
       border-bottom: 1px solid color-mix(in srgb, var(--il-c1) 42%, rgba(142, 182, 255, 0.42));
@@ -25,14 +25,16 @@
         radial-gradient(ellipse 85% 55% at 50% -8%, color-mix(in srgb, var(--il-c1) 22%, transparent), transparent 58%),
         radial-gradient(ellipse 42% 38% at 8% 72%, color-mix(in srgb, var(--il-c1) 12%, transparent), transparent 52%),
         radial-gradient(ellipse 42% 38% at 92% 68%, color-mix(in srgb, var(--il-c2) 11%, transparent), transparent 52%),
-        linear-gradient(180deg, #0b1220 0%, #070b14 32%, #05070e 100%);
+        radial-gradient(ellipse 90% 50% at 50% -10%, var(--body-wash), transparent 55%),
+        linear-gradient(180deg, var(--body-mid) 0%, var(--bg) 28%, var(--bg) 100%);
     }
     html[data-theme="day"] body[data-page="league-hq"] {
       background:
         radial-gradient(ellipse 85% 55% at 50% -8%, color-mix(in srgb, var(--il-c1) 14%, transparent), transparent 58%),
         radial-gradient(ellipse 42% 38% at 8% 72%, color-mix(in srgb, var(--il-c1) 8%, transparent), transparent 52%),
         radial-gradient(ellipse 42% 38% at 92% 68%, color-mix(in srgb, var(--il-c2) 7%, transparent), transparent 52%),
-        linear-gradient(180deg, #eef2f8 0%, #e8ecf1 100%);
+        radial-gradient(ellipse 90% 50% at 50% -10%, var(--body-wash), transparent 55%),
+        linear-gradient(180deg, var(--body-mid) 0%, var(--bg) 28%, var(--bg) 100%);
     }
     body[data-page="league-hq"] .page-main {
       padding-top: 0.35rem;
@@ -653,31 +655,39 @@
     .il-form input,
     .il-form select {
       font: inherit;
-      font-size: 0.95rem;
+      font-size: var(--fs-sm);
       font-weight: 500;
       letter-spacing: 0;
       text-transform: none;
-      color: var(--text);
+      color: var(--field-text, var(--text));
       background: var(--field-bg, var(--panel-2));
       border: 1px solid var(--line);
-      border-radius: 0.35rem;
-      padding: 0.55rem 0.65rem;
+      border-radius: 0;
+      padding: 0.55rem 0.7rem;
     }
     .il-form textarea,
     .il-rule-editor input,
     .il-rule-editor textarea {
       font: inherit;
-      font-size: 0.95rem;
+      font-size: var(--fs-sm);
       font-weight: 500;
       letter-spacing: 0;
       text-transform: none;
-      color: var(--text);
+      color: var(--field-text, var(--text));
       background: var(--field-bg, var(--panel-2));
       border: 1px solid var(--line);
-      border-radius: 0.35rem;
-      padding: 0.55rem 0.65rem;
+      border-radius: 0;
+      padding: 0.55rem 0.7rem;
       width: 100%;
       box-sizing: border-box;
+    }
+    .il-form input:focus,
+    .il-form select:focus,
+    .il-form textarea:focus,
+    .il-rule-editor input:focus,
+    .il-rule-editor textarea:focus {
+      outline: none;
+      border-color: var(--chip-border-active);
     }
     .il-form textarea,
     .il-rule-editor textarea {
@@ -956,6 +966,8 @@
       --mock-dst: #94a3b8;
       --mock-flex: #2dd4bf;
       --mock-bn: #64748b;
+      --mock-ir: #fb7185;
+      --mock-taxi: #7c5cbf;
       list-style: none;
       margin: 0;
       padding: 0;
@@ -1000,9 +1012,52 @@
     .il-slot-roster-row .slot[data-pos="DST"],
     .il-slot-roster-row .slot[data-pos="D/ST"] { background: var(--mock-dst); }
     .il-slot-roster-row .slot[data-pos="FLEX"] { background: var(--mock-flex); }
-    .il-slot-roster-row .slot[data-pos="BN"],
-    .il-slot-roster-row .slot[data-pos="IR"] { background: var(--mock-bn); color: #e8eef8; }
-    .il-slot-roster-row .slot[data-pos="TAXI"] { background: var(--mock-bn); color: #d7c4ff; }
+    .il-slot-roster-row .slot[data-pos="BN"] { background: var(--mock-bn); color: #e8eef8; }
+    .il-slot-roster-row .slot[data-pos="IR"] { background: var(--mock-ir); color: #1a0a0e; }
+    .il-slot-roster-row .slot[data-pos="TAXI"] { background: var(--mock-taxi); color: #f4edff; }
+    .il-slot-roster-row.is-keeper {
+      box-shadow: inset 3px 0 0 #efd782;
+      padding-left: 0.45rem;
+    }
+    .il-keeper-tag {
+      display: inline-block;
+      margin-left: 0.35rem;
+      padding: 0.08rem 0.35rem;
+      border: 1px solid rgba(239, 215, 130, 0.55);
+      color: #efd782;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+    .il-slot-empty {
+      padding: 0.35rem 0 0.55rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+      list-style: none;
+    }
+    .il-story {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem 0.85rem;
+      margin: 0 0 1rem;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .il-story-cell .lbl {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .il-story-cell .val {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
     .il-slot-roster-row .nm { min-width: 0; font-weight: 600; }
     .il-slot-roster-row .nm .pro {
       display: block;
@@ -1159,22 +1214,40 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid var(--btn-border, var(--text));
-      background: var(--btn-bg, var(--text));
-      color: var(--btn-text, var(--bg));
+      gap: 0.4rem;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
       font-family: var(--display);
-      font-size: 0.78rem;
-      letter-spacing: 0.06em;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       text-decoration: none;
-      padding: 0.55rem 0.9rem;
+      padding: 0.55rem 0.95rem;
       cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, opacity 0.15s ease, transform 0.15s ease, box-shadow 0.18s ease;
+    }
+    .il-btn:hover:not(:disabled) {
+      background: var(--btn-hover-bg);
+      color: var(--btn-hover-text);
+      box-shadow: 0 0 0 1px rgba(47, 109, 255, 0.25);
+    }
+    .il-btn:active:not(:disabled) {
+      transform: translateY(1px);
     }
     .il-btn.is-ghost {
+      border-color: var(--line);
       background: transparent;
       color: var(--text);
     }
-    .il-btn:disabled { opacity: 0.45; cursor: default; }
+    .il-btn.is-ghost:hover:not(:disabled) {
+      border-color: var(--ghost-hover-border);
+      background: var(--ghost-hover-bg);
+      color: var(--nav-hover);
+    }
+    .il-btn:disabled { opacity: 0.55; cursor: not-allowed; }
     .il-status {
       min-height: 1.2rem;
       font-size: 0.88rem;
@@ -1371,8 +1444,8 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=165"></script>
-  <script src="/js/official-draft-ui.js?v=11"></script>
+  <script src="/js/nav.js?v=170"></script>
+  <script src="/js/official-draft-ui.js?v=14"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -1408,11 +1481,6 @@
         <h1>${esc(title)}</h1>
         ${sub ? `<p>${sub}</p>` : ''}
       </header>${statusBanner(league)}`;
-    }
-
-    function franchiseLogo(franchise) {
-      const src = franchise?.logo || franchise?.crest || '/assets/team-logo-placeholder.svg';
-      return `<img src="${esc(src)}" alt="" width="72" height="72" decoding="async" />`;
     }
 
     function franchiseById(id) {
@@ -1485,8 +1553,7 @@
         <div class="il-conf-head" style="--conf:${esc(color)}"><h3>${esc(title)}</h3></div>
         <div class="il-motw">
           <div class="il-motw-side">
-            ${franchiseLogo(awayF || matchup.away)}
-            <div class="nm" title="${esc(matchup.away?.name || '')}">${esc(matchup.away?.name || 'Away')}</div>
+            ${window.GridIronTitle.html(matchup.away?.name || 'Away', { size: 'sm', owner: awayF?.managerName || matchup.away?.managerName })}
           </div>
           <div class="il-motw-mid">
             <div class="vs">VS</div>
@@ -1494,8 +1561,7 @@
             ${board?.live ? '<div class="live-note">LIVE</div>' : ''}
           </div>
           <div class="il-motw-side">
-            ${franchiseLogo(homeF || matchup.home)}
-            <div class="nm" title="${esc(matchup.home?.name || '')}">${esc(matchup.home?.name || 'Home')}</div>
+            ${window.GridIronTitle.html(matchup.home?.name || 'Home', { size: 'sm', owner: homeF?.managerName || matchup.home?.managerName })}
           </div>
         </div>
       </div>`;
@@ -1547,11 +1613,11 @@
           <div class="il-hotnot">
             <div class="il-hotnot-col hot">
               <div class="label">Who’s Hot</div>
-              ${hot ? `<div class="il-hotnot-team">${franchiseLogo(hot)}<div style="min-width:0"><div class="nm">${esc(hot.name)}</div><div class="sub">${esc(rec(hot))}</div></div></div>` : ''}
+              ${hot ? `<div class="il-hotnot-team">${window.GridIronTitle.html(hot.name, { size: 'sm', owner: hot.managerName })}<div class="sub">${esc(rec(hot))}</div></div>` : ''}
             </div>
             <div class="il-hotnot-col cold">
               <div class="label">Who’s Not</div>
-              ${cold ? `<div class="il-hotnot-team">${franchiseLogo(cold)}<div style="min-width:0"><div class="nm">${esc(cold.name)}</div><div class="sub">${esc(rec(cold))}</div></div></div>` : ''}
+              ${cold ? `<div class="il-hotnot-team">${window.GridIronTitle.html(cold.name, { size: 'sm', owner: cold.managerName })}<div class="sub">${esc(rec(cold))}</div></div>` : ''}
             </div>
           </div>
         </div>`;
@@ -1655,14 +1721,13 @@
                   ? `${s.wins}-${s.losses}${s.ties ? `-${s.ties}` : ''}`
                   : '0-0';
                 const pf = s ? Number(s.pointsFor || 0).toFixed(1) : '0.0';
-                const logo = t.logo || t.crest || '';
                 return `
                 <tr>
                   <td class="rank">${i + 1}</td>
                   <td class="team">
                     <a class="il-team-link" href="${esc(teamPath(t.id, weekBoard?.week))}">${
-                      logo ? `<img class="team-logo-sm" src="${esc(logo)}" alt="" width="28" height="28" />` : ''
-                    }${esc(t.name || t.teamName || `Team ${i + 1}`)}</a>
+                      window.GridIronTitle.html(t.name || t.teamName || `Team ${i + 1}`, { size: 'sm', inline: true, owner: t.managerName || t.ownerName })
+                    }</a>
                   </td>
                   ${compact ? '' : `<td class="mgr">${esc(t.managerName || t.ownerName || 'Open')}</td>`}
                   <td class="num">${esc(record)}</td>
@@ -2274,6 +2339,73 @@
       return s;
     }
 
+    function reserveKind(slot) {
+      const s = String(slot || '').toUpperCase();
+      if (s === 'TAXI' || s.startsWith('TAXI')) return 'taxi';
+      if (s === 'IR' || s.startsWith('IR')) return 'ir';
+      return 'bench';
+    }
+
+    function declaredKeeperIds() {
+      const ids = new Set();
+      for (const p of hqState.keepers?.myFranchise?.roster || []) {
+        if (p.declared) ids.add(String(p.playerId || p.id || ''));
+      }
+      return ids;
+    }
+
+    function keeperTagHtml(player) {
+      const id = String(player?.playerId || player?.id || '');
+      return id && declaredKeeperIds().has(id) ? '<span class="il-keeper-tag">Keeper</span>' : '';
+    }
+
+    function reserveGroupHtml(players, slots, rowFn) {
+      const groups = { bench: [], ir: [], taxi: [] };
+      for (const p of players || []) groups[reserveKind(p.slot)].push(p);
+      const irMax = Number(slots?.IR) || 0;
+      const taxiMax = Number(slots?.TAXI) || 0;
+      const parts = [];
+      const chunk = (label, rows, emptyNote) => {
+        parts.push(`<li class="il-slot-roster-divider" aria-hidden="true">${label}</li>`);
+        if (rows.length) parts.push(rows.map(rowFn).join(''));
+        else if (emptyNote) parts.push(`<li class="il-slot-empty">${emptyNote}</li>`);
+      };
+      if (groups.bench.length) chunk('Bench', groups.bench);
+      if (groups.ir.length || irMax > 0) {
+        chunk(irMax > 0 ? `IR · ${groups.ir.length} of ${irMax}` : 'IR', groups.ir, 'Nobody on IR');
+      }
+      if (groups.taxi.length || taxiMax > 0) {
+        chunk(taxiMax > 0 ? `Taxi · ${groups.taxi.length} of ${taxiMax}` : 'Taxi', groups.taxi, 'Nobody on taxi');
+      }
+      return parts.join('');
+    }
+
+    function rosterStoryHtml(league, franchise) {
+      const slots = league.settings?.rosterSlots || {};
+      const roster = Array.isArray(franchise?.roster) ? franchise.roster : [];
+      const irMax = Number(slots.IR) || 0;
+      const taxiMax = Number(slots.TAXI) || 0;
+      const irUsed = roster.filter((p) => reserveKind(p.slot) === 'ir').length;
+      const taxiUsed = roster.filter((p) => reserveKind(p.slot) === 'taxi').length;
+      const s = league.settings || {};
+      const format = s.leagueFormat || 'redraft';
+      const keepers = hqState.keepers;
+      let keepLine = 'This league redrafts — no keepers.';
+      if (format === 'dynasty') {
+        keepLine = 'Dynasty — the whole roster carries. Taxi is first-year. IR does not score.';
+      } else if (keepersAreOn(s)) {
+        const n = (keepers?.myFranchise?.roster || []).filter((p) => p.declared).length;
+        const max = Number(s.keeperCount) || 0;
+        const locked = keepers?.status === 'locked';
+        keepLine = `${n} of ${max} keeper${max === 1 ? '' : 's'} declared · ${locked ? 'locked' : 'open'}.`;
+      }
+      return `<div class="il-story">
+        <div class="il-story-cell"><span class="lbl">IR</span><span class="val">${irMax ? `${irUsed} / ${irMax}` : 'Off'}</span></div>
+        <div class="il-story-cell"><span class="lbl">Taxi</span><span class="val">${taxiMax ? `${taxiUsed} / ${taxiMax}` : 'Off'}</span></div>
+        <p class="il-meta" style="grid-column:1/-1;margin:0;">${esc(keepLine)}</p>
+      </div>`;
+    }
+
     function slotRosterHtml(scoredFranchise, franchise, rosterSlots = {}, opts = {}) {
       const starters = Array.isArray(scoredFranchise?.starters) ? scoredFranchise.starters : [];
       const bench = Array.isArray(scoredFranchise?.bench) ? scoredFranchise.bench : [];
@@ -2304,26 +2436,36 @@
       }
 
       const total = scoredFranchise?.total != null ? Number(scoredFranchise.total).toFixed(1) : null;
+      const kept = declaredKeeperIds();
       if (!editable) {
         return `
         ${total != null ? `<p class="il-meta" style="margin:0 0 0.55rem;">Starting lineup · week total <span class="il-pts">${esc(total)}</span></p>` : ''}
         <ul class="il-slot-roster" role="list">
-          ${filled.map((p) => `
-            <li class="il-slot-roster-row ${p.empty ? 'is-empty' : 'is-selected'}${p.live ? ' is-live' : ''}">
+          ${filled.map((p) => {
+            const pid = String(p.playerId || p.id || '');
+            const isKeeper = pid && kept.has(pid);
+            return `
+            <li class="il-slot-roster-row ${p.empty ? 'is-empty' : 'is-selected'}${p.live ? ' is-live' : ''}${isKeeper ? ' is-keeper' : ''}">
               <span class="slot" data-pos="${esc(posBadge(p.slot || p.position))}">${esc(posBadge(p.slot || p.position))}</span>
-              <span class="nm">${esc(p.empty ? '—' : (p.name || p.playerName || 'Player'))}
+              <span class="nm">${esc(p.empty ? '—' : (p.name || p.playerName || 'Player'))}${isKeeper ? '<span class="il-keeper-tag">Keeper</span>' : ''}
                 <span class="pro">${p.empty ? 'Open slot' : `${esc(p.nflTeam || p.team || p.position || '')}${p.gameClock ? ` · ${esc(p.gameClock)}` : ''}`}</span>
               </span>
               <span class="nums">${p.weekPoints != null ? Number(p.weekPoints).toFixed(1) : '—'}</span>
-            </li>`).join('')}
-          ${bench.length ? `<li class="il-slot-roster-divider" aria-hidden="true">Bench / IR / Taxi</li>${bench.map((p) => `
-            <li class="il-slot-roster-row${p.live ? ' is-live' : ''}">
-              <span class="slot" data-pos="${esc(p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN')}">${esc(p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN')}</span>
-              <span class="nm">${esc(p.name || p.playerName || 'Player')}
+            </li>`;
+          }).join('')}
+          ${reserveGroupHtml(bench, slots, (p) => {
+            const pid = String(p.playerId || p.id || '');
+            const isKeeper = pid && kept.has(pid);
+            const pos = p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN';
+            return `
+            <li class="il-slot-roster-row${p.live ? ' is-live' : ''}${isKeeper ? ' is-keeper' : ''}">
+              <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
+              <span class="nm">${esc(p.name || p.playerName || 'Player')}${isKeeper ? '<span class="il-keeper-tag">Keeper</span>' : ''}
                 <span class="pro">${esc(p.nflTeam || p.team || p.position || '')}${p.injuryStatus ? ` · ${esc(p.injuryStatus)}` : ''}${p.gameClock ? ` · ${esc(p.gameClock)}` : ''}</span>
               </span>
               <span class="nums">${p.weekPoints != null ? Number(p.weekPoints).toFixed(1) : '—'}</span>
-            </li>`).join('')}` : ''}
+            </li>`;
+          })}
         </ul>`;
       }
 
@@ -2364,25 +2506,29 @@
       if (Number(slots.IR) > 0) reserveChoices.push('IR');
       if (Number(slots.TAXI) > 0) reserveChoices.push('TAXI');
       const reservePlayers = pool.filter((p) => !starterIds.has(p.playerId));
-      const reserveRows = reservePlayers.map((p) => `
-        <li class="il-slot-roster-row il-lineup-row">
-          <span class="slot" data-pos="${esc(p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN')}">${esc(p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN')}</span>
-          <span class="nm">${esc(p.name)} <span class="pro">${esc(p.position)} ${esc(p.team)}</span>
+      const reserveHtml = reserveGroupHtml(reservePlayers, slots, (p) => {
+        const isKeeper = kept.has(String(p.playerId));
+        const pos = p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN';
+        return `
+        <li class="il-slot-roster-row il-lineup-row${isKeeper ? ' is-keeper' : ''}">
+          <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
+          <span class="nm">${esc(p.name)}${isKeeper ? '<span class="il-keeper-tag">Keeper</span>' : ''} <span class="pro">${esc(p.position)} ${esc(p.team)}</span>
             <select data-lineup-slot-reserve="1" data-player="${esc(p.playerId)}">
               ${reserveChoices.map((s) => `<option value="${s}" ${p.slot === s || (!['IR','TAXI'].includes(p.slot) && s === 'BN') ? 'selected' : ''}>${s}</option>`).join('')}
             </select>
           </span>
           <span class="nums"></span>
-        </li>`).join('');
+        </li>`;
+      });
 
       return `
         ${total != null ? `<p class="il-meta" style="margin:0 0 0.55rem;">Starting lineup · week total <span class="il-pts">${esc(total)}</span></p>` : ''}
         <form id="il-lineup-form" data-franchise="${esc(franchise.id)}">
           <ul class="il-slot-roster" role="list">
             ${slotRows}
-            ${reserveRows ? `<li class="il-slot-roster-divider">Bench / IR / Taxi</li>${reserveRows}` : ''}
+            ${reserveHtml}
           </ul>
-          <p class="il-meta">IR only for Out / IR / PUP / Doubtful unless the owner opened IR. Taxi is dynasty rookies. IR and taxi do not score.</p>
+          <p class="il-meta">Move players into IR or taxi here. IR only for Out / IR / PUP / Doubtful unless the owner opened IR. Taxi is dynasty rookies. IR and taxi do not score.</p>
           <div class="il-actions" style="margin-top:0.85rem;">
             <button type="submit" class="il-btn">Save lineup</button>
             <span class="il-status" id="il-lineup-status" role="status"></span>
@@ -2442,10 +2588,15 @@
       }
       const scored = (weekBoard?.franchises || []).find((f) => f.franchiseId === mine.id) || null;
       const week = weekBoard?.week;
-      return teamPageBody(league, mine, scored, week);
+      return `${teamPageBody(league, mine, scored, week, { story: true })}
+        <div id="il-keepers-root" data-embed="1">${hqState.keepers
+          ? (hqState.keepers.ok === false
+            ? `<section class="il-panel" id="keepers" style="margin-top:1rem;"><p class="il-empty">${esc(hqState.keepers.error || 'Could not load keepers')}</p></section>`
+            : keepersHtml(league, hqState.viewer, hqState.keepers, { embed: true }))
+          : '<section class="il-panel" id="keepers" style="margin-top:1rem;"><p class="il-empty">Loading keepers…</p></section>'}</div>`;
     }
 
-    function teamPageBody(league, franchise, scored, week) {
+    function teamPageBody(league, franchise, scored, week, opts = {}) {
       const conf = (league.conferences || []).find((c) => c.key === franchise.conferenceKey);
       const weeks = hqState.weekBoard?.availableWeeks?.length
         ? hqState.weekBoard.availableWeeks
@@ -2461,9 +2612,10 @@
           </label>
           <span class="il-meta">${esc(conf?.name || '')}${franchise.managerName ? ` · ${esc(franchise.managerName)}` : ''}</span>
         </div>
+        ${opts.story ? rosterStoryHtml(league, franchise) : ''}
         <section class="il-panel">
-          <h2>${esc(franchise.name)}</h2>
-          <p class="il-meta" style="margin:0 0 0.75rem;">Set your starters. Only the starting lineup scores. Points update as NFL games go.</p>
+          <h2>${window.GridIronTitle.html(franchise.name, { size: 'lg' })}</h2>
+          <p class="il-meta" style="margin:0 0 0.75rem;">Set your starters. Only the starting lineup scores. Move IR and taxi on this roster. Keepers are below.</p>
           ${slotRosterHtml(scored, franchise, league.settings?.rosterSlots || {}, { editable: canEditLineup(franchise) })}
         </section>`;
     }
@@ -2483,7 +2635,7 @@
             <ul class="il-team-list">
               ${(league.franchises || []).map((f) => `
                 <li>
-                  <a class="il-team-link" href="${esc(teamPath(f.id, weekBoard?.week))}">${esc(f.name)}</a>
+                  <a class="il-team-link" href="${esc(teamPath(f.id, weekBoard?.week))}">${window.GridIronTitle.html(f.name, { size: 'sm', inline: true, owner: f.managerName })}</a>
                   <span class="il-meta">${esc(f.managerName || 'Open')}</span>
                 </li>`).join('') || '<li class="il-empty">No franchises</li>'}
             </ul>
@@ -2686,6 +2838,8 @@
         root.innerHTML = myRosterHtml(league, hqState.viewer?.id, hqState.weekBoard);
         wireTeamWeekUi();
         wireLineupUi();
+        wireKeepersUi();
+        scrollKeepersIfHash();
         return;
       }
       if (section === 'team') {
@@ -3314,14 +3468,20 @@
       });
     }
 
-    function keepersHtml(league, viewer, data) {
+    function keepersHtml(league, viewer, data, opts = {}) {
+      const embed = Boolean(opts.embed);
       const s = { ...(league.settings || {}), ...(data.settings || {}) };
       const format = s.leagueFormat || 'redraft';
       const mine = data.myFranchise;
       const decls = data.declarations || [];
       const owner = viewer?.isOwner || viewer?.isSiteOwner;
       const on = keepersAreOn(s);
-      const ownerForm = owner ? `<section class="il-panel">
+      const myTeamHref = (hqState.pages && hqState.pages.myRoster) || 'my-roster.html';
+      const keepersHref = (hqState.pages && hqState.pages.keepers) || 'keepers.html';
+      const ownerLink = owner
+        ? `<p class="il-meta"><a class="il-team-link" href="${esc(keepersHref)}">Owner keeper settings →</a></p>`
+        : '';
+      const ownerForm = (!embed && owner) ? `<section class="il-panel">
           <h2>Keeper settings</h2>
           <p class="il-meta">Turn keepers off for a full redraft, or on and choose how many and whether they cost a draft pick.</p>
           <form class="il-form is-wide" id="il-keepers-page-form" style="margin-top:0.75rem;">
@@ -3332,11 +3492,25 @@
             </div>
           </form>
         </section>` : '';
+      if (embed && format === 'dynasty') {
+        return `<section class="il-panel" id="keepers" style="margin-top:1rem;">
+          <h2>Dynasty · IR · Taxi</h2>
+          <p class="il-meta">Everyone is kept. Taxi is first-year players. IR does not score. Set IR and taxi on the roster above.</p>
+          ${ownerLink}
+        </section>`;
+      }
+      if (embed && !on) {
+        return `<section class="il-panel" id="keepers" style="margin-top:1rem;">
+          <h2>Keepers</h2>
+          <p class="il-empty">This league redrafts. IR and taxi are on the roster above.</p>
+          ${ownerLink}
+        </section>`;
+      }
       if (format === 'dynasty') {
         return `${ownerForm}
         <section class="il-panel" style="margin-top:1rem;">
           <h2>Dynasty</h2>
-          <p class="il-meta">The whole roster carries into ${esc(String((league.season || new Date().getFullYear()) + 1))}. The next draft is rookies only. Taxi is for first-year players. IR is for injured players and does not score. Keepers stay off — everyone is retained.</p>
+          <p class="il-meta">The whole roster carries into ${esc(String((league.season || new Date().getFullYear()) + 1))}. The next draft is rookies only. Taxi is for first-year players. IR is for injured players and does not score. Keepers stay off — everyone is retained. Managers set IR and taxi on <a class="il-team-link" href="${esc(myTeamHref)}">My Team</a>.</p>
           ${owner ? `<div class="il-actions" style="margin-top:1rem;">
             <button type="button" class="il-btn" id="il-keep-rollover">Start next season</button>
           </div>
@@ -3347,7 +3521,7 @@
         return `${ownerForm}
         <section class="il-panel" style="margin-top:1rem;">
           <h2>Keepers are off</h2>
-          <p class="il-empty">This league redrafts. ${owner ? 'Turn keepers on above to let teams keep players into next season.' : 'The league owner can turn keepers on in Settings.'}</p>
+          <p class="il-empty">This league redrafts. ${owner ? 'Turn keepers on above to let teams keep players into next season.' : 'The league owner can turn keepers on in Settings.'} IR and taxi live on <a class="il-team-link" href="${esc(myTeamHref)}">My Team</a>.</p>
         </section>`;
       }
       const costLabel = s.keeperCost === 'round'
@@ -3355,30 +3529,39 @@
         : s.keeperCost === 'round-minus-one'
           ? 'Keeping a player uses that round’s pick, one round earlier each year they are kept. Undrafted keepers cost the last round.'
           : 'Keepers do not cost a draft pick. You still have a full draft.';
+      const minePanel = mine ? `<section class="il-panel" ${embed ? 'id="keepers" style="margin-top:1rem;"' : ''}>
+          <h2>${embed ? `Keepers · ${esc(mine.name)}` : esc(mine.name)}</h2>
+          <p class="il-meta">${esc(costLabel)} ${esc(String(s.keeperCount || 0))} per team · max ${esc(String(s.keeperMaxSeasons || 1))} seasons. Status: ${esc(data.status || 'open')}.</p>
+          <ul class="il-team-list">
+            ${(mine.roster || []).map((p) => `
+              <li>
+                <span>${esc(p.name)} <span class="il-meta">${esc(p.position || '')} · ${esc(String(p.slot || 'BN'))} · rd ${esc(String(p.acquiredRound || 'FA'))}${p.costRound ? ` · costs rd ${esc(String(p.costRound))}` : ''}${p.declared ? ' · kept' : ''}</span></span>
+                ${data.status === 'locked' ? `<span class="il-meta">${p.declared ? 'Kept' : ''}</span>` : `
+                <button type="button" class="il-btn" data-keep="${esc(p.playerId || p.id)}" data-keep-on="${p.declared ? '0' : '1'}">${p.declared ? 'Drop keeper' : 'Keep'}</button>`}
+              </li>`).join('') || '<li class="il-empty">No roster yet.</li>'}
+          </ul>
+          ${embed ? '<p class="il-status" id="il-keep-status" role="status"></p>' : ''}
+          ${embed ? ownerLink : ''}
+        </section>` : `<p class="il-empty"${embed ? ' id="keepers"' : ''}>Claim a franchise to declare keepers.</p>`;
+      const declaredPanel = `<section class="il-panel" style="margin-top:1rem;">
+          <h2>Declared</h2>
+          <ul class="il-team-list">
+            ${decls.map((d) => `<li><span>${esc(d.franchiseName)} · ${esc(d.playerName)}</span><span class="il-meta">${d.costRound ? `rd ${esc(String(d.costRound))}` : 'no pick cost'}</span></li>`).join('') || '<li class="il-empty">No keepers declared yet.</li>'}
+          </ul>
+        </section>`;
+      if (embed) {
+        return `${minePanel}${declaredPanel}`;
+      }
       return `
+        <p class="il-meta">Managers declare keepers, IR, and taxi on <a class="il-team-link" href="${esc(myTeamHref)}#keepers">My Team</a>. This page is league-wide${owner ? ' and owner settings' : ''}.</p>
         ${ownerForm}
         <p class="il-meta" style="margin-top:1rem;">${esc(costLabel)} ${esc(String(s.keeperCount || 0))} per team · max ${esc(String(s.keeperMaxSeasons || 1))} seasons. Status: ${esc(data.status || 'open')}.</p>
         ${owner ? `<div class="il-actions" style="margin:0 0 1rem;">
           ${data.status === 'locked' ? '' : '<button type="button" class="il-btn" id="il-keep-lock">Lock keepers</button>'}
           <button type="button" class="il-btn" id="il-keep-rollover">Start next season (apply keepers)</button>
         </div>` : ''}
-        ${mine ? `<section class="il-panel">
-          <h2>${esc(mine.name)}</h2>
-          <ul class="il-team-list">
-            ${(mine.roster || []).map((p) => `
-              <li>
-                <span>${esc(p.name)} <span class="il-meta">${esc(p.position || '')} · rd ${esc(String(p.acquiredRound || 'FA'))}${p.costRound ? ` · costs rd ${esc(String(p.costRound))}` : ''}</span></span>
-                ${data.status === 'locked' ? `<span class="il-meta">${p.declared ? 'Kept' : ''}</span>` : `
-                <button type="button" class="il-btn" data-keep="${esc(p.playerId || p.id)}" data-keep-on="${p.declared ? '0' : '1'}">${p.declared ? 'Drop keeper' : 'Keep'}</button>`}
-              </li>`).join('') || '<li class="il-empty">No roster yet.</li>'}
-          </ul>
-        </section>` : '<p class="il-empty">Claim a franchise to declare keepers.</p>'}
-        <section class="il-panel" style="margin-top:1rem;">
-          <h2>Declared</h2>
-          <ul class="il-team-list">
-            ${decls.map((d) => `<li><span>${esc(d.franchiseName)} · ${esc(d.playerName)}</span><span class="il-meta">${d.costRound ? `rd ${esc(String(d.costRound))}` : 'no pick cost'}</span></li>`).join('') || '<li class="il-empty">No keepers declared yet.</li>'}
-          </ul>
-        </section>`;
+        ${minePanel}
+        ${declaredPanel}`;
     }
 
     async function loadKeepers() {
@@ -3417,7 +3600,18 @@
       const paint = () => {
         const mount = document.getElementById('il-keepers-root');
         if (!mount) return;
-        mount.innerHTML = keepersHtml(hqState.league, hqState.viewer, hqState.keepers);
+        const embed = mount.getAttribute('data-embed') === '1';
+        if (embed) {
+          const host = document.getElementById('il-week-scored');
+          if (host) {
+            host.innerHTML = myRosterHtml(hqState.league, hqState.viewer?.id, hqState.weekBoard);
+            wireTeamWeekUi();
+            wireLineupUi();
+            wireKeepersUi();
+            return;
+          }
+        }
+        mount.innerHTML = keepersHtml(hqState.league, hqState.viewer, hqState.keepers, { embed });
         wireKeepersUi();
       };
       document.querySelectorAll('[data-keep]').forEach((btn) => {
@@ -3480,6 +3674,12 @@
           setStatus(err.message);
         }
       });
+    }
+
+    function scrollKeepersIfHash() {
+      if (location.hash !== '#keepers') return;
+      const el = document.getElementById('keepers') || document.getElementById('il-keepers-root');
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function sectionHtml(section, league, pages, viewer = {}) {
@@ -4289,7 +4489,7 @@
               hqState.wireError = wireErr.message || 'Could not load the wire';
             }
           }
-          if (section === 'keepers') {
+          if (section === 'keepers' || section === 'my-roster') {
             try {
               await loadKeepers();
             } catch (keepErr) {
@@ -4302,12 +4502,13 @@
           if (section === 'rulebook') wireRulebookUi();
           if (section === 'scoreboard') wireScoreboardUi();
           if (section === 'playoffs') wirePlayoffUi();
-          if (section === 'keepers') wireKeepersUi();
+          if (section === 'keepers' || section === 'my-roster') wireKeepersUi();
           if (section === 'transactions') wireWireUi();
           if (section === 'team' || section === 'my-roster') {
             wireTeamWeekUi();
             wireLineupUi();
           }
+          if (section === 'my-roster') scrollKeepersIfHash();
           if (['home', 'scoreboard', 'standings', 'team-rosters', 'my-roster', 'team', 'schedules', 'rankings', 'playoffs'].includes(section)) {
             setLiveSync();
             startLivePoll();

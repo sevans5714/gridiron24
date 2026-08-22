@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
     .tree {
       display: flex;
@@ -270,7 +270,7 @@
 
     .mu-row {
       display: grid;
-      grid-template-columns: 1.35rem 1.7rem minmax(0, 1fr) auto;
+      grid-template-columns: 1.35rem minmax(0, 1fr) auto;
       gap: 0.4rem;
       align-items: center;
       min-height: 2.05rem;
@@ -681,7 +681,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -722,8 +722,7 @@
       return `
         <div class="${cls}">
           <span class="mu-seed">${seed ? `#${esc(seed)}` : '·'}</span>
-          <img class="mu-logo" src="${esc(side?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
-          <span class="mu-name">${esc(side?.name || opts.fallbackName || 'TBD')}</span>
+          ${window.GridIronTitle.html(side?.name || opts.fallbackName || 'TBD', { size: 'sm', inline: true, owner: side?.owner })}
           <span class="mu-score${hasScore ? '' : ' is-empty'}">${hasScore ? fmt(score) : '—'}</span>
         </div>`;
     }
@@ -846,8 +845,7 @@
               <div class="bowl-scoreboard" id="bowl-scoreboard">
                 <div class="bowl-side detail">
                   <span class="conf-chip">Detail</span>
-                  <img class="bowl-logo" id="bowl-detail-logo" src="/assets/team-logo-placeholder.svg" alt="" />
-                  <div class="nm" id="bowl-detail-name">Detail Champion</div>
+                  <div class="nm" id="bowl-detail-name">${window.GridIronTitle.html('Detail Champion', { size: 'sm' })}</div>
                   <div class="pts" id="bowl-detail-pts"></div>
                 </div>
                 <div class="bowl-mid">
@@ -856,8 +854,7 @@
                 </div>
                 <div class="bowl-side overtime">
                   <span class="conf-chip">Overtime</span>
-                  <img class="bowl-logo" id="bowl-overtime-logo" src="/assets/team-logo-placeholder.svg" alt="" />
-                  <div class="nm" id="bowl-overtime-name">Overtime Champion</div>
+                  <div class="nm" id="bowl-overtime-name">${window.GridIronTitle.html('Overtime Champion', { size: 'sm' })}</div>
                   <div class="pts" id="bowl-overtime-pts"></div>
                 </div>
               </div>
@@ -876,8 +873,7 @@
               <div class="bowl-scoreboard" id="survival-scoreboard" data-week-label="Week 17 · Mayor's Cup">
                 <div class="bowl-side detail">
                   <span class="conf-chip">Detail</span>
-                  <img class="bowl-logo" id="survival-detail-logo" src="/assets/team-logo-placeholder.svg" alt="" />
-                  <div class="nm" id="survival-detail-name">Detail Last Place</div>
+                  <div class="nm" id="survival-detail-name">${window.GridIronTitle.html('Detail Last Place', { size: 'sm' })}</div>
                   <div class="pts" id="survival-detail-pts"></div>
                 </div>
                 <div class="bowl-mid">
@@ -886,8 +882,7 @@
                 </div>
                 <div class="bowl-side overtime">
                   <span class="conf-chip">Overtime</span>
-                  <img class="bowl-logo" id="survival-overtime-logo" src="/assets/team-logo-placeholder.svg" alt="" />
-                  <div class="nm" id="survival-overtime-name">Overtime Last Place</div>
+                  <div class="nm" id="survival-overtime-name">${window.GridIronTitle.html('Overtime Last Place', { size: 'sm' })}</div>
                   <div class="pts" id="survival-overtime-pts"></div>
                 </div>
               </div>
@@ -900,11 +895,11 @@
       const nameEl = document.getElementById(`bowl-${prefix}-name`);
       if (!nameEl) return;
       const wrap = nameEl.closest('.bowl-side');
-      wrap.classList.toggle('is-lead', Boolean(isLead));
-      nameEl.textContent = side?.champion?.name
-        || (prefix === 'detail' ? 'Detail Champion' : 'Overtime Champion');
-      const img = document.getElementById(`bowl-${prefix}-logo`) || wrap.querySelector('img.bowl-logo');
-      if (img) img.src = side?.champion?.logo || PLACEHOLDER;
+      wrap?.classList.toggle('is-lead', Boolean(isLead));
+      nameEl.innerHTML = window.GridIronTitle.html(
+        side?.champion?.name || (prefix === 'detail' ? 'Detail Champion' : 'Overtime Champion'),
+        { size: 'sm' }
+      );
       const pts = document.getElementById(`bowl-${prefix}-pts`);
       if (pts) pts.textContent = side?.score != null ? fmt(side.score) : '';
     }
@@ -913,11 +908,11 @@
       const nameEl = document.getElementById(`survival-${prefix}-name`);
       if (!nameEl) return;
       const wrap = nameEl.closest('.bowl-side');
-      wrap.classList.toggle('is-lead', Boolean(isLead));
-      nameEl.textContent = side?.team?.name
-        || (prefix === 'detail' ? 'Detail Last Place' : 'Overtime Last Place');
-      const img = document.getElementById(`survival-${prefix}-logo`) || wrap.querySelector('img.bowl-logo');
-      if (img) img.src = side?.team?.logo || PLACEHOLDER;
+      wrap?.classList.toggle('is-lead', Boolean(isLead));
+      nameEl.innerHTML = window.GridIronTitle.html(
+        side?.team?.name || (prefix === 'detail' ? 'Detail Last Place' : 'Overtime Last Place'),
+        { size: 'sm' }
+      );
       const pts = document.getElementById(`survival-${prefix}-pts`);
       if (pts) pts.textContent = side?.score != null ? fmt(side.score) : '';
     }

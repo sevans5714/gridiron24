@@ -1598,7 +1598,7 @@ html[data-theme="day"] .league-switch img {
   position: relative;
   flex: 0 1 auto;
   min-width: 0;
-  max-width: min(16rem, 42vw);
+  max-width: min(22rem, 52vw);
 }
 
 .user-chip {
@@ -1606,11 +1606,11 @@ html[data-theme="day"] .league-switch img {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.55rem;
   width: 100%;
   max-width: 100%;
   min-height: 2.55rem;
-  padding: 0.1rem 0.35rem 0.1rem 0.35rem;
+  padding: 0.12rem 0.4rem 0.12rem 0.45rem;
   border: 0;
   border-left: 1px solid var(--chip-border);
   border-radius: 0;
@@ -1621,7 +1621,7 @@ html[data-theme="day"] .league-switch img {
   cursor: pointer;
   font: inherit;
   text-align: left;
-  --chip-avatar-size: 2rem;
+  --chip-avatar-size: 1.35rem;
 }
 
 .user-chip:hover,
@@ -1656,7 +1656,7 @@ html[data-theme="day"] .league-switch img {
   gap: 0.04rem;
   min-width: 0;
   flex: 1 1 auto;
-  padding: 0.05rem 0.1rem 0.05rem 0;
+  padding: 0.02rem 0.15rem 0.02rem 0;
   border-left: 0;
 }
 
@@ -1666,6 +1666,7 @@ html[data-theme="day"] .league-switch img {
   gap: 0.4rem;
   min-width: 0;
   max-width: 100%;
+  width: 100%;
 }
 
 .user-chip-caret {
@@ -1698,7 +1699,7 @@ html[data-theme="day"] .league-switch img {
 
 .user-chip-team {
   font-family: var(--display);
-  font-size: clamp(0.9rem, 1.7vw, 1.05rem);
+  font-size: clamp(0.88rem, 1.5vw, 1.08rem);
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1708,7 +1709,10 @@ html[data-theme="day"] .league-switch img {
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.15;
+  min-width: 0;
+  width: 100%;
   max-width: 100%;
+  flex: 1 1 auto;
 }
 html[data-theme="day"] .user-chip-team {
   text-shadow: none;
@@ -1724,7 +1728,9 @@ html[data-theme="day"] .user-chip-team {
   text-overflow: ellipsis;
   line-height: 1.2;
   max-width: 100%;
-  padding-left: calc(var(--chip-avatar-size, 2rem) + 0.4rem);
+}
+.user-chip-owner:empty {
+  display: none;
 }
 
 .user-chip-access {
@@ -1740,7 +1746,6 @@ html[data-theme="day"] .user-chip-team {
   line-height: 1.2;
   max-width: 100%;
   opacity: 0.9;
-  padding-left: calc(var(--chip-avatar-size, 2rem) + 0.4rem);
 }
 
 .user-chip.needs-logo .user-chip-access {
@@ -3347,7 +3352,7 @@ body.has-install-sheet {
 
 @media (max-width: 1100px) {
   .topbar-right {
-    max-width: min(12.5rem, 34vw);
+    max-width: min(16rem, 42vw);
   }
   .user-chip-access {
     display: none;
@@ -3368,7 +3373,7 @@ body.has-install-sheet {
     display: none;
   }
   .user-chip-avatar {
-    --chip-avatar-size: 1.85rem;
+    --chip-avatar-size: 1.2rem;
     width: var(--chip-avatar-size);
     height: var(--chip-avatar-size);
     flex-basis: var(--chip-avatar-size);
@@ -3453,9 +3458,9 @@ body.has-install-sheet {
     display: none;
   }
   .user-chip-avatar {
-    width: 1.7rem;
-    height: 1.7rem;
-    flex-basis: 1.7rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    flex-basis: 1.2rem;
   }
   .user-chip-team {
     font-size: 0.82rem;
@@ -3640,4 +3645,129 @@ html[data-theme="day"] .desk-tile {
 }
 @media (max-width: 640px) {
   .desk-palette { grid-template-columns: 1fr; }
+}
+
+/* Franchise identity is the name — no photos or avatars beside team names. */
+.franchise-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  line-height: 0.88;
+  color: inherit;
+  text-align: inherit;
+}
+.franchise-title.is-inline {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0.28em 0.38em;
+  line-height: 1;
+}
+.franchise-title-lead {
+  font-family: var(--body);
+  font-size: 0.42em;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  max-width: 100%;
+  flex: 0 1 auto;
+}
+.franchise-title.is-inline .franchise-title-lead {
+  font-size: 0.52em;
+  letter-spacing: 0.12em;
+}
+.franchise-title-mark {
+  font-family: var(--display);
+  font-size: 1em;
+  font-weight: 400;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  max-width: 100%;
+  color: inherit;
+  flex: 0 1 auto;
+}
+.franchise-title.is-sm { font-size: 1.15rem; }
+.franchise-title.is-md { font-size: 1.45rem; }
+.franchise-title.is-lg { font-size: 1.85rem; }
+.franchise-title.is-xl { font-size: clamp(2.15rem, 5.5vw, 3.35rem); }
+.franchise-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  gap: 0.08rem;
+}
+.team .franchise-block,
+.team > .franchise-title,
+.side .franchise-block,
+.side > .franchise-title,
+.team-cell .franchise-block,
+.team-cell > .franchise-title,
+.motw-side .franchise-block,
+.motw-side > .franchise-title,
+.matchup-side .franchise-block,
+.matchup-side > .franchise-title,
+.il-motw-side .franchise-block,
+.il-hotnot-team .franchise-block,
+.records-team .franchise-block,
+.sgame-teamline .franchise-block,
+.sgame-teamline > .franchise-title,
+.wire-side .franchise-block,
+.wire-side > .franchise-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.franchise-owner {
+  font-family: var(--body);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.team.home .franchise-title,
+.team.home .franchise-block,
+.side.home .franchise-title,
+.side.home .franchise-block,
+.motw-side:last-child .franchise-title,
+.motw-side:last-child .franchise-block,
+.matchup-side.home .franchise-title,
+.matchup-side.home .franchise-block,
+.mu-side.is-home .franchise-title,
+.mu-side.is-home .franchise-block {
+  align-items: flex-end;
+  text-align: right;
+}
+.user-chip .franchise-title {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  font-size: 1.02rem;
+  color: var(--chip-team);
+}
+.user-chip .franchise-title-lead {
+  color: var(--chip-access);
+}
+.user-menu-name .franchise-title {
+  width: auto;
+  font-size: 1.35rem;
+  color: var(--text);
 }

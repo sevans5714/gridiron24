@@ -182,6 +182,7 @@ function publicUser(user) {
     loungeOnly,
     accountType: loungeOnly ? 'social' : 'member',
     theme: normalizeTheme(user.theme),
+    bio: String(user.bio || '').trim() || null,
     membershipLeague,
     hqConference,
     duesPaid: Boolean(user.duesPaid),
@@ -1205,6 +1206,29 @@ function updatePreferences(userId, prefs = {}) {
   return publicUser(store.users[idx]);
 }
 
+function updateProfile(userId, patch = {}) {
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Account not found'), { status: 404 });
+  }
+  const user = store.users[idx];
+  if (Object.prototype.hasOwnProperty.call(patch, 'name')) {
+    const nextName = String(patch.name || '').trim().replace(/\s+/g, ' ');
+    if (!nextName) throw Object.assign(new Error('Name is required'), { status: 400 });
+    if (nextName.length > 80) throw Object.assign(new Error('Name is too long'), { status: 400 });
+    user.name = nextName;
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'bio')) {
+    const nextBio = String(patch.bio || '').trim();
+    if (nextBio.length > 280) throw Object.assign(new Error('Bio must be 280 characters or less'), { status: 400 });
+    user.bio = nextBio || null;
+  }
+  user.updatedAt = new Date().toISOString();
+  writeStore(store);
+  return publicUser(user);
+}
+
 /** Returns true once — marks welcome as sent so it only fires on first login. */
 function claimWelcomeInbox(userId) {
   if (!userId) return false;
@@ -1242,6 +1266,7 @@ module.exports = {
   changePassword,
   adminSetCredentials,
   updatePreferences,
+  updateProfile,
   setUserLeagueOwner,
   claimWelcomeInbox,
   hasReceivedWelcomeInbox,

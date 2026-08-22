@@ -1028,6 +1028,7 @@ function fantasySide(team, winnerCode, sideCode) {
     name: team.name || `Team ${team.id || ''}`,
     shortName: team.name || `Team ${team.id || ''}`,
     logo: team.logo || null,
+    owner: team.owner || null,
     score: Number.isFinite(score) ? score : null,
     projected: Number.isFinite(projected) ? projected : null,
     record: formatFantasyRecord(team.record),

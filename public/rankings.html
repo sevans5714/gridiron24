@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
     .rank-board {
       max-width: 44rem;
@@ -50,7 +50,7 @@
     }
     .rank-row {
       display: grid;
-      grid-template-columns: 2.75rem 2.5rem minmax(0, 1fr);
+      grid-template-columns: 2.75rem minmax(0, 1fr);
       gap: 0.75rem 0.85rem;
       align-items: center;
       padding: 0.7rem 0;
@@ -114,7 +114,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
   <script>
     const esc = (v='') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
@@ -125,18 +125,10 @@
 
     (async () => {
       try {
-        const [rankRes, leagueRes] = await Promise.all([
-          fetch('/api/power-rankings', { cache: 'no-store' }),
-          fetch('/api/leagues', { cache: 'no-store' })
+        const [rankRes] = await Promise.all([
+          fetch('/api/power-rankings', { cache: 'no-store' })
         ]);
         const data = await rankRes.json();
-        const leagues = await leagueRes.json().catch(() => ({}));
-        const logoMap = new Map();
-        for (const conf of leagues.conferences || []) {
-          for (const t of conf.teams || []) {
-            logoMap.set(`${conf.key}:${t.id}`, t.logo || PLACEHOLDER);
-          }
-        }
 
         const main = document.getElementById('main');
         if (data.mode === 'pre_draft' || (!data.latest && data.message)) {
@@ -163,14 +155,12 @@
             <p class="rank-meta-line">${esc(modeLabel)} · ${esc(ranks.length)} teams · System</p>
             ${latest.notes ? `<p class="rank-notes">${esc(latest.notes)}</p>` : ''}
             ${ranks.map((r) => {
-              const logo = r.logo || logoMap.get(`${r.conferenceKey}:${r.teamId}`) || PLACEHOLDER;
               const conf = r.conferenceKey === 'overtime' ? 'overtime' : 'detail';
               return `
                 <div class="rank-row">
                   <div class="rank-num">${esc(r.rank)}</div>
-                  <img class="rank-logo" src="${esc(logo)}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />
                   <div>
-                    <div class="rank-name">${esc(r.teamName)}</div>
+                    ${window.GridIronTitle.html(r.teamName, { size: 'md', inline: true })}
                     <div class="rank-conf ${conf}">${esc(confLabel(conf))}</div>
                     ${r.note ? `<div class="rank-note">${esc(r.note)}</div>` : ''}
                   </div>

@@ -749,7 +749,7 @@
       const label = seatBoardLabel(i);
       return `<article class="mock-complete-team${you ? ' is-you' : ''}">
         <div class="mock-complete-team-head">
-          <strong>${seatAvatarHtml(i, 'complete-team-avatar')}${you ? '★ ' : ''}${esc(label)}</strong>
+          <strong>${you ? '★ ' : ''}${window.GridIronTitle.html(label, { size: 'sm', inline: true })}</strong>
           <span>${picks.length} / ${totalSlots}</span>
         </div>
         <div class="mock-complete-slots">
@@ -930,7 +930,7 @@
 
     // Fresh celebrity GMs for every CPU seat before the lobby opens.
     mock.teamNames = applyCelebrityCpuNames(
-      padTeamNames(teamNames.length ? teamNames : mock.teamNames, mock.teamNames.length),
+      padTeamNames([], mock.teamNames.length),
       mock.seatIndex
     );
     if (myFantasyTeamName) {
@@ -1404,7 +1404,6 @@
     const cards = records.map((r) => {
       if (r.vacant) {
         return `<article class="record-card is-vacant" data-record="${esc(r.id || '')}">
-          <div class="record-card-mark">${teamLogoHtml(null, 'logo')}</div>
           <div class="record-card-main">
             <p class="record-card-label">${esc(r.label)}</p>
             <p class="record-card-value">—</p>
@@ -1418,13 +1417,12 @@
       const yearTxt = r.yearLabel || (r.year != null ? String(r.year) : '—');
       const valueLine = [r.value, r.valueSuffix].filter(Boolean).join(' ');
       return `<article class="record-card" data-record="${esc(r.id || '')}">
-        <div class="record-card-mark">${teamLogoHtml(r, 'logo')}</div>
         <div class="record-card-main">
           <p class="record-card-label">${esc(r.label)}</p>
           <p class="record-card-value">${esc(valueLine)}</p>
-          <p class="record-card-holder">
-            <strong>${esc(r.teamName || '—')}</strong>
-            <span>${esc(r.owner || '—')}</span>
+            <p class="record-card-holder">
+              <strong>${window.GridIronTitle.html(r.teamName || '—', { size: 'sm', inline: true })}</strong>
+              <span>${esc(r.owner || '—')}</span>
             <span class="record-card-year">${esc(yearTxt)}</span>
           </p>
           ${r.detail || r.conferenceName
@@ -1464,10 +1462,9 @@
         return `<div class="records-row${i === 0 ? ' is-top' : ''}">
           <span class="rank">${i + 1}</span>
           <div class="records-team">
-            ${teamLogoHtml(t, 'logo')}
             <div>
-              <strong>${esc(t.name)}</strong>
-              <span>${esc(t.owner || '—')}${t.playoffSeed ? ` · Seed ${esc(String(t.playoffSeed))}` : ''} · ${esc(streakLabel(t))}</span>
+              ${window.GridIronTitle.html(t.name, { size: 'sm', inline: true, owner: t.owner })}
+              <span>${t.playoffSeed ? `Seed ${esc(String(t.playoffSeed))}` : ''}${t.playoffSeed ? ' · ' : ''}${esc(streakLabel(t))}</span>
             </div>
           </div>
           <span class="rec">${esc(recordLine(t))}</span>
@@ -2415,133 +2412,41 @@
     return a;
   }
 
-  /** Funny GM names for CPU draft slots — keep short so seat chips stay one line. */
-  const CELEBRITY_DRAFT_NAMES = [
-    'Nicolas Cage',
-    'Danny DeVito',
-    'Flavor Flav',
-    'Post Malone',
-    'Pete Davidson',
-    'DJ Khaled',
-    'The Situation',
-    'Snooki',
-    'Honey Boo Boo',
-    'Steven Seagal',
-    'Van Damme',
-    'Carrot Top',
-    'Pauly D',
-    'MGK',
-    'Dice Clay',
-    'Gottfried',
-    'Skip Bayless',
-    'Stephen A.',
-    'Shannon Sharpe',
-    'Pat McAfee',
-    'Charles Barkley',
-    'Shaq',
-    'John Daly',
-    'Romo\'s Mic',
-    'Belichick',
-    'Johnny Manziel',
-    'Tebow Time',
-    'Odell',
-    'Baker Mayfield',
-    'AB\'s Vibe',
-    'Mike Tyson',
-    'Conor McGregor',
-    'Logan Paul',
-    'Jake Paul',
-    'Dan Bilzerian',
-    'Bernie Madoff',
-    'E. Holmes',
-    'Anna Delvey',
-    'SBF',
-    'Billy McFarland',
-    'Jordan Belfort',
-    'Al Capone',
-    'Whitey Bulger',
-    'Pablo\'s CPA',
-    'Stormy Daniels',
-    'Mia Khalifa',
-    'Jenna Jameson',
-    'Sasha Grey',
-    'Ron Jeremy',
-    'Lexi Belle',
-    'Riley Reid',
-    'Nikki Benz',
-    'Lisa Ann',
-    'Johnny Sins',
-    'Rock\'s Double',
-    'Elon\'s Intern',
-    'Zuck\'s NPC',
-    'Bezos\' Laugh',
-    'Ye\'s Group Chat',
-    'Dr. Phil',
-    'Judge Judy',
-    'Maury Povich',
-    'Jerry Springer',
-    'Steve Harvey',
-    'Rogan\'s Elk',
-    'Alex Jones',
-    'Tucker\'s Tie',
-    'Ozzy',
-    'Keith Richards',
-    'Tommy Lee',
-    'Kid Rock',
-    'Vanilla Ice',
-    'MC Hammer',
-    'Soulja Boy',
-    'Lil Pump',
-    '6ix9ine',
-    'Tekashi',
-    'Birdman',
-    'Diddy\'s Planner',
-    'Hulk Hogan',
-    'Ric Flair',
-    'Undertaker',
-    'Stone Cold',
-    'John Cena',
-    'Grumpy Cat',
-    'Chuck Norris',
-    'Mr. Bean',
-    'Borat',
-    'Napoleon D.',
-    'Tommy Wiseau',
-    'Billy Madison',
-    'Uncle Rico',
-    'Ron Burgundy',
-    'Baxter',
-    'Fyre Fest DJ',
-    'Adam Neumann',
-    'Theranos Intern',
-    'Crypto Bro',
-    'OF Accountant',
-    'DK Whale',
-    'Vegas Chaplain',
-    'Times Sq Elmo',
-    'Hollywood Guy',
-    'Halftime Fog'
-  ];
+  /** Funny GM names: porn / pop / sports / old-school WWF. Shared list in cpu-gm-names.js. */
+  const CELEBRITY_DRAFT_NAMES = Array.isArray(window.GRIDIRON_CPU_GM_NAMES) && window.GRIDIRON_CPU_GM_NAMES.length
+    ? window.GRIDIRON_CPU_GM_NAMES
+    : ['Flavor Flav', 'Stone Cold', 'Mia Khalifa', 'Shaq', 'Snooki', 'Hulk Hogan'];
 
   function applyCelebrityCpuNames(names, keepIndex = 0) {
     const count = (names || []).length;
-    const celebs = shuffle(CELEBRITY_DRAFT_NAMES);
-    let c = 0;
     const keep = Number.isFinite(Number(keepIndex)) ? Number(keepIndex) : 0;
+    const keepLabel = String(myFantasyTeamName || names?.[keep] || '').trim();
+    const used = new Set();
+    if (keepLabel) used.add(keepLabel.toLowerCase());
+    const pool = shuffle(CELEBRITY_DRAFT_NAMES.filter((n, i, arr) => {
+      const key = String(n || '').trim().toLowerCase();
+      return key && arr.findIndex((x) => String(x).trim().toLowerCase() === key) === i;
+    }));
+    let p = 0;
     return Array.from({ length: count }, (_, i) => {
-      if (i === keep) {
-        return String(myFantasyTeamName || names[i] || `Team ${i + 1}`);
+      if (i === keep) return keepLabel || `Team ${i + 1}`;
+      while (p < pool.length) {
+        const cand = String(pool[p++] || '').trim();
+        if (cand && !used.has(cand.toLowerCase())) {
+          used.add(cand.toLowerCase());
+          return cand;
+        }
       }
-      const name = celebs[c % celebs.length];
-      c += 1;
-      return name;
+      const fallback = `CPU ${i + 1}`;
+      used.add(fallback.toLowerCase());
+      return fallback;
     });
   }
 
   function ensureMock(names, rounds, teamCount) {
     clearPersistedMock();
     const count = normalizeTeamCount(teamCount || DEFAULT_TEAM_COUNT);
-    const sourceNames = (names && names.length ? names : null) || [];
+    const sourceNames = [];
     const list = padTeamNames(sourceNames, count);
     const r = normalizeRounds(rounds || DEFAULT_ROUNDS);
     mock = {
@@ -2563,8 +2468,7 @@
 
   function applyTeamCount(count) {
     const n = normalizeTeamCount(count);
-    const pool = teamNames.length ? teamNames : mock.teamNames;
-    const list = padTeamNames(pool, n);
+    const list = padTeamNames([], n);
     mock.teamNames = applyCelebrityCpuNames(list, mock.seatIndex || 0);
     mock.picks = [];
     mock.seatIndex = Math.min(mock.seatIndex || 0, n - 1);
@@ -2616,7 +2520,7 @@
     if (Number.isFinite(seat) && seat >= 0 && seat < mock.teamNames.length) {
       mock.seatIndex = seat;
       mock.teamNames = applyCelebrityCpuNames(
-        padTeamNames(teamNames.length ? teamNames : mock.teamNames, mock.teamNames.length),
+        padTeamNames([], mock.teamNames.length),
         mock.seatIndex
       );
     }
@@ -2726,6 +2630,32 @@
       : '<span class="pick-first"></span>';
     const bye = meta.bye ? `<span class="pick-bye">Bye ${esc(meta.bye)}</span>` : '';
     return `<span class="last" data-pos="${esc(meta.pos)}"><span class="pick-meta"><span class="pick-pos">${esc(meta.pos)}</span>${first}${team}</span><span class="pick-last">${esc(bits.last)}</span>${bye}</span>`;
+  }
+
+  function fitMagnetLastName(root) {
+    const scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('.last:not(.is-empty) .pick-last').forEach((el) => {
+      el.style.fontSize = '';
+      el.style.letterSpacing = '';
+      el.style.transform = '';
+      const avail = el.clientWidth;
+      if (avail < 8) return;
+      const used = el.scrollWidth;
+      if (used <= avail) return;
+      const current = Number.parseFloat(getComputedStyle(el).fontSize) || 16;
+      const next = Math.max(9, current * ((avail - 2) / Math.max(used, 1)));
+      el.style.fontSize = `${next.toFixed(2)}px`;
+      el.style.letterSpacing = '0';
+      if (el.scrollWidth > avail) {
+        const squeeze = Math.max(0.62, avail / Math.max(el.scrollWidth, 1));
+        el.style.transform = `scaleX(${squeeze.toFixed(3)})`;
+        el.style.transformOrigin = 'center';
+      }
+    });
+  }
+
+  function scheduleFitMagnetNames(root) {
+    requestAnimationFrame(() => fitMagnetLastName(root || document));
   }
 
   function posBadge(pos) {
@@ -3257,6 +3187,7 @@
     wrap.hidden = false;
     void card.offsetWidth;
     card.classList.add('is-magnet', 'is-pop');
+    scheduleFitMagnetNames(card);
 
     const flyToSeat = () => {
       if (epoch !== cpuAnnounceEpoch) return;
@@ -3548,6 +3479,7 @@
     }
     if (!open || !card || !mock) return;
     card.innerHTML = draftBoardHtml();
+    scheduleFitMagnetNames(card);
     requestAnimationFrame(() => {
       const board = card.querySelector('.cpu-recap-board');
       if (!board) return;
@@ -3586,6 +3518,7 @@
     wrap.hidden = false;
     void card.offsetWidth;
     card.classList.add(recap ? 'is-recap-in' : 'is-pop');
+    scheduleFitMagnetNames(card);
     paintMockStartBar();
     if (audioRound) playRoundAudio(audioRound);
 
@@ -3829,9 +3762,13 @@
         <span class="st${status ? '' : ' is-idle'}">${status || ''}</span>
       </button>`;
     }).join('');
-    if (html === lastOrderHtml) return;
+    if (html === lastOrderHtml) {
+      scheduleFitMagnetNames(el);
+      return;
+    }
     lastOrderHtml = html;
     el.innerHTML = html;
+    scheduleFitMagnetNames(el);
   }
 
   function renderClock() {
@@ -5573,7 +5510,7 @@
       }
       mock.seatIndex = Number.isFinite(idx) ? idx : 0;
       mock.teamNames = applyCelebrityCpuNames(
-        padTeamNames(teamNames.length ? teamNames : mock.teamNames, mock.teamNames.length),
+        padTeamNames([], mock.teamNames.length),
         mock.seatIndex
       );
       renderMock();
@@ -5659,8 +5596,7 @@
       if ((mock.picks.length || draftLive) && !confirm('Shuffle clears current picks. Continue?')) return;
       endDraftSession();
       const count = mock.teamNames.length;
-      const pool = teamNames.length ? teamNames : mock.teamNames;
-      mock.teamNames = applyCelebrityCpuNames(padTeamNames(shuffle(pool), count), mock.seatIndex);
+      mock.teamNames = applyCelebrityCpuNames(padTeamNames([], count), mock.seatIndex);
       mock.picks = [];
       mock.seatIndex = Math.min(mock.seatIndex, count - 1);
       renderMock();

@@ -1629,6 +1629,99 @@ function listIndependentLeaguesForOwner(ownerUserId) {
     .map(publicLeague);
 }
 
+function independentRecordForFranchise(league, franchiseId) {
+  const wr = independentWeekResults(league);
+  const fid = String(franchiseId || '');
+  let wins = 0;
+  let losses = 0;
+  let ties = 0;
+  let pointsFor = 0;
+  let pointsAgainst = 0;
+  let playoff = false;
+  for (const key of Object.keys(wr || {})) {
+    const week = wr[key];
+    if (!week) continue;
+    for (const m of week.matchups || []) {
+      if (!m || m.result === 'upcoming') continue;
+      const homeId = String(m.homeId || '');
+      const awayId = String(m.awayId || '');
+      if (homeId !== fid && awayId !== fid) continue;
+      const hs = Number(m.homeScore) || 0;
+      const as = Number(m.awayScore) || 0;
+      const mineHome = homeId === fid;
+      const pf = mineHome ? hs : as;
+      const pa = mineHome ? as : hs;
+      pointsFor += pf;
+      pointsAgainst += pa;
+      if (week.phase === 'playoff') playoff = true;
+      if (m.result === 'tie') ties += 1;
+      else if ((m.result === 'home' && mineHome) || (m.result === 'away' && !mineHome)) wins += 1;
+      else losses += 1;
+    }
+  }
+  return {
+    wins,
+    losses,
+    ties,
+    pointsFor: Math.round(pointsFor * 10) / 10,
+    pointsAgainst: Math.round(pointsAgainst * 10) / 10,
+    playoff
+  };
+}
+
+function independentChampionFranchiseId(league) {
+  const games = league?.playoffs?.games;
+  if (!Array.isArray(games)) return null;
+  const finals = games.filter((g) => g && (g.final === true || g.id === 'final-0'));
+  const last = finals.sort((a, b) => Number(b.round || 0) - Number(a.round || 0))[0]
+    || games.filter((g) => g.winnerId).sort((a, b) => Number(b.round || 0) - Number(a.round || 0))[0];
+  return last?.winnerId ? String(last.winnerId) : null;
+}
+
+function listIndependentMembershipsForUser(userId) {
+  const uid = String(userId || '');
+  if (!uid) return [];
+  const out = [];
+  for (const l of readStore().leagues || []) {
+    if (l.platform !== 'independent' || l.status === 'rejected') continue;
+    const isOwner = String(l.ownerUserId || '') === uid;
+    const franchise = (l.franchises || []).find((f) => f.managerUserId && String(f.managerUserId) === uid) || null;
+    if (!isOwner && !franchise) continue;
+    const record = franchise ? independentRecordForFranchise(l, franchise.id) : null;
+    const champId = independentChampionFranchiseId(l);
+    out.push({
+      leagueId: l.id,
+      slug: l.slug,
+      name: (l.brand && l.brand.name) || l.slug,
+      season: l.season,
+      format: (l.settings && l.settings.leagueFormat) || 'redraft',
+      status: l.status,
+      isOwner,
+      champion: Boolean(franchise && champId && String(franchise.id) === champId),
+      franchise: franchise
+        ? {
+          id: franchise.id,
+          name: franchise.name,
+          conferenceKey: franchise.conferenceKey || null,
+          rosterSize: Array.isArray(franchise.roster) ? franchise.roster.length : 0,
+          ...record
+        }
+        : null,
+      paths: {
+        home: independentHomePath(l),
+        myRoster: independentSectionPath(l, 'my-roster'),
+        keepers: independentSectionPath(l, 'keepers'),
+        settings: independentSectionPath(l, 'settings'),
+        manage: independentSectionPath(l, 'manage'),
+        draft: independentSectionPath(l, 'draft'),
+        transactions: independentSectionPath(l, 'transactions'),
+        standings: independentSectionPath(l, 'standings')
+      }
+    });
+  }
+  return out.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+}
+
 function completeIndependentLeagueSetup(leagueId, body = {}, actor = null, uploadedAssets = {}) {
   const { store, league } = requireIndependentLeague(leagueId);
   if (actor && !canManageIndependentLeague(actor, league) && !actor.siteOwner) {
@@ -2375,6 +2468,9 @@ module.exports = {
   listIndependentLeagues,
   listPendingIndependentLeagues,
   listIndependentLeaguesForOwner,
+  listIndependentMembershipsForUser,
+  independentRecordForFranchise,
+  independentChampionFranchiseId,
   independentHomePath,
   independentSectionPath,
   isReservedLeagueSlug,

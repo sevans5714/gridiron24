@@ -7,24 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=125" />
-  <link rel="icon" href="/favicon.ico?v=125" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=125" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=125" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=126" />
+  <link rel="icon" href="/favicon.ico?v=126" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=126" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=126" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=157" />
+  <link rel="stylesheet" href="/css/site.css?v=170" />
   <style>
-    .team-hero { display: flex; align-items: center; gap: 1.1rem; margin-bottom: 1.5rem; }
-    .team-hero img {
-      width: 6rem;
-      height: 6rem;
-      object-fit: contain;
-      background: transparent;
-      border: 0;
-      filter: none;
-      box-shadow: var(--logo-lift);
-    }
-    .team-hero h1 { margin: 0; font-family: var(--display); font-size: clamp(1.6rem, 4vw, 2.3rem); letter-spacing: 0.04em; text-transform: uppercase; }
+    .team-hero { margin-bottom: 1.5rem; }
+    .team-hero h1 { margin: 0; }
     .team-hero .meta { margin-top: 0.35rem; color: var(--muted); }
     .layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem; }
     .section-head h2 { margin: 0 0 0.75rem; font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 1.1rem; }
@@ -138,7 +129,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=165"></script>
+  <script src="/js/nav.js?v=170"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     const params = new URLSearchParams(location.search);
@@ -205,9 +196,8 @@
         main.innerHTML = `
           <p style="margin:0 0 0.75rem;"><a href="${esc(backHref)}" style="color:#8eb6ff;text-decoration:none;">← ${esc(backLabel)}</a></p>
           <div class="team-hero">
-            <img src="${esc(t.logo||'/assets/team-logo-placeholder.svg')}" alt="" />
             <div>
-              <h1>${esc(t.name)}</h1>
+              <h1>${window.GridIronTitle.html(t.name, { size: 'xl' })}</h1>
               <div class="meta">${esc(data.conference.shortName)} · ${esc(record(t))} · PF ${Number(t.pointsFor||0).toFixed(1)}${t.playoffSeed ? ` · Seed #${t.playoffSeed}` : ''}</div>
               <div class="meta">Manager: ${esc(t.owner||'—')}</div>
             </div>
