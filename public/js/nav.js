@@ -288,13 +288,6 @@
     });
   }
 
-  function initials(name) {
-    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
-    if (!parts.length) return '?';
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-
   let ruleProposalVisible = false;
   let featureRequestVisible = false;
 
@@ -646,21 +639,6 @@
     }
   }
 
-  function hasChosenLogo(logo) {
-    return logo?.type === 'icon' || logo?.type === 'upload';
-  }
-
-  function avatarHtml(myTeam, user) {
-    const url = hasChosenLogo(myTeam?.logo)
-      ? myTeam.logo.url
-      : (myTeam?.claim ? '/assets/team-logo-placeholder.svg' : '');
-    const label = myTeam?.team?.name || myTeam?.claim?.teamName || user?.name || 'Account';
-    if (url) {
-      return `<img class="user-avatar-img" src="${esc(url)}" alt="" width="32" height="32" />`;
-    }
-    return `<span class="user-avatar-fallback" aria-hidden="true">${esc(initials(label))}</span>`;
-  }
-
   function roleLabel(role, conference, user = null) {
     if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner';
     if (user?.leagueOwner) return 'League Owner';
@@ -771,17 +749,20 @@
   }
 
   function headerTeamName(user, myTeam) {
-    const live = String(myTeam?.team?.name || myTeam?.claim?.teamName || '').trim();
-    if (!isPlaceholderTeamName(live)) return live;
-    const saved = String(authState?.franchise?.name || '').trim();
-    if (!isPlaceholderTeamName(saved)) return saved;
-    if (myTeam?.claim || authState?.franchise) {
-      const claimed = String(myTeam?.claim?.teamName || authState?.franchise?.name || '').trim();
-      if (!isPlaceholderTeamName(claimed)) return claimed;
+    const picks = [
+      myTeam?.team?.name,
+      myTeam?.claim?.teamName,
+      authState?.franchise?.name,
+      myTeam?.claim?.teamName
+    ];
+    for (const raw of picks) {
+      const name = String(raw || '').trim();
+      if (isPlaceholderTeamName(name)) continue;
+      if (name.toLowerCase() === 'gridiron 24') continue;
+      return name;
     }
     if (user?.loungeOnly) return 'Members Lounge';
-    if (user?.siteOwner || user?.canSwitchLeagues) return 'GridIron 24';
-    return '';
+    return String(user?.name || '').trim();
   }
 
   function renderUserMenu(user, myTeam = null) {
@@ -808,11 +789,7 @@
     const hasFranchise = Boolean(teamName) && teamName !== ownerName;
     const chipTitleName = hasFranchise ? teamName : ownerName;
     const chipTitle = `${chipTitleName} · ${ownerName} · ${access}`;
-    const teamHtml = user.loungeOnly
-      ? esc(teamName || 'Members Lounge')
-      : (hasFranchise && teamName !== 'GridIron 24'
-        ? franchiseTitleHtml(teamName, { size: 'sm', inline: true })
-        : esc(chipTitleName));
+    const teamHtml = esc(chipTitleName);
     const profileHref = '/profile.html';
     const chipClass = `user-chip${onProfile ? ' is-active' : ''}`;
 
@@ -821,7 +798,6 @@
 
     mount.innerHTML = `
       <button type="button" class="${chipClass}" title="${esc(chipTitle)}" aria-haspopup="menu" aria-expanded="false" id="user-menu-toggle">
-        <span class="user-chip-avatar">${avatarHtml(myTeam, user)}</span>
         <span class="user-chip-text">
           <span class="user-chip-team-row">
             <span class="user-chip-team">${teamHtml}</span>
@@ -834,7 +810,6 @@
       <div class="user-menu-panel" role="menu" hidden>
         ${user.loungeOnly
           ? `<div class="user-menu-head" tabindex="-1">
-              <span class="user-menu-preview">${avatarHtml(myTeam, user)}</span>
               <span>
                 <span class="user-menu-name">${esc(ownerName)}</span>
                 <span class="user-menu-role">${esc(access)}</span>
@@ -842,7 +817,7 @@
             </div>`
           : `<a class="user-menu-head" href="${profileHref}" role="menuitem">
               <span>
-                <span class="user-menu-name">${hasFranchise && teamName !== 'GridIron 24' ? franchiseTitleHtml(teamName, { size: 'md' }) : esc(chipTitleName)}</span>
+                <span class="user-menu-name">${esc(chipTitleName)}</span>
                 <span class="user-menu-role">${esc(ownerName)} · ${esc(access)}</span>
               </span>
             </a>`}

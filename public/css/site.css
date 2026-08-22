@@ -1598,7 +1598,7 @@ html[data-theme="day"] .league-switch img {
   position: relative;
   flex: 0 1 auto;
   min-width: 0;
-  max-width: min(22rem, 52vw);
+  max-width: min(28rem, 58vw);
 }
 
 .user-chip {
@@ -1621,7 +1621,7 @@ html[data-theme="day"] .league-switch img {
   cursor: pointer;
   font: inherit;
   text-align: left;
-  --chip-avatar-size: 1.35rem;
+  --chip-avatar-size: 0;
 }
 
 .user-chip:hover,
@@ -1632,22 +1632,7 @@ html[data-theme="day"] .league-switch img {
 }
 
 .user-chip-avatar {
-  width: var(--chip-avatar-size, 2rem);
-  height: var(--chip-avatar-size, 2rem);
-  flex: 0 0 var(--chip-avatar-size, 2rem);
-  border-radius: 0;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: transparent;
-  border: 0;
-  position: relative;
-  z-index: 1;
-}
-.user-chip-avatar:has(.user-avatar-fallback) {
-  border-radius: 999px;
-  background: var(--chip-avatar-bg);
-  border: 1px solid var(--chip-avatar-border);
+  display: none;
 }
 
 .user-chip-text {
@@ -1829,15 +1814,7 @@ a.user-chip {
 }
 
 .user-menu-preview {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.55rem;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: var(--panel-2);
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
+  display: none;
 }
 
 .user-menu-name {
@@ -3350,7 +3327,7 @@ body.has-install-sheet {
 
 @media (max-width: 1100px) {
   .topbar-right {
-    max-width: min(16rem, 42vw);
+    max-width: min(22rem, 50vw);
   }
   .user-chip-access {
     display: none;
@@ -3364,17 +3341,11 @@ body.has-install-sheet {
 
 @media (max-width: 900px) {
   .topbar-right {
-    max-width: min(10.5rem, 32vw);
+    max-width: min(18rem, 48vw);
   }
   .user-chip-owner,
   .user-chip-access {
     display: none;
-  }
-  .user-chip-avatar {
-    --chip-avatar-size: 1.2rem;
-    width: var(--chip-avatar-size);
-    height: var(--chip-avatar-size);
-    flex-basis: var(--chip-avatar-size);
   }
 
   .topbar-inner {
@@ -3454,11 +3425,6 @@ body.has-install-sheet {
   .user-chip-owner,
   .user-chip-access {
     display: none;
-  }
-  .user-chip-avatar {
-    width: 1.2rem;
-    height: 1.2rem;
-    flex-basis: 1.2rem;
   }
   .user-chip-team {
     font-size: 0.82rem;
