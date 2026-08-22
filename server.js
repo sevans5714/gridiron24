@@ -2406,13 +2406,18 @@ async function buildPlayoffsPayload() {
     const byId = new Map(teams.map((t) => [t.id, t]));
     const bySeed = new Map();
     for (const t of teams) {
-      if (Number(t.playoffSeed) > 0) bySeed.set(Number(t.playoffSeed), t);
+      const seed = Number(t.playoffSeed || 0);
+      if (seed >= 1 && seed <= 6) bySeed.set(seed, t);
     }
-    // Fallback: top 6 standings as provisional seeds before ESPN sets playoffSeed
+    // Fallback: top 6 standings as provisional seeds before ESPN sets playoffSeed 1–6
     if (bySeed.size < 6) {
       teams.slice(0, 6).forEach((t, i) => {
         if (!bySeed.has(i + 1)) bySeed.set(i + 1, { ...t, playoffSeed: i + 1, provisional: true });
       });
+    }
+    const seedByTeamId = new Map();
+    for (const [seed, t] of bySeed) {
+      if (t?.id != null) seedByTeamId.set(Number(t.id), seed);
     }
 
     const w14 = (weeks[14].conferences || []).find((c) => c.key === conf.key);
@@ -2434,7 +2439,7 @@ async function buildPlayoffsPayload() {
 
     const withSeed = (side) => {
       if (!side) return null;
-      const seed = Number(byId.get(side.id)?.playoffSeed || 0) || null;
+      const seed = seedByTeamId.get(Number(side.id)) || Number(byId.get(side.id)?.playoffSeed || 0) || null;
       return { ...side, seed };
     };
     const formatGame = (m, fallbackLabel) => {
@@ -2458,19 +2463,49 @@ async function buildPlayoffsPayload() {
       };
     };
 
+    const sideFromSeed = (seedNum) => {
+      const s = slot(seedNum);
+      if (!s) return null;
+      return {
+        id: s.id,
+        name: s.name,
+        logo: s.logo || null,
+        owner: s.owner || null,
+        seed: s.seed,
+        score: 0,
+        projected: 0
+      };
+    };
+    const seededGame = (espnMatchup, seedA, seedB, label) => {
+      const real = espnMatchup && (isWinnersBracketMatchup(espnMatchup) || isConsolationMatchup(espnMatchup));
+      if (real) return { ...formatGame(espnMatchup, label), hypothetical: false };
+      return {
+        label,
+        status: 'upcoming',
+        winner: 'UNDECIDED',
+        hypothetical: true,
+        home: sideFromSeed(seedA),
+        away: sideFromSeed(seedB),
+        playoffTierType: null
+      };
+    };
+
     const playable14 = (w14?.matchups || []).filter((m) => m.home && m.away);
-    const game45 = pickMatchupForSeeds(playable14, 4, 5, byId) || playable14[0] || null;
-    const game36 = pickMatchupForSeeds(playable14, 3, 6, byId) || playable14[1] || playable14[0] || null;
+    const playoff14 = playable14.filter((m) => isWinnersBracketMatchup(m) || isConsolationMatchup(m));
+    const game45 = seededGame(pickMatchupForSeeds(playoff14, 4, 5, byId), 4, 5, '#4 vs #5');
+    const game36 = seededGame(pickMatchupForSeeds(playoff14, 3, 6, byId), 3, 6, '#3 vs #6');
 
     const playable15 = (w15?.matchups || []).filter((m) => m.home && m.away);
     const winners15 = playable15.filter(isWinnersBracketMatchup);
-    const semis = (winners15.length ? winners15 : playable15).slice(0, 2);
+    const semisEspn = (winners15.length ? winners15 : []).slice(0, 2);
+    const semis = [
+      seededGame(semisEspn[0], 1, 4, 'Semifinal 1'),
+      seededGame(semisEspn[1], 2, 3, 'Semifinal 2')
+    ];
 
     const playable16 = (w16?.matchups || []).filter((m) => m.home && m.away);
-    const title16 = playable16.find(isWinnersBracketMatchup) || playable16[0] || null;
-    const third16 = playable16.find(isConsolationMatchup)
-      || playable16.find((m) => m.id !== title16?.id)
-      || null;
+    const title16 = playable16.find(isWinnersBracketMatchup) || null;
+    const third16 = playable16.find(isConsolationMatchup) || null;
 
     return {
       key: conf.key,
@@ -2484,20 +2519,17 @@ async function buildPlayoffsPayload() {
           week: 14,
           bye1: slot(1),
           bye2: slot(2),
-          game45: formatGame(game45, '#4 vs #5'),
-          game36: formatGame(game36, '#3 vs #6')
+          game45,
+          game36
         },
         semifinals: {
           week: 15,
-          games: [
-            formatGame(semis[0], 'Semifinal 1'),
-            formatGame(semis[1], 'Semifinal 2')
-          ]
+          games: semis
         },
         finals: {
           week: 16,
-          title: formatGame(title16, 'Conference Title'),
-          third: formatGame(third16, 'Third Place')
+          title: seededGame(title16, 1, 2, 'Conference Title'),
+          third: seededGame(third16, 3, 4, 'Third Place')
         }
       }
     };

@@ -701,10 +701,10 @@
       return s.provisional ? `${s.name}` : s.name;
     }
 
-    function statusLabel(status) {
+    function statusLabel(status, hypothetical) {
       if (status === 'final') return 'Final';
       if (status === 'live') return 'Live';
-      return 'Upcoming';
+      return hypothetical ? 'Projected' : 'Upcoming';
     }
 
     function teamRow(side, opts = {}) {
@@ -751,7 +751,7 @@
           <div class="mu">
             <div class="mu-head">
               <span class="mu-label">${esc(game.label || fallback)}</span>
-              <span class="mu-status ${status === 'live' ? 'is-live' : status === 'final' ? 'is-final' : ''}">${esc(statusLabel(status))}</span>
+              <span class="mu-status ${status === 'live' ? 'is-live' : status === 'final' ? 'is-final' : ''}">${esc(statusLabel(status, game.hypothetical))}</span>
             </div>
             ${teamRow(game.away, { role: 'away', winner: game.winner, status })}
             ${teamRow(game.home, { role: 'home', winner: game.winner, status })}
@@ -785,7 +785,7 @@
             <div class="mu">
               <div class="mu-head">
                 <span class="mu-label">${esc(game.label || alt)}</span>
-                <span class="mu-status ${status === 'live' ? 'is-live' : status === 'final' ? 'is-final' : ''}">${esc(statusLabel(status))}</span>
+                <span class="mu-status ${status === 'live' ? 'is-live' : status === 'final' ? 'is-final' : ''}">${esc(statusLabel(status, game.hypothetical))}</span>
               </div>
               ${teamRow(game.away, { role: 'away', winner: game.winner, status })}
               ${teamRow(game.home, { role: 'home', winner: game.winner, status })}
