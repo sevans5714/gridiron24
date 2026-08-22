@@ -3645,7 +3645,7 @@ html[data-theme="day"] .desk-tile {
   .desk-palette { grid-template-columns: 1fr; }
 }
 
-/* Franchise names: one gold line, owner underneath. */
+/* Franchise names: page text color, owner underneath. */
 .franchise-title {
   display: block;
   min-width: 0;
@@ -3659,10 +3659,7 @@ html[data-theme="day"] .desk-tile {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1.05;
-  color: var(--gold);
-}
-html[data-theme="night"] .franchise-title {
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 0 14px color-mix(in srgb, var(--gold) 32%, transparent);
+  color: var(--text);
 }
 .franchise-title.is-sm,
 .franchise-title.is-md,
@@ -3789,6 +3786,8 @@ html[data-theme="night"] .franchise-title {
   max-width: 100%;
   min-width: 0;
 }
-.il-team-link:has(.franchise-title):hover .franchise-title {
-  color: var(--text);
+.il-team-link:has(.franchise-title):hover .franchise-title,
+.team-cell:hover .franchise-title,
+.team-row:hover .franchise-title {
+  color: var(--chip-team);
 }

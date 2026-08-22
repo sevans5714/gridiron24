@@ -4062,7 +4062,7 @@ body.has-install-sheet { overflow: hidden; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1.05;
-  color: var(--gold, #efd782);
+  color: var(--text);
 }
 .franchise-title.is-sm,
 .franchise-title.is-md,
