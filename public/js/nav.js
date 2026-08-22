@@ -164,25 +164,18 @@
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
   }
 
+  function ownerLineOk(owner) {
+    const n = String(owner || '').trim().toLowerCase();
+    return Boolean(n) && n !== '—' && n !== '-' && n !== 'unassigned' && n !== 'owner pending' && n !== 'pending';
+  }
+
   function franchiseTitleHtml(name, opts = {}) {
     const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
     const extra = opts.className ? ` ${String(opts.className)}` : '';
     const text = String(name || '').trim() || 'TBD';
-    const parts = text.split(/\s+/).filter(Boolean);
-    let lead = '';
-    let mark = text;
-    if (parts.length >= 2) {
-      mark = parts.pop();
-      lead = parts.join(' ');
-    }
-    const inline = opts.inline === true || (opts.inline !== false && size === 'sm');
-    const layout = inline ? ' is-inline' : '';
     const owner = String(opts.owner || '').trim();
-    const ownerOk = owner && owner !== '—' && owner.toLowerCase() !== 'unassigned';
-    const title = `<span class="franchise-title is-${size}${layout}${extra}" title="${esc(text)}">${
-      lead ? `<span class="franchise-title-lead">${esc(lead)}</span>` : ''
-    }<span class="franchise-title-mark">${esc(mark)}</span></span>`;
-    if (!ownerOk) return title;
+    const title = `<span class="franchise-title is-${size}${extra}" title="${esc(text)}">${esc(text)}</span>`;
+    if (!ownerLineOk(owner)) return title;
     return `<span class="franchise-block" title="${esc(`${text} · ${owner}`)}">${title}<span class="franchise-owner">${esc(owner)}</span></span>`;
   }
 
@@ -221,18 +214,7 @@
     title.style.whiteSpace = 'nowrap';
     title.style.overflow = 'visible';
     title.style.fontSize = `${maxPx}px`;
-    const kids = title.querySelectorAll('.franchise-title-lead, .franchise-title-mark');
-    const kidPrev = [];
-    kids.forEach((el) => {
-      kidPrev.push([el, el.style.maxWidth, el.style.overflow]);
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'visible';
-    });
     const used = Math.ceil(title.scrollWidth || title.getBoundingClientRect().width);
-    kidPrev.forEach(([el, maxWidth, overflow]) => {
-      el.style.maxWidth = maxWidth;
-      el.style.overflow = overflow;
-    });
     title.style.width = prev.width;
     title.style.flex = prev.flex;
     title.style.maxWidth = prev.maxWidth;

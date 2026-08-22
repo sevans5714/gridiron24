@@ -12,21 +12,11 @@
     const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
     const extra = opts.className ? ` ${String(opts.className)}` : '';
     const text = String(name || '').trim() || 'TBD';
-    const parts = text.split(/\s+/).filter(Boolean);
-    let lead = '';
-    let mark = text;
-    if (parts.length >= 2) {
-      mark = parts.pop();
-      lead = parts.join(' ');
-    }
-    const inline = opts.inline === true || (opts.inline !== false && size === 'sm');
-    const owner = String(opts.owner || '').trim();
-    const ownerOk = owner && owner !== '—' && owner.toLowerCase() !== 'unassigned';
-    const title = `<span class="franchise-title is-${size}${inline ? ' is-inline' : ''}${extra}" title="${esc(text)}">${
-      lead ? `<span class="franchise-title-lead">${esc(lead)}</span>` : ''
-    }<span class="franchise-title-mark">${esc(mark)}</span></span>`;
+    const owner = String(opts.owner || '').trim().toLowerCase();
+    const title = `<span class="franchise-title is-${size}${extra}" title="${esc(text)}">${esc(text)}</span>`;
+    const ownerOk = owner && owner !== '—' && owner !== '-' && owner !== 'unassigned' && owner !== 'owner pending' && owner !== 'pending';
     if (!ownerOk) return title;
-    return `<span class="franchise-block" title="${esc(`${text} · ${owner}`)}">${title}<span class="franchise-owner">${esc(owner)}</span></span>`;
+    return `<span class="franchise-block" title="${esc(`${text} · ${opts.owner}`)}">${title}<span class="franchise-owner">${esc(String(opts.owner || '').trim())}</span></span>`;
   }
 
   const TITLE_MAX = { sm: 23, md: 30, lg: 38, xl: 56 };
@@ -58,18 +48,7 @@
     title.style.whiteSpace = 'nowrap';
     title.style.overflow = 'visible';
     title.style.fontSize = `${maxPx}px`;
-    const kids = title.querySelectorAll('.franchise-title-lead, .franchise-title-mark');
-    const kidPrev = [];
-    kids.forEach((el) => {
-      kidPrev.push([el, el.style.maxWidth, el.style.overflow]);
-      el.style.maxWidth = 'none';
-      el.style.overflow = 'visible';
-    });
     const used = Math.ceil(title.scrollWidth || title.getBoundingClientRect().width);
-    kidPrev.forEach(([el, maxWidth, overflow]) => {
-      el.style.maxWidth = maxWidth;
-      el.style.overflow = overflow;
-    });
     title.style.width = prev.width;
     title.style.flex = prev.flex;
     title.style.maxWidth = prev.maxWidth;
