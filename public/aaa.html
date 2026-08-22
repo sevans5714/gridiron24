@@ -8,12 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=129" />
-  <link rel="icon" href="/favicon.ico?v=129" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=129" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=129" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=130" />
+  <link rel="icon" href="/favicon.ico?v=130" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=130" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=130" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=173" />
+  <link rel="stylesheet" href="/css/site.css?v=174" />
   <style>
     body[data-page="aaa"] {
       background:
@@ -386,7 +386,7 @@
 
     .mini-table {
       width: 100%;
-      table-layout: fixed;
+      table-layout: auto;
       border-collapse: collapse;
       font-size: 1rem;
     }
@@ -402,11 +402,13 @@
     }
     .mini-table th.num,
     .mini-table td.num {
+      width: 1%;
       text-align: right;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
       border-left: 1px solid rgba(255, 255, 255, 0.12);
-      padding-left: 0.55rem;
+      padding-left: 0.4rem;
+      padding-right: 0.15rem;
     }
     html[data-theme="day"] .mini-table th.num,
     html[data-theme="day"] .mini-table td.num {
@@ -420,31 +422,33 @@
     }
     .mini-table tr:last-child td { border-bottom: 0; }
     .mini-table .rank {
-      width: 1.35rem;
+      width: 1%;
+      white-space: nowrap;
       color: var(--muted);
       font-variant-numeric: tabular-nums;
       font-weight: 600;
     }
     .mini-table .team {
       width: auto;
+      min-width: 0;
       overflow: hidden;
       color: var(--text);
       font-weight: 600;
     }
     .mini-table .team-cell {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.45rem;
       max-width: 100%;
       min-width: 0;
       width: 100%;
     }
-    .mini-table .team-name {
+    .mini-table .team-name,
+    .mini-table .franchise-title,
+    .mini-table .franchise-block {
       min-width: 0;
+      max-width: 100%;
       flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
     .mini-table .team-logo-sm {
       width: 2.5rem;
@@ -455,13 +459,17 @@
     }
     .mini-table th.num.wl,
     .mini-table td.num.wl {
-      width: 3.55rem;
+      width: 1%;
+      min-width: 5.2ch;
       text-align: center;
-      padding-left: 0.2rem;
-      padding-right: 0.2rem;
+      padding-left: 0.28rem;
+      padding-right: 0.28rem;
     }
     .mini-table th.num.pf,
-    .mini-table td.num.pf { width: 4.85rem; }
+    .mini-table td.num.pf {
+      width: 1%;
+      min-width: 6ch;
+    }
     .mini-table .out td { opacity: 0.72; }
     .mini-table tr.cut-line td {
       padding: 0.45rem 0.35rem;
@@ -626,6 +634,17 @@
       color: var(--muted);
       line-height: 1.35;
     }
+    .hotnot-team .streak {
+      margin: 0.05rem 0 0;
+      font-family: var(--display);
+      font-size: 0.98rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+    .hotnot-team .streak.is-win { color: #ef4444; }
+    .hotnot-team .streak.is-loss { color: #2f6dff; }
 
     .bottom-stack {
       display: flex;
@@ -917,10 +936,6 @@
       .hq-main { font-size: 1.12rem; }
       .hq-hero img { width: min(14rem, 68vw); }
       .hq-hero .tag { font-size: clamp(1.2rem, 5.2vw, 1.55rem); }
-      .mini-table th.num.wl,
-      .mini-table td.num.wl { width: 3.4rem; }
-      .mini-table th.num.pf,
-      .mini-table td.num.pf { width: 4.6rem; }
     }
 
     body[data-page="aaa"] .standings-preview {
@@ -1023,7 +1038,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=173"></script>
+  <script src="/js/nav.js?v=175"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const esc = (v = '') => String(v)
@@ -1177,30 +1192,34 @@
         </div>`;
     }
 
-    function streakText(t) {
-      const n = Number(t.streakLength || 0);
-      if (n <= 0 || !t.streakType || t.streakType === 'NONE') return null;
-      if (t.streakType === 'WIN') return `${n}W streak`;
-      if (t.streakType === 'LOSS') return `${n}L streak`;
-      return null;
+    function streakKind(t) {
+      const type = String(t?.streakType || '').trim().toUpperCase();
+      const n = Number(t?.streakLength || 0);
+      if (n <= 0) return { type: 'NONE', n: 0 };
+      if (type === 'W' || type === 'WIN' || type === 'WINS') return { type: 'WIN', n };
+      if (type === 'L' || type === 'LOSS' || type === 'LOSSES') return { type: 'LOSS', n };
+      return { type: 'NONE', n };
     }
 
     function formStatsHtml(t) {
       const rec = record(t);
-      const streak = streakText(t);
+      const s = streakKind(t);
       const games = Number(t.gamesPlayed || (t.wins || 0) + (t.losses || 0) + (t.ties || 0));
       const pf = Number(t.pointsFor || 0);
       const high = Number(t.highPoints || 0);
       const ppg = games > 0
         ? Number(t.pointsPerGame != null ? t.pointsPerGame : pf / games)
         : 0;
-      const lines = [streak ? `${rec} · ${streak}` : rec];
+      const streak = s.type === 'WIN'
+        ? `<div class="streak is-win">${s.n}W winning streak</div>`
+        : s.type === 'LOSS'
+          ? `<div class="streak is-loss">${s.n}L losing streak</div>`
+          : '';
       const bits = [];
       if (high > 0) bits.push(`High ${high.toFixed(1)}`);
       if (games > 0) bits.push(`${ppg.toFixed(1)} PPG`);
       bits.push(`${pf.toFixed(1)} PF`);
-      lines.push(bits.join(' · '));
-      return lines.map((line) => `<div class="sub">${esc(line)}</div>`).join('');
+      return `${streak}<div class="sub">${esc(rec)}</div><div class="sub">${esc(bits.join(' · '))}</div>`;
     }
 
     function hotNotBoard(data) {

@@ -1489,7 +1489,7 @@
     const myFutureByMarket = new Map((d.openFutures || []).map((f) => [String(f.marketId), f]));
     const futureTabs = markets.map((m) => `
       <button type="button" class="degen-chip${String(m.id) === String(market?.id) ? ' is-on' : ''}" data-future-market="${esc(m.id)}">
-        ${esc(m.sport)}
+        ${esc(m.chip || m.label || m.sport)}
       </button>`).join('');
 
     let futuresBody = `<div class="degen-empty">Futures board is quiet right now.</div>`;
@@ -1684,7 +1684,7 @@
             <input type="search" id="degen-team-q" placeholder="Find a team or player…" value="${esc(book.teamQuery || '')}" autocomplete="off" />
           </label>
         </div>
-        ${linesUpdated ? `<p class="degen-lines-asof">${esc(linesUpdated)} · next 6 days</p>` : ''}
+        ${linesUpdated ? `<p class="degen-lines-asof">${esc(linesUpdated)} · current slate</p>` : ''}
         <div class="degen-board">${gamesHtml || `<div class="degen-empty">No open lines right now.</div>`}</div>`;
     } else if (tab === 'futures') {
       screen = `

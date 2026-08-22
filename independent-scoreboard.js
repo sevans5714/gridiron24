@@ -171,8 +171,14 @@ function cumulativeStandings(franchises, weekResults, currentWeek, currentMatchu
       ties: 0,
       pointsFor: 0,
       pointsAgainst: 0,
+      highPoints: 0,
+      outcomes: [],
       total: f.total
     });
+  }
+  function pushOutcome(row, letter) {
+    if (!row) return;
+    row.outcomes.push(letter);
   }
   function apply(matchups, skipUpcoming) {
     for (const m of matchups || []) {
@@ -187,33 +193,64 @@ function cumulativeStandings(franchises, weekResults, currentWeek, currentMatchu
       if (home) {
         home.pointsFor = scoring.round1(home.pointsFor + hs);
         home.pointsAgainst = scoring.round1(home.pointsAgainst + as);
+        home.highPoints = Math.max(home.highPoints, hs);
       }
       if (away) {
         away.pointsFor = scoring.round1(away.pointsFor + as);
         away.pointsAgainst = scoring.round1(away.pointsAgainst + hs);
+        away.highPoints = Math.max(away.highPoints, as);
       }
       if (result === 'home') {
         if (home) home.wins += 1;
         if (away) away.losses += 1;
+        pushOutcome(home, 'W');
+        pushOutcome(away, 'L');
       } else if (result === 'away') {
         if (away) away.wins += 1;
         if (home) home.losses += 1;
+        pushOutcome(away, 'W');
+        pushOutcome(home, 'L');
       } else if (result === 'tie') {
         if (home) home.ties += 1;
         if (away) away.ties += 1;
+        pushOutcome(home, 'T');
+        pushOutcome(away, 'T');
       }
     }
   }
   const wr = weekResults || {};
-  for (const key of Object.keys(wr)) {
-    const w = Number(wr[key]?.week);
-    if (!Number.isFinite(w) || w >= currentWeek) continue;
-    if (wr[key]?.phase === 'playoff') continue;
-    if (Number.isFinite(opts.regularEnd) && w > opts.regularEnd) continue;
-    apply(wr[key].matchups || [], true);
-  }
+  const pastWeeks = Object.keys(wr)
+    .map((k) => wr[k])
+    .filter((week) => {
+      const w = Number(week?.week);
+      if (!Number.isFinite(w) || w >= currentWeek) return false;
+      if (week?.phase === 'playoff') return false;
+      if (Number.isFinite(opts.regularEnd) && w > opts.regularEnd) return false;
+      return true;
+    })
+    .sort((a, b) => Number(a.week) - Number(b.week));
+  for (const week of pastWeeks) apply(week.matchups || [], true);
   if (!opts.skipCurrent) apply(currentMatchups, false);
-  return [...rows.values()].sort((a, b) =>
+  return [...rows.values()].map((row) => {
+    const gp = row.wins + row.losses + row.ties;
+    const outcomes = row.outcomes || [];
+    let streakType = 'NONE';
+    let streakLength = 0;
+    if (outcomes.length) {
+      const last = outcomes[outcomes.length - 1];
+      streakLength = 1;
+      for (let i = outcomes.length - 2; i >= 0 && outcomes[i] === last; i -= 1) streakLength += 1;
+      streakType = last === 'W' ? 'WIN' : last === 'L' ? 'LOSS' : 'TIE';
+    }
+    const { outcomes: _drop, ...rest } = row;
+    return {
+      ...rest,
+      gamesPlayed: gp,
+      pointsPerGame: gp ? Math.round((row.pointsFor / gp) * 10) / 10 : 0,
+      streakType,
+      streakLength
+    };
+  }).sort((a, b) =>
     (b.wins - a.wins) || (b.ties - a.ties) || (b.pointsFor - a.pointsFor)
   );
 }

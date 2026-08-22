@@ -301,7 +301,34 @@ async function fetchEspnCoreOdds(game, meta) {
   return null;
 }
 
-function mapBovadaEvent(ev) {
+function isSideMarket(label) {
+  return /1st|2nd|first|second|half|quarter|period|qtr|team total|alternate|alt\b|highest scoring|1h|2h/.test(label);
+}
+
+function isMainTotalLabel(label) {
+  if (isSideMarket(label)) return false;
+  return label === 'total'
+    || label === 'totals'
+    || label === 'over/under'
+    || label === 'over under'
+    || label === 'total points'
+    || /^total( points)?$/.test(label);
+}
+
+function plausibleTotal(leagueId, total) {
+  const n = Number(total);
+  if (!Number.isFinite(n) || n <= 0) return false;
+  const id = String(leagueId || '');
+  if (id === 'wnba') return n >= 120 && n <= 200;
+  if (id === 'nba') return n >= 180 && n <= 280;
+  if (id === 'ncaam' || id === 'ncaaw') return n >= 110 && n <= 200;
+  if (id === 'mlb') return n >= 5 && n <= 18;
+  if (id === 'nhl') return n >= 3 && n <= 12;
+  if (id === 'nfl' || id === 'ncaaf') return n >= 20 && n <= 90;
+  return true;
+}
+
+function mapBovadaEvent(ev, leagueId) {
   const desc = String(ev?.description || '');
   const parts = desc.split(/\s+@\s+/);
   if (parts.length !== 2) return null;
@@ -313,6 +340,7 @@ function mapBovadaEvent(ev) {
   let awayMl = null;
   let homeMl = null;
   let total = null;
+  let totalRank = -1;
 
   for (const group of groups) {
     for (const market of group.markets || []) {
@@ -330,6 +358,7 @@ function mapBovadaEvent(ev) {
         label.includes('puck line') ||
         label.includes('handicap')
       ) {
+        if (isSideMarket(label)) continue;
         for (const o of outcomes) {
           const line = parseHandicap(o.price?.handicap);
           if (!Number.isFinite(line)) continue;
@@ -337,9 +366,13 @@ function mapBovadaEvent(ev) {
           if (namesLooselyMatch(o.description, homeName)) homeSpread = line;
         }
       } else if (label.includes('total') || label === 'over/under') {
+        const rank = isMainTotalLabel(label) ? 2 : (isSideMarket(label) ? 0 : 1);
+        if (rank === 0 || rank < totalRank) continue;
         for (const o of outcomes) {
           const line = parseHandicap(o.price?.handicap);
-          if (Number.isFinite(line)) total = line;
+          if (!Number.isFinite(line) || !plausibleTotal(leagueId, line)) continue;
+          total = line;
+          totalRank = rank;
         }
       }
     }
@@ -371,7 +404,7 @@ function mapBovadaEvent(ev) {
   };
 }
 
-async function fetchBovadaLeague(meta) {
+async function fetchBovadaLeague(meta, leagueId) {
   if (!meta?.bovada) return [];
   const path = meta.bovada;
   const urls = [
@@ -388,7 +421,7 @@ async function fetchBovadaLeague(meta) {
       const blocks = Array.isArray(data) ? data : [];
       for (const block of blocks) {
         for (const ev of block.events || []) {
-          const row = mapBovadaEvent(ev);
+          const row = mapBovadaEvent(ev, leagueId);
           if (row) mapped.push(row);
         }
       }
@@ -407,7 +440,7 @@ function matchBovadaOdds(game, bovadaRows) {
   return null;
 }
 
-function mapOddsApiEvent(ev) {
+function mapOddsApiEvent(ev, leagueId) {
   const awayName = ev.away_team;
   const homeName = ev.home_team;
   const bookmakers = Array.isArray(ev.bookmakers) ? ev.bookmakers : [];
@@ -439,7 +472,8 @@ function mapOddsApiEvent(ev) {
     } else if (key === 'totals') {
       for (const o of outcomes) {
         const line = Number(o.point);
-        if (Number.isFinite(line)) total = line;
+        if (!Number.isFinite(line) || !plausibleTotal(leagueId, line)) continue;
+        total = line;
       }
     }
   }
@@ -470,7 +504,7 @@ function mapOddsApiEvent(ev) {
   };
 }
 
-async function fetchOddsApiLeague(meta) {
+async function fetchOddsApiLeague(meta, leagueId) {
   const key = oddsApiKey();
   if (!key || !meta?.oddsApi) return [];
   const url =
@@ -480,7 +514,7 @@ async function fetchOddsApiLeague(meta) {
     const data = await cached(`oddsapi:${meta.oddsApi}`, () => fetchJson(url, { timeoutMs: 12000 }), 90_000);
     const rows = [];
     for (const ev of Array.isArray(data) ? data : []) {
-      const row = mapOddsApiEvent(ev);
+      const row = mapOddsApiEvent(ev, leagueId || meta.id);
       if (row) rows.push(row);
     }
     return rows;
@@ -529,12 +563,12 @@ async function enrichBoard(board) {
   let bovadaRows = [];
   let oddsApiRows = [];
   try {
-    bovadaRows = await fetchBovadaLeague(meta);
+    bovadaRows = await fetchBovadaLeague(meta, board.id);
   } catch {
     bovadaRows = [];
   }
   try {
-    oddsApiRows = await fetchOddsApiLeague(meta);
+    oddsApiRows = await fetchOddsApiLeague(meta, board.id);
   } catch {
     oddsApiRows = [];
   }
@@ -545,11 +579,19 @@ async function enrichBoard(board) {
   for (const g of openGames) {
     const fromBovada = matchBovadaOdds(g, bovadaRows);
     if (hasUsableOdds(fromBovada)) {
+      const espnOu = g.odds?.overUnder;
+      if (!plausibleTotal(board.id, fromBovada.overUnder) && plausibleTotal(board.id, espnOu)) {
+        fromBovada.overUnder = espnOu;
+      }
       patched.set(String(g.id), fromBovada);
       continue;
     }
     const fromApi = matchOddsApi(g, oddsApiRows);
     if (hasUsableOdds(fromApi)) {
+      const espnOu = g.odds?.overUnder;
+      if (!plausibleTotal(board.id, fromApi.overUnder) && plausibleTotal(board.id, espnOu)) {
+        fromApi.overUnder = espnOu;
+      }
       patched.set(String(g.id), fromApi);
       continue;
     }

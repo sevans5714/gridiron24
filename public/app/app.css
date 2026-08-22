@@ -4056,33 +4056,72 @@ body.has-install-sheet { overflow: hidden; }
 }
 
 .franchise-title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.04em;
   min-width: 0;
   width: 100%;
   max-width: 100%;
   overflow: hidden;
   font-family: var(--display);
   font-weight: 400;
-  letter-spacing: 0.06em;
   text-transform: uppercase;
-  line-height: 0.9;
+  line-height: 0.86;
   color: inherit;
   text-align: inherit;
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: break-word;
 }
 .franchise-title-lead,
 .franchise-title-mark {
-  font: inherit;
-  letter-spacing: inherit;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-transform: inherit;
-  color: inherit;
 }
-.franchise-title.is-sm { font-size: 1.32rem; }
-.franchise-title.is-md { font-size: 1.55rem; }
+.franchise-title-lead {
+  font-size: 0.48em;
+  letter-spacing: 0.22em;
+  line-height: 1.05;
+  color: color-mix(in srgb, var(--chip-team, #8eb6ff) 82%, var(--muted, #9b9b9b));
+}
+.franchise-title-mark {
+  font-size: 1em;
+  letter-spacing: 0.045em;
+  line-height: 0.84;
+  color: var(--gold, #efd782);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 0 18px rgba(239, 215, 130, 0.35);
+}
+.franchise-title.is-solo .franchise-title-mark {
+  letter-spacing: 0.06em;
+}
+.franchise-title.is-sm { font-size: 1.42rem; }
+.franchise-title.is-md { font-size: 1.68rem; }
+.franchise-title.is-inline,
+.po-side .franchise-title,
+.po-side .franchise-block {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0.28em;
+  width: 100%;
+  max-width: 100%;
+  font-size: 1.02rem;
+  line-height: 1;
+}
+.franchise-title.is-inline .franchise-title-lead,
+.po-side .franchise-title-lead {
+  font-size: 0.58em;
+  letter-spacing: 0.12em;
+}
+.franchise-title.is-inline .franchise-title-mark,
+.po-side .franchise-title-mark {
+  font-size: 1em;
+  letter-spacing: 0.03em;
+  text-shadow: none;
+}
 .franchise-block {
   display: flex;
   flex-direction: column;

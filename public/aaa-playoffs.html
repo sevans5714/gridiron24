@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=129" />
-  <link rel="icon" href="/favicon.ico?v=129" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=129" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=129" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=130" />
+  <link rel="icon" href="/favicon.ico?v=130" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=130" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=130" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=173" />
+  <link rel="stylesheet" href="/css/site.css?v=174" />
   <style>
     .tree {
       display: flex;
@@ -270,6 +270,11 @@
       line-height: 1.2;
       color: var(--text);
     }
+    .mu-name .franchise-title,
+    .mu-name .franchise-block {
+      width: 100%;
+      max-width: 100%;
+    }
     .mu-score {
       font-family: var(--display);
       font-size: 0.95rem;
@@ -282,6 +287,11 @@
       text-align: right;
     }
     .mu-score.is-empty { color: var(--muted); font-size: 0.8rem; }
+    .mu-row > .franchise-title,
+    .mu-row > .franchise-block {
+      min-width: 0;
+      overflow: hidden;
+    }
     .mu-await {
       padding: 0.55rem 0.4rem;
       text-align: center;
@@ -566,7 +576,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=173"></script>
+  <script src="/js/nav.js?v=175"></script>
   <script>
     const PLACEHOLDER = '/assets/team-logo-placeholder.svg';
     const AAA_MARK = '/assets/aaa-league.png?v=7';
@@ -608,7 +618,7 @@
       return `
         <div class="${cls}">
           <span class="mu-seed">${seed ? `#${esc(seed)}` : '·'}</span>
-          ${window.GridIronTitle.html(side?.name || opts.fallbackName || 'TBD', { size: 'sm', inline: true })}
+          <span class="mu-name">${window.GridIronTitle.html(side?.name || opts.fallbackName || 'TBD', { size: 'sm', inline: true })}</span>
           <span class="mu-score${hasScore ? '' : ' is-empty'}">${hasScore ? fmt(score) : '—'}</span>
         </div>`;
     }

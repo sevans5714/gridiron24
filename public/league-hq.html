@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=129" />
-  <link rel="icon" href="/favicon.ico?v=129" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=129" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=129" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=130" />
+  <link rel="icon" href="/favicon.ico?v=130" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=130" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=130" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=173" />
+  <link rel="stylesheet" href="/css/site.css?v=174" />
   <link rel="stylesheet" href="/css/draft-desk.css?v=11" />
   <style>
     body[data-page="league-hq"] .topbar {
@@ -276,7 +276,7 @@
     }
     .il-mini {
       width: 100%;
-      table-layout: fixed;
+      table-layout: auto;
       border-collapse: collapse;
       font-size: 1.05rem;
     }
@@ -298,37 +298,48 @@
     }
     .il-mini tr:last-child td { border-bottom: 0; }
     .il-mini .rank {
-      width: 1.35rem;
+      width: 1%;
+      white-space: nowrap;
       color: var(--muted);
       font-variant-numeric: tabular-nums;
       font-weight: 600;
     }
     .il-mini .team {
-      font-weight: 600;
+      width: auto;
       min-width: 0;
+      overflow: hidden;
+      font-weight: 600;
     }
     .il-mini .mgr {
+      width: 1%;
+      white-space: nowrap;
       color: var(--muted);
       font-size: 0.88rem;
       font-weight: 500;
     }
     .il-mini th.num,
     .il-mini td.num {
+      width: 1%;
       text-align: right;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
       border-left: 1px solid rgba(255, 255, 255, 0.12);
-      padding-left: 0.55rem;
+      padding-left: 0.4rem;
+      padding-right: 0.15rem;
     }
     .il-mini th.num.wl,
     .il-mini td.num.wl {
-      width: 3.55rem;
+      width: 1%;
+      min-width: 5.2ch;
       text-align: center;
-      padding-left: 0.2rem;
-      padding-right: 0.2rem;
+      padding-left: 0.28rem;
+      padding-right: 0.28rem;
     }
     .il-mini th.num.pf,
-    .il-mini td.num.pf { width: 4.85rem; }
+    .il-mini td.num.pf {
+      width: 1%;
+      min-width: 6ch;
+    }
     html[data-theme="day"] .il-mini th.num,
     html[data-theme="day"] .il-mini td.num {
       border-left-color: rgba(20, 28, 40, 0.14);
@@ -519,9 +530,15 @@
     }
     .il-hotnot-team {
       display: flex;
-      align-items: center;
-      gap: 0.7rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.12rem;
       min-width: 0;
+    }
+    .il-hotnot-team .franchise-title,
+    .il-hotnot-team .franchise-block {
+      align-items: flex-start;
+      text-align: left;
     }
     .il-hotnot-team img {
       width: 2.6rem;
@@ -536,6 +553,17 @@
       color: var(--muted);
       font-size: 0.82rem;
     }
+    .il-hotnot-team .streak {
+      margin: 0.08rem 0 0.12rem;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+    .il-hotnot-team .streak.is-win { color: #ef4444; }
+    .il-hotnot-team .streak.is-loss { color: var(--blue); }
     .il-matchup.is-live {
       border-color: color-mix(in srgb, #4dff9a 40%, var(--line));
       box-shadow: inset 3px 0 0 #4dff9a;
@@ -933,16 +961,26 @@
       display: flex;
       justify-content: space-between;
       gap: 0.5rem;
-      align-items: baseline;
+      align-items: center;
       padding: 0.18rem 0;
+      min-width: 0;
     }
     .il-pgame .pg-row.is-win { color: var(--gold); font-weight: 700; }
+    .il-pgame .pg-team {
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
     .il-pgame .seed {
       color: var(--muted);
       font-variant-numeric: tabular-nums;
-      margin-right: 0.35rem;
+      margin-right: 0;
+      flex: 0 0 auto;
     }
-    .il-pgame .pts { font-variant-numeric: tabular-nums; }
+    .il-pgame .pts { font-variant-numeric: tabular-nums; flex: 0 0 auto; }
     .il-final-game {
       max-width: 28rem;
       margin: 1rem auto 0;
@@ -1453,7 +1491,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=173"></script>
+  <script src="/js/nav.js?v=175"></script>
   <script src="/js/official-draft-ui.js?v=14"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -1595,6 +1633,34 @@
       const groups = franchisesByConf(league);
       const byId = new Map((board?.standings || []).map((s) => [s.franchiseId, s]));
       if (!groups.length) return '';
+      const streakKind = (t) => {
+        const type = String(t?.streakType || '').trim().toUpperCase();
+        const n = Number(t?.streakLength || 0);
+        if (n <= 0) return { type: 'NONE', n: 0 };
+        if (type === 'W' || type === 'WIN' || type === 'WINS') return { type: 'WIN', n };
+        if (type === 'L' || type === 'LOSS' || type === 'LOSSES') return { type: 'LOSS', n };
+        return { type: 'NONE', n };
+      };
+      const heatIndex = (t) => {
+        const s = streakKind(t);
+        const winStreak = s.type === 'WIN' ? s.n : 0;
+        const lossStreak = s.type === 'LOSS' ? s.n : 0;
+        const ppg = Number(t.pointsPerGame || 0);
+        const pf = Number(t.pointsFor || 0);
+        const high = Number(t.highPoints || 0);
+        const live = board?.live ? Number(t.total || 0) : 0;
+        return winStreak * 120 + ppg * 3.2 + high * 0.4 + pf * 0.1 + live * 2 - lossStreak * 100;
+      };
+      const coldIndex = (t) => {
+        const s = streakKind(t);
+        const winStreak = s.type === 'WIN' ? s.n : 0;
+        const lossStreak = s.type === 'LOSS' ? s.n : 0;
+        const ppg = Number(t.pointsPerGame || 0);
+        const pf = Number(t.pointsFor || 0);
+        const high = Number(t.highPoints || 0);
+        const live = board?.live ? Number(t.total || 0) : 0;
+        return lossStreak * 120 - ppg * 3.2 - high * 0.25 - pf * 0.1 - live * 2 - winStreak * 100;
+      };
       return groups.map(({ conf, teams }, gi) => {
         const ranked = [...teams].map((t) => {
           const s = byId.get(t.id);
@@ -1602,31 +1668,45 @@
             ...t,
             wins: s?.wins || 0,
             losses: s?.losses || 0,
+            ties: s?.ties || 0,
             pointsFor: Number(s?.pointsFor || s?.total || 0),
+            pointsPerGame: Number(s?.pointsPerGame || 0),
+            highPoints: Number(s?.highPoints || 0),
+            streakType: s?.streakType || 'NONE',
+            streakLength: Number(s?.streakLength || 0),
             total: Number(s?.total || 0)
           };
-        }).sort((a, b) => {
-          if (board?.live) return (b.total - a.total) || (b.pointsFor - a.pointsFor);
-          return (b.wins - a.wins) || (b.pointsFor - a.pointsFor);
         });
-        const hot = ranked[0];
-        const cold = ranked.length > 1 ? ranked[ranked.length - 1] : null;
+        if (!ranked.length) return '';
+        const byHeat = ranked.slice().sort((a, b) => heatIndex(b) - heatIndex(a));
+        const hot = byHeat[0];
+        const byCold = ranked.filter((t) => t.id !== hot.id).sort((a, b) => coldIndex(b) - coldIndex(a));
+        const cold = byCold[0] || (ranked.length > 1 ? byHeat[byHeat.length - 1] : null);
         const color = confColor(conf, gi);
         const rec = (t) => {
           if (!t) return '';
           if (board?.live) return `${Number(t.total || t.pointsFor || 0).toFixed(1)} this week`;
-          return `${t.wins}-${t.losses} · ${Number(t.pointsFor || 0).toFixed(1)} PF`;
+          return `${t.wins}-${t.losses}${t.ties ? `-${t.ties}` : ''} · ${Number(t.pointsFor || 0).toFixed(1)} PF`;
         };
+        const streakHtml = (t) => {
+          const s = streakKind(t);
+          if (s.type === 'WIN') return `<div class="streak is-win">${s.n}W winning streak</div>`;
+          if (s.type === 'LOSS') return `<div class="streak is-loss">${s.n}L losing streak</div>`;
+          return '';
+        };
+        const card = (t) => t
+          ? `<div class="il-hotnot-team">${window.GridIronTitle.html(t.name, { size: 'sm' })}${streakHtml(t)}<div class="sub">${esc(rec(t))}</div></div>`
+          : '';
         return `<div class="il-motw-block">
           <div class="il-conf-head" style="--conf:${esc(color)}"><h3>${esc(conf.shortName || conf.name || conf.key)}</h3></div>
           <div class="il-hotnot">
             <div class="il-hotnot-col hot">
               <div class="label">Who’s Hot</div>
-              ${hot ? `<div class="il-hotnot-team">${window.GridIronTitle.html(hot.name, { size: 'sm' })}<div class="sub">${esc(rec(hot))}</div></div>` : ''}
+              ${card(hot)}
             </div>
             <div class="il-hotnot-col cold">
               <div class="label">Who’s Not</div>
-              ${cold ? `<div class="il-hotnot-team">${window.GridIronTitle.html(cold.name, { size: 'sm' })}<div class="sub">${esc(rec(cold))}</div></div>` : ''}
+              ${card(cold)}
             </div>
           </div>
         </div>`;
@@ -1735,7 +1815,11 @@
                   <td class="rank">${i + 1}</td>
                   <td class="team">
                     <a class="il-team-link" href="${esc(teamPath(t.id, weekBoard?.week))}">${
-                      window.GridIronTitle.html(t.name || t.teamName || `Team ${i + 1}`, { size: 'sm', inline: true, owner: t.managerName || t.ownerName })
+                      window.GridIronTitle.html(t.name || t.teamName || `Team ${i + 1}`, {
+                        size: 'sm',
+                        inline: true,
+                        owner: compact ? (t.managerName || t.ownerName) : ''
+                      })
                     }</a>
                   </td>
                   ${compact ? '' : `<td class="mgr">${esc(t.managerName || t.ownerName || 'Open')}</td>`}
@@ -2712,13 +2796,13 @@
           ${m.label ? `<p class="il-meta" style="margin:0 0 0.45rem;">${esc(m.label)}${m.homeSeed ? ` · #${esc(String(m.homeSeed))} vs #${esc(String(m.awaySeed || ''))}` : ''}</p>` : ''}
           <header class="il-mu-head">
             <div class="side">
-              <div><a class="il-team-link" href="${esc(teamPath(m.home?.franchiseId, week))}"><strong>${esc(m.home?.name || 'Home')}</strong></a></div>
+              <div><a class="il-team-link" href="${esc(teamPath(m.home?.franchiseId, week))}">${window.GridIronTitle.html(m.home?.name || 'Home', { size: 'md' })}</a></div>
               <div class="il-meta">${esc(m.home?.managerName || '')}</div>
               <div class="score">${Number(m.homeScore || m.home?.total || 0).toFixed(1)}</div>
             </div>
             <div class="vs">${live ? '<span class="il-live-pill">LIVE</span>' : 'vs'}</div>
             <div class="side is-right">
-              <div><a class="il-team-link" href="${esc(teamPath(m.away?.franchiseId, week))}"><strong>${esc(m.away?.name || 'Away')}</strong></a></div>
+              <div><a class="il-team-link" href="${esc(teamPath(m.away?.franchiseId, week))}">${window.GridIronTitle.html(m.away?.name || 'Away', { size: 'md' })}</a></div>
               <div class="il-meta">${esc(m.away?.managerName || '')}</div>
               <div class="score">${Number(m.awayScore || m.away?.total || 0).toFixed(1)}</div>
             </div>
@@ -3327,7 +3411,7 @@
       const win = winnerId && String(winnerId) === String(side.franchiseId);
       const pts = score != null && Number.isFinite(Number(score)) ? Number(score).toFixed(1) : '';
       return `<div class="pg-row${win ? ' is-win' : ''}">
-        <span><span class="seed">${side.seed != null ? `#${esc(String(side.seed))}` : ''}</span>${esc(side.name || 'Team')}</span>
+        <span class="pg-team">${side.seed != null ? `<span class="seed">#${esc(String(side.seed))}</span>` : ''}${window.GridIronTitle.html(side.name || 'Team', { size: 'sm', inline: true })}</span>
         <span class="pts">${esc(pts)}</span>
       </div>`;
     }
@@ -3406,7 +3490,7 @@
         </section>` : ''}
         ${seeds.length ? `<section class="il-panel" style="margin-top:1rem;">
           <h2>Seeds</h2>
-          <ol class="il-team-list">${seeds.map((s) => `<li><span>#${esc(String(s.seed))} ${esc(s.name)}</span><span class="il-meta">${esc(s.record || '')}</span></li>`).join('')}</ol>
+          <ol class="il-team-list">${seeds.map((s) => `<li><span>#${esc(String(s.seed))} ${window.GridIronTitle.html(s.name, { size: 'sm', inline: true })}</span><span class="il-meta">${esc(s.record || '')}</span></li>`).join('')}</ol>
         </section>` : ''}`;
     }
 

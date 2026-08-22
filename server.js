@@ -766,8 +766,8 @@ function requireCommissioner(req, res) {
     sendJson(res, 401, { ok: false, error: 'Authentication required' });
     return null;
   }
-  if (!users.isCommissioner(user)) {
-    sendJson(res, 403, { ok: false, error: 'Commissioner access required' });
+  if (!canAccessGi24OwnerTools(user)) {
+    sendJson(res, 403, { ok: false, error: 'Owner access required' });
     return null;
   }
   return user;
@@ -868,6 +868,14 @@ function canAccessCommissionerPage(user) {
   return users.isStaff(user);
 }
 
+function canAccessGi24OwnerTools(user) {
+  return Boolean(user && users.isSiteOwner(user));
+}
+
+function canAccessSiteTools(user) {
+  return Boolean(user && users.isSiteOwner(user));
+}
+
 function isIndependentLeagueOwner(user) {
   if (!user?.leagueOwner || !user.leagueId || users.isSiteOwner(user)) return false;
   try {
@@ -898,8 +906,9 @@ function ownerDashboardPath(user) {
       return '/my-league.html';
     }
   }
-  if (!canAccessCommissionerPage(user) && !user?.leagueOwner) return '/profile.html';
-  return isConferenceAdminOnly(user) ? '/admin.html' : '/owner.html';
+  if (isConferenceAdminOnly(user)) return '/admin.html';
+  if (canAccessGi24OwnerTools(user)) return '/owner.html';
+  return '/profile.html';
 }
 
 function staffDashboardPath(user) {
@@ -1038,6 +1047,14 @@ function teamHighPoints(raw, teamId) {
   return high;
 }
 
+function normalizeStreakType(raw) {
+  const s = String(raw || '').trim().toUpperCase();
+  if (s === 'W' || s === 'WIN' || s === 'WINS') return 'WIN';
+  if (s === 'L' || s === 'LOSS' || s === 'LOSSES') return 'LOSS';
+  if (s === 'T' || s === 'TIE' || s === 'TIES') return 'TIE';
+  return 'NONE';
+}
+
 function conferenceAdminName(conferenceKey) {
   const key = String(conferenceKey || '').trim().toLowerCase();
   if (!key) return null;
@@ -1052,15 +1069,15 @@ function normalizeLeague(raw, conference) {
   const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
   const logoOverrides = logos.getOverrideMap();
   const teams = (raw.teams || []).map((team) => {
-    const record = team.record?.overall || {};
+    const record = team.record?.overall || team.record || {};
 
     const wins = record.wins || 0;
     const losses = record.losses || 0;
     const ties = record.ties || 0;
     const gamesPlayed = wins + losses + ties;
     const pointsFor = Number(record.pointsFor || team.points || 0);
-    const streakType = record.streakType || 'NONE';
-    const streakLength = Number(record.streakLength || 0);
+    const streakType = normalizeStreakType(record.streakType || team.streakType);
+    const streakLength = Number(record.streakLength || team.streakLength || 0);
     const identity = resolveEspnTeamIdentity(conference.key, team, membersById);
     const key = logos.logoKey(conference.key, team.id);
     const overrideLogo = logoOverrides.get(key);
@@ -5276,20 +5293,25 @@ function aaaPayoutsFromAffiliate(affiliate) {
 }
 
 function teamHeatIndex(t) {
-  const winStreak = t.streakType === 'WIN' ? Number(t.streakLength || 0) : 0;
-  const lossStreak = t.streakType === 'LOSS' ? Number(t.streakLength || 0) : 0;
+  const type = normalizeStreakType(t.streakType);
+  const n = Number(t.streakLength || 0);
+  const winStreak = type === 'WIN' ? n : 0;
+  const lossStreak = type === 'LOSS' ? n : 0;
   const ppg = Number(t.pointsPerGame || 0);
   const pf = Number(t.pointsFor || 0);
   const high = Number(t.highPoints || 0);
-  return winStreak * 55 + ppg * 2.2 + pf * 0.08 + high * 0.12 - lossStreak * 40;
+  return winStreak * 120 + ppg * 3.2 + high * 0.4 + pf * 0.1 - lossStreak * 100;
 }
 
 function teamColdIndex(t) {
-  const winStreak = t.streakType === 'WIN' ? Number(t.streakLength || 0) : 0;
-  const lossStreak = t.streakType === 'LOSS' ? Number(t.streakLength || 0) : 0;
+  const type = normalizeStreakType(t.streakType);
+  const n = Number(t.streakLength || 0);
+  const winStreak = type === 'WIN' ? n : 0;
+  const lossStreak = type === 'LOSS' ? n : 0;
   const ppg = Number(t.pointsPerGame || 0);
   const pf = Number(t.pointsFor || 0);
-  return lossStreak * 55 - ppg * 2.2 - pf * 0.08 - winStreak * 40;
+  const high = Number(t.highPoints || 0);
+  return lossStreak * 120 - ppg * 3.2 - high * 0.25 - pf * 0.1 - winStreak * 100;
 }
 
 function pickHotCold(teams) {
@@ -10968,7 +10990,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(302, { Location: '/enter?next=' + encodeURIComponent('/site.html') });
         return res.end();
       }
-      if (!users.isSiteOwner(user)) {
+      if (!canAccessSiteTools(user)) {
         res.writeHead(302, { Location: ownerDashboardPath(user) });
         return res.end();
       }
@@ -10985,12 +11007,12 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(302, { Location: ownerDashboardPath(user) });
         return res.end();
       }
-      if (!canAccessCommissionerPage(user) && !user.leagueOwner) {
-        res.writeHead(302, { Location: '/profile.html' });
-        return res.end();
-      }
       if (isConferenceAdminOnly(user)) {
         res.writeHead(302, { Location: '/admin.html' });
+        return res.end();
+      }
+      if (!canAccessGi24OwnerTools(user)) {
+        res.writeHead(302, { Location: '/profile.html' });
         return res.end();
       }
       return sendLeagueToolsPage(res);
@@ -10998,12 +11020,12 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/admin.html' || pathname === '/admin') {
       const user = getSessionUser(req);
-      if (!canAccessCommissionerPage(user)) {
-        res.writeHead(302, { Location: user ? '/profile.html' : '/enter?next=' + encodeURIComponent('/admin.html') });
+      if (!user) {
+        res.writeHead(302, { Location: '/enter?next=' + encodeURIComponent('/admin.html') });
         return res.end();
       }
       if (!isConferenceAdminOnly(user)) {
-        res.writeHead(302, { Location: '/owner.html' });
+        res.writeHead(302, { Location: ownerDashboardPath(user) });
         return res.end();
       }
       return sendLeagueToolsPage(res);
@@ -11040,15 +11062,24 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/league-tools.html' || pathname === '/league-tools') {
       const user = getSessionUser(req);
+      if (!user) {
+        res.writeHead(302, { Location: '/enter?next=' + encodeURIComponent('/owner.html') });
+        return res.end();
+      }
       if (isIndependentLeagueOwner(user)) {
         res.writeHead(302, { Location: ownerDashboardPath(user) });
         return res.end();
       }
-      if (!canAccessCommissionerPage(user)) {
-        res.writeHead(302, { Location: user ? '/profile.html' : '/enter?next=' + encodeURIComponent('/league-tools.html') });
+      if (isConferenceAdminOnly(user)) {
+        res.writeHead(302, { Location: '/admin.html' });
         return res.end();
       }
-      return sendLeagueToolsPage(res);
+      if (!canAccessGi24OwnerTools(user)) {
+        res.writeHead(302, { Location: '/profile.html' });
+        return res.end();
+      }
+      res.writeHead(302, { Location: '/owner.html' });
+      return res.end();
     }
 
     if (pathname === '/api/leagues') {
@@ -11067,8 +11098,19 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/espn-leagues' && req.method === 'GET') {
-      if (!requireStaff(req, res)) return;
+      const user = requireStaff(req, res);
+      if (!user) return;
       const bindings = listEspnLeagueBindings();
+      if (!users.isSiteOwner(user)) {
+        if (user.role === 'conference_admin' && user.conference) {
+          const conf = String(user.conference).toLowerCase();
+          bindings.leagues = (bindings.leagues || []).filter(
+            (row) => String(row.key || '').toLowerCase() === conf
+          );
+        } else {
+          return sendJson(res, 403, { ok: false, error: 'Owner access required' });
+        }
+      }
       const peek = String(requestUrl.searchParams.get('peek') || '').trim() === '1';
       if (!peek) {
         return sendJson(res, 200, { ok: true, ...bindings });

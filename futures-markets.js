@@ -42,6 +42,30 @@ function parseAmerican(raw) {
   return Number.isFinite(n) && n !== 0 ? n : null;
 }
 
+function classifyFutureMarket(meta, title) {
+  const t = String(title || '').toLowerCase();
+  if (/mvp|cy young|rookie|coach|player|props?|yes\/no|over\/under|make the playoffs|win the division|division winner|north|south|atlantic|central|pacific|mountain|win total|regular season/.test(t)) {
+    if (!/super\s*bowl|\bafc\b|\bnfc\b|world series|stanley cup|nba (champion|title)|national champion|college football playoff/.test(t)) {
+      return null;
+    }
+  }
+  if (meta.sport === 'NFL') {
+    if (/super\s*bowl/.test(t)) return { chip: 'Super Bowl', rank: 1 };
+    if (/\bafc\b/.test(t) && !/division|north|south|east|west/.test(t)) return { chip: 'AFC', rank: 2 };
+    if (/\bnfc\b/.test(t) && !/division|north|south|east|west/.test(t)) return { chip: 'NFC', rank: 3 };
+    return null;
+  }
+  if (meta.sport === 'NBA' && /(champion|title|winner)/.test(t) && !/conference|division|east|west/.test(t)) {
+    return { chip: 'NBA Champ', rank: 10 };
+  }
+  if (meta.sport === 'MLB' && /world series/.test(t)) return { chip: 'World Series', rank: 11 };
+  if (meta.sport === 'NHL' && /stanley cup/.test(t)) return { chip: 'Stanley Cup', rank: 12 };
+  if (meta.sport === 'NCAAF' && /(national champion|playoff champion|cfb champ|ncaa.*champ)/.test(t)) {
+    return { chip: 'CFB Champ', rank: 13 };
+  }
+  return null;
+}
+
 function mapMarket(meta, event, market) {
   const outcomes = (market.outcomes || [])
     .map((o) => {
@@ -60,11 +84,15 @@ function mapMarket(meta, event, market) {
   if (!outcomes.length) return null;
 
   const title = String(market.description || event.description || meta.label).trim();
+  const kind = classifyFutureMarket(meta, title);
+  if (!kind) return null;
   return {
     id: `${meta.id}:${String(market.id || title)}`,
     boardId: meta.id,
     sport: meta.sport,
-    label: meta.label,
+    label: kind.chip,
+    chip: kind.chip,
+    rank: kind.rank,
     title,
     eventName: event.description || meta.label,
     seasonHint: event.description || null,
@@ -111,18 +139,19 @@ async function getFuturesBoard() {
     })
   );
 
-  // Prefer one primary winner market per board.
-  const byBoard = new Map();
+  // One board per futures title (Super Bowl, AFC, NFC, …) — keep the deepest book.
+  const byChip = new Map();
   for (const m of markets) {
-    const prev = byBoard.get(m.boardId);
-    if (!prev || m.outcomes.length > prev.outcomes.length) byBoard.set(m.boardId, m);
+    const key = `${m.sport}:${m.chip || m.label}`;
+    const prev = byChip.get(key);
+    if (!prev || m.outcomes.length > prev.outcomes.length) byChip.set(key, m);
   }
 
   const value = {
     ok: true,
     source: 'bovada-futures',
     generatedAt: new Date().toISOString(),
-    markets: [...byBoard.values()].sort((a, b) => a.sport.localeCompare(b.sport)),
+    markets: [...byChip.values()].sort((a, b) => (a.rank || 99) - (b.rank || 99) || a.sport.localeCompare(b.sport)),
     errors
   };
   cache.set('futures', { at: Date.now(), value });

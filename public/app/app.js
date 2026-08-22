@@ -7,13 +7,32 @@
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
+  const TITLE_SOLO_LEAD = new Set(['the', 'a', 'an', 'el', 'la', 'los', 'las', 'san', 'st', 'saint', 'fc', 'sc', 'of']);
+
+  function splitFranchiseName(name) {
+    const text = String(name || '').replace(/\s+/g, ' ').trim() || 'TBD';
+    const parts = text.split(' ');
+    if (parts.length < 2) return { lead: '', mark: text };
+    let cut = parts.length - 1;
+    if (parts[cut].length === 1 && parts.length > 2) cut -= 1;
+    const lead = parts.slice(0, cut).join(' ');
+    const mark = parts.slice(cut).join(' ');
+    if (!lead || TITLE_SOLO_LEAD.has(lead.toLowerCase())) return { lead: '', mark: text };
+    return { lead, mark };
+  }
+
   function franchiseTitleHtml(name, opts = {}) {
     if (window.GridIronTitle?.html) return window.GridIronTitle.html(name, opts);
     const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
     const extra = opts.className ? ` ${String(opts.className)}` : '';
-    const text = String(name || '').trim() || 'TBD';
+    const inline = Boolean(opts.inline);
+    const text = String(name || '').replace(/\s+/g, ' ').trim() || 'TBD';
+    const { lead, mark } = splitFranchiseName(text);
+    const inner = lead
+      ? `<span class="franchise-title-lead">${esc(lead)}</span><span class="franchise-title-mark">${esc(mark)}</span>`
+      : `<span class="franchise-title-mark">${esc(mark)}</span>`;
     const owner = String(opts.owner || '').trim().toLowerCase();
-    const title = `<span class="franchise-title is-${size}${extra}" title="${esc(text)}">${esc(text)}</span>`;
+    const title = `<span class="franchise-title is-${size}${inline ? ' is-inline' : ''}${lead ? '' : ' is-solo'}${extra}" title="${esc(text)}">${inner}</span>`;
     const ownerOk = owner && owner !== '—' && owner !== '-' && owner !== 'unassigned' && owner !== 'owner pending' && owner !== 'pending';
     if (!ownerOk) return title;
     return `<span class="franchise-block" title="${esc(`${text} · ${opts.owner}`)}">${title}<span class="franchise-owner">${esc(String(opts.owner || '').trim())}</span></span>`;
@@ -470,7 +489,6 @@
     if (!b?.id) return false;
     const isFantasy = Boolean(b.fantasy) || b.id === 'gi24' || b.id === 'aaa';
     if (isFantasy) return (b.games || []).length > 0;
-    if (b.inSeason) return true;
     return (b.games || []).some((g) => {
       const bucket = g?.status?.bucket;
       return bucket === 'live' || bucket === 'upcoming' || bucket === 'final';
@@ -2618,7 +2636,7 @@
     return `<div class="po-side">
       <img src="${esc(side.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
       <span class="seed">${esc(seed)}</span>
-      <span class="nm">${esc(side.name || 'Team')}</span>
+      <span class="nm">${franchiseTitleHtml(side.name || 'Team', { size: 'sm', inline: true })}</span>
       ${pts}
     </div>`;
   }

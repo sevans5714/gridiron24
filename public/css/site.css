@@ -3647,40 +3647,101 @@ html[data-theme="day"] .desk-tile {
   .desk-palette { grid-template-columns: 1fr; }
 }
 
-/* Franchise identity is the name — one dramatic display face. */
+/* Franchise identity: city/prefix as a kicker, nickname as the gold mark. */
 .franchise-title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.04em;
   min-width: 0;
   width: 100%;
   max-width: 100%;
   overflow: hidden;
   font-family: var(--display);
   font-weight: 400;
-  letter-spacing: 0.06em;
   text-transform: uppercase;
-  line-height: 0.9;
+  line-height: 0.86;
   color: inherit;
   text-align: inherit;
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-html[data-theme="night"] .franchise-title {
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 0 16px rgba(142, 182, 255, 0.14);
 }
 .franchise-title-lead,
 .franchise-title-mark {
-  font: inherit;
-  letter-spacing: inherit;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-transform: inherit;
-  color: inherit;
 }
-.franchise-title.is-sm { font-size: 1.32rem; }
-.franchise-title.is-md { font-size: 1.55rem; }
-.franchise-title.is-lg { font-size: 1.95rem; }
-.franchise-title.is-xl { font-size: clamp(2.15rem, 5vw, 3.15rem); }
+.franchise-title-lead {
+  font-size: 0.48em;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  line-height: 1.05;
+  color: color-mix(in srgb, var(--chip-team) 82%, var(--muted));
+}
+.franchise-title-mark {
+  font-size: 1em;
+  letter-spacing: 0.045em;
+  line-height: 0.84;
+  color: var(--gold);
+}
+html[data-theme="night"] .franchise-title-mark {
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 0 18px color-mix(in srgb, var(--gold) 42%, transparent);
+}
+html[data-theme="day"] .franchise-title-lead {
+  color: color-mix(in srgb, var(--blue) 55%, var(--muted));
+}
+.franchise-title.is-solo .franchise-title-mark {
+  letter-spacing: 0.06em;
+}
+.franchise-title.is-lg .franchise-title-mark,
+.franchise-title.is-xl .franchise-title-mark {
+  padding-bottom: 0.06em;
+  box-shadow: inset 0 -0.07em 0 color-mix(in srgb, var(--gold) 55%, transparent);
+}
+.franchise-title.is-sm { font-size: 1.42rem; }
+.franchise-title.is-md { font-size: 1.68rem; }
+.franchise-title.is-lg { font-size: 2.15rem; }
+.franchise-title.is-xl { font-size: clamp(2.35rem, 5.4vw, 3.35rem); }
+.franchise-title.is-inline,
+.mu-row > .franchise-title,
+.mu-row > .franchise-block,
+.mu-name .franchise-title,
+.mu-name .franchise-block,
+.pg-team .franchise-title,
+.pg-team .franchise-block,
+.bowl-side .nm > .franchise-title,
+.bowl-side .nm > .franchise-block,
+.po-side .franchise-title,
+.po-side .franchise-block {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0.28em;
+  width: 100%;
+  max-width: 100%;
+  font-size: 1.02rem;
+  line-height: 1;
+}
+.franchise-title.is-inline .franchise-title-lead,
+.mu-row .franchise-title-lead,
+.pg-team .franchise-title-lead,
+.bowl-side .nm .franchise-title-lead,
+.po-side .franchise-title-lead {
+  font-size: 0.58em;
+  letter-spacing: 0.12em;
+}
+.franchise-title.is-inline .franchise-title-mark,
+.mu-row .franchise-title-mark,
+.pg-team .franchise-title-mark,
+.bowl-side .nm .franchise-title-mark,
+.po-side .franchise-title-mark {
+  font-size: 1em;
+  letter-spacing: 0.03em;
+  text-shadow: none;
+}
 .franchise-block {
   display: flex;
   flex-direction: column;
@@ -3701,8 +3762,12 @@ html[data-theme="night"] .franchise-title {
 .motw-side > .franchise-title,
 .matchup-side .franchise-block,
 .matchup-side > .franchise-title,
+.il-motw-side .franchise-title,
 .il-motw-side .franchise-block,
+.il-hotnot-team .franchise-title,
 .il-hotnot-team .franchise-block,
+.il-mu-head .side .franchise-title,
+.il-mu-head .side .franchise-block,
 .records-team .franchise-block,
 .sgame-teamline .franchise-block,
 .sgame-teamline > .franchise-title,
@@ -3732,23 +3797,54 @@ html[data-theme="night"] .franchise-title {
 .matchup-side.home .franchise-title,
 .matchup-side.home .franchise-block,
 .mu-side.is-home .franchise-title,
-.mu-side.is-home .franchise-block {
+.mu-side.is-home .franchise-block,
+.il-mu-head .side.is-right .franchise-title,
+.il-mu-head .side.is-right .franchise-block {
   align-items: flex-end;
   text-align: right;
 }
+.il-motw-side .franchise-title,
+.il-motw-side .franchise-block,
+.il-hotnot-team .franchise-title,
+.il-hotnot-team .franchise-block {
+  align-items: center;
+  text-align: center;
+}
 .user-chip .franchise-title {
-  display: block;
-  -webkit-line-clamp: 1;
-  width: 100%;
-  max-width: 100%;
-  font-size: 1.02rem;
-  color: var(--chip-team);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0.32em;
+  width: auto;
+  max-width: 12.5rem;
+  font-size: 1.05rem;
+}
+.user-chip .franchise-title-lead {
+  font-size: 0.58em;
+  letter-spacing: 0.16em;
+  max-width: 6rem;
+  color: var(--chip-owner);
+}
+.user-chip .franchise-title-mark {
+  font-size: 1.05rem;
+  color: var(--gold);
+  text-shadow: none;
 }
 .user-menu-name .franchise-title {
   width: auto;
-  font-size: 1.35rem;
+  max-width: 100%;
+  font-size: 1.55rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05em;
+}
+.il-team-link:has(.franchise-title) {
+  border-bottom: 0;
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+}
+.il-team-link:has(.franchise-title):hover .franchise-title-mark {
   color: var(--text);
 }

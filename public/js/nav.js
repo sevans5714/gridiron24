@@ -169,12 +169,31 @@
     return Boolean(n) && n !== '—' && n !== '-' && n !== 'unassigned' && n !== 'owner pending' && n !== 'pending';
   }
 
+  const TITLE_SOLO_LEAD = new Set(['the', 'a', 'an', 'el', 'la', 'los', 'las', 'san', 'st', 'saint', 'fc', 'sc', 'of']);
+
+  function splitFranchiseName(name) {
+    const text = String(name || '').replace(/\s+/g, ' ').trim() || 'TBD';
+    const parts = text.split(' ');
+    if (parts.length < 2) return { lead: '', mark: text };
+    let cut = parts.length - 1;
+    if (parts[cut].length === 1 && parts.length > 2) cut -= 1;
+    const lead = parts.slice(0, cut).join(' ');
+    const mark = parts.slice(cut).join(' ');
+    if (!lead || TITLE_SOLO_LEAD.has(lead.toLowerCase())) return { lead: '', mark: text };
+    return { lead, mark };
+  }
+
   function franchiseTitleHtml(name, opts = {}) {
     const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
     const extra = opts.className ? ` ${String(opts.className)}` : '';
-    const text = String(name || '').trim() || 'TBD';
+    const inline = Boolean(opts.inline);
+    const text = String(name || '').replace(/\s+/g, ' ').trim() || 'TBD';
+    const { lead, mark } = splitFranchiseName(text);
+    const inner = lead
+      ? `<span class="franchise-title-lead">${esc(lead)}</span><span class="franchise-title-mark">${esc(mark)}</span>`
+      : `<span class="franchise-title-mark">${esc(mark)}</span>`;
     const owner = String(opts.owner || '').trim();
-    const title = `<span class="franchise-title is-${size}${extra}" title="${esc(text)}">${esc(text)}</span>`;
+    const title = `<span class="franchise-title is-${size}${inline ? ' is-inline' : ''}${lead ? '' : ' is-solo'}${extra}" title="${esc(text)}">${inner}</span>`;
     if (!ownerLineOk(owner)) return title;
     return `<span class="franchise-block" title="${esc(`${text} · ${owner}`)}">${title}<span class="franchise-owner">${esc(owner)}</span></span>`;
   }
@@ -191,8 +210,27 @@
     return 'sm';
   }
 
-  function fitFranchiseTitle() {
-    /* Names wrap in display type; do not compress them to fit a column. */
+  function fitFranchiseTitle(title) {
+    if (!title || !title.classList) return;
+    const compact = title.classList.contains('is-inline')
+      || Boolean(title.closest('.mu-row, .mu-name, .pg-team, .pg-row, .bowl-side, .po-side, .mini-table, .il-mini, .il-pgame, .user-chip'));
+    if (!compact) {
+      title.style.fontSize = '';
+      return;
+    }
+    if (title.clientWidth < 8) {
+      title.style.fontSize = '';
+      return;
+    }
+    const key = titleSizeKey(title);
+    const max = TITLE_MAX[key] || 18;
+    const min = TITLE_MIN[key] || 10;
+    title.style.fontSize = `${max}px`;
+    let size = max;
+    while (size > min && title.scrollWidth > title.clientWidth + 1) {
+      size -= 1;
+      title.style.fontSize = `${size}px`;
+    }
   }
 
   function fitAllFranchiseTitles(scope) {
@@ -682,21 +720,24 @@
   }
 
   function ownerDeskHref(user) {
-    if (!user) return '/owner.html';
+    if (!user) return '/profile.html';
     if (user.leagueOwner && leagueScope?.platform === 'independent' && !user.siteOwner) {
       return leagueScope.ownerDashboardPath || leagueScope.settingsPath || leagueScope.homePath || '/my-league.html';
     }
-    return '/owner.html';
+    if (user.siteOwner) return '/owner.html';
+    if (user.role === 'conference_admin') return '/admin.html';
+    return '/profile.html';
   }
 
   function toolsMenuLinks(user) {
     if (!user || user.loungeOnly) return '';
-    const owner = Boolean(user.siteOwner || user.canSwitchLeagues || user.leagueOwner || user.role === 'commissioner');
-    const admin = user.role === 'conference_admin' && !owner;
+    const independentOwner = Boolean(user.leagueOwner && leagueScope?.platform === 'independent' && !user.siteOwner);
     const items = [];
-    if (owner) {
+    if (user.siteOwner) {
+      items.push(`<a class="user-menu-action" href="/owner.html" role="menuitem">Owner tools</a>`);
+    } else if (independentOwner) {
       items.push(`<a class="user-menu-action" href="${esc(ownerDeskHref(user))}" role="menuitem">Owner tools</a>`);
-    } else if (admin) {
+    } else if (user.role === 'conference_admin') {
       items.push(`<a class="user-menu-action" href="/admin.html" role="menuitem">Admin tools</a>`);
     }
     if (user.siteOwner) {

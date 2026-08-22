@@ -205,7 +205,9 @@ const GOLF_LEADER_LIMIT = 40;
  * Sports can appear up to 7 days before their calendar season when games exist.
  */
 const LOUNGE_UPCOMING_MAX_MS = 7 * 24 * 60 * 60 * 1000;
+const DAILY_UPCOMING_MAX_MS = 36 * 60 * 60 * 1000;
 const OFFSEASON_FINAL_MAX_MS = 36 * 60 * 60 * 1000;
+const WEEKLY_LEAGUES = new Set(['nfl', 'ncaaf']);
 
 function isLeagueMonthInSeason(meta, now = new Date()) {
   const months = meta?.seasonMonths;
@@ -245,10 +247,23 @@ function isNearTermUpcoming(g, now = new Date(), maxMs = LOUNGE_UPCOMING_MAX_MS)
   return start >= t - 6 * 60 * 60 * 1000 && start <= t + maxMs;
 }
 
+function upcomingHorizonMs(board, now = new Date()) {
+  const meta = LEAGUES[board?.id];
+  if (!meta) return DAILY_UPCOMING_MAX_MS;
+  if (WEEKLY_LEAGUES.has(meta.id) || meta.kind === 'golf' || meta.kind === 'racing') {
+    return LOUNGE_UPCOMING_MAX_MS;
+  }
+  if (!isLeagueMonthInSeason(meta, now) && isApproachingSeason(meta, now)) {
+    return LOUNGE_UPCOMING_MAX_MS;
+  }
+  return DAILY_UPCOMING_MAX_MS;
+}
+
 function boardHasNearTermGames(board, now = new Date()) {
+  const maxMs = upcomingHorizonMs(board, now);
   return (board?.games || []).some((g) => {
     if (g?.status?.bucket === 'live') return true;
-    return isNearTermUpcoming(g, now, LOUNGE_UPCOMING_MAX_MS);
+    return isNearTermUpcoming(g, now, maxMs);
   });
 }
 
@@ -256,14 +271,8 @@ function isCalendarInSeason(board, now = new Date()) {
   if (board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)) return true;
   const meta = LEAGUES[board?.id];
   if (!meta) return false;
-  const golfish = meta.kind === 'golf' || meta.kind === 'racing';
-  if (isLeagueMonthInSeason(meta, now)) {
-    return golfish ? (board.games || []).length > 0 : true;
-  }
-  // Week before the calendar season: only if preseason/exhibition games exist.
-  if (isApproachingSeason(meta, now)) {
-    return (board.games || []).length > 0;
-  }
+  const hasGames = (board.games || []).length > 0;
+  if (isLeagueMonthInSeason(meta, now) || isApproachingSeason(meta, now)) return hasGames;
   return false;
 }
 
@@ -296,9 +305,7 @@ function pruneHorizonGames(board, now = new Date(), upcomingMaxMs = LOUNGE_UPCOM
 /** Drop far-future schedule teasers from calendar-offseason boards. */
 function pruneOffSeasonGames(board, now = new Date()) {
   if (board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)) return board;
-  const meta = LEAGUES[board?.id];
-  if (!meta || isLeagueMonthInSeason(meta, now) || isApproachingSeason(meta, now)) return board;
-  return pruneHorizonGames(board, now, LOUNGE_UPCOMING_MAX_MS);
+  return pruneHorizonGames(board, now, upcomingHorizonMs(board, now));
 }
 
 function gameDedupeKey(g) {
@@ -389,10 +396,12 @@ async function fetchSecondaryGames(leagueId) {
 /** In-season, the week before a season starts, or preseason games this week. */
 function filterInSeasonBoards(boards, now = new Date()) {
   return (boards || [])
-    .map((board) => pruneHorizonGames(board, now, LOUNGE_UPCOMING_MAX_MS))
     .map((board) => pruneOffSeasonGames(board, now))
     .filter((board) => {
-      if (board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)) return true;
+      if (board?.fantasy || FANTASY_LEAGUE_IDS.has(board?.id)) {
+        return (board.games || []).length > 0;
+      }
+      if (!(board.games || []).length) return false;
       if (isCalendarInSeason(board, now)) return true;
       return boardHasNearTermGames(board, now);
     })
@@ -428,7 +437,7 @@ function sitePathForMeta(meta, { daysAhead = 0, daysBehind = 0, forceDateRange =
   // finished games still appear after ESPN rolls to the next week.
   const useDates =
     (ahead > 0 || behind > 0) &&
-    (forceDateRange || DAILY_RANGE_LEAGUES.has(meta.id)) &&
+    (forceDateRange || DAILY_RANGE_LEAGUES.has(meta.id) || WEEKLY_LEAGUES.has(meta.id)) &&
     meta.kind !== 'golf' &&
     meta.kind !== 'racing';
   if (useDates) {
