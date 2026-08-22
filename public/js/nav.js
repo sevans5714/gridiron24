@@ -751,9 +751,9 @@
   function headerTeamName(user, myTeam) {
     const picks = [
       myTeam?.team?.name,
+      myTeam?.team?.espnName,
       myTeam?.claim?.teamName,
-      authState?.franchise?.name,
-      myTeam?.claim?.teamName
+      authState?.franchise?.name
     ];
     for (const raw of picks) {
       const name = String(raw || '').trim();
@@ -762,7 +762,7 @@
       return name;
     }
     if (user?.loungeOnly) return 'Members Lounge';
-    return String(user?.name || '').trim();
+    return '';
   }
 
   function renderUserMenu(user, myTeam = null) {
@@ -783,13 +783,12 @@
     mount.hidden = false;
     mount.classList.remove('is-open');
     const teamName = headerTeamName(user, myTeam);
-    const ownerName = user.name || 'Owner';
+    const ownerName = String(user.name || '').trim();
     const access = roleLabel(user.role, user.conference, user);
     const onProfile = active === 'profile';
-    const hasFranchise = Boolean(teamName) && teamName !== ownerName;
-    const chipTitleName = hasFranchise ? teamName : ownerName;
-    const chipTitle = `${chipTitleName} · ${ownerName} · ${access}`;
-    const teamHtml = esc(chipTitleName);
+    const chipTitle = [teamName, ownerName, access].filter(Boolean).join(' · ');
+    const teamHtml = esc(teamName || ownerName || 'Account');
+    const ownerHtml = (teamName && ownerName) ? esc(ownerName) : '';
     const profileHref = '/profile.html';
     const chipClass = `user-chip${onProfile ? ' is-active' : ''}`;
 
@@ -802,8 +801,7 @@
           <span class="user-chip-team-row">
             <span class="user-chip-team">${teamHtml}</span>
           </span>
-          <span class="user-chip-owner">${hasFranchise ? esc(ownerName) : ''}</span>
-          <span class="user-chip-access">${esc(access)}</span>
+          <span class="user-chip-owner">${ownerHtml}</span>
         </span>
         <span class="user-chip-caret" aria-hidden="true"></span>
       </button>
@@ -817,7 +815,7 @@
             </div>`
           : `<a class="user-menu-head" href="${profileHref}" role="menuitem">
               <span>
-                <span class="user-menu-name">${esc(chipTitleName)}</span>
+                <span class="user-menu-name">${esc(teamName || ownerName)}</span>
                 <span class="user-menu-role">${esc(ownerName)} · ${esc(access)}</span>
               </span>
             </a>`}

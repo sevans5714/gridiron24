@@ -3343,7 +3343,6 @@ body.has-install-sheet {
   .topbar-right {
     max-width: min(18rem, 48vw);
   }
-  .user-chip-owner,
   .user-chip-access {
     display: none;
   }
@@ -3422,7 +3421,6 @@ body.has-install-sheet {
   .user-chip-text {
     display: flex;
   }
-  .user-chip-owner,
   .user-chip-access {
     display: none;
   }
