@@ -13,7 +13,6 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
-  <link rel="stylesheet" href="/css/draft-desk.css?v=12" />
   <style>
     .draft-toolbar {
       display: flex;
@@ -49,6 +48,186 @@
       color: var(--muted);
       font-size: 0.92rem;
     }
+    .draft-scroll {
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: #f4f4f2;
+      max-height: min(78vh, 920px);
+    }
+    [data-theme="night"] .draft-scroll { background: #121212; }
+    .draft-board {
+      display: grid;
+      row-gap: 1px;
+      column-gap: 5px;
+      min-width: max-content;
+      padding: 4px;
+      background: #1c1c1a;
+    }
+    [data-theme="night"] .draft-board { background: #0c0c0c; }
+    .draft-corner,
+    .draft-team-head,
+    .draft-round,
+    .draft-cell {
+      background: #fff;
+    }
+    [data-theme="night"] .draft-corner,
+    [data-theme="night"] .draft-team-head,
+    [data-theme="night"] .draft-round {
+      background: #1a1a1a;
+      color: var(--text);
+    }
+    .draft-corner {
+      position: sticky;
+      left: 0;
+      top: 0;
+      z-index: 5;
+      min-width: 2.4rem;
+    }
+    .draft-team-head {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      min-width: 7.6rem;
+      max-width: 8.4rem;
+      padding: 0.5rem 0.4rem 0.55rem;
+      text-align: center;
+      border-bottom: 3px solid #111;
+      box-shadow: inset 1px 0 0 rgba(0,0,0,0.18), inset -1px 0 0 rgba(0,0,0,0.18);
+      font-family: var(--display);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.15;
+      color: #111;
+    }
+    .draft-team-head.is-alt {
+      background: #f3f1ea;
+    }
+    [data-theme="night"] .draft-team-head {
+      border-bottom-color: rgba(255,255,255,0.4);
+      color: var(--text);
+      box-shadow: inset 1px 0 0 rgba(255,255,255,0.08), inset -1px 0 0 rgba(0,0,0,0.45);
+    }
+    [data-theme="night"] .draft-team-head.is-alt {
+      background: #222;
+    }
+    [data-theme="night"] .draft-cell.is-alt:not([class*="pos-"]) {
+      background: #1c1c1c;
+    }
+    .draft-team-head .owner {
+      display: block;
+      margin-top: 0.15rem;
+      font-family: var(--body);
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      color: #555;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    [data-theme="night"] .draft-team-head .owner { color: var(--muted); }
+    .draft-round {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1rem;
+      color: #111;
+      min-width: 2.4rem;
+    }
+    .draft-cell {
+      min-height: 3.55rem;
+      min-width: 7.6rem;
+      max-width: 8.4rem;
+      padding: 0.28rem 0.32rem 0.35rem;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 0.1rem;
+      color: #111;
+      box-shadow: inset 1px 0 0 rgba(0,0,0,0.12), inset -1px 0 0 rgba(0,0,0,0.12);
+    }
+    .draft-cell.is-alt:not([class*="pos-"]) {
+      background: #f3f1ea;
+    }
+    .draft-cell.empty {
+      background: #ecece8;
+    }
+    .draft-cell.empty.is-alt {
+      background: #e2e0d8;
+    }
+    [data-theme="night"] .draft-cell.empty {
+      background: #222;
+    }
+    [data-theme="night"] .draft-cell.empty.is-alt {
+      background: #1a1a1a;
+    }
+    .draft-cell .top {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.2rem;
+      align-items: baseline;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      opacity: 0.92;
+    }
+    .draft-cell .first {
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+    }
+    .draft-cell .last {
+      font-family: var(--display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      line-height: 1.05;
+      text-align: center;
+      align-self: center;
+      word-break: break-word;
+    }
+    .draft-cell.pos-QB { background: #e85d5d; }
+    .draft-cell.pos-RB { background: #5fbf6a; }
+    .draft-cell.pos-WR { background: #5aa8e8; }
+    .draft-cell.pos-TE { background: #f0b24a; }
+    .draft-cell.pos-K { background: #c9a0e8; }
+    .draft-cell.pos-DST { background: #8a9aa8; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0.85rem 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-right: 0.35rem;
+    }
+    .swatch {
+      width: 0.85rem;
+      height: 0.85rem;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .swatch.QB { background: #e85d5d; }
+    .swatch.RB { background: #5fbf6a; }
+    .swatch.WR { background: #5aa8e8; }
+    .swatch.TE { background: #f0b24a; }
+    .swatch.K { background: #c9a0e8; }
+    .swatch.DST { background: #8a9aa8; }
   </style>
 </head>
 <body data-page="draft">
@@ -68,6 +247,14 @@
       <p class="draft-meta" id="draft-meta">Loading…</p>
     </div>
     <div id="draft-mount"><div class="msg">Loading draft board…</div></div>
+    <div class="legend" id="legend" hidden>
+      <span><i class="swatch QB"></i>QB</span>
+      <span><i class="swatch RB"></i>RB</span>
+      <span><i class="swatch WR"></i>WR</span>
+      <span><i class="swatch TE"></i>TE</span>
+      <span><i class="swatch K"></i>K</span>
+      <span><i class="swatch DST"></i>D/ST</span>
+    </div>
   </main>
   <footer class="shell site-footer">
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
@@ -86,6 +273,12 @@
     let CONFS = GI_CONFS.slice();
     let activeConf = new URLSearchParams(location.search).get('conference') || 'detail';
     let activeSeason = new URLSearchParams(location.search).get('season') || '';
+
+    function posClass(pos) {
+      if (pos === 'D/ST' || pos === 'DST') return 'pos-DST';
+      const clean = String(pos || '').replace(/[^A-Za-z0-9]/g, '');
+      return clean ? `pos-${clean}` : '';
+    }
 
     function renderTabs() {
       const tabs = document.getElementById('conf-tabs');
@@ -112,65 +305,30 @@
       });
     }
 
-    function posKey(pos) {
-      const raw = String(pos || '').trim().toUpperCase();
-      if (raw === 'DST' || raw === 'D/ST' || raw === 'DEF') return 'D/ST';
-      return raw || '—';
-    }
-
-    function nflLogoSrc(team) {
-      const abbr = String(team || '').trim().toUpperCase();
-      const canon = abbr === 'ARZ' ? 'ARI' : (abbr === 'WSH' || abbr === 'WASH' ? 'WAS' : abbr);
-      if (!canon || canon === 'FA' || canon.length > 3) return '';
-      const slug = canon === 'WAS' ? 'wsh' : canon.toLowerCase();
-      return `https://a.espncdn.com/i/teamlogos/nfl/500/${slug}.png`;
-    }
-
-    function magnetHtml(pick) {
-      if (!pick?.filled) return '<span class="last is-empty"></span>';
-      const pos = posKey(pick.position);
-      const nfl = String(pick.proTeam || '').toUpperCase();
-      const logo = nflLogoSrc(nfl);
-      const first = pick.firstName
-        ? `<span class="pick-first">${esc(pick.firstName)}</span>`
-        : '<span class="pick-first"></span>';
-      const team = logo
-        ? `<img class="pick-nfl-logo" src="${esc(logo)}" alt="${esc(nfl)}" width="16" height="16" loading="lazy" referrerpolicy="no-referrer" />`
-        : (nfl && nfl !== 'FA' ? `<span class="pick-nfl-abbr">${esc(nfl)}</span>` : '<span class="pick-nfl-abbr"></span>');
-      const bye = pick.byeWeek != null && String(pick.byeWeek).trim() !== ''
-        ? `<span class="pick-bye">Bye ${esc(String(pick.byeWeek))}</span>`
-        : '';
-      return `<span class="last" data-pos="${esc(pos)}"><span class="pick-meta"><span class="pick-pos">${esc(pos)}</span>${first}${team}</span><span class="pick-last">${esc(pick.lastName || '')}</span>${bye}</span>`;
-    }
-
-    function fitMagnetLastName(root) {
-      const scope = root && root.querySelectorAll ? root : document;
-      scope.querySelectorAll('.last:not(.is-empty) .pick-last').forEach((el) => {
-        el.style.fontSize = '';
-        el.style.letterSpacing = '';
-        el.style.transform = '';
-        const avail = el.clientWidth;
-        if (avail < 8) return;
-        const used = el.scrollWidth;
-        if (used <= avail) return;
-        const current = Number.parseFloat(getComputedStyle(el).fontSize) || 16;
-        const next = Math.max(9, current * ((avail - 2) / Math.max(used, 1)));
-        el.style.fontSize = `${next.toFixed(2)}px`;
-        el.style.letterSpacing = '0';
-        if (el.scrollWidth > avail) {
-          const squeeze = Math.max(0.62, avail / Math.max(el.scrollWidth, 1));
-          el.style.transform = `scaleX(${squeeze.toFixed(3)})`;
-          el.style.transformOrigin = 'center';
-        }
-      });
+    function cellHtml(pick, colIndex = 0) {
+      const alt = colIndex % 2 ? ' is-alt' : '';
+      if (!pick?.filled) {
+        return `<div class="draft-cell empty${alt}" title="Undrafted slot"></div>`;
+      }
+      const pos = pick.position === 'D/ST' ? 'D/ST' : pick.position;
+      return `<div class="draft-cell ${posClass(pos)}${alt}" title="${esc(pick.fullName)} · Rd ${esc(String(pick.round))} · Overall ${esc(String(pick.overall || ''))}">
+        <div class="top">
+          <span>${esc(pos)}</span>
+          <span class="first">${esc(pick.firstName)}</span>
+          <span>${esc(pick.proTeam)}</span>
+        </div>
+        <div class="last">${esc(pick.lastName)}</div>
+      </div>`;
     }
 
     function renderBoard(data) {
       const mount = document.getElementById('draft-mount');
       const meta = document.getElementById('draft-meta');
+      const legend = document.getElementById('legend');
       if (!data.ok) {
         mount.innerHTML = `<div class="msg">${esc(data.error || 'Draft unavailable')}</div>`;
         meta.textContent = '';
+        legend.hidden = true;
         return;
       }
 
@@ -178,11 +336,13 @@
       if (!d.visible) {
         mount.innerHTML = `<div class="msg">Draft board unlocks once the ${esc(String(data.season))} draft starts or completes on ESPN.</div>`;
         meta.textContent = `${data.conference?.name || ''} · ${d.type || 'SNAKE'} · not started`;
+        legend.hidden = true;
         return;
       }
 
       const cols = data.columns || [];
       const rows = data.board || [];
+      const colCount = cols.length + 1;
       meta.textContent = [
         data.conference?.name || '',
         d.type || 'SNAKE',
@@ -190,34 +350,19 @@
         `${d.filledCount || 0}/${d.totalSlots || 0} picks`
       ].filter(Boolean).join(' · ');
 
-      const heads = cols.map((t, i) => {
-        const label = t?.abbreviation || t?.name || `Team ${i + 1}`;
-        const title = [t?.name, t?.owner].filter(Boolean).join(' · ');
-        return `<div class="cpu-recap-head${i % 2 ? ' is-alt' : ''}" title="${esc(title || label)}"><span class="cpu-recap-num">${i + 1}</span></div>`;
-      }).join('');
+      const head = [
+        `<div class="draft-corner"></div>`,
+        ...cols.map((t, i) => `<div class="draft-team-head${i % 2 ? ' is-alt' : ''}" title="${esc(t.name)}">${esc(t.abbreviation || t.name)}${t.owner ? `<span class="owner">${esc(t.owner)}</span>` : ''}</div>`)
+      ].join('');
 
       const body = rows.map((row) => {
-        const cells = (row.cells || []).map((pick) => `<div class="cpu-recap-cell">${magnetHtml(pick)}</div>`).join('');
-        return `<div class="cpu-recap-row"><div class="cpu-recap-rn">${esc(String(row.round))}</div>${cells}</div>`;
+        const cells = (row.cells || []).map((pick, i) => cellHtml(pick, i)).join('');
+        return `<div class="draft-round">${esc(String(row.round))}</div>${cells}`;
       }).join('');
 
-      mount.innerHTML = `
-        <section class="official-draft-desk lounge-section is-mock draft-results-page" aria-label="Draft results">
-          <div class="cpu-recap-title">Fantasy Draft Board</div>
-          <div class="cpu-recap-board" style="--mock-seats:${cols.length}">
-            <div class="cpu-recap-row is-head">
-              <div class="cpu-recap-rn" aria-hidden="true"></div>
-              ${heads}
-            </div>
-            ${body}
-          </div>
-        </section>`;
-      requestAnimationFrame(() => fitMagnetLastName(mount));
+      mount.innerHTML = `<div class="draft-scroll"><div class="draft-board" style="grid-template-columns: 2.4rem repeat(${cols.length}, minmax(7.6rem, 8.4rem));">${head}${body}</div></div>`;
+      legend.hidden = false;
     }
-
-    window.addEventListener('resize', () => {
-      fitMagnetLastName(document.getElementById('draft-mount'));
-    });
 
     async function loadDraft() {
       const mount = document.getElementById('draft-mount');

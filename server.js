@@ -1348,7 +1348,6 @@ async function loadDraftBoard(conferenceKey, seasonOverride = null) {
       fullName: filled ? (player?.fullName || names.lastName) : '',
       position: filled ? (player?.position || '—') : '',
       proTeam: filled ? (player?.proTeam || 'FA') : '',
-      byeWeek: filled ? byeWeekForProTeam(player?.proTeamId) : null,
       keeper: Boolean(pick.keeper),
       filled
     };
@@ -1383,7 +1382,6 @@ async function loadDraftBoard(conferenceKey, seasonOverride = null) {
         fullName: '',
         position: '',
         proTeam: '',
-        byeWeek: null,
         keeper: false,
         filled: false
       })
