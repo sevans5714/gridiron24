@@ -618,8 +618,24 @@
     placeProposalActionsInNav();
   }
 
+  function featureRequestsAreOpen() {
+    // Hidden in-season. Returns June 1, 2027 (America/New_York).
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: 'numeric'
+      }).formatToParts(new Date());
+      const year = Number(parts.find((p) => p.type === 'year')?.value);
+      const month = Number(parts.find((p) => p.type === 'month')?.value);
+      return year > 2027 || (year === 2027 && month >= 6);
+    } catch {
+      return Date.now() >= Date.UTC(2027, 5, 1);
+    }
+  }
+
   function renderFeatureRequestButton(show) {
-    featureRequestVisible = Boolean(show);
+    featureRequestVisible = Boolean(show) && featureRequestsAreOpen();
     placeProposalActionsInNav();
   }
 

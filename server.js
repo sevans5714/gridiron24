@@ -235,6 +235,22 @@ function sendJson(res, status, payload, extraHeaders = {}) {
   res.end(body);
 }
 
+function featureRequestsAreOpen(now = new Date()) {
+  // Hidden during the season. Opens June 1, 2027 Eastern.
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: 'numeric'
+    }).formatToParts(now);
+    const year = Number(parts.find((p) => p.type === 'year')?.value);
+    const month = Number(parts.find((p) => p.type === 'month')?.value);
+    return year > 2027 || (year === 2027 && month >= 6);
+  } catch {
+    return now.getTime() >= Date.UTC(2027, 5, 1);
+  }
+}
+
 function parseCookies(header = '') {
   const out = {};
   for (const part of String(header).split(';')) {
@@ -10578,6 +10594,9 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/feature-requests' && req.method === 'POST') {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      if (!featureRequestsAreOpen()) {
+        return sendJson(res, 403, { ok: false, error: 'Feature requests reopen in June 2027' });
+      }
       let body;
       try {
         body = await readJsonBody(req);
