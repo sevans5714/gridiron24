@@ -45,7 +45,7 @@ function settingsOf(league) {
 
 function rosterCap(league) {
   const slots = settingsOf(league).rosterSlots || {};
-  return ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K', 'BN', 'IR', 'TAXI']
+  return ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SFLEX', 'DST', 'K', 'BN', 'IR', 'TAXI']
     .reduce((sum, key) => sum + (Number(slots[key]) || 0), 0);
 }
 

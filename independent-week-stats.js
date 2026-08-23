@@ -138,6 +138,9 @@ function normalizePlayerRow(row) {
     receivingTds: toNum(row.receiving_tds),
     fumblesLost,
     twoPointConversions: twoPt,
+    passing2pt: toNum(row.passing_2pt_conversions),
+    rushing2pt: toNum(row.rushing_2pt_conversions),
+    receiving2pt: toNum(row.receiving_2pt_conversions),
     specialTeamsTds: toNum(row.special_teams_tds),
     patMade: toNum(row.pat_made),
     fgMade: toNum(row.fg_made),
@@ -163,7 +166,10 @@ function normalizeTeamRow(row) {
     fumbleRecoveries: toNum(row.fumble_recovery_opp) + toNum(row.def_fumbles),
     defTouchdowns: toNum(row.def_tds) + toNum(row.fumble_recovery_tds) + toNum(row.special_teams_tds),
     safeties: toNum(row.def_safeties),
-    blockedKicks: toNum(row.fg_blocked) + toNum(row.pat_blocked) + toNum(row.pt_blocked)
+    onePointSafeties: toNum(row.def_1_pt_safeties) + toNum(row.def_1pt_safeties),
+    blockedKicks: toNum(row.fg_blocked) + toNum(row.pat_blocked) + toNum(row.pt_blocked),
+    passingYards: toNum(row.passing_yards),
+    rushingYards: toNum(row.rushing_yards)
   };
 }
 
@@ -238,12 +244,19 @@ async function loadWeekBoxScores(season, week, { allowFallbackSeason = true } = 
   }
 
   const pointsAllowed = buildPointsAllowedMap(pack.gameRows, sourceSeason, useWeek);
+  const offenseByTeam = new Map();
+  for (const row of pack.teamRows) {
+    if (row.week !== useWeek) continue;
+    offenseByTeam.set(row.team, toNum(row.passingYards) + toNum(row.rushingYards));
+  }
   const teams = new Map();
   for (const row of pack.teamRows) {
     if (row.week !== useWeek) continue;
+    const oppYards = row.opponent ? (offenseByTeam.get(row.opponent) || 0) : 0;
     teams.set(row.team, {
       ...row,
-      pointsAllowed: pointsAllowed.has(row.team) ? pointsAllowed.get(row.team) : 0
+      pointsAllowed: pointsAllowed.has(row.team) ? pointsAllowed.get(row.team) : 0,
+      yardsAllowed: oppYards
     });
   }
 

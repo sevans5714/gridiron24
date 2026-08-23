@@ -13,7 +13,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=182" />
+  <link rel="stylesheet" href="/css/site.css?v=186" />
   <style>
     body.league-reg {
       min-height: 100vh;
@@ -96,6 +96,7 @@
     .slot-grid .slot-field[data-pos="WR"] { --slot-color: var(--mock-wr); }
     .slot-grid .slot-field[data-pos="TE"] { --slot-color: var(--mock-te); }
     .slot-grid .slot-field[data-pos="FLEX"] { --slot-color: var(--mock-flex); }
+    .slot-grid .slot-field[data-pos="SFLEX"] { --slot-color: #f59e0b; }
     .slot-grid .slot-field[data-pos="DST"] { --slot-color: var(--mock-dst); }
     .slot-grid .slot-field[data-pos="K"] { --slot-color: var(--mock-k); }
     .slot-grid .slot-field[data-pos="BN"] { --slot-color: var(--mock-bn); }
@@ -316,7 +317,7 @@
           </div>
           <div>
             <label class="field-label" for="playoffTeams" id="playoffLabel">Playoff teams per conference</label>
-            <input class="field" id="playoffTeams" type="number" min="0" max="16" placeholder="e.g. 4 or 6" />
+            <input class="field" id="playoffTeams" type="number" min="0" max="16" value="6" placeholder="e.g. 4 or 6" />
           </div>
         </div>
         <div class="grid-2">
@@ -342,23 +343,25 @@
         </div>
         <label class="field-label" for="scoringPreset">Scoring starting point</label>
         <select class="field" id="scoringPreset" style="max-width:18rem;">
-          <option value="custom" selected>Custom — tune in HQ Settings</option>
+          <option value="ppr-6" selected>Full PPR (6-pt pass TD)</option>
           <option value="gridiron24-vanilla">Full PPR (4-pt pass TD)</option>
-          <option value="half-ppr">Half-PPR</option>
-          <option value="standard">Standard (non-PPR)</option>
+          <option value="half-ppr">Half PPR (6-pt pass TD)</option>
+          <option value="standard">Standard (no PPR, 6-pt pass TD)</option>
+          <option value="custom">Custom — tune on Scoring after setup</option>
         </select>
         <label class="field-label">Roster slots (owner-defined)</label>
         <div class="slot-grid" id="slot-grid">
-          <div class="slot-field" data-pos="QB"><label class="field-label" for="slotQB">QB</label><input class="field" id="slotQB" type="number" min="0" max="8" placeholder="0" /></div>
-          <div class="slot-field" data-pos="RB"><label class="field-label" for="slotRB">RB</label><input class="field" id="slotRB" type="number" min="0" max="12" placeholder="0" /></div>
-          <div class="slot-field" data-pos="WR"><label class="field-label" for="slotWR">WR</label><input class="field" id="slotWR" type="number" min="0" max="12" placeholder="0" /></div>
-          <div class="slot-field" data-pos="TE"><label class="field-label" for="slotTE">TE</label><input class="field" id="slotTE" type="number" min="0" max="8" placeholder="0" /></div>
-          <div class="slot-field" data-pos="FLEX"><label class="field-label" for="slotFLEX">FLEX</label><input class="field" id="slotFLEX" type="number" min="0" max="8" placeholder="0" /></div>
-          <div class="slot-field" data-pos="DST"><label class="field-label" for="slotDST">D/ST</label><input class="field" id="slotDST" type="number" min="0" max="4" placeholder="0" /></div>
-          <div class="slot-field" data-pos="K"><label class="field-label" for="slotK">K</label><input class="field" id="slotK" type="number" min="0" max="4" placeholder="0" /></div>
-          <div class="slot-field" data-pos="BN"><label class="field-label" for="slotBN">BN</label><input class="field" id="slotBN" type="number" min="0" max="30" placeholder="0" /></div>
-          <div class="slot-field" data-pos="IR"><label class="field-label" for="slotIR">IR</label><input class="field" id="slotIR" type="number" min="0" max="10" placeholder="0" /></div>
-          <div class="slot-field" data-pos="TAXI"><label class="field-label" for="slotTAXI">Taxi</label><input class="field" id="slotTAXI" type="number" min="0" max="10" placeholder="0" /></div>
+          <div class="slot-field" data-pos="QB"><label class="field-label" for="slotQB">QB</label><input class="field" id="slotQB" type="number" min="0" max="8" value="1" /></div>
+          <div class="slot-field" data-pos="RB"><label class="field-label" for="slotRB">RB</label><input class="field" id="slotRB" type="number" min="0" max="12" value="2" /></div>
+          <div class="slot-field" data-pos="WR"><label class="field-label" for="slotWR">WR</label><input class="field" id="slotWR" type="number" min="0" max="12" value="2" /></div>
+          <div class="slot-field" data-pos="TE"><label class="field-label" for="slotTE">TE</label><input class="field" id="slotTE" type="number" min="0" max="8" value="1" /></div>
+          <div class="slot-field" data-pos="FLEX"><label class="field-label" for="slotFLEX">FLEX</label><input class="field" id="slotFLEX" type="number" min="0" max="8" value="1" /></div>
+          <div class="slot-field" data-pos="SFLEX"><label class="field-label" for="slotSFLEX">Superflex</label><input class="field" id="slotSFLEX" type="number" min="0" max="4" value="0" /></div>
+          <div class="slot-field" data-pos="DST"><label class="field-label" for="slotDST">D/ST</label><input class="field" id="slotDST" type="number" min="0" max="4" value="1" /></div>
+          <div class="slot-field" data-pos="K"><label class="field-label" for="slotK">K</label><input class="field" id="slotK" type="number" min="0" max="4" value="1" /></div>
+          <div class="slot-field" data-pos="BN"><label class="field-label" for="slotBN">BN</label><input class="field" id="slotBN" type="number" min="0" max="30" value="7" /></div>
+          <div class="slot-field" data-pos="IR"><label class="field-label" for="slotIR">IR</label><input class="field" id="slotIR" type="number" min="0" max="10" value="1" /></div>
+          <div class="slot-field" data-pos="TAXI"><label class="field-label" for="slotTAXI">Taxi</label><input class="field" id="slotTAXI" type="number" min="0" max="10" value="0" /></div>
         </div>
         <div class="grid-2" style="margin-top:0.85rem;">
           <div>
@@ -400,18 +403,52 @@
       </section>
 
       <section class="step" data-step="3" hidden>
-        <h2>Championship</h2>
-        <p class="help" style="margin:0 0 0.75rem;">Optional. Leave blank if you have not named a title game yet — we will not invent a Bowl or consolation game for you.</p>
+        <h2>Playoffs &amp; championship</h2>
+        <p class="help" style="margin:0 0 0.75rem;">Full playoff tree for this league — not GridIron 24’s ESPN format. Defaults are 13 regular-season weeks, 6 playoff teams, Weeks 14–17, reseed on.</p>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="regularSeasonEndWeek">Regular season ends (week)</label>
+            <input class="field" id="regularSeasonEndWeek" type="number" min="1" max="18" value="13" />
+          </div>
+          <div>
+            <label class="field-label" for="playoffWeeks">Playoff weeks</label>
+            <input class="field" id="playoffWeeks" type="text" value="14, 15, 16" placeholder="14, 15, 16" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="playoffFormat">Playoff format</label>
+            <select class="field" id="playoffFormat">
+              <option value="conference-brackets">Conference brackets → title game</option>
+              <option value="league-bracket">One league-wide bracket</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="playoffSeedingRule">Seeding</label>
+            <select class="field" id="playoffSeedingRule">
+              <option value="record" selected>Record, then points</option>
+              <option value="points">Total points, then record</option>
+            </select>
+          </div>
+        </div>
+        <label class="field-label" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.75rem;text-transform:none;letter-spacing:0;font-weight:600;">
+          <input type="checkbox" id="playoffReseed" checked />
+          Reseed after each round
+        </label>
+        <label class="field-label" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.45rem;text-transform:none;letter-spacing:0;font-weight:600;">
+          <input type="checkbox" id="thirdPlaceEnabled" />
+          Third-place game (semifinal losers)
+        </label>
         <label class="field-label" for="bowlName">Championship name</label>
         <input class="field" id="bowlName" type="text" placeholder="e.g. Metro Cup" />
         <div class="grid-2">
           <div>
             <label class="field-label" for="titleWeek">Conference title week</label>
-            <input class="field" id="titleWeek" type="number" min="1" max="18" />
+            <input class="field" id="titleWeek" type="number" min="1" max="18" value="16" />
           </div>
           <div>
             <label class="field-label" for="bowlWeek">Championship week</label>
-            <input class="field" id="bowlWeek" type="number" min="1" max="18" />
+            <input class="field" id="bowlWeek" type="number" min="1" max="18" value="17" />
           </div>
         </div>
         <label class="field-label" class="field-check" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.75rem;text-transform:none;letter-spacing:0;font-weight:600;">
@@ -467,7 +504,7 @@
 
   <script>
     const ALLOWED_TEAMS = new Set([8, 10, 12, 14, 16, 18, 20, 24]);
-    const STEPS = ['Brand', 'Conferences', 'Rules', 'Championship', 'Payouts', 'Review'];
+    const STEPS = ['Brand', 'Conferences', 'Rules', 'Playoffs', 'Payouts', 'Review'];
     let step = 0;
     let draftId = null;
     let setupLeague = null;
@@ -723,6 +760,11 @@
       if (playoffLabel) playoffLabel.textContent = n === 1 ? 'Playoff teams' : 'Playoff teams per conference';
       const draftScope = document.getElementById('draftScope');
       if (draftScope && n === 1) draftScope.value = 'league';
+      const playoffFormat = document.getElementById('playoffFormat');
+      if (playoffFormat) {
+        playoffFormat.disabled = n === 1;
+        if (n === 1) playoffFormat.value = 'league-bracket';
+      }
     }
 
     document.getElementById('conferenceCount')?.addEventListener('change', syncConferenceUi);
@@ -744,6 +786,11 @@
       if (confN === 2) confs.push(confData(1));
       const titleWeekRaw = document.getElementById('titleWeek').value;
       const bowlWeekRaw = document.getElementById('bowlWeek').value;
+      const playoffWeeks = String(document.getElementById('playoffWeeks')?.value || '')
+        .split(/[,\s]+/).map(Number).filter((n) => Number.isFinite(n) && n >= 1 && n <= 18);
+      const formatChoice = confN === 1
+        ? 'league-bracket'
+        : (document.getElementById('playoffFormat')?.value || 'conference-brackets');
       return {
         draftId,
         leagueId: setupLeague?.id,
@@ -758,7 +805,7 @@
           name: document.getElementById('bowlName').value.trim(),
           titleWeek: titleWeekRaw === '' ? null : Number(titleWeekRaw),
           bowlWeek: bowlWeekRaw === '' ? null : Number(bowlWeekRaw),
-          format: confN === 1 ? 'single-bracket' : 'super-bowl'
+          format: confN === 1 || formatChoice === 'league-bracket' ? 'single-bracket' : 'super-bowl'
         },
         structure: {
           conferenceCount: confN,
@@ -766,9 +813,12 @@
           totalTeams: confN === 1 ? totalTeams : teamsPerConference * 2,
           playoffTeamsPerConference: playoff,
           playoffTeamCount: confN === 1 ? playoff : playoff * 2,
-          playoffWeeks: [],
-          regularSeasonEndWeek: 13,
-          playoffFormat: confN === 1 ? 'league-bracket' : 'conference-brackets'
+          playoffWeeks,
+          regularSeasonEndWeek: Number(document.getElementById('regularSeasonEndWeek')?.value) || 13,
+          playoffFormat: formatChoice,
+          playoffReseed: document.getElementById('playoffReseed')?.checked !== false,
+          playoffSeedingRule: document.getElementById('playoffSeedingRule')?.value === 'points' ? 'points' : 'record',
+          thirdPlaceEnabled: Boolean(document.getElementById('thirdPlaceEnabled')?.checked)
         },
         settings: {
           scoringPreset: document.getElementById('scoringPreset').value,
@@ -792,6 +842,7 @@
             WR: slotNum('slotWR'),
             TE: slotNum('slotTE'),
             FLEX: slotNum('slotFLEX'),
+            SFLEX: slotNum('slotSFLEX'),
             DST: slotNum('slotDST'),
             K: slotNum('slotK'),
             BN: slotNum('slotBN'),
@@ -830,7 +881,7 @@
           return `Team count must be one of: ${[...ALLOWED_TEAMS].join(', ')}`;
         }
         const slots = p.settings.rosterSlots;
-        const starters = slots.QB + slots.RB + slots.WR + slots.TE + slots.FLEX + slots.DST + slots.K;
+        const starters = slots.QB + slots.RB + slots.WR + slots.TE + slots.FLEX + (slots.SFLEX || 0) + slots.DST + slots.K;
         if (starters < 1) return 'Set at least one starter roster slot.';
       }
       if (n === 3) return '';
@@ -847,7 +898,7 @@
           <dt>Season</dt><dd>${esc(String(p.season))}</dd>
           <dt>Conferences</dt><dd>${esc(confNames)} (${p.structure.conferenceCount})</dd>
           <dt>Structure</dt><dd>${p.structure.totalTeams} teams · ${p.structure.playoffTeamCount} playoff · ${esc(p.settings.draftScope)} draft</dd>
-          <dt>Roster</dt><dd>QB${slots.QB} RB${slots.RB} WR${slots.WR} TE${slots.TE} FLEX${slots.FLEX} D/ST${slots.DST} K${slots.K} BN${slots.BN} IR${slots.IR}${slots.TAXI ? ` Taxi${slots.TAXI}` : ''}</dd>
+          <dt>Roster</dt><dd>QB${slots.QB} RB${slots.RB} WR${slots.WR} TE${slots.TE} FLEX${slots.FLEX}${slots.SFLEX ? ` SFLEX${slots.SFLEX}` : ''} D/ST${slots.DST} K${slots.K} BN${slots.BN} IR${slots.IR}${slots.TAXI ? ` Taxi${slots.TAXI}` : ''}</dd>
           <dt>Keepers</dt><dd>${p.settings.leagueFormat === 'dynasty'
             ? 'Dynasty — entire roster carries over (keepers off)'
             : (p.settings.keepersEnabled
@@ -856,6 +907,7 @@
               }`
               : 'Off')}</dd>
           <dt>Scoring</dt><dd>${esc(p.settings.scoringPreset)}</dd>
+          <dt>Playoffs</dt><dd>${p.structure.regularSeasonEndWeek} RS weeks · ${esc(p.structure.playoffFormat)} · ${p.structure.playoffReseed === false ? 'no reseed' : 'reseed'} · ${esc((p.structure.playoffWeeks || []).join(', ') || 'weeks unset')}</dd>
           <dt>Championship</dt><dd>${esc(p.championship.name || 'Not named yet')}</dd>
           <dt>Buy-in</dt><dd>${p.payouts.buyInPerTeam} · ${esc(p.payouts.seasonLabel || '')}</dd>
         </dl>`;
@@ -896,7 +948,7 @@
       }
       if (league.settings?.scoringPreset) document.getElementById('scoringPreset').value = league.settings.scoringPreset;
       const slots = league.settings?.rosterSlots || {};
-      ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K', 'BN', 'IR', 'TAXI'].forEach((pos) => {
+      ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SFLEX', 'DST', 'K', 'BN', 'IR', 'TAXI'].forEach((pos) => {
         const el = document.getElementById(`slot${pos}`);
         if (el && slots[pos] != null) el.value = slots[pos];
       });
@@ -914,9 +966,27 @@
       if (league.championship?.name) document.getElementById('bowlName').value = league.championship.name;
       else document.getElementById('bowlName').value = '';
       if (league.championship?.titleWeek) document.getElementById('titleWeek').value = league.championship.titleWeek;
-      else document.getElementById('titleWeek').value = '';
+      else if (document.getElementById('titleWeek') && !document.getElementById('titleWeek').value) document.getElementById('titleWeek').value = '16';
       if (league.championship?.bowlWeek) document.getElementById('bowlWeek').value = league.championship.bowlWeek;
-      else document.getElementById('bowlWeek').value = '';
+      else if (document.getElementById('bowlWeek') && !document.getElementById('bowlWeek').value) document.getElementById('bowlWeek').value = '17';
+      if (document.getElementById('regularSeasonEndWeek') && league.structure?.regularSeasonEndWeek) {
+        document.getElementById('regularSeasonEndWeek').value = league.structure.regularSeasonEndWeek;
+      }
+      if (document.getElementById('playoffWeeks') && Array.isArray(league.structure?.playoffWeeks) && league.structure.playoffWeeks.length) {
+        document.getElementById('playoffWeeks').value = league.structure.playoffWeeks.join(', ');
+      }
+      if (document.getElementById('playoffFormat') && league.structure?.playoffFormat) {
+        document.getElementById('playoffFormat').value = league.structure.playoffFormat;
+      }
+      if (document.getElementById('playoffSeedingRule')) {
+        document.getElementById('playoffSeedingRule').value = league.structure?.playoffSeedingRule === 'points' ? 'points' : 'record';
+      }
+      if (document.getElementById('playoffReseed')) {
+        document.getElementById('playoffReseed').checked = league.structure?.playoffReseed !== false;
+      }
+      if (document.getElementById('thirdPlaceEnabled')) {
+        document.getElementById('thirdPlaceEnabled').checked = Boolean(league.structure?.thirdPlaceEnabled);
+      }
       document.getElementById('survivalEnabled').checked = Boolean(league.survival?.enabled);
       if (document.getElementById('survivalName')) {
         document.getElementById('survivalName').value = league.survival?.enabled ? (league.survival?.name || '') : '';

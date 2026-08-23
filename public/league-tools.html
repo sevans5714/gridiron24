@@ -12,7 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=182" />
+  <link rel="stylesheet" href="/css/site.css?v=185" />
   <style>
     body[data-page="league-tools"] .page-hero {
       padding-top: 1.5rem;
@@ -1443,7 +1443,7 @@
               <div class="section-head">
                 <h3>Accounts</h3>
               </div>
-              <p class="help">Approved members. Put GridIron 24 players in Detail or Overtime (12 each). <strong>Delete Account</strong> removes them from the system.</p>
+              <p class="help" id="members-help">Approved members. Put GridIron 24 players in Detail or Overtime (12 each). <strong>Delete Account</strong> removes them from the system.</p>
               <div class="members-census" id="members-census" hidden></div>
               <div id="members-access-block">
                 <div class="status-note" id="members-msg" role="status"></div>
@@ -1667,7 +1667,7 @@
         <section class="comm-group" id="group-espn">
           <header>
             <h2 id="group-espn-title">ESPN</h2>
-            <p id="group-espn-blurb">Connect this year’s leagues, then check that Detail, Overtime, and AAA match. Detail is the source of truth.</p>
+            <p id="group-espn-blurb">Connect this year’s GridIron 24 leagues, then check that Detail and Overtime both match the Rule Book. Independent leagues set the full rules in their own HQ.</p>
           </header>
           <div class="comm-group-body">
             <section class="comm-section" id="espn-leagues">
@@ -1688,7 +1688,7 @@
               <div class="section-head">
                 <h3>Rules</h3>
               </div>
-              <p class="help">Scoring and lineup from ESPN. The Scoring page follows Detail. Checks run Mondays and Thursdays.</p>
+              <p class="help">GridIron 24: Detail and Overtime ESPN must both match this Rule Book (scoring, lineup, and playoffs). Until Week 1 kickoff, opening the Rule Book or Check Rules Sync copies live Detail ESPN into the book, then both conferences are checked against it. Independent leagues already set the full rules in their own HQ — they are not part of ESPN Rules Sync. AAA scoring is compared separately below. Checks run Mondays and Thursdays.</p>
               <div class="sync-tools">
                 <span class="hint">Live pull from Detail, Overtime, and AAA</span>
                 <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
@@ -1700,7 +1700,7 @@
               <div class="section-head">
                 <h3>AAA scoring</h3>
               </div>
-              <p class="help">AAA mirrors GridIron 24 scoring and lineup (Detail). Playoff bracket size can differ — only points and roster slots are compared.</p>
+              <p class="help">AAA mirrors GridIron 24 Rule Book scoring and lineup. Playoff bracket size can differ — only points and roster slots are compared.</p>
               <div id="aaa-sync-content"><div class="msg">Loading AAA scoring…</div></div>
             </section>
 
@@ -1708,7 +1708,7 @@
               <div class="section-head">
                 <h3>Playoffs</h3>
               </div>
-              <p class="help">Target: 13 regular-season weeks, 6 teams, reseed on, Weeks 14–16 bracket, Week 17 Bowl.</p>
+              <p class="help">Both Detail and Overtime must match the Rule Book playoff settings copied from live Detail ESPN (until Week 1 lock).</p>
               <div id="playoff-content"><div class="msg">Loading playoff settings…</div></div>
             </section>
 
@@ -1795,8 +1795,8 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=183"></script>
-  <script src="/js/conference-diff.js?v=5"></script>
+  <script src="/js/nav.js?v=185"></script>
+  <script src="/js/conference-diff.js?v=7"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -2132,6 +2132,17 @@
       commissioner: 'Commissioner'
     };
 
+    function officialSettings(data) {
+      const o = data?.officialScoring;
+      if (!o || !Array.isArray(o.scoringItems) || o.scoringItems.length < 5) return null;
+      return {
+        ok: true,
+        ...o,
+        name: o.conferenceName || o.name || 'Detail Conference',
+        shortName: o.shortName || 'DETAIL'
+      };
+    }
+
     function confBlock(conf, side) {
       const logo = conf?.logo ? `<img src="${esc(conf.logo)}" alt="">` : '';
       const defaults = { detail: 'Detail', overtime: 'Overtime', aaa: 'AAA' };
@@ -2143,14 +2154,14 @@
       return `<div class="conf ${side}${(side === 'overtime' || side === 'aaa') ? ' right' : ''}">${inner}</div>`;
     }
 
-    function diffTable(rows, { withAction = false, peerLabel = 'Overtime' } = {}) {
+    function diffTable(rows, { withAction = false, peerLabel = 'Overtime', sourceLabel = 'Rule Book' } = {}) {
       if (!rows.length) return '';
       return `
         <table class="diff-table">
           <thead>
             <tr>
               <th>Setting</th>
-              <th class="num">Detail</th>
+              <th class="num">${esc(sourceLabel)}</th>
               <th class="num">${esc(peerLabel)}</th>
               ${withAction ? `<th class="action">Set ${esc(peerLabel)} to</th>` : ''}
             </tr>
@@ -2171,8 +2182,8 @@
       if (!scoringDiffs.length) return '';
       return `
         <div class="sync-box">
-          <strong>Sync ${esc(peerLabel)} to Detail</strong>
-          <p>Open ${esc(peerLabel)} ESPN settings and match each value in the rightmost column. Numbers match ESPN’s scoring fields (e.g. <strong>0.4</strong> pass yards).</p>
+          <strong>Sync ${esc(peerLabel)} to the Rule Book</strong>
+          <p>Open ${esc(peerLabel)} ESPN settings and match each value in the rightmost column. Those numbers are the official Rule Book values (e.g. <strong>0.04</strong> pass yards).</p>
           <ol>
             <li>Open <a href="${esc(peerUrl)}" target="_blank" rel="noopener">${esc(peerLabel)} ESPN Settings</a> as commissioner</li>
             <li>Go to <strong>Scoring</strong> and apply the ${scoringDiffs.length} change${scoringDiffs.length === 1 ? '' : 's'} below</li>
@@ -2208,12 +2219,18 @@
         </table>`;
     }
 
-    function renderPlayoffSync(cmp, detail, overtime) {
+    function renderPlayoffSync(cmp, detail, overtime, official) {
       const el = document.getElementById('playoff-content');
       if (!cmp.bothOk) {
         el.innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load playoff settings from one or both ESPN leagues.</div>`;
         return;
       }
+      const t = cmp.playoffTarget || official || {};
+      const rs = t.matchupPeriodCount;
+      const teams = t.playoffTeamCount;
+      const first = t.firstPlayoffWeek;
+      const last = t.finalScoringPeriod;
+      const bookLabel = [rs != null ? `${rs} RS weeks` : null, teams != null ? `${teams} teams` : null, first != null && last != null ? `Weeks ${first}–${last}` : null].filter(Boolean).join(' · ');
       const badgeCls = cmp.playoffMatched && cmp.playoffOnTarget ? 'ok' : 'warn';
       const badgeLabel = !cmp.playoffMatched
         ? 'Playoffs Out of Sync'
@@ -2221,25 +2238,28 @@
           ? 'Playoffs Aligned'
           : 'Leagues Match · Off Target';
       const badgeSub = !cmp.playoffMatched
-        ? 'Detail and Overtime playoff settings differ — match Overtime to Detail, then hit the GridIron targets.'
+        ? `Detail and Overtime playoff settings must both match the Rule Book${bookLabel ? ` (${bookLabel})` : ''}.`
         : cmp.playoffOnTarget
-          ? 'Both leagues match the GridIron playoff tree (13 RS · 6 teams · reseed · Weeks 14–17).'
-          : 'Leagues match each other, but one or more values still miss the GridIron target.';
+          ? `Both GridIron 24 ESPN leagues match the Rule Book playoff tree${bookLabel ? ` (${bookLabel})` : ''}.`
+          : 'The two ESPN leagues match each other, but they still miss the Rule Book. Fix Detail and Overtime to match live Detail ESPN.';
 
       const checklist = [];
-      if (Number(detail?.matchupPeriodCount) !== 13 || Number(overtime?.matchupPeriodCount) !== 13) {
-        checklist.push('Set regular season to 13 weeks in both ESPN leagues');
+      if (rs != null && (Number(detail?.matchupPeriodCount) !== Number(rs) || Number(overtime?.matchupPeriodCount) !== Number(rs))) {
+        checklist.push(`Set regular season to ${rs} weeks in both ESPN leagues`);
       }
-      if (detail?.playoffReseed !== true || overtime?.playoffReseed !== true) {
+      if (t.playoffReseed === true && (detail?.playoffReseed !== true || overtime?.playoffReseed !== true)) {
         checklist.push('Turn playoff reseeding ON in both leagues');
       }
-      if (Number(detail?.playoffTeamCount) !== 6 || Number(overtime?.playoffTeamCount) !== 6) {
-        checklist.push('Set playoff teams to 6 in both leagues');
+      if (t.playoffReseed === false && (detail?.playoffReseed !== false || overtime?.playoffReseed !== false)) {
+        checklist.push('Turn playoff reseeding OFF in both leagues');
       }
-      if (Number(detail?.finalScoringPeriod) !== 17 || Number(overtime?.finalScoringPeriod) !== 17) {
-        checklist.push('Confirm final scoring week is 17 (Bowl week)');
+      if (teams != null && (Number(detail?.playoffTeamCount) !== Number(teams) || Number(overtime?.playoffTeamCount) !== Number(teams))) {
+        checklist.push(`Set playoff teams to ${teams} in both leagues`);
       }
-      checklist.push('Open Detail ESPN Settings and Overtime ESPN Settings, apply the yellow target column, save, then re-check');
+      if (last != null && (Number(detail?.finalScoringPeriod) !== Number(last) || Number(overtime?.finalScoringPeriod) !== Number(last))) {
+        checklist.push(`Confirm final scoring week is ${last} (Bowl week)`);
+      }
+      checklist.push('Open Detail ESPN Settings and Overtime ESPN Settings, match the Rule Book target column in both leagues, save, then re-check');
 
       el.innerHTML = `
         <div class="playoff-badge ${badgeCls}"><span class="dot" aria-hidden="true"></span>${esc(badgeLabel)}</div>
@@ -2255,38 +2275,61 @@
         </div>`;
     }
 
+    function peerDiffHtml(cmp, { peerLabel, peerUrl }) {
+      if (!cmp?.bothOk) {
+        return `<div class="msg"><strong>${esc(peerLabel)} unavailable</strong>Could not load ESPN scoring for this conference.</div>`;
+      }
+      if (cmp.matched) {
+        return `<div class="ok-line"><strong>${esc(peerLabel)} synced</strong> Scoring and lineup match the Rule Book.</div>`;
+      }
+      return `
+        ${syncChecklist(cmp.byKind.Scoring, { peerLabel, peerUrl })}
+        ${cmp.byKind.Setting.length ? `<section class="diff-section"><h3>${esc(peerLabel)} settings (${cmp.byKind.Setting.length})</h3>${diffTable(cmp.byKind.Setting, { peerLabel })}</section>` : ''}
+        ${cmp.byKind.Scoring.length ? `<section class="diff-section"><h3>${esc(peerLabel)} scoring (${cmp.byKind.Scoring.length})</h3>${diffTable(cmp.byKind.Scoring, { withAction: true, peerLabel })}</section>` : ''}
+        ${cmp.byKind.Lineup.length ? `<section class="diff-section"><h3>${esc(peerLabel)} lineup (${cmp.byKind.Lineup.length})</h3>${diffTable(cmp.byKind.Lineup, { withAction: true, peerLabel })}</section>` : ''}`;
+    }
+
     function render(data) {
       const detail = (data.conferences || []).find((c) => c.key === 'detail');
       const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
-      const cmp = GridIronDiff.compare(detail, overtime);
+      const officialRaw = officialSettings(data);
+      const official = officialRaw
+        ? { ...officialRaw, logo: officialRaw.logo || detail?.logo, name: 'Rule Book', shortName: 'RULES' }
+        : detail;
+      const detailCmp = GridIronDiff.compareScoring(official, detail);
+      const overtimeCmp = GridIronDiff.compareScoring(official, overtime);
+      const cmp = GridIronDiff.compare(detail, overtime, { official });
 
-      if (!detail?.ok && !overtime?.ok) {
+      if (!detail?.ok && !overtime?.ok && !official?.ok) {
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load either conference from ESPN.</div>`;
         document.getElementById('playoff-content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load playoff settings.</div>`;
-        renderAaaSync(data, detail);
+        renderAaaSync(data, official || detail);
         return;
       }
 
-      const syncLabel = !cmp.bothOk ? 'Incomplete' : cmp.matched ? 'Rules Synced' : 'Out of Sync';
-      const syncCls = cmp.matched ? 'ok' : 'warn';
-      const syncSub = !cmp.bothOk
-        ? 'One or both leagues failed to load'
-        : cmp.matched
-          ? 'Overtime matches Detail'
-          : `${cmp.diffs.length} difference${cmp.diffs.length === 1 ? '' : 's'} — match Overtime to Detail`;
+      const bothLoaded = Boolean(detailCmp.bothOk && overtimeCmp.bothOk);
+      const scoringOk = bothLoaded && detailCmp.matched && overtimeCmp.matched;
+      const syncLabel = !bothLoaded ? 'Incomplete' : scoringOk ? 'Both Synced' : 'Out of Sync';
+      const syncCls = scoringOk ? 'ok' : 'warn';
+      const parts = [];
+      if (detailCmp.bothOk && !detailCmp.matched) parts.push(`Detail ${detailCmp.diffs.length}`);
+      if (overtimeCmp.bothOk && !overtimeCmp.matched) parts.push(`Overtime ${overtimeCmp.diffs.length}`);
+      const syncSub = !bothLoaded
+        ? 'Could not load Detail and Overtime from ESPN'
+        : scoringOk
+          ? 'Detail and Overtime both match the Rule Book'
+          : `${parts.join(' · ')} — match both GridIron 24 ESPN leagues to the Rule Book`;
 
-      const diffSections = cmp.matched ? `
-        <div class="ok-line">
-          <strong>All Clear</strong>
-          Overtime matches Detail Conference scoring, lineup, and playoff settings.
-        </div>` : `
-        ${syncChecklist(cmp.byKind.Scoring, { peerLabel: 'Overtime', peerUrl: ESPN.overtime })}
-        ${cmp.byKind.Playoff.length ? `<section class="diff-section"><h3>Playoffs (${cmp.byKind.Playoff.length})</h3>${diffTable(cmp.byKind.Playoff, { withAction: true, peerLabel: 'Overtime' })}</section>` : ''}
-        ${cmp.byKind.Setting.length ? `<section class="diff-section"><h3>League Settings (${cmp.byKind.Setting.length})</h3>${diffTable(cmp.byKind.Setting, { peerLabel: 'Overtime' })}</section>` : ''}
-        ${cmp.byKind.Scoring.length ? `<section class="diff-section"><h3>Scoring (${cmp.byKind.Scoring.length})</h3>${diffTable(cmp.byKind.Scoring, { withAction: true, peerLabel: 'Overtime' })}</section>` : ''}
-        ${cmp.byKind.Lineup.length ? `<section class="diff-section"><h3>Lineup (${cmp.byKind.Lineup.length})</h3>${diffTable(cmp.byKind.Lineup, { withAction: true, peerLabel: 'Overtime' })}</section>` : ''}`;
+      const lock = data.seasonRulesLock?.locked
+        ? `<div class="ok-line"><strong>Season rules locked</strong> at Week 1 kickoff. Check Rules Sync will not rewrite the Rule Book. Keep both ESPN leagues on these values.</div>`
+        : '';
+      const detailOff = detailCmp.bothOk && !detailCmp.matched
+        ? `<div class="msg"><strong>Detail ESPN</strong> ${esc(String(detailCmp.diffs.length))} difference(s) from the Rule Book. Restore Detail on ESPN.</div>`
+        : '';
 
       document.getElementById('content').innerHTML = `
+        ${lock}
+        ${detailOff}
         <div class="status-bar">
           ${confBlock(detail, 'detail')}
           <div class="sync-badge">
@@ -2296,20 +2339,22 @@
           ${confBlock(overtime, 'overtime')}
         </div>
         <div class="summary">
-          <div class="stat"><span>Detail categories</span><strong class="detail">${detail?.ok ? (detail.scoringItems || []).length : '—'}</strong></div>
-          <div class="stat"><span>Overtime categories</span><strong class="overtime">${overtime?.ok ? (overtime.scoringItems || []).length : '—'}</strong></div>
+          <div class="stat"><span>Rule Book categories</span><strong class="detail">${official?.ok ? (official.scoringItems || []).length : '—'}</strong></div>
+          <div class="stat"><span>Detail diffs</span><strong class="detail">${detailCmp.bothOk ? detailCmp.diffs.length : '—'}</strong></div>
+          <div class="stat"><span>Overtime diffs</span><strong class="overtime">${overtimeCmp.bothOk ? overtimeCmp.diffs.length : '—'}</strong></div>
           <div class="stat"><span>RS weeks</span><strong>${detail?.matchupPeriodCount ?? '—'} / ${overtime?.matchupPeriodCount ?? '—'}</strong></div>
-          <div class="stat"><span>Differences</span><strong>${cmp.bothOk ? cmp.diffs.length : '—'}</strong></div>
         </div>
-        ${diffSections}
+        ${scoringOk
+          ? `<div class="ok-line"><strong>All Clear</strong> Detail and Overtime scoring and lineup both match the Rule Book.</div>`
+          : `${peerDiffHtml(detailCmp, { peerLabel: 'Detail', peerUrl: ESPN.detail })}${peerDiffHtml(overtimeCmp, { peerLabel: 'Overtime', peerUrl: ESPN.overtime })}`}
         <div class="links">
           <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
           <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
           <a href="${ESPN.aaa}" target="_blank" rel="noopener">AAA League Settings →</a>
         </div>`;
 
-      renderPlayoffSync(cmp, detail, overtime);
-      renderAaaSync(data, detail);
+      renderPlayoffSync(cmp, detail, overtime, official);
+      renderAaaSync(data, official);
     }
 
     function renderAaaSync(data, detail) {
@@ -2334,20 +2379,25 @@
       const syncLabel = cmp.matched ? 'Points Synced' : 'Out of Sync';
       const syncCls = cmp.matched ? 'ok' : 'warn';
       const syncSub = cmp.matched
-        ? 'AAA scoring and lineup match Detail'
-        : `${cmp.diffs.length} difference${cmp.diffs.length === 1 ? '' : 's'} — match AAA to Detail`;
+        ? 'AAA scoring and lineup match the Rule Book'
+        : `${cmp.diffs.length} difference${cmp.diffs.length === 1 ? '' : 's'} — match AAA to the Rule Book`;
 
       const diffSections = cmp.matched ? `
         <div class="ok-line">
           <strong>All Clear</strong>
-          AAA League scoring and lineup match GridIron 24 (Detail).
+          AAA League scoring and lineup match the Rule Book.
         </div>` : `
         ${syncChecklist(cmp.byKind.Scoring, { peerLabel: 'AAA', peerUrl: ESPN.aaa })}
         ${cmp.byKind.Setting.length ? `<section class="diff-section"><h3>League Settings (${cmp.byKind.Setting.length})</h3>${diffTable(cmp.byKind.Setting, { peerLabel: 'AAA' })}</section>` : ''}
         ${cmp.byKind.Scoring.length ? `<section class="diff-section"><h3>Scoring (${cmp.byKind.Scoring.length})</h3>${diffTable(cmp.byKind.Scoring, { withAction: true, peerLabel: 'AAA' })}</section>` : ''}
         ${cmp.byKind.Lineup.length ? `<section class="diff-section"><h3>Lineup (${cmp.byKind.Lineup.length})</h3>${diffTable(cmp.byKind.Lineup, { withAction: true, peerLabel: 'AAA' })}</section>` : ''}`;
 
+      const lockNote = data.seasonRulesLock?.locked
+        ? `<div class="ok-line"><strong>Season rules locked</strong> at Week 1 kickoff. Match AAA to the locked Rule Book.</div>`
+        : '';
+
       mount.innerHTML = `
+        ${lockNote}
         <div class="status-bar">
           ${confBlock(detail, 'detail')}
           <div class="sync-badge">
@@ -2357,7 +2407,7 @@
           ${confBlock(aaa, 'aaa')}
         </div>
         <div class="summary">
-          <div class="stat"><span>Detail categories</span><strong class="detail">${(detail.scoringItems || []).length}</strong></div>
+          <div class="stat"><span>Rule Book categories</span><strong class="detail">${(detail.scoringItems || []).length}</strong></div>
           <div class="stat"><span>AAA categories</span><strong class="overtime">${(aaa.scoringItems || []).length}</strong></div>
           <div class="stat"><span>Differences</span><strong>${cmp.diffs.length}</strong></div>
         </div>
@@ -2681,13 +2731,33 @@
       return `${open} ${name} ${noun} left · ${assigned}/${cap} registered`;
     }
 
+    function isAdminDesk() {
+      return toolsDeskKind(toolsUser) === 'admin';
+    }
+
     function paintMembersCensus(list) {
       const stats = membersCensus(list);
       const census = document.getElementById('members-census');
       const jump = document.getElementById('jump-members');
-      if (jump) jump.textContent = stats.gi + stats.aaa ? `Accounts (${stats.gi + stats.aaa})` : 'Accounts';
+      if (jump) {
+        const n = list.filter((u) => u.approved !== false).length;
+        jump.textContent = n ? `Accounts (${n})` : 'Accounts';
+      }
       if (!census) return;
       census.hidden = false;
+      if (isAdminDesk()) {
+        const conf = String(toolsUser?.conference || '').toLowerCase();
+        const n = list.filter((u) => u.approved !== false).length;
+        const label = conf === 'aaa'
+          ? `AAA managers · ${n}`
+          : conf === 'overtime'
+            ? `Overtime managers · ${n}`
+            : conf === 'detail'
+              ? `Detail managers · ${n}`
+              : `Managers · ${n}`;
+        census.innerHTML = `<button type="button" class="is-on"><strong>${n}</strong><span>${esc(label)}</span></button>`;
+        return;
+      }
       const chip = (key, strong, label, extraCls = '') => `
         <button type="button" data-members-filter="${esc(key)}" class="${membersLeagueFilter === key ? 'is-on' : ''} ${extraCls}">
           <strong>${strong}</strong>
@@ -2778,7 +2848,7 @@
       setToolsBadge('nav-account-requests-badge', pendingCount);
       updateRequestsOverviewBadge();
 
-      renderAccountRequests(list);
+      if (!isAdminDesk()) renderAccountRequests(list);
 
       if (!list.length) {
         document.getElementById('members-list').innerHTML = `<div class="msg">No member accounts yet.</div>`;
@@ -2787,11 +2857,15 @@
         return;
       }
 
+      const adminView = isAdminDesk();
       const visible = filteredMembersList(list).slice().sort((a, b) =>
         String(a.name || a.loginName || '').localeCompare(String(b.name || b.loginName || ''), undefined, { sensitivity: 'base' })
       );
       const countEl = document.getElementById('members-count');
       if (countEl) {
+        if (adminView) {
+          countEl.textContent = `${visible.length} in your conference`;
+        } else {
         const stats = membersCensus(list);
         const leagueLabel = membersLeagueFilter === 'gridiron'
           ? 'GridIron 24'
@@ -2813,9 +2887,10 @@
         countEl.textContent = membersLeagueFilter === 'all'
           ? `${stats.gi} GridIron 24 · ${stats.aaa} AAA`
           : `Showing ${visible.length} ${leagueLabel}`;
+        }
       }
 
-      const pendingBanner = pendingCount
+      const pendingBanner = (!adminView && pendingCount)
         ? `<div class="members-pending-banner"><strong>${pendingCount} awaiting approval</strong> — review in <a href="#account-requests">Requests → Account Requests</a>.</div>`
         : '';
 
@@ -2830,13 +2905,13 @@
             <tr>
               <th>Member</th>
               <th>Status</th>
-              <th>Franchise &amp; career</th>
-              <th>Access</th>
+              <th>Franchise${adminView ? '' : ' &amp; career'}</th>
+              ${adminView ? '<th>Conference</th>' : `<th>Access</th>
               <th>Membership</th>
               <th>Conference</th>
               <th>Lounge</th>
               <th>Dues</th>
-              <th>Delete</th>
+              <th>Delete</th>`}
             </tr>
           </thead>
           <tbody>
@@ -2863,9 +2938,11 @@
                     ${teamOptionsHtml(conferences, u.claim)}
                   </select>
                   ${!u.loungeOnly && u.claim ? `<button type="button" class="link-action" style="margin-top:0.4rem;" data-remove-team="${esc(u.id)}">Remove current team</button>` : ''}
-                  ${u.loungeOnly ? '' : careerAssignHtml(u)}
+                  ${adminView || u.loungeOnly ? '' : careerAssignHtml(u)}
                 </td>
-                <td>
+                ${adminView
+                  ? `<td><span class="muted-sm">${esc(memberConferenceKey(u) || (memberLeagueKey(u) === 'aaa' ? 'AAA' : 'Unassigned'))}</span></td>`
+                  : `<td>
                   <select class="role-select" data-user-id="${esc(u.id)}" ${u.loungeOnly ? 'disabled' : ''}>
                     <option value="user" ${roleValue(u) === 'user' ? 'selected' : ''}>User</option>
                     ${conferences.map((c) => `
@@ -2906,7 +2983,7 @@
                   ${u.siteOwner || u.id === toolsUser?.id
                     ? `<span class="muted-sm">${u.siteOwner ? 'Owner' : 'You'}</span>`
                     : `<button type="button" class="link-action is-danger" data-delete-account="${esc(u.id)}" data-delete-name="${esc(u.name || u.loginName || 'this member')}">Delete Account</button>`}
-                </td>
+                </td>`}
               </tr>`).join('')}
           </tbody>
         </table>`;
@@ -3303,9 +3380,18 @@
             ? ' · AAA points synced'
             : ` · AAA out of sync (${aaa.diffCount || 0})`;
         const allOk = checkData.matched && (!aaa || aaa.configured === false || aaa.matched);
+        const locked = Boolean(checkData.rulesLocked || checkData.seasonRulesLock?.locked);
+        const bookBit = locked
+          ? (checkData.officialUpdated ? 'Rule Book locked at Week 1 kickoff' : 'Rule Book locked')
+          : 'both conferences match the Rule Book';
+        const detailN = checkData.detailSync?.diffCount;
+        const overtimeN = checkData.overtimeSync?.diffCount;
+        const outNote = Number.isFinite(detailN) || Number.isFinite(overtimeN)
+          ? `Out of sync (Detail ${detailN ?? '—'} · Overtime ${overtimeN ?? '—'})`
+          : `Out of sync (${checkData.diffCount || 0})`;
         const note = checkData.matched
-          ? `Synced · Scoring page updated${aaaNote} · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
-          : `Out of sync (${checkData.diffCount || 0})${aaaNote} · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+          ? `Synced · ${bookBit}${aaaNote} · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+          : `${outNote}${aaaNote}${locked ? ' · Rule Book locked' : ''} · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
         window.GridIronNav?.setSync(note, allOk);
       } catch (err) {
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
@@ -5086,7 +5172,7 @@
       }
       cards.push(...(admin
         ? [
-            { href: '#players', title: 'Invite', kicker: 'Conference', blurb: 'Send invite links for your conference.', tone: 'blue' },
+            { href: '#players', title: 'Players', kicker: 'Conference', blurb: 'Your managers — invite, assign franchises, reset logins.', tone: 'blue' },
             { href: '#messages', title: 'Broadcast', kicker: 'League', blurb: 'News, polls, ticker, and email owners.', tone: 'gold' },
             { href: '#espn', title: 'ESPN', kicker: 'Sync', blurb: 'Your conference league ID, rules, and roster patrol.', tone: 'detail' },
             { href: '/profile.html', title: 'User Dashboard', kicker: 'You', blurb: 'Your account, franchise, and avatar.', tone: 'good' }
@@ -5275,7 +5361,7 @@
       if (siteJump) siteJump.hidden = !user?.siteOwner;
       if (scopeEl) {
         scopeEl.textContent = admin
-          ? 'Invite, broadcast, and ESPN for your conference.'
+          ? 'Invite, accounts, broadcast, and ESPN for your conference.'
           : 'Palette of league tools. Your User Dashboard is separate — your team, account, and avatar.';
       }
       document.body.dataset.desk = admin ? 'admin' : 'owner';
@@ -5283,11 +5369,27 @@
       const peopleBlurb = document.getElementById('group-people-blurb');
       const commsTitle = document.getElementById('group-comms-title');
       const commsBlurb = document.getElementById('group-comms-blurb');
-      if (peopleTitle) peopleTitle.textContent = admin ? 'Invite' : 'Players';
+      if (peopleTitle) peopleTitle.textContent = 'Players';
       if (peopleBlurb) {
         peopleBlurb.textContent = admin
-          ? 'Send invite links. Owner approves new accounts.'
+          ? 'Invite managers in your conference and manage their accounts. The owner still approves new sign-ups.'
           : 'Approve people, send invites, then manage accounts.';
+      }
+      const membersHelp = document.getElementById('members-help');
+      if (membersHelp) {
+        membersHelp.textContent = admin
+          ? 'Managers in your conference. Assign a franchise and email them from Messages. Login/password can be reset here.'
+          : 'Approved members. Put GridIron 24 players in Detail or Overtime (12 each). Delete Account removes them from the system.';
+      }
+      const inviteKind = document.getElementById('invite-kind');
+      if (admin && inviteKind) {
+        const conf = String(user.conference || '').toLowerCase();
+        const keep = conf === 'aaa' ? 'aaa' : 'gridiron';
+        [...inviteKind.options].forEach((opt) => {
+          opt.hidden = opt.value !== keep;
+        });
+        inviteKind.value = keep;
+        inviteKind.disabled = true;
       }
       if (commsTitle) commsTitle.textContent = admin ? 'Broadcast' : 'Messages';
       if (commsBlurb) {
@@ -5299,7 +5401,7 @@
       if (espnBlurb) {
         espnBlurb.textContent = admin
           ? 'Your conference league ID, rules check, and roster patrol.'
-          : 'Connect this year’s leagues, then check that Detail, Overtime, and AAA match. Detail is the source of truth.';
+          : 'Connect this year’s GridIron 24 leagues, then check that Detail and Overtime both match the Rule Book. Independent leagues set the full rules in their own HQ.';
       }
       const playoffs = document.getElementById('playoff-sync');
       const jumpPlayoffs = document.getElementById('jump-playoffs');
@@ -5381,6 +5483,14 @@
         }
       }
 
+      try {
+        await loadMembers();
+      } catch (err) {
+        revealAccountsAndInvites();
+        const list = document.getElementById('members-list');
+        if (list) list.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+      }
+
       if (isPlatformAdmin(user)) {
         revealPeopleTools();
         revealSeasonTools();
@@ -5390,14 +5500,6 @@
         try { await loadCalendarAdmin(); } catch { /* ignore */ }
         try { await loadHistoryAdmin(); } catch (err) {
           showHistoryMsg(err.message || 'Could not load season archive', false);
-        }
-        try {
-          await loadMembers();
-        } catch (err) {
-          revealAccountsAndInvites();
-          document.getElementById('members-list').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
-          const ar = document.getElementById('account-requests-list');
-          if (ar) ar.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
         }
       }
     }

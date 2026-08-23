@@ -164,6 +164,15 @@
       justify-content: flex-end;
     }
     .hq-league-actions .btn { padding: 0.28rem 0.55rem; font-size: 0.78rem; }
+    .hq-account-search {
+      max-width: 22rem;
+      margin: 0 0 0.85rem;
+    }
+    .hq-copy-link {
+      margin: 0.55rem 0 0;
+      word-break: break-all;
+      font-size: 0.82rem;
+    }
     .link-action.is-danger { color: var(--status-err-text, #ff8e8e); }
     .data-table { width: 100%; }
     @media (max-width: 640px) {
@@ -182,7 +191,7 @@
   <section class="page-hero shell">
     <p class="eyebrow">Platform</p>
     <h1>Site Tools</h1>
-    <p>Settings for this website: ESPN league IDs, who’s on, league management, and join requests. GridIron 24 league ops (news, invites, calendar) stay on Owner Tools.</p>
+    <p>Settings for this website: ESPN league IDs, who’s on, accounts, league management, and join requests. GridIron 24 league ops (news, invites, calendar) stay on Owner Tools.</p>
   </section>
 
   <main class="page-main shell">
@@ -191,6 +200,7 @@
       <a href="#overview">Overview</a>
       <a href="#espn">ESPN</a>
       <a href="#online">Signed on</a>
+      <a href="#accounts">Accounts</a>
       <a href="#leagues">League management</a>
       <a href="#approvals">Approvals</a>
       <a href="#server">Server</a>
@@ -219,6 +229,13 @@
       <div id="hq-online-body"></div>
     </section>
 
+    <section class="hq-section" id="accounts">
+      <h2>Accounts</h2>
+      <p class="hq-help">Approved logins. Delete wipes the account. Send reset emails a recovery link — copy it here if mail isn’t set. Set a password when they have no email. You cannot delete the site owner. Pending join requests stay under Approvals. Members can also use <a href="/forgot">Forgot password</a> on sign-in.</p>
+      <input class="field hq-account-search" id="hq-account-search" type="search" placeholder="Search name, login, email…" autocomplete="off" />
+      <div id="hq-accounts-body"></div>
+    </section>
+
     <section class="hq-section" id="leagues">
       <h2>League management</h2>
       <p class="hq-help">Independent leagues only. Renew starts the next season on the same franchises and managers. Archive hides the league without deleting it. Delete is permanent — accounts stay. GridIron 24 and AAA cannot be deleted; they stay bound to ESPN above.</p>
@@ -244,11 +261,15 @@
       const HASH_ALIAS = {
         home: 'overview',
         health: 'espn',
+        members: 'accounts',
+        users: 'accounts',
         registrations: 'approvals',
         'apis': 'server'
       };
       let snapshot = null;
       let espnRows = [];
+      let accountQuery = '';
+      let accountNote = { text: '', ok: null, resetUrl: '' };
 
       function esc(value) {
         return String(value ?? '')
@@ -479,6 +500,7 @@
         const espnWarn = espnN > 0 && live < espnN;
         document.getElementById('hq-overview-stats').innerHTML = `
           <div class="hq-stat"><strong>${esc(c.online || 0)}</strong><span>Signed on</span></div>
+          <div class="hq-stat"><strong>${esc(c.accounts || 0)}</strong><span>Accounts</span></div>
           <div class="hq-stat"><strong>${esc(pending)}</strong><span>Waiting approval</span></div>
           <div class="hq-stat"><strong>${esc(c.independentLive || 0)}</strong><span>Independent live</span></div>
           <div class="hq-stat"><strong>${esc(espnLabel)}</strong><span>${espnWarn ? 'ESPN leagues — fix below' : 'ESPN leagues'}</span></div>`;
@@ -506,6 +528,130 @@
                 </tr>`).join('')}
             </tbody>
           </table>`;
+      }
+
+      function accountMatches(u, q) {
+        if (!q) return true;
+        const hay = [u.name, u.loginName, u.email, u.role, u.league].map((v) => String(v || '').toLowerCase()).join(' ');
+        return hay.includes(q);
+      }
+
+      function accountActions(u) {
+        const bits = [
+          `<button type="button" class="btn btn-secondary" data-account-act="reset-email" data-account-id="${esc(u.id)}" data-account-name="${esc(u.name || u.loginName)}" ${u.email ? '' : 'disabled title="No email on file"'}>Send reset</button>`,
+          `<button type="button" class="link-action" data-account-act="password" data-account-id="${esc(u.id)}" data-account-name="${esc(u.name || u.loginName)}">Set password</button>`
+        ];
+        if (!u.siteOwner) {
+          bits.push(`<button type="button" class="link-action is-danger" data-account-act="delete" data-account-id="${esc(u.id)}" data-account-login="${esc(u.loginName || u.email || u.name)}" data-account-name="${esc(u.name || u.loginName)}">Delete</button>`);
+        }
+        return `<div class="hq-league-actions">${bits.join('')}</div>`;
+      }
+
+      function renderAccounts(data) {
+        const el = document.getElementById('hq-accounts-body');
+        if (!el) return;
+        const all = (data.accounts || []).filter((u) => u.approved !== false);
+        const q = accountQuery.trim().toLowerCase();
+        const rows = q ? all.filter((u) => accountMatches(u, q)) : all;
+        const body = rows.length
+          ? rows.map((u) => `
+            <tr>
+              <td><strong>${esc(u.name)}</strong></td>
+              <td>${esc(u.loginName || '—')}</td>
+              <td>${esc(u.email || '—')}</td>
+              <td>${esc(u.role || 'Member')}</td>
+              <td>${esc(u.league || '—')}</td>
+              <td>${accountActions(u)}</td>
+            </tr>`).join('')
+          : `<tr><td colspan="6" class="muted-sm">${all.length ? 'No accounts match that search.' : 'No approved accounts yet.'}</td></tr>`;
+        el.innerHTML = `
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Login</th><th>Email</th><th>Role</th><th>League</th><th></th></tr></thead>
+            <tbody>${body}</tbody>
+          </table>
+          <p class="hq-note" id="hq-accounts-msg" hidden></p>
+          <p class="hq-note hq-copy-link" id="hq-accounts-reset-link" hidden></p>`;
+        el.querySelectorAll('[data-account-act]').forEach((btn) => {
+          btn.addEventListener('click', () => runAccountAction(btn));
+        });
+        if (accountNote.text) showMsg('hq-accounts-msg', accountNote.text, accountNote.ok);
+        const linkEl = document.getElementById('hq-accounts-reset-link');
+        if (linkEl) {
+          if (accountNote.resetUrl) {
+            linkEl.hidden = false;
+            linkEl.className = 'hq-note hq-copy-link';
+            linkEl.textContent = accountNote.resetUrl;
+          } else {
+            linkEl.hidden = true;
+            linkEl.textContent = '';
+          }
+        }
+      }
+
+      async function runAccountAction(btn) {
+        const id = btn.getAttribute('data-account-id');
+        const name = btn.getAttribute('data-account-name') || 'this account';
+        const act = btn.getAttribute('data-account-act');
+        let body = {};
+        if (act === 'delete') {
+          const login = btn.getAttribute('data-account-login') || name;
+          const typed = window.prompt(`Type the login name to delete this account forever.\n\n${login}`);
+          if (typed == null) return;
+          body = { confirmName: typed };
+        } else if (act === 'password') {
+          const password = window.prompt(`New password for ${name} (at least 6 characters)`);
+          if (password == null) return;
+          if (String(password).length < 6) {
+            showMsg('hq-accounts-msg', 'Password must be at least 6 characters.', false);
+            return;
+          }
+          body = { password };
+        } else if (act === 'reset-email') {
+          if (!confirm(`Send a password reset email to ${name}?`)) return;
+        } else return;
+        showMsg('hq-accounts-msg', '');
+        showMsg('hq-accounts-reset-link', '');
+        showMsg('hq-msg', '');
+        accountNote = { text: '', ok: null, resetUrl: '' };
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/api/site-hq/users/${encodeURIComponent(id)}/${act}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update account');
+          if (act === 'delete') {
+            accountNote = { text: `Deleted ${data.user?.loginName || name}.`, ok: true, resetUrl: '' };
+            showMsg('hq-msg', accountNote.text, true);
+            await load({ skipEspn: true });
+            return;
+          }
+          if (act === 'password') {
+            accountNote = { text: `Password set for ${data.user?.loginName || name}.`, ok: true, resetUrl: '' };
+            showMsg('hq-msg', accountNote.text, true);
+            showMsg('hq-accounts-msg', accountNote.text, true);
+            return;
+          }
+          const note = data.message || (data.sent ? 'Reset email sent.' : 'Mail did not send. Copy the reset link.');
+          accountNote = { text: note, ok: Boolean(data.sent), resetUrl: data.resetUrl || '' };
+          showMsg('hq-msg', note, Boolean(data.sent));
+          showMsg('hq-accounts-msg', note, Boolean(data.sent));
+          if (data.resetUrl) {
+            const linkEl = document.getElementById('hq-accounts-reset-link');
+            if (linkEl) {
+              linkEl.hidden = false;
+              linkEl.className = 'hq-note hq-copy-link';
+              linkEl.textContent = data.resetUrl;
+            }
+          }
+        } catch (err) {
+          showMsg('hq-accounts-msg', err.message || 'Could not update account', false);
+          showMsg('hq-msg', err.message || 'Could not update account', false);
+        } finally {
+          btn.disabled = false;
+        }
       }
 
       function leagueStatus(l) {
@@ -790,6 +936,7 @@
         renderOverview(data);
         if (!skipEspn) renderEspn();
         renderOnline(data);
+        renderAccounts(data);
         renderLeagues(data);
         if (!skipForms) renderApprovals(data);
         renderServer(data);
@@ -817,6 +964,10 @@
 
       document.getElementById('hq-espn-save')?.addEventListener('click', saveEspn);
       document.getElementById('hq-espn-peek')?.addEventListener('click', peekAll);
+      document.getElementById('hq-account-search')?.addEventListener('input', (e) => {
+        accountQuery = e.target.value || '';
+        if (snapshot) renderAccounts(snapshot);
+      });
       window.addEventListener('hashchange', jumpFromHash);
 
       load().then(() => {

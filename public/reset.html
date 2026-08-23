@@ -13,12 +13,13 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=182" />
+  <link rel="stylesheet" href="/css/site.css?v=183" />
 </head>
 <body class="auth-page">
   <img class="auth-crest" src="/assets/gridiron24-crest.png?v=10" alt="GridIron 24" width="1024" height="1024" />
   <form class="auth-card" id="form">
     <h1 class="auth-title">Reset Password</h1>
+    <p class="auth-help">Choose a new password (at least 6 characters). You’ll be signed in after it saves.</p>
     <div class="status-note err" id="err" role="alert"></div>
     <label class="field-label" for="password">New Password</label>
     <input class="field" id="password" type="password" required minlength="6" autocomplete="new-password" />
@@ -59,7 +60,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || 'Could not reset password');
-        window.location.href = '/enter';
+        window.location.href = data.homePath || '/enter?reset=1';
       } catch (err) {
         errEl.textContent = err.message;
         errEl.classList.add('show');

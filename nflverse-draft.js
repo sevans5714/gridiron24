@@ -49,7 +49,7 @@ function scoringFromSettings(settings) {
   const preset = String(settings?.scoringPreset || settings?.preset || '').toLowerCase();
   if (preset === 'standard') return 'standard';
   if (preset === 'half-ppr' || preset === 'halfppr') return 'half-ppr';
-  if (preset === 'gridiron24-vanilla' || preset === 'ppr' || preset === 'full-ppr' || preset === 'fullppr') {
+  if (preset === 'gridiron24-vanilla' || preset === 'ppr' || preset === 'ppr-4' || preset === 'ppr-6' || preset === 'full-ppr' || preset === 'fullppr') {
     return 'ppr';
   }
   const rec = Number(settings?.scoring?.reception ?? settings?.reception);

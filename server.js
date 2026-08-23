@@ -38,6 +38,8 @@ const weeklyWrap = require('./weekly-wrap');
 const calendar = require('./calendar-store');
 const powerRankingsCompute = require('./power-rankings-compute');
 const rulesSyncStore = require('./rules-sync-store');
+const officialRules = require('./official-rules');
+const seasonRulesLock = require('./season-rules-lock');
 const espnResilient = require('./espn-resilient');
 const rosterViolations = require('./roster-violations-store');
 const keepers = require('./keepers-store');
@@ -51,7 +53,7 @@ const presence = require('./presence-store');
 const ruleProposals = require('./rule-proposals-store');
 const featureRequests = require('./feature-requests-store');
 const leagues = require('./leagues-store');
-const { compareSettings, compareScoringSettings } = require('./rules-diff');
+const { compareScoringSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
 const sportsScoreboard = require('./sports-scoreboard');
 const nflverseDraft = require('./nflverse-draft');
@@ -633,6 +635,19 @@ function buildSiteHqPayload(viewer) {
       membershipLeague: u.membershipLeague || null,
       createdAt: u.createdAt || null
     })),
+    accounts: allUsers.map((u) => ({
+      id: u.id,
+      name: u.name,
+      loginName: u.loginName,
+      email: u.email || null,
+      role: siteHqRoleLabel(u),
+      league: siteHqLeagueLabel(u),
+      loungeOnly: Boolean(u.loungeOnly),
+      leagueOwner: Boolean(u.leagueOwner),
+      siteOwner: users.isSiteOwner(u),
+      approved: u.approved !== false,
+      createdAt: u.createdAt || null
+    })),
     pendingLeagues: pendingLeagues.map((l) => ({
       id: l.id,
       name: l.brand?.name || l.slug,
@@ -776,6 +791,58 @@ function requireCommissioner(req, res) {
     return null;
   }
   return user;
+}
+
+/** Detail / Overtime / AAA admin scope. Site owner and overall commissioner see everyone. */
+function staffConferenceScope(user) {
+  if (!user || users.isSiteOwner(user) || users.isCommissioner(user)) return null;
+  if (String(user.role || '') !== 'conference_admin') return null;
+  return String(user.conference || '').trim().toLowerCase() || null;
+}
+
+function userVisibleToStaff(admin, target) {
+  if (!admin || !target) return false;
+  const scope = staffConferenceScope(admin);
+  if (!scope) return true;
+  if (target.id === admin.id) return true;
+  if (target.approved === false) return false;
+  if (scope === 'aaa') return users.hqMembershipOf(target) === 'aaa';
+  if (users.hqMembershipOf(target) !== 'gridiron') return false;
+  const conf = users.hqConferenceOf(target) || memberConferenceKey(target);
+  return !conf || conf === scope;
+}
+
+function assertStaffCanManageUser(admin, target) {
+  if (!target) {
+    throw Object.assign(new Error('User not found'), { status: 404 });
+  }
+  if (users.isSiteOwner(target) && !users.isSiteOwner(admin)) {
+    throw Object.assign(new Error('Cannot change the site owner account'), { status: 403 });
+  }
+  if (!userVisibleToStaff(admin, target)) {
+    throw Object.assign(new Error('That account is not in your conference'), { status: 403 });
+  }
+}
+
+function inviteVisibleToStaff(admin, invite) {
+  const scope = staffConferenceScope(admin);
+  if (!scope) return true;
+  if (scope === 'aaa') return String(invite.membershipLeague || '') === 'aaa';
+  return !invite.loungeOnly && String(invite.membershipLeague || '') !== 'aaa';
+}
+
+function staffInviteMembership(admin, requested) {
+  const scope = staffConferenceScope(admin);
+  if (!scope) {
+    const membershipRaw = String(requested || '').trim().toLowerCase();
+    const loungeOnly = membershipRaw === 'social';
+    return {
+      loungeOnly,
+      membershipLeague: loungeOnly ? null : (membershipRaw === 'aaa' ? 'aaa' : 'gridiron')
+    };
+  }
+  if (scope === 'aaa') return { loungeOnly: false, membershipLeague: 'aaa' };
+  return { loungeOnly: false, membershipLeague: 'gridiron' };
 }
 
 function removeMemberAccount(userId, actor) {
@@ -2760,7 +2827,7 @@ function normalizeSettings(raw, conference) {
     scoringItems: items,
     lineup: slots,
     playoffTeamCount: schedule.playoffTeamCount ?? null,
-    playoffReseed: schedule.playoffReseed ?? null,
+    playoffReseed: schedule.playoffReseed == null ? null : Boolean(schedule.playoffReseed),
     matchupPeriodCount,
     playoffMatchupPeriodLength: schedule.playoffMatchupPeriodLength ?? null,
     playoffSeedingRule: schedule.playoffSeedingRule ?? null,
@@ -3407,13 +3474,29 @@ async function runRulesSyncJob({
   notify = true,
   notifyOnMatch = false
 } = {}) {
-  const [conferences, aaa] = await Promise.all([
+  const [conferences, aaa, nflLock] = await Promise.all([
     loadConferenceSettings(),
-    loadAaaLeagueSettings()
+    loadAaaLeagueSettings(),
+    seasonRulesLock.getStatus(config.season)
   ]);
   const detail = conferences.find((c) => c.key === 'detail') || null;
   const overtime = conferences.find((c) => c.key === 'overtime') || null;
-  const cmp = compareSettings(detail, overtime);
+  const freeze = Boolean(nflLock.locked);
+  const adoptDetail = !freeze && Boolean(detail?.ok);
+  const officialSnap = freeze
+    ? rulesSyncStore.getOfficialScoring()
+    : (detail?.ok
+      ? officialRules.snapshotFromDetail(detail, { season: config.season })
+      : rulesSyncStore.getOfficialScoring());
+  const official = officialRules.asComparable(officialSnap);
+  const detailCmp = compareScoringSettings(official, detail);
+  const overtimeCmp = compareScoringSettings(official, overtime);
+  const gi24Ok = Boolean(detail?.ok && overtime?.ok);
+  const gi24Matched = gi24Ok && detailCmp.matched && overtimeCmp.matched;
+  const diffs = [
+    ...(detailCmp.diffs || []).map((d) => ({ ...d, peer: 'detail' })),
+    ...(overtimeCmp.diffs || []).map((d) => ({ ...d, peer: 'overtime' }))
+  ];
   const aaaCmp = aaa.configured === false
     ? {
         matched: false,
@@ -3424,27 +3507,35 @@ async function runRulesSyncJob({
         byKind: { Setting: [], Playoff: [], Scoring: [], Lineup: [] }
       }
     : {
-        ...compareScoringSettings(detail, aaa),
+        ...compareScoringSettings(official, aaa),
         configured: true
       };
   aaaCmp.diffCount = (aaaCmp.diffs || []).length;
+  const detailDrift = detail?.ok && (!detailCmp.matched || freeze)
+    ? detailCmp
+    : null;
 
   const store = rulesSyncStore.saveCheck({
-    matched: cmp.matched,
-    bothOk: cmp.bothOk,
-    diffs: cmp.diffs,
+    matched: gi24Matched,
+    bothOk: gi24Ok,
+    diffs,
     detail,
     triggeredBy,
     season: config.season,
-    aaaSync: aaaCmp
+    aaaSync: aaaCmp,
+    adoptDetail,
+    seasonLock: nflLock,
+    detailDrift,
+    detailSync: detailCmp,
+    overtimeSync: overtimeCmp
   });
 
   const result = {
     ok: true,
-    matched: cmp.matched,
-    bothOk: cmp.bothOk,
-    diffCount: cmp.diffs.length,
-    diffs: cmp.diffs,
+    matched: gi24Matched,
+    bothOk: gi24Ok,
+    diffCount: diffs.length,
+    diffs,
     aaaSync: {
       matched: aaaCmp.matched,
       bothOk: aaaCmp.bothOk,
@@ -3454,18 +3545,37 @@ async function runRulesSyncJob({
       leagueId: aaa.leagueId || null,
       name: aaa.name || 'AAA League'
     },
-    officialUpdated: Boolean(cmp.matched && store.officialScoring),
+    detailSync: {
+      matched: Boolean(detailCmp.matched),
+      bothOk: Boolean(detailCmp.bothOk),
+      diffCount: (detailCmp.diffs || []).length
+    },
+    overtimeSync: {
+      matched: Boolean(overtimeCmp.matched),
+      bothOk: Boolean(overtimeCmp.bothOk),
+      diffCount: (overtimeCmp.diffs || []).length
+    },
+    detailDrift: detailDrift
+      ? {
+          matched: detailDrift.matched,
+          bothOk: detailDrift.bothOk,
+          diffCount: (detailDrift.diffs || []).length
+        }
+      : null,
+    officialUpdated: Boolean(adoptDetail && store.officialScoring),
+    rulesLocked: Boolean(store.seasonRulesLock?.locked || store.officialScoring?.lockedAt),
+    seasonRulesLock: store.seasonRulesLock,
     lastCheck: store.lastCheck,
     officialScoring: store.officialScoring,
     generatedAt: new Date().toISOString()
   };
 
-  const conferenceDrift = cmp.bothOk && !cmp.matched;
+  const conferenceDrift = gi24Ok && !gi24Matched;
   const aaaDrift = aaaCmp.configured !== false && aaaCmp.bothOk && !aaaCmp.matched;
   const shouldMail = notify && (
     conferenceDrift ||
     aaaDrift ||
-    (notifyOnMatch && cmp.matched && (aaaCmp.configured === false || aaaCmp.matched))
+    (notifyOnMatch && gi24Matched && (aaaCmp.configured === false || aaaCmp.matched))
   );
   if (shouldMail) {
     const recipients = users.listUsers()
@@ -3478,8 +3588,10 @@ async function runRulesSyncJob({
       try {
         const sent = await sendRulesSyncAlert({
           to,
-          matched: cmp.matched,
-          diffs: cmp.diffs,
+          matched: gi24Matched,
+          diffs,
+          detailSync: result.detailSync,
+          overtimeSync: result.overtimeSync,
           aaaSync: result.aaaSync,
           checkedAt: store.lastCheck?.checkedAt,
           baseUrl: process.env.APP_BASE_URL
@@ -3493,21 +3605,29 @@ async function runRulesSyncJob({
   }
 
   console.log(
-    `[rules-sync] matched=${cmp.matched} diffs=${cmp.diffs.length} aaaMatched=${aaaCmp.matched} aaaDiffs=${aaaCmp.diffCount} by=${triggeredBy}`
+    `[rules-sync] matched=${gi24Matched} detailDiffs=${(detailCmp.diffs || []).length} overtimeDiffs=${(overtimeCmp.diffs || []).length} aaaMatched=${aaaCmp.matched} aaaDiffs=${aaaCmp.diffCount} by=${triggeredBy}`
   );
   return result;
 }
 
 async function apiSettings(res) {
-  const [results, aaa] = await Promise.all([
+  const [results, aaa, nflLock] = await Promise.all([
     loadConferenceSettings(),
-    loadAaaLeagueSettings()
+    loadAaaLeagueSettings(),
+    seasonRulesLock.getStatus(config.season)
   ]);
-  const sync = rulesSyncStore.getStatus();
   const detail = results.find((c) => c.key === 'detail') || null;
+  if (!nflLock.locked && detail?.ok) {
+    rulesSyncStore.refreshFromDetail(detail, { season: config.season, seasonLock: nflLock });
+  }
+  const sync = rulesSyncStore.getStatus();
+  const seasonLock = nflLock.locked
+    ? { ...nflLock, lockedAt: sync.seasonRulesLock?.lockedAt || nflLock.lockedAt }
+    : { ...nflLock, locked: false };
+  const official = officialRules.asComparable(sync.officialScoring);
   const aaaCmp = aaa.configured === false
     ? null
-    : compareScoringSettings(detail, aaa);
+    : compareScoringSettings(official, aaa);
 
   sendJson(res, 200, {
     season: config.season,
@@ -3550,54 +3670,74 @@ async function apiSettings(res) {
       aaa: espnSettingsUrl(aaa.leagueId, config.season)
     },
     rulesSync: sync.lastCheck,
-    officialScoring: sync.officialScoring
+    officialScoring: sync.officialScoring,
+    seasonRulesLock: seasonLock
   });
 }
 
 async function apiOfficialScoring(res) {
-  const sync = rulesSyncStore.getStatus();
-  const live = await loadConferenceSettings();
-  const primaryKey = (config.conferences || []).find((c) => c.isRulesPrimary)?.key
-    || (config.conferences || [])[0]?.key
-    || 'detail';
-  const secondaryKey = (config.conferences || []).find((c) => c.key !== primaryKey)?.key
+  const [live, nflLock] = await Promise.all([
+    loadConferenceSettings(),
+    seasonRulesLock.getStatus(config.season)
+  ]);
+  const secondaryKey = (config.conferences || []).find((c) => c.key !== 'detail')?.key
     || (config.conferences || [])[1]?.key
     || 'overtime';
-  const detail = live.find((c) => c.key === primaryKey) || live[0] || null;
   const overtime = live.find((c) => c.key === secondaryKey) || live[1] || null;
-  const cmp = compareSettings(detail, overtime);
-
-  // Prefer persisted official snapshot when conferences are known synced.
-  const official = sync.officialScoring;
-  const useOfficial = Boolean(official && (cmp.matched || sync.lastCheck?.matched));
+  const detail = live.find((c) => c.key === 'detail') || live[0] || null;
+  if (!nflLock.locked && detail?.ok) {
+    rulesSyncStore.refreshFromDetail(detail, { season: config.season, seasonLock: nflLock });
+  }
+  const sync = rulesSyncStore.getStatus();
+  const seasonLock = nflLock.locked ? nflLock : sync.seasonRulesLock;
+  const official = officialRules.asComparable(sync.officialScoring);
+  const detailCmp = compareScoringSettings(official, detail);
+  const overtimeCmp = compareScoringSettings(official, overtime);
+  const bothOk = Boolean(detailCmp.bothOk && overtimeCmp.bothOk);
+  const matched = bothOk && detailCmp.matched && overtimeCmp.matched;
 
   sendJson(res, 200, {
     ok: true,
     season: config.season,
     generatedAt: new Date().toISOString(),
-    source: useOfficial ? 'official' : 'live-detail',
-    synced: cmp.matched,
+    source: 'official',
+    synced: matched,
     rulesSync: sync.lastCheck,
-    officialScoring: official,
-    scoring: useOfficial
-      ? {
-          ok: true,
-          key: official.conferenceKey,
-          name: official.conferenceName,
-          shortName: official.shortName,
-          playerRankType: official.playerRankType,
-          scoringType: official.scoringType,
-          scoringItems: refreshScoringDisplays(official.scoringItems),
-          lineup: official.lineup
-        }
-      : detail
-        ? { ...detail, scoringItems: refreshScoringDisplays(detail.scoringItems) }
-        : detail,
+    officialScoring: sync.officialScoring,
+    seasonRulesLock: seasonLock,
+    scoring: {
+      ok: true,
+      key: official.key,
+      name: official.name,
+      shortName: official.shortName,
+      playerRankType: official.playerRankType,
+      scoringType: official.scoringType,
+      scoringItems: refreshScoringDisplays(official.scoringItems),
+      lineup: official.lineup,
+      playoffTeamCount: official.playoffTeamCount,
+      playoffReseed: official.playoffReseed,
+      matchupPeriodCount: official.matchupPeriodCount,
+      playoffMatchupPeriodLength: official.playoffMatchupPeriodLength,
+      playoffSeedingRule: official.playoffSeedingRule,
+      finalScoringPeriod: official.finalScoringPeriod,
+      firstPlayoffWeek: official.firstPlayoffWeek,
+      playoffWeekCount: official.playoffWeekCount
+    },
     conferences: live,
     compare: {
-      matched: cmp.matched,
-      bothOk: cmp.bothOk,
-      diffCount: cmp.diffs.length
+      matched,
+      bothOk,
+      diffCount: (detailCmp.diffs || []).length + (overtimeCmp.diffs || []).length,
+      detail: {
+        matched: Boolean(detailCmp.matched),
+        bothOk: Boolean(detailCmp.bothOk),
+        diffCount: (detailCmp.diffs || []).length
+      },
+      overtime: {
+        matched: Boolean(overtimeCmp.matched),
+        bothOk: Boolean(overtimeCmp.bothOk),
+        diffCount: (overtimeCmp.diffs || []).length
+      }
     }
   });
 }
@@ -4496,7 +4636,7 @@ function homePathForUser(user, req = null) {
 const INDEPENDENT_HQ_SECTIONS = new Set([
   'standings', 'schedules', 'my-roster', 'team-rosters', 'rankings', 'draft',
   'transactions', 'playoffs', 'calendar', 'rulebook', 'scoreboard', 'payouts',
-  'settings', 'manage', 'team', 'keepers'
+  'settings', 'manage', 'team', 'keepers', 'scoring'
 ]);
 
 function parseIndependentHqPath(pathname) {
@@ -5386,40 +5526,25 @@ async function loadGridironOfficialScoringSummary() {
   try {
     const sync = rulesSyncStore.getStatus();
     const live = await loadConferenceSettings();
-    const primaryKey = (config.conferences || []).find((c) => c.isRulesPrimary)?.key
-      || (config.conferences || [])[0]?.key
-      || 'detail';
-    const secondaryKey = (config.conferences || []).find((c) => c.key !== primaryKey)?.key
-      || (config.conferences || [])[1]?.key
-      || 'overtime';
-    const detail = live.find((c) => c.key === primaryKey) || live[0] || null;
-    const overtime = live.find((c) => c.key === secondaryKey) || live[1] || null;
-    const cmp = compareSettings(detail, overtime);
-    const official = sync.officialScoring;
-    const useOfficial = Boolean(official && (cmp.matched || sync.lastCheck?.matched));
-    const scoring = useOfficial
-      ? {
-          ok: true,
-          source: 'official',
-          key: official.conferenceKey,
-          name: official.conferenceName,
-          shortName: official.shortName,
-          playerRankType: official.playerRankType,
-          scoringType: official.scoringType,
-          scoringItems: refreshScoringDisplays(official.scoringItems),
-          lineup: official.lineup
-        }
-      : detail
-        ? {
-            ...detail,
-            source: 'live-detail',
-            scoringItems: refreshScoringDisplays(detail.scoringItems)
-          }
-        : null;
+    const overtime = live.find((c) => c.key === 'overtime') || live[1] || null;
+    const detail = live.find((c) => c.key === 'detail') || live[0] || null;
+    const official = officialRules.asComparable(sync.officialScoring);
+    const detailCmp = compareScoringSettings(official, detail);
+    const overtimeCmp = compareScoringSettings(official, overtime);
     return {
-      scoring,
-      gridironSynced: Boolean(cmp.matched),
-      source: scoring?.source || null
+      scoring: {
+        ok: true,
+        source: 'official',
+        key: official.key,
+        name: official.name,
+        shortName: official.shortName,
+        playerRankType: official.playerRankType,
+        scoringType: official.scoringType,
+        scoringItems: refreshScoringDisplays(official.scoringItems),
+        lineup: official.lineup
+      },
+      gridironSynced: Boolean(detailCmp.matched && overtimeCmp.matched),
+      source: 'official'
     };
   } catch {
     return { scoring: null, gridironSynced: false, source: null };
@@ -5475,7 +5600,7 @@ async function buildAaaPayload() {
     scoring: officialPack.scoring,
     scoringPolicy: {
       matchesGridiron24: true,
-      note: 'AAA is a separate league with its own draft, league admin, and player pool. Scoring and lineup settings mirror GridIron 24 (Detail Conference source of truth) so promotees enter familiar rules.'
+      note: 'AAA is a separate league with its own draft, league admin, and player pool. Scoring and lineup settings mirror the GridIron 24 Rule Book so promotees enter familiar rules.'
     },
     hot: null,
     cold: null,
@@ -6354,14 +6479,14 @@ const server = http.createServer(async (req, res) => {
       } catch {
         return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
       }
-      const email = String(body.email || '').trim();
+      const identifier = String(body.email || body.loginName || body.identifier || '').trim();
       const generic = {
         ok: true,
-        message: 'If that email is on file, a reset link has been sent.'
+        message: 'If that login or email is on file, a reset link has been sent. Check spam — the link expires in one hour.'
       };
-      if (!email) return sendJson(res, 200, generic);
+      if (!identifier) return sendJson(res, 200, generic);
 
-      const created = users.createResetToken(email);
+      const created = users.createResetToken(identifier);
       if (!created) return sendJson(res, 200, generic);
 
       const resetUrl = `${requestOrigin(req)}/reset?token=${encodeURIComponent(created.token)}`;
@@ -6397,7 +6522,11 @@ const server = http.createServer(async (req, res) => {
         const user = users.resetPasswordWithToken(body.token, body.password);
         const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
         const token = signSession(user.id, expiresAt);
-        return sendJson(res, 200, { ok: true, user }, { 'Set-Cookie': sessionCookieHeader(token) });
+        return sendJson(res, 200, {
+          ok: true,
+          user,
+          homePath: homePathForUser(user, req)
+        }, { 'Set-Cookie': sessionCookieHeader(token) });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not reset password' });
       }
@@ -7059,11 +7188,15 @@ const server = http.createServer(async (req, res) => {
       }
       const pub = leagues.publicLeague(league);
       const section = String(requestUrl.searchParams.get('section') || 'home').toLowerCase();
+      const nflLock = await seasonRulesLock.getStatus(league.season || config.season);
+      const persistedLock = rulesSyncStore.getSeasonRulesLock(league.season || config.season);
+      const seasonLock = (persistedLock?.locked ? persistedLock : nflLock);
       return sendJson(res, 200, {
         ok: true,
         league: pub,
         section: INDEPENDENT_HQ_SECTIONS.has(section) ? section : 'home',
         leagueScope: independentLeagueScope(league),
+        seasonRulesLock: seasonLock,
         viewer: {
           id: user.id,
           isOwner: Boolean(league.ownerUserId && league.ownerUserId === user.id),
@@ -7085,6 +7218,7 @@ const server = http.createServer(async (req, res) => {
           payouts: leagues.independentSectionPath(league, 'payouts'),
           keepers: leagues.independentSectionPath(league, 'keepers'),
           settings: leagues.independentSectionPath(league, 'settings'),
+          scoring: leagues.independentSectionPath(league, 'scoring'),
           manage: leagues.independentSectionPath(league, 'manage'),
           team: leagues.independentSectionPath(league, 'team')
         }
@@ -7114,6 +7248,15 @@ const server = http.createServer(async (req, res) => {
         body = {};
       }
       try {
+        const lock = await seasonRulesLock.getStatus(league.season || config.season);
+        const persisted = rulesSyncStore.isSeasonRulesLocked(league.season || config.season);
+        if ((lock.locked || persisted) && seasonRulesLock.patchTouchesSeasonRules(body)) {
+          return sendJson(res, 400, {
+            ok: false,
+            error: 'Season rules are locked at kickoff of Week 1',
+            code: 'season_rules_locked'
+          });
+        }
         const actor = { ...users.publicUser(user), siteOwner: users.isSiteOwner(user) };
         const updated = leagues.updateIndependentSettings(leagueId, body, actor);
         return sendJson(res, 200, { ok: true, league: updated });
@@ -9052,6 +9195,83 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    {
+      const manageUser = pathname.match(/^\/api\/site-hq\/users\/([^/]+)\/(delete|reset-email|password)$/);
+      if (manageUser && req.method === 'POST') {
+        const owner = requireSiteOwner(req, res);
+        if (!owner) return;
+        const userId = decodeURIComponent(manageUser[1]);
+        const action = manageUser[2];
+        let body = {};
+        try { body = await readJsonBody(req); } catch { body = {}; }
+        try {
+          const target = users.findById(userId);
+          if (!target) return sendJson(res, 404, { ok: false, error: 'Account not found' });
+          if (action === 'delete') {
+            const expected = String(target.loginName || target.email || target.name || '').trim();
+            const typed = String(body.confirmName || body.loginName || '').trim();
+            if (!expected || typed.toLowerCase() !== expected.toLowerCase()) {
+              return sendJson(res, 400, {
+                ok: false,
+                error: `Type the login name (${expected || 'the account'}) to delete it`
+              });
+            }
+            const removed = removeMemberAccount(userId, owner);
+            syncPendingInboxDigests(owner, { force: true });
+            return sendJson(res, 200, {
+              ok: true,
+              action,
+              user: removed,
+              hq: buildSiteHqPayload(owner)
+            });
+          }
+          if (action === 'password') {
+            const password = String(body.password || '');
+            if (password.length < 6) {
+              return sendJson(res, 400, { ok: false, error: 'Password must be at least 6 characters' });
+            }
+            const updated = users.adminSetCredentials(userId, { password });
+            return sendJson(res, 200, {
+              ok: true,
+              action,
+              user: { id: updated.id, name: updated.name, loginName: updated.loginName },
+              hq: buildSiteHqPayload(owner)
+            });
+          }
+          const created = users.createResetTokenForUser(userId);
+          const resetUrl = `${requestOrigin(req)}/reset?token=${encodeURIComponent(created.token)}`;
+          let sent = false;
+          try {
+            const mailResult = await sendPasswordResetEmail({
+              to: created.user.email,
+              name: created.user.name,
+              resetUrl,
+              baseUrl: requestOrigin(req)
+            });
+            sent = Boolean(mailResult.sent);
+          } catch (mailErr) {
+            console.error('[site-hq] reset email failed', mailErr.message || mailErr);
+          }
+          return sendJson(res, 200, {
+            ok: true,
+            action,
+            sent,
+            email: created.user.email,
+            resetUrl,
+            user: { id: created.user.id, name: created.user.name, loginName: created.user.loginName },
+            message: sent
+              ? `Reset email sent to ${created.user.email}.`
+              : 'Mail did not send. Copy the reset link and give it to them.'
+          });
+        } catch (err) {
+          return sendJson(res, err.status || 400, {
+            ok: false,
+            error: err.message || 'Could not update account'
+          });
+        }
+      }
+    }
+
     if (pathname === '/api/users/pending' && req.method === 'GET') {
       if (!requireCommissioner(req, res)) return;
       const pending = users.listUsers()
@@ -9061,10 +9281,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/users' && req.method === 'GET') {
-      if (!requireCommissioner(req, res)) return;
+      const admin = requireStaff(req, res);
+      if (!admin) return;
       const claims = logos.listClaims();
       const claimByUser = new Map(claims.map((c) => [c.userId, c]));
-      const adminLeagues = listAdminLeagues();
+      const scope = staffConferenceScope(admin);
+      const adminLeagues = listAdminLeagues().filter((conference) => !scope || conference.key === scope);
       let teamsByConference = {};
       try {
         const leagues = await Promise.all(
@@ -9100,14 +9322,18 @@ const server = http.createServer(async (req, res) => {
         users.syncHqConferenceFromClaims(claims);
       } catch { /* ignore */ }
 
+      const listed = users.listUsers().filter((u) => userVisibleToStaff(admin, u));
       return sendJson(res, 200, {
         ok: true,
-        users: users.listUsers().map((u) => ({
+        scope: scope
+          ? { kind: 'admin', conference: scope }
+          : { kind: 'owner' },
+        users: listed.map((u) => ({
           ...u,
           claim: claimByUser.get(u.id) || null,
           career: career.listForUser(u.id)
         })),
-        claims,
+        claims: claims.filter((c) => !scope || c.conferenceKey === scope),
         archiveSeasons: historySeasonEntries(),
         conferences: adminLeagues.map((c) => ({
           key: c.key,
@@ -9120,7 +9346,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname.startsWith('/api/users/') && pathname.endsWith('/team') && req.method === 'POST') {
-      const admin = requireCommissioner(req, res);
+      const admin = requireStaff(req, res);
       if (!admin) return;
       const userId = pathname.slice('/api/users/'.length, -'/team'.length);
       let body;
@@ -9131,7 +9357,7 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const target = users.findById(userId);
-        if (!target) return sendJson(res, 404, { ok: false, error: 'User not found' });
+        assertStaffCanManageUser(admin, target);
 
         if (body.clear || body.conferenceKey === '' || body.teamId === '' || body.teamId == null) {
           logos.unassignTeam(userId);
@@ -9139,6 +9365,10 @@ const server = http.createServer(async (req, res) => {
         }
 
         const conferenceKey = String(body.conferenceKey || '').trim();
+        const scope = staffConferenceScope(admin);
+        if (scope && conferenceKey !== scope) {
+          return sendJson(res, 403, { ok: false, error: 'You can only assign franchises in your conference' });
+        }
         const teamId = Number(body.teamId);
         let teamName = String(body.teamName || '').trim();
         if (!teamName) {
@@ -9387,7 +9617,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname.startsWith('/api/users/') && pathname.endsWith('/credentials') && req.method === 'POST') {
-      if (!requireCommissioner(req, res)) return;
+      const admin = requireStaff(req, res);
+      if (!admin) return;
       const userId = pathname.slice('/api/users/'.length, -'/credentials'.length);
       let body;
       try {
@@ -9396,6 +9627,7 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
       }
       try {
+        assertStaffCanManageUser(admin, users.findById(userId));
         const updated = users.adminSetCredentials(userId, {
           loginName: body.loginName,
           password: body.password
@@ -10077,13 +10309,16 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/invites' && req.method === 'GET') {
-      if (!requireStaff(req, res)) return;
+      const user = requireStaff(req, res);
+      if (!user) return;
       const byEmail = new Map();
       for (const u of users.listUsers()) {
         const key = String(u.email || '').trim().toLowerCase();
         if (key) byEmail.set(key, u);
       }
-      const listed = invites.listInvites().map((inv) => {
+      const listed = invites.listInvites()
+        .filter((inv) => inviteVisibleToStaff(user, inv))
+        .map((inv) => {
         const u = byEmail.get(String(inv.email || '').trim().toLowerCase());
         return {
           ...inv,
@@ -10131,10 +10366,12 @@ const server = http.createServer(async (req, res) => {
         emails.push(email.trim());
       }
       const membershipRaw = String(body.membership || body.kind || body.league || '').trim().toLowerCase();
-      const loungeOnly = Boolean(
-        body.loungeOnly || body.social || body.accountType === 'social' || membershipRaw === 'social'
-      );
-      const membershipLeague = loungeOnly ? null : (membershipRaw === 'aaa' ? 'aaa' : 'gridiron');
+      const requestedKind = (body.loungeOnly || body.social || body.accountType === 'social' || membershipRaw === 'social')
+        ? 'social'
+        : membershipRaw;
+      const scopedInvite = staffInviteMembership(user, requestedKind);
+      const loungeOnly = scopedInvite.loungeOnly;
+      const membershipLeague = scopedInvite.membershipLeague;
       const inviteLeagueName = loungeOnly
         ? config.brand.name
         : membershipLeague === 'aaa'
@@ -10223,6 +10460,10 @@ const server = http.createServer(async (req, res) => {
       if (!user) return;
       const id = pathname.split('/')[3];
       try {
+        const existing = invites.listInvites().find((inv) => inv.id === id);
+        if (!existing || !inviteVisibleToStaff(user, existing)) {
+          return sendJson(res, 404, { ok: false, error: 'Invite not found' });
+        }
         const refreshed = invites.refreshInvite(id, user);
         const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(refreshed.token)}`;
         let mailResult = { sent: false, method: 'none' };
@@ -10262,12 +10503,17 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname.startsWith('/api/invites/') && req.method === 'DELETE') {
-      if (!requireStaff(req, res)) return;
+      const user = requireStaff(req, res);
+      if (!user) return;
       const id = pathname.slice('/api/invites/'.length);
       if (id.includes('/')) {
         return sendJson(res, 404, { ok: false, error: 'Not found' });
       }
       try {
+        const existing = invites.listInvites().find((inv) => inv.id === id);
+        if (!existing || !inviteVisibleToStaff(user, existing)) {
+          return sendJson(res, 404, { ok: false, error: 'Invite not found' });
+        }
         const invite = invites.revokeInvite(id);
         return sendJson(res, 200, { ok: true, invite });
       } catch (err) {

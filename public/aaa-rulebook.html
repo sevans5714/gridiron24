@@ -12,7 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=182" />
+  <link rel="stylesheet" href="/css/site.css?v=185" />
   <style>
     .book { max-width: 52rem; margin: 0 auto; }
 
@@ -192,7 +192,60 @@
     html[data-theme="day"] .aaa-payout-table th,
     html[data-theme="day"] .aaa-payout-table td { color: #3a4250; }
 
+    .lineup-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0.75rem 0 0;
+    }
+    .slot {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.55rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .slot .pos {
+      font-family: "Oswald", sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .slot .cnt { font-variant-numeric: tabular-nums; color: var(--muted); }
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+    .group-panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .group-panel h3 {
+      margin: 0;
+      padding: 0.65rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+      font-family: var(--display);
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .rule {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.55rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.92rem;
+    }
+    .rule:last-child { border-bottom: 0; }
+    .rule .pts { font-family: var(--display); font-weight: 600; white-space: nowrap; }
     @media (max-width: 640px) {
+      .rules-grid { grid-template-columns: 1fr; }
       .book-toc li { flex-wrap: wrap; }
       .book-toc li::before { min-width: 0; }
       .article { scroll-margin-top: 4.75rem; }
@@ -303,7 +356,10 @@
         </header>
         <section class="section">
           <h3 class="section-title">§4.01 Scoring Settings</h3>
-          <p>AAA scoring and lineup settings are administered in AAA’s ESPN league. Scoring or lineup drift shall be corrected by the AAA league admin. Official point values for the season are those published in AAA ESPN settings and this Rule Book’s payout / scoring notices when issued.</p>
+          <p>AAA scoring and lineup shall match the GridIron 24 Rule Book (Detail Conference). Those season rules lock at kickoff of Week 1. Drift after lock is restored to the Rule Book by the AAA league admin. Official point values:</p>
+          <div id="aaa-scoring-banner"></div>
+          <div id="aaa-lineup-rules"><div class="msg">Loading lineup…</div></div>
+          <div id="aaa-scoring-rules" style="margin-top:1rem;"><div class="msg">Loading scoring…</div></div>
         </section>
       </article>
 
@@ -386,6 +442,77 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=183"></script>
+  <script src="/js/nav.js?v=185"></script>
+  <script src="/js/conference-diff.js?v=7"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+    const GROUP_ORDER = [
+      'Passing', 'Rushing', 'Receiving', 'Misc. Offense',
+      'Kicking', 'Defense / Special Teams', 'Other'
+    ];
+    function lineupRow(lineup) {
+      const starterOrder = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K', 'Bench', 'IR'];
+      const sorted = [...(lineup || [])].sort((a, b) => {
+        const ai = starterOrder.indexOf(a.label);
+        const bi = starterOrder.indexOf(b.label);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+      if (!sorted.length) return '<p>Lineup settings unavailable.</p>';
+      return `<div class="lineup-row">${sorted.map((s) => `
+        <div class="slot"><span class="pos">${esc(s.label)}</span><span class="cnt">×${esc(String(s.count))}</span></div>`).join('')}</div>`;
+    }
+    function groupPanels(items) {
+      const buckets = new Map();
+      for (const item of items || []) {
+        const g = item.group || 'Other';
+        if (!buckets.has(g)) buckets.set(g, []);
+        buckets.get(g).push(item);
+      }
+      const order = GROUP_ORDER.filter((g) => buckets.has(g));
+      for (const g of buckets.keys()) {
+        if (!order.includes(g)) order.push(g);
+      }
+      if (!order.length) return '<p>Scoring settings unavailable.</p>';
+      return `<div class="rules-grid">${order.map((group) => {
+        const rules = buckets.get(group).map((item) => `
+          <div class="rule">
+            <span class="label">${esc(item.label)}</span>
+            <span class="pts">${esc(window.GridIronDiff ? GridIronDiff.fmtItem(item) : String(item.display || item.points))}</span>
+          </div>`).join('');
+        return `<section class="group-panel"><h3>${esc(group)}</h3>${rules}</section>`;
+      }).join('')}</div>`;
+    }
+    (async function loadOfficialScoring() {
+      const lineupMount = document.getElementById('aaa-lineup-rules');
+      const scoringMount = document.getElementById('aaa-scoring-rules');
+      if (!lineupMount || !scoringMount) return;
+      try {
+        const res = await fetch('/api/scoring', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        const rules = data.scoring;
+        if (!rules?.ok && !(rules?.scoringItems || []).length) {
+          lineupMount.innerHTML = '<p>Could not load official scoring.</p>';
+          scoringMount.innerHTML = '';
+          return;
+        }
+        const banner = document.getElementById('aaa-scoring-banner');
+        if (banner && data.seasonRulesLock?.locked) {
+          const lockWhen = data.seasonRulesLock.lockedAt || data.officialScoring?.lockedAt;
+          const lockLabel = lockWhen
+            ? new Date(lockWhen).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+            : '';
+          banner.innerHTML = `<div class="banner ok">Season rules locked at Week 1 kickoff${lockLabel ? ` · ${esc(lockLabel)}` : ''}</div>`;
+        }
+        lineupMount.innerHTML = lineupRow(rules.lineup);
+        scoringMount.innerHTML = groupPanels(rules.scoringItems);
+      } catch (err) {
+        lineupMount.innerHTML = `<p>${esc(err.message || 'Could not load scoring.')}</p>`;
+        scoringMount.innerHTML = '';
+      }
+    })();
+  </script>
 </body>
 </html>

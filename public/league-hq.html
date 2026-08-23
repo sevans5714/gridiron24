@@ -12,7 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=182" />
+  <link rel="stylesheet" href="/css/site.css?v=186" />
   <link rel="stylesheet" href="/css/draft-desk.css?v=13" />
   <style>
     body[data-page="league-hq"] .topbar {
@@ -1221,6 +1221,7 @@
     .il-slot-field[data-pos="WR"] { --slot-color: var(--mock-wr); }
     .il-slot-field[data-pos="TE"] { --slot-color: var(--mock-te); }
     .il-slot-field[data-pos="FLEX"] { --slot-color: var(--mock-flex); }
+    .il-slot-field[data-pos="SFLEX"] { --slot-color: #f59e0b; }
     .il-slot-field[data-pos="DST"] { --slot-color: var(--mock-dst); }
     .il-slot-field[data-pos="K"] { --slot-color: var(--mock-k); }
     .il-slot-field[data-pos="BN"] { --slot-color: var(--mock-bn); }
@@ -1495,8 +1496,8 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=183"></script>
-  <script src="/js/official-draft-ui.js?v=15"></script>
+  <script src="/js/nav.js?v=186"></script>
+  <script src="/js/official-draft-ui.js?v=16"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -1858,7 +1859,7 @@
       const settingsBlock = `
         <section class="il-panel">
           <h2>From settings</h2>
-          <p class="il-meta">These articles update automatically when you change draft, roster, scoring, structure, or payouts in Settings.</p>
+          <p class="il-meta">These articles update automatically when you change draft, roster, scoring, structure, or payouts in Settings or on the Scoring page. Season scoring, lineup, and playoff format lock at kickoff of Week 1.</p>
           <div style="margin-top:1rem;">
             ${settingsArticles.map((a) => `
               <article class="il-rule-article">
@@ -1982,6 +1983,15 @@
       };
     }
 
+    function seasonRulesAreLocked() {
+      return Boolean(hqState.seasonRulesLock?.locked);
+    }
+
+    function seasonRulesLockNote() {
+      if (!seasonRulesAreLocked()) return '';
+      return `<p class="il-meta"><strong>Season rules are locked</strong> at kickoff of Week 1. Scoring, lineup, and playoff format cannot be changed for the rest of the season.</p>`;
+    }
+
     function settingsHtml(league, viewer) {
       const s = league.settings || {};
       const st = league.structure || {};
@@ -2096,8 +2106,11 @@
         </section>
         <section class="il-panel" style="margin-top:1rem;">
           <h2>Conferences &amp; playoffs</h2>
-          <p class="il-meta">1 or 2 conferences, any team count (10 / 12 / 14 / …). You set the playoff shape — Rule Book and Playoff Bracket follow these settings.</p>
+          <p class="il-meta">1 or 2 conferences, any team count (10 / 12 / 14 / …). Set the full playoff tree — format, seeding, reseed, weeks, and optional third-place / consolation. The Rule Book and Playoff Bracket follow these settings.</p>
+          <p class="il-meta">Shapes: 6-team / 13-week (Weeks 14–17) · 4-team / 14-week · 8-team deep bracket. Tune any field after.</p>
+          ${seasonRulesLockNote()}
           <form class="il-form is-wide" id="il-playoff-form" style="margin-top:0.85rem;">
+            <fieldset ${seasonRulesAreLocked() ? 'disabled' : ''} style="border:0;margin:0;padding:0;min-inline-size:0;">
             <label>Conferences
               <select name="conferenceCount">
                 <option value="1" ${Number(st.conferenceCount) === 1 ? 'selected' : ''}>1 conference</option>
@@ -2133,6 +2146,18 @@
               </select>
             </label>
             <div class="il-form-grid">
+              <label>Seeding
+                <select name="playoffSeedingRule">
+                  <option value="record" ${st.playoffSeedingRule !== 'points' ? 'selected' : ''}>Record, then points</option>
+                  <option value="points" ${st.playoffSeedingRule === 'points' ? 'selected' : ''}>Total points, then record</option>
+                </select>
+              </label>
+              <label style="margin-top:1.35rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
+                <input type="checkbox" name="playoffReseed" value="1" ${st.playoffReseed === false ? '' : 'checked'} />
+                Reseed after each round
+              </label>
+            </div>
+            <div class="il-form-grid">
               <label>Regular season ends (week)
                 <input type="number" name="regularSeasonEndWeek" min="0" max="18" value="${esc(st.regularSeasonEndWeek || '')}" />
               </label>
@@ -2152,6 +2177,10 @@
               </label>
             </div>
             <label style="margin-top:0.35rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
+              <input type="checkbox" name="thirdPlaceEnabled" value="1" ${st.thirdPlaceEnabled === true ? 'checked' : ''} />
+              Third-place game (semifinal losers)
+            </label>
+            <label style="margin-top:0.35rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
               <input type="checkbox" name="survivalEnabled" value="1" ${league.survival?.enabled === true ? 'checked' : ''} />
               Last-place / consolation game (optional)
             </label>
@@ -2167,16 +2196,19 @@
               <button type="submit" class="il-btn">Save conferences &amp; playoffs</button>
               <span class="il-status" id="il-playoff-status" role="status"></span>
             </div>
+            </fieldset>
           </form>
         </section>
         <section class="il-panel" style="margin-top:1rem;">
           <h2>Roster slots</h2>
-          <p class="il-meta">Owner-defined — e.g. 2 QB, 3 RB, 5 WR, 2 FLEX, multiple IR. Colors match the draft / roster position badges.</p>
+          <p class="il-meta">Owner-defined — e.g. 2 QB, Superflex, 3 RB, multiple IR. FLEX is RB/WR/TE. Superflex also takes a QB. Colors match the draft / roster position badges.</p>
+          ${seasonRulesLockNote()}
           <form class="il-form is-wide" id="il-roster-form" style="margin-top:0.85rem;">
+            <fieldset ${seasonRulesAreLocked() ? 'disabled' : ''} style="border:0;margin:0;padding:0;min-inline-size:0;">
             <div class="il-slot-grid">
-              ${[['QB',8],['RB',12],['WR',12],['TE',8],['FLEX',8],['DST',4],['K',4],['BN',30],['IR',10],['TAXI',10]].map(([pos, max]) => `
+              ${[['QB',8],['RB',12],['WR',12],['TE',8],['FLEX',8],['SFLEX',4],['DST',4],['K',4],['BN',30],['IR',10],['TAXI',10]].map(([pos, max]) => `
                 <div class="il-slot-field" data-pos="${pos}">
-                  <label>${esc(pos)}
+                  <label>${esc(pos === 'SFLEX' ? 'Superflex' : pos)}
                     <input type="number" name="slot-${pos}" min="0" max="${max}" step="1" value="${esc(s.rosterSlots?.[pos] ?? 0)}" />
                   </label>
                 </div>`).join('')}
@@ -2208,6 +2240,7 @@
               <button type="submit" class="il-btn">Save roster slots</button>
               <span class="il-status" id="il-roster-status" role="status"></span>
             </div>
+            </fieldset>
           </form>
         </section>
         <section class="il-panel" style="margin-top:1rem;">
@@ -2246,24 +2279,11 @@
             </div>
           </form>
         </section>
-        <section class="il-panel" style="margin-top:1rem;">
+        <section class="il-panel" style="margin-top:1rem;" id="scoring">
           <h2>Scoring</h2>
-          <p class="il-meta">Set the preset, then tune individual position scoring. Changes publish to the Rule Book.</p>
-          <form class="il-form is-wide" id="il-scoring-form" style="margin-top:0.85rem;">
-            <label>Scoring preset
-              <select name="scoringPreset">
-                <option value="custom" ${!s.scoringPreset || s.scoringPreset === 'custom' ? 'selected' : ''}>Custom</option>
-                <option value="gridiron24-vanilla" ${s.scoringPreset === 'gridiron24-vanilla' ? 'selected' : ''}>Full PPR (4-pt pass TD)</option>
-                <option value="half-ppr" ${s.scoringPreset === 'half-ppr' ? 'selected' : ''}>Half PPR</option>
-                <option value="standard" ${s.scoringPreset === 'standard' ? 'selected' : ''}>Standard (no PPR)</option>
-              </select>
-            </label>
-            ${scoringFieldsHtml(s.scoring || {})}
-            <div class="il-actions">
-              <button type="submit" class="il-btn">Save scoring</button>
-              <span class="il-status" id="il-scoring-status" role="status"></span>
-            </div>
-          </form>
+          <p class="il-meta">Passing TDs default to <strong>6 points</strong>. Pick a preset to fill Pass TD and PPR, then tune any value — 2-pt splits, FG distances, DST points allowed, and DST yards allowed. You can also use the dedicated <a href="${esc((hqState.pages && hqState.pages.scoring) || '#')}">Scoring</a> page. Season rules lock at kickoff of Week 1.</p>
+          ${seasonRulesLockNote()}
+          ${scoringFormHtml(league, { disabled: seasonRulesAreLocked() })}
         </section>
         <section class="il-panel" style="margin-top:1rem;">
           <h2>Franchises</h2>
@@ -2277,6 +2297,48 @@
                 </button>
               </li>`).join('') || '<li class="il-empty">No franchises</li>'}
           </ul>
+        </section>`;
+    }
+
+    function scoringHtml(league, viewer = {}) {
+      const canEdit = Boolean(viewer?.isOwner || viewer?.isSiteOwner);
+      if (!canEdit) {
+        return `${pageHead('Scoring', league)}
+          <section class="il-panel">
+            <h2>Scoring</h2>
+            <p class="il-meta">Only the league owner can change scoring. Current values:</p>
+            ${scoringNoticeHtml(league)}
+            ${scoringFormHtml(league, { disabled: true })}
+            <p class="il-meta" style="margin-top:0.75rem;">Full write-up is on the <a href="${esc((hqState.pages && hqState.pages.rulebook) || '#')}">Rule Book</a>.</p>
+          </section>`;
+      }
+      if (league.status === 'pending_approval') {
+        return `${pageHead('Scoring', league)}
+          <section class="il-panel">
+            <h2>Waiting for approval</h2>
+            <p class="il-meta">Scoring unlocks after the site owner approves this league.</p>
+          </section>`;
+      }
+      if (league.status === 'approved' && league.setupComplete === false) {
+        return `${pageHead('Scoring', league)}
+          <section class="il-panel">
+            <h2>Finish setup first</h2>
+            <p class="il-meta">Complete <a href="/create-league">Create a League</a> before editing scoring.</p>
+          </section>`;
+      }
+      if (league.status === 'rejected') {
+        return `${pageHead('Scoring', league)}
+          <section class="il-panel"><h2>League not approved</h2>
+          <p class="il-empty">Scoring stays locked for rejected leagues.</p>
+          </section>`;
+      }
+      return `${pageHead('Scoring', league)}
+        <section class="il-panel">
+          <h2>Scoring</h2>
+          <p class="il-meta">Passing TDs default to <strong>6 points</strong>. Pick a preset to fill Pass TD and PPR, then tune any value — including 2-pt splits, FG buckets, and DST points/yards allowed. Season rules lock at kickoff of Week 1.</p>
+          ${seasonRulesLockNote()}
+          ${scoringNoticeHtml(league)}
+          ${scoringFormHtml(league, { disabled: seasonRulesAreLocked() })}
         </section>`;
     }
 
@@ -2355,10 +2417,44 @@
         </div>`;
     }
 
-    function scoringFieldsHtml(scoring) {
+    function scoringNoticeHtml(league) {
+      const td = Number(league.settings?.scoring?.passingTD);
+      if (td !== 4) return '';
+      return `<p class="il-meta" style="margin-top:0.55rem;"><strong>Passing TDs are still 4 in this league.</strong> The current default is 6. Choose <strong>Full PPR (6-pt pass TD)</strong> or type 6 in Pass TD, then Save.</p>`;
+    }
+
+    function scoringPresetSelectHtml(s, disabled = false) {
+      const p = String(s?.scoringPreset || '');
+      const fourPt = p === 'gridiron24-vanilla' || p === 'ppr-4';
+      return `
+            <label>Scoring preset
+              <select name="scoringPreset" id="il-scoring-preset" ${disabled ? 'disabled' : ''}>
+                <option value="ppr-6" ${p === 'ppr-6' ? 'selected' : ''}>Full PPR (6-pt pass TD)</option>
+                <option value="gridiron24-vanilla" ${fourPt ? 'selected' : ''}>Full PPR (4-pt pass TD)</option>
+                <option value="half-ppr" ${p === 'half-ppr' ? 'selected' : ''}>Half PPR (6-pt pass TD)</option>
+                <option value="standard" ${p === 'standard' ? 'selected' : ''}>Standard (no PPR, 6-pt pass TD)</option>
+                <option value="custom" ${!p || p === 'custom' ? 'selected' : ''}>Custom</option>
+              </select>
+            </label>`;
+    }
+
+    function scoringFormHtml(league, { disabled = false } = {}) {
+      const s = league.settings || {};
+      return `
+          <form class="il-form is-wide" id="il-scoring-form" style="margin-top:0.85rem;">
+            ${scoringPresetSelectHtml(s, disabled)}
+            ${scoringFieldsHtml(s.scoring || {}, disabled)}
+            ${disabled ? '' : `<div class="il-actions">
+              <button type="submit" class="il-btn">Save scoring</button>
+              <span class="il-status" id="il-scoring-status" role="status"></span>
+            </div>`}
+          </form>`;
+    }
+
+    function scoringFieldsHtml(scoring, disabled = false) {
       const num = (key, label, step = '1') => `
         <label>${esc(label)}
-          <input type="number" name="score-${key}" step="${step}" value="${esc(scoring[key] ?? '')}" />
+          <input type="number" name="score-${key}" step="${step}" value="${esc(scoring[key] ?? '')}" ${disabled ? 'disabled' : ''} />
         </label>`;
       return `
         <div class="il-scoring-block">
@@ -2367,29 +2463,34 @@
             ${num('passingYardsPerPoint', 'Yards per point')}
             ${num('passingTD', 'Pass TD')}
             ${num('interception', 'Interception')}
+            ${num('passing2pt', 'Pass 2-pt')}
           </div>
           <h3>Rushing</h3>
           <div class="il-form-grid">
             ${num('rushingYardsPerPoint', 'Yards per point')}
             ${num('rushingTD', 'Rush TD')}
+            ${num('rushing2pt', 'Rush 2-pt')}
           </div>
           <h3>Receiving (WR / TE / RB)</h3>
           <div class="il-form-grid">
             ${num('receivingYardsPerPoint', 'Yards per point')}
             ${num('receivingTD', 'Receiving TD')}
             ${num('reception', 'Reception (PPR)', '0.5')}
+            ${num('receiving2pt', 'Receiving 2-pt')}
           </div>
           <h3>Misc</h3>
           <div class="il-form-grid">
             ${num('fumbleLost', 'Fumble lost')}
-            ${num('twoPointConversion', '2-pt conversion')}
+            ${num('twoPointConversion', '2-pt (fallback)')}
+            ${num('specialTeamsTD', 'Special teams TD')}
           </div>
           <h3>Kicker (K)</h3>
           <div class="il-form-grid">
             ${num('patMade', 'PAT made')}
             ${num('fg0to39', 'FG 0–39')}
             ${num('fg40to49', 'FG 40–49')}
-            ${num('fg50plus', 'FG 50+')}
+            ${num('fg50to59', 'FG 50–59')}
+            ${num('fg60plus', 'FG 60+')}
             ${num('fgMissed', 'FG missed')}
           </div>
           <h3>Defense / ST (DST)</h3>
@@ -2399,6 +2500,7 @@
             ${num('dstFumbleRecovery', 'Fumble recovery')}
             ${num('dstTouchdown', 'Defensive TD')}
             ${num('dstSafety', 'Safety')}
+            ${num('dstOnePointSafety', '1-pt safety')}
             ${num('dstBlockKick', 'Blocked kick')}
           </div>
           <h3>DST points allowed</h3>
@@ -2410,6 +2512,18 @@
             ${num('dstPointsAllowed21to27', '21–27')}
             ${num('dstPointsAllowed28to34', '28–34')}
             ${num('dstPointsAllowed35plus', '35+')}
+          </div>
+          <h3>DST yards allowed (0 = off)</h3>
+          <div class="il-form-grid is-3">
+            ${num('dstYardsAllowed0to99', '≤99')}
+            ${num('dstYardsAllowed100to199', '100–199')}
+            ${num('dstYardsAllowed200to299', '200–299')}
+            ${num('dstYardsAllowed300to349', '300–349')}
+            ${num('dstYardsAllowed350to399', '350–399')}
+            ${num('dstYardsAllowed400to449', '400–449')}
+            ${num('dstYardsAllowed450to499', '450–499')}
+            ${num('dstYardsAllowed500to549', '500–549')}
+            ${num('dstYardsAllowed550plus', '550+')}
           </div>
         </div>`;
     }
@@ -2515,7 +2629,7 @@
 
       const slots = rosterSlots || {};
       const needed = [];
-      ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K'].forEach((key) => {
+      ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SFLEX', 'DST', 'K'].forEach((key) => {
         const n = Number(slots[key]) || 0;
         for (let i = 0; i < n; i += 1) needed.push(key);
       });
@@ -2577,6 +2691,7 @@
       function eligible(pos, slot) {
         const p = pos === 'D/ST' || pos === 'DEF' ? 'DST' : pos;
         if (slot === 'FLEX') return p === 'RB' || p === 'WR' || p === 'TE';
+        if (slot === 'SFLEX' || slot === 'SUPERFLEX') return p === 'QB' || p === 'RB' || p === 'WR' || p === 'TE';
         if (slot === 'DST') return p === 'DST';
         return p === slot;
       }
@@ -3466,6 +3581,8 @@
       return `
         <p class="il-meta" style="margin:0 0 0.85rem;">
           ${esc(champName)} · ${format === 'conference-brackets' ? 'Conference brackets, then title game' : 'One league bracket'}
+          ${st.playoffReseed === false ? '· no reseed' : '· reseed on'}
+          · ${st.playoffSeedingRule === 'points' ? 'seeded by points' : 'seeded by record'}
           · Regular season through week ${esc(String(st.regularSeasonEndWeek || playoffs?.regularSeasonEndWeek || '—'))}
           · ${locked ? 'Bracket locked' : 'Projected seeds — bracket locks when the playoffs start'}
         </p>
@@ -3826,6 +3943,7 @@
         rankings: 'Rankings',
         draft: 'Draft',
         settings: 'Settings',
+        scoring: 'Scoring',
         manage: 'Manage',
         transactions: 'Transactions',
         keepers: 'Keepers',
@@ -3857,6 +3975,9 @@
       }
       if (section === 'settings') {
         return settingsHtml(league, viewer);
+      }
+      if (section === 'scoring') {
+        return scoringHtml(league, viewer);
       }
       if (section === 'manage') {
         return manageHtml(league, viewer);
@@ -4172,7 +4293,10 @@
               playoffTeamsPerConference: playoffPer,
               playoffTeamCount: confCount === 1 ? playoffPer : playoffPer * 2,
               regularSeasonEndWeek: Number(fd.get('regularSeasonEndWeek')) || 0,
-              playoffWeeks
+              playoffWeeks,
+              playoffReseed: fd.get('playoffReseed') === '1',
+              playoffSeedingRule: fd.get('playoffSeedingRule') === 'points' ? 'points' : 'record',
+              thirdPlaceEnabled: fd.get('thirdPlaceEnabled') === '1'
             },
             championship: {
               name: fd.get('championshipName'),
@@ -4206,7 +4330,7 @@
         const status = document.getElementById('il-roster-status');
         const fd = new FormData(e.target);
         const rosterSlots = {};
-        for (const pos of ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K', 'BN', 'IR', 'TAXI']) {
+        for (const pos of ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SFLEX', 'DST', 'K', 'BN', 'IR', 'TAXI']) {
           rosterSlots[pos] = Number(fd.get(`slot-${pos}`));
         }
         try {
@@ -4289,6 +4413,43 @@
         }
       });
 
+      function paintAfterScoringSave(updated) {
+        const { section } = parsePath();
+        const root = document.getElementById('il-root');
+        if (section === 'scoring') root.innerHTML = scoringHtml(updated, hqState.viewer);
+        else root.innerHTML = settingsHtml(updated, hqState.viewer);
+        wireSettingsUi();
+      }
+
+      function applyScoringPreset(preset) {
+        const p = String(preset || '');
+        if (!p || p === 'custom') return;
+        const form = document.getElementById('il-scoring-form');
+        if (!form) return;
+        const passTd = (p === 'gridiron24-vanilla' || p === 'ppr-4') ? 4 : 6;
+        const reception = p === 'standard' ? 0 : p === 'half-ppr' ? 0.5 : 1;
+        const set = (name, val) => {
+          const el = form.querySelector(`[name="score-${name}"]`);
+          if (el) el.value = val;
+        };
+        set('passingTD', passTd);
+        set('reception', reception);
+      }
+
+      let applyingScoringPreset = false;
+      document.getElementById('il-scoring-preset')?.addEventListener('change', (e) => {
+        applyingScoringPreset = true;
+        applyScoringPreset(e.target.value);
+        applyingScoringPreset = false;
+      });
+      document.querySelectorAll('#il-scoring-form [name^="score-"]').forEach((input) => {
+        input.addEventListener('input', () => {
+          if (applyingScoringPreset) return;
+          const sel = document.getElementById('il-scoring-preset');
+          if (sel) sel.value = 'custom';
+        });
+      });
+
       document.getElementById('il-scoring-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const status = document.getElementById('il-scoring-status');
@@ -4305,8 +4466,7 @@
             scoringPreset: fd.get('scoringPreset'),
             scoring
           }, status);
-          document.getElementById('il-root').innerHTML = settingsHtml(updated, hqState.viewer);
-          wireSettingsUi();
+          paintAfterScoringSave(updated);
           const ok = document.getElementById('il-scoring-status');
           if (ok) {
             ok.textContent = 'Saved.';
@@ -4551,7 +4711,8 @@
             id: data.viewer?.id || null
           },
           pages: data.pages || {},
-          slug
+          slug,
+          seasonRulesLock: data.seasonRulesLock || null
         };
         // Resolve viewer id from auth if needed for my-roster claims
         try {
@@ -4594,7 +4755,7 @@
             }
           }
           root.innerHTML = sectionHtml(section === 'home' ? 'home' : section, hqState.league, data.pages || {}, hqState.viewer);
-          if (section === 'settings') wireSettingsUi();
+          if (section === 'settings' || section === 'scoring') wireSettingsUi();
           if (section === 'manage') wireManageUi();
           if (section === 'rulebook') wireRulebookUi();
           if (section === 'scoreboard') wireScoreboardUi();

@@ -94,6 +94,9 @@ function playoffPlan(league) {
     titleWeek,
     bowlWeek,
     rsEnd,
+    reseed: st.playoffReseed !== false,
+    seedingRule: st.playoffSeedingRule === 'points' ? 'points' : 'record',
+    thirdPlace: st.thirdPlaceEnabled === true,
     champName: String(ch.name || '').trim() || `${league?.brand?.name || 'League'} Championship`,
     survival: league?.survival?.enabled === true ? league.survival : { enabled: false }
   };
@@ -165,12 +168,18 @@ function recordsThrough(league, throughWeek) {
   );
 }
 
-function seedList(standings, n, conferenceKey) {
+function seedList(standings, n, conferenceKey, rule = 'record') {
   let pool = standings;
   if (conferenceKey) {
     pool = standings.filter((s) => String(s.conferenceKey) === String(conferenceKey));
   }
-  return pool.slice(0, Math.max(0, n)).map((s, i) => ({
+  const ranked = pool.slice().sort((a, b) => {
+    if (rule === 'points') {
+      return (b.pointsFor - a.pointsFor) || (b.wins - a.wins) || (b.ties - a.ties);
+    }
+    return (b.wins - a.wins) || (b.ties - a.ties) || (b.pointsFor - a.pointsFor);
+  });
+  return ranked.slice(0, Math.max(0, n)).map((s, i) => ({
     franchiseId: s.franchiseId,
     seed: i + 1,
     name: s.name,
@@ -272,12 +281,26 @@ function winnerSide(game) {
   return hit ? { ...hit } : null;
 }
 
-function advanceGames(games) {
+function loserSide(game) {
+  if (!game?.winnerId) return null;
+  const sides = [game.home, game.away].filter((s) => s && !s.bye && s.franchiseId);
+  const hit = sides.find((s) => String(s.franchiseId) !== String(game.winnerId));
+  return hit ? { ...hit } : null;
+}
+
+function fillBySource(games) {
   const byId = new Map(games.map((g) => [g.id, g]));
   for (const g of games) {
     if (!g.source) continue;
     const fromHome = byId.get(g.source.homeGameId);
     const fromAway = byId.get(g.source.awayGameId);
+    if (g.thirdPlace) {
+      const home = loserSide(fromHome);
+      const away = loserSide(fromAway);
+      if (home) g.home = home;
+      if (away) g.away = away;
+      continue;
+    }
     const home = winnerSide(fromHome);
     const away = winnerSide(fromAway);
     if (home) g.home = home;
@@ -287,6 +310,78 @@ function advanceGames(games) {
     }
   }
   return games;
+}
+
+function reseedRound(prevGames, nextGames) {
+  if (!nextGames.length) return;
+  const ready = prevGames.every((g) => g.winnerId || g.bye);
+  if (!ready) {
+    fillBySource(prevGames.concat(nextGames));
+    return;
+  }
+  const winners = prevGames.map(winnerSide).filter(Boolean)
+    .sort((a, b) => (Number(a.seed) || 99) - (Number(b.seed) || 99));
+  nextGames.sort((a, b) => a.slot - b.slot).forEach((g, p) => {
+    g.home = winners[p] || null;
+    g.away = winners[winners.length - 1 - p] || null;
+    if (g.home && g.away && g.home.franchiseId === g.away.franchiseId) g.away = null;
+  });
+}
+
+function advanceGames(games, { reseed = false } = {}) {
+  if (!reseed) return fillBySource(games);
+  const main = (games || []).filter((g) => !g.consolation && !g.thirdPlace);
+  const groups = new Map();
+  for (const g of main) {
+    const key = g.final ? '__final__' : String(g.conferenceKey || '__lg__');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(g);
+  }
+  for (const [, gs] of groups) {
+    if (gs.every((g) => g.final)) {
+      fillBySource(gs);
+      continue;
+    }
+    const rounds = [...new Set(gs.filter((g) => !g.final).map((g) => g.round))].sort((a, b) => a - b);
+    for (let i = 1; i < rounds.length; i += 1) {
+      const prev = gs.filter((g) => g.round === rounds[i - 1] && !g.final);
+      const next = gs.filter((g) => g.round === rounds[i] && !g.final);
+      reseedRound(prev, next);
+    }
+    const finals = gs.filter((g) => g.final);
+    if (finals.length) fillBySource(finals);
+  }
+  fillBySource((games || []).filter((g) => g.thirdPlace || g.consolation));
+  return games;
+}
+
+function buildThirdPlace(games, plan, { conferenceKey, prefix, week }) {
+  if (!plan.thirdPlace) return [];
+  const tree = games.filter((g) => !g.consolation && !g.thirdPlace
+    && String(g.conferenceKey || '') === String(conferenceKey || ''));
+  if (!tree.length) return [];
+  const lastRound = Math.max(...tree.map((g) => g.round));
+  const semiRound = lastRound - 1;
+  if (semiRound < 0) return [];
+  const semis = tree.filter((g) => g.round === semiRound && !g.final).sort((a, b) => a.slot - b.slot);
+  if (semis.length < 2) return [];
+  return [{
+    id: `${prefix}-third`,
+    round: lastRound,
+    slot: 90,
+    week: week || plan.titleWeek || plan.bowlWeek,
+    label: 'Third Place',
+    conferenceKey: conferenceKey || null,
+    thirdPlace: true,
+    home: null,
+    away: null,
+    bye: false,
+    winnerId: null,
+    source: {
+      homeGameId: semis[0].id,
+      awayGameId: semis[1].id
+    }
+  }];
 }
 
 function buildConsolation(league, standings, plan, playoffIds) {
@@ -321,7 +416,7 @@ function buildBracket(league, standings) {
     return { plan, games, seeds: [], playoffIds };
   }
   if (plan.format === 'league-bracket') {
-    const seeds = seedList(standings, plan.perTree, null);
+    const seeds = seedList(standings, plan.perTree, null, plan.seedingRule);
     seeds.forEach((s) => playoffIds.add(String(s.franchiseId)));
     const treeWeeks = plan.treeWeeks.slice();
     if (plan.bowlWeek && treeWeeks.length) treeWeeks[treeWeeks.length - 1] = plan.bowlWeek;
@@ -334,34 +429,45 @@ function buildBracket(league, standings) {
     if (games.length) {
       const lastRound = Math.max(...games.map((g) => g.round));
       for (const g of games) {
-        if (g.round === lastRound) {
+        if (g.round === lastRound && !g.thirdPlace) {
           g.label = plan.champName;
           g.final = true;
           g.week = plan.bowlWeek || g.week;
         }
       }
     }
+    games.push(...buildThirdPlace(games, plan, {
+      conferenceKey: null,
+      prefix: 'lg',
+      week: plan.bowlWeek || plan.titleWeek
+    }));
     games.push(...buildConsolation(league, standings, plan, playoffIds));
-    return { plan, games: advanceGames(games), seeds, playoffIds };
+    return { plan, games: advanceGames(games, { reseed: plan.reseed }), seeds, playoffIds };
   }
 
   const trees = [];
   confs.slice(0, 2).forEach((conf, i) => {
-    const seeds = seedList(standings, plan.perTree, conf.key);
+    const seeds = seedList(standings, plan.perTree, conf.key, plan.seedingRule);
     seeds.forEach((s) => playoffIds.add(String(s.franchiseId)));
     trees.push({ conf, seeds });
+    const prefix = String(conf.key || `c${i}`);
     games.push(...buildTree(seeds, plan.treeWeeks, {
       conferenceKey: conf.key,
       conferenceName: conf.name || conf.shortName || `Conference ${i + 1}`,
       champName: plan.champName,
-      prefix: String(conf.key || `c${i}`)
+      prefix
+    }));
+    games.push(...buildThirdPlace(games, plan, {
+      conferenceKey: conf.key,
+      prefix,
+      week: plan.titleWeek
     }));
   });
-  advanceGames(games);
+  advanceGames(games, { reseed: plan.reseed });
   if (plan.extraFinal && trees.length === 2) {
     const lastRound = plan.roundsPerTree - 1;
-    const left = games.find((g) => g.conferenceKey === trees[0].conf.key && g.round === lastRound);
-    const right = games.find((g) => g.conferenceKey === trees[1].conf.key && g.round === lastRound);
+    const left = games.find((g) => g.conferenceKey === trees[0].conf.key && g.round === lastRound && !g.thirdPlace);
+    const right = games.find((g) => g.conferenceKey === trees[1].conf.key && g.round === lastRound && !g.thirdPlace);
     games.push({
       id: 'final-0',
       round: lastRound + 1,
@@ -381,12 +487,12 @@ function buildBracket(league, standings) {
     });
   }
   games.push(...buildConsolation(league, standings, plan, playoffIds));
-  return { plan, games: advanceGames(games), seeds: trees.flatMap((t) => t.seeds), playoffIds };
+  return { plan, games: advanceGames(games, { reseed: plan.reseed }), seeds: trees.flatMap((t) => t.seeds), playoffIds };
 }
 
 function fingerprintSeeds(games) {
   return games
-    .filter((g) => g.round === 0 && !g.consolation)
+    .filter((g) => g.round === 0 && !g.consolation && !g.thirdPlace)
     .map((g) => `${g.id}:${g.home?.franchiseId || ''}:${g.away?.franchiseId || ''}`)
     .join('|');
 }
@@ -403,7 +509,7 @@ function mergeLocked(existing, next) {
     if (prev.result) g.result = prev.result;
     if (prev.forced) g.forced = true;
   }
-  next.games = advanceGames(next.games);
+  next.games = advanceGames(next.games, { reseed: Boolean(existing.reseed) });
   return next;
 }
 
@@ -417,6 +523,9 @@ function snapshot(league, built, extra = {}) {
     regularSeasonEndWeek: plan.rsEnd,
     titleWeek: plan.titleWeek,
     bowlWeek: plan.bowlWeek,
+    reseed: Boolean(plan.reseed),
+    seedingRule: plan.seedingRule || 'record',
+    thirdPlace: Boolean(plan.thirdPlace),
     weeks: [...new Set([
       ...plan.treeWeeks,
       plan.bowlWeek,
@@ -448,7 +557,9 @@ function ensurePlayoffs(league, { week = null, lockIfDue = true } = {}) {
       games: merged.games,
       seeds: existing.seeds?.length ? existing.seeds : merged.seeds
     };
-    league.playoffs.games = advanceGames(league.playoffs.games);
+    league.playoffs.games = advanceGames(league.playoffs.games, {
+      reseed: Boolean(league.playoffs.reseed)
+    });
     return league.playoffs;
   }
   const next = snapshot(league, built, { locked: false });
@@ -509,7 +620,7 @@ function applyWeekScores(playoffs, week, matchups) {
       g.tiebreak = null;
     }
   }
-  playoffs.games = advanceGames(playoffs.games);
+  playoffs.games = advanceGames(playoffs.games, { reseed: Boolean(playoffs.reseed) });
   return playoffs;
 }
 
@@ -585,7 +696,7 @@ function setWinner(leagueId, { gameId, winnerId, actor }) {
     game.winnerId = String(winnerId);
     game.forced = true;
     game.result = String(winnerId) === String(game.home?.franchiseId) ? 'home' : 'away';
-    playoffs.games = advanceGames(playoffs.games);
+    playoffs.games = advanceGames(playoffs.games, { reseed: Boolean(playoffs.reseed) });
     playoffs.locked = true;
     playoffs.lockedAt = playoffs.lockedAt || new Date().toISOString();
     league.playoffs = playoffs;

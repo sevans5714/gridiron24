@@ -1072,12 +1072,41 @@ function authenticate(loginName, password) {
   return pub;
 }
 
-function createResetToken(email) {
+function createResetToken(identifier) {
   const store = readStore();
-  const emailKey = normalizeEmail(email);
-  const idx = store.users.findIndex((u) => normalizeEmail(u.email) === emailKey);
+  const raw = String(identifier || '').trim();
+  if (!raw) return null;
+  const emailKey = normalizeEmail(raw);
+  let idx = -1;
+  if (emailKey.includes('@')) {
+    idx = store.users.findIndex((u) => normalizeEmail(u.email) === emailKey);
+  }
+  if (idx === -1) {
+    const loginKey = normalizeLoginName(raw);
+    if (loginKey) {
+      idx = store.users.findIndex((u) => normalizeLoginName(u.loginName) === loginKey);
+    }
+  }
   if (idx === -1) return null;
+  const email = String(store.users[idx].email || '').trim();
+  if (!email || !email.includes('@')) return null;
+  return issueResetTokenAt(store, idx);
+}
 
+function createResetTokenForUser(userId) {
+  const store = readStore();
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Account not found'), { status: 404 });
+  }
+  const email = String(store.users[idx].email || '').trim();
+  if (!email || !email.includes('@')) {
+    throw Object.assign(new Error('This account has no email — set a password instead'), { status: 400 });
+  }
+  return issueResetTokenAt(store, idx);
+}
+
+function issueResetTokenAt(store, idx) {
   const token = crypto.randomBytes(32).toString('hex');
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   store.users[idx].resetTokenHash = tokenHash;
@@ -1277,6 +1306,7 @@ module.exports = {
   createUser,
   authenticate,
   createResetToken,
+  createResetTokenForUser,
   resetPasswordWithToken,
   changePassword,
   adminSetCredentials,

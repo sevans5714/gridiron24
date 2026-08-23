@@ -21,18 +21,52 @@ function yardsPoints(yards, yardsPerPoint) {
 function fgBucketPoints(stats, scoring) {
   const made019 = num(stats.fgMade0to19) + num(stats.fgMade20to29) + num(stats.fgMade30to39);
   const made40 = num(stats.fgMade40to49);
-  const made50 = num(stats.fgMade50to59) + num(stats.fgMade60plus);
+  const made50 = num(stats.fgMade50to59);
+  const made60 = num(stats.fgMade60plus);
+  const fiftyPts = num(scoring.fg50to59, num(scoring.fg50plus, 5));
+  const sixtyPts = num(scoring.fg60plus, num(scoring.fg50plus, 5));
   // If distance buckets missing, fall back to total made as 0–39 value.
   const totalMade = num(stats.fgMade);
-  const bucketSum = made019 + made40 + made50;
+  const bucketSum = made019 + made40 + made50 + made60;
   if (bucketSum <= 0 && totalMade > 0) {
     return totalMade * num(scoring.fg0to39, 3);
   }
   return (
     made019 * num(scoring.fg0to39, 3)
     + made40 * num(scoring.fg40to49, 4)
-    + made50 * num(scoring.fg50plus, 5)
+    + made50 * fiftyPts
+    + made60 * sixtyPts
   );
+}
+
+function twoPointPoints(stats, scoring) {
+  const conv = num(scoring.twoPointConversion, 2);
+  const split =
+    num(stats.passing2pt) * num(scoring.passing2pt, conv)
+    + num(stats.rushing2pt) * num(scoring.rushing2pt, conv)
+    + num(stats.receiving2pt) * num(scoring.receiving2pt, conv);
+  if (split !== 0 || num(stats.passing2pt) || num(stats.rushing2pt) || num(stats.receiving2pt)) {
+    return split;
+  }
+  return num(stats.twoPointConversions) * conv;
+}
+
+function dstYardsAllowedBucket(yardsAllowed, scoring) {
+  const y = num(yardsAllowed, 0);
+  const keys = [
+    [99, 'dstYardsAllowed0to99'],
+    [199, 'dstYardsAllowed100to199'],
+    [299, 'dstYardsAllowed200to299'],
+    [349, 'dstYardsAllowed300to349'],
+    [399, 'dstYardsAllowed350to399'],
+    [449, 'dstYardsAllowed400to449'],
+    [499, 'dstYardsAllowed450to499'],
+    [549, 'dstYardsAllowed500to549']
+  ];
+  for (const [cap, key] of keys) {
+    if (y <= cap) return num(scoring[key], 0);
+  }
+  return num(scoring.dstYardsAllowed550plus, 0);
 }
 
 /**
@@ -43,7 +77,7 @@ function fgBucketPoints(stats, scoring) {
 function scorePlayerStats(stats = {}, scoring = {}) {
   const s = scoring || {};
   const passYds = yardsPoints(stats.passingYards, s.passingYardsPerPoint);
-  const passTd = num(stats.passingTds) * num(s.passingTD, 4);
+  const passTd = num(stats.passingTds) * num(s.passingTD, 6);
   const passInt = num(stats.passingInterceptions) * num(s.interception, -2);
   const rushYds = yardsPoints(stats.rushingYards, s.rushingYardsPerPoint);
   const rushTd = num(stats.rushingTds) * num(s.rushingTD, 6);
@@ -51,11 +85,11 @@ function scorePlayerStats(stats = {}, scoring = {}) {
   const recTd = num(stats.receivingTds) * num(s.receivingTD, 6);
   const receptions = num(stats.receptions) * num(s.reception, 0);
   const fumbles = num(stats.fumblesLost) * num(s.fumbleLost, -2);
-  const twoPt = num(stats.twoPointConversions) * num(s.twoPointConversion, 2);
+  const twoPt = twoPointPoints(stats, s);
   const pat = num(stats.patMade) * num(s.patMade, 1);
   const fg = fgBucketPoints(stats, s);
   const fgMiss = num(stats.fgMissed) * num(s.fgMissed, -1);
-  const stTd = num(stats.specialTeamsTds) * num(s.rushingTD, 6);
+  const stTd = num(stats.specialTeamsTds) * num(s.specialTeamsTD, num(s.rushingTD, 6));
 
   const breakdown = {
     passing: round1(passYds + passTd + passInt),
@@ -92,9 +126,11 @@ function scoreDstStats(teamStats = {}, scoring = {}) {
   const fr = num(teamStats.fumbleRecoveries) * num(s.dstFumbleRecovery, 2);
   const td = num(teamStats.defTouchdowns) * num(s.dstTouchdown, 6);
   const safety = num(teamStats.safeties) * num(s.dstSafety, 2);
+  const onePtSafety = num(teamStats.onePointSafeties) * num(s.dstOnePointSafety, 1);
   const block = num(teamStats.blockedKicks) * num(s.dstBlockKick, 2);
   const pa = dstPointsAllowedBucket(teamStats.pointsAllowed, s);
-  const points = round1(sack + ints + fr + td + safety + block + pa);
+  const ya = dstYardsAllowedBucket(teamStats.yardsAllowed, s);
+  const points = round1(sack + ints + fr + td + safety + onePtSafety + block + pa + ya);
   return {
     points,
     breakdown: {
@@ -103,14 +139,17 @@ function scoreDstStats(teamStats = {}, scoring = {}) {
       fumbleRecovery: round1(fr),
       touchdown: round1(td),
       safety: round1(safety),
+      onePointSafety: round1(onePtSafety),
       blockKick: round1(block),
-      pointsAllowed: round1(pa)
+      pointsAllowed: round1(pa),
+      yardsAllowed: round1(ya)
     }
   };
 }
 
 const FLEX_ELIGIBLE = new Set(['RB', 'WR', 'TE']);
-const STARTER_KEYS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K'];
+const SUPERFLEX_ELIGIBLE = new Set(['QB', 'RB', 'WR', 'TE']);
+const STARTER_KEYS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SFLEX', 'DST', 'K'];
 
 function normalizePos(pos) {
   const p = String(pos || '').toUpperCase();
@@ -122,6 +161,7 @@ function normalizeSlot(slot) {
   const s = String(slot || '').toUpperCase();
   if (s === 'D/ST' || s === 'DEF' || s === 'D ST') return 'DST';
   if (s === 'BENCH') return 'BN';
+  if (s === 'SUPERFLEX') return 'SFLEX';
   return s;
 }
 
@@ -130,6 +170,7 @@ function slotEligible(pos, slot) {
   const s = normalizeSlot(slot);
   if (s === 'BN' || s === 'IR' || s === 'TAXI') return true;
   if (s === 'FLEX') return FLEX_ELIGIBLE.has(p);
+  if (s === 'SFLEX' || s === 'SUPERFLEX') return SUPERFLEX_ELIGIBLE.has(p);
   if (s === 'DST') return p === 'DST';
   return p === s;
 }
@@ -276,6 +317,7 @@ module.exports = {
   normalizeSlot,
   normalizePos,
   STARTER_KEYS,
+  SUPERFLEX_ELIGIBLE,
   neededStarterSlots,
   round1,
   yardsPoints

@@ -5,8 +5,9 @@
  */
 (() => {
   const DEFAULT_STARTERS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
-  const STARTER_LABEL_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'D/ST', 'K'];
+  const STARTER_LABEL_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SFLEX', 'SUPERFLEX', 'D/ST', 'K'];
   const FLEX_ELIGIBLE = new Set(['RB', 'WR', 'TE']);
+  const SUPERFLEX_ELIGIBLE = new Set(['QB', 'RB', 'WR', 'TE']);
   const DEFAULT_BENCH = 6;
   const POS_ORDER = { QB: 0, RB: 1, WR: 2, TE: 3, K: 4, 'D/ST': 5 };
   const ON_CLOCK_AUDIO_URL = '/assets/lounge/nfl-draft-on-clock.wav?v=2';
@@ -135,6 +136,9 @@
   function slotAccepts(slot, position) {
     const pos = posKey(position);
     const s = posKey(slot);
+    if (String(slot || '').toUpperCase() === 'SFLEX' || s === 'SFLEX' || s === 'SUPERFLEX') {
+      return SUPERFLEX_ELIGIBLE.has(pos);
+    }
     if (String(slot || '').toUpperCase() === 'FLEX' || s === 'FLEX') return FLEX_ELIGIBLE.has(pos);
     if (s === 'D/ST') return pos === 'D/ST';
     return s === pos;
@@ -147,11 +151,21 @@
     for (const pick of picks || []) {
       let placed = false;
       for (const row of starters) {
-        if (row.player || row.slot === 'FLEX') continue;
+        if (row.player || row.slot === 'FLEX' || row.slot === 'SFLEX' || row.slot === 'SUPERFLEX') continue;
         if (slotAccepts(row.slot, pickPos(pick))) {
           row.player = pick;
           placed = true;
           break;
+        }
+      }
+      if (!placed) {
+        for (const row of starters) {
+          if (row.player || (row.slot !== 'SFLEX' && row.slot !== 'SUPERFLEX')) continue;
+          if (slotAccepts('SFLEX', pickPos(pick))) {
+            row.player = pick;
+            placed = true;
+            break;
+          }
         }
       }
       if (!placed) {

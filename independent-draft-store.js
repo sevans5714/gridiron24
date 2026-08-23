@@ -92,6 +92,7 @@ function startersFromSettings(settings) {
     WR: Number(slots.WR) || 2,
     TE: Number(slots.TE) || 1,
     FLEX: Number(slots.FLEX) || 1,
+    SFLEX: Number(slots.SFLEX) || 0,
     DST: Number(slots.DST) || 0,
     K: Number(slots.K) || 1
   };

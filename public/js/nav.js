@@ -63,6 +63,7 @@
       { href: `${base}/team-rosters.html`, label: 'Team Rosters' },
       { href: `${base}/rankings.html`, label: 'Rankings' },
       { href: `${base}/draft.html`, label: 'Draft Results' },
+      { href: `${base}/scoring.html`, label: 'Scoring' },
       { href: `${base}/manage.html`, label: 'Manage' },
       { href: `${base}/settings.html`, label: 'Settings' },
       { href: `${base}/transactions.html`, label: 'Transactions' },
@@ -134,28 +135,33 @@
   const sync = document.getElementById('lastUpdated');
 
   function navActiveKey() {
-    if (active === 'scoring' || active === 'rulebook' || active === 'payouts' || active === 'aaa-rulebook') {
-      return 'rulebook';
-    }
-    if (active === 'standings' || active === 'teams' || active === 'my-roster' || active === 'team-rosters' || active === 'draft' || active === 'history' || active === 'transactions' || active === 'rankings' || active === 'schedules' || active === 'roster-2026') {
+    const page = document.body.dataset.page || active || 'home';
+    const independent = leagueScope?.scope === 'independent' || leagueScope?.platform === 'independent';
+    if (independent && (page === 'scoring' || page === 'settings' || page === 'manage' || page === 'keepers')) {
       return 'league';
     }
-    if (active === 'aaa') {
+    if (page === 'scoring' || page === 'rulebook' || page === 'payouts' || page === 'aaa-rulebook') {
+      return 'rulebook';
+    }
+    if (page === 'standings' || page === 'teams' || page === 'my-roster' || page === 'team-rosters' || page === 'draft' || page === 'history' || page === 'transactions' || page === 'rankings' || page === 'schedules' || page === 'roster-2026') {
+      return 'league';
+    }
+    if (page === 'aaa') {
       return 'home';
     }
-    if (active === 'aaa-playoffs') {
+    if (page === 'aaa-playoffs') {
       return 'playoffs';
     }
-    if (active === 'league-hq') {
+    if (page === 'league-hq') {
       return 'home';
     }
-    if (active === 'members') {
+    if (page === 'members') {
       return 'members';
     }
-    if (active === 'aaa-scoreboard') {
+    if (page === 'aaa-scoreboard') {
       return 'scoreboard';
     }
-    return active;
+    return page;
   }
 
   function esc(v = '') {

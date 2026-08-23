@@ -12,7 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=182" />
+  <link rel="stylesheet" href="/css/site.css?v=185" />
   <style>
     .book {
       max-width: 52rem;
@@ -417,7 +417,7 @@
         </header>
         <section class="section">
           <h3 class="section-title">§2.01 Regular Season</h3>
-          <p>Each conference shall play a thirteen (13) week regular season. Standings and playoff seeding shall follow ESPN results for that conference.</p>
+          <p id="regular-season-copy">Each conference shall play a regular season whose length matches Detail ESPN (see §5.01). Standings and playoff seeding shall follow ESPN results for that conference.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§2.02 Official Calendar</h3>
@@ -478,12 +478,17 @@
         </header>
         <section class="section">
           <h3 class="section-title">§4.01 Uniform Scoring</h3>
-          <p>Detail and Overtime shall use identical scoring settings. If the conferences diverge on ESPN, Detail Conference settings are controlling until Overtime is restored to conformity.</p>
+          <p>Detail and Overtime shall use identical scoring and lineup. Rules Sync checks both GridIron 24 ESPN leagues against this Rule Book. Independent leagues set their own full rules in league HQ and are not part of ESPN Rules Sync. If Detail, Overtime, or AAA diverge, this Rule Book is controlling until they are restored to conformity.</p>
           <div id="scoring-banner"></div>
         </section>
         <section class="section">
           <h3 class="section-title">§4.02 Point Values</h3>
+          <p>Point values below are copied from live Detail ESPN until Week 1 kickoff. Detail and Overtime must both match this table. After Week 1 kickoff this Rule Book is not rewritten from later ESPN changes.</p>
           <div id="scoring-rules"><div class="msg">Loading scoring…</div></div>
+        </section>
+        <section class="section">
+          <h3 class="section-title">§4.03 Season Lock</h3>
+          <p>Scoring, lineup, and playoff-format rules lock at kickoff of Week 1 of the NFL regular season. After that kickoff they shall not be amended for the remainder of the season except by league vote under §7.03. Rules Sync continues to compare Detail, Overtime, and AAA to this locked Rule Book; it does not adopt later ESPN changes.</p>
         </section>
       </article>
 
@@ -494,7 +499,7 @@
         </header>
         <section class="section">
           <h3 class="section-title">§5.01 Conference Playoffs</h3>
-          <ol>
+          <ol id="playoff-rules">
             <li>Six (6) teams qualify in each conference.</li>
             <li>Playoffs begin in Week 14 (Wild Card).</li>
             <li>Conferences reseed after each round.</li>
@@ -504,7 +509,7 @@
         <section class="section">
           <h3 class="section-title">§5.02 GridIron Bowl</h3>
           <p class="rule-mark"><img src="/assets/gridiron-bowl.png?v=7" alt="GridIron Bowl" width="1024" height="682" /></p>
-          <p>In Week 17, the Detail Conference champion and the Overtime Conference champion shall meet in the GridIron Bowl. The champion is determined by each entrant’s Week 17 ESPN fantasy score.</p>
+          <p id="gridiron-bowl-copy">In Week 17, the Detail Conference champion and the Overtime Conference champion shall meet in the GridIron Bowl. The champion is determined by each entrant’s Week 17 ESPN fantasy score.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§5.03 Relegation</h3>
@@ -519,9 +524,9 @@
         <section class="section">
           <h3 class="section-title">§5.04 Mayor's Cup</h3>
           <p class="rule-mark"><img src="/assets/mayors-cup.png?v=7" alt="Mayor's Cup" width="1024" height="768" /></p>
-          <p>In Week 17, the relegated Detail franchise and the relegated Overtime franchise shall meet in the Mayor's Cup.</p>
+          <p id="mayors-cup-copy">In Week 17, the relegated Detail franchise and the relegated Overtime franchise shall meet in the Mayor's Cup.</p>
           <ol>
-            <li>The Mayor's Cup is decided by each entrant’s Week 17 ESPN fantasy score.</li>
+            <li id="mayors-cup-score">The Mayor's Cup is decided by each entrant’s Week 17 ESPN fantasy score.</li>
             <li>The franchise with the higher score remains in GridIron 24 for the following season.</li>
             <li>The franchise with the lower score is relegated to AAA League for the following season and is removed from GridIron 24.</li>
             <li>The resulting vacancy is filled by promotion under §5.05.</li>
@@ -569,7 +574,7 @@
         </section>
         <section class="section">
           <h3 class="section-title">§7.02 Amendments</h3>
-          <p>Material amendments to this Rule Book shall be communicated before they affect active competition. Scoring or lineup settings that drift between conferences shall be restored to the uniform standard under Article IV.</p>
+          <p>Material amendments to this Rule Book shall be communicated before they affect active competition. Season scoring, lineup, and playoff-format rules lock at kickoff of Week 1 under §4.03. Scoring or lineup settings that drift between conferences shall be restored to the uniform standard under Article IV.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§7.03 Final Authority</h3>
@@ -583,8 +588,8 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=183"></script>
-  <script src="/js/conference-diff.js?v=5"></script>
+  <script src="/js/nav.js?v=185"></script>
+  <script src="/js/conference-diff.js?v=7"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -676,17 +681,71 @@
           ? new Date(updated).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
           : '';
 
+        bannerMount.innerHTML = '';
+        if (data.seasonRulesLock?.locked) {
+          const lockWhen = data.seasonRulesLock.lockedAt || data.officialScoring?.lockedAt;
+          const lockLabel = lockWhen
+            ? new Date(lockWhen).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+            : '';
+          bannerMount.innerHTML += `<div class="banner ok">Season rules locked at Week 1 kickoff${lockLabel ? ` · ${esc(lockLabel)}` : ''}</div>`;
+        }
         if (synced) {
-          bannerMount.innerHTML = `<div class="banner ok">Conferences in conformity<span class="sync-pill">Official</span>${when ? ` · As of ${esc(when)}` : ''}</div>`;
+          bannerMount.innerHTML += `<div class="banner ok">Detail and Overtime match this Rule Book<span class="sync-pill">Official</span>${when ? ` · As of ${esc(when)}` : ''}</div>`;
         } else if (data.compare?.bothOk === false) {
-          bannerMount.innerHTML = `<div class="banner">Unable to verify both conferences. Detail Conference settings are shown.</div>`;
+          bannerMount.innerHTML += `<div class="banner">Official scoring is shown. One or both GridIron 24 ESPN leagues could not be verified.</div>`;
         } else {
+          const d = data.compare?.detail?.diffCount;
+          const o = data.compare?.overtime?.diffCount;
           const n = data.compare?.diffCount || 0;
-          bannerMount.innerHTML = `<div class="banner">Conferences diverge on ESPN (${n} difference${n === 1 ? '' : 's'}). Detail Conference is controlling. See <a href="/owner.html#rules-sync">Owner Dashboard</a>.</div>`;
+          const who = [
+            data.compare?.detail && data.compare.detail.matched === false ? `Detail (${d ?? n})` : null,
+            data.compare?.overtime && data.compare.overtime.matched === false ? `Overtime (${o ?? n})` : null
+          ].filter(Boolean).join(' · ');
+          bannerMount.innerHTML += `<div class="banner">${esc(who || `ESPN differs (${n})`)} from this Rule Book. See <a href="/owner.html#rules-sync">Owner Dashboard</a>.</div>`;
         }
 
         lineupMount.innerHTML = lineupRow(rules.lineup);
         scoringMount.innerHTML = groupPanels(rules.scoringItems);
+
+        const book = data.officialScoring || rules;
+        const rs = Number(book.matchupPeriodCount);
+        const rsCopy = document.getElementById('regular-season-copy');
+        if (rsCopy && Number.isFinite(rs)) {
+          rsCopy.textContent = `Each conference shall play a ${rs}-week regular season. Standings and playoff seeding shall follow ESPN results for that conference.`;
+        }
+        const teams = Number(book.playoffTeamCount);
+        const first = Number(book.firstPlayoffWeek);
+        const last = Number(book.finalScoringPeriod);
+        const champWeek = Number.isFinite(last) && Number.isFinite(first) ? last - 1 : NaN;
+        const reseed = book.playoffReseed === true;
+        const playoffEl = document.getElementById('playoff-rules');
+        if (playoffEl) {
+          const teamLine = Number.isFinite(teams)
+            ? `${teams} team${teams === 1 ? '' : 's'} qualify in each conference.`
+            : 'Playoff field size follows live Detail ESPN.';
+          const startLine = Number.isFinite(first)
+            ? `Playoffs begin in Week ${first}.`
+            : 'Playoff start week follows live Detail ESPN.';
+          const reseedLine = book.playoffReseed == null
+            ? 'Reseed setting follows live Detail ESPN.'
+            : (reseed ? 'Conferences reseed after each round.' : 'Conferences do not reseed after each round.');
+          const champLine = Number.isFinite(champWeek)
+            ? `Conference champions are determined by Week ${champWeek}.`
+            : 'Conference championship week follows live Detail ESPN.';
+          playoffEl.innerHTML = `<li>${esc(teamLine)}</li><li>${esc(startLine)}</li><li>${esc(reseedLine)}</li><li>${esc(champLine)}</li>`;
+        }
+        const bowl = document.getElementById('gridiron-bowl-copy');
+        if (bowl && Number.isFinite(last)) {
+          bowl.textContent = `In Week ${last}, the Detail Conference champion and the Overtime Conference champion shall meet in the GridIron Bowl. The champion is determined by each entrant’s Week ${last} ESPN fantasy score.`;
+        }
+        const mayor = document.getElementById('mayors-cup-copy');
+        if (mayor && Number.isFinite(last)) {
+          mayor.textContent = `In Week ${last}, the relegated Detail franchise and the relegated Overtime franchise shall meet in the Mayor's Cup.`;
+        }
+        const mayorScore = document.getElementById('mayors-cup-score');
+        if (mayorScore && Number.isFinite(last)) {
+          mayorScore.textContent = `The Mayor's Cup is decided by each entrant’s Week ${last} ESPN fantasy score.`;
+        }
       } catch (err) {
         lineupMount.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
         scoringMount.innerHTML = '';

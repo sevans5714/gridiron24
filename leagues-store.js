@@ -501,29 +501,41 @@ function normalizeConferenceInput(raw, index, uploadedLogos = {}, { requireEspn 
 }
 
 /** Vanilla GridIron 24–shaped scoring / roster for independent leagues (no ESPN). */
-function defaultIndependentScoring(seed = {}, preset = 'gridiron24-vanilla') {
+function passingTdForPreset(preset) {
+  const p = String(preset || '').toLowerCase();
+  if (p === 'gridiron24-vanilla' || p === 'ppr-4' || p === '4pt' || p === '4-pt') return 4;
+  return 6;
+}
+
+function defaultIndependentScoring(seed = {}, preset = 'ppr-6') {
   const reception =
     preset === 'standard' ? 0 : preset === 'half-ppr' ? 0.5 : 1;
   const base = {
     // Passing (QB)
     passingYardsPerPoint: 25,
-    passingTD: 4,
+    passingTD: passingTdForPreset(preset),
     interception: -2,
+    passing2pt: 2,
     // Rushing (RB / QB / WR)
     rushingYardsPerPoint: 10,
     rushingTD: 6,
+    rushing2pt: 2,
     // Receiving (WR / TE / RB)
     receivingYardsPerPoint: 10,
     receivingTD: 6,
     reception,
+    receiving2pt: 2,
     // Ball security / conversions
     fumbleLost: -2,
     twoPointConversion: 2,
+    specialTeamsTD: 6,
     // Kicker
     patMade: 1,
     fg0to39: 3,
     fg40to49: 4,
     fg50plus: 5,
+    fg50to59: 5,
+    fg60plus: 6,
     fgMissed: -1,
     // Defense / ST
     dstSack: 1,
@@ -531,6 +543,7 @@ function defaultIndependentScoring(seed = {}, preset = 'gridiron24-vanilla') {
     dstFumbleRecovery: 2,
     dstTouchdown: 6,
     dstSafety: 2,
+    dstOnePointSafety: 1,
     dstBlockKick: 2,
     dstPointsAllowed0: 10,
     dstPointsAllowed1to6: 7,
@@ -538,7 +551,16 @@ function defaultIndependentScoring(seed = {}, preset = 'gridiron24-vanilla') {
     dstPointsAllowed14to20: 1,
     dstPointsAllowed21to27: 0,
     dstPointsAllowed28to34: -1,
-    dstPointsAllowed35plus: -4
+    dstPointsAllowed35plus: -4,
+    dstYardsAllowed0to99: 0,
+    dstYardsAllowed100to199: 0,
+    dstYardsAllowed200to299: 0,
+    dstYardsAllowed300to349: 0,
+    dstYardsAllowed350to399: 0,
+    dstYardsAllowed400to449: 0,
+    dstYardsAllowed450to499: 0,
+    dstYardsAllowed500to549: 0,
+    dstYardsAllowed550plus: 0
   };
   const custom = seed && typeof seed === 'object' ? seed : {};
   const out = { ...base };
@@ -550,6 +572,22 @@ function defaultIndependentScoring(seed = {}, preset = 'gridiron24-vanilla') {
   return out;
 }
 
+function defaultIndependentRosterSlots() {
+  return {
+    QB: 1,
+    RB: 2,
+    WR: 2,
+    TE: 1,
+    FLEX: 1,
+    SFLEX: 0,
+    DST: 1,
+    K: 1,
+    BN: 7,
+    IR: 1,
+    TAXI: 0
+  };
+}
+
 function normalizeRosterSlots(roster = {}) {
   const n = (val, max) => {
     if (val === '' || val == null) return 0;
@@ -557,18 +595,25 @@ function normalizeRosterSlots(roster = {}) {
     if (!Number.isFinite(x) || x < 0) return 0;
     return Math.min(max, Math.round(x));
   };
-  return {
+  const out = {
     QB: n(roster.QB, 8),
     RB: n(roster.RB, 12),
     WR: n(roster.WR, 12),
     TE: n(roster.TE, 8),
     FLEX: n(roster.FLEX, 8),
+    SFLEX: n(roster.SFLEX ?? roster.SUPERFLEX, 4),
     DST: n(roster.DST, 4),
     K: n(roster.K, 4),
     BN: n(roster.BN, 30),
     IR: n(roster.IR, 10),
     TAXI: n(roster.TAXI, 10)
   };
+  const starterTotal = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SFLEX', 'DST', 'K']
+    .reduce((sum, key) => sum + (Number(out[key]) || 0), 0);
+  if (starterTotal === 0 && (!roster || !Object.keys(roster).length)) {
+    return defaultIndependentRosterSlots();
+  }
+  return out;
 }
 
 function defaultIndependentSettings(seed = {}) {
@@ -578,7 +623,7 @@ function defaultIndependentSettings(seed = {}) {
     ? (String(seed.scoringPreset || seed.preset || 'custom').trim() || 'custom')
     : 'custom';
   const rosterSlots = normalizeRosterSlots(seed.rosterSlots || {});
-  const derivedRounds = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K', 'BN']
+  const derivedRounds = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SFLEX', 'DST', 'K', 'BN']
     .reduce((sum, key) => sum + (Number(rosterSlots[key]) || 0), 0);
   const formatRaw = String(seed.leagueFormat || '').trim().toLowerCase();
   const hasKeepers = Object.prototype.hasOwnProperty.call(seed, 'keepersEnabled');
@@ -611,7 +656,7 @@ function defaultIndependentSettings(seed = {}) {
     ? seed.draftOrder.map((id) => String(id || '').trim()).filter(Boolean)
     : [];
   const roundsOverride = Number(seed.draftRounds);
-  const scoringSeedPreset = preset === 'custom' ? 'gridiron24-vanilla' : preset;
+  const scoringSeedPreset = preset === 'custom' ? 'ppr-6' : preset;
   const scoring = defaultIndependentScoring(
     seed.scoring && typeof seed.scoring === 'object' ? seed.scoring : {},
     scoringSeedPreset
@@ -705,7 +750,7 @@ function formatIndependentRulebookFromSettings(league) {
       title: 'II. Roster slots',
       body: [
         `QB ${slots.QB} · RB ${slots.RB} · WR ${slots.WR} · TE ${slots.TE}`,
-        `FLEX ${slots.FLEX} · DST ${slots.DST} · K ${slots.K} · BN ${slots.BN} · IR ${slots.IR ?? 0}${slots.TAXI ? ` · Taxi ${slots.TAXI}` : ''}`,
+        `FLEX ${slots.FLEX} · Superflex ${slots.SFLEX ?? 0} · DST ${slots.DST} · K ${slots.K} · BN ${slots.BN} · IR ${slots.IR ?? 0}${slots.TAXI ? ` · Taxi ${slots.TAXI}` : ''}`,
         slots.IR
           ? 'IR: only Out / IR / PUP / Doubtful (does not count against the active roster). IR does not score.'
           : 'IR slots: none.',
@@ -724,13 +769,14 @@ function formatIndependentRulebookFromSettings(league) {
       title: 'III. Scoring',
       body: [
         `Preset: ${s.scoringPreset || 'Custom'}.`,
-        `Passing (QB): ${scoring.passingYardsPerPoint || '—'} yards/point · TD ${scoring.passingTD ?? '—'} · INT ${scoring.interception ?? '—'}.`,
-        `Rushing: ${scoring.rushingYardsPerPoint || '—'} yards/point · TD ${scoring.rushingTD ?? '—'}.`,
-        `Receiving: ${scoring.receivingYardsPerPoint || '—'} yards/point · TD ${scoring.receivingTD ?? '—'} · Reception ${scoring.reception ?? '—'}.`,
-        `Fumble lost ${scoring.fumbleLost ?? '—'} · 2-pt conversion ${scoring.twoPointConversion ?? '—'}.`,
-        `Kicker: PAT ${scoring.patMade ?? '—'} · FG 0–39 ${scoring.fg0to39 ?? '—'} · 40–49 ${scoring.fg40to49 ?? '—'} · 50+ ${scoring.fg50plus ?? '—'} · Miss ${scoring.fgMissed ?? '—'}.`,
-        `DST: Sack ${scoring.dstSack ?? '—'} · INT ${scoring.dstInterception ?? '—'} · FR ${scoring.dstFumbleRecovery ?? '—'} · TD ${scoring.dstTouchdown ?? '—'} · Safety ${scoring.dstSafety ?? '—'} · Block ${scoring.dstBlockKick ?? '—'}.`,
-        `DST points allowed: 0=${scoring.dstPointsAllowed0 ?? '—'}, 1–6=${scoring.dstPointsAllowed1to6 ?? '—'}, 7–13=${scoring.dstPointsAllowed7to13 ?? '—'}, 14–20=${scoring.dstPointsAllowed14to20 ?? '—'}, 21–27=${scoring.dstPointsAllowed21to27 ?? '—'}, 28–34=${scoring.dstPointsAllowed28to34 ?? '—'}, 35+=${scoring.dstPointsAllowed35plus ?? '—'}.`
+        `Passing (QB): ${scoring.passingYardsPerPoint || '—'} yards/point · TD ${scoring.passingTD ?? '—'} · INT ${scoring.interception ?? '—'} · 2-pt ${scoring.passing2pt ?? scoring.twoPointConversion ?? '—'}.`,
+        `Rushing: ${scoring.rushingYardsPerPoint || '—'} yards/point · TD ${scoring.rushingTD ?? '—'} · 2-pt ${scoring.rushing2pt ?? scoring.twoPointConversion ?? '—'}.`,
+        `Receiving: ${scoring.receivingYardsPerPoint || '—'} yards/point · TD ${scoring.receivingTD ?? '—'} · Reception ${scoring.reception ?? '—'} · 2-pt ${scoring.receiving2pt ?? scoring.twoPointConversion ?? '—'}.`,
+        `Fumble lost ${scoring.fumbleLost ?? '—'} · ST TD ${scoring.specialTeamsTD ?? '—'}.`,
+        `Kicker: PAT ${scoring.patMade ?? '—'} · FG 0–39 ${scoring.fg0to39 ?? '—'} · 40–49 ${scoring.fg40to49 ?? '—'} · 50–59 ${scoring.fg50to59 ?? scoring.fg50plus ?? '—'} · 60+ ${scoring.fg60plus ?? scoring.fg50plus ?? '—'} · Miss ${scoring.fgMissed ?? '—'}.`,
+        `DST: Sack ${scoring.dstSack ?? '—'} · INT ${scoring.dstInterception ?? '—'} · FR ${scoring.dstFumbleRecovery ?? '—'} · TD ${scoring.dstTouchdown ?? '—'} · Safety ${scoring.dstSafety ?? '—'} · 1-pt safety ${scoring.dstOnePointSafety ?? '—'} · Block ${scoring.dstBlockKick ?? '—'}.`,
+        `DST points allowed: 0=${scoring.dstPointsAllowed0 ?? '—'}, 1–6=${scoring.dstPointsAllowed1to6 ?? '—'}, 7–13=${scoring.dstPointsAllowed7to13 ?? '—'}, 14–20=${scoring.dstPointsAllowed14to20 ?? '—'}, 21–27=${scoring.dstPointsAllowed21to27 ?? '—'}, 28–34=${scoring.dstPointsAllowed28to34 ?? '—'}, 35+=${scoring.dstPointsAllowed35plus ?? '—'}.`,
+        `DST yards allowed: ≤99=${scoring.dstYardsAllowed0to99 ?? 0}, 100–199=${scoring.dstYardsAllowed100to199 ?? 0}, 200–299=${scoring.dstYardsAllowed200to299 ?? 0}, 350–399=${scoring.dstYardsAllowed350to399 ?? 0}, 400–449=${scoring.dstYardsAllowed400to449 ?? 0}, 550+=${scoring.dstYardsAllowed550plus ?? 0}.`
       ].join('\n')
     },
     {
@@ -764,10 +810,13 @@ function formatIndependentRulebookFromSettings(league) {
           ? `League playoff bracket · ${structure.playoffTeamCount || '—'} teams.`
           : `Each conference runs its own playoff (${structure.playoffTeamsPerConference || '—'} teams per conference · ${structure.playoffTeamCount || '—'} total).`,
         `Playoff weeks: ${(structure.playoffWeeks || []).join(', ') || 'Not set'}.`,
+        `Seeding: ${structure.playoffSeedingRule === 'points' ? 'total points' : 'record (then points)'}.`,
+        `Reseed after each round: ${structure.playoffReseed === false ? 'off' : 'on'}.`,
+        structure.thirdPlaceEnabled ? 'Third-place game: on.' : null,
         championship.name
           ? `${championship.name}${championship.bowlWeek ? ` (week ${championship.bowlWeek})` : ''}${championship.titleWeek ? ` · conference title week ${championship.titleWeek}` : ''}.`
           : 'Championship name not set yet — the title game uses this league’s name.'
-      ].join('\n')
+      ].filter(Boolean).join('\n')
     },
     {
       id: 'settings-payouts',
@@ -901,6 +950,13 @@ function normalizeIndependentStructure(seed = {}, league = null) {
   }
   if (conferenceCount === 1) format = 'league-bracket';
 
+  const playoffReseed = src.playoffReseed !== false && src.playoffReseed !== '0';
+  const seedRaw = String(src.playoffSeedingRule || src.seedingRule || '').trim().toLowerCase();
+  const playoffSeedingRule = seedRaw === 'points' || seedRaw === 'total_points' || seedRaw === 'total_points_scored'
+    ? 'points'
+    : 'record';
+  const thirdPlaceEnabled = src.thirdPlaceEnabled === true || src.thirdPlaceEnabled === '1';
+
   if (!regularSeasonEndWeek) regularSeasonEndWeek = 13;
   if (!playoffWeeks.length && playoffTeamCount >= 2) {
     const perTree = format === 'league-bracket'
@@ -923,7 +979,10 @@ function normalizeIndependentStructure(seed = {}, league = null) {
     playoffTeamCount,
     playoffWeeks,
     regularSeasonEndWeek,
-    playoffFormat: format
+    playoffFormat: format,
+    playoffReseed,
+    playoffSeedingRule,
+    thirdPlaceEnabled
   };
 }
 
@@ -1076,8 +1135,8 @@ function vanillaIndependentTemplate() {
     ],
     championship: {
       name: '',
-      titleWeek: null,
-      bowlWeek: null,
+      titleWeek: 16,
+      bowlWeek: 17,
       format: 'super-bowl'
     },
     structure: {
@@ -1087,10 +1146,14 @@ function vanillaIndependentTemplate() {
       playoffTeamCount: 12,
       playoffWeeks: [14, 15, 16],
       regularSeasonEndWeek: 13,
-      playoffFormat: 'conference-brackets'
+      playoffFormat: 'conference-brackets',
+      playoffReseed: true,
+      playoffSeedingRule: 'record',
+      thirdPlaceEnabled: false
     },
     settings: defaultIndependentSettings({
-      scoringPreset: 'gridiron24-vanilla',
+      scoringPreset: 'ppr-6',
+      rosterSlots: defaultIndependentRosterSlots(),
       draftScope: 'conference',
       draftSecondsPerPick: 90,
       draftFillEmptySeats: 'cpu',
@@ -1714,6 +1777,7 @@ function listIndependentMembershipsForUser(userId) {
         myRoster: independentSectionPath(l, 'my-roster'),
         keepers: independentSectionPath(l, 'keepers'),
         settings: independentSectionPath(l, 'settings'),
+        scoring: independentSectionPath(l, 'scoring'),
         manage: independentSectionPath(l, 'manage'),
         draft: independentSectionPath(l, 'draft'),
         transactions: independentSectionPath(l, 'transactions'),
@@ -1794,7 +1858,7 @@ function completeIndependentLeagueSetup(leagueId, body = {}, actor = null, uploa
   const champName = String(body.championship?.name || '').trim();
 
   const slots = body.settings?.rosterSlots || {};
-  const starters = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K']
+  const starters = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SFLEX', 'DST', 'K']
     .reduce((sum, k) => sum + (Number(slots[k]) || 0), 0);
   if (starters < 1) {
     throw Object.assign(new Error('Set at least one starter roster slot'), { status: 400 });
@@ -2121,14 +2185,26 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
       ? { ...(league.settings?.rosterSlots || {}), ...patch.rosterSlots }
       : league.settings?.rosterSlots,
     scoring: (() => {
+      const receptionFor = (p) => (p === 'standard' ? 0 : p === 'half-ppr' ? 0.5 : 1);
       if (patch.scoring) {
-        return { ...(league.settings?.scoring || {}), ...patch.scoring };
+        const preset = String(patch.scoringPreset || league.settings?.scoringPreset || 'custom');
+        const seedPreset = preset === 'custom' ? 'ppr-6' : preset;
+        return defaultIndependentScoring(
+          { ...(league.settings?.scoring || {}), ...patch.scoring },
+          seedPreset
+        );
       }
-      // Preset-only change: refresh reception points to match PPR / half / standard.
+      // Preset-only: apply pass TD + PPR; keep kicker/DST customizations.
       if (patch.scoringPreset) {
         const p = String(patch.scoringPreset);
-        const reception = p === 'standard' ? 0 : p === 'half-ppr' ? 0.5 : 1;
-        return { ...(league.settings?.scoring || {}), reception };
+        if (p && p !== 'custom') {
+          return defaultIndependentScoring({
+            ...(league.settings?.scoring || {}),
+            passingTD: passingTdForPreset(p),
+            reception: receptionFor(p)
+          }, p);
+        }
+        return league.settings?.scoring;
       }
       return league.settings?.scoring;
     })()

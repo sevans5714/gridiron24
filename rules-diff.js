@@ -1,6 +1,7 @@
 /**
  * Server-side Detail vs Overtime / AAA rules comparison (mirrors public/js/conference-diff.js).
- * Diff rows keep `detail` / `overtime` keys: `detail` is the source of truth, `overtime` is the peer.
+ * Diff rows keep `detail` / `overtime` keys: `detail` is the Rule Book (or primary),
+ * `overtime` is the ESPN peer being checked (Overtime, Detail, or AAA).
  */
 function pointsNearlyEqual(a, b) {
   if (a == null && b == null) return true;

@@ -50,6 +50,7 @@
     const s = String(slot || '').toUpperCase();
     const pos = normPos(position);
     if (s === 'FLEX') return FLEX_ELIGIBLE.has(pos);
+    if (s === 'SFLEX' || s === 'SUPERFLEX') return ['QB', 'RB', 'WR', 'TE'].includes(pos);
     if (s === 'DST' || s === 'D/ST') return pos === 'D/ST';
     return s === pos;
   }

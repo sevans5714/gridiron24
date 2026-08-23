@@ -386,11 +386,6 @@ function buildPasswordResetEmail({ resetUrl, name, leagueName, baseUrl }) {
 }
 
 async function sendPasswordResetEmail({ to, resetUrl, name, baseUrl, leagueName }) {
-  try {
-    if (!require('./comms-settings-store').isEnabled('email.password_reset')) {
-      return { sent: false, method: 'disabled', skipped: true };
-    }
-  } catch { /* continue */ }
   const { configured, from } = mailConfig();
   const apiKey = process.env.RESEND_API_KEY || '';
   const content = buildPasswordResetEmail({
@@ -1053,7 +1048,16 @@ async function sendWeeklyWrapEmail({ to, week, season, title, body, stats, recip
   return { sent: false, method: 'log', previewHtml: content.html };
 }
 
-async function sendRulesSyncAlert({ to, matched, diffs, aaaSync, checkedAt, baseUrl }) {
+async function sendRulesSyncAlert({
+  to,
+  matched,
+  diffs,
+  detailSync,
+  overtimeSync,
+  aaaSync,
+  checkedAt,
+  baseUrl
+}) {
   try {
     if (!require('./comms-settings-store').isEnabled('email.rules_sync')) {
       return { sent: false, method: 'disabled', skipped: true };
@@ -1069,30 +1073,41 @@ async function sendRulesSyncAlert({ to, matched, diffs, aaaSync, checkedAt, base
   const aaaDiffs = aaaConfigured ? (aaaSync?.diffs || []) : [];
   const conferenceMatched = Boolean(matched);
   const allMatched = conferenceMatched && aaaMatched;
+  const peerLines = (peer, rows) => (rows || []).slice(0, 12).map((d) => (
+    `• [${peer}] [${d.kind}] ${d.label}: Rule Book=${d.detail} · ESPN=${d.overtime}`
+  ));
+  const detailRows = (diffs || []).filter((d) => d.peer === 'detail');
+  const overtimeRows = (diffs || []).filter((d) => d.peer === 'overtime');
+  const detailCount = detailSync?.diffCount ?? detailRows.length;
+  const overtimeCount = overtimeSync?.diffCount ?? overtimeRows.length;
 
   const subject = allMatched
-    ? 'GridIron 24 · Conferences & AAA scoring synced'
+    ? 'GridIron 24 · Detail, Overtime & AAA scoring synced'
     : !conferenceMatched
       ? `GridIron 24 · Rules out of sync (${(diffs || []).length} differences)`
       : `GridIron 24 · AAA scoring out of sync (${aaaDiffs.length} differences)`;
 
-  const lines = (diffs || []).slice(0, 20).map((d) => (
-    `• [OT] [${d.kind}] ${d.label}: Detail=${d.detail} · Overtime=${d.overtime}`
-  ));
+  const lines = [
+    ...peerLines('Detail', detailRows.length ? detailRows : (detailSync?.diffs || [])),
+    ...peerLines('Overtime', overtimeRows.length ? overtimeRows : (overtimeSync?.diffs || []))
+  ];
   const aaaLines = aaaDiffs.slice(0, 20).map((d) => (
-    `• [AAA] [${d.kind}] ${d.label}: Detail=${d.detail} · AAA=${d.overtime}`
+    `• [AAA] [${d.kind}] ${d.label}: Rule Book=${d.detail} · AAA=${d.overtime}`
   ));
 
   const textParts = [`Checked: ${when}`];
   if (conferenceMatched) {
-    textParts.push('Detail and Overtime match.');
+    textParts.push('Detail and Overtime both match the Rule Book.');
   } else {
-    textParts.push(`Detail and Overtime differ (${(diffs || []).length}):`, lines.join('\n'));
+    textParts.push(
+      `GridIron 24 ESPN leagues differ from the Rule Book (Detail ${detailCount}, Overtime ${overtimeCount}):`,
+      lines.join('\n')
+    );
   }
   if (!aaaConfigured) {
     textParts.push('AAA League ESPN ID is not configured.');
   } else if (aaaMatched) {
-    textParts.push('AAA scoring/lineup matches GridIron 24 (Detail).');
+    textParts.push('AAA scoring/lineup matches the GridIron 24 Rule Book.');
   } else {
     textParts.push(`AAA scoring/lineup differs (${aaaDiffs.length}):`, aaaLines.join('\n'));
   }
@@ -1100,21 +1115,21 @@ async function sendRulesSyncAlert({ to, matched, diffs, aaaSync, checkedAt, base
   const text = `${textParts.join('\n\n')}\n`;
 
   const htmlConference = conferenceMatched
-    ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#86efac;">Detail and Overtime match. Official scoring was refreshed when applicable.</p>`
-    : `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#fca5a5;">${(diffs || []).length} Detail ↔ Overtime difference(s).</p>
+    ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#86efac;">Detail and Overtime both match the Rule Book.</p>`
+    : `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#fca5a5;">${(diffs || []).length} Rule Book difference(s) — Detail ${detailCount}, Overtime ${overtimeCount}.</p>
        <ul style="margin:0 0 14px;padding-left:1.2rem;color:#c8c8c8;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;text-align:left;">${lines.map((l) => `<li>${escapeHtml(l.replace(/^• /, ''))}</li>`).join('')}</ul>`;
 
   const htmlAaa = !aaaConfigured
     ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;color:#9a9a9a;">AAA League ESPN ID is not configured.</p>`
     : aaaMatched
-      ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#86efac;">AAA scoring and lineup match Detail.</p>`
+      ? `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#86efac;">AAA scoring and lineup match the Rule Book.</p>`
       : `<p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#fca5a5;">${aaaDiffs.length} AAA scoring/lineup difference(s).</p>
          <ul style="margin:0 0 14px;padding-left:1.2rem;color:#c8c8c8;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;text-align:left;">${aaaLines.map((l) => `<li>${escapeHtml(l.replace(/^• /, ''))}</li>`).join('')}</ul>
          <p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:13px;"><a href="${escapeHtml(aaaToolsUrl)}" style="color:#fbbf24;">Fix AAA scoring in League Tools</a></p>`;
 
   const html = brandedEmailHtml({
     title: subject,
-    preheader: allMatched ? 'Conferences and AAA scoring match.' : 'Rules differ — open League Tools.',
+    preheader: allMatched ? 'Detail, Overtime, and AAA scoring match the Rule Book.' : 'Rules differ — open League Tools.',
     eyebrow: 'GridIron 24 · Rules Patrol',
     headline: allMatched ? 'Scoring synced' : 'Rules out of sync',
     bodyHtml:

@@ -52,49 +52,63 @@ window.GridIronDiff = (function () {
     return Math.abs(Number(a) - Number(b)) < 1e-9;
   }
 
-  function playoffRows(detail, overtime) {
+  function targetFromOfficial(official) {
+    if (!official) return PLAYOFF_TARGET;
+    return {
+      matchupPeriodCount: official.matchupPeriodCount ?? PLAYOFF_TARGET.matchupPeriodCount,
+      playoffTeamCount: official.playoffTeamCount ?? PLAYOFF_TARGET.playoffTeamCount,
+      playoffReseed: official.playoffReseed == null ? PLAYOFF_TARGET.playoffReseed : Boolean(official.playoffReseed),
+      playoffWeekCount: official.playoffWeekCount ?? PLAYOFF_TARGET.playoffWeekCount,
+      firstPlayoffWeek: official.firstPlayoffWeek ?? PLAYOFF_TARGET.firstPlayoffWeek,
+      finalScoringPeriod: official.finalScoringPeriod ?? PLAYOFF_TARGET.finalScoringPeriod,
+      playoffMatchupPeriodLength: official.playoffMatchupPeriodLength ?? 1
+    };
+  }
+
+  function playoffRows(detail, overtime, official) {
+    const t = targetFromOfficial(official);
     const fields = [
       {
         key: 'matchupPeriodCount',
         label: 'Regular-season weeks',
-        hint: 'Should be 13 so playoffs start Week 14',
-        target: PLAYOFF_TARGET.matchupPeriodCount
+        hint: 'Copied from Detail ESPN into the Rule Book until Week 1 lock',
+        target: t.matchupPeriodCount
       },
       {
         key: 'playoffTeamCount',
         label: 'Playoff teams',
-        hint: 'Top 6 per conference',
-        target: PLAYOFF_TARGET.playoffTeamCount
+        hint: 'Must match the Rule Book (live Detail ESPN)',
+        target: t.playoffTeamCount
       },
       {
         key: 'playoffReseed',
         label: 'Playoff reseed',
-        hint: 'On after Wild Card',
-        target: PLAYOFF_TARGET.playoffReseed
+        hint: 'Must match the Rule Book',
+        target: t.playoffReseed
       },
       {
         key: 'firstPlayoffWeek',
         label: 'First playoff week',
-        hint: 'Week 14 Wild Card',
-        target: PLAYOFF_TARGET.firstPlayoffWeek
+        hint: 'Must match the Rule Book',
+        target: t.firstPlayoffWeek
       },
       {
         key: 'playoffWeekCount',
         label: 'Playoff / Bowl weeks',
-        hint: '14–17 (3 conference + Bowl scoring week)',
-        target: PLAYOFF_TARGET.playoffWeekCount
+        hint: 'Must match the Rule Book',
+        target: t.playoffWeekCount
       },
       {
         key: 'finalScoringPeriod',
         label: 'Final scoring week',
-        hint: 'Week 17 GridIron Bowl',
-        target: PLAYOFF_TARGET.finalScoringPeriod
+        hint: 'GridIron Bowl / Mayor\'s Cup week',
+        target: t.finalScoringPeriod
       },
       {
         key: 'playoffMatchupPeriodLength',
         label: 'Playoff week length',
         hint: 'Usually 1 NFL week',
-        target: 1
+        target: t.playoffMatchupPeriodLength
       },
       {
         key: 'playoffSeedingRule',
@@ -127,7 +141,8 @@ window.GridIronDiff = (function () {
     });
   }
 
-  function findDiffs(detail, overtime, { includePlayoff = true } = {}) {
+  function findDiffs(detail, overtime, options = {}) {
+    const { includePlayoff = true, official } = options;
     const diffs = [];
     const settings = [
       ['Scoring type', 'playerRankType']
@@ -146,7 +161,7 @@ window.GridIronDiff = (function () {
     }
 
     if (includePlayoff) {
-      for (const row of playoffRows(detail, overtime)) {
+      for (const row of playoffRows(detail, overtime, official)) {
         if (!row.matched) {
           diffs.push({
             kind: 'Playoff',
@@ -215,7 +230,9 @@ window.GridIronDiff = (function () {
 
   function compare(detail, overtime, options = {}) {
     const bothOk = !!(detail?.ok && overtime?.ok);
-    const playoff = bothOk && options.includePlayoff !== false ? playoffRows(detail, overtime) : [];
+    const playoff = bothOk && options.includePlayoff !== false
+      ? playoffRows(detail, overtime, options.official)
+      : [];
     const diffs = bothOk ? findDiffs(detail, overtime, options) : [];
     const playoffMatched = playoff.length > 0 && playoff.every((r) => r.matched);
     const playoffOnTarget = playoff.length > 0 && playoff.every((r) => r.meetsTarget);
@@ -225,7 +242,7 @@ window.GridIronDiff = (function () {
       playoffMatched,
       playoffOnTarget,
       playoff,
-      playoffTarget: PLAYOFF_TARGET,
+      playoffTarget: targetFromOfficial(options.official),
       diffs,
       byKind: byKind(diffs)
     };
