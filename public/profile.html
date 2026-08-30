@@ -802,7 +802,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=183"></script>
+  <script src="/js/nav.js?v=187"></script>
   <script src="/js/team-icons.js?v=10"></script>
   <script>
     const escP = (v = '') => String(v)
@@ -811,12 +811,14 @@
 
     const ROLE_LABELS_P = {
       user: 'Member',
+      viewer: 'View only',
       conference_admin: 'Conference Admin',
       commissioner: 'Commissioner'
     };
 
     function accessLabel(user) {
-      if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner';
+      if (user?.readOnly || user?.role === 'viewer') return 'View only';
+      if (user?.siteOwner) return 'Owner';
       if (user?.leagueOwner) return 'League Owner';
       if (user?.role === 'conference_admin' && user.conference === 'aaa') return 'AAA League Admin';
       return ROLE_LABELS_P[user?.role] || user?.role || 'Member';
@@ -937,8 +939,15 @@
           blurb: 'You created this league — run settings, invites, and operations.'
         };
       }
-      if (user.siteOwner) {
-        return { href: '/owner.html', title: 'Owner Dashboard', blurb: 'You own this league — players, messages, ESPN, and season.' };
+      if (user.siteOwner || user.readOnly || user.role === 'viewer') {
+        const viewOnly = user.readOnly || user.role === 'viewer';
+        return {
+          href: '/owner.html',
+          title: 'Owner Dashboard',
+          blurb: viewOnly
+            ? 'Look at players, messages, ESPN, and season tools. Nothing can be changed.'
+            : 'You own this league — players, messages, ESPN, and season.'
+        };
       }
       const admin = user.role === 'conference_admin' && !user.siteOwner && !user.canSwitchLeagues && !user.leagueOwner;
       if (admin) {
@@ -952,7 +961,7 @@
       if (!home) return;
       const desk = staffDesk(user);
       const cards = [];
-      if (user?.siteOwner) {
+      if (user?.siteOwner || user?.readOnly || user?.role === 'viewer') {
         cards.push({ href: '/site.html', title: 'Site Tools', kicker: 'Platform', blurb: 'ESPN IDs, who’s signed on, leagues, and approvals.', tone: 'gold' });
       }
       if (desk) {
@@ -974,7 +983,7 @@
       const cross = document.getElementById('user-crosslinks');
       if (cross) {
         const links = [];
-        if (user?.siteOwner) links.push(`<a class="desk-crosslink" href="/site.html">Site Tools</a>`);
+        if (user?.siteOwner || user?.readOnly || user?.role === 'viewer') links.push(`<a class="desk-crosslink" href="/site.html">Site Tools</a>`);
         if (desk) links.push(`<a class="desk-crosslink" href="${escP(desk.href)}">${escP(desk.title)}</a>`);
         if (links.length) {
           cross.hidden = false;

@@ -560,7 +560,7 @@ function requireSiteOwner(req, res) {
     sendJson(res, 401, { ok: false, error: 'Authentication required' });
     return null;
   }
-  if (!users.isSiteOwner(user)) {
+  if (!users.isSiteOwner(user) && !users.isReadOnly(user)) {
     sendJson(res, 403, { ok: false, error: 'Site owner access required' });
     return null;
   }
@@ -570,6 +570,7 @@ function requireSiteOwner(req, res) {
 function siteHqRoleLabel(u) {
   if (!u) return 'Member';
   if (users.isSiteOwner(u)) return 'Site owner';
+  if (users.isReadOnly(u)) return 'View only';
   if (u.leagueOwner) return 'League owner';
   if (u.role === 'commissioner') return 'Commissioner';
   if (u.role === 'conference_admin') {
@@ -641,8 +642,14 @@ function buildSiteHqPayload(viewer) {
       loginName: u.loginName,
       email: u.email || null,
       role: siteHqRoleLabel(u),
+      roleKey: u.role || 'user',
+      conference: u.conference || null,
+      hqConference: u.hqConference || null,
+      membershipLeague: u.membershipLeague || null,
       league: siteHqLeagueLabel(u),
       loungeOnly: Boolean(u.loungeOnly),
+      loungeToken: Boolean(u.loungeToken),
+      duesPaid: Boolean(u.duesPaid),
       leagueOwner: Boolean(u.leagueOwner),
       siteOwner: users.isSiteOwner(u),
       approved: u.approved !== false,
@@ -773,7 +780,7 @@ function requireStaff(req, res) {
     sendJson(res, 401, { ok: false, error: 'Authentication required' });
     return null;
   }
-  if (!users.isStaff(user)) {
+  if (!users.isStaff(user) && !users.isReadOnly(user)) {
     sendJson(res, 403, { ok: false, error: 'Commissioner or conference admin access required' });
     return null;
   }
@@ -795,7 +802,7 @@ function requireCommissioner(req, res) {
 
 /** Detail / Overtime / AAA admin scope. Site owner and overall commissioner see everyone. */
 function staffConferenceScope(user) {
-  if (!user || users.isSiteOwner(user) || users.isCommissioner(user)) return null;
+  if (!user || users.isSiteOwner(user) || users.isCommissioner(user) || users.isReadOnly(user)) return null;
   if (String(user.role || '') !== 'conference_admin') return null;
   return String(user.conference || '').trim().toLowerCase() || null;
 }
@@ -941,11 +948,15 @@ function canAccessCommissionerPage(user) {
 }
 
 function canAccessGi24OwnerTools(user) {
-  return Boolean(user && users.isSiteOwner(user));
+  return Boolean(user && (users.isSiteOwner(user) || users.isReadOnly(user)));
 }
 
 function canAccessSiteTools(user) {
-  return Boolean(user && users.isSiteOwner(user));
+  return Boolean(user && (users.isSiteOwner(user) || users.isReadOnly(user)));
+}
+
+function canInspectAsOwner(user) {
+  return users.isSiteOwner(user) || users.isReadOnly(user);
 }
 
 function isIndependentLeagueOwner(user) {
@@ -4614,7 +4625,7 @@ function homePathForUser(user, req = null) {
       }
     } catch { /* ignore */ }
   }
-  if (users.isSiteOwner(user)) {
+  if (users.isReadOnly(user) || users.isSiteOwner(user)) {
     const preferred = getPreferredLeague(req) || 'gridiron';
     return preferred === 'aaa' ? '/aaa.html' : '/home.html';
   }
@@ -4661,7 +4672,7 @@ function parseIndependentHqPath(pathname) {
 function canViewIndependentLeague(user, league) {
   if (!league || league.platform !== 'independent') return false;
   if (!user) return false;
-  if (users.isSiteOwner(user)) return true;
+  if (canInspectAsOwner(user)) return true;
   if (league.status === 'archived' || league.status === 'rejected') return false;
   if (league.ownerUserId && league.ownerUserId === user.id) return true;
   if (user.leagueId && user.leagueId === league.id) return true;
@@ -5019,7 +5030,7 @@ function syncPendingInboxDigests(user, { force = false } = {}) {
 function menuLeaguesForUser(user, req = null) {
   if (!user || users.isLoungeOnly(user)) return [];
   const current = leagueScopeForUser(user, req);
-  const siteOwner = users.isSiteOwner(user);
+  const siteOwner = users.isSiteOwner(user) || users.isReadOnly(user);
   const independentOnly = Boolean(user.leagueOwner && user.leagueId && !siteOwner);
   const items = [];
 
@@ -5090,7 +5101,7 @@ function menuLeaguesForUser(user, req = null) {
  * Members: claim / conference_admin assignment.
  */
 function leagueScopeForUser(user, req = null) {
-  const canSwitch = users.isSiteOwner(user);
+  const canSwitch = users.isSiteOwner(user) || users.isReadOnly(user);
   if (!user) {
     return {
       scope: 'gridiron',
@@ -6268,6 +6279,30 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    const mutatingApi = pathname.startsWith('/api/')
+      && !pathname.startsWith('/api/cron/')
+      && !['GET', 'HEAD', 'OPTIONS'].includes(String(req.method || '').toUpperCase());
+    if (mutatingApi) {
+      const sessionUser = getSessionUser(req);
+      if (sessionUser && users.isReadOnly(sessionUser)) {
+        const allowed = pathname === '/api/login'
+          || pathname === '/api/logout'
+          || pathname === '/api/presence'
+          || pathname === '/api/preferred-league'
+          || pathname === '/api/preferences'
+          || pathname === '/api/change-password'
+          || pathname === '/api/inbox/read-all'
+          || (pathname.startsWith('/api/inbox/') && pathname.endsWith('/read'));
+        if (!allowed) {
+          return sendJson(res, 403, {
+            ok: false,
+            error: 'This account is view only. Nothing can be changed.',
+            readOnly: true
+          });
+        }
+      }
+    }
+
     if (pathname === '/api/auth') {
       const user = getSessionUser(req);
       if (user) {
@@ -6290,7 +6325,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/preferred-league' && req.method === 'POST') {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      if (!users.isSiteOwner(user)) {
+      if (!canInspectAsOwner(user)) {
         return sendJson(res, 403, { ok: false, error: 'Only the site owner can switch leagues' });
       }
       let body = {};
@@ -6650,7 +6685,7 @@ const server = http.createServer(async (req, res) => {
     if (GRIDIRON_ONLY_PAGES.has(pathname)) {
       const user = getSessionUser(req);
       // Site owner may browse either league; members stay scoped to their assignment.
-      if (user && !users.isSiteOwner(user) && leagueScopeForUser(user, req).scope === 'aaa') {
+      if (user && !canInspectAsOwner(user) && leagueScopeForUser(user, req).scope === 'aaa') {
         res.writeHead(302, {
           Location: '/aaa.html',
           'Cache-Control': 'no-store, no-cache, must-revalidate',
@@ -8123,7 +8158,7 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/scoreboard' || pathname === '/scoreboard.html') {
       const user = getSessionUser(req);
-      if (user && !users.isSiteOwner(user) && leagueScopeForUser(user, req).scope === 'aaa') {
+      if (user && !canInspectAsOwner(user) && leagueScopeForUser(user, req).scope === 'aaa') {
         res.writeHead(302, {
           Location: '/aaa-scoreboard',
           'Cache-Control': 'no-store, no-cache, must-revalidate',
@@ -8136,7 +8171,7 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/aaa-scoreboard' || pathname === '/aaa-scoreboard.html') {
       const user = getSessionUser(req);
-      if (user && !users.isSiteOwner(user) && leagueScopeForUser(user, req).scope !== 'aaa') {
+      if (user && !canInspectAsOwner(user) && leagueScopeForUser(user, req).scope !== 'aaa') {
         res.writeHead(302, {
           Location: '/scoreboard',
           'Cache-Control': 'no-store, no-cache, must-revalidate',
@@ -9139,6 +9174,82 @@ const server = http.createServer(async (req, res) => {
       const owner = requireSiteOwner(req, res);
       if (!owner) return;
       return sendJson(res, 200, buildSiteHqPayload(owner));
+    }
+
+    if (pathname === '/api/site-hq/users' && req.method === 'POST') {
+      const owner = requireSiteOwner(req, res);
+      if (!owner) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const accessRaw = String(body.access || body.role || 'user').trim();
+        let role = 'user';
+        let roleConference = null;
+        if (accessRaw.startsWith('conference_admin:')) {
+          role = 'conference_admin';
+          roleConference = accessRaw.slice('conference_admin:'.length);
+        } else if (accessRaw === 'viewer' || accessRaw === 'view_only' || accessRaw === 'readonly') {
+          role = 'viewer';
+        } else if (accessRaw === 'commissioner' || accessRaw === 'conference_admin') {
+          role = accessRaw;
+          roleConference = String(body.roleConference || body.adminConference || '').trim() || null;
+        }
+        const membership = role === 'viewer'
+          ? 'gridiron'
+          : users.normalizeMembershipKind(body.membership || body.kind || 'gridiron');
+        const social = membership === 'social';
+        if (social && role !== 'user') {
+          throw Object.assign(new Error('Staff access cannot be a social (lounge-only) account'), { status: 400 });
+        }
+        let user = users.createUser({
+          name: body.name,
+          email: body.email,
+          loginName: body.loginName,
+          password: body.password,
+          role,
+          conference: roleConference,
+          approved: true,
+          loungeMember: true,
+          loungeOnly: social
+        });
+        try {
+          if (!social) {
+            const patch = { league: membership === 'aaa' ? 'aaa' : 'gridiron' };
+            user = users.setLeagueMembership(user.id, patch);
+            const conference = String(body.conference || body.hqConference || '').trim();
+            if (membership === 'gridiron' && conference && role === 'user') {
+              user = users.setLeagueMembership(user.id, { hqConference: conference });
+            }
+          }
+          if (role !== 'viewer' && (body.loungeToken === true || body.loungeToken === '1')) {
+            const token = users.setLoungeToken(user.id, true, owner.id);
+            user = token.user || user;
+          }
+          if (body.duesPaid === true && !social) {
+            user = users.setLeagueMembership(user.id, { duesPaid: true });
+          }
+        } catch (assignErr) {
+          try { users.deleteUser(user.id, owner.id); } catch { /* keep original error */ }
+          throw assignErr;
+        }
+        deliverWelcomeInboxIfNeeded(user);
+        return sendJson(res, 201, {
+          ok: true,
+          user,
+          membershipKind: users.membershipKindOf(user),
+          hq: buildSiteHqPayload(owner),
+          message: `${user.loginName} can sign in now.`
+        });
+      } catch (err) {
+        return sendJson(res, err.status || 400, {
+          ok: false,
+          error: err.message || 'Could not create account'
+        });
+      }
     }
 
     {
@@ -11180,7 +11291,7 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         proposal: ruleProposals.publicProposal(item, {
           user,
-          includeVotes: users.isSiteOwner(user)
+          includeVotes: canInspectAsOwner(user)
         }),
         isOwner: users.isSiteOwner(user),
         isStaff: isStaffUser
@@ -11372,7 +11483,7 @@ const server = http.createServer(async (req, res) => {
       const user = requireStaff(req, res);
       if (!user) return;
       const bindings = listEspnLeagueBindings();
-      if (!users.isSiteOwner(user)) {
+      if (!canInspectAsOwner(user)) {
         if (user.role === 'conference_admin' && user.conference) {
           const conf = String(user.conference).toLowerCase();
           bindings.leagues = (bindings.leagues || []).filter(

@@ -1795,7 +1795,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=185"></script>
+  <script src="/js/nav.js?v=187"></script>
   <script src="/js/conference-diff.js?v=7"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -2128,6 +2128,7 @@
 
     const ROLE_LABELS = {
       user: 'User',
+      viewer: 'View only',
       conference_admin: 'Conference Admin',
       commissioner: 'Commissioner'
     };
@@ -2426,11 +2427,12 @@
     }
 
     function isPlatformAdmin(user) {
-      return Boolean(user?.siteOwner);
+      return Boolean(user?.siteOwner || user?.readOnly || user?.role === 'viewer');
     }
 
     function roleDisplayLabel(user) {
-      if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner';
+      if (user?.readOnly || user?.role === 'viewer') return 'View only';
+      if (user?.siteOwner) return 'Owner';
       if (user?.leagueOwner) return 'League Owner';
       if (user?.role === 'commissioner') return 'Overall Commissioner';
       if (user?.role === 'conference_admin') {
@@ -2945,6 +2947,7 @@
                   : `<td>
                   <select class="role-select" data-user-id="${esc(u.id)}" ${u.loungeOnly ? 'disabled' : ''}>
                     <option value="user" ${roleValue(u) === 'user' ? 'selected' : ''}>User</option>
+                    <option value="viewer" ${roleValue(u) === 'viewer' ? 'selected' : ''}>View only</option>
                     ${conferences.map((c) => `
                       <option value="conference_admin:${esc(c.key)}" ${roleValue(u) === `conference_admin:${c.key}` ? 'selected' : ''}>
                         ${esc(adminAccessLabel(c))}
@@ -5094,6 +5097,7 @@
     }
 
     function toolsDeskLabel(user) {
+      if (user?.readOnly || user?.role === 'viewer') return 'View only';
       return toolsDeskKind(user) === 'admin' ? 'Conference Admin Dashboard' : 'Owner Dashboard';
     }
 
@@ -5167,7 +5171,7 @@
       const admin = toolsDeskKind(user) === 'admin';
       const pending = Number(window.__giPendingAccountCount || 0) + Number(window.__giPendingLeagueCount || 0);
       const cards = [];
-      if (user?.siteOwner) {
+      if (user?.siteOwner || user?.readOnly || user?.role === 'viewer') {
         cards.push({ href: '/site.html', title: 'Site Tools', kicker: 'Platform', blurb: 'ESPN IDs, who’s signed on, leagues, and approvals.', tone: 'gold', badge: pending });
       }
       cards.push(...(admin
@@ -5353,14 +5357,19 @@
       const scopeEl = document.getElementById('tools-role-scope');
       const sideNav = document.getElementById('tools-side-nav');
       if (titleEl) titleEl.textContent = desk;
-      if (eyebrowEl) eyebrowEl.textContent = admin ? 'Conference Admin' : 'Owner';
+      if (eyebrowEl) eyebrowEl.textContent = user?.readOnly || user?.role === 'viewer'
+        ? 'View only'
+        : (admin ? 'Conference Admin' : 'Owner');
       if (document.title) document.title = `${desk} · GridIron 24`;
       if (sideNav) sideNav.setAttribute('aria-label', `${desk} pages`);
       if (roleEl) roleEl.textContent = roleDisplayLabel(user);
       const siteJump = document.getElementById('jump-site-hq');
-      if (siteJump) siteJump.hidden = !user?.siteOwner;
+      if (siteJump) siteJump.hidden = !(user?.siteOwner || user?.readOnly || user?.role === 'viewer');
       if (scopeEl) {
-        scopeEl.textContent = admin
+        const viewOnly = user?.readOnly || user?.role === 'viewer';
+        scopeEl.textContent = viewOnly
+          ? 'Look around GridIron 24, AAA, the lounge, and tools. Nothing can be changed.'
+          : admin
           ? 'Invite, accounts, broadcast, and ESPN for your conference.'
           : 'Palette of league tools. Your User Dashboard is separate — your team, account, and avatar.';
       }
@@ -5420,7 +5429,7 @@
         window.location.replace(scope.ownerDashboardPath || scope.settingsPath || scope.homePath || '/profile.html');
         return;
       }
-      if (!user?.siteOwner && user?.role !== 'conference_admin') {
+      if (!user?.siteOwner && user?.role !== 'conference_admin' && user?.role !== 'viewer' && !user?.readOnly) {
         window.location.replace('/profile.html');
         return;
       }

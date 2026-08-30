@@ -19,6 +19,63 @@
     return isStandalonePwa;
   }
 
+  function isViewOnlyUser(user) {
+    return Boolean(user?.readOnly || user?.role === 'viewer');
+  }
+
+  function applyViewOnlyChrome(user) {
+    const on = isViewOnlyUser(user);
+    document.body.classList.toggle('is-view-only', on);
+    if (!document.getElementById('view-only-style')) {
+      const style = document.createElement('style');
+      style.id = 'view-only-style';
+      style.textContent = `
+        .view-only-banner {
+          position: sticky;
+          top: 0;
+          z-index: 80;
+          margin: 0;
+          padding: 0.45rem 1rem;
+          text-align: center;
+          font-family: var(--display, inherit);
+          font-size: 0.82rem;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          color: #1a1208;
+          background: #e8b84a;
+          border-bottom: 1px solid rgba(0,0,0,0.12);
+        }
+        body.is-view-only .page-main button,
+        body.is-view-only .page-main input,
+        body.is-view-only .page-main select,
+        body.is-view-only .page-main textarea,
+        body.is-view-only main button,
+        body.is-view-only main input,
+        body.is-view-only main select,
+        body.is-view-only main textarea {
+          pointer-events: none;
+          opacity: 0.72;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    let banner = document.getElementById('view-only-banner');
+    if (!on) {
+      banner?.remove();
+      return;
+    }
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'view-only-banner';
+      banner.className = 'view-only-banner';
+      banner.setAttribute('role', 'status');
+      banner.textContent = 'View only — you can look at GridIron 24. Nothing can be changed.';
+      const header = document.querySelector('header, .site-header, .topbar');
+      if (header?.parentNode) header.parentNode.insertBefore(banner, header.nextSibling);
+      else document.body.prepend(banner);
+    }
+  }
+
   const HOME_DEFAULT = '/home.html';
   let homePath = HOME_DEFAULT;
   let leagueScope = { scope: 'gridiron', conferenceKey: null, homePath: HOME_DEFAULT, label: 'GridIron 24' };
@@ -573,7 +630,8 @@
   }
 
   function roleLabel(role, conference, user = null) {
-    if (user?.siteOwner || user?.canSwitchLeagues) return 'Owner';
+    if (user?.readOnly || role === 'viewer') return 'View only';
+    if (user?.siteOwner) return 'Owner';
     if (user?.leagueOwner) return 'League Owner';
     if (user?.loungeOnly) return 'Social';
     if (role === 'commissioner') return 'Commissioner';
@@ -589,7 +647,7 @@
     if (user.leagueOwner && leagueScope?.platform === 'independent' && !user.siteOwner) {
       return leagueScope.ownerDashboardPath || leagueScope.settingsPath || leagueScope.homePath || '/my-league.html';
     }
-    if (user.siteOwner) return '/owner.html';
+    if (user.siteOwner || user.readOnly || user.role === 'viewer') return '/owner.html';
     if (user.role === 'conference_admin') return '/admin.html';
     return '/profile.html';
   }
@@ -598,14 +656,14 @@
     if (!user || user.loungeOnly) return '';
     const independentOwner = Boolean(user.leagueOwner && leagueScope?.platform === 'independent' && !user.siteOwner);
     const items = [];
-    if (user.siteOwner) {
+    if (user.siteOwner || user.readOnly || user.role === 'viewer') {
       items.push(`<a class="user-menu-action" href="/owner.html" role="menuitem">Owner tools</a>`);
     } else if (independentOwner) {
       items.push(`<a class="user-menu-action" href="${esc(ownerDeskHref(user))}" role="menuitem">Owner tools</a>`);
     } else if (user.role === 'conference_admin') {
       items.push(`<a class="user-menu-action" href="/admin.html" role="menuitem">Admin tools</a>`);
     }
-    if (user.siteOwner) {
+    if (user.siteOwner || user.readOnly || user.role === 'viewer') {
       items.push(`<a class="user-menu-action" href="/site.html" role="menuitem">Site Tools</a>`);
     }
     items.push(`<a class="user-menu-action" href="/profile.html" role="menuitem">User Dashboard</a>`);
@@ -1071,6 +1129,7 @@
     try {
       const data = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json());
       const user = data.authenticated ? data.user : null;
+      applyViewOnlyChrome(user);
       if (data.homePath) homePath = data.homePath;
       if (data.leagueScope) applyLeagueScope(data.leagueScope);
       // Social accounts: Members Lounge only — bounce anything else, including /app.
@@ -1079,7 +1138,7 @@
         const path = String(location.pathname || '');
         const onLounge = path === '/members.html' || path === '/members';
         const onRestricted = path === '/restricted.html';
-        const loungeOk = Boolean(data.loungeAccess || user.siteOwner);
+        const loungeOk = Boolean(data.loungeAccess || user.siteOwner || user.readOnly);
         const loungeHome = loungeOk ? '/members.html' : '/restricted.html?area=lounge';
         if (!onLounge && !onRestricted) {
           location.replace(loungeHome);
@@ -1092,7 +1151,7 @@
       } else {
         document.body.classList.remove('is-social');
         // Full members in installed PWA use the /app shell (unless desktop mode is on).
-        if (preferAppShell()) {
+        if (preferAppShell() && !isViewOnlyUser(user)) {
           const path = String(location.pathname || '');
           const authGate = path === '/enter' || path === '/enter.html'
             || path === '/login.html' || path === '/register' || path === '/register.html'

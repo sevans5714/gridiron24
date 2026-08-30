@@ -168,6 +168,54 @@
       max-width: 22rem;
       margin: 0 0 0.85rem;
     }
+    .hq-create {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+      gap: 0.65rem 0.75rem;
+      align-items: end;
+      margin: 0 0 1.15rem;
+      padding: 0.9rem 1rem 1rem;
+      border: 1px solid var(--line);
+    }
+    .hq-create h3 {
+      grid-column: 1 / -1;
+      margin: 0;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .hq-create p {
+      grid-column: 1 / -1;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .hq-create label {
+      display: block;
+      margin: 0 0 0.28rem;
+      font-size: 0.76rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hq-create label.hq-create-check {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 0;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.88rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .data-table .field {
+      min-width: 8.2rem;
+      max-width: 12rem;
+      padding: 0.35rem 0.45rem;
+      font-size: 0.8rem;
+    }
     .hq-copy-link {
       margin: 0.55rem 0 0;
       word-break: break-all;
@@ -191,7 +239,7 @@
   <section class="page-hero shell">
     <p class="eyebrow">Platform</p>
     <h1>Site Tools</h1>
-    <p>Settings for this website: ESPN league IDs, who’s on, accounts, league management, and join requests. GridIron 24 league ops (news, invites, calendar) stay on Owner Tools.</p>
+    <p>Settings for this website: ESPN league IDs, who’s on, accounts, league management, and join requests. GridIron 24 league ops (news, invites, calendar) stay on Owner Tools. Create a <strong>View only</strong> account when someone should see everything and change nothing.</p>
   </section>
 
   <main class="page-main shell">
@@ -201,6 +249,7 @@
       <a href="#espn">ESPN</a>
       <a href="#online">Signed on</a>
       <a href="#accounts">Accounts</a>
+      <a href="#create-account">Create account</a>
       <a href="#leagues">League management</a>
       <a href="#approvals">Approvals</a>
       <a href="#server">Server</a>
@@ -231,7 +280,56 @@
 
     <section class="hq-section" id="accounts">
       <h2>Accounts</h2>
-      <p class="hq-help">Approved logins. Delete wipes the account. Send reset emails a recovery link — copy it here if mail isn’t set. Set a password when they have no email. You cannot delete the site owner. Pending join requests stay under Approvals. Members can also use <a href="/forgot">Forgot password</a> on sign-in.</p>
+      <p class="hq-help">Approved logins. Access, membership, conference, and lounge pass match Owner Tools → Members. Delete wipes the account. Send reset emails a recovery link — copy it here if mail isn’t set. Set a password when they have no email. You cannot delete the site owner. Pending join requests stay under Approvals.</p>
+      <form class="hq-create" id="hq-create-form">
+        <h3 id="create-account">Create account</h3>
+        <p>Make a login here — no invite, no public register, no approval queue. They can sign in as soon as you create it. Set access the same way as other members, then tell them the login and password.</p>
+        <div>
+          <label for="hq-create-name">Name</label>
+          <input class="field" id="hq-create-name" name="name" autocomplete="off" required />
+        </div>
+        <div>
+          <label for="hq-create-login">Login</label>
+          <input class="field" id="hq-create-login" name="loginName" autocomplete="off" spellcheck="false" required />
+        </div>
+        <div>
+          <label for="hq-create-email">Email</label>
+          <input class="field" id="hq-create-email" name="email" type="email" autocomplete="off" required />
+        </div>
+        <div>
+          <label for="hq-create-password">Password</label>
+          <input class="field" id="hq-create-password" name="password" type="password" autocomplete="new-password" minlength="6" required />
+        </div>
+        <div>
+          <label for="hq-create-access">Access</label>
+          <select class="field" id="hq-create-access" name="access"></select>
+        </div>
+        <div>
+          <label for="hq-create-membership">Membership</label>
+          <select class="field" id="hq-create-membership" name="membership">
+            <option value="gridiron">GridIron 24</option>
+            <option value="aaa">AAA League</option>
+            <option value="social">Social Membership</option>
+          </select>
+        </div>
+        <div id="hq-create-conference-wrap">
+          <label for="hq-create-conference">Conference</label>
+          <select class="field" id="hq-create-conference" name="conference">
+            <option value="">Unassigned</option>
+            <option value="detail">Detail</option>
+            <option value="overtime">Overtime</option>
+          </select>
+        </div>
+        <div>
+          <label class="hq-create-check" for="hq-create-lounge">
+            <input type="checkbox" id="hq-create-lounge" name="loungeToken" />
+            Lounge pass
+          </label>
+        </div>
+        <div>
+          <button type="submit" class="btn" id="hq-create-submit">Create account</button>
+        </div>
+      </form>
       <input class="field hq-account-search" id="hq-account-search" type="search" placeholder="Search name, login, email…" autocomplete="off" />
       <div id="hq-accounts-body"></div>
     </section>
@@ -255,7 +353,7 @@
     </section>
   </main>
 
-  <script src="/js/nav.js?v=183"></script>
+  <script src="/js/nav.js?v=187"></script>
   <script>
     (function () {
       const HASH_ALIAS = {
@@ -263,6 +361,7 @@
         health: 'espn',
         members: 'accounts',
         users: 'accounts',
+        create: 'create-account',
         registrations: 'approvals',
         'apis': 'server'
       };
@@ -532,8 +631,55 @@
 
       function accountMatches(u, q) {
         if (!q) return true;
-        const hay = [u.name, u.loginName, u.email, u.role, u.league].map((v) => String(v || '').toLowerCase()).join(' ');
+        const hay = [u.name, u.loginName, u.email, u.role, u.roleKey, u.league, u.membershipLeague].map((v) => String(v || '').toLowerCase()).join(' ');
         return hay.includes(q);
+      }
+
+      function platformConferences() {
+        const rows = snapshot?.leagues?.platform?.conferences || [];
+        if (rows.length) return rows;
+        return [
+          { key: 'detail', name: 'Detail', kind: 'conference' },
+          { key: 'overtime', name: 'Overtime', kind: 'conference' },
+          { key: 'aaa', name: 'AAA', kind: 'affiliate' }
+        ];
+      }
+
+      function adminAccessLabel(c) {
+        if (!c) return 'Admin';
+        if (c.kind === 'affiliate' || c.key === 'aaa') return `${c.name} League Admin`;
+        return `${c.name} Admin`;
+      }
+
+      function accessValue(u) {
+        if (u?.roleKey === 'conference_admin') return `conference_admin:${u.conference || ''}`;
+        return u?.roleKey || 'user';
+      }
+
+      function membershipValue(u) {
+        if (u?.loungeOnly) return 'social';
+        if (u?.membershipLeague === 'aaa') return 'aaa';
+        if (u?.membershipLeague === 'gridiron') return 'gridiron';
+        return '';
+      }
+
+      function accessOptionsHtml(selected) {
+        const sel = String(selected || 'user');
+        return [
+          `<option value="user"${sel === 'user' ? ' selected' : ''}>User</option>`,
+          `<option value="viewer"${sel === 'viewer' ? ' selected' : ''}>View only</option>`,
+          ...platformConferences().map((c) => {
+            const val = `conference_admin:${c.key}`;
+            return `<option value="${esc(val)}"${sel === val ? ' selected' : ''}>${esc(adminAccessLabel(c))}</option>`;
+          }),
+          `<option value="commissioner"${sel === 'commissioner' ? ' selected' : ''}>Overall Commissioner</option>`
+        ].join('');
+      }
+
+      function fillCreateAccessOptions() {
+        const sel = document.getElementById('hq-create-access');
+        if (!sel) return;
+        sel.innerHTML = accessOptionsHtml(sel.value || 'user');
       }
 
       function accountActions(u) {
@@ -547,32 +693,132 @@
         return `<div class="hq-league-actions">${bits.join('')}</div>`;
       }
 
+      function syncCreatePermissionFields() {
+        const access = document.getElementById('hq-create-access')?.value || 'user';
+        const membershipEl = document.getElementById('hq-create-membership');
+        const wrap = document.getElementById('hq-create-conference-wrap');
+        const staff = access !== 'user';
+        if (membershipEl && staff && membershipEl.value === 'social') {
+          membershipEl.value = 'gridiron';
+        }
+        if (membershipEl) {
+          const socialOpt = membershipEl.querySelector('option[value="social"]');
+          if (socialOpt) socialOpt.disabled = staff;
+        }
+        const membership = membershipEl?.value || 'gridiron';
+        if (wrap) wrap.hidden = membership !== 'gridiron' || staff;
+      }
+
+      async function createAccount(ev) {
+        ev.preventDefault();
+        const name = document.getElementById('hq-create-name')?.value.trim();
+        const loginName = document.getElementById('hq-create-login')?.value.trim();
+        const email = document.getElementById('hq-create-email')?.value.trim();
+        const password = document.getElementById('hq-create-password')?.value;
+        const access = document.getElementById('hq-create-access')?.value || 'user';
+        const membership = document.getElementById('hq-create-membership')?.value || 'gridiron';
+        const conference = membership === 'gridiron' && access === 'user'
+          ? (document.getElementById('hq-create-conference')?.value || '')
+          : '';
+        const loungeToken = Boolean(document.getElementById('hq-create-lounge')?.checked);
+        const submit = document.getElementById('hq-create-submit');
+        showMsg('hq-msg', '');
+        showMsg('hq-accounts-msg', '');
+        if (submit) submit.disabled = true;
+        try {
+          const res = await fetch('/api/site-hq/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, loginName, email, password, access, membership, conference, loungeToken })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not create account');
+          document.getElementById('hq-create-form')?.reset();
+          fillCreateAccessOptions();
+          syncCreatePermissionFields();
+          accountNote = { text: data.message || `Created ${data.user?.loginName}. They can sign in now.`, ok: true, resetUrl: '' };
+          showMsg('hq-msg', accountNote.text, true);
+          await load({ skipEspn: true });
+        } catch (err) {
+          showMsg('hq-msg', err.message || 'Could not create account', false);
+          showMsg('hq-accounts-msg', err.message || 'Could not create account', false);
+        } finally {
+          if (submit) submit.disabled = false;
+        }
+      }
+
+      function permissionCell(u) {
+        if (u.siteOwner) {
+          return `<td colspan="4"><span class="muted-sm">Site owner</span></td>`;
+        }
+        const access = accessValue(u);
+        const membership = membershipValue(u);
+        const lockedConf = u.roleKey === 'conference_admin'
+          && (u.conference === 'detail' || u.conference === 'overtime');
+        const confNow = u.hqConference || (lockedConf ? u.conference : '') || '';
+        const showConf = membership === 'gridiron';
+        return `
+          <td>
+            <select class="field" data-perm="access" data-account-id="${esc(u.id)}" ${u.loungeOnly ? 'disabled' : ''}>
+              ${accessOptionsHtml(access)}
+            </select>
+          </td>
+          <td>
+            <select class="field" data-perm="membership" data-account-id="${esc(u.id)}">
+              <option value="gridiron"${membership === 'gridiron' ? ' selected' : ''}>GridIron 24</option>
+              <option value="aaa"${membership === 'aaa' ? ' selected' : ''}>AAA League</option>
+              <option value="social"${membership === 'social' ? ' selected' : ''}>Social Membership</option>
+            </select>
+          </td>
+          <td>
+            ${showConf
+              ? `<select class="field" data-perm="conference" data-account-id="${esc(u.id)}" ${lockedConf ? 'disabled' : ''}>
+                  <option value=""${!confNow ? ' selected' : ''}>Unassigned</option>
+                  <option value="detail"${confNow === 'detail' ? ' selected' : ''}>Detail</option>
+                  <option value="overtime"${confNow === 'overtime' ? ' selected' : ''}>Overtime</option>
+                </select>`
+              : `<span class="muted-sm">—</span>`}
+          </td>
+          <td>
+            <label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+              <input type="checkbox" data-perm="lounge" data-account-id="${esc(u.id)}" ${u.loungeToken || u.roleKey === 'viewer' ? 'checked' : ''} ${u.roleKey === 'viewer' ? 'disabled' : ''} />
+              Pass
+            </label>
+          </td>`;
+      }
+
       function renderAccounts(data) {
         const el = document.getElementById('hq-accounts-body');
         if (!el) return;
+        fillCreateAccessOptions();
+        syncCreatePermissionFields();
         const all = (data.accounts || []).filter((u) => u.approved !== false);
         const q = accountQuery.trim().toLowerCase();
         const rows = q ? all.filter((u) => accountMatches(u, q)) : all;
         const body = rows.length
           ? rows.map((u) => `
             <tr>
-              <td><strong>${esc(u.name)}</strong></td>
+              <td><strong>${esc(u.name)}</strong><br><span class="muted-sm">${esc(u.email || '—')}</span></td>
               <td>${esc(u.loginName || '—')}</td>
-              <td>${esc(u.email || '—')}</td>
-              <td>${esc(u.role || 'Member')}</td>
-              <td>${esc(u.league || '—')}</td>
+              ${permissionCell(u)}
               <td>${accountActions(u)}</td>
             </tr>`).join('')
-          : `<tr><td colspan="6" class="muted-sm">${all.length ? 'No accounts match that search.' : 'No approved accounts yet.'}</td></tr>`;
+          : `<tr><td colspan="7" class="muted-sm">${all.length ? 'No accounts match that search.' : 'No approved accounts yet.'}</td></tr>`;
         el.innerHTML = `
+          <div style="overflow-x:auto;">
           <table class="data-table">
-            <thead><tr><th>Name</th><th>Login</th><th>Email</th><th>Role</th><th>League</th><th></th></tr></thead>
+            <thead><tr><th>Member</th><th>Login</th><th>Access</th><th>Membership</th><th>Conference</th><th>Lounge</th><th></th></tr></thead>
             <tbody>${body}</tbody>
           </table>
+          </div>
           <p class="hq-note" id="hq-accounts-msg" hidden></p>
           <p class="hq-note hq-copy-link" id="hq-accounts-reset-link" hidden></p>`;
         el.querySelectorAll('[data-account-act]').forEach((btn) => {
           btn.addEventListener('click', () => runAccountAction(btn));
+        });
+        el.querySelectorAll('[data-perm]').forEach((node) => {
+          const evt = node.type === 'checkbox' ? 'change' : 'change';
+          node.addEventListener(evt, () => runAccountPermission(node));
         });
         if (accountNote.text) showMsg('hq-accounts-msg', accountNote.text, accountNote.ok);
         const linkEl = document.getElementById('hq-accounts-reset-link');
@@ -585,6 +831,54 @@
             linkEl.hidden = true;
             linkEl.textContent = '';
           }
+        }
+      }
+
+      async function runAccountPermission(node) {
+        const id = node.getAttribute('data-account-id');
+        const perm = node.getAttribute('data-perm');
+        let url = '';
+        let body = {};
+        if (perm === 'access') {
+          const raw = node.value;
+          let role = raw;
+          let conference = null;
+          if (raw.startsWith('conference_admin:')) {
+            role = 'conference_admin';
+            conference = raw.slice('conference_admin:'.length);
+          }
+          url = `/api/users/${encodeURIComponent(id)}/role`;
+          body = { role, conference };
+        } else if (perm === 'membership') {
+          url = `/api/users/${encodeURIComponent(id)}/membership`;
+          body = { membership: node.value };
+        } else if (perm === 'conference') {
+          url = `/api/users/${encodeURIComponent(id)}/hq-conference`;
+          body = { conference: node.value || null };
+        } else if (perm === 'lounge') {
+          url = `/api/users/${encodeURIComponent(id)}/lounge-token`;
+          body = { granted: node.checked };
+        } else return;
+        node.disabled = true;
+        showMsg('hq-msg', '');
+        showMsg('hq-accounts-msg', '');
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not update permissions');
+          accountNote = { text: 'Permissions updated.', ok: true, resetUrl: '' };
+          showMsg('hq-msg', accountNote.text, true);
+          await load({ skipEspn: true });
+        } catch (err) {
+          showMsg('hq-accounts-msg', err.message || 'Could not update permissions', false);
+          showMsg('hq-msg', err.message || 'Could not update permissions', false);
+          await load({ skipEspn: true });
+        } finally {
+          node.disabled = false;
         }
       }
 
@@ -968,6 +1262,11 @@
         accountQuery = e.target.value || '';
         if (snapshot) renderAccounts(snapshot);
       });
+      document.getElementById('hq-create-form')?.addEventListener('submit', createAccount);
+      document.getElementById('hq-create-membership')?.addEventListener('change', syncCreatePermissionFields);
+      document.getElementById('hq-create-access')?.addEventListener('change', syncCreatePermissionFields);
+      fillCreateAccessOptions();
+      syncCreatePermissionFields();
       window.addEventListener('hashchange', jumpFromHash);
 
       load().then(() => {

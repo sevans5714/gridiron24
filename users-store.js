@@ -7,6 +7,7 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 const ROLES = {
   USER: 'user',
+  VIEWER: 'viewer',
   CONFERENCE_ADMIN: 'conference_admin',
   COMMISSIONER: 'commissioner'
 };
@@ -84,6 +85,9 @@ function normalizeRole(role) {
   const value = String(role || ROLES.USER).trim().toLowerCase();
   if (value === ROLES.COMMISSIONER) return ROLES.COMMISSIONER;
   if (value === ROLES.CONFERENCE_ADMIN) return ROLES.CONFERENCE_ADMIN;
+  if (value === ROLES.VIEWER || value === 'view_only' || value === 'readonly' || value === 'read_only' || value === 'observer') {
+    return ROLES.VIEWER;
+  }
   return ROLES.USER;
 }
 
@@ -153,7 +157,7 @@ function publicUser(user) {
   if (membershipLeague === 'aaa' && isAaaAdminAlt(user)) {
     membershipLeague = null;
   }
-  if (!membershipLeague && !loungeOnly && (siteOwner || role === ROLES.COMMISSIONER)) {
+  if (!membershipLeague && !loungeOnly && (siteOwner || role === ROLES.COMMISSIONER || role === ROLES.VIEWER)) {
     membershipLeague = 'gridiron';
   }
   let hqConference = null;
@@ -174,13 +178,14 @@ function publicUser(user) {
     leagueId: user.leagueId || null,
     leagueOwner: Boolean(user.leagueOwner),
     siteOwner,
-    canSwitchLeagues: siteOwner,
+    canSwitchLeagues: siteOwner || role === ROLES.VIEWER,
     approved,
     loungeMember,
-    loungeToken,
+    loungeToken: role === ROLES.VIEWER ? true : loungeToken,
     loungeTokenGrantedAt: user.loungeTokenGrantedAt || null,
     loungeOnly,
-    accountType: loungeOnly ? 'social' : 'member',
+    readOnly: role === ROLES.VIEWER,
+    accountType: loungeOnly ? 'social' : (role === ROLES.VIEWER ? 'viewer' : 'member'),
     theme: normalizeTheme(user.theme),
     bio: String(user.bio || '').trim() || null,
     membershipLeague,
@@ -241,7 +246,7 @@ function isAaaAdminAlt(user) {
 function hqMembershipOf(user) {
   if (!user || user.approved === false) return null;
   if (isLoungeOnly(user)) return null;
-  if (isOwnerLogin(user)) {
+  if (isReadOnly(user) || isOwnerLogin(user)) {
     const explicit = normalizeMembershipLeague(user.membershipLeague);
     return explicit === 'aaa' ? 'gridiron' : (explicit || 'gridiron');
   }
@@ -471,7 +476,7 @@ function isLoungeOpenToMembers() {
 
 function hasLoungeAccess(user) {
   if (!user) return false;
-  if (user.siteOwner) return true;
+  if (user.siteOwner || isReadOnly(user)) return true;
   // Soft-launch pass: individually granted lounge tokens work even before LOUNGE_OPEN.
   if (user.loungeToken) return true;
   if (!isLoungeOpenToMembers()) return false;
@@ -489,8 +494,8 @@ function setLoungeToken(userId, granted, actorId = null) {
   const idx = store.users.findIndex((u) => u.id === userId);
   if (idx === -1) throw Object.assign(new Error('User not found'), { status: 404 });
   const target = store.users[idx];
-  if (target.siteOwner) {
-    throw Object.assign(new Error('Owner already has lounge access'), { status: 400 });
+  if (target.siteOwner || isReadOnly(target)) {
+    throw Object.assign(new Error('That account already has lounge access'), { status: 400 });
   }
   if (target.approved === false) {
     throw Object.assign(new Error('Approve the account before granting a lounge token'), { status: 400 });
@@ -542,7 +547,7 @@ function listUsers() {
   return readStore().users
     .map(publicUser)
     .sort((a, b) => {
-      const rank = { commissioner: 0, conference_admin: 1, user: 2 };
+      const rank = { commissioner: 0, viewer: 1, conference_admin: 2, user: 3 };
       const aRank = a.siteOwner ? -1 : (rank[a.role] ?? 9);
       const bRank = b.siteOwner ? -1 : (rank[b.role] ?? 9);
       const roleDiff = aRank - bRank;
@@ -555,14 +560,23 @@ function isSiteOwner(user) {
   return Boolean(user?.siteOwner);
 }
 
+/** See everything, change nothing. */
+function isReadOnly(user) {
+  return Boolean(user) && !isSiteOwner(user) && normalizeRole(user.role) === ROLES.VIEWER;
+}
+
 function isStaff(user) {
   const role = normalizeRole(user?.role);
   return role === ROLES.COMMISSIONER || role === ROLES.CONFERENCE_ADMIN || isSiteOwner(user);
 }
 
+function canInspectOps(user) {
+  return isStaff(user) || isReadOnly(user);
+}
+
 /** Who may compose / broadcast inbox messages (not system automations). */
 function canSendInbox(user) {
-  return isStaff(user);
+  return isStaff(user) && !isReadOnly(user);
 }
 
 /** Platform-wide ops: commissioners and the site owner. */
@@ -603,7 +617,7 @@ function createUser({ name, email, loginName, password, role, conference, approv
       throw Object.assign(new Error('Conference admin requires a valid conference'), { status: 400 });
     }
   }
-  if (nextRole === ROLES.COMMISSIONER) nextConference = null;
+  if (nextRole === ROLES.COMMISSIONER || nextRole === ROLES.VIEWER) nextConference = null;
 
   // Default new signups to user unless this is the designated commissioner login.
   const commissionerLogin = normalizeLoginName(process.env.COMMISSIONER_LOGIN || '');
@@ -613,12 +627,13 @@ function createUser({ name, email, loginName, password, role, conference, approv
   }
 
   const isCommissionerAccount = nextRole === ROLES.COMMISSIONER;
+  const isViewerAccount = nextRole === ROLES.VIEWER;
   // Invite token can mark lounge eligibility, but new signups still wait for approval.
-  const finalLoungeMember = isCommissionerAccount || loungeMember === true;
-  const finalApproved = isCommissionerAccount || approved === true;
-  // Social invites: lounge-only. Never apply to staff / owner accounts.
+  const finalLoungeMember = isCommissionerAccount || isViewerAccount || loungeMember === true;
+  const finalApproved = isCommissionerAccount || isViewerAccount || approved === true;
+  // Social invites: lounge-only. Never apply to staff / owner / view-only accounts.
   const finalLoungeOnly =
-    Boolean(loungeOnly) && !isCommissionerAccount && nextRole === ROLES.USER;
+    Boolean(loungeOnly) && !isCommissionerAccount && !isViewerAccount && nextRole === ROLES.USER;
 
   const { salt, hash } = hashPassword(password);
   const user = {
@@ -640,6 +655,12 @@ function createUser({ name, email, loginName, password, role, conference, approv
     resetTokenHash: null,
     resetTokenExpires: null
   };
+  if (isViewerAccount) {
+    user.membershipLeague = 'gridiron';
+    user.loungeToken = true;
+    user.loungeMember = true;
+    user.loungeOnly = false;
+  }
   if (nextRole === ROLES.CONFERENCE_ADMIN && nextConference) {
     const existing = findConferenceAdmin(store, nextConference, null);
     if (existing) {
@@ -697,13 +718,19 @@ function setUserRole(userId, role, conference) {
   }
 
   store.users[idx].role = nextRole;
+  if (nextRole === ROLES.COMMISSIONER || nextRole === ROLES.VIEWER) nextConference = null;
   store.users[idx].conference = nextConference;
-  if (nextRole === ROLES.COMMISSIONER) {
+  if (nextRole === ROLES.COMMISSIONER || nextRole === ROLES.VIEWER) {
     store.users[idx].approved = true;
     store.users[idx].approvedAt = store.users[idx].approvedAt || new Date().toISOString();
     store.users[idx].loungeMember = true;
   }
-  // Staff roles are full members — clear social restriction.
+  if (nextRole === ROLES.VIEWER) {
+    store.users[idx].loungeToken = true;
+    store.users[idx].loungeOnly = false;
+    if (!store.users[idx].membershipLeague) store.users[idx].membershipLeague = 'gridiron';
+  }
+  // Staff and view-only roles are full members — clear social restriction.
   if (nextRole !== ROLES.USER) {
     store.users[idx].loungeOnly = false;
   }
@@ -726,8 +753,8 @@ function setLoungeOnly(userId, loungeOnly, actorId = null) {
     throw Object.assign(new Error('You cannot change your own social access here'), { status: 400 });
   }
   const target = store.users[idx];
-  if (target.siteOwner) {
-    throw Object.assign(new Error('Site owner cannot be a social account'), { status: 400 });
+  if (target.siteOwner || isReadOnly(target)) {
+    throw Object.assign(new Error('That account cannot be a social account'), { status: 400 });
   }
   const role = normalizeRole(target.role);
   if (loungeOnly && role !== ROLES.USER) {
@@ -1320,6 +1347,8 @@ module.exports = {
   findByEmail,
   listUsers,
   isStaff,
+  canInspectOps,
+  isReadOnly,
   canSendInbox,
   isCommissioner,
   isSiteOwner,
