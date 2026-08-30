@@ -123,7 +123,8 @@ async function fetchJsonResilient(opts) {
   } = opts;
 
   const key = String(cacheKey || urls?.[0] || '');
-  const existing = memory.get(key);
+  if (opts.dropCache) memory.delete(key);
+  const existing = !opts.skipCache ? memory.get(key) : null;
   if (existing && Date.now() - existing.at < ttlMs) {
     return {
       data: existing.data,
@@ -180,8 +181,13 @@ async function fetchJsonResilient(opts) {
   throw err;
 }
 
+function dropCache(cacheKey) {
+  if (cacheKey) memory.delete(String(cacheKey));
+}
+
 module.exports = {
   fetchJsonResilient,
+  dropCache,
   fantasyLeagueUrls,
   siteApiUrls,
   getUpstreamStatus

@@ -205,17 +205,35 @@ function normalizeMembershipLeague(league) {
   return null;
 }
 
-/** Welcome / access bucket: social | aaa | gridiron */
+/** Staff dropdown / API: gridiron | aaa | social | independent */
+function parseMembershipPlacement(raw) {
+  const key = String(raw || '').trim();
+  const lower = key.toLowerCase();
+  if (lower.startsWith('independent:')) {
+    return { kind: 'independent', leagueId: key.slice(key.indexOf(':') + 1).trim() || null };
+  }
+  if (lower === 'independent') return { kind: 'independent', leagueId: null };
+  if (lower === 'social' || lower === 'lounge' || lower === 'lounge_only') {
+    return { kind: 'social', leagueId: null };
+  }
+  if (lower === 'aaa') return { kind: 'aaa', leagueId: null };
+  return { kind: 'gridiron', leagueId: null };
+}
+
+/** Welcome / access bucket: social | aaa | gridiron | independent */
 function normalizeMembershipKind(raw, user = null) {
   const key = String(raw || '').trim().toLowerCase();
   if (key === 'social' || key === 'lounge' || key === 'lounge_only') return 'social';
   if (key === 'aaa') return 'aaa';
+  if (key.startsWith('independent:') || key === 'independent') return 'independent';
   if (key === 'gridiron' || key === 'gridiron24' || key === 'gi24') return 'gridiron';
   if (user) {
     if (isLoungeOnly(user)) return 'social';
     if (isOwnerLogin(user) || isAaaAdminAlt(user)) return 'gridiron';
     const league = normalizeMembershipLeague(user.membershipLeague);
     if (league === 'aaa') return 'aaa';
+    if (league === 'gridiron') return 'gridiron';
+    if (user.leagueId) return 'independent';
   }
   return 'gridiron';
 }
@@ -257,9 +275,10 @@ function hqMembershipOf(user) {
   return normalizeMembershipLeague(user.membershipLeague);
 }
 
-function membershipKindLabel(kind) {
+function membershipKindLabel(kind, leagueName = '') {
   if (kind === 'social') return 'Social Membership';
   if (kind === 'aaa') return 'AAA League';
+  if (kind === 'independent') return String(leagueName || '').trim() || 'Independent league';
   return 'GridIron 24';
 }
 
@@ -292,6 +311,8 @@ function occupiesLeagueSeat(user) {
   if (!user || user.approved === false) return false;
   if (isSiteOwner(user) || isOwnerLogin(user) || isReadOnly(user)) return false;
   if (isLoungeOnly(user)) return false;
+  // Independent-league placement does not take a GridIron 24 / AAA seat.
+  if (user.leagueId && !normalizeMembershipLeague(user.membershipLeague)) return false;
   return true;
 }
 
@@ -463,7 +484,7 @@ function listLeagueMembers() {
   const lounge = dedupeRollByName(
     store.users
       .map(publicUser)
-      .filter((u) => u.loungeMember)
+      .filter((u) => u.approved !== false)
   );
 
   const byLeague = (key) => lounge.filter((u) => hqMembershipOf(u) === key);
@@ -485,12 +506,8 @@ function isLoungeOpenToMembers() {
 
 function hasLoungeAccess(user) {
   if (!user) return false;
-  if (user.siteOwner || isReadOnly(user)) return true;
-  // Soft-launch pass: individually granted lounge tokens work even before LOUNGE_OPEN.
-  if (user.loungeToken) return true;
-  if (!isLoungeOpenToMembers()) return false;
-  if (typeof user.loungeMember === 'boolean') return Boolean(user.loungeMember);
-  return Boolean(publicUser(user)?.loungeMember);
+  if (user.approved === false) return false;
+  return true;
 }
 
 /**
@@ -637,9 +654,9 @@ function createUser({ name, email, loginName, password, role, conference, approv
 
   const isCommissionerAccount = nextRole === ROLES.COMMISSIONER;
   const isViewerAccount = nextRole === ROLES.VIEWER;
-  // Invite token can mark lounge eligibility, but new signups still wait for approval.
-  const finalLoungeMember = isCommissionerAccount || isViewerAccount || loungeMember === true;
   const finalApproved = isCommissionerAccount || isViewerAccount || approved === true;
+  // Every approved account gets the Members Lounge (any league).
+  const finalLoungeMember = isCommissionerAccount || isViewerAccount || loungeMember === true || finalApproved;
   // Social invites: lounge-only. Never apply to staff / owner / view-only accounts.
   const finalLoungeOnly =
     Boolean(loungeOnly) && !isCommissionerAccount && !isViewerAccount && nextRole === ROLES.USER;
@@ -657,6 +674,7 @@ function createUser({ name, email, loginName, password, role, conference, approv
     approved: finalApproved,
     approvedAt: finalApproved ? new Date().toISOString() : null,
     loungeMember: finalLoungeMember || finalLoungeOnly,
+    loungeToken: Boolean(finalApproved),
     loungeOnly: finalLoungeOnly,
     passwordSalt: salt,
     passwordHash: hash,
@@ -797,6 +815,10 @@ function setUserApproved(userId, approved, actorId = null, options = {}) {
   // Approving unlocks the account; league / social / lounge pass are assigned after.
   if (approved) {
     store.users[idx].loungeMember = true;
+    if (!store.users[idx].loungeToken) {
+      store.users[idx].loungeToken = true;
+      store.users[idx].loungeTokenGrantedAt = new Date().toISOString();
+    }
     const hasMembership = Object.prototype.hasOwnProperty.call(options, 'membership')
       || Object.prototype.hasOwnProperty.call(options, 'kind');
     if (hasMembership) {
@@ -804,6 +826,10 @@ function setUserApproved(userId, approved, actorId = null, options = {}) {
       if (kind === 'social') {
         store.users[idx].loungeOnly = true;
         store.users[idx].membershipLeague = null;
+      } else if (kind === 'independent') {
+        store.users[idx].loungeOnly = false;
+        store.users[idx].membershipLeague = null;
+        store.users[idx].hqConference = null;
       } else {
         store.users[idx].loungeOnly = false;
         store.users[idx].membershipLeague = kind === 'aaa' ? 'aaa' : 'gridiron';
@@ -1373,6 +1399,7 @@ module.exports = {
   setLoungeOnly,
   setLoungeToken,
   normalizeMembershipLeague,
+  parseMembershipPlacement,
   normalizeMembershipKind,
   membershipKindOf,
   hqMembershipOf,

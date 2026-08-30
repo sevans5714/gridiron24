@@ -47,5 +47,6 @@ services:
         value: "all"
 
   # Scheduled jobs (weekly wrap, rules sync, roster violations, death-pool
-  # news) run in-process on the web service. Do not add Render cron jobs —
-  # a failed tick emails "Exited with status 1" even when the site is up.
+  # news, pre-draft player-pool refresh) run in-process on the web service.
+  # Do not add Render cron jobs — a failed tick emails "Exited with status 1"
+  # even when the site is up.

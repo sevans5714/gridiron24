@@ -1443,7 +1443,7 @@
               <div class="section-head">
                 <h3>Accounts</h3>
               </div>
-              <p class="help" id="members-help">Approved members. Put GridIron 24 players in Detail or Overtime (12 each). <strong>Delete Account</strong> removes them from the system.</p>
+              <p class="help" id="members-help">Approved members. Assign GridIron 24, AAA, Social, or any independent league. Put GridIron 24 players in Detail or Overtime (12 each). Every league includes the Members Lounge. <strong>Delete Account</strong> removes them from the system.</p>
               <div class="members-census" id="members-census" hidden></div>
               <div id="members-access-block">
                 <div class="status-note" id="members-msg" role="status"></div>
@@ -2550,7 +2550,7 @@
 
     function conferenceSelectHtml(user) {
       const league = memberLeagueKey(user);
-      if (league === 'aaa' || league === 'social') {
+      if (league === 'aaa' || league === 'social' || String(league || '').startsWith('independent:')) {
         return `<span class="muted-sm">—</span>`;
       }
       if (league !== 'gridiron') {
@@ -2683,8 +2683,39 @@
       if (u.loungeOnly) return 'social';
       if (u.membershipLeague === 'aaa') return 'aaa';
       if (u.membershipLeague === 'gridiron') return 'gridiron';
+      if (u.leagueId) return `independent:${u.leagueId}`;
       if (u.siteOwner || u.role === 'commissioner') return 'gridiron';
       return 'unassigned';
+    }
+
+    function independentLeaguesList(payload) {
+      const fromPayload = payload?.independentLeagues;
+      if (Array.isArray(fromPayload) && fromPayload.length) return fromPayload;
+      return window.__giIndependentLeagues || [];
+    }
+
+    function membershipValue(u) {
+      if (!u || u.siteOwner) return 'gridiron';
+      if (u.loungeOnly) return 'social';
+      if (u.membershipLeague === 'aaa') return 'aaa';
+      if (u.membershipLeague === 'gridiron') return 'gridiron';
+      if (u.leagueId) return `independent:${u.leagueId}`;
+      return '';
+    }
+
+    function membershipOptionsHtml(u, payload) {
+      const selected = membershipValue(u);
+      const leagues = independentLeaguesList(payload);
+      const extra = (leagues || []).map((l) => {
+        const val = `independent:${l.id}`;
+        return `<option value="${esc(val)}" ${selected === val ? 'selected' : ''}>${esc(l.name || l.slug || 'League')}</option>`;
+      }).join('');
+      return `
+        <option value="" ${!selected ? 'selected' : ''} disabled hidden>Assign…</option>
+        <option value="gridiron" ${selected === 'gridiron' ? 'selected' : ''}>GridIron 24</option>
+        <option value="aaa" ${selected === 'aaa' ? 'selected' : ''}>AAA League</option>
+        ${extra}
+        <option value="social" ${selected === 'social' ? 'selected' : ''}>Social Membership</option>`;
     }
 
     function memberConferenceKey(u) {
@@ -2704,6 +2735,7 @@
       const aaa = approved.filter((u) => memberLeagueKey(u) === 'aaa').length;
       const social = approved.filter((u) => memberLeagueKey(u) === 'social').length;
       const viewer = approved.filter((u) => memberLeagueKey(u) === 'viewer').length;
+      const independent = approved.filter((u) => String(memberLeagueKey(u) || '').startsWith('independent:')).length;
       const unassigned = approved.filter((u) => memberLeagueKey(u) === 'unassigned').length;
       const pending = (list || []).filter((u) => u.approved === false).length;
       const giMembers = approved.filter((u) => memberLeagueKey(u) === 'gridiron');
@@ -2715,6 +2747,7 @@
         aaa,
         social,
         viewer,
+        independent,
         unassigned,
         pending,
         detail,
@@ -2781,12 +2814,13 @@
         ? chip('overtime', 'FULL', `Overtime · ${stats.overtime} of ${stats.confCap}`)
         : chip('overtime', String(stats.overtimeOpen), `Overtime spots left · ${stats.overtime} of ${stats.confCap}`, 'census-open');
       census.innerHTML = [
-        chip('all', String(stats.gi + stats.aaa + stats.social + stats.viewer + stats.unassigned), 'All approved accounts'),
+        chip('all', String(stats.gi + stats.aaa + stats.social + stats.viewer + stats.independent + stats.unassigned), 'All approved accounts'),
         giChip,
         detailChip,
         overtimeChip,
         stats.noConf ? chip('noconf', String(stats.noConf), 'GridIron · no conference yet', 'census-open') : '',
         aaaChip,
+        stats.independent ? chip('independent', String(stats.independent), 'Independent leagues', 'census-open') : '',
         chip('social', String(stats.social), 'Social / lounge'),
         stats.viewer ? chip('viewer', String(stats.viewer), 'View only', 'census-open') : '',
         stats.unassigned
@@ -2821,6 +2855,8 @@
           if (memberConferenceKey(u) !== membersLeagueFilter) return false;
         } else if (membersLeagueFilter === 'noconf') {
           if (memberLeagueKey(u) !== 'gridiron' || memberConferenceKey(u)) return false;
+        } else if (membersLeagueFilter === 'independent') {
+          if (!String(memberLeagueKey(u) || '').startsWith('independent:')) return false;
         } else if (membersLeagueFilter !== 'all' && memberLeagueKey(u) !== membersLeagueFilter) {
           return false;
         }
@@ -2840,6 +2876,7 @@
 
     function renderMembers(payload) {
       window.__giMembersPayload = payload;
+      window.__giIndependentLeagues = payload.independentLeagues || [];
       const list = payload.users || [];
       const conferences = payload.conferences || [];
       window.__giClaims = payload.claims || list.map((u) => u.claim).filter(Boolean);
@@ -2880,6 +2917,8 @@
             ? 'AAA'
             : membersLeagueFilter === 'social'
               ? 'Social'
+              : membersLeagueFilter === 'independent'
+                ? 'independent'
               : membersLeagueFilter === 'unassigned'
                 ? 'unassigned'
                 : membersLeagueFilter === 'pending'
@@ -2965,11 +3004,8 @@
                 <td>
                   ${u.siteOwner
                     ? `<span class="muted-sm">Owner</span>`
-                    : `<select class="field membership-select" data-membership="${esc(u.id)}" aria-label="Membership type" style="max-width:12rem;">
-                        <option value="" ${!u.loungeOnly && !u.membershipLeague ? 'selected' : ''} disabled hidden>Assign…</option>
-                        <option value="gridiron" ${!u.loungeOnly && u.membershipLeague === 'gridiron' ? 'selected' : ''}>GridIron 24</option>
-                        <option value="aaa" ${!u.loungeOnly && u.membershipLeague === 'aaa' ? 'selected' : ''}>AAA League</option>
-                        <option value="social" ${u.loungeOnly ? 'selected' : ''}>Social Membership</option>
+                    : `<select class="field membership-select" data-membership="${esc(u.id)}" aria-label="Membership type" style="max-width:14rem;">
+                        ${membershipOptionsHtml(u, payload)}
                       </select>`}
                 </td>
                 <td>
@@ -2979,7 +3015,7 @@
                   ${u.siteOwner
                     ? `<span class="muted-sm">Owner</span>`
                     : `<label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;" title="Members Lounge pass">
-                          <input type="checkbox" data-lounge-token="${esc(u.id)}" ${u.loungeToken ? 'checked' : ''} />
+                          <input type="checkbox" data-lounge-token="${esc(u.id)}" ${u.loungeToken || u.approved !== false ? 'checked' : ''} />
                           Pass
                         </label>`}
                 </td>
@@ -4925,10 +4961,12 @@
                 </td>
                 <td class="muted-sm">${esc((u.createdAt || '').slice(0, 10) || '—')}</td>
                 <td>
-                  <select class="field" data-pending-membership="${esc(u.id)}" aria-label="Membership for ${esc(u.name || u.loginName)}" style="max-width:13rem;">
-                    <option value="gridiron" ${!u.loungeOnly && u.membershipLeague !== 'aaa' ? 'selected' : ''}>GridIron 24</option>
-                    <option value="aaa" ${u.membershipLeague === 'aaa' ? 'selected' : ''}>AAA League</option>
-                    <option value="social" ${u.loungeOnly ? 'selected' : ''}>Social Membership</option>
+                  <select class="field" data-pending-membership="${esc(u.id)}" aria-label="Membership for ${esc(u.name || u.loginName)}" style="max-width:14rem;">
+                    ${membershipOptionsHtml({
+                      ...u,
+                      loungeOnly: u.loungeOnly,
+                      membershipLeague: u.loungeOnly ? null : (u.membershipLeague || 'gridiron')
+                    }, window.__giMembersPayload)}
                   </select>
                 </td>
                 <td>

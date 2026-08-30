@@ -280,7 +280,7 @@
 
     <section class="hq-section" id="accounts">
       <h2>Accounts</h2>
-      <p class="hq-help">Approved logins. Access, membership, conference, and lounge pass match Owner Tools → Members. Delete wipes the account. Send reset emails a recovery link — copy it here if mail isn’t set. Set a password when they have no email. You cannot delete the site owner. Pending join requests stay under Approvals.</p>
+      <p class="hq-help">Approved logins. Access, membership (GridIron 24, AAA, independent leagues, or social), conference, and lounge. Every approved account gets the Members Lounge. Delete wipes the account. Send reset emails a recovery link — copy it here if mail isn’t set. Set a password when they have no email. You cannot delete the site owner. Pending join requests stay under Approvals.</p>
       <form class="hq-create" id="hq-create-form">
         <h3 id="create-account">Create account</h3>
         <p>Make a login here — no invite, no public register, no approval queue. They can sign in as soon as you create it. Set access the same way as other members, then tell them the login and password.</p>
@@ -322,8 +322,8 @@
         </div>
         <div>
           <label class="hq-create-check" for="hq-create-lounge">
-            <input type="checkbox" id="hq-create-lounge" name="loungeToken" />
-            Lounge pass
+            <input type="checkbox" id="hq-create-lounge" name="loungeToken" checked />
+            Members Lounge (all leagues)
           </label>
         </div>
         <div>
@@ -631,7 +631,7 @@
 
       function accountMatches(u, q) {
         if (!q) return true;
-        const hay = [u.name, u.loginName, u.email, u.role, u.roleKey, u.league, u.membershipLeague].map((v) => String(v || '').toLowerCase()).join(' ');
+        const hay = [u.name, u.loginName, u.email, u.role, u.roleKey, u.league, u.membershipLeague, u.leagueId].map((v) => String(v || '').toLowerCase()).join(' ');
         return hay.includes(q);
       }
 
@@ -656,11 +656,37 @@
         return u?.roleKey || 'user';
       }
 
+      function placementLeagues() {
+        return (snapshot?.leagues?.independent || []).filter((l) => l.status !== 'archived' && l.status !== 'rejected');
+      }
+
       function membershipValue(u) {
         if (u?.loungeOnly) return 'social';
         if (u?.membershipLeague === 'aaa') return 'aaa';
         if (u?.membershipLeague === 'gridiron') return 'gridiron';
-        return '';
+        if (u?.leagueId) return `independent:${u.leagueId}`;
+        return 'gridiron';
+      }
+
+      function membershipOptionsHtml(selected) {
+        const sel = String(selected || 'gridiron');
+        const extra = placementLeagues().map((l) => {
+          const val = `independent:${l.id}`;
+          return `<option value="${esc(val)}"${sel === val ? ' selected' : ''}>${esc(l.name || l.slug || 'League')}</option>`;
+        }).join('');
+        return [
+          `<option value="gridiron"${sel === 'gridiron' ? ' selected' : ''}>GridIron 24</option>`,
+          `<option value="aaa"${sel === 'aaa' ? ' selected' : ''}>AAA League</option>`,
+          extra,
+          `<option value="social"${sel === 'social' ? ' selected' : ''}>Social Membership</option>`
+        ].join('');
+      }
+
+      function fillMembershipOptions(selected) {
+        const sel = document.getElementById('hq-create-membership');
+        if (!sel) return;
+        const keep = selected || sel.value || 'gridiron';
+        sel.innerHTML = membershipOptionsHtml(keep);
       }
 
       function accessOptionsHtml(selected) {
@@ -698,6 +724,9 @@
         const membershipEl = document.getElementById('hq-create-membership');
         const wrap = document.getElementById('hq-create-conference-wrap');
         const staff = access !== 'user';
+        if (membershipEl) {
+          fillMembershipOptions(membershipEl.value);
+        }
         if (membershipEl && staff && membershipEl.value === 'social') {
           membershipEl.value = 'gridiron';
         }
@@ -734,7 +763,10 @@
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.ok) throw new Error(data.error || 'Could not create account');
           document.getElementById('hq-create-form')?.reset();
+          const loungeBox = document.getElementById('hq-create-lounge');
+          if (loungeBox) loungeBox.checked = true;
           fillCreateAccessOptions();
+          fillMembershipOptions('gridiron');
           syncCreatePermissionFields();
           accountNote = {
             text: data.message || `Created ${data.user?.loginName}. They can sign in now.`,
@@ -770,9 +802,7 @@
           </td>
           <td>
             <select class="field" data-perm="membership" data-account-id="${esc(u.id)}">
-              <option value="gridiron"${membership === 'gridiron' ? ' selected' : ''}>GridIron 24</option>
-              <option value="aaa"${membership === 'aaa' ? ' selected' : ''}>AAA League</option>
-              <option value="social"${membership === 'social' ? ' selected' : ''}>Social Membership</option>
+              ${membershipOptionsHtml(membership)}
             </select>
           </td>
           <td>
@@ -786,7 +816,7 @@
           </td>
           <td>
             <label class="muted-sm" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
-              <input type="checkbox" data-perm="lounge" data-account-id="${esc(u.id)}" ${u.loungeToken || u.roleKey === 'viewer' ? 'checked' : ''} ${u.roleKey === 'viewer' ? 'disabled' : ''} />
+              <input type="checkbox" data-perm="lounge" data-account-id="${esc(u.id)}" ${u.loungeToken || u.roleKey === 'viewer' || u.approved !== false ? 'checked' : ''} ${u.roleKey === 'viewer' ? 'disabled' : ''} />
               Pass
             </label>
           </td>`;
@@ -796,6 +826,7 @@
         const el = document.getElementById('hq-accounts-body');
         if (!el) return;
         fillCreateAccessOptions();
+        fillMembershipOptions();
         syncCreatePermissionFields();
         const all = (data.accounts || []).filter((u) => u.approved !== false);
         const q = accountQuery.trim().toLowerCase();
@@ -1061,6 +1092,10 @@
       function askedFor(u) {
         if (u.loungeOnly) return 'Social';
         if (u.membershipLeague === 'aaa') return 'AAA';
+        if (u.leagueId) {
+          const named = placementLeagues().find((l) => l.id === u.leagueId);
+          return named?.name || 'Independent';
+        }
         return 'GridIron 24';
       }
 
@@ -1074,10 +1109,8 @@
               <td><strong>${esc(u.name || u.loginName)}</strong><br><span class="muted-sm">${esc(u.loginName)} · ${esc(u.email || '')}</span></td>
               <td class="muted-sm">${esc(when(u.createdAt))}</td>
               <td>
-                <select class="field" data-pending-membership="${esc(u.id)}" aria-label="Membership" style="max-width:13rem;">
-                  <option value="gridiron" ${!u.loungeOnly && u.membershipLeague !== 'aaa' ? 'selected' : ''}>GridIron 24</option>
-                  <option value="aaa" ${u.membershipLeague === 'aaa' ? 'selected' : ''}>AAA League</option>
-                  <option value="social" ${u.loungeOnly ? 'selected' : ''}>Social</option>
+                <select class="field" data-pending-membership="${esc(u.id)}" aria-label="Membership" style="max-width:14rem;">
+                  ${membershipOptionsHtml(u.loungeOnly ? 'social' : (u.membershipLeague === 'aaa' ? 'aaa' : 'gridiron'))}
                 </select>
               </td>
               <td>

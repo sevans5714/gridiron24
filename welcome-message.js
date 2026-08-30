@@ -30,17 +30,14 @@ function bodyFor(name = 'Member', opts = {}) {
       `Hey ${who} —`,
       '',
       league
-        ? `You’re the owner of ${league}. Your headquarters is live.`
-        : 'You’re the league owner. Your headquarters is live.',
+        ? `You’re in ${league}. League HQ and the Members Lounge are both open.`
+        : 'You’re in an independent league. League HQ and the Members Lounge are both open.',
       '',
-      'WHAT TO DO NEXT',
-      '• Open League HQ — that’s your desk',
-      '• Name franchises and invite managers',
-      '• Set roster, scoring, draft time, and playoffs yourself',
+      'WHAT YOU CAN DO',
+      '• Open League HQ — standings, roster, and your desk',
+      '• Use the shared Members Lounge — chat, games, and the social desk',
       '',
-      'Playoffs, consolation games, and titles stay blank until you name them.',
-      '',
-      'Build it, then draft.',
+      'See you in HQ.',
       '',
       '— League HQ'
     ].join('\n');

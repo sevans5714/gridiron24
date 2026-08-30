@@ -534,7 +534,7 @@ function espnRankForScoring(draftRanks, scoring) {
   return ppr != null && ppr > 0 ? ppr : std;
 }
 
-async function loadEspnDraftRanks(year, scoring) {
+async function loadEspnDraftRanks(year, scoring, { skipCache = false } = {}) {
   const empty = { byEspnId: new Map(), byKey: new Map(), byDst: new Map(), count: 0 };
   try {
     const espnResilient = require('./espn-resilient');
@@ -543,6 +543,8 @@ async function loadEspnDraftRanks(year, scoring) {
       urls: espnResilient.fantasyLeagueUrls(pathAndQuery),
       cacheKey: `espn-draft-ranks:${year}`,
       ttlMs: Math.min(POOL_CACHE_MS, 60 * 60 * 1000),
+      skipCache,
+      dropCache: skipCache,
       headers: {
         Accept: 'application/json',
         'User-Agent': UA,
@@ -837,7 +839,7 @@ async function loadRoster(season) {
   }
 }
 
-async function loadDraftPool({ season, activeOnly = true, force = false, scoring, teams } = {}) {
+async function loadDraftPool({ season, activeOnly = true, force = false, hard = false, scoring, teams } = {}) {
   const yearGuess = Number(season) || new Date().getFullYear();
   const scoringKey = normalizeScoring(scoring);
   const teamKey = clampAdpTeams(teams);
@@ -849,7 +851,7 @@ async function loadDraftPool({ season, activeOnly = true, force = false, scoring
   if (!force && freshEnough) {
     return cachedPoolPayload(cached);
   }
-  if (force && freshEnough && cacheAge < FORCE_COALESCE_MS) {
+  if (force && !hard && freshEnough && cacheAge < FORCE_COALESCE_MS) {
     return cachedPoolPayload(cached);
   }
   if (poolInflight.has(key)) {
@@ -869,7 +871,7 @@ async function loadDraftPool({ season, activeOnly = true, force = false, scoring
     fetchJson(SLEEPER_PROJ_URL(yearGuess)).catch(() => ({})),
     fetchJson(sleeperSeasonProjListUrl(yearGuess, scoringKey)).catch(() => []),
     loadFfcAdpMaps(yearGuess, scoringKey, teamKey),
-    loadEspnDraftRanks(yearGuess, scoringKey)
+    loadEspnDraftRanks(yearGuess, scoringKey, { skipCache: Boolean(force || hard) })
   ]);
 
   const year = Number(season) || Number(nflState?.season) || yearGuess;
@@ -1267,9 +1269,14 @@ async function getPlayerNews({ espnId, sleeperId, name, limit = 6 } = {}) {
   };
 }
 
+function clearPlayerNewsCache() {
+  playerNewsCache.clear();
+}
+
 module.exports = {
   loadDraftPool,
   getPlayerNews,
+  clearPlayerNewsCache,
   getDraftBoard,
   resetDraft,
   makePick,

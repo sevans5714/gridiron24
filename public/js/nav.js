@@ -376,6 +376,7 @@
     }));
     const canLounge = Boolean(
       authState?.loungeAccess
+      || (u && u.approved !== false)
       || u?.siteOwner
       || u?.loungeToken
       || (authState?.loungeOpen && u?.loungeMember)

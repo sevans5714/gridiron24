@@ -504,22 +504,22 @@ function buildAccountApprovedEmail({ name, leagueName, signInUrl, baseUrl, membe
     },
     independent: {
       label: leagueName || 'Your league',
-      eyebrow: leagueName || 'League owner',
-      headline: 'Your league HQ is ready',
-      subject: leagueName ? `Welcome to ${leagueName}` : 'Your league HQ is ready',
+      eyebrow: leagueName || 'Independent league',
+      headline: leagueName ? `You're in ${leagueName}` : 'Your league HQ is ready',
+      subject: leagueName ? `You're in · ${leagueName}` : 'Your league HQ is ready',
       preheader: leagueName
-        ? `You’re the owner of ${leagueName}. Sign in and open your headquarters.`
-        : 'You’re the league owner. Sign in and open your headquarters.',
+        ? `You’re in ${leagueName}. Sign in for League HQ and the Members Lounge.`
+        : 'You’re in an independent league. Sign in for League HQ and the Members Lounge.',
       textLine: leagueName
-        ? `You’re the owner of ${leagueName}. Sign in, open League HQ, and set up your season — playoffs and titles stay blank until you name them.`
-        : 'You’re the league owner. Sign in, open League HQ, and set up your season.',
+        ? `You’re in ${leagueName}. Sign in for League HQ and the shared Members Lounge.`
+        : 'You’re in an independent league. Sign in for League HQ and the shared Members Lounge.',
       bodyHtml:
-        `Hi <strong style="color:#ffffff;">${escapeHtml(who)}</strong> — you’re the owner` +
-        (leagueName ? ` of <strong style="color:#efd782;">${escapeHtml(leagueName)}</strong>` : '') +
-        `. Open League HQ to invite managers, set rules, and schedule your draft.`,
+        `Hi <strong style="color:#ffffff;">${escapeHtml(who)}</strong> — you’re in` +
+        (leagueName ? ` <strong style="color:#efd782;">${escapeHtml(leagueName)}</strong>` : ' your league') +
+        `. Open League HQ and hang in the shared <strong style="color:#9ec8ff;">Members Lounge</strong>.`,
       ctaLabel: 'Open League HQ',
-      ctaPath: hqPath || '/create-league',
-      badge: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#efd782;">League owner</div>`
+      ctaPath: hqPath || '/home.html',
+      badge: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#efd782;">Independent league</div>`
     }
   };
   const profile = profiles[kind] || profiles.gridiron;

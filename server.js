@@ -71,6 +71,7 @@ const customPools = require('./custom-pool-store');
 const futuresMarkets = require('./futures-markets');
 const matchupDisplayWeek = require('./matchup-display-week');
 const { startInProcessCrons } = require('./in-process-cron');
+const preDraftRefresh = require('./pre-draft-refresh');
 const {
   sendPasswordResetEmail,
   sendInviteEmail,
@@ -209,6 +210,7 @@ const PUBLIC_PATHS = new Set([
   '/api/cron/roster-violations',
   '/api/cron/death-pool-news',
   '/api/cron/paper-book-settle',
+  '/api/cron/pre-draft-refresh',
   '/install-app',
   '/install-app.html',
   '/api/docs/pwa-install',
@@ -584,15 +586,117 @@ function siteHqRoleLabel(u) {
 
 function siteHqLeagueLabel(u) {
   if (!u) return null;
+  if (u.loungeOnly) return 'Lounge';
+  if (u.membershipLeague === 'aaa') return 'AAA';
+  if (u.membershipLeague === 'gridiron') return 'GridIron 24';
   if (u.leagueId) {
     try {
       const linked = leagues.findById(u.leagueId);
       if (linked?.brand?.name || linked?.slug) return linked.brand?.name || linked.slug;
     } catch { /* ignore */ }
   }
-  if (u.membershipLeague === 'aaa') return 'AAA';
-  if (u.loungeOnly) return 'Lounge';
   return 'GridIron 24';
+}
+
+function listStaffPlacementLeagues() {
+  return leagues.listIndependentLeagues()
+    .filter((l) => l.status !== 'archived' && l.status !== 'rejected')
+    .map((l) => ({
+      id: l.id,
+      name: l.brand?.name || l.slug,
+      slug: l.slug,
+      status: l.status,
+      setupComplete: l.setupComplete !== false,
+      homePath: l.homePath || leagues.independentHomePath(l)
+    }));
+}
+
+function grantLoungeAdmission(userId, actorId = null) {
+  const current = users.findById(userId);
+  if (!current || current.approved === false) return users.publicUser(current);
+  let next = users.publicUser(current);
+  if (!users.isSiteOwner(current) && !users.isReadOnly(current)) {
+    try {
+      const result = users.setLoungeToken(userId, true, actorId);
+      next = result.user || next;
+    } catch { /* already admitted */ }
+  }
+  try { paperBook.grantLoungeBankroll(next); } catch { /* ignore */ }
+  return users.publicUser(users.findById(userId));
+}
+
+function placementLeagueName(leagueId) {
+  if (!leagueId) return '';
+  try {
+    const league = leagues.findById(leagueId);
+    return league?.brand?.name || league?.slug || '';
+  } catch {
+    return '';
+  }
+}
+
+function applyStaffPlacement(userId, membershipRaw, actor) {
+  const before = users.findById(userId);
+  if (!before) {
+    throw Object.assign(new Error('Account not found'), { status: 404 });
+  }
+  if (users.isSiteOwner(before) || users.isReadOnly(before)) {
+    throw Object.assign(new Error('That account cannot be reassigned'), { status: 400 });
+  }
+  const parsed = users.parseMembershipPlacement(membershipRaw);
+  if (parsed.kind === 'independent') {
+    const leagueId = parsed.leagueId;
+    const league = leagueId ? leagues.findById(leagueId) : null;
+    if (!league || league.platform !== 'independent') {
+      throw Object.assign(new Error('Pick an independent league'), { status: 400 });
+    }
+    if (league.status === 'archived' || league.status === 'rejected') {
+      throw Object.assign(new Error('That league is not available'), { status: 400 });
+    }
+    if (before.leagueOwner && before.leagueId && before.leagueId !== league.id) {
+      throw Object.assign(
+        new Error('Transfer league ownership first — this account owns another independent league'),
+        { status: 400 }
+      );
+    }
+    users.setLoungeOnly(userId, false, actor.id);
+    users.setLeagueMembership(userId, { league: null });
+    users.setUserLeagueOwner(
+      userId,
+      league.id,
+      Boolean(before.leagueOwner && before.leagueId === league.id)
+    );
+    try { logos.unassignTeam(userId); } catch { /* ignore */ }
+    return grantLoungeAdmission(userId, actor.id);
+  }
+  if (parsed.kind === 'social') {
+    if (before.leagueOwner && before.leagueId) {
+      throw Object.assign(
+        new Error('League owners cannot be social-only. Transfer ownership first.'),
+        { status: 400 }
+      );
+    }
+    const updated = users.setLoungeOnly(userId, true, actor.id);
+    if (before.leagueId && !before.leagueOwner) {
+      users.setUserLeagueOwner(userId, null, false);
+    }
+    try { logos.unassignTeam(userId); } catch { /* ignore */ }
+    return grantLoungeAdmission(updated.id, actor.id);
+  }
+  users.setLoungeOnly(userId, false, actor.id);
+  users.setLeagueMembership(userId, {
+    league: parsed.kind === 'aaa' ? 'aaa' : 'gridiron'
+  });
+  if (before.leagueId && !before.leagueOwner) {
+    users.setUserLeagueOwner(userId, null, false);
+  }
+  if (parsed.kind === 'aaa') {
+    const claim = logos.getClaimForUser(userId);
+    if (claim && (claim.conferenceKey === 'detail' || claim.conferenceKey === 'overtime')) {
+      try { logos.unassignTeam(userId); } catch { /* ignore */ }
+    }
+  }
+  return grantLoungeAdmission(userId, actor.id);
 }
 
 function buildSiteHqPayload(viewer) {
@@ -636,6 +740,7 @@ function buildSiteHqPayload(viewer) {
       email: u.email,
       loungeOnly: Boolean(u.loungeOnly),
       membershipLeague: u.membershipLeague || null,
+      leagueId: u.leagueId || null,
       createdAt: u.createdAt || null
     })),
     accounts: allUsers.map((u) => ({
@@ -648,6 +753,7 @@ function buildSiteHqPayload(viewer) {
       conference: u.conference || null,
       hqConference: u.hqConference || null,
       membershipLeague: u.membershipLeague || null,
+      leagueId: u.leagueId || null,
       league: siteHqLeagueLabel(u),
       loungeOnly: Boolean(u.loungeOnly),
       loungeToken: Boolean(u.loungeToken),
@@ -4719,12 +4825,12 @@ function deliverWelcomeInboxIfNeeded(user) {
     let kind = users.membershipKindOf(user);
     let leagueName = '';
     let href = '';
-    if (user.leagueOwner && user.leagueId) {
-      const owned = leagues.findById(user.leagueId);
-      if (owned?.platform === 'independent') {
+    if (user.leagueId) {
+      const linked = leagues.findById(user.leagueId);
+      if (linked?.platform === 'independent') {
         kind = 'independent';
-        leagueName = owned.brand?.name || owned.slug || '';
-        href = leagues.independentHomePath(owned);
+        leagueName = linked.brand?.name || linked.slug || '';
+        href = leagues.independentHomePath(linked);
       }
     }
     const msg = welcomeMessage.buildWelcome({
@@ -4935,6 +5041,7 @@ async function inviteIndependentPlayer(req, { league, actor, email, franchiseId 
       throw Object.assign(new Error('That account is already linked to another league'), { status: 409 });
     }
     users.setUserLeagueOwner(existing.id, leagueId, false);
+    grantLoungeAdmission(existing.id, actor.id);
     let updatedLeague = leagues.publicLeague(league);
     if (seat) {
       updatedLeague = leagues.assignFranchiseManager(leagueId, seat, existing);
@@ -6473,6 +6580,26 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/cron/pre-draft-refresh' && (req.method === 'POST' || req.method === 'GET')) {
+      if (!authorizeCron(req)) {
+        return sendJson(res, 401, { ok: false, error: 'Invalid cron secret' });
+      }
+      try {
+        const result = await preDraftRefresh.refreshAheadOfDrafts({
+          force: requestUrl.searchParams.get('force') === '1'
+        });
+        return sendJson(res, 200, { ...result, triggeredBy: 'cron' });
+      } catch (err) {
+        console.error('[pre-draft-refresh] cron failed', err);
+        return sendJson(res, 200, {
+          ok: false,
+          skipped: true,
+          reason: 'job_failed',
+          error: err.message || 'Pre-draft pool refresh failed'
+        });
+      }
+    }
+
     const mutatingApi = pathname.startsWith('/api/')
       && !pathname.startsWith('/api/cron/')
       && !['GET', 'HEAD', 'OPTIONS'].includes(String(req.method || '').toUpperCase());
@@ -6606,7 +6733,7 @@ const server = http.createServer(async (req, res) => {
           loginName: body.loginName,
           password: body.password,
           approved: bootstrap || independentInvite,
-          loungeMember: bootstrap || socialInvite || (admittedByToken && !independentInvite),
+          loungeMember: bootstrap || socialInvite || admittedByToken || independentInvite,
           loungeOnly: socialInvite
         });
         if (inviteToken) {
@@ -6614,6 +6741,7 @@ const server = http.createServer(async (req, res) => {
           if (inviteRecord?.leagueId) {
             try {
               users.setUserLeagueOwner(user.id, inviteRecord.leagueId, false);
+              grantLoungeAdmission(user.id, user.id);
               user = users.findById(user.id) || user;
               if (inviteRecord.franchiseId) {
                 leagues.assignFranchiseManager(
@@ -9349,8 +9477,9 @@ const server = http.createServer(async (req, res) => {
         }
         const membership = role === 'viewer'
           ? 'gridiron'
-          : users.normalizeMembershipKind(body.membership || body.kind || 'gridiron');
-        const social = membership === 'social';
+          : String(body.membership || body.kind || 'gridiron').trim();
+        const placement = users.parseMembershipPlacement(membership);
+        const social = placement.kind === 'social';
         if (social && role !== 'user') {
           throw Object.assign(new Error('Staff access cannot be a social (lounge-only) account'), { status: 400 });
         }
@@ -9366,21 +9495,17 @@ const server = http.createServer(async (req, res) => {
           loungeOnly: social
         });
         try {
-          if (!social && role !== 'viewer') {
-            const patch = { league: membership === 'aaa' ? 'aaa' : 'gridiron' };
-            user = users.setLeagueMembership(user.id, patch);
+          if (role !== 'viewer') {
+            user = applyStaffPlacement(user.id, membership, owner);
             const conference = String(body.conference || body.hqConference || '').trim();
-            if (membership === 'gridiron' && conference && role === 'user') {
+            if (placement.kind === 'gridiron' && conference && role === 'user') {
               user = users.setLeagueMembership(user.id, { hqConference: conference });
             }
+            if (body.duesPaid === true && (placement.kind === 'gridiron' || placement.kind === 'aaa')) {
+              user = users.setLeagueMembership(user.id, { duesPaid: true });
+            }
           }
-          if (role !== 'viewer' && (body.loungeToken === true || body.loungeToken === '1')) {
-            const token = users.setLoungeToken(user.id, true, owner.id);
-            user = token.user || user;
-          }
-          if (body.duesPaid === true && !social && role !== 'viewer') {
-            user = users.setLeagueMembership(user.id, { duesPaid: true });
-          }
+          user = grantLoungeAdmission(user.id, owner.id);
         } catch (assignErr) {
           return sendJson(res, 201, {
             ok: true,
@@ -9599,6 +9724,7 @@ const server = http.createServer(async (req, res) => {
           claim: claimByUser.get(u.id) || null,
           career: career.listForUser(u.id)
         })),
+        independentLeagues: listStaffPlacementLeagues(),
         claims: claims.filter((c) => !scope || c.conferenceKey === scope),
         archiveSeasons: historySeasonEntries(),
         conferences: adminLeagues.map((c) => ({
@@ -10011,23 +10137,13 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const before = users.findById(userId);
-        const kind = users.normalizeMembershipKind(body.membership || body.kind);
-        let updated;
-        if (kind === 'social') {
-          updated = users.setLoungeOnly(userId, true, admin.id);
-          try { logos.unassignTeam(userId); } catch { /* ignore */ }
-        } else {
-          users.setLoungeOnly(userId, false, admin.id);
-          updated = users.setLeagueMembership(userId, {
-            league: kind === 'aaa' ? 'aaa' : 'gridiron'
-          });
-          if (kind === 'aaa') {
-            const claim = logos.getClaimForUser(userId);
-            if (claim && (claim.conferenceKey === 'detail' || claim.conferenceKey === 'overtime')) {
-              try { logos.unassignTeam(userId); } catch { /* ignore */ }
-            }
-          }
-        }
+        const updated = applyStaffPlacement(userId, body.membership || body.kind, admin);
+        const kind = users.membershipKindOf(updated);
+        const leagueName = kind === 'independent'
+          ? placementLeagueName(updated.leagueId)
+          : (kind === 'aaa'
+            ? (getAffiliatedLeague('aaa')?.brand?.name || 'AAA League')
+            : config.brand.name);
         let mail = { sent: false, method: 'none' };
         const shouldWelcome = Boolean(before)
           && before.approved !== false
@@ -10038,11 +10154,12 @@ const server = http.createServer(async (req, res) => {
             mail = await sendAccountApprovedEmail({
               to: updated.email,
               name: updated.name || updated.loginName,
-              leagueName: kind === 'aaa'
-                ? (getAffiliatedLeague('aaa')?.brand?.name || 'AAA League')
-                : config.brand.name,
+              leagueName,
               baseUrl: requestOrigin(req),
-              membershipKind: kind
+              membershipKind: kind,
+              hqPath: kind === 'independent' && updated.leagueId
+                ? leagues.independentHomePath(leagues.findById(updated.leagueId))
+                : undefined
             });
             if (mail.sent) {
               try { users.markWelcomeMailSent(userId); } catch { /* ignore */ }
@@ -10059,8 +10176,8 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, {
           ok: true,
           user: updated,
-          membershipKind: users.membershipKindOf(updated),
-          membershipLabel: users.membershipKindLabel(users.membershipKindOf(updated)),
+          membershipKind: kind,
+          membershipLabel: users.membershipKindLabel(kind, leagueName),
           mailSent: Boolean(mail.sent),
           mailMethod: mail.method || null,
           mailError: mail.error || null
@@ -10088,29 +10205,42 @@ const server = http.createServer(async (req, res) => {
         const newlyApproved = Boolean(before) && before.approved === false && body.approved !== false;
         const hasMembership = Object.prototype.hasOwnProperty.call(body, 'membership')
           || Object.prototype.hasOwnProperty.call(body, 'kind');
-        const approveOpts = {};
-        if (hasMembership) {
-          approveOpts.membership = users.normalizeMembershipKind(
-            body.membership || body.kind || (before?.loungeOnly ? 'social' : before?.membershipLeague)
-          );
-        }
-        const updated = users.setUserApproved(userId, body.approved !== false, admin.id, approveOpts);
-        if (updated.loungeOnly) {
+        const membershipRaw = body.membership || body.kind
+          || (before?.loungeOnly ? 'social' : before?.membershipLeague);
+        let updated = users.setUserApproved(userId, body.approved !== false, admin.id, {});
+        let placementWarning = null;
+        if (body.approved !== false && hasMembership) {
+          try {
+            updated = applyStaffPlacement(userId, membershipRaw, admin);
+          } catch (placeErr) {
+            placementWarning = placeErr.message || 'Membership could not be assigned.';
+            if (updated.loungeOnly) {
+              try { logos.unassignTeam(userId); } catch { /* ignore */ }
+            }
+          }
+        } else if (updated.loungeOnly) {
           try { logos.unassignTeam(userId); } catch { /* ignore */ }
         }
+        grantLoungeAdmission(userId, admin.id);
+        updated = users.publicUser(users.findById(userId));
         let mail = { sent: false, method: 'none' };
-        // Welcome email goes out when membership is assigned (Members → Access → Membership).
         if (newlyApproved && hasMembership && updated.email) {
           try {
             const kind = users.membershipKindOf(updated);
+            const leagueName = kind === 'independent'
+              ? placementLeagueName(updated.leagueId)
+              : (kind === 'aaa'
+                ? (getAffiliatedLeague('aaa')?.brand?.name || 'AAA League')
+                : config.brand.name);
             mail = await sendAccountApprovedEmail({
               to: updated.email,
               name: updated.name || updated.loginName,
-              leagueName: kind === 'aaa'
-                ? (getAffiliatedLeague('aaa')?.brand?.name || 'AAA League')
-                : config.brand.name,
+              leagueName,
               baseUrl: requestOrigin(req),
-              membershipKind: kind
+              membershipKind: kind,
+              hqPath: kind === 'independent' && updated.leagueId
+                ? leagues.independentHomePath(leagues.findById(updated.leagueId))
+                : undefined
             });
             if (mail.sent) {
               try { users.markWelcomeMailSent(userId); } catch { /* ignore */ }
@@ -10125,11 +10255,13 @@ const server = http.createServer(async (req, res) => {
           }
         }
         syncPendingInboxDigests(admin, { force: true });
+        const kind = users.membershipKindOf(updated);
         return sendJson(res, 200, {
           ok: true,
           user: updated,
-          membershipKind: users.membershipKindOf(updated),
-          membershipLabel: users.membershipKindLabel(users.membershipKindOf(updated)),
+          membershipKind: kind,
+          membershipLabel: users.membershipKindLabel(kind, placementLeagueName(updated.leagueId)),
+          warning: placementWarning || undefined,
           mailSent: Boolean(mail.sent),
           mailMethod: mail.method || null,
           mailError: mail.error || null
@@ -12470,6 +12602,9 @@ server.listen(PORT, '0.0.0.0', () => {
   }, 8_000);
   const INDEPENDENT_DRAFT_TICK_MS = 4_000;
   setInterval(() => {
+    preDraftRefresh.refreshAheadOfDrafts().catch((err) => {
+      console.warn('[pre-draft-refresh] failed', err.message || err);
+    });
     nflverseDraft.loadDraftPool({ activeOnly: true })
       .then((payload) => {
         independentDraft.tickAll(payload.players || []);
@@ -12508,6 +12643,11 @@ server.listen(PORT, '0.0.0.0', () => {
         run: () => deathPoolNews.runDeathNewsScan({ force: true })
       },
       {
+        name: 'pre-draft-refresh',
+        everyMinutes: 1,
+        run: () => preDraftRefresh.refreshAheadOfDrafts()
+      },
+      {
         name: 'roster-violations-q1',
         days: [0, 1, 2, 4, 5],
         hours: [0, 1, 2, 3, 16, 17, 18, 19, 20, 21, 22, 23],
@@ -12519,7 +12659,7 @@ server.listen(PORT, '0.0.0.0', () => {
         })
       }
     ]);
-    console.log('In-process crons: weekly-wrap, rules-sync, roster-violations, death-pool-news, roster-violations-q1');
+    console.log('In-process crons: weekly-wrap, rules-sync, roster-violations, death-pool-news, pre-draft-refresh, roster-violations-q1');
   }
   console.log('');
 });
