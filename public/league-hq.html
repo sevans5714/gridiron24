@@ -1767,12 +1767,17 @@
       return 'Scheduled';
     }
 
+    function setupPath(league) {
+      const id = String(league?.id || '').trim();
+      return id ? `/create-league?leagueId=${encodeURIComponent(id)}` : '/create-league';
+    }
+
     function statusBanner(league) {
       if (league.status === 'pending_approval') {
-        return `<div class="il-banner is-pending"><strong>Pending approval.</strong> After the site owner approves, open <a href="/create-league">Create a League</a> to set up the league.</div>`;
+        return `<div class="il-banner is-pending"><strong>Pending approval.</strong> After the site owner approves, open <a href="${esc(setupPath(league))}">Create a League</a> to set up the league.</div>`;
       }
       if (league.status === 'approved' && league.setupComplete === false) {
-        return `<div class="il-banner is-pending"><strong>Approved — setup required.</strong> <a href="/create-league">Set up your league</a>.</div>`;
+        return `<div class="il-banner is-pending"><strong>Approved — setup required.</strong> <a href="${esc(setupPath(league))}">Set up your league</a>.</div>`;
       }
       if (league.status === 'rejected') {
         return `<div class="il-banner"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
@@ -2029,15 +2034,15 @@
         return `${pageHead('Settings', league)}
           <section class="il-panel">
             <h2>Waiting for approval</h2>
-            <p class="il-meta">You submitted <strong>${esc(league.brand?.name || league.slug)}</strong> — <strong>${esc(String(league.structure?.totalTeams || '—'))}</strong> teams · ${esc((league.leagueType === 'two-conferences' || (league.conferences || []).length === 2) ? 'two conferences' : 'one conference')}. After approval, set up the league on <a href="/create-league">Create a League</a>.</p>
+            <p class="il-meta">You submitted <strong>${esc(league.brand?.name || league.slug)}</strong> — <strong>${esc(String(league.structure?.totalTeams || '—'))}</strong> teams · ${esc((league.leagueType === 'two-conferences' || (league.conferences || []).length === 2) ? 'two conferences' : 'one conference')}. After approval, set up the league on <a href="${esc(setupPath(league))}">Create a League</a>.</p>
           </section>`;
       }
       if (league.status === 'approved' && league.setupComplete === false) {
         return `${pageHead('Settings', league)}
           <section class="il-panel">
             <h2>Set up your league</h2>
-            <p class="il-meta">Approved. Complete setup on <a href="/create-league">Create a League</a> before Settings unlock here.</p>
-            <p class="il-actions" style="margin-top:0.85rem;"><a class="il-btn" href="/create-league">Open setup</a></p>
+            <p class="il-meta">Approved. Complete setup on <a href="${esc(setupPath(league))}">Create a League</a> before Settings unlock here.</p>
+            <p class="il-actions" style="margin-top:0.85rem;"><a class="il-btn" href="${esc(setupPath(league))}">Open setup</a></p>
           </section>`;
       }
       if (league.status === 'rejected') {
@@ -2363,7 +2368,7 @@
         return `${pageHead('Scoring', league)}
           <section class="il-panel">
             <h2>Finish setup first</h2>
-            <p class="il-meta">Complete <a href="/create-league">Create a League</a> before editing scoring.</p>
+            <p class="il-meta">Complete <a href="${esc(setupPath(league))}">Create a League</a> before editing scoring.</p>
           </section>`;
       }
       if (league.status === 'rejected') {
@@ -2396,7 +2401,7 @@
         return `${pageHead('Manage', league)}
           <section class="il-panel">
             <h2>Finish setup first</h2>
-            <p class="il-meta">Complete the <a href="/create-league">Create a League</a> wizard before inviting managers.</p>
+            <p class="il-meta">Complete the <a href="${esc(setupPath(league))}">Create a League</a> wizard before inviting managers.</p>
           </section>`;
       }
       const confs = league.conferences || [];

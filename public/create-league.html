@@ -635,6 +635,10 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json().catch(() => ({}));
+        if (data.homePath && res.status === 409) {
+          window.location.replace(data.homePath);
+          return;
+        }
         if (!res.ok || !data.ok) throw new Error(data.error || 'Could not submit league');
         showOk('Your request has been sent! Please keep an eye on your email for approval from GridIron 24.');
         setMode('waiting');
@@ -1055,7 +1059,11 @@
           return;
         }
         setRequestSignedIn(auth.user);
-        const mine = await fetch('/api/my-league', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
+        const qid = new URLSearchParams(location.search || '').get('leagueId') || '';
+        const mine = await fetch(
+          `/api/my-league${qid ? `?leagueId=${encodeURIComponent(qid)}` : ''}`,
+          { cache: 'no-store' }
+        ).then((r) => r.json()).catch(() => ({}));
         const league = mine?.league || null;
         if (!league) {
           setMode('request');
@@ -1071,9 +1079,8 @@
           showStep(0);
           return;
         }
-        if (league.setupComplete !== false && league.homePath) {
-          setMode('request');
-          showOk(`Your league is already set up. Open HQ: ${league.homePath}`);
+        if (league.homePath) {
+          window.location.replace(league.homePath);
           return;
         }
         setMode('request');

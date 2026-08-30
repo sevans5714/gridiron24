@@ -124,9 +124,9 @@
 
       let banner = '';
       if (league.status === 'pending_approval') {
-        banner = `<div class="banner">Registration is with the site owner. After approval, open <a href="/create-league">Create a League</a> to set up the league.</div>`;
+        banner = `<div class="banner">Registration is with the site owner. After approval, open <a href="/create-league?leagueId=${esc(league.id)}">Create a League</a> to set up the league.</div>`;
       } else if (league.status === 'approved' && league.setupComplete === false) {
-        banner = `<div class="banner">Approved. <a href="/create-league">Set up your league</a>.</div>`;
+        banner = `<div class="banner">Approved. <a href="/create-league?leagueId=${esc(league.id)}">Set up your league</a>.</div>`;
       } else if (league.status === 'rejected') {
         banner = `<div class="banner bad"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
       } else if (league.status === 'approved') {

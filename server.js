@@ -4883,6 +4883,41 @@ function isIndependentHqScope(scope) {
   return Boolean(scope && (scope.scope === 'independent' || scope.platform === 'independent'));
 }
 
+function independentCreateLeagueHref(league) {
+  if (!league?.id) return '/create-league';
+  return `/create-league?leagueId=${encodeURIComponent(league.id)}`;
+}
+
+/** League the Create-a-League page should act on — current HQ first, never a random other request. */
+function resolveCreateLeagueSubject(user, req, requestedId = '') {
+  if (!user) return null;
+  const canSee = (raw) => {
+    if (!raw || raw.platform !== 'independent') return false;
+    if (canInspectAsOwner(user)) return true;
+    return Boolean(raw.ownerUserId && raw.ownerUserId === user.id);
+  };
+  const want = String(requestedId || '').trim();
+  if (want) {
+    const hit = leagues.findById(want);
+    if (canSee(hit)) return hit;
+  }
+  const scope = leagueScopeForUser(user, req);
+  if (isIndependentHqScope(scope) && scope.leagueId) {
+    const scoped = leagues.findById(scope.leagueId);
+    if (canSee(scoped)) return scoped;
+  }
+  if (!canInspectAsOwner(user) && user.leagueId) {
+    const linked = leagues.findById(user.leagueId);
+    if (canSee(linked)) return linked;
+  }
+  const owned = leagues.listIndependentLeaguesForOwner(user.id);
+  const pending = owned.find((l) => l.status === 'pending_approval');
+  if (pending) return leagues.findById(pending.id);
+  const setup = owned.find((l) => l.status === 'approved' && l.setupComplete === false);
+  if (setup) return leagues.findById(setup.id);
+  return null;
+}
+
 function inboxMessageVisibleForScope(msg, scope) {
   if (!isIndependentHqScope(scope)) return true;
   const leagueId = String(scope.leagueId || '');
@@ -7616,6 +7651,14 @@ const server = http.createServer(async (req, res) => {
             error: 'You already have a league waiting on approval or setup. Open Create a League to continue.'
           });
         }
+        const current = resolveCreateLeagueSubject(user, req);
+        if (current && current.status === 'approved' && isIndependentHqScope(leagueScopeForUser(user, req))) {
+          return sendJson(res, 409, {
+            ok: false,
+            error: 'This league is already approved. Open HQ — do not submit another request.',
+            homePath: leagues.independentHomePath(current)
+          });
+        }
 
         const brandName = String(body.brand?.name || '').trim();
         const leagueType = String(body.leagueType || '').trim();
@@ -7699,9 +7742,12 @@ const server = http.createServer(async (req, res) => {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
       const owned = leagues.listIndependentLeaguesForOwner(user.id);
+      const requestedId = String(requestUrl.searchParams.get('leagueId') || '').trim();
+      const raw = resolveCreateLeagueSubject(user, req, requestedId);
       const byId = user.leagueId ? leagues.findById(user.leagueId) : null;
-      const league = owned[0]
-        || (byId?.platform === 'independent' ? leagues.publicLeague(byId) : null);
+      const league = raw
+        ? leagues.publicLeague(raw)
+        : (owned[0] || (byId?.platform === 'independent' ? leagues.publicLeague(byId) : null));
       return sendJson(res, 200, { ok: true, league: league || null, leagues: owned });
     }
 
@@ -8618,12 +8664,12 @@ const server = http.createServer(async (req, res) => {
               body: [
                 `Your league “${league.brand?.name || league.slug}” was approved.`,
                 '',
-                'Next: open /create-league and finish setup (brand, conferences, roster, scoring, payouts). Championship names stay blank until you set them.',
+                `Next: finish setup at ${independentCreateLeagueHref(league)} (brand, conferences, roster, scoring, payouts). Championship names stay blank until you set them.`,
                 '',
                 `HQ opens after setup: ${leagues.independentHomePath(league)}`
               ].join('\n'),
               type: 'league_approved',
-              meta: { href: '/create-league', leagueId: league.id }
+              meta: { href: independentCreateLeagueHref(league), leagueId: league.id }
             });
           }
         } catch { /* ignore */ }
@@ -8657,7 +8703,7 @@ const server = http.createServer(async (req, res) => {
                 league.rejectionReason || 'No reason provided.'
               ].join('\n'),
               type: 'league_rejected',
-              meta: { href: '/create-league', leagueId: league.id }
+              meta: { href: independentCreateLeagueHref(league), leagueId: league.id }
             });
           }
         } catch { /* ignore */ }
