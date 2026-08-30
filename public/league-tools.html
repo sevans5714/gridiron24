@@ -2679,10 +2679,11 @@
 
     function memberLeagueKey(u) {
       if (!u || u.approved === false) return null;
+      if (u.readOnly || u.role === 'viewer') return 'viewer';
       if (u.loungeOnly) return 'social';
       if (u.membershipLeague === 'aaa') return 'aaa';
       if (u.membershipLeague === 'gridiron') return 'gridiron';
-      if (u.siteOwner || u.canSwitchLeagues || u.role === 'commissioner') return 'gridiron';
+      if (u.siteOwner || u.role === 'commissioner') return 'gridiron';
       return 'unassigned';
     }
 
@@ -2702,6 +2703,7 @@
       const gi = approved.filter((u) => memberLeagueKey(u) === 'gridiron').length;
       const aaa = approved.filter((u) => memberLeagueKey(u) === 'aaa').length;
       const social = approved.filter((u) => memberLeagueKey(u) === 'social').length;
+      const viewer = approved.filter((u) => memberLeagueKey(u) === 'viewer').length;
       const unassigned = approved.filter((u) => memberLeagueKey(u) === 'unassigned').length;
       const pending = (list || []).filter((u) => u.approved === false).length;
       const giMembers = approved.filter((u) => memberLeagueKey(u) === 'gridiron');
@@ -2712,6 +2714,7 @@
         gi,
         aaa,
         social,
+        viewer,
         unassigned,
         pending,
         detail,
@@ -2778,15 +2781,17 @@
         ? chip('overtime', 'FULL', `Overtime · ${stats.overtime} of ${stats.confCap}`)
         : chip('overtime', String(stats.overtimeOpen), `Overtime spots left · ${stats.overtime} of ${stats.confCap}`, 'census-open');
       census.innerHTML = [
+        chip('all', String(stats.gi + stats.aaa + stats.social + stats.viewer + stats.unassigned), 'All approved accounts'),
         giChip,
         detailChip,
         overtimeChip,
         stats.noConf ? chip('noconf', String(stats.noConf), 'GridIron · no conference yet', 'census-open') : '',
         aaaChip,
         chip('social', String(stats.social), 'Social / lounge'),
+        stats.viewer ? chip('viewer', String(stats.viewer), 'View only', 'census-open') : '',
         stats.unassigned
           ? chip('unassigned', String(stats.unassigned), 'Approved · no league yet', 'census-open')
-          : chip('all', String(stats.gi + stats.aaa + stats.social + stats.unassigned), 'All approved accounts'),
+          : '',
         stats.pending
           ? `<a href="#account-requests" class="census-open"><strong>${stats.pending}</strong><span>Awaiting approval</span></a>`
           : ''
@@ -2801,7 +2806,7 @@
     }
 
     function memberSearchHaystack(u) {
-      return [u.name, u.loginName, u.email, u.claim?.teamName, memberConferenceKey(u)]
+      return [u.name, u.loginName, u.email, u.role, u.claim?.teamName, memberConferenceKey(u), memberLeagueKey(u)]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -2885,9 +2890,11 @@
                       ? 'Overtime'
                       : membersLeagueFilter === 'noconf'
                         ? 'no conference'
+                        : membersLeagueFilter === 'viewer'
+                          ? 'view only'
                         : 'approved';
         countEl.textContent = membersLeagueFilter === 'all'
-          ? `${stats.gi} GridIron 24 · ${stats.aaa} AAA`
+          ? `${stats.gi} GridIron 24 · ${stats.aaa} AAA${stats.viewer ? ` · ${stats.viewer} view only` : ''}`
           : `Showing ${visible.length} ${leagueLabel}`;
         }
       }

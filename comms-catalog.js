@@ -95,6 +95,24 @@ const CATALOG = [
     placeholders: ['who']
   },
   {
+    id: 'email.account_created',
+    name: 'New account (email)',
+    channel: 'email',
+    group: 'Requests',
+    when: 'Someone creates an account (invite, register, or league signup). Emails site owners and commissioners.',
+    editable: ['subject'],
+    canDisable: true
+  },
+  {
+    id: 'email.league_request',
+    name: 'League request (email)',
+    channel: 'email',
+    group: 'Requests',
+    when: 'An independent league is submitted and waiting for site owner approval.',
+    editable: ['subject'],
+    canDisable: true
+  },
+  {
     id: 'inbox.account_created',
     name: 'New account alert',
     channel: 'inbox',

@@ -80,10 +80,12 @@ const {
   sendConferenceOwnerEmail,
   sendRosterViolationEmail,
   sendPwaInstallEmail,
+  sendOwnerOpsEmail,
   buildWeeklyWrapEmail,
   buildConferenceOwnerEmail,
   buildPwaInstallEmail,
-  mailConfig
+  mailConfig,
+  siteBaseUrl
 } = require('./mail');
 const { GUIDE: pwaInstallGuide } = require('./pwa-install-guide');
 
@@ -4749,7 +4751,44 @@ function deliverWelcomeInboxIfNeeded(user) {
   }
 }
 
-/** Alert site owner inbox when someone creates an account. */
+function staffOpsEmailRecipients(excludeUserId = null) {
+  return users.listUsers().filter((u) => {
+    if (!u || u.approved === false) return false;
+    if (excludeUserId && u.id === excludeUserId) return false;
+    if (!u.email || !String(u.email).includes('@')) return false;
+    if (users.isReadOnly(u)) return false;
+    return users.isSiteOwner(u) || users.isCommissioner(u);
+  });
+}
+
+function emailStaffOpsAlert({
+  commsId,
+  excludeUserId,
+  subject,
+  headline,
+  preheader,
+  lines,
+  ctaLabel,
+  ctaPath
+}) {
+  const origin = siteBaseUrl();
+  const ctaUrl = `${origin}${ctaPath || '/owner.html'}`;
+  const recipients = staffOpsEmailRecipients(excludeUserId);
+  Promise.all(recipients.map((u) => sendOwnerOpsEmail({
+    to: u.email,
+    commsId,
+    subject,
+    headline,
+    preheader,
+    lines,
+    ctaLabel,
+    ctaUrl
+  }))).catch((err) => {
+    console.warn('[owner-ops] batch failed', err.message || err);
+  });
+}
+
+/** Alert site owner inbox + email when someone creates an account. */
 function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
   if (!user?.id) return;
   if (users.isSiteOwner(user)) return;
@@ -4757,9 +4796,10 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
     const owners = users.listUsers().filter(
       (u) => users.isSiteOwner(u) && u.approved !== false && u.id !== user.id
     );
-    if (!owners.length) return;
+    if (!owners.length && !staffOpsEmailRecipients(user.id).length) return;
 
-    const kind = user.approved === false
+    const pending = user.approved === false;
+    const kind = pending
       ? 'Pending approval'
       : user.loungeOnly
         ? 'Social (Members Lounge only)'
@@ -4768,9 +4808,11 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
           : user.loungeMember
             ? 'Member'
             : 'Pending approval';
-    const subject = `New account: ${user.name || user.loginName}`;
+    const subject = pending
+      ? `Pending account: ${user.name || user.loginName}`
+      : `New account: ${user.name || user.loginName}`;
     const body = [
-      'NEW ACCOUNT CREATED',
+      pending ? 'ACCOUNT AWAITING APPROVAL' : 'NEW ACCOUNT CREATED',
       '',
       `Name: ${user.name || '—'}`,
       `Login: ${user.loginName}`,
@@ -4778,35 +4820,187 @@ function notifySiteOwnersOfNewAccount(user, { source = 'register' } = {}) {
       `Type: ${kind}`,
       `Source: ${source}`,
       '',
-      user.approved === false
+      pending
         ? 'Waiting for commissioner approval. They cannot sign in yet.'
         : 'They can sign in now.',
       '',
       'Open Owner Dashboard → Players → Approve.'
     ].join('\n');
 
-    if (!commsSettings.isEnabled('inbox.account_created')) return;
-
-    for (const ownerUser of owners) {
-      inbox.sendMessage({
-        toUserId: ownerUser.id,
-        from: { name: 'League HQ' },
-        subject,
-        body,
-        type: 'account_created',
-        relatedId: user.id,
-        meta: {
-          href: '/owner.html#account-requests',
-          hrefLabel: 'Open Owner Dashboard',
-          userId: user.id,
-          source,
-          pendingApprovals: true
-        }
-      });
+    if (commsSettings.isEnabled('inbox.account_created')) {
+      for (const ownerUser of owners) {
+        inbox.sendMessage({
+          toUserId: ownerUser.id,
+          from: { name: 'League HQ' },
+          subject,
+          body,
+          type: 'account_created',
+          relatedId: user.id,
+          meta: {
+            href: '/owner.html#account-requests',
+            hrefLabel: 'Open Owner Dashboard',
+            userId: user.id,
+            source,
+            pendingApprovals: pending
+          }
+        });
+      }
     }
+
+    emailStaffOpsAlert({
+      commsId: 'email.account_created',
+      excludeUserId: user.id,
+      subject: `GridIron 24 · ${subject}`,
+      headline: pending ? 'Account awaiting approval' : 'New account created',
+      preheader: pending
+        ? `${user.name || user.loginName} created an account and is waiting for approval.`
+        : `${user.name || user.loginName} created an account.`,
+      lines: body.split('\n'),
+      ctaLabel: pending ? 'Review request' : 'Open dashboard',
+      ctaPath: pending ? '/owner.html#account-requests' : '/site.html#accounts'
+    });
   } catch (err) {
     console.warn('[account-created] owner notify failed', err.message || err);
   }
+}
+
+function notifySiteOwnersOfLeagueRequest(league, ownerUser) {
+  if (!league) return;
+  const name = league.brand?.name || league.slug || 'Independent league';
+  const teams = league.structure?.totalTeams || '?';
+  const conferences = Number(league.structure?.conferenceCount) === 2 ? 'Two conferences' : 'One conference';
+  const subject = `League request: ${name}`;
+  const bodyLines = [
+    'NEW LEAGUE REGISTRATION',
+    '',
+    `League: ${name}`,
+    ownerUser
+      ? `Owner: ${ownerUser.name || ownerUser.loginName} (${ownerUser.loginName}) · ${ownerUser.email || '—'}`
+      : `Owner: ${league.ownerName || league.ownerEmail || '—'}`,
+    `Teams: ${teams}`,
+    `Type: ${conferences}`,
+    '',
+    'This request is pending your approval.',
+    '',
+    '1. Review in Owner Dashboard → Players → League requests.',
+    '2. After approval, the owner sets up the league on /create-league.'
+  ];
+  try {
+    if (commsSettings.isEnabled('inbox.league_request')) {
+      const owners = users.listUsers().filter((u) => users.isSiteOwner(u) && u.approved !== false);
+      for (const recipient of owners) {
+        inbox.sendMessage({
+          toUserId: recipient.id,
+          from: { name: 'League HQ' },
+          subject,
+          body: bodyLines.join('\n'),
+          type: 'league_request',
+          meta: {
+            href: '/owner.html#league-requests',
+            hrefLabel: 'Open Owner Dashboard',
+            leagueId: league.id
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[league-request] inbox notify failed', err.message || err);
+  }
+  emailStaffOpsAlert({
+    commsId: 'email.league_request',
+    excludeUserId: ownerUser?.id,
+    subject: `GridIron 24 · ${subject}`,
+    headline: 'League request pending',
+    preheader: `${name} is waiting for approval.`,
+    lines: bodyLines,
+    ctaLabel: 'Review league request',
+    ctaPath: '/owner.html#league-requests'
+  });
+}
+
+async function inviteIndependentPlayer(req, { league, actor, email, franchiseId = null }) {
+  const leagueId = league.id;
+  const address = String(email || '').trim();
+  const seat = String(franchiseId || '').trim() || null;
+  if (!address) {
+    throw Object.assign(new Error('Email is required'), { status: 400 });
+  }
+  if (seat && !(league.franchises || []).some((f) => f.id === seat)) {
+    throw Object.assign(new Error('Franchise not found'), { status: 400 });
+  }
+  const existing = users.findByEmail(address);
+  if (existing) {
+    const publicExisting = users.publicUser(existing);
+    if (publicExisting.leagueId && publicExisting.leagueId !== leagueId && !users.isSiteOwner(publicExisting)) {
+      throw Object.assign(new Error('That account is already linked to another league'), { status: 409 });
+    }
+    users.setUserLeagueOwner(existing.id, leagueId, false);
+    let updatedLeague = leagues.publicLeague(league);
+    if (seat) {
+      updatedLeague = leagues.assignFranchiseManager(leagueId, seat, existing);
+    }
+    try {
+      inbox.sendMessage({
+        toUserId: existing.id,
+        from: { name: league.brand?.name || 'League HQ' },
+        subject: `You're in · ${league.brand?.name || 'league'}`,
+        body: [
+          `${actor.name || actor.loginName} added you to ${league.brand?.name || 'their league'}.`,
+          '',
+          `Open HQ: ${leagues.independentHomePath(league)}`
+        ].join('\n'),
+        type: 'league_invite',
+        meta: { href: leagues.independentHomePath(league), leagueId }
+      });
+    } catch { /* ignore */ }
+    return {
+      ok: true,
+      attached: true,
+      email: users.normalizeEmail(address),
+      user: users.publicUser(users.findById(existing.id)),
+      league: updatedLeague,
+      message: 'Existing account linked to this league.'
+    };
+  }
+  const created = invites.createInvite({
+    email: address,
+    invitedBy: actor,
+    loungeOnly: false,
+    leagueId,
+    franchiseId: seat
+  });
+  const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(created.token)}`;
+  let mailResult = { sent: false, method: 'none' };
+  try {
+    mailResult = await sendInviteEmail({
+      to: created.invite.email,
+      inviteUrl,
+      invitedByName: actor.name || actor.loginName,
+      leagueName: league.brand?.name || 'your league',
+      baseUrl: requestOrigin(req),
+      loungeOnly: false,
+      independent: true
+    });
+  } catch (mailErr) {
+    mailResult = {
+      sent: false,
+      method: 'error',
+      error: mailErr.message || 'Email send failed'
+    };
+  }
+  return {
+    ok: true,
+    attached: false,
+    email: created.invite.email,
+    invite: created.invite,
+    inviteUrl,
+    sent: Boolean(mailResult.sent),
+    method: mailResult.method,
+    mailError: mailResult.error || null,
+    message: mailResult.sent
+      ? 'Invite emailed. They can create an account and join immediately.'
+      : 'Invite created — copy the link if email did not send.'
+  };
 }
 
 const pendingInboxSyncAt = new Map();
@@ -6405,13 +6599,14 @@ const server = http.createServer(async (req, res) => {
           inviteRecord = invites.findByToken(inviteToken);
         }
         const socialInvite = Boolean(inviteRecord?.loungeOnly);
+        const independentInvite = Boolean(inviteRecord?.leagueId);
         let user = users.createUser({
           name: body.name,
           email: body.email,
           loginName: body.loginName,
           password: body.password,
-          approved: bootstrap,
-          loungeMember: bootstrap || admittedByToken,
+          approved: bootstrap || independentInvite,
+          loungeMember: bootstrap || socialInvite || (admittedByToken && !independentInvite),
           loungeOnly: socialInvite
         });
         if (inviteToken) {
@@ -6442,10 +6637,14 @@ const server = http.createServer(async (req, res) => {
             }
           }
         }
+        user = users.publicUser(users.findById(user.id) || user);
         notifySiteOwnersOfNewAccount(user, {
-          source: socialInvite ? 'lounge_invite' : (inviteToken ? 'invite' : 'bootstrap')
+          source: socialInvite
+            ? 'lounge_invite'
+            : (independentInvite ? 'league_invite' : (inviteToken ? 'invite' : 'bootstrap'))
         });
-        // Invite lets them create an account. Commissioner still has to approve before sign-in.
+        // GI24/AAA invites still wait for commissioner approval. Independent league
+        // owner invites are approved immediately so players can sign in.
         if (!user.approved) {
           for (const staffUser of users.listUsers()) {
             if (users.isSiteOwner(staffUser) || users.isCommissioner(staffUser)) {
@@ -7121,31 +7320,7 @@ const server = http.createServer(async (req, res) => {
         users.setUserLeagueOwner(user.id, league.id, true);
 
         try {
-          const owners = users.listUsers().filter((u) => users.isSiteOwner(u) && u.approved !== false);
-          for (const ownerUser of owners) {
-            inbox.sendMessage({
-              toUserId: ownerUser.id,
-              from: { name: 'League HQ' },
-              subject: `League request: ${league.brand?.name || league.slug}`,
-              body: [
-                'NEW LEAGUE REGISTRATION',
-                '',
-                `League: ${league.brand?.name || league.slug}`,
-                `Owner: ${user.name} (${user.loginName}) · ${user.email}`,
-                `Teams: ${league.structure?.totalTeams || '?'}`,
-                `Type: ${conferenceCount === 2 ? 'Two conferences' : 'One conference'}`,
-                '',
-                '1. Review in Owner Dashboard → Players → League requests.',
-                '2. After approval, the owner sets up the league on /create-league.'
-              ].join('\n'),
-              type: 'league_request',
-              meta: {
-                href: '/owner.html#league-requests',
-                hrefLabel: 'Open Owner Dashboard',
-                leagueId: league.id
-              }
-            });
-          }
+          notifySiteOwnersOfLeagueRequest(league, user);
         } catch (mailErr) {
           console.warn('[create-league] owner notify failed', mailErr.message || mailErr);
         }
@@ -7360,89 +7535,60 @@ const server = http.createServer(async (req, res) => {
         if (league.status !== 'approved' || league.setupComplete === false) {
           return sendJson(res, 403, { ok: false, error: 'Finish league setup before inviting players' });
         }
-        const email = String(body.email || '').trim();
-        const franchiseId = String(body.franchiseId || '').trim() || null;
-        if (!email) return sendJson(res, 400, { ok: false, error: 'Email is required' });
-        if (franchiseId && !(league.franchises || []).some((f) => f.id === franchiseId)) {
-          return sendJson(res, 400, { ok: false, error: 'Franchise not found' });
+        const rawEmails = Array.isArray(body.emails)
+          ? body.emails.map((e) => String(e || '').trim()).filter(Boolean)
+          : String(body.email || body.emails || '')
+            .split(/[,;\n]+/)
+            .map((e) => e.trim())
+            .filter(Boolean);
+        const seen = new Set();
+        const emails = [];
+        for (const email of rawEmails) {
+          const key = email.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          emails.push(email);
         }
-        try {
-          const existing = users.findByEmail(email);
-          if (existing) {
-            if (existing.leagueId && existing.leagueId !== leagueId && !users.isSiteOwner(existing)) {
-              return sendJson(res, 409, {
-                ok: false,
-                error: 'That account is already linked to another league'
-              });
-            }
-            users.setUserLeagueOwner(existing.id, leagueId, false);
-            let updatedLeague = leagues.publicLeague(league);
-            if (franchiseId) {
-              updatedLeague = leagues.assignFranchiseManager(leagueId, franchiseId, existing);
-            }
-            try {
-              inbox.sendMessage({
-                toUserId: existing.id,
-                from: { name: league.brand?.name || 'League HQ' },
-                subject: `You're in · ${league.brand?.name || 'league'}`,
-                body: [
-                  `${user.name || user.loginName} added you to ${league.brand?.name || 'their league'}.`,
-                  '',
-                  `Open HQ: ${leagues.independentHomePath(league)}`
-                ].join('\n'),
-                type: 'league_invite',
-                meta: { href: leagues.independentHomePath(league), leagueId }
-              });
-            } catch { /* ignore */ }
-            return sendJson(res, 200, {
-              ok: true,
-              attached: true,
-              user: users.publicUser(users.findById(existing.id)),
-              league: updatedLeague,
-              message: 'Existing account linked to this league.'
-            });
-          }
-          const created = invites.createInvite({
-            email,
-            invitedBy: user,
-            loungeOnly: false,
-            leagueId,
-            franchiseId
-          });
-          const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(created.token)}`;
-          let mailResult = { sent: false, method: 'none' };
+        if (!emails.length) return sendJson(res, 400, { ok: false, error: 'Enter at least one email address' });
+        const franchiseId = emails.length === 1
+          ? (String(body.franchiseId || '').trim() || null)
+          : null;
+        const results = [];
+        let latestLeague = leagues.publicLeague(league);
+        for (const email of emails) {
           try {
-            mailResult = await sendInviteEmail({
-              to: created.invite.email,
-              inviteUrl,
-              invitedByName: user.name || user.loginName,
-              leagueName: league.brand?.name || 'your league',
-              baseUrl: requestOrigin(req),
-              loungeOnly: false,
-              independent: true
+            const row = await inviteIndependentPlayer(req, {
+              league: leagues.findById(leagueId) || league,
+              actor: user,
+              email,
+              franchiseId
             });
-          } catch (mailErr) {
-            mailResult = {
-              sent: false,
-              method: 'error',
-              error: mailErr.message || 'Email send failed'
-            };
+            if (row.league) latestLeague = row.league;
+            results.push(row);
+          } catch (err) {
+            results.push({
+              ok: false,
+              email: users.normalizeEmail(email) || email,
+              error: err.message || 'Could not invite'
+            });
           }
-          return sendJson(res, 201, {
-            ok: true,
-            attached: false,
-            invite: created.invite,
-            inviteUrl,
-            sent: Boolean(mailResult.sent),
-            method: mailResult.method,
-            mailError: mailResult.error || null,
-            message: mailResult.sent
-              ? 'Invite emailed.'
-              : 'Invite created — copy the link if email did not send.'
-          });
-        } catch (err) {
-          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not invite' });
         }
+        const okCount = results.filter((r) => r.ok).length;
+        const one = results.length === 1 ? results[0] : null;
+        return sendJson(res, okCount ? 201 : 400, {
+          ok: okCount > 0,
+          attached: Boolean(one?.attached),
+          invite: one?.invite || null,
+          inviteUrl: one?.inviteUrl || null,
+          sent: Boolean(one?.sent),
+          method: one?.method || null,
+          mailError: one?.mailError || null,
+          message: one
+            ? (one.message || one.error)
+            : `Sent ${okCount} of ${results.length} invites.`,
+          results,
+          league: latestLeague
+        });
       }
 
       if (parts.length === 4 && parts[2] === 'invites' && parts[3] !== 'resend') {
@@ -7457,26 +7603,29 @@ const server = http.createServer(async (req, res) => {
           if (!existing) return sendJson(res, 404, { ok: false, error: 'Invite not found' });
           const refreshed = invites.refreshInvite(inviteId, user);
           const inviteUrl = `${requestOrigin(req)}/register?invite=${encodeURIComponent(refreshed.token)}`;
+          const sendMail = body.send !== false;
           let mailResult = { sent: false, method: 'none' };
-          try {
-            mailResult = await sendInviteEmail({
-              to: refreshed.invite.email,
-              inviteUrl,
-              invitedByName: user.name || user.loginName,
-              leagueName: league.brand?.name || 'your league',
-              baseUrl: requestOrigin(req),
-              loungeOnly: false,
-              independent: true
-            });
-          } catch (mailErr) {
-            mailResult = { sent: false, method: 'error', error: mailErr.message || 'Email send failed' };
+          if (sendMail) {
+            try {
+              mailResult = await sendInviteEmail({
+                to: refreshed.invite.email,
+                inviteUrl,
+                invitedByName: user.name || user.loginName,
+                leagueName: league.brand?.name || 'your league',
+                baseUrl: requestOrigin(req),
+                loungeOnly: false,
+                independent: true
+              });
+            } catch (mailErr) {
+              mailResult = { sent: false, method: 'error', error: mailErr.message || 'Email send failed' };
+            }
           }
           return sendJson(res, 200, {
             ok: true,
             invite: refreshed.invite,
             inviteUrl,
             sent: Boolean(mailResult.sent),
-            method: mailResult.method,
+            method: sendMail ? mailResult.method : 'copy',
             mailError: mailResult.error || null
           });
         } catch (err) {
@@ -9217,7 +9366,7 @@ const server = http.createServer(async (req, res) => {
           loungeOnly: social
         });
         try {
-          if (!social) {
+          if (!social && role !== 'viewer') {
             const patch = { league: membership === 'aaa' ? 'aaa' : 'gridiron' };
             user = users.setLeagueMembership(user.id, patch);
             const conference = String(body.conference || body.hqConference || '').trim();
@@ -9229,12 +9378,18 @@ const server = http.createServer(async (req, res) => {
             const token = users.setLoungeToken(user.id, true, owner.id);
             user = token.user || user;
           }
-          if (body.duesPaid === true && !social) {
+          if (body.duesPaid === true && !social && role !== 'viewer') {
             user = users.setLeagueMembership(user.id, { duesPaid: true });
           }
         } catch (assignErr) {
-          try { users.deleteUser(user.id, owner.id); } catch { /* keep original error */ }
-          throw assignErr;
+          return sendJson(res, 201, {
+            ok: true,
+            user,
+            membershipKind: users.membershipKindOf(user),
+            hq: buildSiteHqPayload(owner),
+            warning: assignErr.message || 'Account created, but membership could not be assigned.',
+            message: `${user.loginName} can sign in. ${assignErr.message || 'Membership was not assigned.'}`
+          });
         }
         deliverWelcomeInboxIfNeeded(user);
         return sendJson(res, 201, {

@@ -2289,7 +2289,7 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
 
 function canManageIndependentLeague(user, league) {
   if (!user?.id || !league) return false;
-  if (user.siteOwner || user.canSwitchLeagues) return true;
+  if (user.siteOwner) return true;
   return Boolean(league.ownerUserId && league.ownerUserId === user.id);
 }
 

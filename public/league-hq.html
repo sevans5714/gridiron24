@@ -1496,7 +1496,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=186"></script>
+  <script src="/js/nav.js?v=188"></script>
   <script src="/js/official-draft-ui.js?v=16"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -2364,12 +2364,12 @@
         <div class="il-manage-grid">
           <section class="il-panel">
             <h2>Invite players</h2>
-            <p class="il-meta">Email an invite link. New accounts join this league automatically. Existing GridIron accounts are linked if that email already registered.</p>
+            <p class="il-meta">Paste emails (one per line). New players create an account from the link and join this league immediately — no GridIron 24 approval wait. Existing GridIron accounts with that email are linked.</p>
             <form class="il-form" id="il-invite-form" style="margin-top:0.85rem;">
-              <label>Email
-                <input type="email" name="email" required placeholder="manager@email.com" />
+              <label>Emails
+                <textarea name="emails" rows="5" required placeholder="one@email.com&#10;two@email.com"></textarea>
               </label>
-              <label>Assign franchise (optional)
+              <label>Assign franchise (optional — single invite only)
                 <select name="franchiseId">
                   <option value="">Assign later</option>
                   ${(league.franchises || []).map((f) =>
@@ -2378,7 +2378,7 @@
                 </select>
               </label>
               <div class="il-actions">
-                <button type="submit" class="il-btn">Send invite</button>
+                <button type="submit" class="il-btn">Send invites</button>
                 <span class="il-status" id="il-invite-status" role="status"></span>
               </div>
             </form>
@@ -4523,22 +4523,48 @@
           inviteList.innerHTML = rows.map((inv) => `
             <div class="il-invite-row">
               <span>${esc(inv.email)} <span class="il-meta">· ${esc(inv.status)}</span></span>
-              <span style="display:flex;gap:0.35rem;">
+              <span style="display:flex;gap:0.35rem;flex-wrap:wrap;">
                 ${inv.status === 'pending' || inv.status === 'expired'
-                  ? `<button type="button" class="il-btn is-ghost" data-resend="${esc(inv.id)}">Resend</button>
+                  ? `<button type="button" class="il-btn is-ghost" data-copy="${esc(inv.id)}">Copy link</button>
+                     <button type="button" class="il-btn is-ghost" data-resend="${esc(inv.id)}">Resend</button>
                      <button type="button" class="il-btn is-ghost" data-revoke="${esc(inv.id)}">Revoke</button>`
                   : ''}
               </span>
             </div>`).join('');
+          const copyInviteUrl = async (id, { send } = { send: false }) => {
+            const res2 = await fetch(
+              `/api/independent-leagues/${encodeURIComponent(league.id)}/invites/${encodeURIComponent(id)}/resend`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ send: Boolean(send) })
+              }
+            );
+            const d = await res2.json().catch(() => ({}));
+            if (!res2.ok || !d.ok) throw new Error(d.error || 'Could not get invite link');
+            return d;
+          };
+          inviteList.querySelectorAll('[data-copy]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              try {
+                const d = await copyInviteUrl(btn.getAttribute('data-copy'), { send: false });
+                if (d.inviteUrl && navigator.clipboard?.writeText) {
+                  await navigator.clipboard.writeText(d.inviteUrl);
+                }
+                const status = document.getElementById('il-invite-status');
+                if (status) {
+                  status.textContent = d.inviteUrl ? 'Invite link copied.' : 'Invite refreshed.';
+                  status.className = 'il-status is-ok';
+                }
+              } catch (err) {
+                alert(err.message);
+              }
+            });
+          });
           inviteList.querySelectorAll('[data-resend]').forEach((btn) => {
             btn.addEventListener('click', async () => {
               try {
-                const res2 = await fetch(
-                  `/api/independent-leagues/${encodeURIComponent(league.id)}/invites/${encodeURIComponent(btn.getAttribute('data-resend'))}/resend`,
-                  { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }
-                );
-                const d = await res2.json().catch(() => ({}));
-                if (!res2.ok || !d.ok) throw new Error(d.error || 'Resend failed');
+                const d = await copyInviteUrl(btn.getAttribute('data-resend'), { send: true });
                 const status = document.getElementById('il-invite-status');
                 if (status) {
                   status.textContent = d.sent ? 'Invite resent.' : (d.inviteUrl ? `Copy link: ${d.inviteUrl}` : 'Invite refreshed.');
@@ -4612,7 +4638,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              email: String(fd.get('email') || '').trim(),
+              emails: String(fd.get('emails') || '').trim(),
               franchiseId: String(fd.get('franchiseId') || '').trim() || null
             })
           });

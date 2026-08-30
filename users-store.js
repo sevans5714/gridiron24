@@ -288,11 +288,19 @@ function hqConferenceOf(user) {
   return normalizeHqConference(user.hqConference);
 }
 
+function occupiesLeagueSeat(user) {
+  if (!user || user.approved === false) return false;
+  if (isSiteOwner(user) || isOwnerLogin(user) || isReadOnly(user)) return false;
+  if (isLoungeOnly(user)) return false;
+  return true;
+}
+
 function countHqConference(store, conferenceKey, exceptUserId = null) {
   const key = normalizeHqConference(conferenceKey);
   if (!key) return 0;
   return store.users.filter((u) => {
     if (exceptUserId && u.id === exceptUserId) return false;
+    if (!occupiesLeagueSeat(u)) return false;
     return hqConferenceOf(u) === key;
   }).length;
 }
@@ -312,6 +320,7 @@ function countMembership(store, league, exceptUserId = null) {
   if (!key) return 0;
   return store.users.filter((u) => {
     if (exceptUserId && u.id === exceptUserId) return false;
+    if (!occupiesLeagueSeat(u)) return false;
     return hqMembershipOf(u) === key;
   }).length;
 }
@@ -340,7 +349,7 @@ function setLeagueMembership(userId, patch = {}) {
     if (nextLeague === 'aaa' && (isSiteOwner(user) || isOwnerLogin(user) || isAaaAdminAlt(user))) {
       throw Object.assign(new Error('Site owner stays on GridIron 24 — not AAA'), { status: 400 });
     }
-    if (nextLeague) {
+    if (nextLeague && occupiesLeagueSeat(user)) {
       const cap = membershipCap(nextLeague);
       const current = normalizeMembershipLeague(user.membershipLeague);
       if (current !== nextLeague && countMembership(store, nextLeague, userId) >= cap) {

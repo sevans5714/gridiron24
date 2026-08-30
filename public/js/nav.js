@@ -109,11 +109,11 @@
     calendar: { href: '/calendar.html', label: 'Calendar', key: 'calendar' }
   };
 
-  function independentMenu(scope) {
+  function independentMenu(scope, user = null) {
     const slug = String(scope?.slug || '').trim();
     if (!slug) return LEAGUE_MENU;
     const base = `/${slug}`;
-    return [
+    const items = [
       { href: `${base}/my-roster.html`, label: 'My Team' },
       { href: `${base}/standings.html`, label: 'Standings' },
       { href: `${base}/schedules.html`, label: 'Schedules' },
@@ -126,9 +126,12 @@
       { href: `${base}/transactions.html`, label: 'Transactions' },
       { href: `${base}/keepers.html`, label: 'Keepers' }
     ];
+    const canManage = Boolean(user?.leagueOwner || user?.siteOwner);
+    if (canManage) return items;
+    return items.filter((item) => !String(item.href || '').endsWith('/manage.html'));
   }
 
-  function independentLinks(scope) {
+  function independentLinks(scope, user = null) {
     const slug = String(scope?.slug || '').trim();
     const home = scope?.homePath || (slug ? `/${slug}.html` : HOME_DEFAULT);
     const scoreboard = scope?.scoreboardPath || (slug ? `/${slug}/scoreboard.html` : '/scoreboard');
@@ -140,7 +143,7 @@
         href: slug ? `/${slug}/standings.html` : '/standings.html',
         label: 'League',
         key: 'league',
-        menu: independentMenu(scope)
+        menu: independentMenu(scope, user)
       },
       { href: slug ? `/${slug}/playoffs.html` : '/playoffs.html', label: 'Playoff Bracket', key: 'playoffs' },
       { href: slug ? `/${slug}/calendar.html` : '/calendar.html', label: 'Calendar', key: 'calendar' },
@@ -182,7 +185,7 @@
 
   function linksForScope(scope, user = null) {
     if (user?.loungeOnly) return SOCIAL_LINKS;
-    if (scope?.scope === 'independent') return independentLinks(scope);
+    if (scope?.scope === 'independent') return independentLinks(scope, user);
     return scope?.scope === 'aaa' ? AAA_LINKS : GRIDIRON_LINKS;
   }
 

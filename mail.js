@@ -1260,6 +1260,83 @@ async function sendRosterViolationEmail(opts) {
   return { sent: false, method: 'log', subject: content.subject, previewHtml: content.html };
 }
 
+function buildOwnerOpsEmail({ subject, headline, preheader, lines, ctaLabel, ctaUrl, baseUrl }) {
+  const title = subject || 'GridIron 24 · Action needed';
+  const bodyLines = (Array.isArray(lines) ? lines : String(lines || '').split('\n'))
+    .map((line) => String(line || ''));
+  const text = `${title}\n\n${bodyLines.join('\n')}\n\n${ctaUrl || ''}`.trim();
+  const bodyHtml = bodyLines
+    .map((line) => (line.trim() === ''
+      ? '<div style="height:10px;"></div>'
+      : `<div style="color:#d8d8d8;font-size:15px;line-height:1.55;">${escapeHtml(line)}</div>`))
+    .join('');
+  const html = brandedEmailHtml({
+    title,
+    preheader: preheader || title,
+    eyebrow: 'Owner alert',
+    headline: headline || title,
+    bodyHtml,
+    showConferences: false,
+    ctaLabel: ctaLabel || 'Open dashboard',
+    ctaUrl,
+    linkFallbackUrl: ctaUrl,
+    baseUrl
+  });
+  return { subject: title, text, html };
+}
+
+async function sendOwnerOpsEmail({
+  to,
+  commsId,
+  subject,
+  headline,
+  preheader,
+  lines,
+  ctaLabel,
+  ctaUrl,
+  baseUrl
+}) {
+  if (commsId) {
+    try {
+      if (!require('./comms-settings-store').isEnabled(commsId)) {
+        return { sent: false, method: 'disabled', skipped: true };
+      }
+    } catch { /* continue */ }
+  }
+  const dest = String(to || '').trim();
+  if (!dest || !dest.includes('@')) {
+    return { sent: false, method: 'skip', error: 'missing_email' };
+  }
+  const content = buildOwnerOpsEmail({
+    subject,
+    headline,
+    preheader,
+    lines,
+    ctaLabel,
+    ctaUrl,
+    baseUrl
+  });
+  const { configured, from } = mailConfig();
+  if (configured) {
+    try {
+      await sendViaResend({
+        from,
+        apiKey: process.env.RESEND_API_KEY,
+        to: dest,
+        subject: content.subject,
+        text: content.text,
+        html: content.html
+      });
+      return { sent: true, method: 'resend', subject: content.subject };
+    } catch (err) {
+      console.error(`[owner-ops] failed ${dest}:`, err.message || err);
+      return { sent: false, method: 'error', error: err.message || 'send failed' };
+    }
+  }
+  console.log(`[owner-ops] ${dest}: ${content.subject}`);
+  return { sent: false, method: 'log', subject: content.subject };
+}
+
 module.exports = {
   sendPasswordResetEmail,
   sendInviteEmail,
@@ -1269,6 +1346,7 @@ module.exports = {
   sendConferenceOwnerEmail,
   sendRosterViolationEmail,
   sendPwaInstallEmail,
+  sendOwnerOpsEmail,
   mailConfig,
   buildInviteEmail,
   buildAccountApprovedEmail,

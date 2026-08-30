@@ -736,8 +736,13 @@
           document.getElementById('hq-create-form')?.reset();
           fillCreateAccessOptions();
           syncCreatePermissionFields();
-          accountNote = { text: data.message || `Created ${data.user?.loginName}. They can sign in now.`, ok: true, resetUrl: '' };
-          showMsg('hq-msg', accountNote.text, true);
+          accountNote = {
+            text: data.message || `Created ${data.user?.loginName}. They can sign in now.`,
+            ok: !data.warning,
+            resetUrl: ''
+          };
+          showMsg('hq-msg', accountNote.text, !data.warning);
+          if (data.hq) paint(data.hq, { skipEspn: true });
           await load({ skipEspn: true });
         } catch (err) {
           showMsg('hq-msg', err.message || 'Could not create account', false);
