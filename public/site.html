@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=137" />
-  <link rel="icon" href="/favicon.ico?v=137" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=138" />
+  <link rel="icon" href="/favicon.ico?v=138" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=138" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=138" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
@@ -263,7 +263,7 @@
 
     <section class="hq-section" id="espn">
       <h2>ESPN</h2>
-      <p class="hq-help">Paste this year’s ESPN league office URL or ID, then Look up. These three IDs are how GridIron 24 reads Detail, Overtime, and AAA. Last year’s settings URL will not work. <a href="https://fantasy.espn.com/football/" target="_blank" rel="noopener">Open ESPN Fantasy</a> · <a href="/espn-setup.html">How to create a league</a>.</p>
+      <p class="hq-help">Paste this year’s ESPN league office URL or ID, then Look up. These IDs are how GridIron 24 reads Detail and Overtime. Last year’s settings URL will not work. <a href="https://fantasy.espn.com/football/" target="_blank" rel="noopener">Open ESPN Fantasy</a> · <a href="/espn-setup.html">How to create a league</a>.</p>
       <div id="hq-espn-body"><p class="hq-empty">Loading ESPN IDs…</p></div>
       <div class="hq-actions">
         <button type="button" class="btn" id="hq-espn-save">Save league IDs</button>
@@ -280,7 +280,7 @@
 
     <section class="hq-section" id="accounts">
       <h2>Accounts</h2>
-      <p class="hq-help">Approved logins. Access, membership (GridIron 24, AAA, independent leagues, or social), conference, and lounge. Every approved account gets the Members Lounge. Delete wipes the account. Send reset emails a recovery link — copy it here if mail isn’t set. Set a password when they have no email. You cannot delete the site owner. Pending join requests stay under Approvals.</p>
+      <p class="hq-help">Approved logins. Access, membership (GridIron 24, independent leagues, or social), conference, and lounge. Every approved account gets the Members Lounge. AAA is not running in 2026. Delete wipes the account. Send reset emails a recovery link — copy it here if mail isn’t set. Set a password when they have no email. You cannot delete the site owner. Pending join requests stay under Approvals.</p>
       <form class="hq-create" id="hq-create-form">
         <h3 id="create-account">Create account</h3>
         <p>Make a login here — no invite, no public register, no approval queue. They can sign in as soon as you create it. Set access the same way as other members, then tell them the login and password.</p>
@@ -308,7 +308,6 @@
           <label for="hq-create-membership">Membership</label>
           <select class="field" id="hq-create-membership" name="membership">
             <option value="gridiron">GridIron 24</option>
-            <option value="aaa">AAA League</option>
             <option value="social">Social Membership</option>
           </select>
         </div>
@@ -336,7 +335,7 @@
 
     <section class="hq-section" id="leagues">
       <h2>League management</h2>
-      <p class="hq-help">Independent leagues only. Renew starts the next season on the same franchises and managers. Archive hides the league without deleting it. Delete is permanent — accounts stay. GridIron 24 and AAA cannot be deleted; they stay bound to ESPN above.</p>
+      <p class="hq-help">Independent leagues only. Renew starts the next season on the same franchises and managers. Archive hides the league without deleting it. Delete is permanent — accounts stay. GridIron 24 cannot be deleted; it stays bound to ESPN above.</p>
       <div id="hq-leagues-body"></div>
     </section>
 
@@ -640,8 +639,7 @@
         if (rows.length) return rows;
         return [
           { key: 'detail', name: 'Detail', kind: 'conference' },
-          { key: 'overtime', name: 'Overtime', kind: 'conference' },
-          { key: 'aaa', name: 'AAA', kind: 'affiliate' }
+          { key: 'overtime', name: 'Overtime', kind: 'conference' }
         ];
       }
 
@@ -676,7 +674,7 @@
         }).join('');
         return [
           `<option value="gridiron"${sel === 'gridiron' ? ' selected' : ''}>GridIron 24</option>`,
-          `<option value="aaa"${sel === 'aaa' ? ' selected' : ''}>AAA League</option>`,
+          sel === 'aaa' ? `<option value="aaa" selected>AAA (not 2026)</option>` : '',
           extra,
           `<option value="social"${sel === 'social' ? ' selected' : ''}>Social Membership</option>`
         ].join('');

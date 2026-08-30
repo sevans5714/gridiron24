@@ -101,7 +101,7 @@ window.GridIronDiff = (function () {
       {
         key: 'finalScoringPeriod',
         label: 'Final scoring week',
-        hint: 'GridIron Bowl / Mayor\'s Cup week',
+        hint: 'GridIron Bowl / MAYORS CUP week',
         target: t.finalScoringPeriod
       },
       {

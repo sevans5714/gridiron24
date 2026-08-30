@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=137" />
-  <link rel="icon" href="/favicon.ico?v=137" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=138" />
+  <link rel="icon" href="/favicon.ico?v=138" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=138" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=138" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=185" />
   <style>
@@ -167,6 +167,12 @@
       text-transform: uppercase;
       vertical-align: middle;
     }
+
+    .aaa-only { display: none; }
+    .book.has-aaa .aaa-only { display: revert; }
+    .book.has-aaa li.aaa-only { display: list-item; }
+    .book.has-aaa section.aaa-only { display: block; }
+    .book.has-aaa .aaa-off { display: none; }
 
     .lineup-row {
       display: flex;
@@ -367,7 +373,7 @@
           <li><a href="#article-ii">Season &amp; Calendar</a></li>
           <li><a href="#article-iii">Rosters &amp; Lineups</a></li>
           <li><a href="#article-iv">Scoring</a></li>
-          <li><a href="#article-v">Playoffs, Relegation &amp; Promotion</a></li>
+          <li><a href="#article-v" id="toc-article-v">Playoffs &amp; MAYORS CUP</a></li>
           <li><a href="#article-vi">Prize Pool &amp; Payouts</a></li>
           <li><a href="#article-vii">Governance</a></li>
         </ol>
@@ -388,24 +394,38 @@
             <li><strong>Detail Conference</strong> — twelve (12) franchises.</li>
             <li><strong>Overtime Conference</strong> — twelve (12) franchises.</li>
           </ol>
-          <p>Prior to each season, all twenty-four (24) franchises shall be randomly assigned to the two conferences, twelve (12) per conference. Conference assignment does not carry forward from the prior season except by chance of the draw.</p>
+          <p>For the 2026 inaugural season, conference assignment is set by the Commissioner. Beginning with the 2027 season, assignment shall be by conference draft under §1.03. Conference membership does not carry forward from the prior season except through that draft (including the MAYORS CUP switch under §1.03 and §5.04).</p>
+        </section>
+        <section class="section" id="section-conference-draft">
+          <h3 class="section-title">§1.03 Conference Draft</h3>
+          <p>Beginning with the 2027 season, franchises shall be placed into Detail and Overtime by a live conference draft hosted at league headquarters. The draft is of managers into conferences, not of NFL players. NFL player drafts remain on ESPN under §1.05.</p>
+          <ol>
+            <li><strong>Captains.</strong> The prior season’s GridIron 24 champion (league winner) and the runner-up are the two captains and Conference Administrators for the coming season (§1.04).</li>
+            <li><strong>Conference choice.</strong> The league winner selects Detail or Overtime first, is seated in that conference, and has the first pick. The runner-up is seated as administrator of the other conference.</li>
+            <li><strong>Schedule.</strong> The two captains shall set a date and time. The date is published on the <a href="/calendar.html">league calendar</a>. The live room is at the <a href="/conference-draft.html">Conference Draft</a>.</li>
+            <li><strong>Order.</strong> Captains snake-draft the remaining twenty-two (22) managers until each conference has twelve (12) franchises, including the captain. The winner picks first in round one; thereafter the order snakes.</li>
+            <li><strong>Board.</strong> Each available manager is shown with franchise (team) name, manager name, prior-season record, and prior-season points for (PF).</li>
+            <li><strong>Audience.</strong> Every GridIron 24 member may join the live room to watch. Only the captain on the clock may pick. The Commissioner may pick on a captain’s behalf if that captain cannot.</li>
+            <li><strong>MAYORS CUP switch.</strong> After the conference draft is complete, the prior season’s MAYORS CUP winner may elect to switch conferences. That winner takes the last-picked seat in the destination conference; the manager who was last picked there moves to the MAYORS CUP winner’s former conference. Conference Administrators may not be displaced by this switch. The election may be used once.</li>
+            <li>The Commissioner locks the results for the coming season after the draft (and any MAYORS CUP switch). Results do not change the season then in progress.</li>
+          </ol>
         </section>
         <section class="section">
-          <h3 class="section-title">§1.03 Conference Administrators</h3>
-          <p>Following the annual conference draw, the Commissioner shall appoint one Conference Administrator for Detail and one for Overtime. Appointments apply for that season only and may be revised when conferences are redrawn.</p>
+          <h3 class="section-title">§1.04 Conference Administrators</h3>
+          <p>For 2026, the Commissioner appoints one Conference Administrator for Detail and one for Overtime. Beginning in 2027, the prior season’s first-place franchise is Conference Administrator of the conference that winner selected in the conference draft, and the runner-up is Conference Administrator of the other conference. Appointments apply for that season. The Commissioner may revise an appointment if a captain cannot serve.</p>
         </section>
         <section class="section">
-          <h3 class="section-title">§1.04 System of Record</h3>
-          <p>ESPN Fantasy is the system of record for drafts, rosters, scoring, waivers, and transactions. GridIron 24 headquarters is authoritative for standings presentation, these rules, payouts, and championship determination under this Rule Book.</p>
+          <h3 class="section-title">§1.05 System of Record</h3>
+          <p>ESPN Fantasy is the system of record for drafts, rosters, scoring, waivers, and transactions. GridIron 24 headquarters is authoritative for standings presentation, these rules, payouts, championship determination, and the conference draft under this Rule Book.</p>
         </section>
         <section class="section">
-          <h3 class="section-title">§1.05 Active Members</h3>
+          <h3 class="section-title">§1.06 Active Members</h3>
           <p>Franchise ownership priority for GridIron 24 runs as follows:</p>
           <ol>
             <li><strong>Active members of the East Providence Police Department</strong> are considered first. For purposes of this section, active members include sworn officers and department personnel such as <strong>Dispatchers</strong>, <strong>Janitors</strong>, and <strong>Prisoners</strong>.</li>
             <li><strong>Retired officers</strong> of the East Providence Police Department may be considered after active members, provided they were not an absolute piece of shit while they were here. Anyone who was a scumbag or a rat while wearing the East Providence Police Department uniform shall not own a franchise — and should play golf in a thunderstorm.</li>
             <li>If no suitable members are identified under (1) or (2), the Commissioner may go <strong>outside the agency</strong> to fill remaining franchises.</li>
-            <li>Members of <strong>AAA League</strong>, regardless of East Providence Police Department status, who win the AAA League have the same opportunity to join GridIron 24 under the promotion rules in Article V.</li>
+            <li class="aaa-only">Members of <strong>AAA League</strong>, regardless of East Providence Police Department status, who win the AAA League have the same opportunity to join GridIron 24 under the promotion rules in Article V.</li>
           </ol>
         </section>
       </article>
@@ -421,7 +441,7 @@
         </section>
         <section class="section">
           <h3 class="section-title">§2.02 Official Calendar</h3>
-          <p>Key dates for the season are set by the league owner and the Commissioner and may be updated as needed. See the <a href="/calendar.html">league calendar</a> for current dates.</p>
+          <p>Key dates for the season are set by the league owner and the Commissioner and may be updated as needed. That includes the conference draft date under §1.03. See the <a href="/calendar.html">league calendar</a> for current dates.</p>
         </section>
       </article>
 
@@ -478,7 +498,7 @@
         </header>
         <section class="section">
           <h3 class="section-title">§4.01 Uniform Scoring</h3>
-          <p>Detail and Overtime shall use identical scoring and lineup. Rules Sync checks both GridIron 24 ESPN leagues against this Rule Book. Independent leagues set their own full rules in league HQ and are not part of ESPN Rules Sync. If Detail, Overtime, or AAA diverge, this Rule Book is controlling until they are restored to conformity.</p>
+          <p>Detail and Overtime shall use identical scoring and lineup. Rules Sync checks both GridIron 24 ESPN leagues against this Rule Book. Independent leagues set their own full rules in league HQ and are not part of ESPN Rules Sync. <span class="aaa-off">If Detail or Overtime diverge, this Rule Book is controlling until they are restored to conformity.</span><span class="aaa-only">If Detail, Overtime, or AAA diverge, this Rule Book is controlling until they are restored to conformity.</span></p>
           <div id="scoring-banner"></div>
         </section>
         <section class="section">
@@ -488,14 +508,14 @@
         </section>
         <section class="section">
           <h3 class="section-title">§4.03 Season Lock</h3>
-          <p>Scoring, lineup, and playoff-format rules lock at kickoff of Week 1 of the NFL regular season. After that kickoff they shall not be amended for the remainder of the season except by league vote under §7.03. Rules Sync continues to compare Detail, Overtime, and AAA to this locked Rule Book; it does not adopt later ESPN changes.</p>
+          <p><span class="aaa-off">Scoring, lineup, and playoff-format rules lock at kickoff of Week 1 of the NFL regular season. After that kickoff they shall not be amended for the remainder of the season except by league vote under §7.03. Rules Sync continues to compare Detail and Overtime to this locked Rule Book; it does not adopt later ESPN changes.</span><span class="aaa-only">Scoring, lineup, and playoff-format rules lock at kickoff of Week 1 of the NFL regular season. After that kickoff they shall not be amended for the remainder of the season except by league vote under §7.03. Rules Sync continues to compare Detail, Overtime, and AAA to this locked Rule Book; it does not adopt later ESPN changes.</span></p>
         </section>
       </article>
 
       <article class="article reveal" id="article-v">
         <header class="article-head">
           <p class="article-num">Article V</p>
-          <h2>Playoffs, Relegation &amp; Promotion</h2>
+          <h2 id="article-v-title">Playoffs &amp; MAYORS CUP</h2>
         </header>
         <section class="section">
           <h3 class="section-title">§5.01 Conference Playoffs</h3>
@@ -511,34 +531,36 @@
           <p class="rule-mark"><img src="/assets/gridiron-bowl.png?v=7" alt="GridIron Bowl" width="1024" height="682" /></p>
           <p id="gridiron-bowl-copy">In Week 17, the Detail Conference champion and the Overtime Conference champion shall meet in the GridIron Bowl. The champion is determined by each entrant’s Week 17 ESPN fantasy score.</p>
         </section>
-        <section class="section">
+        <section class="section aaa-only" id="section-relegation">
           <h3 class="section-title">§5.03 Relegation</h3>
           <p>Relegation is determined solely by final conference standings after the regular season and conference playoffs.</p>
           <ol>
             <li>Within each conference, franchises are ranked by overall record: wins, then losses, then ties, then points for (PF).</li>
             <li>The franchise finishing last in each conference is the relegated franchise for that conference.</li>
             <li>If two or more franchises are tied for last, the franchise with the fewest points for (PF) is relegated.</li>
-            <li>Conference standings shall display a relegation line immediately above the relegated franchise.</li>
+            <li>Conference standings shall display a MAYORS CUP line immediately above the last-place franchise.</li>
           </ol>
         </section>
         <section class="section">
-          <h3 class="section-title">§5.04 Mayor's Cup</h3>
-          <p class="rule-mark"><img src="/assets/mayors-cup.png?v=7" alt="Mayor's Cup" width="1024" height="768" /></p>
-          <p id="mayors-cup-copy">In Week 17, the relegated Detail franchise and the relegated Overtime franchise shall meet in the Mayor's Cup.</p>
+          <h3 class="section-title">§5.04 MAYORS CUP</h3>
+          <p class="rule-mark"><img src="/assets/mayors-cup.png?v=7" alt="MAYORS CUP" width="1024" height="768" /></p>
+          <p id="mayors-cup-copy">In Week 17, the last-place Detail franchise and the last-place Overtime franchise shall meet in the MAYORS CUP.</p>
           <ol>
-            <li id="mayors-cup-score">The Mayor's Cup is decided by each entrant’s Week 17 ESPN fantasy score.</li>
+            <li id="mayors-cup-score">The MAYORS CUP is decided by each entrant’s Week 17 ESPN fantasy score.</li>
             <li>The franchise with the higher score remains in GridIron 24 for the following season.</li>
-            <li>The franchise with the lower score is relegated to AAA League for the following season and is removed from GridIron 24.</li>
-            <li>The resulting vacancy is filled by promotion under §5.05.</li>
+            <li>The franchise with the lower score is the MAYORS CUP loser.</li>
+            <li>Beginning with the 2027 conference draft (§1.03), the MAYORS CUP winner may switch conferences after that draft and replace the destination conference’s last pick.</li>
+            <li class="aaa-only">When AAA League is operating, the MAYORS CUP loser is relegated to AAA for the following season and is removed from GridIron 24.</li>
+            <li class="aaa-only">The resulting vacancy is filled by promotion under §5.05.</li>
             <li>A score tie is resolved by the Commissioner.</li>
           </ol>
         </section>
-        <section class="section">
+        <section class="section aaa-only" id="section-promotion">
           <h3 class="section-title">§5.05 Promotion</h3>
-          <p>The AAA Super Bowl winner is promoted into GridIron 24 for the following season.</p>
+          <p>The AAA champion is promoted into GridIron 24 for the following season.</p>
           <ol>
-            <li>Promotion fills the vacancy created by Mayor's Cup relegation (§5.04), or another vacancy designated by the Commissioner.</li>
-            <li>The promoted franchise joins the twenty-four (24) franchise field and is included in the next season’s conference draw (§1.02).</li>
+            <li>Promotion fills the vacancy created by MAYORS CUP relegation (§5.04), or another vacancy designated by the Commissioner.</li>
+            <li>The promoted franchise joins the twenty-four (24) franchise field and is included in the next season’s conference draft (§1.03).</li>
             <li>Promotion is administered by the Commissioner in coordination with the AAA League Administrator.</li>
           </ol>
         </section>
@@ -570,7 +592,7 @@
         </header>
         <section class="section">
           <h3 class="section-title">§7.01 Commissioner</h3>
-          <p>The Commissioner administers membership, franchise assignments, invitations, the annual conference draw, and league operations for Detail and Overtime. Conference Administrators, appointed under §1.03, may assist within their assigned conference for that season.</p>
+          <p>The Commissioner administers membership, franchise assignments, invitations, the conference draft under §1.03, and league operations for Detail and Overtime. Conference Administrators, appointed under §1.04, may assist within their assigned conference for that season.</p>
         </section>
         <section class="section">
           <h3 class="section-title">§7.02 Amendments</h3>
@@ -668,6 +690,17 @@
         const res = await fetch('/api/scoring', { cache: 'no-store' });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
+        const aaaOn = Boolean(data.aaaEnabled);
+        const bookEl = document.querySelector('.book');
+        bookEl?.classList.toggle('has-aaa', aaaOn);
+        const tocV = document.getElementById('toc-article-v');
+        const artV = document.getElementById('article-v-title');
+        const vLabel = aaaOn ? 'Playoffs, Relegation & Promotion' : 'Playoffs & MAYORS CUP';
+        if (tocV) tocV.textContent = vLabel;
+        if (artV) artV.textContent = vLabel;
+        const mayorH = [...document.querySelectorAll('#article-v .section-title')]
+          .find((el) => /MAYORS CUP/i.test(el.textContent || ''));
+        if (mayorH) mayorH.textContent = aaaOn ? '§5.04 MAYORS CUP' : '§5.03 MAYORS CUP';
         const rules = data.scoring;
         if (!rules?.ok && !(rules?.scoringItems || []).length) {
           lineupMount.innerHTML = '<p>Could not load lineup settings from ESPN.</p>';
@@ -740,11 +773,11 @@
         }
         const mayor = document.getElementById('mayors-cup-copy');
         if (mayor && Number.isFinite(last)) {
-          mayor.textContent = `In Week ${last}, the relegated Detail franchise and the relegated Overtime franchise shall meet in the Mayor's Cup.`;
+          mayor.textContent = `In Week ${last}, the last-place Detail franchise and the last-place Overtime franchise shall meet in the MAYORS CUP.`;
         }
         const mayorScore = document.getElementById('mayors-cup-score');
         if (mayorScore && Number.isFinite(last)) {
-          mayorScore.textContent = `The Mayor's Cup is decided by each entrant’s Week ${last} ESPN fantasy score.`;
+          mayorScore.textContent = `The MAYORS CUP is decided by each entrant’s Week ${last} ESPN fantasy score.`;
         }
       } catch (err) {
         lineupMount.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;

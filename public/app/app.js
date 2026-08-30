@@ -1147,7 +1147,7 @@
       const rank = index + 1;
       if (!compact && rank === 7) rows.push(`<div class="cut-line">Playoff cut · 7–12 out</div>`);
       if (!compact && lastRank > 1 && rank === lastRank) {
-        rows.push(`<div class="cut-line relegation">Relegation · Mayor's Cup</div>`);
+        rows.push(`<div class="cut-line relegation">MAYORS CUP</div>`);
       }
       const mine = highlightId != null && String(team.id) === String(highlightId);
       const zone = [
@@ -1903,8 +1903,8 @@
           <div class="pulse-card-head">
             <img class="mark" src="/assets/mayors-cup.png?v=7" alt="" width="1024" height="768" loading="eager" decoding="async" />
             <div>
-              <div class="eyebrow">Week ${esc(String(finaleEventWeek(survival)))} · Relegation</div>
-              <p class="pulse-title">${esc(survival.name || "Mayor's Cup")}</p>
+              <div class="eyebrow">Week ${esc(String(finaleEventWeek(survival)))} · MAYORS CUP</div>
+              <p class="pulse-title">${esc(survival.name || 'MAYORS CUP')}</p>
             </div>
           </div>
           <div class="pulse-score">
@@ -1916,7 +1916,7 @@
     }
 
     if (!parts.length) {
-      const cupName = survival?.name || "Mayor's Cup";
+      const cupName = survival?.name || 'MAYORS CUP';
       mount.innerHTML = `
         <div class="finale-card">
           <div class="section-label">Week ${esc(String(weekLabel))} finales</div>
@@ -2689,8 +2689,8 @@
             </div>` : ''}
           ${cup ? `
             <div class="po-finale">
-              <img src="/assets/mayors-cup.png?v=7" alt="${esc(cup.name || "Mayor's Cup")}" width="320" height="240" loading="lazy" decoding="async" />
-              <strong>${esc(cup.name || "Mayor's Cup")}</strong>
+              <img src="/assets/mayors-cup.png?v=7" alt="${esc(cup.name || 'MAYORS CUP')}" width="320" height="240" loading="lazy" decoding="async" />
+              <strong>${esc(cup.name || 'MAYORS CUP')}</strong>
             </div>` : ''}
         </div>
         <a class="text-link" href="/aaa-playoffs.html">AAA Super Bowl bracket</a>` : ''}

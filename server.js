@@ -63,6 +63,7 @@ const deathPool = require('./death-pool-store');
 const deathPoolNews = require('./death-pool-news');
 const mockDraftRooms = require('./mock-draft-rooms-store');
 const independentDraft = require('./independent-draft-store');
+const conferenceDraft = require('./conference-draft-store');
 const independentScoreboard = require('./independent-scoreboard');
 const independentWire = require('./independent-wire');
 const independentPlayoffs = require('./independent-playoffs');
@@ -395,8 +396,26 @@ function sessionCookieHeader(token) {
   return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
 }
 
+function preferredLeagueCookieValue(league) {
+  if (!league) return 'gridiron';
+  if (typeof league === 'object') {
+    if (league.kind === 'independent' && league.id) return `independent:${league.id}`;
+    if (league.kind === 'aaa') return 'aaa';
+    return 'gridiron';
+  }
+  const raw = String(league).trim();
+  const lower = raw.toLowerCase();
+  if (lower === 'aaa') return 'aaa';
+  if (lower === 'gridiron' || lower === 'gridiron24' || lower === 'gi24') return 'gridiron';
+  if (lower.startsWith('independent:')) {
+    const id = raw.slice(raw.indexOf(':') + 1).trim();
+    return id ? `independent:${id}` : 'gridiron';
+  }
+  return `independent:${raw}`;
+}
+
 function preferredLeagueCookieHeader(league) {
-  const value = league === 'aaa' ? 'aaa' : 'gridiron';
+  const value = preferredLeagueCookieValue(league);
   const maxAge = SESSION_DAYS * 24 * 60 * 60;
   const secure = process.env.NODE_ENV === 'production' || process.env.RENDER ? '; Secure' : '';
   return `${LEAGUE_COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
@@ -409,8 +428,14 @@ function clearPreferredLeagueCookieHeader() {
 
 function getPreferredLeague(req) {
   const cookies = parseCookies(req?.headers?.cookie);
-  const value = String(cookies[LEAGUE_COOKIE] || '').trim().toLowerCase();
-  if (value === 'aaa' || value === 'gridiron') return value;
+  const raw = String(cookies[LEAGUE_COOKIE] || '').trim();
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+  if (lower === 'aaa' || lower === 'gridiron') return lower;
+  if (lower.startsWith('independent:')) {
+    const id = raw.slice(raw.indexOf(':') + 1).trim();
+    return id ? { kind: 'independent', id } : null;
+  }
   return null;
 }
 
@@ -668,6 +693,12 @@ function applyStaffPlacement(userId, membershipRaw, actor) {
     );
     try { logos.unassignTeam(userId); } catch { /* ignore */ }
     return grantLoungeAdmission(userId, actor.id);
+  }
+  if (parsed.kind === 'aaa') {
+    throw Object.assign(
+      new Error('AAA League is not running in 2026. Assign GridIron 24, social, or an independent league.'),
+      { status: 400 }
+    );
   }
   if (parsed.kind === 'social') {
     if (before.leagueOwner && before.leagueId) {
@@ -939,7 +970,12 @@ function assertStaffCanManageUser(admin, target) {
   }
 }
 
-function inviteVisibleToStaff(admin, invite) {
+function inviteVisibleToStaff(admin, invite, req = null) {
+  const leagueScope = leagueScopeForUser(admin, req);
+  if (leagueScope?.scope === 'independent' || leagueScope?.platform === 'independent') {
+    return Boolean(invite?.leagueId && String(invite.leagueId) === String(leagueScope.leagueId || ''));
+  }
+  if (invite?.leagueId) return false;
   const scope = staffConferenceScope(admin);
   if (!scope) return true;
   if (scope === 'aaa') return String(invite.membershipLeague || '') === 'aaa';
@@ -3821,6 +3857,7 @@ async function apiOfficialScoring(res) {
     generatedAt: new Date().toISOString(),
     source: 'official',
     synced: matched,
+    aaaEnabled: Boolean(config.aaaEnabled) && Array.isArray(config.affiliatedLeagues) && config.affiliatedLeagues.length > 0,
     rulesSync: sync.lastCheck,
     officialScoring: sync.officialScoring,
     seasonRulesLock: seasonLock,
@@ -4596,23 +4633,23 @@ function survivalSideFromConference(standConf, survivalConf, confMeta, label) {
 }
 
 async function buildSurvivalPayload() {
-  const survivalCfg = config.survival || { enabled: true, week: 17, name: "Mayor's Cup" };
+  const survivalCfg = config.survival || { enabled: true, week: 17, name: 'MAYORS CUP' };
   if (survivalCfg.enabled === false) {
     return {
       ok: true,
       enabled: false,
       season: config.season,
-      name: survivalCfg.name || "Mayor's Cup",
+      name: survivalCfg.name || 'MAYORS CUP',
       week: Number(survivalCfg.week) || 17,
       sides: [],
       phase: 'disabled',
-      message: "Mayor's Cup is disabled for this season.",
+      message: 'MAYORS CUP is disabled for this season.',
       generatedAt: new Date().toISOString()
     };
   }
 
   const SURVIVAL_WEEK = Number(survivalCfg.week) || Number(config.championship?.bowlWeek) || 17;
-  const survivalName = survivalCfg.name || "Mayor's Cup";
+  const survivalName = survivalCfg.name || 'MAYORS CUP';
   const [standings, survivalWeek] = await Promise.all([
     loadStandingsPayload(),
     loadSchedulePayload(SURVIVAL_WEEK)
@@ -4725,7 +4762,7 @@ function homePathForUser(user, req = null) {
       ? '/members.html'
       : '/restricted.html?area=lounge';
   }
-  if (user.leagueId) {
+  if (user.leagueId && !canInspectAsOwner(user)) {
     try {
       const linked = leagues.findById(user.leagueId);
       if (linked?.platform === 'independent') {
@@ -4734,8 +4771,17 @@ function homePathForUser(user, req = null) {
     } catch { /* ignore */ }
   }
   if (users.isReadOnly(user) || users.isSiteOwner(user)) {
-    const preferred = getPreferredLeague(req) || 'gridiron';
-    return preferred === 'aaa' ? '/aaa.html' : '/home.html';
+    const preferred = getPreferredLeague(req);
+    if (preferred && typeof preferred === 'object' && preferred.kind === 'independent') {
+      try {
+        const linked = leagues.findById(preferred.id);
+        if (linked?.platform === 'independent') {
+          return leagues.independentHomePath(linked);
+        }
+      } catch { /* ignore */ }
+    }
+    const key = preferred === 'aaa' ? 'aaa' : 'gridiron';
+    return key === 'aaa' && getAffiliatedLeague('aaa') ? '/aaa.html' : '/home.html';
   }
   try {
     const claim = logos.getClaimForUser(user.id);
@@ -4747,7 +4793,7 @@ function homePathForUser(user, req = null) {
     return user.conference === 'aaa' ? '/aaa.html' : `/${user.conference}.html`;
   }
   const membership = users.normalizeMembershipLeague(user.membershipLeague);
-  if (membership === 'aaa') return '/aaa.html';
+  if (membership === 'aaa') return getAffiliatedLeague('aaa') ? '/aaa.html' : '/home.html';
   if (membership === 'gridiron') return '/home.html';
   return '/home.html';
 }
@@ -4755,7 +4801,7 @@ function homePathForUser(user, req = null) {
 const INDEPENDENT_HQ_SECTIONS = new Set([
   'standings', 'schedules', 'my-roster', 'team-rosters', 'rankings', 'draft',
   'transactions', 'playoffs', 'calendar', 'rulebook', 'scoreboard', 'payouts',
-  'settings', 'manage', 'team', 'keepers', 'scoring'
+  'settings', 'manage', 'team', 'keepers', 'scoring', 'conference-draft'
 ]);
 
 function parseIndependentHqPath(pathname) {
@@ -4790,7 +4836,7 @@ function canViewIndependentLeague(user, league) {
   return false;
 }
 
-function independentLeagueScope(league) {
+function independentLeagueScope(league, extras = {}) {
   const homePath = leagues.independentHomePath(league);
   const slug = league.slug;
   return {
@@ -4804,10 +4850,101 @@ function independentLeagueScope(league) {
     ownerDashboardPath: leagues.independentSectionPath(league, 'settings'),
     label: league.brand?.name || slug,
     logo: league.brand?.logo || league.brand?.crest || null,
-    canSwitchLeagues: false,
-    preferredLeague: null,
+    canSwitchLeagues: Boolean(extras.canSwitchLeagues),
+    preferredLeague: extras.preferredLeague || null,
     platform: 'independent',
-    status: league.status
+    status: league.status,
+    conferenceDraftEnabled: league.conferenceDraftEnabled === true
+  };
+}
+
+function resolveIndependentLeagueForUser(user) {
+  if (!user) return null;
+  if (user.leagueId) {
+    try {
+      const linked = leagues.findById(user.leagueId);
+      if (linked?.platform === 'independent'
+        && linked.status !== 'rejected'
+        && linked.status !== 'pending_approval') {
+        return linked;
+      }
+    } catch { /* ignore */ }
+  }
+  try {
+    const memberships = leagues.listIndependentMembershipsForUser(user.id);
+    if (memberships.length === 1) {
+      return leagues.findById(memberships[0].leagueId) || null;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function isIndependentHqScope(scope) {
+  return Boolean(scope && (scope.scope === 'independent' || scope.platform === 'independent'));
+}
+
+function inboxMessageVisibleForScope(msg, scope) {
+  if (!isIndependentHqScope(scope)) return true;
+  const leagueId = String(scope.leagueId || '');
+  const metaLeague = String(msg?.meta?.leagueId || '');
+  if (msg?.type === 'league_invite' || msg?.type === 'league_approved' || msg?.type === 'league_request') {
+    return Boolean(leagueId && metaLeague === leagueId);
+  }
+  if (msg?.type === 'welcome') {
+    if (msg?.meta?.membershipKind === 'independent') {
+      return !metaLeague || metaLeague === leagueId;
+    }
+    return false;
+  }
+  return true;
+}
+
+function scopedInboxForUser(user, req) {
+  const scope = leagueScopeForUser(user, req);
+  const messages = inbox.listForUser(user.id).filter((m) => inboxMessageVisibleForScope(m, scope));
+  return {
+    messages,
+    unread: messages.filter((m) => m.unread).length
+  };
+}
+
+function conferenceDraftTargetSeason(league = null) {
+  if (league?.season) return Number(league.season) + 1;
+  return Number(config.season || 2026) + 1;
+}
+
+function resolveConferenceDraftContext(req, requestUrl, body = {}) {
+  const raw = String(body.leagueId || requestUrl.searchParams.get('leagueId') || '').trim();
+  if (raw && raw !== 'gridiron' && raw !== 'gridiron24') {
+    const league = leagues.findById(raw) || leagues.findBySlug(raw);
+    if (!league || league.platform !== 'independent') {
+      const e = new Error('Independent league not found');
+      e.status = 404;
+      throw e;
+    }
+    return {
+      scope: 'independent',
+      leagueId: league.id,
+      league,
+      targetSeason: conferenceDraftTargetSeason(league)
+    };
+  }
+  return {
+    scope: 'gridiron',
+    leagueId: conferenceDraft.GRIDIRON_KEY,
+    league: null,
+    targetSeason: conferenceDraftTargetSeason()
+  };
+}
+
+function conferenceDraftPayload(room, user, ctx) {
+  const pub = conferenceDraft.publicRoom(room, user?.id, { league: ctx.league });
+  return {
+    ok: true,
+    room: pub,
+    canManage: conferenceDraft.canManage(room, user, ctx.league),
+    viewer: user ? { id: user.id, name: user.name || user.loginName } : null,
+    targetSeason: ctx.targetSeason
   };
 }
 
@@ -4829,7 +4966,7 @@ function deliverWelcomeInboxIfNeeded(user) {
       const linked = leagues.findById(user.leagueId);
       if (linked?.platform === 'independent') {
         kind = 'independent';
-        leagueName = linked.brand?.name || linked.slug || '';
+        leagueName: linked.brand?.name || linked.slug || '',
         href = leagues.independentHomePath(linked);
       }
     }
@@ -4847,6 +4984,8 @@ function deliverWelcomeInboxIfNeeded(user) {
       meta: {
         kind: 'first_login_welcome',
         membershipKind: kind,
+        leagueId: user.leagueId || undefined,
+        leagueName: leagueName || undefined,
         href: href || undefined,
         hrefLabel: href ? 'Open League HQ' : undefined
       }
@@ -5057,7 +5196,11 @@ async function inviteIndependentPlayer(req, { league, actor, email, franchiseId 
           `Open HQ: ${leagues.independentHomePath(league)}`
         ].join('\n'),
         type: 'league_invite',
-        meta: { href: leagues.independentHomePath(league), leagueId }
+        meta: {
+          href: leagues.independentHomePath(league),
+          leagueId,
+          leagueName: league.brand?.name || league.slug || null
+        }
       });
     } catch { /* ignore */ }
     return {
@@ -5332,7 +5475,11 @@ function menuLeaguesForUser(user, req = null) {
   if (!user || users.isLoungeOnly(user)) return [];
   const current = leagueScopeForUser(user, req);
   const siteOwner = users.isSiteOwner(user) || users.isReadOnly(user);
-  const independentOnly = Boolean(user.leagueOwner && user.leagueId && !siteOwner);
+  const independentOnly = Boolean(
+    !siteOwner
+    && resolveIndependentLeagueForUser(user)
+    && !users.hqMembershipOf(user)
+  );
   const items = [];
 
   if (!independentOnly) {
@@ -5356,6 +5503,7 @@ function menuLeaguesForUser(user, req = null) {
     }
     if (siteOwner || aaaOnly) {
       const affiliate = getAffiliatedLeague('aaa');
+      if (affiliate) {
       items.push({
         id: 'aaa',
         kind: 'aaa',
@@ -5364,6 +5512,7 @@ function menuLeaguesForUser(user, req = null) {
         logo: affiliate?.logo || '/assets/aaa-league.png?v=7',
         current: current.scope === 'aaa' && current.platform !== 'independent'
       });
+      }
     }
   }
 
@@ -5416,19 +5565,30 @@ function leagueScopeForUser(user, req = null) {
     };
   }
 
-  if (user.leagueOwner && user.leagueId && !canSwitch) {
-    try {
-      const owned = leagues.findById(user.leagueId);
-      if (owned?.platform === 'independent') {
-        return independentLeagueScope(owned);
-      }
-    } catch { /* ignore */ }
+  if (!canSwitch) {
+    const linked = resolveIndependentLeagueForUser(user);
+    const hq = users.hqMembershipOf(user);
+    if (linked && hq !== 'gridiron' && hq !== 'aaa') {
+      return independentLeagueScope(linked);
+    }
   }
 
   if (canSwitch) {
-    const preferred = getPreferredLeague(req) || 'gridiron';
+    const preferred = getPreferredLeague(req);
+    if (preferred && typeof preferred === 'object' && preferred.kind === 'independent') {
+      try {
+        const linked = leagues.findById(preferred.id);
+        if (linked?.platform === 'independent') {
+          return independentLeagueScope(linked, {
+            canSwitchLeagues: true,
+            preferredLeague: `independent:${linked.id}`
+          });
+        }
+      } catch { /* ignore */ }
+    }
     if (preferred === 'aaa') {
       const affiliate = getAffiliatedLeague('aaa');
+      if (affiliate) {
       return {
         scope: 'aaa',
         conferenceKey: 'aaa',
@@ -5439,6 +5599,7 @@ function leagueScopeForUser(user, req = null) {
         canSwitchLeagues: true,
         preferredLeague: 'aaa'
       };
+      }
     }
     return {
       scope: 'gridiron',
@@ -5636,6 +5797,18 @@ function resolveLeagueScope(user, req, requestedLeague) {
   }
   if (want === 'aaa') {
     const affiliate = getAffiliatedLeague('aaa');
+    if (!affiliate) return personal.scope === 'aaa'
+      ? {
+          scope: 'gridiron',
+          conferenceKey: null,
+          homePath: '/home.html',
+          scoreboardPath: '/scoreboard',
+          label: 'GridIron 24',
+          logo: '/assets/gridiron24-league.png?v=8',
+          canSwitchLeagues: personal.canSwitchLeagues,
+          preferredLeague: personal.preferredLeague
+        }
+      : personal;
     return {
       scope: 'aaa',
       conferenceKey: 'aaa',
@@ -6655,7 +6828,26 @@ const server = http.createServer(async (req, res) => {
       } catch {
         body = {};
       }
-      const league = String(body.league || '').trim().toLowerCase() === 'aaa' ? 'aaa' : 'gridiron';
+      const raw = String(body.league || body.id || '').trim();
+      const lower = raw.toLowerCase();
+      if (lower.startsWith('independent:') || (raw && lower !== 'aaa' && lower !== 'gridiron' && lower !== 'gridiron24' && lower !== 'gi24')) {
+        const id = lower.startsWith('independent:') ? raw.slice(raw.indexOf(':') + 1).trim() : raw;
+        const linked = leagues.findById(id) || leagues.findBySlug(id);
+        if (!linked || linked.platform !== 'independent') {
+          return sendJson(res, 400, { ok: false, error: 'Independent league not found' });
+        }
+        const stamped = independentLeagueScope(linked, {
+          canSwitchLeagues: true,
+          preferredLeague: `independent:${linked.id}`
+        });
+        return sendJson(res, 200, {
+          ok: true,
+          preferredLeague: stamped.preferredLeague,
+          homePath: stamped.homePath,
+          leagueScope: stamped
+        }, { 'Set-Cookie': preferredLeagueCookieHeader(`independent:${linked.id}`) });
+      }
+      const league = lower === 'aaa' && getAffiliatedLeague('aaa') ? 'aaa' : 'gridiron';
       const scope = resolveLeagueScope(user, req, league);
       // Cookie is the source of truth for owners after this response.
       const stamped = {
@@ -7012,7 +7204,7 @@ const server = http.createServer(async (req, res) => {
     if (GRIDIRON_ONLY_PAGES.has(pathname)) {
       const user = getSessionUser(req);
       // Site owner may browse either league; members stay scoped to their assignment.
-      if (user && !canInspectAsOwner(user) && leagueScopeForUser(user, req).scope === 'aaa') {
+      if (user && !canInspectAsOwner(user) && leagueScopeForUser(user, req).scope === 'aaa' && getAffiliatedLeague('aaa')) {
         res.writeHead(302, {
           Location: '/aaa.html',
           'Cache-Control': 'no-store, no-cache, must-revalidate',
@@ -7114,6 +7306,7 @@ const server = http.createServer(async (req, res) => {
         season: config.season,
         championship: config.championship || null,
         structure: config.structure || null,
+        aaaEnabled: Boolean(config.aaaEnabled) && Array.isArray(config.affiliatedLeagues) && config.affiliatedLeagues.length > 0,
         conferences: (config.conferences || []).map((c) => ({
           key: c.key,
           name: c.name,
@@ -7529,11 +7722,18 @@ const server = http.createServer(async (req, res) => {
       const nflLock = await seasonRulesLock.getStatus(league.season || config.season);
       const persistedLock = rulesSyncStore.getSeasonRulesLock(league.season || config.season);
       const seasonLock = (persistedLock?.locked ? persistedLock : nflLock);
+      const canSwitch = canInspectAsOwner(user);
+      const extras = canSwitch
+        ? { canSwitchLeagues: true, preferredLeague: `independent:${league.id}` }
+        : {};
+      const headers = canSwitch
+        ? { 'Set-Cookie': preferredLeagueCookieHeader(`independent:${league.id}`) }
+        : {};
       return sendJson(res, 200, {
         ok: true,
         league: pub,
         section: INDEPENDENT_HQ_SECTIONS.has(section) ? section : 'home',
-        leagueScope: independentLeagueScope(league),
+        leagueScope: independentLeagueScope(league, extras),
         seasonRulesLock: seasonLock,
         viewer: {
           id: user.id,
@@ -7548,6 +7748,7 @@ const server = http.createServer(async (req, res) => {
           teamRosters: leagues.independentSectionPath(league, 'team-rosters'),
           rankings: leagues.independentSectionPath(league, 'rankings'),
           draft: leagues.independentSectionPath(league, 'draft'),
+          conferenceDraft: leagues.independentSectionPath(league, 'conference-draft'),
           transactions: leagues.independentSectionPath(league, 'transactions'),
           playoffs: leagues.independentSectionPath(league, 'playoffs'),
           calendar: leagues.independentSectionPath(league, 'calendar'),
@@ -7560,7 +7761,98 @@ const server = http.createServer(async (req, res) => {
           manage: leagues.independentSectionPath(league, 'manage'),
           team: leagues.independentSectionPath(league, 'team')
         }
+      }, headers);
+    }
+
+    if (pathname === '/api/conference-draft') {
+      const user = getSessionUser(req);
+      if (!user) return sendJson(res, 401, { ok: false, error: 'Sign in to join the conference draft' });
+      let body = {};
+      if (req.method === 'POST') {
+        try { body = await readJsonBody(req); } catch {
+          return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+        }
+      }
+      let ctx;
+      try {
+        ctx = resolveConferenceDraftContext(req, requestUrl, body);
+      } catch (e) {
+        return sendJson(res, e.status || 400, { ok: false, error: e.message });
+      }
+      if (ctx.scope === 'independent') {
+        if (!canViewIndependentLeague(user, ctx.league)) {
+          return sendJson(res, 403, { ok: false, error: 'You do not have access to this league' });
+        }
+        if (ctx.league.conferenceDraftEnabled !== true && !leagues.canManageIndependentLeague(user, ctx.league) && !users.isSiteOwner(user)) {
+          return sendJson(res, 404, { ok: false, error: 'Conference draft is not enabled for this league' });
+        }
+        if ((ctx.league.conferences || []).length < 2) {
+          return sendJson(res, 400, { ok: false, error: 'Conference draft needs two conferences' });
+        }
+      } else if (!conferenceDraft.inLeague({ scope: 'gridiron' }, user, null)) {
+        return sendJson(res, 403, { ok: false, error: 'GridIron 24 members only' });
+      }
+      const enabled = ctx.scope === 'gridiron' || ctx.league.conferenceDraftEnabled === true
+        || leagues.canManageIndependentLeague(user, ctx.league);
+      let room = conferenceDraft.ensureRoom({
+        scope: ctx.scope,
+        leagueId: ctx.leagueId,
+        targetSeason: ctx.targetSeason,
+        league: ctx.league,
+        enabled
       });
+      if (!conferenceDraft.inLeague(room, user, ctx.league)) {
+        return sendJson(res, 403, { ok: false, error: 'Not in this league' });
+      }
+      try {
+        conferenceDraft.tickRoom(room);
+        room = conferenceDraft.getRoom(ctx.scope, ctx.leagueId) || room;
+        if (req.method === 'GET') {
+          return sendJson(res, 200, conferenceDraftPayload(room, user, ctx));
+        }
+        const action = String(body.action || '').toLowerCase();
+        const manage = conferenceDraft.canManage(room, user, ctx.league);
+        if (action === 'setup') {
+          if (!manage) return sendJson(res, 403, { ok: false, error: 'Captains or staff only' });
+          room = conferenceDraft.setupRoom(room, body, user);
+          if (room.draftAt) {
+            try {
+              const d = new Date(room.draftAt);
+              const date = Number.isFinite(d.getTime()) ? d.toISOString().slice(0, 10) : null;
+              if (date && ctx.scope === 'gridiron') {
+                calendar.addEvent({
+                  title: `${room.targetSeason} Conference Draft`,
+                  type: 'conference-draft',
+                  date,
+                  notes: 'League winner and runner-up draft managers into Detail and Overtime. Whole league can watch.'
+                });
+              }
+            } catch { /* ignore duplicate calendar */ }
+          }
+        } else if (action === 'choose-conference') {
+          room = conferenceDraft.chooseConference(room, body.conferenceKey, user);
+        } else if (action === 'start') {
+          if (!manage) return sendJson(res, 403, { ok: false, error: 'Captains or staff only' });
+          if (room.status === 'lobby') room = conferenceDraft.beginLive(room);
+          else room = conferenceDraft.openLobby(room);
+        } else if (action === 'join') {
+          room = conferenceDraft.joinWatch(room, user);
+        } else if (action === 'pick') {
+          room = conferenceDraft.humanPick(room, user, body.userId, { league: ctx.league });
+        } else if (action === 'chat') {
+          room = conferenceDraft.addChat(room, user, body.text);
+        } else if (action === 'mayor-switch') {
+          room = conferenceDraft.mayorSwitch(room, user, body.conferenceKey);
+        } else if (action === 'apply') {
+          room = conferenceDraft.applyAssignments(room, user, { league: ctx.league });
+        } else {
+          return sendJson(res, 400, { ok: false, error: 'Unknown action' });
+        }
+        room = conferenceDraft.getRoom(ctx.scope, ctx.leagueId) || room;
+        return sendJson(res, 200, conferenceDraftPayload(room, user, ctx));
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Conference draft failed' });
+      }
     }
 
     if (pathname.startsWith('/api/independent-leagues/') && req.method === 'PATCH') {
@@ -8429,13 +8721,28 @@ const server = http.createServer(async (req, res) => {
     if (!requireAuth(req, res, pathname)) return;
     if (!enforceLoungeOnlyAccess(req, res, pathname)) return;
 
+    const aaaPausedPaths = new Set([
+      '/aaa', '/aaa/', '/aaa.html',
+      '/aaa-playoffs', '/aaa-playoffs/', '/aaa-playoffs.html',
+      '/aaa-rulebook', '/aaa-rulebook/', '/aaa-rulebook.html',
+      '/aaa-scoreboard', '/aaa-scoreboard.html'
+    ]);
+    if (!getAffiliatedLeague('aaa') && aaaPausedPaths.has(pathname)) {
+      res.writeHead(302, {
+        Location: '/home.html',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        Pragma: 'no-cache'
+      });
+      return res.end();
+    }
+
     if (pathname === '/app' || pathname === '/app/' || pathname === '/app/index.html') {
       return sendFile(res, path.join(PUBLIC_DIR, 'app', 'index.html'));
     }
 
     if (pathname === '/scoreboard' || pathname === '/scoreboard.html') {
       const user = getSessionUser(req);
-      if (user && !canInspectAsOwner(user) && leagueScopeForUser(user, req).scope === 'aaa') {
+      if (user && !canInspectAsOwner(user) && leagueScopeForUser(user, req).scope === 'aaa' && getAffiliatedLeague('aaa')) {
         res.writeHead(302, {
           Location: '/aaa-scoreboard',
           'Cache-Control': 'no-store, no-cache, must-revalidate',
@@ -9154,7 +9461,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         ok: true,
         online: presence.listOnline(),
-        unread: inbox.unreadCount(user.id),
+        unread: scopedInboxForUser(user, req).unread,
         generatedAt: new Date().toISOString()
       });
     }
@@ -10715,7 +11022,7 @@ const server = http.createServer(async (req, res) => {
         if (key) byEmail.set(key, u);
       }
       const listed = invites.listInvites()
-        .filter((inv) => inviteVisibleToStaff(user, inv))
+        .filter((inv) => inviteVisibleToStaff(user, inv, req))
         .map((inv) => {
         const u = byEmail.get(String(inv.email || '').trim().toLowerCase());
         return {
@@ -10859,7 +11166,7 @@ const server = http.createServer(async (req, res) => {
       const id = pathname.split('/')[3];
       try {
         const existing = invites.listInvites().find((inv) => inv.id === id);
-        if (!existing || !inviteVisibleToStaff(user, existing)) {
+        if (!existing || !inviteVisibleToStaff(user, existing, req)) {
           return sendJson(res, 404, { ok: false, error: 'Invite not found' });
         }
         const refreshed = invites.refreshInvite(id, user);
@@ -10909,7 +11216,7 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const existing = invites.listInvites().find((inv) => inv.id === id);
-        if (!existing || !inviteVisibleToStaff(user, existing)) {
+        if (!existing || !inviteVisibleToStaff(user, existing, req)) {
           return sendJson(res, 404, { ok: false, error: 'Invite not found' });
         }
         const invite = invites.revokeInvite(id);
@@ -11155,10 +11462,11 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/inbox' && req.method === 'GET') {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const box = scopedInboxForUser(user, req);
       return sendJson(res, 200, {
         ok: true,
-        messages: inbox.listForUser(user.id),
-        unread: inbox.unreadCount(user.id),
+        messages: box.messages,
+        unread: box.unread,
         canSend: users.canSendInbox(user),
         isStaff: users.isStaff(user),
         isOwner: users.isSiteOwner(user),
@@ -11268,7 +11576,7 @@ const server = http.createServer(async (req, res) => {
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
       return sendJson(res, 200, {
         ok: true,
-        unread: inbox.unreadCount(user.id)
+        unread: scopedInboxForUser(user, req).unread
       });
     }
 
@@ -11289,7 +11597,7 @@ const server = http.createServer(async (req, res) => {
           ok: true,
           message: message || null,
           removed: !message,
-          unread: inbox.unreadCount(user.id)
+          unread: scopedInboxForUser(user, req).unread
         });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not mark read' });
@@ -11304,7 +11612,7 @@ const server = http.createServer(async (req, res) => {
         inbox.deleteMessage(id, user.id);
         return sendJson(res, 200, {
           ok: true,
-          unread: inbox.unreadCount(user.id)
+          unread: scopedInboxForUser(user, req).unread
         });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete message' });
@@ -12373,7 +12681,7 @@ const server = http.createServer(async (req, res) => {
         const payload = await buildSurvivalPayload();
         return sendJson(res, 200, payload);
       } catch (err) {
-        return sendJson(res, 500, { ok: false, error: err.message || "Could not load Mayor's Cup" });
+        return sendJson(res, 500, { ok: false, error: err.message || 'Could not load MAYORS CUP' });
       }
     }
 
@@ -12608,6 +12916,7 @@ server.listen(PORT, '0.0.0.0', () => {
     nflverseDraft.loadDraftPool({ activeOnly: true })
       .then((payload) => {
         independentDraft.tickAll(payload.players || []);
+        try { conferenceDraft.tickAll(); } catch { /* ignore */ }
         try { independentWire.processDueLeagues(); } catch { /* ignore */ }
       })
       .catch((err) => {

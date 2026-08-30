@@ -88,6 +88,7 @@
     { href: '/team-rosters.html', label: 'Team Rosters' },
     { href: '/rankings.html', label: 'Rankings' },
     { href: '/draft.html', label: 'Draft Results' },
+    { href: '/conference-draft.html', label: 'Conference Draft' },
     { href: '/transactions.html', label: 'Transactions' }
   ];
 
@@ -120,6 +121,9 @@
       { href: `${base}/team-rosters.html`, label: 'Team Rosters' },
       { href: `${base}/rankings.html`, label: 'Rankings' },
       { href: `${base}/draft.html`, label: 'Draft Results' },
+      ...(scope?.conferenceDraftEnabled
+        ? [{ href: `${base}/conference-draft.html`, label: 'Conference Draft' }]
+        : []),
       { href: `${base}/scoring.html`, label: 'Scoring' },
       { href: `${base}/manage.html`, label: 'Manage' },
       { href: `${base}/settings.html`, label: 'Settings' },
@@ -203,7 +207,7 @@
     if (page === 'scoring' || page === 'rulebook' || page === 'payouts' || page === 'aaa-rulebook') {
       return 'rulebook';
     }
-    if (page === 'standings' || page === 'teams' || page === 'my-roster' || page === 'team-rosters' || page === 'draft' || page === 'history' || page === 'transactions' || page === 'rankings' || page === 'schedules' || page === 'roster-2026') {
+    if (page === 'standings' || page === 'teams' || page === 'my-roster' || page === 'team-rosters' || page === 'draft' || page === 'conference-draft' || page === 'history' || page === 'transactions' || page === 'rankings' || page === 'schedules' || page === 'roster-2026') {
       return 'league';
     }
     if (page === 'aaa') {
@@ -968,23 +972,25 @@
 
   async function switchLeague(item) {
     const kind = typeof item === 'string' ? item : String(item?.kind || '');
+    const id = typeof item === 'object' ? String(item?.id || '') : '';
     const href = (typeof item === 'object' && item?.homePath)
       || (kind === 'aaa' ? '/aaa.html' : '/home.html');
+    const league = kind === 'independent'
+      ? (id.toLowerCase().startsWith('independent:') ? id : `independent:${id}`)
+      : (kind === 'aaa' ? 'aaa' : 'gridiron');
     try {
-      if (kind === 'aaa' || kind === 'gridiron') {
-        const res = await fetch('/api/preferred-league', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ league: kind === 'aaa' ? 'aaa' : 'gridiron' })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ok) {
-          window.location.href = data.homePath || href;
-          return;
-        }
-        if (res.status !== 403) {
-          throw new Error(data.error || 'Could not switch league');
-        }
+      const res = await fetch('/api/preferred-league', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ league })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        window.location.href = data.homePath || href;
+        return;
+      }
+      if (res.status !== 403) {
+        throw new Error(data.error || 'Could not switch league');
       }
       window.location.href = href;
     } catch (err) {
@@ -1193,7 +1199,12 @@
           if (res.ok && body.ok) {
             myTeam = body;
             if (body.homePath) homePath = body.homePath;
-            if (body.leagueScope) applyLeagueScope(body.leagueScope);
+            if (body.leagueScope) {
+              const incoming = body.leagueScope;
+              const hereIndependent = leagueScope?.platform === 'independent' || leagueScope?.scope === 'independent';
+              const incomingIndependent = incoming.scope === 'independent' || incoming.platform === 'independent';
+              if (!(hereIndependent && !incomingIndependent)) applyLeagueScope(incoming);
+            }
             renderNav(user);
           }
         } catch { /* ignore */ }

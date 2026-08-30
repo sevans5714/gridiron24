@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'calendar.json');
 
-const TYPES = new Set(['draft', 'deadline', 'dues', 'bowl', 'survival', 'aaa', 'event', 'other']);
+const TYPES = new Set(['draft', 'deadline', 'dues', 'bowl', 'survival', 'aaa', 'event', 'other', 'conference-draft']);
 
 function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -50,24 +50,24 @@ function migrateLegacyEvents(store) {
   let dirty = false;
   for (const ev of store.events || []) {
     const title = String(ev.title || '');
-    if (/stay in league|toilet\s*bowl/i.test(title)) {
-      ev.title = "Mayor's Cup";
+    if (/stay in league|toilet\s*bowl|mayor'?s?\s*cup/i.test(title) && title !== 'MAYORS CUP') {
+      ev.title = 'MAYORS CUP';
       ev.type = 'survival';
-      if (!/relegat|pf|mayor/i.test(String(ev.notes || ''))) {
-        ev.notes = 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).';
+      if (!/last-place|pf|mayor/i.test(String(ev.notes || ''))) {
+        ev.notes = 'Week 17 — last-place Detail vs last-place Overtime (PF tiebreaker).';
       }
       ev.updatedAt = new Date().toISOString();
       dirty = true;
     }
-    if (String(ev.type || '').toLowerCase() === 'survival' && /stay in league|toilet/i.test(title)) {
-      ev.title = "Mayor's Cup";
+    if (String(ev.type || '').toLowerCase() === 'survival' && ev.title !== 'MAYORS CUP') {
+      ev.title = 'MAYORS CUP';
       dirty = true;
     }
     const isDues =
       String(ev.type || '').toLowerCase() === 'dues' ||
       /^dues due$/i.test(title);
     if (isDues) {
-      const nextNotes = 'GridIron 24 $100 · AAA League $50.';
+      const nextNotes = 'GridIron 24 $100.';
       const nextDate = '2026-09-01';
       if (String(ev.notes || '') !== nextNotes || String(ev.date || '') !== nextDate || String(ev.title || '') !== 'Dues Due') {
         ev.title = 'Dues Due';

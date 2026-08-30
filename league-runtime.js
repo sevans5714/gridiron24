@@ -3,13 +3,17 @@ const leagues = require('./leagues-store');
 const users = require('./users-store');
 const logos = require('./logos-store');
 
+function liveAffiliatedLeagues(league = null) {
+  if (staticConfig.aaaEnabled === false) return [];
+  if (Array.isArray(league?.affiliatedLeagues) && league.affiliatedLeagues.length) {
+    return league.affiliatedLeagues;
+  }
+  return Array.isArray(staticConfig.affiliatedLeagues) ? staticConfig.affiliatedLeagues : [];
+}
+
 function syncConferenceKeys(league) {
   const confKeys = (league?.conferences || []).map((c) => c.key);
-  const affiliateKeys = (
-    Array.isArray(league?.affiliatedLeagues) && league.affiliatedLeagues.length
-      ? league.affiliatedLeagues
-      : (staticConfig.affiliatedLeagues || [])
-  ).map((l) => l.key);
+  const affiliateKeys = liveAffiliatedLeagues(league).map((l) => l.key);
   const keys = [...confKeys, ...affiliateKeys]
     .map((k) => String(k || '').trim().toLowerCase())
     .filter(Boolean);
@@ -59,11 +63,10 @@ function leagueToConfig(league) {
     survival: league.survival || staticConfig.survival || {
       enabled: true,
       week: 17,
-      name: "Mayor's Cup"
+      name: 'MAYORS CUP'
     },
-    affiliatedLeagues: Array.isArray(league.affiliatedLeagues)
-      ? league.affiliatedLeagues
-      : (staticConfig.affiliatedLeagues || []),
+    aaaEnabled: staticConfig.aaaEnabled !== false,
+    affiliatedLeagues: liveAffiliatedLeagues(league),
     historySeasons: Array.isArray(league.historySeasons)
       ? league.historySeasons
       : (staticConfig.historySeasons || []),

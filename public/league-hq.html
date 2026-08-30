@@ -7,13 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=137" />
-  <link rel="icon" href="/favicon.ico?v=137" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=138" />
+  <link rel="icon" href="/favicon.ico?v=138" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=138" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=138" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=186" />
   <link rel="stylesheet" href="/css/draft-desk.css?v=13" />
+  <link rel="stylesheet" href="/css/conference-draft.css?v=1" />
   <style>
     body[data-page="league-hq"] .topbar {
       border-bottom: 1px solid color-mix(in srgb, var(--il-c1) 42%, rgba(142, 182, 255, 0.42));
@@ -297,6 +298,18 @@
       color: var(--text);
     }
     .il-mini tr:last-child td { border-bottom: 0; }
+    .il-mini tr.il-cut td {
+      padding: 0.28rem 0.4rem;
+      font-family: var(--display);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: center;
+      color: #f5b942;
+      border-top: 1px dashed rgba(245, 185, 66, 0.45);
+      border-bottom: 1px dashed rgba(245, 185, 66, 0.45);
+      background: rgba(245, 185, 66, 0.08);
+    }
     .il-mini .rank {
       width: 1%;
       white-space: nowrap;
@@ -1496,8 +1509,9 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
 
-  <script src="/js/nav.js?v=188"></script>
+  <script src="/js/nav.js?v=189"></script>
   <script src="/js/official-draft-ui.js?v=16"></script>
+  <script src="/js/conference-draft-ui.js?v=1"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -1790,6 +1804,8 @@
           if (!sb) return -1;
           return (sb.wins - sa.wins) || (sb.pointsFor - sa.pointsFor);
         });
+        const showCup = league.aaaEnabled !== false && ranked.length > 1;
+        const cupLabel = league.survival?.name || 'MAYORS CUP';
         const color = confColor(conf, gi);
         return `
         <div class="il-conf" style="--conf:${esc(color)}">
@@ -1815,7 +1831,11 @@
                   ? `${s.wins}-${s.losses}${s.ties ? `-${s.ties}` : ''}`
                   : '0-0';
                 const pf = s ? Number(s.pointsFor || 0).toFixed(1) : '0.0';
+                const cupRow = showCup && i === ranked.length - 1
+                  ? `<tr class="il-cut"><td colspan="${compact ? 4 : 6}">${esc(cupLabel)}</td></tr>`
+                  : '';
                 return `
+                ${cupRow}
                 <tr>
                   <td class="rank">${i + 1}</td>
                   <td class="team">
@@ -1842,7 +1862,7 @@
     function formatRuleBody(text) {
       const raw = String(text || '').trim();
       if (!raw) return '<p class="il-empty">No text yet.</p>';
-      return `<p class="body">${esc(raw)}</p>`;
+      return raw.split(/\n+/).map((p) => `<p class="body">${esc(p)}</p>`).join('');
     }
 
     function rulebookHtml(league, viewer = {}) {
@@ -2097,6 +2117,13 @@
                 <option value="hold" ${s.draftFillEmptySeats === 'hold' ? 'selected' : ''}>Hold until every franchise has a manager</option>
               </select>
             </label>
+            ${(league.conferences || []).length >= 2 ? `
+            <label style="margin-top:0.55rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
+              <input type="checkbox" name="conferenceDraftEnabled" value="1" ${league.conferenceDraftEnabled === true ? 'checked' : ''} />
+              Next-season conference draft
+            </label>
+            <p class="il-meta">Prior-year winner and runner-up snake managers into your two conferences. The league can watch live. The consolation winner may switch after the draft. <a href="${esc((hqState.pages && hqState.pages.conferenceDraft) || '#')}">Open conference draft</a></p>
+            ` : ''}
             <div class="il-actions">
               <button type="submit" class="il-btn" ${locked ? 'disabled' : ''}>Save draft settings</button>
               <span class="il-status" id="il-settings-status" role="status"></span>
@@ -2186,10 +2213,23 @@
             </label>
             <div class="il-form-grid">
               <label>Consolation name
-                <input type="text" name="survivalName" maxlength="80" value="${esc(league.survival?.enabled ? (league.survival?.name || '') : '')}" placeholder="Optional" />
+                <input type="text" name="survivalName" maxlength="80" value="${esc(league.survival?.enabled ? (league.survival?.name || '') : '')}" placeholder="MAYORS CUP" />
               </label>
               <label>Consolation week
                 <input type="number" name="survivalWeek" min="1" max="18" value="${esc(league.survival?.enabled ? (league.survival?.week ?? '') : '')}" />
+              </label>
+            </div>
+            <label style="margin-top:0.55rem;display:flex;gap:0.45rem;align-items:center;text-transform:none;letter-spacing:0;font-weight:600;">
+              <input type="checkbox" name="aaaEnabled" value="1" ${league.aaaEnabled !== false ? 'checked' : ''} />
+              AAA League (feeder) and relegation
+            </label>
+            <p class="il-meta">When on, the Rule Book includes AAA League and relegation / MAYORS CUP. Turn off if this league has no feeder.</p>
+            <div class="il-form-grid">
+              <label>AAA name
+                <input type="text" name="aaaName" maxlength="80" value="${esc((league.affiliatedLeagues || []).find((l) => String(l.key || '').toLowerCase() === 'aaa')?.name || 'AAA League')}" />
+              </label>
+              <label>AAA buy-in ($)
+                <input type="number" name="aaaBuyIn" min="0" max="10000" step="1" value="${esc((league.affiliatedLeagues || []).find((l) => String(l.key || '').toLowerCase() === 'aaa')?.payouts?.buyInPerTeam ?? 50)}" />
               </label>
             </div>
             <div class="il-actions">
@@ -3942,6 +3982,7 @@
         team: 'Team',
         rankings: 'Rankings',
         draft: 'Draft',
+        'conference-draft': 'Conference Draft',
         settings: 'Settings',
         scoring: 'Scoring',
         manage: 'Manage',
@@ -4078,6 +4119,16 @@
           </section>`;
       }
 
+      if (section === 'conference-draft') {
+        if (!league.conferenceDraftEnabled) {
+          return `${pageHead(title, league)}
+            <section class="il-panel">
+              <h2>Conference draft</h2>
+              <p class="il-meta">Turn this on in Settings (two conferences required). Prior-year winner and runner-up draft managers into conferences for next season. The league can watch live.</p>
+            </section>`;
+        }
+        return `${pageHead(title, league)}<div id="cd-root"></div>`;
+      }
       if (section === 'keepers') {
         return `${pageHead(title, league)}
           <div id="il-keepers-root">${hqState.keepers
@@ -4261,7 +4312,8 @@
             draftScope: fd.get('draftScope'),
             draftRounds: Number(fd.get('draftRounds')),
             draftSecondsPerPick: Number(fd.get('draftSecondsPerPick')),
-            draftFillEmptySeats: fd.get('draftFillEmptySeats')
+            draftFillEmptySeats: fd.get('draftFillEmptySeats'),
+            conferenceDraftEnabled: fd.get('conferenceDraftEnabled') === '1'
           }, status);
         } catch (err) {
           if (status) {
@@ -4308,7 +4360,17 @@
               enabled: fd.get('survivalEnabled') === '1',
               name: fd.get('survivalEnabled') === '1' ? String(fd.get('survivalName') || '').trim() : '',
               week: fd.get('survivalEnabled') === '1' ? (Number(fd.get('survivalWeek')) || null) : null
-            }
+            },
+            aaaEnabled: fd.get('aaaEnabled') === '1',
+            affiliatedLeagues: fd.get('aaaEnabled') === '1'
+              ? [{
+                  key: 'aaa',
+                  name: String(fd.get('aaaName') || 'AAA League').trim() || 'AAA League',
+                  shortName: 'AAA',
+                  role: 'feeder',
+                  payouts: { buyInPerTeam: Number(fd.get('aaaBuyIn')) || 50 }
+                }]
+              : []
           }, status);
           document.getElementById('il-root').innerHTML = settingsHtml(updated, hqState.viewer);
           wireSettingsUi();
@@ -4755,8 +4817,16 @@
 
         if (section === 'draft') {
           await loadDraftBoard();
+        } else if (section === 'conference-draft' && hqState.league.conferenceDraftEnabled) {
+          window.OfficialDraftUi?.unmount();
+          root.innerHTML = sectionHtml('conference-draft', hqState.league, data.pages || {}, hqState.viewer);
+          await window.ConferenceDraftUi.mount({
+            api: `/api/conference-draft?leagueId=${encodeURIComponent(hqState.league.id)}`,
+            leagueId: hqState.league.id
+          });
         } else {
           window.OfficialDraftUi?.unmount();
+          window.ConferenceDraftUi?.unmount();
           const needsScores = ['home', 'scoreboard', 'standings', 'team-rosters', 'my-roster', 'team', 'schedules', 'rankings', 'playoffs'].includes(section);
           if (needsScores) {
             try {

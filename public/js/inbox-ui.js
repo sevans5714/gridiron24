@@ -72,7 +72,16 @@
     );
   }
 
-  function typeEyebrow(type) {
+  function typeEyebrow(msg) {
+    const type = msg?.type || msg;
+    if (type === 'league_invite' || type === 'league_approved') {
+      const name = String(msg?.meta?.leagueName || '').trim();
+      return name ? `${name} · Invite` : 'League invite';
+    }
+    if (type === 'welcome' && msg?.meta?.membershipKind === 'independent') {
+      const name = String(msg?.meta?.leagueName || '').trim();
+      return name ? `${name} · Welcome` : 'Welcome';
+    }
     const map = {
       welcome: 'GridIron 24 HQ · Welcome',
       chat_mention: 'Members Lounge · Mention',
@@ -506,7 +515,7 @@
         <header class="inbox-letter-head${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}${action ? ' is-action' : ''}">
           <div class="inbox-letter-brand${rule ? ' is-rule-change' : ''}">
             <img class="inbox-crest${rule ? ' is-powerdms' : ''}" src="${brandSrc}" alt="${esc(brandAlt)}" width="${rule ? 220 : 96}" height="${rule ? 48 : 96}" decoding="async" />
-            <p class="inbox-eyebrow${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}${action ? ' is-action' : ''}">${esc(typeEyebrow(msg.type))}</p>
+            <p class="inbox-eyebrow${rule ? ' is-rule-change' : ''}${feature ? ' is-feature-request' : ''}${action ? ' is-action' : ''}">${esc(typeEyebrow(msg))}</p>
           </div>
           <div class="inbox-letter-meta">
             <span class="inbox-letter-avatar" aria-hidden="true">${esc(initials(msg.fromName))}</span>

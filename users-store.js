@@ -768,6 +768,13 @@ function setUserRole(userId, role, conference) {
   };
 }
 
+function assignConferenceAdminExclusive(userId, conferenceKey) {
+  const store = readStore();
+  clearOtherConferenceAdmins(store, conferenceKey, userId);
+  writeStore(store);
+  return setUserRole(userId, ROLES.CONFERENCE_ADMIN, conferenceKey);
+}
+
 /**
  * Toggle social (lounge-only) access. Social accounts keep lounge admission
  * but cannot use franchise HQ / league tools.
@@ -1388,6 +1395,7 @@ module.exports = {
   isCommissioner,
   isSiteOwner,
   setUserRole,
+  assignConferenceAdminExclusive,
   setUserApproved,
   markWelcomeMailSent,
   deleteUser,
@@ -1404,6 +1412,7 @@ module.exports = {
   membershipKindOf,
   hqMembershipOf,
   hqConferenceOf,
+  occupiesLeagueSeat,
   normalizeHqConference,
   hqConferenceLabel,
   syncHqConferenceFromClaims,

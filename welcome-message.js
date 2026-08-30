@@ -97,7 +97,7 @@ function bodyFor(name = 'Member', opts = {}) {
     '• Scoreboard — live fantasy matchups and the NFL slate',
     '• League — standings, My Roster, Team Rosters, draft, schedules',
     '• Members Lounge — Record Book (franchise records & historical seasons), Mock Draft, Sportsbook, Roll Call, dues',
-    '• Playoffs — Bowl, Mayor\'s Cup, and the road to the title',
+    '• Playoffs — Bowl, MAYORS CUP, and the road to the title',
     '• Rule Book — the law of the land',
     '• Inbox — votes, mentions, and HQ messages',
     '',

@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=137" />
-  <link rel="icon" href="/favicon.ico?v=137" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=137" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=137" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=138" />
+  <link rel="icon" href="/favicon.ico?v=138" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=138" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=138" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=185" />
   <style>
@@ -1428,7 +1428,6 @@
                 <label class="field-label" for="invite-kind">Invite as</label>
                 <select class="field" id="invite-kind" name="inviteKind" style="max-width:16rem;margin:0 0 0.85rem;">
                   <option value="gridiron" selected>GridIron 24 member</option>
-                  <option value="aaa">AAA member</option>
                   <option value="social">Social / lounge only</option>
                 </select>
                 <div class="btn-row">
@@ -1443,7 +1442,7 @@
               <div class="section-head">
                 <h3>Accounts</h3>
               </div>
-              <p class="help" id="members-help">Approved members. Assign GridIron 24, AAA, Social, or any independent league. Put GridIron 24 players in Detail or Overtime (12 each). Every league includes the Members Lounge. <strong>Delete Account</strong> removes them from the system.</p>
+              <p class="help" id="members-help">Approved members. Assign GridIron 24, Social, or any independent league. Put GridIron 24 players in Detail or Overtime (12 each). Every league includes the Members Lounge. AAA is not running in 2026. <strong>Delete Account</strong> removes them from the system.</p>
               <div class="members-census" id="members-census" hidden></div>
               <div id="members-access-block">
                 <div class="status-note" id="members-msg" role="status"></div>
@@ -1549,7 +1548,6 @@
                 <select class="field" id="owners-conference" style="max-width:16rem;">
                   <option value="detail">Detail Conference</option>
                   <option value="overtime">Overtime Conference</option>
-                  <option value="aaa">AAA League</option>
                 </select>
               </div>
               <div class="owners-actions">
@@ -1688,9 +1686,9 @@
               <div class="section-head">
                 <h3>Rules</h3>
               </div>
-              <p class="help">GridIron 24: Detail and Overtime ESPN must both match this Rule Book (scoring, lineup, and playoffs). Until Week 1 kickoff, opening the Rule Book or Check Rules Sync copies live Detail ESPN into the book, then both conferences are checked against it. Independent leagues already set the full rules in their own HQ — they are not part of ESPN Rules Sync. AAA scoring is compared separately below. Checks run Mondays and Thursdays.</p>
+              <p class="help">GridIron 24: Detail and Overtime ESPN must both match this Rule Book (scoring, lineup, and playoffs). Until Week 1 kickoff, opening the Rule Book or Check Rules Sync copies live Detail ESPN into the book, then both conferences are checked against it. Independent leagues already set the full rules in their own HQ — they are not part of ESPN Rules Sync. Checks run Mondays and Thursdays.</p>
               <div class="sync-tools">
-                <span class="hint">Live pull from Detail, Overtime, and AAA</span>
+                <span class="hint">Live pull from Detail and Overtime</span>
                 <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
               </div>
               <div id="content"><div class="msg">Loading conference settings…</div></div>
@@ -1747,7 +1745,7 @@
                   <option value="dues">Dues</option>
                   <option value="deadline">Deadline</option>
                   <option value="bowl">Bowl</option>
-                  <option value="survival">Mayor's Cup</option>
+                  <option value="survival">MAYORS CUP</option>
                   <option value="aaa">AAA Championship</option>
                 </select>
                 <button type="button" class="btn btn-send" id="cal-add">Add</button>
@@ -1795,7 +1793,7 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=187"></script>
+  <script src="/js/nav.js?v=189"></script>
   <script src="/js/conference-diff.js?v=7"></script>
   <script>
     const esc = (v = '') => String(v)
@@ -2713,7 +2711,7 @@
       return `
         <option value="" ${!selected ? 'selected' : ''} disabled hidden>Assign…</option>
         <option value="gridiron" ${selected === 'gridiron' ? 'selected' : ''}>GridIron 24</option>
-        <option value="aaa" ${selected === 'aaa' ? 'selected' : ''}>AAA League</option>
+        ${selected === 'aaa' ? '<option value="aaa" selected>AAA (not 2026)</option>' : ''}
         ${extra}
         <option value="social" ${selected === 'social' ? 'selected' : ''}>Social Membership</option>`;
     }
@@ -2804,9 +2802,6 @@
       const giChip = stats.giOpen === 0
         ? chip('gridiron', 'FULL', `GridIron 24 · ${stats.gi} of ${stats.giCap} registered`)
         : chip('gridiron', String(stats.giOpen), `GridIron 24 spots left · ${stats.gi} of ${stats.giCap} registered`, 'census-open');
-      const aaaChip = stats.aaaOpen === 0
-        ? chip('aaa', 'FULL', `AAA · ${stats.aaa} of ${stats.aaaCap} registered`)
-        : chip('aaa', String(stats.aaaOpen), `AAA spots left · ${stats.aaa} of ${stats.aaaCap} registered`, 'census-open');
       const detailChip = stats.detailOpen === 0
         ? chip('detail', 'FULL', `Detail · ${stats.detail} of ${stats.confCap}`)
         : chip('detail', String(stats.detailOpen), `Detail spots left · ${stats.detail} of ${stats.confCap}`, 'census-open');
@@ -2819,7 +2814,7 @@
         detailChip,
         overtimeChip,
         stats.noConf ? chip('noconf', String(stats.noConf), 'GridIron · no conference yet', 'census-open') : '',
-        aaaChip,
+        stats.aaa ? chip('aaa', String(stats.aaa), 'AAA leftover · reassign', 'census-open') : '',
         stats.independent ? chip('independent', String(stats.independent), 'Independent leagues', 'census-open') : '',
         chip('social', String(stats.social), 'Social / lounge'),
         stats.viewer ? chip('viewer', String(stats.viewer), 'View only', 'census-open') : '',
@@ -5462,7 +5457,7 @@
       const aaaSync = document.getElementById('aaa-rules-sync');
       if (playoffs) playoffs.hidden = admin;
       if (jumpPlayoffs) jumpPlayoffs.hidden = admin;
-      if (aaaSync) aaaSync.hidden = admin;
+      if (aaaSync) aaaSync.hidden = true;
       revealPeopleTools();
       if (!admin) revealSeasonTools();
       renderDeskHome(user);
@@ -5470,7 +5465,7 @@
 
     async function bootCommissionerTools(user) {
       const scope = window.GridIronNav?.getLeagueScope?.() || {};
-      if (user?.leagueOwner && scope.platform === 'independent' && !user.siteOwner) {
+      if (scope.platform === 'independent' || scope.scope === 'independent') {
         window.location.replace(scope.ownerDashboardPath || scope.settingsPath || scope.homePath || '/profile.html');
         return;
       }

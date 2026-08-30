@@ -52,19 +52,20 @@ module.exports = {
   historySeasons: [],
   calendarDefaults: [
     { title: 'Draft Day', type: 'draft', date: '2026-08-24', notes: 'Both conferences draft — confirm time with your commissioner. Single-player keeper rule begins after the 2026 season (Rule Book §3.03–§3.05).' },
-    { title: 'Dues Due', type: 'dues', date: '2026-09-01', notes: 'GridIron 24 $100 · AAA League $50.' },
+    { title: 'Dues Due', type: 'dues', date: '2026-09-01', notes: 'GridIron 24 $100.' },
     { title: 'Trade Deadline', type: 'deadline', date: '2026-11-18', notes: 'No trades after this date.' },
     { title: 'Conference Playoffs Begin', type: 'event', date: '2026-12-08', notes: 'Week 14 Wild Card round.' },
     { title: 'GridIron Bowl I', type: 'bowl', date: '2026-12-29', notes: 'Week 17 — Detail champ vs Overtime champ.' },
-    { title: "Mayor's Cup", type: 'survival', date: '2026-12-29', notes: 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).' },
-    { title: 'AAA Super Bowl', type: 'aaa', date: '2026-12-29', notes: 'AAA League championship — ESPN title game. Winner promotes to GridIron 24 next season.' },
+    { title: 'MAYORS CUP', type: 'survival', date: '2026-12-29', notes: 'Week 17 — last-place Detail vs last-place Overtime (PF tiebreaker).' },
     { title: 'Keeper Declarations Due', type: 'deadline', date: '2027-08-17', notes: 'One keeper per franchise. First keep costs the original draft round; each later keep drops one round. Max three seasons with the franchise, then back to the pool.' }
   ],
   survival: {
     enabled: true,
     week: 17,
-    name: "Mayor's Cup"
+    name: 'MAYORS CUP'
   },
+  // Set true to run AAA as a GridIron 24 feeder this season.
+  aaaEnabled: false,
   affiliatedLeagues: [
     {
       key: 'aaa',
@@ -74,13 +75,13 @@ module.exports = {
       role: 'feeder',
       logo: '/assets/aaa-league.png?v=7',
       payouts: {
-        seasonLabel: '2026 AAA Season',
+        seasonLabel: 'AAA Season',
         buyInPerTeam: 50,
         teamCountMin: 10,
         teamCountMax: 14,
         teamCount: 12,
         currency: 'USD',
-        notes: 'AAA is a separate league with its own league admin, draft, and player pool. Roster size is set by interest (10–14 franchises). Buy-in is $50 per franchise; the prize pool equals $50 × final roster ($500–$700). Award amounts below assume a 12-team field and may be adjusted when the roster locks. Scoring/lineup settings mirror GridIron 24. Champion promotes to GridIron 24 next season (display / commissioner-administered).',
+        notes: 'AAA is a separate feeder league with its own admin, draft, and player pool. Roster size is set by interest (10–14 franchises). Buy-in is $50 per franchise. Champion promotes to GridIron 24 the following season.',
         prizes: [
           { place: 1, label: 'AAA Champion', amount: 300 },
           { place: 2, label: 'AAA Runner-Up', amount: 150 },

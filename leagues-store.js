@@ -184,17 +184,7 @@ function defaultAaaPayouts(seed = {}) {
 
 function defaultAffiliatedLeagues(seedList) {
   const list = Array.isArray(seedList) ? seedList : [];
-  if (!list.length) {
-    return [{
-      key: 'aaa',
-      name: 'AAA League',
-      shortName: 'AAA',
-      espnLeagueId: null,
-      role: 'feeder',
-      logo: '/assets/aaa-league.png?v=7',
-      payouts: defaultAaaPayouts()
-    }];
-  }
+  if (!list.length) return [];
   return list.map((row) => ({
     key: String(row.key || 'aaa').trim() || 'aaa',
     name: String(row.name || 'AAA League').trim() || 'AAA League',
@@ -204,6 +194,55 @@ function defaultAffiliatedLeagues(seedList) {
     logo: String(row.logo || '/assets/aaa-league.png?v=7').trim() || '/assets/aaa-league.png?v=7',
     payouts: defaultAaaPayouts(row.payouts || {})
   }));
+}
+
+function defaultIndependentAaaAffiliate(league = {}) {
+  return defaultAffiliatedLeagues([{
+    key: 'aaa',
+    name: 'AAA League',
+    shortName: 'AAA',
+    espnLeagueId: null,
+    role: 'feeder',
+    logo: '/assets/aaa-league.png?v=7',
+    payouts: defaultAaaPayouts()
+  }]);
+}
+
+function independentAaaOn(league) {
+  if (!league || league.platform !== 'independent') return false;
+  return league.aaaEnabled !== false;
+}
+
+function seedIndependentAaa(league) {
+  if (!league || league.platform !== 'independent') return false;
+  let dirty = false;
+  if (league.aaaEnabled == null) {
+    league.aaaEnabled = true;
+    dirty = true;
+  }
+  if (league.aaaEnabled === false) {
+    if (Array.isArray(league.affiliatedLeagues) && league.affiliatedLeagues.length) {
+      league.affiliatedLeagues = [];
+      dirty = true;
+    }
+    return dirty;
+  }
+  if (!Array.isArray(league.affiliatedLeagues) || !league.affiliatedLeagues.length) {
+    league.affiliatedLeagues = defaultIndependentAaaAffiliate(league);
+    dirty = true;
+  }
+  return dirty;
+}
+
+function defaultIndependentSurvival(seed = {}) {
+  if (seed && Object.prototype.hasOwnProperty.call(seed, 'enabled')) {
+    return defaultSurvival(seed);
+  }
+  return defaultSurvival({
+    enabled: true,
+    name: String(seed?.name || 'MAYORS CUP').trim() || 'MAYORS CUP',
+    week: Number.isFinite(Number(seed?.week)) ? Number(seed.week) : 17
+  });
 }
 
 function independentChampionshipPublic(league) {
@@ -218,6 +257,15 @@ function independentChampionshipPublic(league) {
 
 function publicLeague(league) {
   if (!league) return null;
+  const independent = league.platform === 'independent';
+  const aaaOn = independent && league.aaaEnabled !== false;
+  const independentAffiliates = aaaOn
+    ? defaultAffiliatedLeagues(
+      Array.isArray(league.affiliatedLeagues) && league.affiliatedLeagues.length
+        ? league.affiliatedLeagues
+        : defaultIndependentAaaAffiliate(league)
+    )
+    : [];
   const pub = {
     id: league.id,
     slug: league.slug,
@@ -241,9 +289,12 @@ function publicLeague(league) {
     survival: league.platform === 'independent'
       ? defaultSurvival(league.survival?.enabled === true ? league.survival : { enabled: false })
       : (league.survival || defaultSurvival()),
-    affiliatedLeagues: Array.isArray(league.affiliatedLeagues)
-      ? league.affiliatedLeagues
-      : defaultAffiliatedLeagues(),
+    affiliatedLeagues: independent
+      ? independentAffiliates
+      : (Array.isArray(league.affiliatedLeagues)
+        ? defaultAffiliatedLeagues(league.affiliatedLeagues)
+        : defaultAffiliatedLeagues()),
+    aaaEnabled: independent ? aaaOn : undefined,
     historySeasons: Array.isArray(league.historySeasons) ? league.historySeasons : [],
     payouts: league.payouts,
     calendarDefaults: league.platform === 'independent'
@@ -256,6 +307,8 @@ function publicLeague(league) {
     rulebook: league.platform === 'independent'
       ? composeIndependentRulebook({
           ...league,
+          aaaEnabled: aaaOn,
+          affiliatedLeagues: independentAffiliates,
           championship: independentChampionshipPublic(league),
           survival: defaultSurvival(league.survival?.enabled === true ? league.survival : { enabled: false })
         })
@@ -278,7 +331,7 @@ function publicLeague(league) {
   };
   if (pub.platform === 'independent') {
     pub.homePath = independentHomePath(league);
-    pub.affiliatedLeagues = []; // never tied to GridIron 24 / AAA
+    pub.conferenceDraftEnabled = league.conferenceDraftEnabled === true;
     pub.schedule = league.schedule || null;
     pub.playoffs = league.playoffs
       ? {
@@ -706,6 +759,52 @@ function defaultIndependentSettings(seed = {}) {
   };
 }
 
+function independentAaaRulebookArticles(league) {
+  const brand = String(league?.brand?.name || 'This league').trim() || 'This league';
+  const aaa = (Array.isArray(league?.affiliatedLeagues) ? league.affiliatedLeagues : [])
+    .find((l) => String(l.key || '').toLowerCase() === 'aaa')
+    || (league?.affiliatedLeagues || [])[0]
+    || defaultIndependentAaaAffiliate(league)[0];
+  const aaaName = aaa?.name || 'AAA League';
+  const cup = String(league?.survival?.name || 'MAYORS CUP').trim() || 'MAYORS CUP';
+  const week = Number(league?.survival?.week)
+    || Number(league?.championship?.bowlWeek)
+    || 17;
+  const twoConf = Number(league?.structure?.conferenceCount) === 2
+    || (Array.isArray(league?.conferences) && league.conferences.length === 2);
+  const buyIn = aaa?.payouts?.buyInPerTeam != null ? `$${aaa.payouts.buyInPerTeam}` : '$50';
+  const min = aaa?.payouts?.teamCountMin || 10;
+  const max = aaa?.payouts?.teamCountMax || 14;
+  return [
+    {
+      id: 'settings-aaa',
+      source: 'settings',
+      title: 'VI. AAA League',
+      body: [
+        `${aaaName} is the affiliated feeder for ${brand}. It is a separate league with its own membership, standings, and championship.`,
+        `Buy-in ${buyIn} per franchise. Roster size is set by interest (${min}–${max}) unless the owner sets a fixed count.`,
+        `The ${aaaName} champion is eligible for promotion into ${brand} under the relegation rules.`
+      ].join('\n')
+    },
+    {
+      id: 'settings-relegation',
+      source: 'settings',
+      title: 'VII. Relegation & MAYORS CUP',
+      body: [
+        twoConf
+          ? `Within each conference, franchises are ranked by overall record: wins, then losses, then ties, then points for (PF). The franchise finishing last in each conference is the relegation candidate.`
+          : `Franchises are ranked by overall record: wins, then losses, then ties, then points for (PF). The franchise finishing last is the relegation candidate.`,
+        `Standings shall display a ${cup} line immediately above the last-place franchise.`,
+        twoConf
+          ? `In week ${week}, the last-place franchise from each conference shall meet in the ${cup}. The higher score remains in ${brand}. The lower score is relegated to ${aaaName} for the following season.`
+          : `The last-place franchise is relegated to ${aaaName} for the following season. If a ${cup} is scheduled (week ${week}), it is the last-place consolation; the loser is relegated.`,
+        `The ${aaaName} champion is promoted into ${brand} to fill that vacancy, or another vacancy designated by the league owner.`,
+        'A score tie is resolved by the league owner.'
+      ].join('\n')
+    }
+  ];
+}
+
 function formatIndependentRulebookFromSettings(league) {
   const s = defaultIndependentSettings(league?.settings || {});
   const slots = s.rosterSlots || {};
@@ -815,13 +914,20 @@ function formatIndependentRulebookFromSettings(league) {
         structure.thirdPlaceEnabled ? 'Third-place game: on.' : null,
         championship.name
           ? `${championship.name}${championship.bowlWeek ? ` (week ${championship.bowlWeek})` : ''}${championship.titleWeek ? ` · conference title week ${championship.titleWeek}` : ''}.`
-          : 'Championship name not set yet — the title game uses this league’s name.'
+          : 'Championship name not set yet — the title game uses this league’s name.',
+        league?.survival?.enabled
+          ? `${league.survival.name || 'MAYORS CUP'}${league.survival.week ? ` (week ${league.survival.week})` : ''} — last-place / consolation.`
+          : null,
+        league?.conferenceDraftEnabled
+          ? 'Next-season conference draft: prior-year winner picks a conference first and picks first; runner-up is the other conference admin. MAYORS CUP winner may switch conferences after the draft, replacing that conference’s last pick.'
+          : null
       ].filter(Boolean).join('\n')
     },
+    ...(independentAaaOn(league) ? independentAaaRulebookArticles(league) : []),
     {
       id: 'settings-payouts',
       source: 'settings',
-      title: 'VI. Payouts',
+      title: independentAaaOn(league) ? 'VIII. Payouts' : 'VI. Payouts',
       body: [
         payouts.buyInPerTeam != null ? `Buy-in $${payouts.buyInPerTeam} × ${payouts.teamCount || structure.totalTeams || '—'} teams.` : 'Buy-in not set.',
         prizes,
@@ -1163,7 +1269,9 @@ function vanillaIndependentTemplate() {
       keeperMaxSeasons: 1
     }),
     rulebook: defaultIndependentRulebook(),
-    survival: defaultSurvival({ enabled: false }),
+    survival: defaultIndependentSurvival(),
+    aaaEnabled: true,
+    affiliatedLeagues: defaultIndependentAaaAffiliate(),
     payouts: {
       seasonLabel: `${year} Season`,
       buyInPerTeam: 100,
@@ -1275,7 +1383,7 @@ function createLeague({
     },
     calendarDefaults: Array.isArray(calendarDefaults) ? calendarDefaults : [],
     survival: defaultSurvival(),
-    affiliatedLeagues: defaultAffiliatedLeagues(),
+    affiliatedLeagues: [],
     ownerUserId: ownerUserId || null,
     createdAt: new Date().toISOString(),
     activatedAt: activate ? new Date().toISOString() : null
@@ -1301,10 +1409,19 @@ function ensureSystemLeague(seed) {
       dirty = true;
     }
     if (!Array.isArray(system.affiliatedLeagues)) {
-      system.affiliatedLeagues = defaultAffiliatedLeagues(seed.affiliatedLeagues);
+      system.affiliatedLeagues = defaultAffiliatedLeagues(seed.aaaEnabled === false ? [] : seed.affiliatedLeagues);
       dirty = true;
     } else {
-      const seeded = defaultAffiliatedLeagues(seed.affiliatedLeagues);
+      const seeded = defaultAffiliatedLeagues(seed.aaaEnabled === false ? [] : seed.affiliatedLeagues);
+      const sameKeys = seeded.length === (system.affiliatedLeagues || []).length
+        && seeded.every((s, i) => s.key === system.affiliatedLeagues[i]?.key);
+      if (!seeded.length && (system.affiliatedLeagues || []).length) {
+        system.affiliatedLeagues = [];
+        dirty = true;
+      } else if (seeded.length && !sameKeys) {
+        system.affiliatedLeagues = seeded;
+        dirty = true;
+      } else if (seeded.length) {
       system.affiliatedLeagues = system.affiliatedLeagues.map((row) => {
         const match = seeded.find((s) => s.key === row.key) || seeded[0] || {};
         let next = row;
@@ -1337,6 +1454,7 @@ function ensureSystemLeague(seed) {
         }
         return next;
       });
+      }
     }
     const hasSurvivalCal = (system.calendarDefaults || []).some(
       (e) => String(e.type || '').toLowerCase() === 'survival'
@@ -1349,23 +1467,25 @@ function ensureSystemLeague(seed) {
       system.calendarDefaults = [
         ...(system.calendarDefaults || []),
         fromSeed || {
-          title: "Mayor's Cup",
+          title: 'MAYORS CUP',
           type: 'survival',
           date: '2026-12-29',
-          notes: 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).'
+          notes: 'Week 17 — last-place Detail vs last-place Overtime (PF tiebreaker).'
         }
       ];
       dirty = true;
     }
-    if (system.survival && /stay in league|toilet\s*bowl/i.test(String(system.survival.name || ''))) {
-      system.survival.name = "Mayor's Cup";
-      dirty = true;
+    if (system.survival && /stay in league|toilet\s*bowl|mayor'?s?\s*cup/i.test(String(system.survival.name || ''))) {
+      if (system.survival.name !== 'MAYORS CUP') {
+        system.survival.name = 'MAYORS CUP';
+        dirty = true;
+      }
     }
-    const calStay = (system.calendarDefaults || []).find((e) => /stay in league|toilet\s*bowl/i.test(String(e.title || '')));
-    if (calStay) {
-      calStay.title = "Mayor's Cup";
-      if (!/relegat|pf|mayor/i.test(String(calStay.notes || ''))) {
-        calStay.notes = 'Week 17 — relegated Detail vs relegated Overtime (PF tiebreaker for last place).';
+    const calStay = (system.calendarDefaults || []).find((e) => /stay in league|toilet\s*bowl|mayor'?s?\s*cup/i.test(String(e.title || '')));
+    if (calStay && calStay.title !== 'MAYORS CUP') {
+      calStay.title = 'MAYORS CUP';
+      if (!/last-place|pf|mayor/i.test(String(calStay.notes || ''))) {
+        calStay.notes = 'Week 17 — last-place Detail vs last-place Overtime (PF tiebreaker).';
       }
       dirty = true;
     }
@@ -1373,20 +1493,34 @@ function ensureSystemLeague(seed) {
       (e) => String(e.type || '').toLowerCase() === 'aaa'
         || /aaa\s*(super\s*)?bowl|aaa\s*championship/i.test(String(e.title || ''))
     );
-    if (!hasAaaCal) {
+    const seedHasAaa = seed.aaaEnabled !== false && (seed.calendarDefaults || []).some(
+      (e) => String(e.type || '').toLowerCase() === 'aaa'
+    );
+    if (hasAaaCal && !seedHasAaa) {
+      system.calendarDefaults = (system.calendarDefaults || []).filter((e) => {
+        const type = String(e.type || '').toLowerCase();
+        const title = String(e.title || '');
+        return type !== 'aaa' && !/aaa\s*(super\s*)?bowl|aaa\s*championship/i.test(title);
+      });
+      dirty = true;
+    } else if (!hasAaaCal && seedHasAaa) {
       const fromSeed = (seed.calendarDefaults || []).find(
         (e) => String(e.type || '').toLowerCase() === 'aaa'
       );
-      system.calendarDefaults = [
-        ...(system.calendarDefaults || []),
-        fromSeed || {
-          title: 'AAA Super Bowl',
-          type: 'aaa',
-          date: '2026-12-29',
-          notes: 'AAA League championship — ESPN title game. Winner promotes to GridIron 24 next season.'
-        }
-      ];
-      dirty = true;
+      if (fromSeed) {
+        system.calendarDefaults = [
+          ...(system.calendarDefaults || []),
+          fromSeed
+        ];
+        dirty = true;
+      }
+    }
+    for (const e of system.calendarDefaults || []) {
+      const notes = String(e.notes || '');
+      if (/aaa league \$50/i.test(notes)) {
+        e.notes = notes.replace(/\s*·\s*AAA League \$50\.?/i, '').trim();
+        dirty = true;
+      }
     }
     if (Array.isArray(system.conferences) && Array.isArray(seed.conferences)) {
       system.conferences = system.conferences.map((row) => {
@@ -1418,6 +1552,9 @@ function ensureSystemLeague(seed) {
         ? normalizeHistorySeasons(seed.historySeasons)
         : [];
       dirty = true;
+    }
+    for (const row of store.leagues) {
+      if (seedIndependentAaa(row)) dirty = true;
     }
     if (dirty) writeStore(store);
     return publicLeague(system);
@@ -1476,7 +1613,7 @@ function ensureSystemLeague(seed) {
     },
     calendarDefaults: seed.calendarDefaults || [],
     survival: defaultSurvival(seed.survival),
-    affiliatedLeagues: defaultAffiliatedLeagues(seed.affiliatedLeagues),
+    affiliatedLeagues: defaultAffiliatedLeagues(seed.aaaEnabled === false ? [] : seed.affiliatedLeagues),
     historySeasons: normalizeHistorySeasons(seed.historySeasons || []),
     ownerUserId: null,
     createdAt: new Date().toISOString(),
@@ -1648,8 +1785,9 @@ function createIndependentLeague({
           survival: survival || { enabled: false }
         })
       : [],
-    survival: defaultSurvival(survival || { enabled: false }),
-    affiliatedLeagues: [],
+    survival: defaultIndependentSurvival(survival),
+    affiliatedLeagues: defaultIndependentAaaAffiliate({ brand: { name: brandName } }),
+    aaaEnabled: true,
     historySeasons: [],
     ownerUserId: ownerUserId || null,
     ownerName: ownerName ? String(ownerName).trim() : null,
@@ -1935,7 +2073,15 @@ function completeIndependentLeagueSetup(leagueId, body = {}, actor = null, uploa
       ? 'league'
       : (body.settings?.draftScope || 'conference')
   });
-  league.survival = defaultSurvival(body.survival || { enabled: false });
+  league.survival = defaultIndependentSurvival(body.survival);
+  league.aaaEnabled = body.aaaEnabled === false ? false : true;
+  league.affiliatedLeagues = league.aaaEnabled
+    ? defaultAffiliatedLeagues(
+      Array.isArray(body.affiliatedLeagues) && body.affiliatedLeagues.length
+        ? body.affiliatedLeagues
+        : defaultIndependentAaaAffiliate(league)
+    )
+    : [];
   league.payouts = {
     seasonLabel: String(body.payouts?.seasonLabel || `${league.season} Season`).trim(),
     buyInPerTeam: Number(body.payouts?.buyInPerTeam) || 0,
@@ -2264,6 +2410,22 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
       ...(league.survival || {}),
       ...(typeof patch.survival === 'object' && patch.survival ? patch.survival : {})
     });
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'conferenceDraftEnabled')) {
+    league.conferenceDraftEnabled = patch.conferenceDraftEnabled === true;
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'aaaEnabled')
+    || Object.prototype.hasOwnProperty.call(patch, 'affiliatedLeagues')) {
+    if (patch.aaaEnabled === false) {
+      league.aaaEnabled = false;
+      league.affiliatedLeagues = [];
+    } else {
+      league.aaaEnabled = true;
+      const incoming = Array.isArray(patch.affiliatedLeagues) ? patch.affiliatedLeagues : league.affiliatedLeagues;
+      league.affiliatedLeagues = defaultAffiliatedLeagues(
+        Array.isArray(incoming) && incoming.length ? incoming : defaultIndependentAaaAffiliate(league)
+      );
+    }
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'rulebook')) {
     const incoming = typeof patch.rulebook === 'object' && patch.rulebook ? patch.rulebook : {};
