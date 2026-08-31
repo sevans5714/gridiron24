@@ -86,13 +86,9 @@ function ensureKeepers(league) {
 }
 
 function isOwnerActor(league, actor = {}) {
-  return Boolean(
-    actor.isSiteOwner
-    || leagues.canManageIndependentLeague({
-      id: actor.id || actor.userId,
-      siteOwner: actor.isSiteOwner || actor.siteOwner
-    }, league)
-  );
+  return leagues.canManageIndependentLeague({
+    id: actor.id || actor.userId
+  }, league);
 }
 
 function canActForFranchise(league, franchise, actor = {}) {

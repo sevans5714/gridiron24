@@ -96,6 +96,10 @@
     unread: 0,
     loungeAccess: false,
     loungeOpen: false,
+    menuLeagues: [],
+    leagueScope: null,
+    independentLeague: null,
+    independentBoard: null,
     bookPanel: 'book',
     bookSlip: null,
     bookBridgeWired: false
@@ -177,6 +181,11 @@
   }
 
   function userConferenceKey() {
+    if (isIndependentScope()) {
+      return state.myTeam?.team?.conferenceKey
+        || state.leagueScope?.label
+        || 'league';
+    }
     const { conference } = myTeamRef();
     if (conference) return conference;
     const scope = state.authUser?.preferredConference || state.authUser?.conference;
@@ -184,6 +193,12 @@
   }
 
   function conferenceLabel(key) {
+    if (isIndependentScope()) {
+      return state.myTeam?.team?.conferenceName
+        || state.leagueScope?.label
+        || key
+        || 'League';
+    }
     const k = String(key || '').toLowerCase();
     if (k === 'aaa') return 'AAA';
     if (k === 'overtime') return 'Overtime';
@@ -191,23 +206,294 @@
     return key || 'League';
   }
 
-  /** League brand (GridIron 24 / AAA), not conference (Detail / Overtime). */
+  /** League brand from current HQ scope (GridIron 24, AAA, or an independent league). */
+  function isIndependentScope() {
+    const s = state.leagueScope;
+    return Boolean(s && (s.scope === 'independent' || s.platform === 'independent') && s.leagueId);
+  }
+
   function leagueBrandLabel() {
+    const scope = state.leagueScope;
+    if (scope?.label) return scope.label;
     const membership = String(state.authUser?.membershipLeague || state.dues?.viewer?.membershipLeague || '').toLowerCase();
     if (membership === 'aaa') return 'AAA';
     if (membership === 'gridiron') return 'GridIron 24';
     const conf = String(userConferenceKey() || '').toLowerCase();
     if (conf === 'aaa') return 'AAA';
-    if (conf === 'detail' || conf === 'overtime') return 'GridIron 24';
     return 'GridIron 24';
   }
 
   function leagueBrandLogo() {
+    const scope = state.leagueScope;
+    if (scope?.logo) return { src: scope.logo, alt: scope.label || 'League' };
     const label = leagueBrandLabel();
     if (label === 'AAA') {
       return { src: '/assets/aaa-league.png?v=7', alt: 'AAA' };
     }
     return { src: '/assets/gridiron24-league.png?v=8', alt: 'GridIron 24' };
+  }
+
+  function preferredLeaguePayload(row) {
+    if (!row) return 'gridiron';
+    if (row.kind === 'independent') {
+      const id = String(row.id || '');
+      return id.toLowerCase().startsWith('independent:') ? id : `independent:${id}`;
+    }
+    if (row.kind === 'aaa') return 'aaa';
+    return 'gridiron';
+  }
+
+  function mapIndependentPlayers(rows) {
+    return (rows || []).map((p) => ({
+      slot: p.slot || p.position || 'BN',
+      name: p.name || p.playerName || null,
+      empty: Boolean(p.empty) || !(p.name || p.playerName),
+      points: p.weekPoints ?? p.points ?? null,
+      weekPoints: p.weekPoints ?? p.points ?? null,
+      injuryStatus: p.injuryStatus || p.status || null,
+      proTeam: p.nflTeam || p.team || null
+    }));
+  }
+
+  function mapIndependentSide(side) {
+    if (!side) return { id: null, name: 'TBD', score: 0, projected: 0, logo: PLACEHOLDER };
+    return {
+      id: side.franchiseId || side.id || null,
+      name: side.name || 'TBD',
+      score: side.total ?? side.score ?? 0,
+      projected: side.projected ?? side.total ?? side.score ?? 0,
+      logo: side.logo || PLACEHOLDER,
+      lineup: mapIndependentPlayers(side.starters),
+      bench: mapIndependentPlayers(side.bench)
+    };
+  }
+
+  function applyIndependentBoard(board, league) {
+    const confs = (league.conferences || []).length
+      ? league.conferences
+      : [{ key: 'league', name: league.brand?.name || 'League', shortName: 'LG', logo: league.brand?.logo }];
+    const standings = board.standings || [];
+    const matchups = (board.matchups || []).map((m) => {
+      const home = mapIndependentSide(m.home);
+      const away = mapIndependentSide(m.away);
+      let winner = 'UNDECIDED';
+      if (board.statsReady && !board.live) {
+        if (m.result === 'home') winner = 'HOME';
+        else if (m.result === 'away') winner = 'AWAY';
+        else if (m.result === 'tie') winner = 'TIE';
+      }
+      return { home, away, winner, id: m.id };
+    });
+    const teamsFor = (key) => standings
+      .filter((s) => !s.conferenceKey || s.conferenceKey === key || confs.length < 2)
+      .map((s) => ({
+        id: s.franchiseId,
+        name: s.name,
+        wins: s.wins || 0,
+        losses: s.losses || 0,
+        ties: s.ties || 0,
+        pointsFor: s.pointsFor || 0,
+        logo: s.logo || null
+      }));
+    const matchupsFor = (key) => {
+      if (confs.length < 2) return matchups;
+      const ids = new Set(teamsFor(key).map((t) => String(t.id)));
+      return matchups.filter((m) => ids.has(String(m.home?.id)) || ids.has(String(m.away?.id)));
+    };
+    state.leagues = {
+      conferences: confs.map((c) => ({
+        ok: true,
+        key: c.key,
+        name: c.name,
+        shortName: c.shortName || c.name,
+        logo: c.logo || league.brand?.logo || null,
+        teams: teamsFor(c.key)
+      }))
+    };
+    state.schedule = {
+      week: board.week,
+      conferences: confs.map((c) => ({
+        ok: true,
+        key: c.key,
+        name: c.name,
+        shortName: c.shortName || c.name,
+        logo: c.logo || league.brand?.logo || null,
+        week: board.week,
+        matchups: matchupsFor(c.key)
+      }))
+    };
+    state.week = board.week;
+    state.currentMatchupPeriod = board.week;
+    state.independentBoard = board;
+    state.independentLeague = league;
+    fillWeeks(board.week);
+  }
+
+  function applyIndependentMyTeam(board, league) {
+    const uid = state.authUser?.id;
+    const franchise = (league.franchises || []).find((f) => f.managerUserId && f.managerUserId === uid)
+      || (board.franchises || []).find((f) => f.managerUserId && f.managerUserId === uid);
+    if (!franchise) {
+      state.myTeam = { team: null, claim: null, leagueScope: state.leagueScope };
+      updateTeamChip();
+      return;
+    }
+    const fid = franchise.id || franchise.franchiseId;
+    const scored = (board.franchises || []).find((f) => String(f.franchiseId) === String(fid)) || {};
+    const standing = (board.standings || []).find((s) => String(s.franchiseId) === String(fid));
+    const rank = standing
+      ? (board.standings || []).findIndex((s) => String(s.franchiseId) === String(fid)) + 1
+      : null;
+    const mu = (board.matchups || []).find((m) =>
+      String(m.home?.franchiseId) === String(fid) || String(m.away?.franchiseId) === String(fid)
+    );
+    const conf = (league.conferences || []).find((c) => c.key === (franchise.conferenceKey || scored.conferenceKey));
+    const mappedMu = mu
+      ? { home: mapIndependentSide(mu.home), away: mapIndependentSide(mu.away), winner: mu.result === 'home' ? 'HOME' : mu.result === 'away' ? 'AWAY' : (mu.result === 'tie' ? 'TIE' : 'UNDECIDED') }
+      : null;
+    state.myTeam = {
+      team: {
+        id: fid,
+        name: franchise.name || scored.name,
+        conferenceKey: franchise.conferenceKey || scored.conferenceKey || conf?.key,
+        conferenceName: conf?.name || league.brand?.name,
+        wins: standing?.wins || 0,
+        losses: standing?.losses || 0,
+        ties: standing?.ties || 0,
+        pointsFor: standing?.pointsFor || scored.total || 0,
+        standingRank: rank || null,
+        logo: franchise.logo || scored.logo || league.brand?.logo || null
+      },
+      claim: {
+        teamId: fid,
+        teamName: franchise.name || scored.name,
+        conferenceKey: franchise.conferenceKey || scored.conferenceKey || null
+      },
+      conference: { key: franchise.conferenceKey || scored.conferenceKey || conf?.key, name: conf?.name },
+      lineup: mapIndependentPlayers(scored.starters),
+      bench: mapIndependentPlayers(scored.bench),
+      currentMatchupPeriod: board.week,
+      displayMatchupPeriod: board.week,
+      currentMatchup: mappedMu,
+      matchupBox: mappedMu ? { week: board.week, ...mappedMu, lineupSlots: (scored.starters || []).map((p) => ({ slot: p.slot || p.position })) } : null,
+      leagueScope: state.leagueScope
+    };
+    updateTeamChip();
+  }
+
+  async function loadIndependentContext() {
+    const scope = state.leagueScope;
+    if (!isIndependentScope()) return false;
+    const slug = String(scope.slug || '').trim();
+    const hq = await apiGet(`/api/independent-hq?slug=${encodeURIComponent(slug)}`);
+    const league = hq.league;
+    const q = state.week ? `?week=${encodeURIComponent(state.week)}` : '';
+    const board = await apiGet(`/api/independent-leagues/${encodeURIComponent(scope.leagueId)}/scoreboard${q}`);
+    applyIndependentBoard(board, league);
+    applyIndependentMyTeam(board, league);
+    return true;
+  }
+
+  function paintLeagueChrome() {
+    const nameEl = document.getElementById('brand-name');
+    if (nameEl) nameEl.textContent = leagueBrandLabel();
+    const mark = document.querySelector('.brand img');
+    const logo = leagueBrandLogo();
+    if (mark && logo?.src) {
+      mark.src = logo.src;
+      mark.alt = logo.alt || '';
+    }
+    const rulebook = document.getElementById('account-rulebook');
+    const payouts = document.getElementById('account-payouts');
+    const scope = state.leagueScope;
+    if (rulebook) {
+      rulebook.href = isIndependentScope() && scope.slug
+        ? `/${scope.slug}/rulebook.html`
+        : (scope?.scope === 'aaa' ? '/aaa-rulebook.html' : '/rulebook.html');
+    }
+    if (payouts) {
+      payouts.href = isIndependentScope() && scope.slug
+        ? `/${scope.slug}/payouts.html`
+        : '/payouts.html';
+    }
+    renderLeagueSwitcher();
+    renderAccountLeagues();
+  }
+
+  function renderAccountLeagues() {
+    const wrap = document.getElementById('account-leagues-wrap');
+    const mount = document.getElementById('account-leagues');
+    if (!wrap || !mount) return;
+    const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
+    if (list.length < 2) {
+      wrap.hidden = true;
+      mount.innerHTML = '';
+      return;
+    }
+    wrap.hidden = false;
+    mount.innerHTML = list.map((row) => {
+      const logo = row.logo ? `<img src="${esc(row.logo)}" alt="" width="28" height="28" />` : '';
+      return `<button type="button" class="user-menu-action${row.current ? ' is-current' : ''}" data-switch-league="${esc(row.id)}" data-kind="${esc(row.kind)}">${logo}<span>${esc(row.label)}${row.role === 'owner' ? ' · Owner' : ''}${row.current ? ' · On' : ''}</span></button>`;
+    }).join('');
+  }
+
+  function closeLeagueSwitcher() {
+    const menu = document.getElementById('league-switch-menu');
+    const btn = document.getElementById('league-switch-btn');
+    if (menu) menu.hidden = true;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+
+  function renderLeagueSwitcher() {
+    const wrap = document.getElementById('league-switch');
+    const btn = document.getElementById('league-switch-btn');
+    const menu = document.getElementById('league-switch-menu');
+    if (!wrap || !btn || !menu) return;
+    const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
+    if (list.length < 2) {
+      wrap.hidden = true;
+      menu.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    const current = list.find((r) => r.current) || list[0];
+    btn.textContent = current?.label || 'Leagues';
+    menu.innerHTML = list.map((row) => {
+      const logo = row.logo ? `<img src="${esc(row.logo)}" alt="" />` : '';
+      return `<button type="button" class="league-switch-item${row.current ? ' is-current' : ''}" role="option" data-switch-league="${esc(row.id)}" data-kind="${esc(row.kind)}" aria-selected="${row.current ? 'true' : 'false'}">${logo}<span>${esc(row.label)}${row.role === 'owner' ? ' · Owner' : ''}</span></button>`;
+    }).join('');
+  }
+
+  async function switchAppLeague(row) {
+    if (!row) return;
+    const already = (state.menuLeagues || []).find((r) => r.id === row.id && r.kind === row.kind && r.current);
+    if (already) return;
+    const league = preferredLeaguePayload(row);
+    const res = await fetch('/api/preferred-league', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ league })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Could not switch league');
+    state.leagueScope = data.leagueScope || state.leagueScope;
+    state.leagues = null;
+    state.schedule = null;
+    state.myTeam = null;
+    state.calendar = null;
+    state.news = null;
+    state.independentLeague = null;
+    state.independentBoard = null;
+    await loadAuth();
+    paintLeagueChrome();
+    await Promise.all([
+      loadHome().catch(() => {}),
+      loadInbox().catch(() => {})
+    ]);
+    if (state.view === 'roster') await loadRoster().catch(() => {});
+    if (state.view === 'matchup') await loadMatchup().catch(() => {});
+    if (state.view === 'league') await loadLeague().catch(() => {});
   }
 
   function isStandalone() {
@@ -1185,13 +1471,13 @@
   }
 
   function matchupStatus(m) {
-    const winner = String(m?.winner || 'UNDECIDED').toUpperCase();
-    const decided = winner === 'HOME' || winner === 'AWAY';
+    const winner = String(m?.winner || m?.result || 'UNDECIDED').toUpperCase();
+    const decided = winner === 'HOME' || winner === 'AWAY' || winner === 'TIE';
     const inProgress = !decided && (Number(m?.home?.score || 0) > 0 || Number(m?.away?.score || 0) > 0);
     return {
       decided,
       inProgress,
-      status: decided ? 'Final' : inProgress ? 'Live' : 'Upcoming',
+      status: decided ? (winner === 'TIE' ? 'Tie' : 'Final') : inProgress ? 'Live' : 'Upcoming',
       statusCls: decided ? 'final' : inProgress ? 'live' : ''
     };
   }
@@ -1659,28 +1945,32 @@
 
     if (state.leagueTab === 'news') {
       const rows = state.news || [];
-      mount.innerHTML = rows.length
+      mount.innerHTML = (rows.length
         ? `<div class="feed-list">${rows.slice(0, 40).map((n) => `
             <article class="feed-card">
               <h3>${esc(n.title || 'Update')}</h3>
               <p>${esc(n.body || n.summary || '')}</p>
               <div class="meta">${esc(n.when || n.date || '')}</div>
             </article>`).join('')}</div>`
-        : `<div class="msg">No league news yet.</div>`;
+        : `<div class="msg">${isIndependentScope() ? 'No news posted in this league yet.' : 'No league news yet.'}</div>`)
+        + `<p class="msg" style="margin-top:1rem;"><button type="button" class="text-btn" data-go="account">Account &amp; desktop</button></p>`;
+      mount.querySelector('[data-go="account"]')?.addEventListener('click', () => navigate('account', { push: true }));
       return;
     }
 
     // calendar
     const events = state.calendar?.events || state.calendar || [];
     const list = Array.isArray(events) ? events : [];
-    mount.innerHTML = list.length
+    mount.innerHTML = (list.length
       ? `<div class="feed-list">${list.slice(0, 50).map((ev) => `
           <article class="feed-card">
             <h3>${esc(ev.title || ev.name || 'Event')}</h3>
             <p>${esc(ev.notes || ev.description || '')}</p>
             <div class="meta">${esc(fmtDate(ev.date || ev.day || ev.startDate))}${ev.conference ? ` · ${esc(ev.conference)}` : ''}</div>
           </article>`).join('')}</div>`
-      : `<div class="msg">No calendar events loaded.</div>`;
+      : `<div class="msg">No calendar events loaded.</div>`)
+      + `<p class="msg" style="margin-top:1rem;"><button type="button" class="text-btn" data-go="account">Account &amp; desktop</button></p>`;
+    mount.querySelector('[data-go="account"]')?.addEventListener('click', () => navigate('account', { push: true }));
   }
 
   function fmtDate(d) {
@@ -2310,11 +2600,15 @@
 
   async function refreshHomeLive() {
     try {
-      await Promise.all([
-        loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: true }),
-        apiGet('/api/my-team').then((d) => { state.myTeam = d; updateTeamChip(); }).catch(() => {}),
-        apiGet('/api/leagues').then((d) => { state.leagues = d; }).catch(() => {})
-      ]);
+      if (isIndependentScope()) {
+        await loadIndependentContext();
+      } else {
+        await Promise.all([
+          loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: true }),
+          apiGet('/api/my-team').then((d) => { state.myTeam = d; updateTeamChip(); }).catch(() => {}),
+          apiGet('/api/leagues').then((d) => { state.leagues = d; }).catch(() => {})
+        ]);
+      }
       if (state.view === 'home') {
         renderHome();
         setHomeSync();
@@ -2332,13 +2626,17 @@
   async function loadHome() {
     const mount = document.getElementById('home-mount');
     try {
-      const tasks = [];
-      tasks.push(loadMyTeam().catch(() => {}));
-      tasks.push(loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: Boolean(state.schedule) }).catch(() => {}));
-      if (!state.leagues) {
-        tasks.push(apiGet('/api/leagues').then((d) => { state.leagues = d; }).catch(() => {}));
+      if (isIndependentScope()) {
+        await loadIndependentContext();
+      } else {
+        const tasks = [];
+        tasks.push(loadMyTeam().catch(() => {}));
+        tasks.push(loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: Boolean(state.schedule) }).catch(() => {}));
+        if (!state.leagues) {
+          tasks.push(apiGet('/api/leagues').then((d) => { state.leagues = d; }).catch(() => {}));
+        }
+        await Promise.all(tasks);
       }
-      await Promise.all(tasks);
       updateTeamChip();
       renderHome();
       setHomeSync();
@@ -2350,13 +2648,17 @@
   async function loadMatchup() {
     const mount = document.getElementById('matchup-mount');
     try {
-      await loadMyTeam().catch(() => {});
-      const displayWeek = state.myTeam?.displayMatchupPeriod
-        || state.myTeam?.matchupBox?.week
-        || undefined;
-      await loadScoreboard(displayWeek, { quiet: Boolean(state.schedule) }).catch(() => {});
-      if (displayWeek != null && Number.isFinite(Number(displayWeek))) {
-        state.week = Number(displayWeek);
+      if (isIndependentScope()) {
+        await loadIndependentContext();
+      } else {
+        await loadMyTeam().catch(() => {});
+        const displayWeek = state.myTeam?.displayMatchupPeriod
+          || state.myTeam?.matchupBox?.week
+          || undefined;
+        await loadScoreboard(displayWeek, { quiet: Boolean(state.schedule) }).catch(() => {});
+        if (displayWeek != null && Number.isFinite(Number(displayWeek))) {
+          state.week = Number(displayWeek);
+        }
       }
       renderMatchup();
       setHomeSync();
@@ -2366,7 +2668,8 @@
   }
 
   async function loadRoster() {
-    await loadMyTeam();
+    if (isIndependentScope()) await loadIndependentContext();
+    else await loadMyTeam();
     renderMyTeam();
   }
 
@@ -2374,10 +2677,19 @@
     try {
       const tasks = [];
       if (state.leagueTab === 'news' && !state.news) {
-        tasks.push(apiGet('/api/news').then((d) => { state.news = d.news || []; }).catch(() => { state.news = []; }));
+        if (isIndependentScope()) {
+          state.news = [];
+        } else {
+          tasks.push(apiGet('/api/news').then((d) => { state.news = d.news || []; }).catch(() => { state.news = []; }));
+        }
       }
       if (state.leagueTab === 'calendar' && !state.calendar) {
-        tasks.push(apiGet('/api/calendar').then((d) => { state.calendar = d.events || []; }).catch(() => { state.calendar = []; }));
+        if (isIndependentScope()) {
+          if (!state.independentLeague) await loadIndependentContext().catch(() => {});
+          state.calendar = state.independentLeague?.calendarDefaults || [];
+        } else {
+          tasks.push(apiGet('/api/calendar').then((d) => { state.calendar = d.events || []; }).catch(() => { state.calendar = []; }));
+        }
       }
       if (state.leagueTab === 'messages') {
         tasks.push(loadInbox().catch(() => {}));
@@ -2403,6 +2715,19 @@
   }
 
   async function loadScoreboard(week, { quiet = false } = {}) {
+    if (isIndependentScope()) {
+      if (week != null && Number.isFinite(Number(week))) state.week = Number(week);
+      await loadIndependentContext();
+      if (state.view === 'home') {
+        renderHome();
+        setHomeSync();
+      }
+      if (state.view === 'matchup') {
+        renderMatchup();
+        setHomeSync();
+      }
+      return;
+    }
     if (state.loadingScores && quiet) return;
     state.loadingScores = true;
     const btn = document.getElementById('refresh-scores');
@@ -2440,6 +2765,11 @@
   }
 
   async function loadMyTeam() {
+    if (isIndependentScope()) {
+      await loadIndependentContext();
+      if (state.view === 'roster') renderMyTeam();
+      return;
+    }
     const mount = document.getElementById('roster-mount');
     try {
       state.myTeam = await apiGet('/api/my-team');
@@ -2832,9 +3162,18 @@
       state.authUser = user;
       state.loungeAccess = Boolean(data.loungeAccess || user.siteOwner);
       state.loungeOpen = Boolean(data.loungeOpen);
+      state.leagueScope = data.leagueScope || null;
+      state.menuLeagues = Array.isArray(data.leagues) ? data.leagues : [];
+      paintLeagueChrome();
       const line = document.getElementById('user-line');
       if (line) {
-        line.textContent = `${user.name || user.loginName || 'Member'}${user.role ? ` · ${String(user.role).replace(/_/g, ' ')}` : ''}`;
+        let roleLabel = '';
+        if (isIndependentScope()) {
+          roleLabel = state.leagueScope?.isLeagueOwner ? 'league owner' : 'member';
+        } else if (user.role) {
+          roleLabel = String(user.role).replace(/_/g, ' ');
+        }
+        line.textContent = `${user.name || user.loginName || 'Member'}${roleLabel ? ` · ${roleLabel}` : ''}`;
       }
       return user;
     } catch {
@@ -2863,7 +3202,34 @@
       loadLeague();
     });
 
+    document.getElementById('league-switch-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = document.getElementById('league-switch-menu');
+      const btn = document.getElementById('league-switch-btn');
+      if (!menu || !btn) return;
+      const open = menu.hidden;
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLeagueSwitcher();
+    });
+
     document.addEventListener('click', (e) => {
+      const switchBtn = e.target.closest?.('[data-switch-league]');
+      if (switchBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeLeagueSwitcher();
+        const row = {
+          id: switchBtn.getAttribute('data-switch-league'),
+          kind: switchBtn.getAttribute('data-kind')
+        };
+        switchAppLeague(row).catch((err) => window.alert(err.message || 'Could not switch league'));
+        return;
+      }
+      if (!e.target.closest?.('#league-switch')) closeLeagueSwitcher();
       const feedBtn = e.target.closest?.('[data-app-feed]');
       if (feedBtn) {
         e.preventDefault();
@@ -3027,11 +3393,11 @@
     function wireUiModeSwitch() {
       const goDesktop = () => {
         if (window.GridIronUiMode?.goDesktop) {
-          window.GridIronUiMode.goDesktop('/home.html');
+          window.GridIronUiMode.goDesktop(state.leagueScope?.homePath || '/home.html');
           return;
         }
         try { localStorage.setItem('gi-ui-mode', 'desktop'); } catch { /* ignore */ }
-        location.assign('/home.html');
+        location.assign(state.leagueScope?.homePath || '/home.html');
       };
       const goMobile = () => {
         if (window.GridIronUiMode?.goMobile) {
@@ -3043,6 +3409,7 @@
       };
       document.getElementById('ui-mode-desktop')?.addEventListener('click', goDesktop);
       document.getElementById('ui-mode-top')?.addEventListener('click', goDesktop);
+      document.getElementById('ui-mode-more')?.addEventListener('click', goDesktop);
       document.getElementById('ui-mode-mobile')?.addEventListener('click', goMobile);
 
       const mode = window.GridIronUiMode?.get?.() || 'mobile';

@@ -73,7 +73,7 @@ function actorUser(actor = {}) {
 
 function isLeagueOwner(league, actor = {}) {
   const user = actorUser(actor);
-  return Boolean(user.siteOwner || leagues.canManageIndependentLeague(user, league));
+  return leagues.canManageIndependentLeague(user, league);
 }
 
 function actorCanManage(league, franchise, actor = {}) {

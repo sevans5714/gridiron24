@@ -340,20 +340,22 @@ function isStaffActor(user) {
 
 function canManage(room, user, league = null) {
   if (!user) return false;
+  if (room.scope === 'independent') {
+    return Boolean(league?.ownerUserId && league.ownerUserId === user.id);
+  }
   if (isStaffActor(user)) return true;
-  if (room.scope === 'independent' && league?.ownerUserId === user.id) return true;
   return isCaptain(room, user.id);
 }
 
 function inLeague(room, user, league = null) {
   if (!user) return false;
-  if (isStaffActor(user) || users.isReadOnly(user)) return true;
   if (room.scope === 'independent') {
     if (!league) return false;
     if (league.ownerUserId === user.id) return true;
     if (user.leagueId === league.id) return true;
     return (league.franchises || []).some((f) => f.managerUserId === user.id);
   }
+  if (users.isLoungeOnly(user)) return false;
   const mem = users.normalizeMembershipLeague(user.membershipLeague);
   return mem === 'gridiron' || user.siteOwner || user.role === 'commissioner' || user.role === 'viewer';
 }

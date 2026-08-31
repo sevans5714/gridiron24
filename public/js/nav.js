@@ -652,8 +652,11 @@
 
   function ownerDeskHref(user) {
     if (!user) return '/profile.html';
-    if (user.leagueOwner && leagueScope?.platform === 'independent' && !user.siteOwner) {
-      return leagueScope.ownerDashboardPath || leagueScope.settingsPath || leagueScope.homePath || '/my-league.html';
+    if (leagueScope?.platform === 'independent' || leagueScope?.scope === 'independent') {
+      if (leagueScope.isLeagueOwner) {
+        return leagueScope.ownerDashboardPath || leagueScope.settingsPath || leagueScope.homePath || '/my-league.html';
+      }
+      return leagueScope.homePath || '/profile.html';
     }
     if (user.siteOwner || user.readOnly || user.role === 'viewer') return '/owner.html';
     if (user.role === 'conference_admin') return '/admin.html';
@@ -662,17 +665,24 @@
 
   function toolsMenuLinks(user) {
     if (!user || user.loungeOnly) return '';
-    const independentOwner = Boolean(user.leagueOwner && leagueScope?.platform === 'independent' && !user.siteOwner);
+    const independent = leagueScope?.platform === 'independent' || leagueScope?.scope === 'independent';
     const items = [];
-    if (user.siteOwner || user.readOnly || user.role === 'viewer') {
-      items.push(`<a class="user-menu-action" href="/owner.html" role="menuitem">Owner tools</a>`);
-    } else if (independentOwner) {
-      items.push(`<a class="user-menu-action" href="${esc(ownerDeskHref(user))}" role="menuitem">Owner tools</a>`);
-    } else if (user.role === 'conference_admin') {
-      items.push(`<a class="user-menu-action" href="/admin.html" role="menuitem">Admin tools</a>`);
-    }
-    if (user.siteOwner || user.readOnly || user.role === 'viewer') {
-      items.push(`<a class="user-menu-action" href="/site.html" role="menuitem">Site Tools</a>`);
+    if (independent) {
+      if (leagueScope.isLeagueOwner) {
+        items.push(`<a class="user-menu-action" href="${esc(ownerDeskHref(user))}" role="menuitem">League settings</a>`);
+      }
+      if (user.siteOwner || user.readOnly) {
+        items.push(`<a class="user-menu-action" href="/site.html" role="menuitem">Site Tools</a>`);
+      }
+    } else {
+      if (user.siteOwner || user.readOnly || user.role === 'viewer') {
+        items.push(`<a class="user-menu-action" href="/owner.html" role="menuitem">Owner tools</a>`);
+      } else if (user.role === 'conference_admin') {
+        items.push(`<a class="user-menu-action" href="/admin.html" role="menuitem">Admin tools</a>`);
+      }
+      if (user.siteOwner || user.readOnly || user.role === 'viewer') {
+        items.push(`<a class="user-menu-action" href="/site.html" role="menuitem">Site Tools</a>`);
+      }
     }
     items.push(`<a class="user-menu-action" href="/profile.html" role="menuitem">User Dashboard</a>`);
     return `<div class="user-menu-section">
@@ -690,7 +700,7 @@
         ? `<img src="${esc(row.logo)}" alt="" width="22" height="22" />`
         : '';
       return `<button type="button" class="user-menu-action user-menu-league${current ? ' is-current' : ''}" role="menuitem" data-switch-league="${esc(row.id)}" data-kind="${esc(row.kind)}" data-href="${esc(row.homePath)}"${current ? ' aria-current="true"' : ''}>
-            ${logo}<span>${esc(row.label)}${current ? ' · On' : ''}</span>
+            ${logo}<span>${esc(row.label)}${row.role === 'owner' ? ' · Owner' : ''}${current ? ' · On' : ''}</span>
           </button>`;
     }).join('');
     return `<div class="user-menu-section">

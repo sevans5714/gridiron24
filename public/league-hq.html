@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=138" />
-  <link rel="icon" href="/favicon.ico?v=138" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=138" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=138" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=142" />
+  <link rel="icon" href="/favicon.ico?v=142" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=142" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=142" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=186" />
   <link rel="stylesheet" href="/css/draft-desk.css?v=13" />
@@ -1877,7 +1877,7 @@
         : (Array.isArray(rb.articles) ? rb.articles : []);
       const ownerArticles = sections.filter((a) => a.source === 'owner');
       const settingsArticles = sections.filter((a) => a.source !== 'owner');
-      const canEdit = Boolean(viewer?.isOwner || viewer?.isSiteOwner)
+      const canEdit = Boolean(viewer?.canManage)
         && league.status !== 'pending_approval'
         && league.status !== 'rejected';
 
@@ -2023,7 +2023,7 @@
       const ch = league.championship || {};
       const pendingLock = league.status === 'pending_approval' || league.status === 'rejected';
       const locked = pendingLock || ['live', 'complete'].includes(String(league.draft?.status || ''));
-      if (!viewer?.isOwner && !viewer?.isSiteOwner) {
+      if (!viewer?.canManage) {
         return `${pageHead('Settings', league)}
           <section class="il-panel"><h2>League settings</h2>
           <p class="il-empty">Only the league owner can edit settings.</p>
@@ -2346,7 +2346,7 @@
     }
 
     function scoringHtml(league, viewer = {}) {
-      const canEdit = Boolean(viewer?.isOwner || viewer?.isSiteOwner);
+      const canEdit = Boolean(viewer?.canManage);
       if (!canEdit) {
         return `${pageHead('Scoring', league)}
           <section class="il-panel">
@@ -2388,7 +2388,7 @@
     }
 
     function manageHtml(league, viewer = {}) {
-      const canManage = Boolean(viewer?.isOwner || viewer?.isSiteOwner);
+      const canManage = Boolean(viewer?.canManage);
       if (!canManage) {
         return `${pageHead('Manage', league)}
           <section class="il-panel">
@@ -2585,7 +2585,7 @@
     function canEditLineup(franchise) {
       const v = hqState.viewer || {};
       if (!franchise) return false;
-      if (v.isOwner || v.isSiteOwner) return true;
+      if (v.canManage) return true;
       return Boolean(franchise.managerUserId && v.id && franchise.managerUserId === v.id);
     }
 
@@ -3292,7 +3292,7 @@
       const pending = claims.filter((c) => c.status === 'pending');
       const waiversPanel = `
         <p class="il-meta">Dropped players stay on waivers ${esc(String(settings.waiverHoldHours ?? 48))} hours. ${type === 'FAAB' ? 'Highest bid wins.' : type === 'rolling' ? 'Priority order wins; a successful claim goes to the end.' : 'Worst record wins.'}</p>
-        ${viewer?.isOwner || viewer?.isSiteOwner ? `<div class="il-actions" style="margin:0.5rem 0 1rem;"><button type="button" class="il-btn" id="il-waivers-run">Process waivers now</button></div>` : ''}
+        ${viewer?.canManage ? `<div class="il-actions" style="margin:0.5rem 0 1rem;"><button type="button" class="il-btn" id="il-waivers-run">Process waivers now</button></div>` : ''}
         <h3 style="margin:0.5rem 0;font-size:1rem;">On waivers</h3>
         <table class="il-wire-table">
           <thead><tr><th>Player</th><th>Clears</th><th></th></tr></thead>
@@ -3367,7 +3367,7 @@
                 ${canAccept ? `<button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="accept">Accept</button>` : ''}
                 ${canAccept ? `<button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="reject">Reject</button>` : ''}
                 ${canCancel ? `<button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="cancel">Cancel</button>` : ''}
-                ${viewer?.isOwner || viewer?.isSiteOwner ? `<button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="veto">Veto</button> <button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="force">Force</button>` : ''}
+                ${viewer?.canManage ? `<button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="veto">Veto</button> <button type="button" class="il-btn" data-trade="${esc(t.id)}" data-trade-action="force">Force</button>` : ''}
               </span>
             </li>`;
           }).join('') || '<li class="il-empty">No open offers.</li>'}
@@ -3581,7 +3581,7 @@
     }
 
     function playoffGameCard(g, viewer) {
-      const owner = viewer?.isOwner || viewer?.isSiteOwner;
+      const owner = viewer?.canManage;
       const canPick = owner && g.home?.franchiseId && g.away?.franchiseId && !g.away?.bye;
       return `<div class="il-pgame${g.bye ? ' is-bye' : ''}" data-game="${esc(g.id)}">
         <p class="il-meta" style="margin:0 0 0.25rem;">Week ${esc(String(g.week || '—'))}${g.tiebreak === 'seed' ? ' · tie → higher seed' : ''}</p>
@@ -3612,7 +3612,7 @@
       const champName = playoffs?.champName || ch.name || `${league.brand?.name || 'League'} Championship`;
       const format = playoffs?.format || st.playoffFormat || 'league-bracket';
       const locked = Boolean(playoffs?.locked);
-      const owner = viewer?.isOwner || viewer?.isSiteOwner;
+      const owner = viewer?.canManage;
       const confs = league.conferences || [];
       const trees = format === 'conference-brackets' && confs.length >= 2
         ? confs.slice(0, 2).map((conf) => ({
@@ -3733,7 +3733,7 @@
       const format = s.leagueFormat || 'redraft';
       const mine = data.myFranchise;
       const decls = data.declarations || [];
-      const owner = viewer?.isOwner || viewer?.isSiteOwner;
+      const owner = viewer?.canManage;
       const on = keepersAreOn(s);
       const myTeamHref = (hqState.pages && hqState.pages.myRoster) || 'my-roster.html';
       const keepersHref = (hqState.pages && hqState.pages.keepers) || 'keepers.html';
@@ -4569,7 +4569,7 @@
 
     async function wireManageUi() {
       const league = hqState.league;
-      if (!league || !(hqState.viewer?.isOwner || hqState.viewer?.isSiteOwner)) return;
+      if (!league || !hqState.viewer?.canManage) return;
       if (league.setupComplete === false) return;
 
       const inviteList = document.getElementById('il-invite-list');

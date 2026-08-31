@@ -12,35 +12,39 @@
   <meta name="format-detection" content="telephone=no" />
   <meta name="description" content="GridIron 24 — standings, matchups, roster, and league HQ." />
   <title>GridIron 24</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=138" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=138" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=138" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=138" />
+  <link rel="manifest" href="/manifest.webmanifest?v=142" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/pwa/apple-touch-icon.png?v=142" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=142" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/pwa/icon-512.png?v=142" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/app/app.css?v=138" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=138" />
-  <link rel="icon" href="/favicon.ico?v=138" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=138" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=138" />
+  <link rel="stylesheet" href="/app/app.css?v=142" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=142" />
+  <link rel="icon" href="/favicon.ico?v=142" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=142" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=142" />
   <script src="/js/theme-boot.js"></script>
 </head>
 <body class="app-shell">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
-    <img src="/assets/pwa/icon-192-transparent.png?v=138" alt="" width="96" height="96" />
+    <img src="/assets/pwa/icon-192-transparent.png?v=142" alt="" width="96" height="96" />
     <strong>GridIron 24</strong>
   </div>
   <header class="app-top">
     <div class="app-top-row">
       <button type="button" class="brand" id="brand-home" aria-label="GridIron 24 Home">
-        <img src="/assets/pwa/icon-192-transparent.png?v=138" alt="" width="192" height="192" />
+        <img src="/assets/pwa/icon-192-transparent.png?v=142" alt="" width="192" height="192" />
         <div class="brand-copy">
-          <strong>GridIron 24</strong>
+          <strong id="brand-name">GridIron 24</strong>
           <span id="subtitle">HQ</span>
         </div>
       </button>
       <div class="app-top-right">
+        <div class="league-switch" id="league-switch" hidden>
+          <button type="button" class="league-switch-btn" id="league-switch-btn" aria-haspopup="listbox" aria-expanded="false">Leagues</button>
+          <div class="league-switch-menu" id="league-switch-menu" hidden role="listbox"></div>
+        </div>
         <button type="button" class="ui-mode-btn" id="ui-mode-top" title="Switch to desktop site">Desktop</button>
         <div class="team-chip" id="team-chip" hidden></div>
       </div>
@@ -82,12 +86,18 @@
     <section class="view" id="view-account" data-view="account" hidden>
       <div class="more-group">
         <p class="more-group-label">Account</p>
-        <div class="more-links">
+        <div class="more-links" id="account-links">
+          <a href="/inbox.html">Inbox <span>Messages for this league</span></a>
+          <a href="/members.html">Members Lounge <span>Chat and presence</span></a>
           <a href="/profile.html">Settings <span>Account, tools, logo</span></a>
-          <a href="/rulebook.html">Rule Book <span>Official rules</span></a>
-          <a href="/payouts.html">Payouts <span>Prize schedule</span></a>
+          <a href="/rulebook.html" id="account-rulebook">Rule Book <span>Official rules</span></a>
+          <a href="/payouts.html" id="account-payouts">Payouts <span>Prize schedule</span></a>
           <button type="button" class="ui-mode-btn" id="ui-mode-more" data-force-desktop="1">Desktop site</button>
         </div>
+      </div>
+      <div class="more-group" id="account-leagues-wrap" hidden>
+        <p class="more-group-label">Your leagues</p>
+        <div class="more-links" id="account-leagues"></div>
       </div>
       <div class="more-group">
         <p class="more-group-label">Session</p>
@@ -157,6 +167,6 @@
     </div>
   </div>
 
-  <script src="/app/app.js?v=138"></script>
+  <script src="/app/app.js?v=142"></script>
 </body>
 </html>

@@ -154,6 +154,90 @@ a {
   text-align: right;
 }
 
+.league-switch {
+  position: relative;
+  z-index: 20;
+  max-width: 100%;
+}
+
+.league-switch-btn {
+  appearance: none;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.28rem 0.7rem;
+  border: 1px solid rgba(232, 196, 90, 0.35);
+  border-radius: 999px;
+  background: rgba(232, 196, 90, 0.12);
+  color: var(--gold);
+  font-family: var(--label);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.league-switch-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  min-width: 13.5rem;
+  padding: 0.35rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: #0a1224;
+  box-shadow: var(--shadow-card);
+}
+
+.league-switch-menu[hidden] {
+  display: none !important;
+}
+
+.league-switch-item {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.55rem 0.6rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.league-switch-item img {
+  width: 1.35rem;
+  height: 1.35rem;
+  object-fit: contain;
+  border-radius: 0.2rem;
+}
+
+#account-leagues button {
+  justify-content: flex-start;
+}
+
+#account-leagues button img {
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+  border-radius: 0.25rem;
+}
+
+.league-switch-item.is-current,
+.league-switch-item:hover,
+.league-switch-item:focus-visible {
+  background: rgba(47, 109, 255, 0.16);
+}
+
 .team-chip {
   max-width: 100%;
   padding: 0.28rem 0.65rem;

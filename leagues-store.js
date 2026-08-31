@@ -1928,7 +1928,7 @@ function listIndependentMembershipsForUser(userId) {
 
 function completeIndependentLeagueSetup(leagueId, body = {}, actor = null, uploadedAssets = {}) {
   const { store, league } = requireIndependentLeague(leagueId);
-  if (actor && !canManageIndependentLeague(actor, league) && !actor.siteOwner) {
+  if (actor && !canManageIndependentLeague(actor, league)) {
     throw Object.assign(new Error('Only the league owner can finish setup'), { status: 403 });
   }
   if (league.status === 'pending_approval') {
@@ -2451,7 +2451,6 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
 
 function canManageIndependentLeague(user, league) {
   if (!user?.id || !league) return false;
-  if (user.siteOwner) return true;
   return Boolean(league.ownerUserId && league.ownerUserId === user.id);
 }
 

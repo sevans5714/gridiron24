@@ -657,8 +657,7 @@ function getPlayoffs(leagueId, { week = null } = {}) {
 
 function lockPlayoffs(leagueId, actor) {
   return leagues.withIndependentLeague(leagueId, (league) => {
-    if (!leagues.canManageIndependentLeague({ id: actor?.id || actor?.userId, siteOwner: actor?.isSiteOwner }, league)
-      && !actor?.isSiteOwner) {
+    if (!leagues.canManageIndependentLeague({ id: actor?.id || actor?.userId }, league)) {
       throw err(403, 'Only the league owner can lock the bracket');
     }
     const playoffs = ensurePlayoffs(league, { week: regularSeasonEnd(league) + 1, lockIfDue: true });
@@ -671,8 +670,7 @@ function lockPlayoffs(leagueId, actor) {
 
 function reseedPlayoffs(leagueId, actor) {
   return leagues.withIndependentLeague(leagueId, (league) => {
-    if (!leagues.canManageIndependentLeague({ id: actor?.id || actor?.userId, siteOwner: actor?.isSiteOwner }, league)
-      && !actor?.isSiteOwner) {
+    if (!leagues.canManageIndependentLeague({ id: actor?.id || actor?.userId }, league)) {
       throw err(403, 'Only the league owner can reseed the bracket');
     }
     league.playoffs = null;
@@ -684,8 +682,7 @@ function reseedPlayoffs(leagueId, actor) {
 
 function setWinner(leagueId, { gameId, winnerId, actor }) {
   return leagues.withIndependentLeague(leagueId, (league) => {
-    if (!leagues.canManageIndependentLeague({ id: actor?.id || actor?.userId, siteOwner: actor?.isSiteOwner }, league)
-      && !actor?.isSiteOwner) {
+    if (!leagues.canManageIndependentLeague({ id: actor?.id || actor?.userId }, league)) {
       throw err(403, 'Only the league owner can set a playoff winner');
     }
     const playoffs = ensurePlayoffs(league, { lockIfDue: false });
