@@ -761,7 +761,7 @@ function buildSiteHqPayload(viewer) {
       pendingAccounts: pendingAccounts.length,
       pendingLeagues: pendingLeagues.length,
       independentLeagues: independent.length,
-      independentLive: independent.filter((l) => l.status === 'approved' && l.setupComplete !== false).length
+      independentLive: independent.filter((l) => l.status === 'approved').length
     },
     online,
     pendingAccounts: pendingAccounts.map((u) => ({
@@ -7827,7 +7827,10 @@ const server = http.createServer(async (req, res) => {
       }
       const pub = leagues.publicLeague(league);
       const section = String(requestUrl.searchParams.get('section') || 'home').toLowerCase();
-      const nflLock = await seasonRulesLock.getStatus(league.season || config.season);
+      let nflLock = { locked: false, season: league.season || config.season };
+      try {
+        nflLock = await seasonRulesLock.getStatus(league.season || config.season);
+      } catch { /* NFL schedule lookup is optional for HQ */ }
       const persistedLock = rulesSyncStore.getSeasonRulesLock(league.season || config.season);
       const seasonLock = (persistedLock?.locked ? persistedLock : nflLock);
       const isLeagueOwner = Boolean(league.ownerUserId && league.ownerUserId === user.id);
@@ -8027,8 +8030,8 @@ const server = http.createServer(async (req, res) => {
 
       if (parts.length === 3 && parts[2] === 'asset') {
         if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can upload logos' });
-        if (league.setupComplete === false) {
-          return sendJson(res, 403, { ok: false, error: 'Finish the Create a League wizard first' });
+        if (league.status !== 'approved') {
+          return sendJson(res, 403, { ok: false, error: 'League must be approved before uploads' });
         }
         try {
           const assetType = String(body.assetType || '').trim();
@@ -8061,8 +8064,8 @@ const server = http.createServer(async (req, res) => {
 
       if (parts.length === 3 && parts[2] === 'invites') {
         if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can invite players' });
-        if (league.status !== 'approved' || league.setupComplete === false) {
-          return sendJson(res, 403, { ok: false, error: 'Finish league setup before inviting players' });
+        if (league.status !== 'approved') {
+          return sendJson(res, 403, { ok: false, error: 'League must be approved before inviting players' });
         }
         const rawEmails = Array.isArray(body.emails)
           ? body.emails.map((e) => String(e || '').trim()).filter(Boolean)
@@ -8388,8 +8391,17 @@ const server = http.createServer(async (req, res) => {
             );
             return sendJson(res, 200, scored);
           } catch (err) {
-            return sendJson(res, err.status || 500, {
-              ok: false,
+            console.error('independent scoreboard', leagueId, err);
+            return sendJson(res, 200, {
+              ok: true,
+              leagueId,
+              week: Number(requestUrl.searchParams.get('week')) || 1,
+              matchups: [],
+              standings: [],
+              franchises: [],
+              statsReady: false,
+              live: false,
+              statsSource: 'unavailable',
               error: err.message || 'Could not score week'
             });
           }
@@ -8727,12 +8739,12 @@ const server = http.createServer(async (req, res) => {
               body: [
                 `Your league “${league.brand?.name || league.slug}” was approved.`,
                 '',
-                `Next: finish setup at ${independentCreateLeagueHref(league)} (brand, conferences, roster, scoring, payouts). Championship names stay blank until you set them.`,
+                'Open HQ and set it up: logos, conferences, scoring, roster slots, draft, playoffs, and invites.',
                 '',
-                `HQ opens after setup: ${leagues.independentHomePath(league)}`
+                leagues.independentSectionPath(league, 'settings')
               ].join('\n'),
               type: 'league_approved',
-              meta: { href: independentCreateLeagueHref(league), leagueId: league.id }
+              meta: { href: leagues.independentSectionPath(league, 'settings'), leagueId: league.id }
             });
           }
         } catch { /* ignore */ }

@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=142" />
-  <link rel="icon" href="/favicon.ico?v=142" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=142" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=142" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=144" />
+  <link rel="icon" href="/favicon.ico?v=144" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=144" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=144" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=186" />
   <style>
@@ -1050,6 +1050,20 @@
       }
     });
 
+    function pollApproval(leagueId) {
+      const q = leagueId ? `?leagueId=${encodeURIComponent(leagueId)}` : '';
+      const timer = setInterval(async () => {
+        try {
+          const mine = await fetch(`/api/my-league${q}`, { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
+          const league = mine?.league;
+          if (league && (league.status === 'approved' || league.status === 'active')) {
+            clearInterval(timer);
+            window.location.replace(league.homePath || '/my-league.html');
+          }
+        } catch { /* keep waiting */ }
+      }, 8000);
+    }
+
     async function boot() {
       try {
         const auth = await fetch('/api/auth', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
@@ -1071,16 +1085,11 @@
         }
         if (league.status === 'pending_approval') {
           setMode('waiting');
+          pollApproval(league.id);
           return;
         }
-        if (league.status === 'approved' && league.setupComplete === false) {
-          fillFromLeague(league);
-          setMode('setup');
-          showStep(0);
-          return;
-        }
-        if (league.homePath) {
-          window.location.replace(league.homePath);
+        if (league.status === 'approved' || league.status === 'active') {
+          window.location.replace(league.homePath || '/my-league.html');
           return;
         }
         setMode('request');

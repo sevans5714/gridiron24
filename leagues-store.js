@@ -277,7 +277,9 @@ function publicLeague(league) {
       || ((Array.isArray(league.conferences) && league.conferences.length === 2)
         ? 'two-conferences'
         : 'one-conference'),
-    setupComplete: league.setupComplete !== false,
+    setupComplete: independent
+      ? (league.status === 'approved' || league.setupComplete === true)
+      : league.setupComplete !== false,
     brand: league.brand,
     conferences: league.conferences,
     championship: league.platform === 'independent'
@@ -2122,11 +2124,14 @@ function approveIndependentLeague(leagueId, actorUserId) {
   league.approvedAt = new Date().toISOString();
   league.approvedBy = actorUserId || null;
   league.rejectionReason = null;
-  // Owner finishes the full Create a League wizard before HQ settings unlock.
-  if (league.setupComplete !== true) league.setupComplete = false;
-  // Independent leagues never replace the site-wide active ESPN HQ.
+  league.setupComplete = true;
+  league.setupCompletedAt = league.setupCompletedAt || league.approvedAt;
   writeStore(store);
-  return publicLeague(league);
+  try {
+    return ensureIndependentSchedule(leagueId);
+  } catch {
+    return publicLeague(league);
+  }
 }
 
 function rejectIndependentLeague(leagueId, reason, actorUserId) {
@@ -2307,12 +2312,6 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
   }
   if (league.status === 'archived') {
     throw Object.assign(new Error('This league is archived. Restore it in Site Tools first.'), { status: 403 });
-  }
-  if (league.setupComplete === false) {
-    throw Object.assign(
-      new Error('Finish the Create a League wizard first'),
-      { status: 403, code: 'setup_required' }
-    );
   }
   const draftStatus = String(league.draft?.status || 'scheduled');
   if (draftStatus === 'live' || draftStatus === 'complete') {

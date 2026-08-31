@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=142" />
-  <link rel="icon" href="/favicon.ico?v=142" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=142" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=142" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=144" />
+  <link rel="icon" href="/favicon.ico?v=144" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=144" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=144" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=186" />
   <link rel="stylesheet" href="/css/draft-desk.css?v=13" />
@@ -1774,10 +1774,7 @@
 
     function statusBanner(league) {
       if (league.status === 'pending_approval') {
-        return `<div class="il-banner is-pending"><strong>Pending approval.</strong> After the site owner approves, open <a href="${esc(setupPath(league))}">Create a League</a> to set up the league.</div>`;
-      }
-      if (league.status === 'approved' && league.setupComplete === false) {
-        return `<div class="il-banner is-pending"><strong>Approved — setup required.</strong> <a href="${esc(setupPath(league))}">Set up your league</a>.</div>`;
+        return `<div class="il-banner is-pending"><strong>Pending approval.</strong> After GridIron 24 approves, you set up this league here — rules, logos, scoring, and invites.</div>`;
       }
       if (league.status === 'rejected') {
         return `<div class="il-banner"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
@@ -2034,15 +2031,7 @@
         return `${pageHead('Settings', league)}
           <section class="il-panel">
             <h2>Waiting for approval</h2>
-            <p class="il-meta">You submitted <strong>${esc(league.brand?.name || league.slug)}</strong> — <strong>${esc(String(league.structure?.totalTeams || '—'))}</strong> teams · ${esc((league.leagueType === 'two-conferences' || (league.conferences || []).length === 2) ? 'two conferences' : 'one conference')}. After approval, set up the league on <a href="${esc(setupPath(league))}">Create a League</a>.</p>
-          </section>`;
-      }
-      if (league.status === 'approved' && league.setupComplete === false) {
-        return `${pageHead('Settings', league)}
-          <section class="il-panel">
-            <h2>Set up your league</h2>
-            <p class="il-meta">Approved. Complete setup on <a href="${esc(setupPath(league))}">Create a League</a> before Settings unlock here.</p>
-            <p class="il-actions" style="margin-top:0.85rem;"><a class="il-btn" href="${esc(setupPath(league))}">Open setup</a></p>
+            <p class="il-meta">You submitted <strong>${esc(league.brand?.name || league.slug)}</strong> — <strong>${esc(String(league.structure?.totalTeams || '—'))}</strong> teams · ${esc((league.leagueType === 'two-conferences' || (league.conferences || []).length === 2) ? 'two conferences' : 'one conference')}. After approval, Settings here is where you set logos, rules, scoring, and the draft.</p>
           </section>`;
       }
       if (league.status === 'rejected') {
@@ -2364,13 +2353,6 @@
             <p class="il-meta">Scoring unlocks after the site owner approves this league.</p>
           </section>`;
       }
-      if (league.status === 'approved' && league.setupComplete === false) {
-        return `${pageHead('Scoring', league)}
-          <section class="il-panel">
-            <h2>Finish setup first</h2>
-            <p class="il-meta">Complete <a href="${esc(setupPath(league))}">Create a League</a> before editing scoring.</p>
-          </section>`;
-      }
       if (league.status === 'rejected') {
         return `${pageHead('Scoring', league)}
           <section class="il-panel"><h2>League not approved</h2>
@@ -2397,11 +2379,11 @@
             <p class="il-meta" style="margin-top:0.75rem;">Claim an open franchise in <a href="${esc((hqState.pages && hqState.pages.settings) || '#')}">Settings</a>.</p>
           </section>`;
       }
-      if (league.setupComplete === false) {
+      if (league.status === 'pending_approval') {
         return `${pageHead('Manage', league)}
           <section class="il-panel">
-            <h2>Finish setup first</h2>
-            <p class="il-meta">Complete the <a href="${esc(setupPath(league))}">Create a League</a> wizard before inviting managers.</p>
+            <h2>Waiting for approval</h2>
+            <p class="il-meta">Invites unlock after this league is approved.</p>
           </section>`;
       }
       const confs = league.conferences || [];
@@ -4570,7 +4552,7 @@
     async function wireManageUi() {
       const league = hqState.league;
       if (!league || !hqState.viewer?.canManage) return;
-      if (league.setupComplete === false) return;
+      if (league.status !== 'approved') return;
 
       const inviteList = document.getElementById('il-invite-list');
       const memberList = document.getElementById('il-member-list');

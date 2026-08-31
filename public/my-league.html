@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=142" />
-  <link rel="icon" href="/favicon.ico?v=142" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=142" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=142" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=144" />
+  <link rel="icon" href="/favicon.ico?v=144" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=144" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=144" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
@@ -124,9 +124,7 @@
 
       let banner = '';
       if (league.status === 'pending_approval') {
-        banner = `<div class="banner">Registration is with the site owner. After approval, open <a href="/create-league?leagueId=${esc(league.id)}">Create a League</a> to set up the league.</div>`;
-      } else if (league.status === 'approved' && league.setupComplete === false) {
-        banner = `<div class="banner">Approved. <a href="/create-league?leagueId=${esc(league.id)}">Set up your league</a>.</div>`;
+        banner = `<div class="banner">Waiting on GridIron 24 approval. After that, open HQ to set rules, logos, scoring, and invites.</div>`;
       } else if (league.status === 'rejected') {
         banner = `<div class="banner bad"><strong>Not approved.</strong> ${esc(league.rejectionReason || 'Contact the site owner for details.')}</div>`;
       } else if (league.status === 'approved') {

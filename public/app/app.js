@@ -269,6 +269,7 @@
   }
 
   function applyIndependentBoard(board, league) {
+    board = board || {};
     const confs = (league.conferences || []).length
       ? league.conferences
       : [{ key: 'league', name: league.brand?.name || 'League', shortName: 'LG', logo: league.brand?.logo }];
@@ -385,10 +386,33 @@
     const scope = state.leagueScope;
     if (!isIndependentScope()) return false;
     const slug = String(scope.slug || '').trim();
-    const hq = await apiGet(`/api/independent-hq?slug=${encodeURIComponent(slug)}`);
+    let hq;
+    try {
+      hq = await apiGet(`/api/independent-hq?slug=${encodeURIComponent(slug)}`);
+    } catch {
+      hq = {
+        league: {
+          id: scope.leagueId,
+          brand: { name: scope.label, logo: scope.logo },
+          conferences: [],
+          franchises: []
+        }
+      };
+    }
     const league = hq.league;
     const q = state.week ? `?week=${encodeURIComponent(state.week)}` : '';
-    const board = await apiGet(`/api/independent-leagues/${encodeURIComponent(scope.leagueId)}/scoreboard${q}`);
+    let board = {
+      week: state.week || 1,
+      matchups: [],
+      standings: [],
+      franchises: [],
+      statsReady: false
+    };
+    try {
+      board = await apiGet(`/api/independent-leagues/${encodeURIComponent(scope.leagueId)}/scoreboard${q}`);
+    } catch {
+      /* nflverse / scoring outage — still show the league */
+    }
     applyIndependentBoard(board, league);
     applyIndependentMyTeam(board, league);
     return true;
@@ -416,8 +440,75 @@
         ? `/${scope.slug}/payouts.html`
         : '/payouts.html';
     }
-    renderLeagueSwitcher();
+    renderAppUserMenu();
     renderAccountLeagues();
+  }
+
+  function getAppTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'day' ? 'day' : 'night';
+  }
+
+  async function setAppTheme(next) {
+    const theme = next === 'day' ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('gi-theme', theme); } catch { /* ignore */ }
+    renderAppUserMenu();
+    try {
+      await fetch('/api/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ theme })
+      });
+    } catch { /* keep local theme */ }
+  }
+
+  function closeAppUserMenu() {
+    const panel = document.getElementById('app-user-panel');
+    const btn = document.getElementById('app-user-btn');
+    if (panel) panel.hidden = true;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+    document.getElementById('app-user')?.classList.remove('is-open');
+  }
+
+  function renderAppUserMenu() {
+    const btn = document.getElementById('app-user-btn');
+    const nameEl = document.getElementById('app-user-name');
+    const panel = document.getElementById('app-user-panel');
+    if (!btn || !panel) return;
+    const who = firstName(state.authUser);
+    if (nameEl) nameEl.textContent = who || 'Account';
+    btn.setAttribute('aria-label', `${who || 'Account'} menu`);
+    const wasOpen = !panel.hidden;
+    const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
+    const theme = getAppTheme();
+    const mode = window.GridIronUiMode?.get?.() || 'mobile';
+    const leagueRows = list.length
+      ? list.map((row) => {
+        const logo = row.logo ? `<img src="${esc(row.logo)}" alt="" />` : '';
+        const mark = row.current ? ' · On' : (row.role === 'owner' ? ' · Owner' : '');
+        return `<button type="button" class="app-user-item${row.current ? ' is-current' : ''}" role="menuitem" data-switch-league="${esc(row.id)}" data-kind="${esc(row.kind)}">${logo}<span>${esc(row.label)}${esc(mark)}</span></button>`;
+      }).join('')
+      : '<p class="app-user-empty">No other leagues</p>';
+    panel.innerHTML = `
+      <p class="app-user-label">Leagues</p>
+      <div class="app-user-list">${leagueRows}</div>
+      <p class="app-user-label">Appearance</p>
+      <div class="app-user-pills" role="group" aria-label="Appearance">
+        <button type="button" class="app-user-pill${theme === 'night' ? ' is-on' : ''}" data-app-theme="night">Dark</button>
+        <button type="button" class="app-user-pill${theme === 'day' ? ' is-on' : ''}" data-app-theme="day">Light</button>
+      </div>
+      <p class="app-user-label">View</p>
+      <div class="app-user-pills" role="group" aria-label="View">
+        <button type="button" class="app-user-pill${mode !== 'desktop' ? ' is-on' : ''}" data-app-ui="mobile">Mobile</button>
+        <button type="button" class="app-user-pill${mode === 'desktop' ? ' is-on' : ''}" data-app-ui="desktop">Desktop</button>
+      </div>
+      <button type="button" class="app-user-item" role="menuitem" data-go="account">Account</button>`;
+    if (wasOpen) {
+      panel.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      document.getElementById('app-user')?.classList.add('is-open');
+    }
   }
 
   function renderAccountLeagues() {
@@ -438,30 +529,11 @@
   }
 
   function closeLeagueSwitcher() {
-    const menu = document.getElementById('league-switch-menu');
-    const btn = document.getElementById('league-switch-btn');
-    if (menu) menu.hidden = true;
-    if (btn) btn.setAttribute('aria-expanded', 'false');
+    closeAppUserMenu();
   }
 
   function renderLeagueSwitcher() {
-    const wrap = document.getElementById('league-switch');
-    const btn = document.getElementById('league-switch-btn');
-    const menu = document.getElementById('league-switch-menu');
-    if (!wrap || !btn || !menu) return;
-    const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
-    if (list.length < 2) {
-      wrap.hidden = true;
-      menu.hidden = true;
-      return;
-    }
-    wrap.hidden = false;
-    const current = list.find((r) => r.current) || list[0];
-    btn.textContent = current?.label || 'Leagues';
-    menu.innerHTML = list.map((row) => {
-      const logo = row.logo ? `<img src="${esc(row.logo)}" alt="" />` : '';
-      return `<button type="button" class="league-switch-item${row.current ? ' is-current' : ''}" role="option" data-switch-league="${esc(row.id)}" data-kind="${esc(row.kind)}" aria-selected="${row.current ? 'true' : 'false'}">${logo}<span>${esc(row.label)}${row.role === 'owner' ? ' · Owner' : ''}</span></button>`;
-    }).join('');
+    renderAppUserMenu();
   }
 
   async function switchAppLeague(row) {
@@ -3164,6 +3236,10 @@
       state.loungeOpen = Boolean(data.loungeOpen);
       state.leagueScope = data.leagueScope || null;
       state.menuLeagues = Array.isArray(data.leagues) ? data.leagues : [];
+      if (user.theme === 'day' || user.theme === 'night') {
+        document.documentElement.setAttribute('data-theme', user.theme);
+        try { localStorage.setItem('gi-theme', user.theme); } catch { /* ignore */ }
+      }
       paintLeagueChrome();
       const line = document.getElementById('user-line');
       if (line) {
@@ -3202,21 +3278,54 @@
       loadLeague();
     });
 
-    document.getElementById('league-switch-btn')?.addEventListener('click', (e) => {
+    document.getElementById('app-user-btn')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      const menu = document.getElementById('league-switch-menu');
-      const btn = document.getElementById('league-switch-btn');
-      if (!menu || !btn) return;
-      const open = menu.hidden;
-      menu.hidden = !open;
+      const panel = document.getElementById('app-user-panel');
+      const btn = document.getElementById('app-user-btn');
+      if (!panel || !btn) return;
+      const open = panel.hidden;
+      panel.hidden = !open;
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.getElementById('app-user')?.classList.toggle('is-open', open);
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeLeagueSwitcher();
+      if (e.key === 'Escape') closeAppUserMenu();
     });
 
     document.addEventListener('click', (e) => {
+      const themeBtn = e.target.closest?.('#app-user-panel [data-app-theme]');
+      if (themeBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        setAppTheme(themeBtn.getAttribute('data-app-theme'));
+        return;
+      }
+      const uiBtn = e.target.closest?.('#app-user-panel [data-app-ui]');
+      if (uiBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const mode = uiBtn.getAttribute('data-app-ui');
+        if (mode === 'desktop') {
+          if (window.GridIronUiMode?.goDesktop) {
+            window.GridIronUiMode.goDesktop(state.leagueScope?.homePath || '/home.html');
+          } else {
+            try { localStorage.setItem('gi-ui-mode', 'desktop'); } catch { /* ignore */ }
+            location.assign(state.leagueScope?.homePath || '/home.html');
+          }
+          return;
+        }
+        closeAppUserMenu();
+        return;
+      }
+      const accountGo = e.target.closest?.('#app-user-panel [data-go="account"]');
+      if (accountGo) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAppUserMenu();
+        navigate('account', { push: true });
+        return;
+      }
       const switchBtn = e.target.closest?.('[data-switch-league]');
       if (switchBtn) {
         e.preventDefault();
@@ -3229,7 +3338,7 @@
         switchAppLeague(row).catch((err) => window.alert(err.message || 'Could not switch league'));
         return;
       }
-      if (!e.target.closest?.('#league-switch')) closeLeagueSwitcher();
+      if (!e.target.closest?.('#app-user')) closeAppUserMenu();
       const feedBtn = e.target.closest?.('[data-app-feed]');
       if (feedBtn) {
         e.preventDefault();
@@ -3408,17 +3517,14 @@
         location.assign('/app/');
       };
       document.getElementById('ui-mode-desktop')?.addEventListener('click', goDesktop);
-      document.getElementById('ui-mode-top')?.addEventListener('click', goDesktop);
       document.getElementById('ui-mode-more')?.addEventListener('click', goDesktop);
       document.getElementById('ui-mode-mobile')?.addEventListener('click', goMobile);
 
       const mode = window.GridIronUiMode?.get?.() || 'mobile';
       const desktopBtn = document.getElementById('ui-mode-desktop');
       const mobileBtn = document.getElementById('ui-mode-mobile');
-      const topBtn = document.getElementById('ui-mode-top');
       if (desktopBtn) desktopBtn.hidden = mode === 'desktop';
       if (mobileBtn) mobileBtn.hidden = mode !== 'desktop';
-      if (topBtn) topBtn.hidden = mode === 'desktop';
     }
     wireUiModeSwitch();
 

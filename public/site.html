@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=142" />
-  <link rel="icon" href="/favicon.ico?v=142" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=142" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=142" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=144" />
+  <link rel="icon" href="/favicon.ico?v=144" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=144" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=144" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
@@ -239,7 +239,7 @@
   <section class="page-hero shell">
     <p class="eyebrow">Platform</p>
     <h1>Site Tools</h1>
-    <p>Settings for this website: ESPN league IDs, who’s on, accounts, league management, and join requests. GridIron 24 league ops (news, invites, calendar) stay on Owner Tools. Create a <strong>View only</strong> account when someone should see everything and change nothing.</p>
+    <p>Settings for this website: ESPN league IDs, who’s on, accounts, league management, and join requests. Independent leagues need <strong>one approval</strong> — then the owner sets rules, logos, scoring, and invites in their own HQ. GridIron 24 league ops (news, invites, calendar) stay on Owner Tools.</p>
   </section>
 
   <main class="page-main shell">
@@ -250,8 +250,8 @@
       <a href="#online">Signed on</a>
       <a href="#accounts">Accounts</a>
       <a href="#create-account">Create account</a>
-      <a href="#leagues">League management</a>
       <a href="#approvals">Approvals</a>
+      <a href="#leagues">League management</a>
       <a href="#server">Server</a>
     </nav>
 
@@ -333,16 +333,16 @@
       <div id="hq-accounts-body"></div>
     </section>
 
-    <section class="hq-section" id="leagues">
-      <h2>League management</h2>
-      <p class="hq-help">Independent leagues only. Renew starts the next season on the same franchises and managers. Archive hides the league without deleting it. Delete is permanent — accounts stay. GridIron 24 cannot be deleted; it stays bound to ESPN above.</p>
-      <div id="hq-leagues-body"></div>
-    </section>
-
     <section class="hq-section" id="approvals">
       <h2>Approvals</h2>
-      <p class="hq-help">New accounts and independent-league requests. Pick membership, then approve or deny here.</p>
+      <p class="hq-help">New accounts and independent-league requests. Approve a league once — the owner then runs setup in their HQ (rules, images, scoring, invites). Pick membership for accounts, then approve or deny here.</p>
       <div id="hq-approvals-body"></div>
+    </section>
+
+    <section class="hq-section" id="leagues">
+      <h2>League management</h2>
+      <p class="hq-help">Independent leagues only. Pending rows have Approve. Renew starts the next season on the same franchises and managers. Archive hides the league without deleting it. Delete is permanent — accounts stay. GridIron 24 cannot be deleted; it stays bound to ESPN above.</p>
+      <div id="hq-leagues-body"></div>
     </section>
 
     <section class="hq-section" id="server">
@@ -599,7 +599,7 @@
         document.getElementById('hq-overview-stats').innerHTML = `
           <div class="hq-stat"><strong>${esc(c.online || 0)}</strong><span>Signed on</span></div>
           <div class="hq-stat"><strong>${esc(c.accounts || 0)}</strong><span>Accounts</span></div>
-          <div class="hq-stat"><strong>${esc(pending)}</strong><span>Waiting approval</span></div>
+          <div class="hq-stat"><strong>${esc(pending)}</strong><span><a href="#approvals" style="color:inherit;text-decoration:underline;">Waiting approval</a></span></div>
           <div class="hq-stat"><strong>${esc(c.independentLive || 0)}</strong><span>Independent live</span></div>
           <div class="hq-stat"><strong>${esc(espnLabel)}</strong><span>${espnWarn ? 'ESPN leagues — fix below' : 'ESPN leagues'}</span></div>`;
       }
@@ -986,12 +986,15 @@
         if (l.status === 'pending_approval') return pill(false, true, 'Pending');
         if (l.status === 'rejected') return pill(false, false, 'Rejected');
         if (l.status === 'archived') return pill(false, true, 'Archived');
-        if (l.status === 'approved' && l.setupComplete === false) return pill(false, true, 'Setup');
         return pill(true, false, 'Live');
       }
 
       function leagueActions(l) {
         const bits = [];
+        if (l.status === 'pending_approval') {
+          bits.push(`<button type="button" class="btn" data-league-act="approve" data-league-id="${esc(l.id)}" data-league-name="${esc(l.name)}">Approve</button>`);
+          bits.push(`<button type="button" class="link-action" data-league-act="reject" data-league-id="${esc(l.id)}" data-league-name="${esc(l.name)}">Reject</button>`);
+        }
         if (l.homePath && l.status !== 'rejected') {
           bits.push(`<a class="link-action" href="${esc(l.homePath)}">Open HQ</a>`);
         }
@@ -1054,6 +1057,24 @@
           if (!confirm(`Archive ${name}? Managers will not see HQ until you restore it.`)) return;
         } else if (act === 'restore') {
           if (!confirm(`Restore ${name} to live?`)) return;
+        } else if (act === 'approve') {
+          if (!confirm(`Approve ${name}? The owner can set up the league in HQ right away.`)) return;
+          btn.disabled = true;
+          try {
+            await actLeague(id, 'approve');
+          } finally {
+            btn.disabled = false;
+          }
+          return;
+        } else if (act === 'reject') {
+          if (!confirm(`Reject ${name}?`)) return;
+          btn.disabled = true;
+          try {
+            await actLeague(id, 'reject');
+          } finally {
+            btn.disabled = false;
+          }
+          return;
         } else if (act === 'delete') {
           const typed = window.prompt(`Type the league name to delete it forever.\n\n${name}`);
           if (typed == null) return;
@@ -1200,7 +1221,9 @@
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.ok) throw new Error(data.error || 'Request failed');
-          showMsg('hq-msg', action === 'approve' ? 'League approved.' : 'League rejected.', true);
+          showMsg('hq-msg', action === 'approve'
+            ? 'League approved. The owner can set it up in HQ now.'
+            : 'League rejected.', true);
           await load({ skipEspn: true });
         } catch (err) {
           showMsg('hq-msg', err.message || 'Request failed', false);

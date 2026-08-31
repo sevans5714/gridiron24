@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=142" />
-  <link rel="icon" href="/favicon.ico?v=142" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=142" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=142" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=144" />
+  <link rel="icon" href="/favicon.ico?v=144" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=144" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=144" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=185" />
   <style>
@@ -5099,7 +5099,7 @@
             const res2 = await fetch(`/api/leagues/${encodeURIComponent(id)}/approve`, { method: 'POST' });
             const data2 = await res2.json().catch(() => ({}));
             if (!res2.ok || !data2.ok) throw new Error(data2.error || 'Approve failed');
-            showLeagueRequestsMsg(`Approved ${data2.league?.brand?.name || 'league'}.`, true);
+            showLeagueRequestsMsg(`Approved ${data2.league?.brand?.name || 'league'}. The owner can set it up in HQ now.`, true);
             await loadLeagueRequests();
           } catch (err) {
             showLeagueRequestsMsg(err.message, false);

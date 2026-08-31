@@ -266,7 +266,23 @@ async function scoreLeagueWeek(league, week, opts = {}) {
   const season = Number(league.season) || new Date().getFullYear();
   const requested = Number(week);
   const weekHint = Number.isFinite(requested) && requested >= 1 ? requested : 99;
-  const boxPack = await weekStats.loadWeekBoxScores(season, weekHint);
+  let boxPack;
+  try {
+    boxPack = await weekStats.loadWeekBoxScores(season, weekHint);
+  } catch {
+    const w = Number.isFinite(requested) && requested >= 1 ? requested : 1;
+    boxPack = {
+      season,
+      week: w,
+      requestedWeek: w,
+      sourceSeason: season,
+      players: new Map(),
+      teams: new Map(),
+      availableWeeks: [w],
+      playerCount: 0,
+      teamCount: 0
+    };
+  }
   let overlay = null;
   if (!opts.skipLive) {
     try {
@@ -392,7 +408,7 @@ async function scoreLeagueWeek(league, week, opts = {}) {
     nflGames: overlay?.games || [],
     statsSource: overlay?.live
       ? 'live'
-      : (overlay?.finalGames ? 'box + week file' : 'week file'),
+      : (overlay?.finalGames ? 'box + week file' : (box.playerCount ? 'week file' : 'unavailable')),
     statsFetchedAt: overlay?.fetchedAt || null,
     matchups,
     franchises: scoredFranchises,
