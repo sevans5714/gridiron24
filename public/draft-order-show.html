@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Draft Order Show · GridIron 24</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=144" />
+  <link rel="icon" href="/favicon.ico?v=144" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=144" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=144" />
+  <script src="/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="/css/site.css?v=182" />
+  <style>
+    .dos-layout { display: grid; gap: 1.5rem; }
+    .dos-years { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .dos-years button {
+      font-family: var(--display);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 0.45rem 0.85rem;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .dos-years button.active {
+      color: var(--text);
+      border-color: var(--blue);
+      background: rgba(47, 109, 255, 0.12);
+    }
+    .dos-player {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .dos-player video,
+    .dos-player iframe {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      height: auto;
+      background: #000;
+      border: 0;
+    }
+    .dos-meta { padding: 1rem 1.1rem 1.15rem; }
+    .dos-meta h2 {
+      margin: 0;
+      font-family: var(--page-title);
+      font-size: 1.35rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .dos-meta p { margin: 0.4rem 0 0; color: var(--muted); line-height: 1.45; }
+    .dos-empty { color: var(--muted); padding: 0.5rem 0 1rem; }
+    .dos-admin {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      padding: 1.1rem 1.15rem 1.25rem;
+    }
+    .dos-admin h2 {
+      margin: 0 0 0.35rem;
+      font-family: var(--display);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-size: 1.05rem;
+    }
+    .dos-admin .hint { color: var(--muted); font-size: 0.9rem; margin: 0 0 1rem; line-height: 1.45; }
+    .dos-form { display: grid; gap: 0.75rem; max-width: 36rem; }
+    .dos-form label { display: grid; gap: 0.3rem; font-size: 0.82rem; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+    .dos-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+    .dos-progress { display: none; color: var(--muted); font-size: 0.9rem; }
+    .dos-progress.is-on { display: block; }
+    .dos-status { min-height: 1.2rem; font-size: 0.9rem; color: var(--muted); }
+    .dos-status.is-err { color: var(--bad); }
+    .dos-status.is-ok { color: var(--good); }
+    .dos-delete { margin-top: 0.75rem; }
+  </style>
+</head>
+<body data-page="draft-order-show">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <nav class="nav" id="site-nav" aria-label="Primary"></nav>
+      <div class="sync" id="lastUpdated">Wire</div>
+    </div>
+  </header>
+  <section class="page-hero shell">
+    <p class="eyebrow">GridIron 24</p>
+    <h1>Draft Order Show</h1>
+  </section>
+  <main class="page-main shell">
+    <div class="dos-layout">
+      <div id="dos-years" class="dos-years" hidden></div>
+      <div id="dos-stage"><p class="dos-empty">Loading…</p></div>
+      <section id="dos-admin" class="dos-admin" hidden>
+        <h2>Add a year</h2>
+        <p class="hint">Site owner only. Upload an MP4 / WebM / MOV (up to 2GB) or paste a YouTube or Vimeo link. A new upload for the same year replaces the old one.</p>
+        <form class="dos-form" id="dos-form">
+          <label>Year
+            <input class="field" id="dos-year" name="year" type="number" min="2000" max="2100" required />
+          </label>
+          <label>Title
+            <input class="field" id="dos-title" name="title" type="text" maxlength="120" placeholder="Draft Order Show" />
+          </label>
+          <label>Notes (optional)
+            <input class="field" id="dos-notes" name="notes" type="text" maxlength="500" placeholder="Lottery, Zoom recording…" />
+          </label>
+          <label>Video file
+            <input class="field" id="dos-file" name="file" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" />
+          </label>
+          <label>Or YouTube / Vimeo URL
+            <input class="field" id="dos-url" name="url" type="url" placeholder="https://youtu.be/…" />
+          </label>
+          <div class="dos-actions">
+            <button class="btn" type="submit" id="dos-save">Save</button>
+            <p class="dos-progress" id="dos-progress" role="status"></p>
+          </div>
+          <p class="dos-status" id="dos-status" role="status"></p>
+        </form>
+      </section>
+    </div>
+  </main>
+  <footer class="shell site-footer">
+    <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
+    <span class="site-footer-build" id="site-build">Build …</span>
+  </footer>
+  <script src="/js/nav.js?v=184"></script>
+  <script>
+    const esc = (v = '') => String(v)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+    const stage = document.getElementById('dos-stage');
+    const yearsEl = document.getElementById('dos-years');
+    const admin = document.getElementById('dos-admin');
+    const form = document.getElementById('dos-form');
+    const statusEl = document.getElementById('dos-status');
+    const progressEl = document.getElementById('dos-progress');
+    const saveBtn = document.getElementById('dos-save');
+    const yearInput = document.getElementById('dos-year');
+
+    let videos = [];
+    let canManage = false;
+    let selectedId = null;
+
+    yearInput.value = String(new Date().getFullYear());
+
+    function setStatus(msg, kind) {
+      statusEl.textContent = msg || '';
+      statusEl.classList.toggle('is-err', kind === 'err');
+      statusEl.classList.toggle('is-ok', kind === 'ok');
+    }
+
+    function selected() {
+      return videos.find((v) => v.id === selectedId) || videos[0] || null;
+    }
+
+    function renderYears() {
+      if (!videos.length) {
+        yearsEl.hidden = true;
+        yearsEl.innerHTML = '';
+        return;
+      }
+      yearsEl.hidden = false;
+      yearsEl.innerHTML = videos.map((v) => (
+        `<button type="button" data-id="${esc(v.id)}" class="${v.id === selected()?.id ? 'active' : ''}">${esc(v.year)}</button>`
+      )).join('');
+    }
+
+    function renderStage() {
+      const v = selected();
+      if (!v) {
+        stage.innerHTML = '<p class="dos-empty">No Draft Order Show is posted yet.</p>';
+        return;
+      }
+      const player = v.kind === 'embed' && v.embedUrl
+        ? `<iframe src="${esc(v.embedUrl)}" title="${esc(v.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
+        : `<video controls playsinline preload="metadata" src="${esc(v.mediaUrl)}"></video>`;
+      const del = canManage
+        ? `<div class="dos-delete"><button class="btn btn-ghost" type="button" id="dos-delete">Remove ${esc(v.year)}</button></div>`
+        : '';
+      stage.innerHTML = `<article class="dos-player">${player}<div class="dos-meta"><h2>${esc(v.year)} · ${esc(v.title)}</h2>${v.notes ? `<p>${esc(v.notes)}</p>` : ''}${del}</div></article>`;
+    }
+
+    async function load(preferId) {
+      const res = await fetch('/api/draft-order-show', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load shows');
+      videos = data.videos || [];
+      canManage = Boolean(data.canManage);
+      admin.hidden = !canManage;
+      selectedId = preferId && videos.some((v) => v.id === preferId)
+        ? preferId
+        : (videos[0]?.id || null);
+      renderYears();
+      renderStage();
+    }
+
+    yearsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-id]');
+      if (!btn) return;
+      selectedId = btn.getAttribute('data-id');
+      renderYears();
+      renderStage();
+    });
+
+    stage.addEventListener('click', async (e) => {
+      if (e.target.id !== 'dos-delete') return;
+      const v = selected();
+      if (!v || !confirm(`Remove the ${v.year} Draft Order Show?`)) return;
+      const res = await fetch(`/api/draft-order-show/${encodeURIComponent(v.id)}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStatus(data.error || 'Could not remove', 'err');
+        return;
+      }
+      setStatus(`Removed ${v.year}.`, 'ok');
+      await load();
+    });
+
+    function uploadFile(file, payload) {
+      return new Promise((resolve, reject) => {
+        const qs = new URLSearchParams({
+          year: payload.year,
+          title: payload.title,
+          notes: payload.notes
+        });
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/api/draft-order-show/upload?${qs.toString()}`);
+        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+        xhr.upload.onprogress = (ev) => {
+          if (!ev.lengthComputable) return;
+          const pct = Math.round((ev.loaded / ev.total) * 100);
+          progressEl.classList.add('is-on');
+          progressEl.textContent = `Uploading… ${pct}%`;
+        };
+        xhr.onload = () => {
+          let data = {};
+          try { data = JSON.parse(xhr.responseText); } catch { /* ignore */ }
+          if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+          else reject(new Error(data.error || 'Upload failed'));
+        };
+        xhr.onerror = () => reject(new Error('Upload failed'));
+        xhr.send(file);
+      });
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setStatus('');
+      const year = yearInput.value;
+      const title = document.getElementById('dos-title').value.trim();
+      const notes = document.getElementById('dos-notes').value.trim();
+      const file = document.getElementById('dos-file').files[0];
+      const url = document.getElementById('dos-url').value.trim();
+      if (!file && !url) {
+        setStatus('Choose a video file or paste a YouTube / Vimeo URL.', 'err');
+        return;
+      }
+      saveBtn.disabled = true;
+      try {
+        let data;
+        if (file) {
+          data = await uploadFile(file, { year, title, notes });
+        } else {
+          const res = await fetch('/api/draft-order-show', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ year, title, notes, url })
+          });
+          data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Could not save');
+        }
+        progressEl.classList.remove('is-on');
+        progressEl.textContent = '';
+        form.reset();
+        yearInput.value = year;
+        setStatus('Saved.', 'ok');
+        await load(data.item?.id);
+      } catch (err) {
+        progressEl.classList.remove('is-on');
+        setStatus(err.message || 'Could not save', 'err');
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+
+    load().catch((err) => {
+      stage.innerHTML = `<p class="dos-empty">${esc(err.message)}</p>`;
+    });
+  </script>
+</body>
+</html>

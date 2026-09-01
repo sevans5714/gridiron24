@@ -88,6 +88,7 @@
     { href: '/team-rosters.html', label: 'Team Rosters' },
     { href: '/rankings.html', label: 'Rankings' },
     { href: '/draft.html', label: 'Draft Results' },
+    { href: '/draft-order-show.html', label: 'Draft Order Show' },
     { href: '/conference-draft.html', label: 'Conference Draft' },
     { href: '/transactions.html', label: 'Transactions' }
   ];
@@ -130,7 +131,7 @@
       { href: `${base}/transactions.html`, label: 'Transactions' },
       { href: `${base}/keepers.html`, label: 'Keepers' }
     ];
-    const canManage = Boolean(user?.leagueOwner || user?.siteOwner);
+    const canManage = Boolean(scope?.isLeagueOwner);
     if (canManage) return items;
     return items.filter((item) => !String(item.href || '').endsWith('/manage.html'));
   }
@@ -207,7 +208,7 @@
     if (page === 'scoring' || page === 'rulebook' || page === 'payouts' || page === 'aaa-rulebook') {
       return 'rulebook';
     }
-    if (page === 'standings' || page === 'teams' || page === 'my-roster' || page === 'team-rosters' || page === 'draft' || page === 'conference-draft' || page === 'history' || page === 'transactions' || page === 'rankings' || page === 'schedules' || page === 'roster-2026') {
+    if (page === 'standings' || page === 'teams' || page === 'my-roster' || page === 'team-rosters' || page === 'draft' || page === 'draft-order-show' || page === 'conference-draft' || page === 'history' || page === 'transactions' || page === 'rankings' || page === 'schedules' || page === 'roster-2026') {
       return 'league';
     }
     if (page === 'aaa') {

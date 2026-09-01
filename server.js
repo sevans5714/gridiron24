@@ -36,6 +36,7 @@ const logos = require('./logos-store');
 const invites = require('./invites-store');
 const weeklyWrap = require('./weekly-wrap');
 const calendar = require('./calendar-store');
+const draftOrderShow = require('./draft-order-show-store');
 const powerRankingsCompute = require('./power-rankings-compute');
 const rulesSyncStore = require('./rules-sync-store');
 const officialRules = require('./official-rules');
@@ -594,6 +595,91 @@ function requireSiteOwner(req, res) {
     return null;
   }
   return user;
+}
+
+/** Mutations that must not include view-only accounts. */
+function requireSiteOwnerWrite(req, res) {
+  const user = getSessionUser(req);
+  if (!user) {
+    sendJson(res, 401, { ok: false, error: 'Authentication required' });
+    return null;
+  }
+  if (!users.isSiteOwner(user)) {
+    sendJson(res, 403, { ok: false, error: 'Only the site owner can do that' });
+    return null;
+  }
+  return user;
+}
+
+function streamRequestToFile(req, destPath, { maxBytes }) {
+  return new Promise((resolve, reject) => {
+    const out = fs.createWriteStream(destPath);
+    let size = 0;
+    let failed = false;
+    const fail = (err) => {
+      if (failed) return;
+      failed = true;
+      req.unpipe(out);
+      out.destroy();
+      req.destroy();
+      fs.unlink(destPath, () => {});
+      reject(err);
+    };
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        fail(Object.assign(new Error('Video must be under 2GB'), { status: 413 }));
+      }
+    });
+    req.pipe(out);
+    out.on('finish', () => {
+      if (!failed) resolve(size);
+    });
+    out.on('error', (err) => fail(err));
+    req.on('error', (err) => fail(err));
+    req.on('aborted', () => fail(Object.assign(new Error('Upload aborted'), { status: 400 })));
+  });
+}
+
+function sendMediaFile(req, res, absPath, mimeType) {
+  let stat;
+  try {
+    stat = fs.statSync(absPath);
+  } catch {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Not found');
+  }
+  const size = stat.size;
+  const type = mimeType || 'video/mp4';
+  const range = String(req.headers.range || '');
+  const headersBase = {
+    'Accept-Ranges': 'bytes',
+    'Content-Type': type,
+    'Cache-Control': 'private, max-age=3600'
+  };
+  if (!range) {
+    res.writeHead(200, { ...headersBase, 'Content-Length': size });
+    fs.createReadStream(absPath).pipe(res);
+    return;
+  }
+  const m = /^bytes=(\d*)-(\d*)$/.exec(range);
+  if (!m) {
+    res.writeHead(416, { ...headersBase, 'Content-Range': `bytes */${size}` });
+    return res.end();
+  }
+  let start = m[1] ? Number(m[1]) : 0;
+  let end = m[2] ? Number(m[2]) : size - 1;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) {
+    res.writeHead(416, { ...headersBase, 'Content-Range': `bytes */${size}` });
+    return res.end();
+  }
+  if (end >= size) end = size - 1;
+  res.writeHead(206, {
+    ...headersBase,
+    'Content-Length': end - start + 1,
+    'Content-Range': `bytes ${start}-${end}/${size}`
+  });
+  fs.createReadStream(absPath, { start, end }).pipe(res);
 }
 
 function siteHqRoleLabel(u) {
@@ -5937,7 +6023,8 @@ const GRIDIRON_ONLY_PAGES = new Set([
   '/standings.html',
   '/teams.html',
   '/history.html',
-  '/playoffs.html'
+  '/playoffs.html',
+  '/draft-order-show.html'
 ]);
 
 function isDefaultHomeNext(nextPath) {
@@ -12963,6 +13050,79 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete event' });
+      }
+    }
+
+    if (pathname === '/api/draft-order-show' && req.method === 'GET') {
+      const viewer = getSessionUser(req);
+      return sendJson(res, 200, {
+        ok: true,
+        videos: draftOrderShow.listVideos(),
+        canManage: Boolean(viewer && users.isSiteOwner(viewer)),
+        generatedAt: new Date().toISOString()
+      });
+    }
+
+    if (pathname === '/api/draft-order-show' && req.method === 'POST') {
+      if (!requireSiteOwnerWrite(req, res)) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const item = draftOrderShow.saveEmbed(body);
+        return sendJson(res, 201, { ok: true, item });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save video' });
+      }
+    }
+
+    if (pathname === '/api/draft-order-show/upload' && req.method === 'POST') {
+      if (!requireSiteOwnerWrite(req, res)) return;
+      const mimeType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+      let dest;
+      try {
+        draftOrderShow.extForMime(mimeType);
+        dest = draftOrderShow.newUploadPath(requestUrl.searchParams.get('year'), mimeType);
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Upload MP4, WebM, or MOV' });
+      }
+      try {
+        const size = await streamRequestToFile(req, dest.abs, { maxBytes: draftOrderShow.MAX_BYTES });
+        const item = draftOrderShow.saveFileMeta({
+          year: requestUrl.searchParams.get('year'),
+          title: requestUrl.searchParams.get('title'),
+          notes: requestUrl.searchParams.get('notes'),
+          filename: dest.filename,
+          mimeType,
+          size
+        });
+        return sendJson(res, 201, { ok: true, item });
+      } catch (err) {
+        try { fs.unlinkSync(dest.abs); } catch { /* ignore */ }
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not upload video' });
+      }
+    }
+
+    if (pathname.startsWith('/api/draft-order-show/') && pathname.endsWith('/media') && req.method === 'GET') {
+      const id = pathname.slice('/api/draft-order-show/'.length, -'/media'.length).replace(/\/$/, '');
+      const media = draftOrderShow.resolveMediaPath(id);
+      if (!media) {
+        return sendJson(res, 404, { ok: false, error: 'Video not found' });
+      }
+      return sendMediaFile(req, res, media.path, media.mimeType);
+    }
+
+    if (pathname.startsWith('/api/draft-order-show/') && req.method === 'DELETE') {
+      if (!requireSiteOwnerWrite(req, res)) return;
+      const id = pathname.slice('/api/draft-order-show/'.length);
+      try {
+        draftOrderShow.remove(id);
+        return sendJson(res, 200, { ok: true });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not remove video' });
       }
     }
 
