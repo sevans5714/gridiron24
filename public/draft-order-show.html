@@ -57,28 +57,6 @@
     }
     .dos-meta p { margin: 0.4rem 0 0; color: var(--muted); line-height: 1.45; }
     .dos-empty { color: var(--muted); padding: 0.5rem 0 1rem; }
-    .dos-admin {
-      border: 1px solid var(--line);
-      background: var(--panel-2);
-      padding: 1.1rem 1.15rem 1.25rem;
-    }
-    .dos-admin h2 {
-      margin: 0 0 0.35rem;
-      font-family: var(--display);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      font-size: 1.05rem;
-    }
-    .dos-admin .hint { color: var(--muted); font-size: 0.9rem; margin: 0 0 1rem; line-height: 1.45; }
-    .dos-form { display: grid; gap: 0.75rem; max-width: 36rem; }
-    .dos-form label { display: grid; gap: 0.3rem; font-size: 0.82rem; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
-    .dos-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
-    .dos-progress { display: none; color: var(--muted); font-size: 0.9rem; }
-    .dos-progress.is-on { display: block; }
-    .dos-status { min-height: 1.2rem; font-size: 0.9rem; color: var(--muted); }
-    .dos-status.is-err { color: var(--bad); }
-    .dos-status.is-ok { color: var(--good); }
-    .dos-delete { margin-top: 0.75rem; }
   </style>
 </head>
 <body data-page="draft-order-show">
@@ -96,32 +74,6 @@
     <div class="dos-layout">
       <div id="dos-years" class="dos-years" hidden></div>
       <div id="dos-stage"><p class="dos-empty">Loading…</p></div>
-      <section id="dos-admin" class="dos-admin" hidden>
-        <h2>Add a year</h2>
-        <p class="hint">Site owner only. Choose an MP4, WebM, or MOV. Large files upload in pieces so they are not cut off. You can also paste a YouTube or Vimeo link.</p>
-        <form class="dos-form" id="dos-form">
-          <label>Year
-            <input class="field" id="dos-year" name="year" type="number" min="2000" max="2100" required />
-          </label>
-          <label>Title
-            <input class="field" id="dos-title" name="title" type="text" maxlength="120" placeholder="Draft Order Show" />
-          </label>
-          <label>Notes (optional)
-            <input class="field" id="dos-notes" name="notes" type="text" maxlength="500" placeholder="Lottery, Zoom recording…" />
-          </label>
-          <label>Video file
-            <input class="field" id="dos-file" name="file" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" />
-          </label>
-          <label>Or YouTube / Vimeo URL
-            <input class="field" id="dos-url" name="url" type="url" placeholder="https://youtu.be/…" />
-          </label>
-          <div class="dos-actions">
-            <button class="btn" type="submit" id="dos-save">Save</button>
-            <p class="dos-progress" id="dos-progress" role="status"></p>
-          </div>
-          <p class="dos-status" id="dos-status" role="status"></p>
-        </form>
-      </section>
     </div>
   </main>
   <footer class="shell site-footer">
@@ -136,24 +88,8 @@
 
     const stage = document.getElementById('dos-stage');
     const yearsEl = document.getElementById('dos-years');
-    const admin = document.getElementById('dos-admin');
-    const form = document.getElementById('dos-form');
-    const statusEl = document.getElementById('dos-status');
-    const progressEl = document.getElementById('dos-progress');
-    const saveBtn = document.getElementById('dos-save');
-    const yearInput = document.getElementById('dos-year');
-
     let videos = [];
-    let canManage = false;
     let selectedId = null;
-
-    yearInput.value = String(new Date().getFullYear());
-
-    function setStatus(msg, kind) {
-      statusEl.textContent = msg || '';
-      statusEl.classList.toggle('is-err', kind === 'err');
-      statusEl.classList.toggle('is-ok', kind === 'ok');
-    }
 
     function selected() {
       return videos.find((v) => v.id === selectedId) || videos[0] || null;
@@ -180,22 +116,15 @@
       const player = v.kind === 'embed' && v.embedUrl
         ? `<iframe src="${esc(v.embedUrl)}" title="${esc(v.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
         : `<video controls playsinline preload="metadata" src="${esc(v.mediaUrl)}"></video>`;
-      const del = canManage
-        ? `<div class="dos-delete"><button class="btn btn-ghost" type="button" id="dos-delete">Remove ${esc(v.year)}</button></div>`
-        : '';
-      stage.innerHTML = `<article class="dos-player">${player}<div class="dos-meta"><h2>${esc(v.year)} · ${esc(v.title)}</h2>${v.notes ? `<p>${esc(v.notes)}</p>` : ''}${del}</div></article>`;
+      stage.innerHTML = `<article class="dos-player">${player}<div class="dos-meta"><h2>${esc(v.year)} · ${esc(v.title)}</h2>${v.notes ? `<p>${esc(v.notes)}</p>` : ''}</div></article>`;
     }
 
-    async function load(preferId) {
+    async function load() {
       const res = await fetch('/api/draft-order-show', { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not load shows');
       videos = data.videos || [];
-      canManage = Boolean(data.canManage);
-      admin.hidden = !canManage;
-      selectedId = preferId && videos.some((v) => v.id === preferId)
-        ? preferId
-        : (videos[0]?.id || null);
+      selectedId = videos.some((v) => v.id === selectedId) ? selectedId : (videos[0]?.id || null);
       renderYears();
       renderStage();
     }
@@ -206,119 +135,6 @@
       selectedId = btn.getAttribute('data-id');
       renderYears();
       renderStage();
-    });
-
-    stage.addEventListener('click', async (e) => {
-      if (e.target.id !== 'dos-delete') return;
-      const v = selected();
-      if (!v || !confirm(`Remove the ${v.year} Draft Order Show?`)) return;
-      const res = await fetch(`/api/draft-order-show/${encodeURIComponent(v.id)}`, { method: 'DELETE' });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setStatus(data.error || 'Could not remove', 'err');
-        return;
-      }
-      setStatus(`Removed ${v.year}.`, 'ok');
-      await load();
-    });
-
-    async function readJsonRes(res) {
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
-      return data;
-    }
-
-    async function putChunk(url, blob) {
-      let lastErr = new Error('Upload failed');
-      for (let attempt = 1; attempt <= 3; attempt += 1) {
-        try {
-          const res = await fetch(url, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/octet-stream' },
-            body: blob
-          });
-          return await readJsonRes(res);
-        } catch (err) {
-          lastErr = err;
-          if (attempt === 3) throw lastErr;
-          await new Promise((r) => setTimeout(r, 400 * attempt));
-        }
-      }
-      throw lastErr;
-    }
-
-    async function uploadFile(file, payload) {
-      progressEl.classList.add('is-on');
-      progressEl.textContent = 'Starting upload…';
-      const started = await readJsonRes(await fetch('/api/draft-order-show/upload/start', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          year: payload.year,
-          title: payload.title,
-          notes: payload.notes,
-          filename: file.name,
-          mimeType: file.type,
-          size: file.size
-        })
-      }));
-      const chunkBytes = Number(started.chunkBytes) || (4 * 1024 * 1024);
-      const chunkCount = Number(started.chunkCount) || Math.ceil(file.size / chunkBytes);
-      let sent = 0;
-      for (let i = 0; i < chunkCount; i += 1) {
-        const blob = file.slice(i * chunkBytes, Math.min(file.size, (i + 1) * chunkBytes));
-        await putChunk(`/api/draft-order-show/upload/${encodeURIComponent(started.uploadId)}/chunk?index=${i}`, blob);
-        sent += blob.size;
-        const pct = Math.max(1, Math.round((sent / file.size) * 100));
-        progressEl.textContent = `Uploading… ${pct}%`;
-      }
-      progressEl.textContent = 'Finishing…';
-      return readJsonRes(await fetch(
-        `/api/draft-order-show/upload/${encodeURIComponent(started.uploadId)}/complete`,
-        { method: 'POST', credentials: 'same-origin' }
-      ));
-    }
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      setStatus('');
-      const year = yearInput.value;
-      const title = document.getElementById('dos-title').value.trim();
-      const notes = document.getElementById('dos-notes').value.trim();
-      const file = document.getElementById('dos-file').files[0];
-      const url = document.getElementById('dos-url').value.trim();
-      if (!file && !url) {
-        setStatus('Choose a video file or paste a YouTube / Vimeo URL.', 'err');
-        return;
-      }
-      saveBtn.disabled = true;
-      try {
-        let data;
-        if (file) {
-          data = await uploadFile(file, { year, title, notes });
-        } else {
-          const res = await fetch('/api/draft-order-show', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ year, title, notes, url })
-          });
-          data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Could not save');
-        }
-        progressEl.classList.remove('is-on');
-        progressEl.textContent = '';
-        form.reset();
-        yearInput.value = year;
-        setStatus('Saved.', 'ok');
-        await load(data.item?.id);
-      } catch (err) {
-        progressEl.classList.remove('is-on');
-        setStatus(err.message || 'Could not save', 'err');
-      } finally {
-        saveBtn.disabled = false;
-      }
     });
 
     load().catch((err) => {
