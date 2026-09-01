@@ -89,7 +89,6 @@
     { href: '/rankings.html', label: 'Rankings' },
     { href: '/draft.html', label: 'Draft Results' },
     { href: '/draft-order-show.html', label: 'Draft Order Show' },
-    { href: '/conference-draft.html', label: 'Conference Draft' },
     { href: '/transactions.html', label: 'Transactions' }
   ];
 
