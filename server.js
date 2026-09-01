@@ -611,6 +611,29 @@ function requireSiteOwnerWrite(req, res) {
   return user;
 }
 
+function readRawBody(req, { maxBytes }) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    let failed = false;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        if (failed) return;
+        failed = true;
+        reject(Object.assign(new Error('Payload too large'), { status: 413 }));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (!failed) resolve(Buffer.concat(chunks));
+    });
+    req.on('error', reject);
+  });
+}
+
 function streamRequestToFile(req, destPath, { maxBytes }) {
   return new Promise((resolve, reject) => {
     const out = fs.createWriteStream(destPath);
@@ -13079,12 +13102,56 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/api/draft-order-show/upload/start' && req.method === 'POST') {
+      if (!requireSiteOwnerWrite(req, res)) return;
+      let body;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
+      }
+      try {
+        const started = draftOrderShow.startUpload(body);
+        return sendJson(res, 200, { ok: true, ...started });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not start upload' });
+      }
+    }
+
+    if (/^\/api\/draft-order-show\/upload\/[^/]+\/chunk$/.test(pathname) && (req.method === 'PUT' || req.method === 'POST')) {
+      if (!requireSiteOwnerWrite(req, res)) return;
+      const uploadId = pathname.split('/')[4];
+      const index = requestUrl.searchParams.get('index');
+      try {
+        const buffer = await readRawBody(req, { maxBytes: draftOrderShow.CHUNK_BYTES + 4096 });
+        const progress = draftOrderShow.saveChunk(uploadId, index, buffer);
+        return sendJson(res, 200, { ok: true, ...progress });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save chunk' });
+      }
+    }
+
+    if (/^\/api\/draft-order-show\/upload\/[^/]+\/complete$/.test(pathname) && req.method === 'POST') {
+      if (!requireSiteOwnerWrite(req, res)) return;
+      const uploadId = pathname.split('/')[4];
+      try {
+        const item = await draftOrderShow.finishUpload(uploadId);
+        return sendJson(res, 201, { ok: true, item });
+      } catch (err) {
+        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not finish upload' });
+      }
+    }
+
     if (pathname === '/api/draft-order-show/upload' && req.method === 'POST') {
       if (!requireSiteOwnerWrite(req, res)) return;
-      const mimeType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+      const filename = requestUrl.searchParams.get('filename') || '';
       let dest;
+      let mimeType;
       try {
-        draftOrderShow.extForMime(mimeType);
+        mimeType = draftOrderShow.resolveMime(
+          String(req.headers['content-type'] || '').split(';')[0].trim(),
+          filename
+        );
         dest = draftOrderShow.newUploadPath(requestUrl.searchParams.get('year'), mimeType);
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Upload MP4, WebM, or MOV' });

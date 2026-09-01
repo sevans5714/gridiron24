@@ -5,17 +5,34 @@ const crypto = require('crypto');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'draft-order-show.json');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads', 'draft-order-show');
+const INCOMING_DIR = path.join(UPLOAD_DIR, 'incoming');
 const MAX_BYTES = 2 * 1024 * 1024 * 1024;
+const CHUNK_BYTES = 4 * 1024 * 1024;
+const SESSION_MS = 6 * 60 * 60 * 1000;
 
 const VIDEO_MIME = {
   'video/mp4': 'mp4',
+  'video/mpeg4': 'mp4',
+  'video/x-m4v': 'mp4',
+  'video/m4v': 'mp4',
+  'application/mp4': 'mp4',
   'video/webm': 'webm',
-  'video/quicktime': 'mov'
+  'video/quicktime': 'mov',
+  'video/x-quicktime': 'mov'
+};
+
+const EXT_MIME = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  qt: 'video/quicktime'
 };
 
 function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  if (!fs.existsSync(INCOMING_DIR)) fs.mkdirSync(INCOMING_DIR, { recursive: true });
   if (!fs.existsSync(FILE)) {
     fs.writeFileSync(FILE, JSON.stringify({ videos: [] }, null, 2));
   }
@@ -103,12 +120,174 @@ function parseEmbed(raw) {
   throw Object.assign(new Error('Use a YouTube or Vimeo URL, or upload a video file'), { status: 400 });
 }
 
-function extForMime(mimeType) {
-  const ext = VIDEO_MIME[String(mimeType || '').toLowerCase()];
+function mimeFromFilename(filename) {
+  const ext = path.extname(String(filename || '')).replace('.', '').toLowerCase();
+  return EXT_MIME[ext] || null;
+}
+
+function resolveMime(mimeType, filename) {
+  const raw = String(mimeType || '').split(';')[0].trim().toLowerCase();
+  if (raw === 'video/mpeg4' || raw === 'video/x-m4v' || raw === 'video/m4v' || raw === 'application/mp4') {
+    return 'video/mp4';
+  }
+  if (raw === 'video/x-quicktime') return 'video/quicktime';
+  if (VIDEO_MIME[raw]) return raw;
+  const fromName = mimeFromFilename(filename);
+  if (fromName) return fromName;
+  throw Object.assign(new Error('Upload MP4, WebM, or MOV'), { status: 400 });
+}
+
+function extForMime(mimeType, filename) {
+  const mime = resolveMime(mimeType, filename);
+  const ext = VIDEO_MIME[mime];
   if (!ext) {
     throw Object.assign(new Error('Upload MP4, WebM, or MOV'), { status: 400 });
   }
   return ext;
+}
+
+function sessionPath(id) {
+  return path.join(INCOMING_DIR, `${id}.json`);
+}
+
+function chunkPath(id, index) {
+  return path.join(INCOMING_DIR, `${id}.${index}`);
+}
+
+function readSession(id) {
+  const abs = sessionPath(id);
+  if (!fs.existsSync(abs)) {
+    throw Object.assign(new Error('Upload expired. Start again.'), { status: 404 });
+  }
+  try {
+    return JSON.parse(fs.readFileSync(abs, 'utf8'));
+  } catch {
+    throw Object.assign(new Error('Upload expired. Start again.'), { status: 404 });
+  }
+}
+
+function writeSession(session) {
+  ensureStore();
+  fs.writeFileSync(sessionPath(session.id), JSON.stringify(session));
+}
+
+function removeSessionFiles(id, chunkCount) {
+  try { fs.unlinkSync(sessionPath(id)); } catch { /* ignore */ }
+  const n = Number(chunkCount) || 0;
+  for (let i = 0; i < n; i += 1) {
+    try { fs.unlinkSync(chunkPath(id, i)); } catch { /* ignore */ }
+  }
+}
+
+function startUpload({ year, title, notes, mimeType, filename, size }) {
+  const y = normalizeYear(year);
+  const bytes = Number(size);
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    throw Object.assign(new Error('Empty upload'), { status: 400 });
+  }
+  if (bytes > MAX_BYTES) {
+    throw Object.assign(new Error('Video must be under 2GB'), { status: 413 });
+  }
+  const mime = resolveMime(mimeType, filename);
+  const ext = extForMime(mime, filename);
+  const id = `upl_${crypto.randomBytes(8).toString('hex')}`;
+  const session = {
+    id,
+    year: y,
+    title: normalizeTitle(title, y),
+    notes: normalizeNotes(notes),
+    mimeType: mime,
+    ext,
+    size: bytes,
+    chunkCount: Math.ceil(bytes / CHUNK_BYTES),
+    received: {},
+    createdAt: Date.now()
+  };
+  writeSession(session);
+  return {
+    uploadId: id,
+    chunkBytes: CHUNK_BYTES,
+    chunkCount: session.chunkCount
+  };
+}
+
+function saveChunk(id, index, buffer) {
+  const session = readSession(id);
+  if (Date.now() - session.createdAt > SESSION_MS) {
+    removeSessionFiles(id, session.chunkCount);
+    throw Object.assign(new Error('Upload expired. Start again.'), { status: 410 });
+  }
+  const idx = Number(index);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= session.chunkCount) {
+    throw Object.assign(new Error('Bad upload chunk'), { status: 400 });
+  }
+  if (!buffer?.length) {
+    throw Object.assign(new Error('Empty upload chunk'), { status: 400 });
+  }
+  if (buffer.length > CHUNK_BYTES + 64) {
+    throw Object.assign(new Error('Upload chunk too large'), { status: 413 });
+  }
+  ensureStore();
+  fs.writeFileSync(chunkPath(id, idx), buffer);
+  session.received[String(idx)] = buffer.length;
+  writeSession(session);
+  const got = Object.keys(session.received).length;
+  return { ok: true, received: got, chunkCount: session.chunkCount };
+}
+
+function pipeFile(from, to) {
+  return new Promise((resolve, reject) => {
+    const inp = fs.createReadStream(from);
+    inp.on('error', reject);
+    inp.on('end', resolve);
+    inp.pipe(to, { end: false });
+  });
+}
+
+async function finishUpload(id) {
+  const session = readSession(id);
+  for (let i = 0; i < session.chunkCount; i += 1) {
+    if (!fs.existsSync(chunkPath(id, i))) {
+      throw Object.assign(new Error(`Upload incomplete (missing piece ${i + 1})`), { status: 400 });
+    }
+  }
+  const dest = newUploadPath(session.year, session.mimeType);
+  await new Promise((resolve, reject) => {
+    const out = fs.createWriteStream(dest.abs);
+    out.on('error', reject);
+    out.on('finish', resolve);
+    (async () => {
+      try {
+        for (let i = 0; i < session.chunkCount; i += 1) {
+          await pipeFile(chunkPath(id, i), out);
+        }
+        out.end();
+      } catch (err) {
+        out.destroy();
+        reject(err);
+      }
+    })();
+  });
+  let statSize = 0;
+  try {
+    statSize = fs.statSync(dest.abs).size;
+  } catch {
+    throw Object.assign(new Error('Could not save video'), { status: 500 });
+  }
+  if (statSize !== session.size) {
+    try { fs.unlinkSync(dest.abs); } catch { /* ignore */ }
+    throw Object.assign(new Error('Upload size did not match. Try again.'), { status: 400 });
+  }
+  const item = saveFileMeta({
+    year: session.year,
+    title: session.title,
+    notes: session.notes,
+    filename: dest.filename,
+    mimeType: session.mimeType,
+    size: statSize
+  });
+  removeSessionFiles(id, session.chunkCount);
+  return item;
 }
 
 function publicVideo(row) {
@@ -238,6 +417,7 @@ function remove(id) {
 
 module.exports = {
   MAX_BYTES,
+  CHUNK_BYTES,
   VIDEO_MIME,
   listVideos,
   findById,
@@ -245,6 +425,10 @@ module.exports = {
   saveEmbed,
   newUploadPath,
   saveFileMeta,
+  startUpload,
+  saveChunk,
+  finishUpload,
+  resolveMime,
   remove,
   extForMime,
   normalizeYear,

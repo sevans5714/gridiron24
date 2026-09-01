@@ -98,7 +98,7 @@
       <div id="dos-stage"><p class="dos-empty">Loading…</p></div>
       <section id="dos-admin" class="dos-admin" hidden>
         <h2>Add a year</h2>
-        <p class="hint">Site owner only. Upload an MP4 / WebM / MOV (up to 2GB) or paste a YouTube or Vimeo link. A new upload for the same year replaces the old one.</p>
+        <p class="hint">Site owner only. Choose an MP4, WebM, or MOV. Large files upload in pieces so they are not cut off. You can also paste a YouTube or Vimeo link.</p>
         <form class="dos-form" id="dos-form">
           <label>Year
             <input class="field" id="dos-year" name="year" type="number" min="2000" max="2100" required />
@@ -222,31 +222,63 @@
       await load();
     });
 
-    function uploadFile(file, payload) {
-      return new Promise((resolve, reject) => {
-        const qs = new URLSearchParams({
+    async function readJsonRes(res) {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+      return data;
+    }
+
+    async function putChunk(url, blob) {
+      let lastErr = new Error('Upload failed');
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: blob
+          });
+          return await readJsonRes(res);
+        } catch (err) {
+          lastErr = err;
+          if (attempt === 3) throw lastErr;
+          await new Promise((r) => setTimeout(r, 400 * attempt));
+        }
+      }
+      throw lastErr;
+    }
+
+    async function uploadFile(file, payload) {
+      progressEl.classList.add('is-on');
+      progressEl.textContent = 'Starting upload…';
+      const started = await readJsonRes(await fetch('/api/draft-order-show/upload/start', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           year: payload.year,
           title: payload.title,
-          notes: payload.notes
-        });
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `/api/draft-order-show/upload?${qs.toString()}`);
-        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
-        xhr.upload.onprogress = (ev) => {
-          if (!ev.lengthComputable) return;
-          const pct = Math.round((ev.loaded / ev.total) * 100);
-          progressEl.classList.add('is-on');
-          progressEl.textContent = `Uploading… ${pct}%`;
-        };
-        xhr.onload = () => {
-          let data = {};
-          try { data = JSON.parse(xhr.responseText); } catch { /* ignore */ }
-          if (xhr.status >= 200 && xhr.status < 300) resolve(data);
-          else reject(new Error(data.error || 'Upload failed'));
-        };
-        xhr.onerror = () => reject(new Error('Upload failed'));
-        xhr.send(file);
-      });
+          notes: payload.notes,
+          filename: file.name,
+          mimeType: file.type,
+          size: file.size
+        })
+      }));
+      const chunkBytes = Number(started.chunkBytes) || (4 * 1024 * 1024);
+      const chunkCount = Number(started.chunkCount) || Math.ceil(file.size / chunkBytes);
+      let sent = 0;
+      for (let i = 0; i < chunkCount; i += 1) {
+        const blob = file.slice(i * chunkBytes, Math.min(file.size, (i + 1) * chunkBytes));
+        await putChunk(`/api/draft-order-show/upload/${encodeURIComponent(started.uploadId)}/chunk?index=${i}`, blob);
+        sent += blob.size;
+        const pct = Math.max(1, Math.round((sent / file.size) * 100));
+        progressEl.textContent = `Uploading… ${pct}%`;
+      }
+      progressEl.textContent = 'Finishing…';
+      return readJsonRes(await fetch(
+        `/api/draft-order-show/upload/${encodeURIComponent(started.uploadId)}/complete`,
+        { method: 'POST', credentials: 'same-origin' }
+      ));
     }
 
     form.addEventListener('submit', async (e) => {
