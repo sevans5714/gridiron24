@@ -3610,7 +3610,9 @@
 
   function registerSw() {
     if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/sw.js', { scope: '/app/' }).catch(() => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/app/' }).then((reg) => {
+      try { reg.update(); } catch { /* ignore */ }
+    }).catch(() => {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
   }

@@ -36,7 +36,6 @@ const logos = require('./logos-store');
 const invites = require('./invites-store');
 const weeklyWrap = require('./weekly-wrap');
 const calendar = require('./calendar-store');
-const draftOrderShow = require('./draft-order-show-store');
 const powerRankingsCompute = require('./power-rankings-compute');
 const rulesSyncStore = require('./rules-sync-store');
 const officialRules = require('./official-rules');
@@ -227,6 +226,7 @@ const PUBLIC_PATHS = new Set([
   '/apple-touch-icon-precomposed.png',
   '/manifest.webmanifest',
   '/sw.js',
+  '/app/pwa-bust.json',
   '/api/lounge/fresh-start',
   '/manifest.webmanifest',
   '/sw.js'
@@ -485,7 +485,7 @@ function isPublicPath(pathname) {
     && pathname !== '/app/index.html'
     && pathname !== '/app/'
     && pathname !== '/app'
-    && /\.(js|css|map|svg|png|jpe?g|webp|woff2?|html)$/i.test(pathname)
+    && /\.(js|css|map|svg|png|jpe?g|webp|woff2?|html|json)$/i.test(pathname)
   ) {
     return true;
   }
@@ -595,114 +595,6 @@ function requireSiteOwner(req, res) {
     return null;
   }
   return user;
-}
-
-/** Mutations that must not include view-only accounts. */
-function requireSiteOwnerWrite(req, res) {
-  const user = getSessionUser(req);
-  if (!user) {
-    sendJson(res, 401, { ok: false, error: 'Authentication required' });
-    return null;
-  }
-  if (!users.isSiteOwner(user)) {
-    sendJson(res, 403, { ok: false, error: 'Only the site owner can do that' });
-    return null;
-  }
-  return user;
-}
-
-function readRawBody(req, { maxBytes }) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    let size = 0;
-    let failed = false;
-    req.on('data', (chunk) => {
-      size += chunk.length;
-      if (size > maxBytes) {
-        if (failed) return;
-        failed = true;
-        reject(Object.assign(new Error('Payload too large'), { status: 413 }));
-        req.destroy();
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on('end', () => {
-      if (!failed) resolve(Buffer.concat(chunks));
-    });
-    req.on('error', reject);
-  });
-}
-
-function streamRequestToFile(req, destPath, { maxBytes }) {
-  return new Promise((resolve, reject) => {
-    const out = fs.createWriteStream(destPath);
-    let size = 0;
-    let failed = false;
-    const fail = (err) => {
-      if (failed) return;
-      failed = true;
-      req.unpipe(out);
-      out.destroy();
-      req.destroy();
-      fs.unlink(destPath, () => {});
-      reject(err);
-    };
-    req.on('data', (chunk) => {
-      size += chunk.length;
-      if (size > maxBytes) {
-        fail(Object.assign(new Error('Video must be under 2GB'), { status: 413 }));
-      }
-    });
-    req.pipe(out);
-    out.on('finish', () => {
-      if (!failed) resolve(size);
-    });
-    out.on('error', (err) => fail(err));
-    req.on('error', (err) => fail(err));
-    req.on('aborted', () => fail(Object.assign(new Error('Upload aborted'), { status: 400 })));
-  });
-}
-
-function sendMediaFile(req, res, absPath, mimeType) {
-  let stat;
-  try {
-    stat = fs.statSync(absPath);
-  } catch {
-    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    return res.end('Not found');
-  }
-  const size = stat.size;
-  const type = mimeType || 'video/mp4';
-  const range = String(req.headers.range || '');
-  const headersBase = {
-    'Accept-Ranges': 'bytes',
-    'Content-Type': type,
-    'Cache-Control': 'private, max-age=3600'
-  };
-  if (!range) {
-    res.writeHead(200, { ...headersBase, 'Content-Length': size });
-    fs.createReadStream(absPath).pipe(res);
-    return;
-  }
-  const m = /^bytes=(\d*)-(\d*)$/.exec(range);
-  if (!m) {
-    res.writeHead(416, { ...headersBase, 'Content-Range': `bytes */${size}` });
-    return res.end();
-  }
-  let start = m[1] ? Number(m[1]) : 0;
-  let end = m[2] ? Number(m[2]) : size - 1;
-  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) {
-    res.writeHead(416, { ...headersBase, 'Content-Range': `bytes */${size}` });
-    return res.end();
-  }
-  if (end >= size) end = size - 1;
-  res.writeHead(206, {
-    ...headersBase,
-    'Content-Length': end - start + 1,
-    'Content-Range': `bytes ${start}-${end}/${size}`
-  });
-  fs.createReadStream(absPath, { start, end }).pipe(res);
 }
 
 function siteHqRoleLabel(u) {
@@ -6046,8 +5938,7 @@ const GRIDIRON_ONLY_PAGES = new Set([
   '/standings.html',
   '/teams.html',
   '/history.html',
-  '/playoffs.html',
-  '/draft-order-show.html'
+  '/playoffs.html'
 ]);
 
 function isDefaultHomeNext(nextPath) {
@@ -13073,123 +12964,6 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, { ok: true });
       } catch (err) {
         return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not delete event' });
-      }
-    }
-
-    if (pathname === '/api/draft-order-show' && req.method === 'GET') {
-      const viewer = getSessionUser(req);
-      return sendJson(res, 200, {
-        ok: true,
-        videos: draftOrderShow.listVideos(),
-        canManage: Boolean(viewer && users.isSiteOwner(viewer)),
-        generatedAt: new Date().toISOString()
-      });
-    }
-
-    if (pathname === '/api/draft-order-show' && req.method === 'POST') {
-      if (!requireSiteOwnerWrite(req, res)) return;
-      let body;
-      try {
-        body = await readJsonBody(req);
-      } catch {
-        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
-      }
-      try {
-        const item = draftOrderShow.saveEmbed(body);
-        return sendJson(res, 201, { ok: true, item });
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save video' });
-      }
-    }
-
-    if (pathname === '/api/draft-order-show/upload/start' && req.method === 'POST') {
-      if (!requireSiteOwnerWrite(req, res)) return;
-      let body;
-      try {
-        body = await readJsonBody(req);
-      } catch {
-        return sendJson(res, 400, { ok: false, error: 'Invalid request body' });
-      }
-      try {
-        const started = draftOrderShow.startUpload(body);
-        return sendJson(res, 200, { ok: true, ...started });
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not start upload' });
-      }
-    }
-
-    if (/^\/api\/draft-order-show\/upload\/[^/]+\/chunk$/.test(pathname) && (req.method === 'PUT' || req.method === 'POST')) {
-      if (!requireSiteOwnerWrite(req, res)) return;
-      const uploadId = pathname.split('/')[4];
-      const index = requestUrl.searchParams.get('index');
-      try {
-        const buffer = await readRawBody(req, { maxBytes: draftOrderShow.CHUNK_BYTES + 4096 });
-        const progress = draftOrderShow.saveChunk(uploadId, index, buffer);
-        return sendJson(res, 200, { ok: true, ...progress });
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not save chunk' });
-      }
-    }
-
-    if (/^\/api\/draft-order-show\/upload\/[^/]+\/complete$/.test(pathname) && req.method === 'POST') {
-      if (!requireSiteOwnerWrite(req, res)) return;
-      const uploadId = pathname.split('/')[4];
-      try {
-        const item = await draftOrderShow.finishUpload(uploadId);
-        return sendJson(res, 201, { ok: true, item });
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not finish upload' });
-      }
-    }
-
-    if (pathname === '/api/draft-order-show/upload' && req.method === 'POST') {
-      if (!requireSiteOwnerWrite(req, res)) return;
-      const filename = requestUrl.searchParams.get('filename') || '';
-      let dest;
-      let mimeType;
-      try {
-        mimeType = draftOrderShow.resolveMime(
-          String(req.headers['content-type'] || '').split(';')[0].trim(),
-          filename
-        );
-        dest = draftOrderShow.newUploadPath(requestUrl.searchParams.get('year'), mimeType);
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Upload MP4, WebM, or MOV' });
-      }
-      try {
-        const size = await streamRequestToFile(req, dest.abs, { maxBytes: draftOrderShow.MAX_BYTES });
-        const item = draftOrderShow.saveFileMeta({
-          year: requestUrl.searchParams.get('year'),
-          title: requestUrl.searchParams.get('title'),
-          notes: requestUrl.searchParams.get('notes'),
-          filename: dest.filename,
-          mimeType,
-          size
-        });
-        return sendJson(res, 201, { ok: true, item });
-      } catch (err) {
-        try { fs.unlinkSync(dest.abs); } catch { /* ignore */ }
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not upload video' });
-      }
-    }
-
-    if (pathname.startsWith('/api/draft-order-show/') && pathname.endsWith('/media') && req.method === 'GET') {
-      const id = pathname.slice('/api/draft-order-show/'.length, -'/media'.length).replace(/\/$/, '');
-      const media = draftOrderShow.resolveMediaPath(id);
-      if (!media) {
-        return sendJson(res, 404, { ok: false, error: 'Video not found' });
-      }
-      return sendMediaFile(req, res, media.path, media.mimeType);
-    }
-
-    if (pathname.startsWith('/api/draft-order-show/') && req.method === 'DELETE') {
-      if (!requireSiteOwnerWrite(req, res)) return;
-      const id = pathname.slice('/api/draft-order-show/'.length);
-      try {
-        draftOrderShow.remove(id);
-        return sendJson(res, 200, { ok: true });
-      } catch (err) {
-        return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not remove video' });
       }
     }
 

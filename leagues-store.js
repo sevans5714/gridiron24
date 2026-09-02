@@ -94,7 +94,7 @@ function slugify(value) {
 /** Basenames that must never become an independent league homepage slug. */
 const RESERVED_LEAGUE_SLUGS = new Set([
   'aaa', 'aaa-playoffs', 'aaa-rulebook', 'app', 'assets', 'beta-draft', 'beta-scoring',
-  'calendar', 'commissioner', 'conference-draft', 'create-league', 'css', 'draft', 'draft-order-show', 'enter', 'forgot',
+  'calendar', 'commissioner', 'conference-draft', 'create-league', 'css', 'draft', 'enter', 'forgot',
   'history', 'home', 'hq', 'inbox', 'index', 'invite-email-preview', 'invite-lounge-preview',
   'js', 'league-hq', 'league-tools', 'login', 'members', 'my-league', 'my-roster',
   'owner', 'admin', 'dashboard', 'site',

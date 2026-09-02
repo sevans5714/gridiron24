@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=144" />
-  <link rel="icon" href="/favicon.ico?v=144" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=144" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=144" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=146" />
+  <link rel="icon" href="/favicon.ico?v=146" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=146" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=146" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
@@ -191,16 +191,6 @@
       font-size: 0.88rem;
       line-height: 1.4;
     }
-    .hq-dos-form .hq-dos-span { grid-column: 1 / -1; }
-    .hq-dos-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem 1rem;
-      padding: 0.65rem 0;
-      border-bottom: 1px solid var(--line);
-    }
     .hq-create label {
       display: block;
       margin: 0 0 0.28rem;
@@ -262,7 +252,6 @@
       <a href="#create-account">Create account</a>
       <a href="#approvals">Approvals</a>
       <a href="#leagues">League management</a>
-      <a href="#draft-order-show">Draft Order Show</a>
       <a href="#server">Server</a>
     </nav>
 
@@ -356,40 +345,6 @@
       <div id="hq-leagues-body"></div>
     </section>
 
-    <section class="hq-section" id="draft-order-show">
-      <h2>Draft Order Show</h2>
-      <p>GridIron 24 members watch at <a href="/draft-order-show.html">League → Draft Order Show</a>. Post years here — they only see the player.</p>
-      <div id="hq-dos-list"><p class="hq-empty">Loading…</p></div>
-      <form class="hq-create hq-dos-form" id="hq-dos-form" hidden>
-        <h3>Add a year</h3>
-        <div>
-          <label for="hq-dos-year">Year</label>
-          <input class="field" id="hq-dos-year" name="year" type="number" min="2000" max="2100" required />
-        </div>
-        <div>
-          <label for="hq-dos-title">Title</label>
-          <input class="field" id="hq-dos-title" name="title" type="text" maxlength="120" placeholder="Draft Order Show" />
-        </div>
-        <div class="hq-dos-span">
-          <label for="hq-dos-notes">Notes</label>
-          <input class="field" id="hq-dos-notes" name="notes" type="text" maxlength="500" placeholder="Optional" />
-        </div>
-        <div class="hq-dos-span">
-          <label for="hq-dos-file">Video file</label>
-          <input class="field" id="hq-dos-file" name="file" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" />
-        </div>
-        <div class="hq-dos-span">
-          <label for="hq-dos-url">Or YouTube / Vimeo URL</label>
-          <input class="field" id="hq-dos-url" name="url" type="url" placeholder="https://youtu.be/…" />
-        </div>
-        <div class="hq-dos-span hq-actions">
-          <button class="btn" type="submit" id="hq-dos-save">Save</button>
-          <p class="hq-note" id="hq-dos-progress" hidden></p>
-        </div>
-      </form>
-      <p class="hq-note" id="hq-dos-msg" hidden></p>
-    </section>
-
     <section class="hq-section" id="server">
       <h2>Server</h2>
       <p class="hq-help">This app, mail, and ESPN site/news hosts. Fantasy health is only “down” when ESPN’s read API itself fails — not when one league ID 404s.</p>
@@ -408,8 +363,6 @@
         create: 'create-account',
         registrations: 'approvals',
         'apis': 'server',
-        'draft-order': 'draft-order-show',
-        videos: 'draft-order-show'
       };
       let snapshot = null;
       let espnRows = [];
@@ -1375,159 +1328,9 @@
       syncCreatePermissionFields();
       window.addEventListener('hashchange', jumpFromHash);
 
-      const dosForm = document.getElementById('hq-dos-form');
-      const dosYear = document.getElementById('hq-dos-year');
-      const dosSave = document.getElementById('hq-dos-save');
-      const dosProgress = document.getElementById('hq-dos-progress');
-      const dosMsg = document.getElementById('hq-dos-msg');
-      if (dosYear) dosYear.value = String(new Date().getFullYear());
-
-      function dosNote(text, ok) {
-        if (!dosMsg) return;
-        dosMsg.hidden = !text;
-        dosMsg.textContent = text || '';
-        dosMsg.classList.toggle('err', ok === false);
-        dosMsg.classList.toggle('ok', ok === true);
-      }
-
-      async function dosJson(res) {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
-        return data;
-      }
-
-      async function dosPutChunk(url, blob) {
-        let lastErr = new Error('Upload failed');
-        for (let attempt = 1; attempt <= 3; attempt += 1) {
-          try {
-            const res = await fetch(url, {
-              method: 'POST',
-              credentials: 'same-origin',
-              headers: { 'Content-Type': 'application/octet-stream' },
-              body: blob
-            });
-            return await dosJson(res);
-          } catch (err) {
-            lastErr = err;
-            if (attempt === 3) throw lastErr;
-            await new Promise((r) => setTimeout(r, 400 * attempt));
-          }
-        }
-        throw lastErr;
-      }
-
-      async function dosUploadFile(file, payload) {
-        dosProgress.hidden = false;
-        dosProgress.textContent = 'Starting upload…';
-        const started = await dosJson(await fetch('/api/draft-order-show/upload/start', {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            year: payload.year,
-            title: payload.title,
-            notes: payload.notes,
-            filename: file.name,
-            mimeType: file.type,
-            size: file.size
-          })
-        }));
-        const chunkBytes = Number(started.chunkBytes) || (4 * 1024 * 1024);
-        const chunkCount = Number(started.chunkCount) || Math.ceil(file.size / chunkBytes);
-        let sent = 0;
-        for (let i = 0; i < chunkCount; i += 1) {
-          const blob = file.slice(i * chunkBytes, Math.min(file.size, (i + 1) * chunkBytes));
-          await dosPutChunk(`/api/draft-order-show/upload/${encodeURIComponent(started.uploadId)}/chunk?index=${i}`, blob);
-          sent += blob.size;
-          dosProgress.textContent = `Uploading… ${Math.max(1, Math.round((sent / file.size) * 100))}%`;
-        }
-        dosProgress.textContent = 'Finishing…';
-        return dosJson(await fetch(
-          `/api/draft-order-show/upload/${encodeURIComponent(started.uploadId)}/complete`,
-          { method: 'POST', credentials: 'same-origin' }
-        ));
-      }
-
-      async function loadDos() {
-        const list = document.getElementById('hq-dos-list');
-        if (!list) return;
-        const res = await fetch('/api/draft-order-show', { cache: 'no-store' });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          list.innerHTML = `<p class="hq-empty">${esc(data.error || 'Could not load shows')}</p>`;
-          return;
-        }
-        const canManage = Boolean(data.canManage);
-        if (dosForm) dosForm.hidden = !canManage;
-        const videos = data.videos || [];
-        if (!videos.length) {
-          list.innerHTML = '<p class="hq-empty">None posted yet.</p>';
-          return;
-        }
-        list.innerHTML = videos.map((v) => `
-          <div class="hq-dos-row">
-            <div>
-              <strong>${esc(v.year)}</strong>
-              <span class="muted-sm"> ${esc(v.title)}${v.kind === 'embed' ? ' · link' : ' · file'}</span>
-            </div>
-            ${canManage ? `<button type="button" class="btn btn-ghost" data-dos-del="${esc(v.id)}" data-dos-year="${esc(v.year)}">Remove</button>` : ''}
-          </div>`).join('');
-      }
-
-      document.getElementById('hq-dos-list')?.addEventListener('click', async (e) => {
-        const btn = e.target.closest('[data-dos-del]');
-        if (!btn) return;
-        const year = btn.getAttribute('data-dos-year');
-        if (!confirm(`Remove the ${year} Draft Order Show?`)) return;
-        try {
-          await dosJson(await fetch(`/api/draft-order-show/${encodeURIComponent(btn.getAttribute('data-dos-del'))}`, { method: 'DELETE' }));
-          dosNote(`Removed ${year}.`, true);
-          await loadDos();
-        } catch (err) {
-          dosNote(err.message || 'Could not remove', false);
-        }
-      });
-
-      dosForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        dosNote('');
-        const year = dosYear.value;
-        const title = document.getElementById('hq-dos-title').value.trim();
-        const notes = document.getElementById('hq-dos-notes').value.trim();
-        const file = document.getElementById('hq-dos-file').files[0];
-        const url = document.getElementById('hq-dos-url').value.trim();
-        if (!file && !url) {
-          dosNote('Choose a video file or paste a YouTube / Vimeo URL.', false);
-          return;
-        }
-        dosSave.disabled = true;
-        try {
-          if (file) await dosUploadFile(file, { year, title, notes });
-          else {
-            await dosJson(await fetch('/api/draft-order-show', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ year, title, notes, url })
-            }));
-          }
-          dosProgress.hidden = true;
-          dosProgress.textContent = '';
-          dosForm.reset();
-          dosYear.value = year;
-          dosNote('Saved. Members can watch it under League → Draft Order Show.', true);
-          await loadDos();
-        } catch (err) {
-          dosProgress.hidden = true;
-          dosNote(err.message || 'Could not save', false);
-        } finally {
-          dosSave.disabled = false;
-        }
-      });
-
       load().then(() => {
         if (location.hash) jumpFromHash();
         else markJump();
-        loadDos().catch(() => {});
       }).catch((err) => {
         showMsg('hq-msg', err.message || 'Could not load Site Tools', false);
       });
