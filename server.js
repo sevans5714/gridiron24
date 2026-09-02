@@ -686,7 +686,10 @@ function applyStaffPlacement(userId, membershipRaw, actor) {
       );
     }
     users.setLoungeOnly(userId, false, actor.id);
-    users.setLeagueMembership(userId, { league: null });
+    // Independent HQ is additive: keep GridIron 24 / AAA if they already have it.
+    if (!users.hqMembershipOf(before)) {
+      users.setLeagueMembership(userId, { league: null });
+    }
     users.setUserLeagueOwner(
       userId,
       league.id,
@@ -4037,34 +4040,76 @@ async function apiSchedule(res, weekParam, leagueScope = null) {
   });
 }
 
-async function apiLeagues(res) {
-  const results = await Promise.all(
-    config.conferences.map(async (conference) => {
+async function apiLeagues(res, leagueScope = null) {
+  let results;
+  if (leagueScope?.scope === 'aaa') {
+    const affiliate = getAffiliatedLeague(leagueScope.conferenceKey || 'aaa');
+    const espnId = Number(affiliate?.espnLeagueId);
+    const conference = {
+      key: affiliate?.key || 'aaa',
+      name: affiliate?.name || 'AAA League',
+      shortName: affiliate?.shortName || 'AAA',
+      espnLeagueId: espnId,
+      logo: affiliate?.logo || '/assets/aaa-league.png?v=7'
+    };
+    if (!affiliate || !Number.isFinite(espnId) || espnId <= 0) {
+      results = [{
+        ok: false,
+        key: conference.key,
+        name: conference.name,
+        shortName: conference.shortName,
+        logo: conference.logo,
+        admin: null,
+        error: 'AAA League ESPN ID is not configured yet'
+      }];
+    } else {
       try {
         const data = await fetchEspnLeague(conference);
-        return { ok: true, ...data, admin: data.admin || conferenceAdminName(conference.key) };
+        results = [{ ok: true, ...data, admin: data.admin || conferenceAdminName(conference.key) }];
       } catch (error) {
-        return {
+        results = [{
           ok: false,
           key: conference.key,
           name: conference.name,
           shortName: conference.shortName,
           leagueId: conference.espnLeagueId,
-          logo: conference.logo || null,
+          logo: conference.logo,
           admin: conferenceAdminName(conference.key),
           error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message,
           detail: error.detail || null
-        };
+        }];
       }
-    })
-  );
+    }
+  } else {
+    results = await Promise.all(
+      config.conferences.map(async (conference) => {
+        try {
+          const data = await fetchEspnLeague(conference);
+          return { ok: true, ...data, admin: data.admin || conferenceAdminName(conference.key) };
+        } catch (error) {
+          return {
+            ok: false,
+            key: conference.key,
+            name: conference.name,
+            shortName: conference.shortName,
+            leagueId: conference.espnLeagueId,
+            logo: conference.logo || null,
+            admin: conferenceAdminName(conference.key),
+            error: error.name === 'AbortError' ? 'ESPN request timed out' : error.message,
+            detail: error.detail || null
+          };
+        }
+      })
+    );
+  }
 
   sendJson(res, 200, {
     brand: config.brand,
     season: config.season,
     generatedAt: new Date().toISOString(),
     upstream: upstreamMeta(),
-    conferences: results
+    conferences: results,
+    leagueScope: leagueScope || { scope: 'gridiron' }
   });
 }
 
@@ -4858,10 +4903,22 @@ function userHasAaaAccess(user) {
   return user.role === 'conference_admin' && String(user.conference || '').toLowerCase() === 'aaa';
 }
 
+function emailsMatch(a, b) {
+  const left = String(a || '').trim().toLowerCase();
+  const right = String(b || '').trim().toLowerCase();
+  return Boolean(left && right && left === right);
+}
+
+function isIndependentLeagueOwnerUser(user, league) {
+  if (!user || !league || league.platform !== 'independent') return false;
+  if (league.ownerUserId && league.ownerUserId === user.id) return true;
+  return emailsMatch(league.ownerEmail, user.email);
+}
+
 function canViewIndependentLeague(user, league) {
   if (!league || league.platform !== 'independent') return false;
   if (!user) return false;
-  const isOwner = Boolean(league.ownerUserId && league.ownerUserId === user.id);
+  const isOwner = isIndependentLeagueOwnerUser(user, league);
   if (league.status === 'rejected' || league.status === 'archived') return isOwner;
   if (isOwner) return true;
   if (league.status === 'pending_approval') return false;
@@ -5553,14 +5610,24 @@ function userAccessibleIndependentLeagues(user) {
   const add = (raw) => {
     if (!raw || raw.platform !== 'independent' || seen.has(raw.id)) return;
     if (raw.status === 'rejected' || raw.status === 'archived') return;
-    if (raw.status === 'pending_approval' && raw.ownerUserId !== user.id) return;
+    if (raw.status === 'pending_approval' && !isIndependentLeagueOwnerUser(user, raw)) {
+      return;
+    }
     seen.add(raw.id);
     out.push(raw);
   };
-  for (const row of leagues.listIndependentLeaguesForOwner(user.id)) add(leagues.findById(row.id) || row);
-  for (const row of leagues.listIndependentLeagues()) {
-    const raw = leagues.findById(row.id) || row;
-    if (canViewIndependentLeague(user, raw)) add(raw);
+  let records = [];
+  try {
+    records = typeof leagues.listIndependentRecords === 'function'
+      ? leagues.listIndependentRecords()
+      : (leagues.listIndependentLeagues() || []).map((row) => leagues.findById(row.id) || row);
+  } catch (err) {
+    console.warn('[leagues] independent list failed', err.message || err);
+  }
+  for (const raw of records) {
+    try {
+      if (canViewIndependentLeague(user, raw)) add(raw);
+    } catch { /* skip a bad record */ }
   }
   return out;
 }
@@ -5598,6 +5665,7 @@ function leagueScopeFromPreferred(user, preferred, extras = {}) {
       canSwitchLeagues: extras.canSwitchLeagues !== false,
       preferredLeague: `independent:${linked.id}`,
       isLeagueOwner: Boolean(user && linked.ownerUserId === user.id)
+        || emailsMatch(linked.ownerEmail, user?.email)
     });
   }
   if (preferred === 'aaa') {
@@ -5664,16 +5732,20 @@ function menuLeaguesForUser(user, req = null) {
   for (const raw of userAccessibleIndependentLeagues(user)) {
     if (!raw?.id || seen.has(raw.id)) continue;
     seen.add(raw.id);
-    const pub = leagues.publicLeague(raw);
-    const isOwner = Boolean(raw.ownerUserId && raw.ownerUserId === user.id);
+    let pub = null;
+    try {
+      pub = leagues.publicLeague(raw);
+    } catch { /* menu still lists the league */ }
+    const isOwner = isIndependentLeagueOwnerUser(user, raw);
+    const id = pub?.id || raw.id;
     items.push({
-      id: pub.id,
+      id,
       kind: 'independent',
-      label: pub.brand?.name || pub.slug || 'League',
-      homePath: pub.homePath || leagues.independentHomePath(raw),
-      logo: pub.brand?.logo || pub.brand?.crest || null,
+      label: pub?.brand?.name || raw.brand?.name || pub?.slug || raw.slug || 'League',
+      homePath: pub?.homePath || leagues.independentHomePath(raw),
+      logo: pub?.brand?.logo || pub?.brand?.crest || raw.brand?.logo || raw.brand?.crest || null,
       role: isOwner ? 'owner' : 'member',
-      current: current.leagueId === pub.id || current.slug === pub.slug
+      current: current.leagueId === id || current.slug === (pub?.slug || raw.slug)
     });
   }
   return items;
@@ -5710,7 +5782,7 @@ function leagueScopeForUser(user, req = null) {
   if (linked && hq !== 'gridiron' && hq !== 'aaa') {
     return independentLeagueScope(linked, {
       ...extras,
-      isLeagueOwner: linked.ownerUserId === user.id
+      isLeagueOwner: isIndependentLeagueOwnerUser(user, linked)
     });
   }
 
@@ -6904,6 +6976,14 @@ const server = http.createServer(async (req, res) => {
         deliverWelcomeInboxIfNeeded(user);
         syncPendingInboxDigests(user, { force: true });
       }
+      let menuLeagues = [];
+      if (user) {
+        try {
+          menuLeagues = menuLeaguesForUser(user, req);
+        } catch (err) {
+          console.warn('[auth] menu leagues failed', err.message || err);
+        }
+      }
       return sendJson(res, 200, {
         authenticated: Boolean(user),
         authConfigured: true,
@@ -6911,7 +6991,7 @@ const server = http.createServer(async (req, res) => {
         franchise: user ? chipFranchiseForUser(user) : null,
         homePath: homePathForUser(user, req),
         leagueScope: leagueScopeForUser(user, req),
-        leagues: user ? menuLeaguesForUser(user, req) : [],
+        leagues: menuLeagues,
         loungeOpen: users.isLoungeOpenToMembers(),
         loungeAccess: users.hasLoungeAccess(user)
       });
@@ -7834,7 +7914,7 @@ const server = http.createServer(async (req, res) => {
       } catch { /* NFL schedule lookup is optional for HQ */ }
       const persistedLock = rulesSyncStore.getSeasonRulesLock(league.season || config.season);
       const seasonLock = (persistedLock?.locked ? persistedLock : nflLock);
-      const isLeagueOwner = Boolean(league.ownerUserId && league.ownerUserId === user.id);
+      const isLeagueOwner = isIndependentLeagueOwnerUser(user, league);
       const extras = {
         canSwitchLeagues: userCanSwitchLeagues(user),
         preferredLeague: `independent:${league.id}`,
@@ -8108,6 +8188,11 @@ const server = http.createServer(async (req, res) => {
         }
         const okCount = results.filter((r) => r.ok).length;
         const one = results.length === 1 ? results[0] : null;
+        if (okCount > 0) {
+          try {
+            latestLeague = leagues.markIndependentSetupStep(leagueId, 'invites');
+          } catch { /* ignore */ }
+        }
         return sendJson(res, okCount ? 201 : 400, {
           ok: okCount > 0,
           attached: Boolean(one?.attached),
@@ -12202,7 +12287,7 @@ const server = http.createServer(async (req, res) => {
           leagueScope: scope
         });
       }
-      return await apiLeagues(res);
+      return await apiLeagues(res, scope);
     }
 
     if (pathname === '/api/league-roster') {

@@ -163,7 +163,7 @@
   }
 
   async function apiGet(url) {
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(url, { cache: 'no-store', credentials: 'same-origin' });
     if (res.status === 401) {
       authRedirect();
       throw new Error('Authentication required');
@@ -516,7 +516,7 @@
     const mount = document.getElementById('account-leagues');
     if (!wrap || !mount) return;
     const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
-    if (list.length < 2) {
+    if (!list.length) {
       wrap.hidden = true;
       mount.innerHTML = '';
       return;
@@ -2705,9 +2705,17 @@
         tasks.push(loadMyTeam().catch(() => {}));
         tasks.push(loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: Boolean(state.schedule) }).catch(() => {}));
         if (!state.leagues) {
-          tasks.push(apiGet('/api/leagues').then((d) => { state.leagues = d; }).catch(() => {}));
+          tasks.push(apiGet('/api/leagues').then((d) => {
+            if (d?.leagueScope && (d.leagueScope.scope === 'independent' || d.leagueScope.platform === 'independent')) {
+              state.leagueScope = d.leagueScope;
+            }
+            state.leagues = d;
+          }).catch(() => {}));
         }
         await Promise.all(tasks);
+        if (isIndependentScope()) {
+          await loadIndependentContext().catch(() => {});
+        }
       }
       updateTeamChip();
       renderHome();
@@ -2776,7 +2784,13 @@
 
   async function loadStandings() {
     try {
-      state.leagues = await apiGet('/api/leagues');
+      const data = await apiGet('/api/leagues');
+      if (data?.leagueScope && (data.leagueScope.scope === 'independent' || data.leagueScope.platform === 'independent')) {
+        state.leagueScope = data.leagueScope;
+        await loadIndependentContext().catch(() => {});
+      } else {
+        state.leagues = data;
+      }
       if (state.view === 'home') renderHome();
     } catch (err) {
       if (state.view === 'home') {

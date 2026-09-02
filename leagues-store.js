@@ -1816,9 +1816,12 @@ function createIndependentLeague({
   return publicLeague(league);
 }
 
+function listIndependentRecords() {
+  return (readStore().leagues || []).filter((l) => l.platform === 'independent');
+}
+
 function listIndependentLeagues() {
-  return readStore().leagues
-    .filter((l) => l.platform === 'independent')
+  return listIndependentRecords()
     .map(publicLeague)
     .sort((a, b) => String(b.submittedAt || b.createdAt || '').localeCompare(String(a.submittedAt || a.createdAt || '')));
 }
@@ -2807,6 +2810,7 @@ module.exports = {
   createIndependentLeague,
   completeIndependentLeagueSetup,
   listIndependentLeagues,
+  listIndependentRecords,
   listPendingIndependentLeagues,
   listIndependentLeaguesForOwner,
   listIndependentMembershipsForUser,
