@@ -243,6 +243,54 @@
     return 'gridiron';
   }
 
+  const PWA_LEAGUE_KEY = 'gi-pwa-league';
+
+  function espnScopeQuery() {
+    if (state.leagueScope?.scope === 'aaa') return 'league=aaa';
+    return 'league=gridiron';
+  }
+
+  function withEspnQuery(url) {
+    if (isIndependentScope()) return url;
+    const q = espnScopeQuery();
+    return url.includes('?') ? `${url}&${q}` : `${url}?${q}`;
+  }
+
+  function rememberPwaLeague(row) {
+    try {
+      localStorage.setItem(PWA_LEAGUE_KEY, preferredLeaguePayload(row));
+    } catch { /* ignore */ }
+  }
+
+  function readRememberedPwaLeague() {
+    try {
+      return String(localStorage.getItem(PWA_LEAGUE_KEY) || '').trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function menuRowForPreferred(want) {
+    const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
+    if (!want) return null;
+    const lower = String(want).toLowerCase();
+    return list.find((row) => preferredLeaguePayload(row).toLowerCase() === lower)
+      || (lower === 'gridiron' ? list.find((row) => row.kind === 'gridiron') : null)
+      || (lower === 'aaa' ? list.find((row) => row.kind === 'aaa') : null)
+      || null;
+  }
+
+  async function restorePwaLeague() {
+    const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
+    if (!list.length) return;
+    const hasGi = list.some((row) => row.kind === 'gridiron');
+    const want = readRememberedPwaLeague() || (hasGi ? 'gridiron' : null);
+    if (!want) return;
+    const row = menuRowForPreferred(want);
+    if (!row || row.current) return;
+    await switchAppLeague(row);
+  }
+
   function mapIndependentPlayers(rows) {
     return (rows || []).map((p) => ({
       slot: p.slot || p.position || 'BN',
@@ -549,6 +597,7 @@
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.error || 'Could not switch league');
+    rememberPwaLeague(row);
     state.leagueScope = data.leagueScope || state.leagueScope;
     state.leagues = null;
     state.schedule = null;
@@ -2677,8 +2726,8 @@
       } else {
         await Promise.all([
           loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: true }),
-          apiGet('/api/my-team').then((d) => { state.myTeam = d; updateTeamChip(); }).catch(() => {}),
-          apiGet('/api/leagues').then((d) => { state.leagues = d; }).catch(() => {})
+          apiGet(withEspnQuery('/api/my-team')).then((d) => { state.myTeam = d; updateTeamChip(); }).catch(() => {}),
+          apiGet(withEspnQuery('/api/leagues')).then((d) => { state.leagues = d; }).catch(() => {})
         ]);
       }
       if (state.view === 'home') {
@@ -2705,10 +2754,7 @@
         tasks.push(loadMyTeam().catch(() => {}));
         tasks.push(loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: Boolean(state.schedule) }).catch(() => {}));
         if (!state.leagues) {
-          tasks.push(apiGet('/api/leagues').then((d) => {
-            if (d?.leagueScope && (d.leagueScope.scope === 'independent' || d.leagueScope.platform === 'independent')) {
-              state.leagueScope = d.leagueScope;
-            }
+          tasks.push(apiGet(withEspnQuery('/api/leagues')).then((d) => {
             state.leagues = d;
           }).catch(() => {}));
         }
@@ -2784,13 +2830,8 @@
 
   async function loadStandings() {
     try {
-      const data = await apiGet('/api/leagues');
-      if (data?.leagueScope && (data.leagueScope.scope === 'independent' || data.leagueScope.platform === 'independent')) {
-        state.leagueScope = data.leagueScope;
-        await loadIndependentContext().catch(() => {});
-      } else {
-        state.leagues = data;
-      }
+      const data = await apiGet(withEspnQuery('/api/leagues'));
+      state.leagues = data;
       if (state.view === 'home') renderHome();
     } catch (err) {
       if (state.view === 'home') {
@@ -2821,7 +2862,9 @@
     const mount = document.getElementById('scoreboard-mount');
     if (!quiet && mount && state.view === 'scoreboard') mount.innerHTML = `<div class="msg">Loading scoreboard…</div>`;
     try {
-      const qs = week ? `?week=${encodeURIComponent(week)}` : '';
+      const qs = week
+        ? `?week=${encodeURIComponent(week)}&${espnScopeQuery()}`
+        : `?${espnScopeQuery()}`;
       state.schedule = await apiGet(`/api/schedule${qs}`);
       state.week = Number(state.schedule.week);
       const livePeriod = state.schedule.conferences?.find((c) => c.ok)?.currentMatchupPeriod;
@@ -2858,7 +2901,7 @@
     }
     const mount = document.getElementById('roster-mount');
     try {
-      state.myTeam = await apiGet('/api/my-team');
+      state.myTeam = await apiGet(withEspnQuery('/api/my-team'));
       updateTeamChip();
       if (state.view === 'roster') {
         renderMyTeam();
@@ -2902,7 +2945,7 @@
           };
         }
         if (!state.leagues) {
-          try { state.leagues = await apiGet('/api/leagues'); } catch { /* logos optional */ }
+          try { state.leagues = await apiGet(withEspnQuery('/api/leagues')); } catch { /* logos optional */ }
         }
       } else if (state.feedTab === 'schedule') {
         if (!state.schedule) {
@@ -3644,6 +3687,7 @@
     wireInstall();
     registerSw();
     await loadAuth();
+    await restorePwaLeague().catch(() => {});
     loadMyTeam().catch(() => {});
     const hash = (location.hash || '').replace('#', '');
     const initial = resolveHashView(hash) || 'home';

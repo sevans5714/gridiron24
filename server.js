@@ -12275,7 +12275,7 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/leagues') {
       const user = getSessionUser(req);
-      const scope = leagueScopeForUser(user, req);
+      const scope = resolveLeagueScope(user, req, requestUrl.searchParams.get('league'));
       if (isIndependentHqScope(scope) || (user && !userHasGridironFranchise(user) && !userHasAaaAccess(user))) {
         return sendJson(res, 200, {
           ok: true,
@@ -12493,7 +12493,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/my-team' && req.method === 'GET') {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      const teamScope = leagueScopeForUser(user, req);
+      const teamScope = resolveLeagueScope(user, req, requestUrl.searchParams.get('league'));
       if (isIndependentHqScope(teamScope)) {
         return sendJson(res, 200, {
           ok: true,
