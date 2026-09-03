@@ -246,14 +246,66 @@
   const PWA_LEAGUE_KEY = 'gi-pwa-league';
 
   function espnScopeQuery() {
+    return leagueScopeQuery();
+  }
+
+  function leagueScopeQuery() {
+    if (isIndependentScope()) {
+      const id = state.leagueScope?.leagueId;
+      return id ? `league=${encodeURIComponent(`independent:${id}`)}` : '';
+    }
     if (state.leagueScope?.scope === 'aaa') return 'league=aaa';
     return 'league=gridiron';
   }
 
-  function withEspnQuery(url) {
-    if (isIndependentScope()) return url;
-    const q = espnScopeQuery();
+  function menuRowMatchesScope(row, scope) {
+    if (!row || !scope) return false;
+    if (row.kind === 'independent') {
+      return String(scope.leagueId || '') === String(row.id);
+    }
+    if (row.kind === 'aaa') return scope.scope === 'aaa' && !scope.leagueId;
+    return scope.scope === 'gridiron' && !scope.leagueId;
+  }
+
+  function withLeagueQuery(url) {
+    const q = leagueScopeQuery();
+    if (!q) return url;
     return url.includes('?') ? `${url}&${q}` : `${url}?${q}`;
+  }
+
+  function withEspnQuery(url) {
+    return withLeagueQuery(url);
+  }
+
+  function markMenuCurrentFromScope() {
+    const scope = state.leagueScope;
+    const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
+    if (!scope || !list.length) return;
+    state.menuLeagues = list.map((row) => {
+      let current = false;
+      if (row.kind === 'independent') {
+        current = String(scope.leagueId || '') === String(row.id)
+          || Boolean(scope.slug && row.homePath && String(row.homePath).includes(`/${scope.slug}`));
+      } else if (row.kind === 'aaa') {
+        current = scope.scope === 'aaa' && !scope.leagueId;
+      } else {
+        current = scope.scope === 'gridiron' && !scope.leagueId;
+      }
+      return { ...row, current };
+    });
+  }
+
+  function applySelectedLeagueScope(scope, row) {
+    if (scope) state.leagueScope = scope;
+    if (row) {
+      const want = preferredLeaguePayload(row).toLowerCase();
+      state.menuLeagues = (state.menuLeagues || []).map((item) => ({
+        ...item,
+        current: preferredLeaguePayload(item).toLowerCase() === want
+      }));
+    } else {
+      markMenuCurrentFromScope();
+    }
   }
 
   function rememberPwaLeague(row) {
@@ -280,15 +332,23 @@
       || null;
   }
 
-  async function restorePwaLeague() {
+  async function ensurePwaLeague() {
     const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
     if (!list.length) return;
     const hasGi = list.some((row) => row.kind === 'gridiron');
-    const want = readRememberedPwaLeague() || (hasGi ? 'gridiron' : null);
+    const want = readRememberedPwaLeague() || (hasGi ? 'gridiron' : preferredLeaguePayload(list[0]));
     if (!want) return;
     const row = menuRowForPreferred(want);
-    if (!row || row.current) return;
+    if (!row) return;
+    if (menuRowMatchesScope(row, state.leagueScope)) {
+      applySelectedLeagueScope(state.leagueScope, row);
+      return;
+    }
     await switchAppLeague(row);
+  }
+
+  async function restorePwaLeague() {
+    return ensurePwaLeague();
   }
 
   function mapIndependentPlayers(rows) {
@@ -498,7 +558,8 @@
 
   async function setAppTheme(next) {
     const theme = next === 'day' ? 'day' : 'night';
-    document.documentElement.setAttribute('data-theme', theme);
+    if (window.GridIronTheme?.apply) window.GridIronTheme.apply(theme);
+    else document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem('gi-theme', theme); } catch { /* ignore */ }
     renderAppUserMenu();
     try {
@@ -586,8 +647,10 @@
 
   async function switchAppLeague(row) {
     if (!row) return;
-    const already = (state.menuLeagues || []).find((r) => r.id === row.id && r.kind === row.kind && r.current);
-    if (already) return;
+    if (menuRowMatchesScope(row, state.leagueScope)) {
+      applySelectedLeagueScope(state.leagueScope, row);
+      return;
+    }
     const league = preferredLeaguePayload(row);
     const res = await fetch('/api/preferred-league', {
       method: 'POST',
@@ -598,7 +661,7 @@
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.error || 'Could not switch league');
     rememberPwaLeague(row);
-    state.leagueScope = data.leagueScope || state.leagueScope;
+    applySelectedLeagueScope(data.leagueScope || state.leagueScope, row);
     state.leagues = null;
     state.schedule = null;
     state.myTeam = null;
@@ -606,7 +669,6 @@
     state.news = null;
     state.independentLeague = null;
     state.independentBoard = null;
-    await loadAuth();
     paintLeagueChrome();
     await Promise.all([
       loadHome().catch(() => {}),
@@ -2726,8 +2788,8 @@
       } else {
         await Promise.all([
           loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: true }),
-          apiGet(withEspnQuery('/api/my-team')).then((d) => { state.myTeam = d; updateTeamChip(); }).catch(() => {}),
-          apiGet(withEspnQuery('/api/leagues')).then((d) => { state.leagues = d; }).catch(() => {})
+          apiGet(withLeagueQuery('/api/my-team')).then((d) => { state.myTeam = d; updateTeamChip(); }).catch(() => {}),
+          apiGet(withLeagueQuery('/api/leagues')).then((d) => { state.leagues = d; }).catch(() => {})
         ]);
       }
       if (state.view === 'home') {
@@ -2754,7 +2816,7 @@
         tasks.push(loadMyTeam().catch(() => {}));
         tasks.push(loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: Boolean(state.schedule) }).catch(() => {}));
         if (!state.leagues) {
-          tasks.push(apiGet(withEspnQuery('/api/leagues')).then((d) => {
+          tasks.push(apiGet(withLeagueQuery('/api/leagues')).then((d) => {
             state.leagues = d;
           }).catch(() => {}));
         }
@@ -2814,7 +2876,7 @@
           if (!state.independentLeague) await loadIndependentContext().catch(() => {});
           state.calendar = state.independentLeague?.calendarDefaults || [];
         } else {
-          tasks.push(apiGet('/api/calendar').then((d) => { state.calendar = d.events || []; }).catch(() => { state.calendar = []; }));
+          tasks.push(apiGet(withLeagueQuery('/api/calendar')).then((d) => { state.calendar = d.events || []; }).catch(() => { state.calendar = []; }));
         }
       }
       if (state.leagueTab === 'messages') {
@@ -2830,7 +2892,7 @@
 
   async function loadStandings() {
     try {
-      const data = await apiGet(withEspnQuery('/api/leagues'));
+      const data = await apiGet(withLeagueQuery('/api/leagues'));
       state.leagues = data;
       if (state.view === 'home') renderHome();
     } catch (err) {
@@ -2862,10 +2924,10 @@
     const mount = document.getElementById('scoreboard-mount');
     if (!quiet && mount && state.view === 'scoreboard') mount.innerHTML = `<div class="msg">Loading scoreboard…</div>`;
     try {
-      const qs = week
-        ? `?week=${encodeURIComponent(week)}&${espnScopeQuery()}`
-        : `?${espnScopeQuery()}`;
-      state.schedule = await apiGet(`/api/schedule${qs}`);
+      const base = week
+        ? `/api/schedule?week=${encodeURIComponent(week)}`
+        : '/api/schedule';
+      state.schedule = await apiGet(withLeagueQuery(base));
       state.week = Number(state.schedule.week);
       const livePeriod = state.schedule.conferences?.find((c) => c.ok)?.currentMatchupPeriod;
       if (livePeriod != null && Number.isFinite(Number(livePeriod))) {
@@ -2901,7 +2963,7 @@
     }
     const mount = document.getElementById('roster-mount');
     try {
-      state.myTeam = await apiGet(withEspnQuery('/api/my-team'));
+      state.myTeam = await apiGet(withLeagueQuery('/api/my-team'));
       updateTeamChip();
       if (state.view === 'roster') {
         renderMyTeam();
@@ -2945,7 +3007,7 @@
           };
         }
         if (!state.leagues) {
-          try { state.leagues = await apiGet(withEspnQuery('/api/leagues')); } catch { /* logos optional */ }
+          try { state.leagues = await apiGet(withLeagueQuery('/api/leagues')); } catch { /* logos optional */ }
         }
       } else if (state.feedTab === 'schedule') {
         if (!state.schedule) {
@@ -3051,7 +3113,7 @@
   async function loadInbox() {
     const mount = document.getElementById('inbox-mount');
     try {
-      const data = await apiGet('/api/inbox');
+      const data = await apiGet(withLeagueQuery('/api/inbox'));
       state.inbox = Array.isArray(data.messages) ? data.messages : [];
       setUnreadBadge(data.unread);
       if (!state.inboxSelectedId && state.inbox[0]) state.inboxSelectedId = state.inbox[0].id;
@@ -3280,7 +3342,7 @@
     }, CHAT_POLL_MS);
   }
 
-  async function loadAuth() {
+  async function loadAuth(opts = {}) {
     try {
       const data = await apiGet('/api/auth');
       if (!data.authenticated) {
@@ -3291,10 +3353,16 @@
       state.authUser = user;
       state.loungeAccess = Boolean(data.loungeAccess || user.siteOwner);
       state.loungeOpen = Boolean(data.loungeOpen);
-      state.leagueScope = data.leagueScope || null;
+      const prior = state.leagueScope;
       state.menuLeagues = Array.isArray(data.leagues) ? data.leagues : [];
+      if (opts.preserveScope && prior) {
+        applySelectedLeagueScope(prior);
+      } else {
+        state.leagueScope = data.leagueScope || null;
+      }
       if (user.theme === 'day' || user.theme === 'night') {
-        document.documentElement.setAttribute('data-theme', user.theme);
+        if (window.GridIronTheme?.apply) window.GridIronTheme.apply(user.theme);
+        else document.documentElement.setAttribute('data-theme', user.theme);
         try { localStorage.setItem('gi-theme', user.theme); } catch { /* ignore */ }
       }
       paintLeagueChrome();
@@ -3687,8 +3755,7 @@
     wireInstall();
     registerSw();
     await loadAuth();
-    await restorePwaLeague().catch(() => {});
-    loadMyTeam().catch(() => {});
+    await ensurePwaLeague().catch(() => {});
     const hash = (location.hash || '').replace('#', '');
     const initial = resolveHashView(hash) || 'home';
     const jump = ['inbox', 'messages', 'calendar', 'news'].includes(hash)

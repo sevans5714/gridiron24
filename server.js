@@ -5031,8 +5031,8 @@ function inboxMessageVisibleForScope(msg, scope) {
   return true;
 }
 
-function scopedInboxForUser(user, req) {
-  const scope = leagueScopeForUser(user, req);
+function scopedInboxForUser(user, req, requestedLeague) {
+  const scope = resolveLeagueScope(user, req, requestedLeague);
   const messages = inbox.listForUser(user.id).filter((m) => inboxMessageVisibleForScope(m, scope));
   return {
     messages,
@@ -5960,49 +5960,42 @@ function buildOwnProfile(user, req) {
   };
 }
 
-/** Scoreboard pages can request a specific league via ?league=aaa|gridiron. */
+function parseRequestedLeague(raw) {
+  if (raw && typeof raw === 'object') {
+    if (raw.kind === 'independent' && raw.id) return { kind: 'independent', id: raw.id };
+    if (raw.kind === 'aaa') return 'aaa';
+    if (raw.kind === 'gridiron') return 'gridiron';
+    return null;
+  }
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  if (lower === 'aaa' || lower === 'gridiron') return lower;
+  if (lower.startsWith('independent:')) {
+    const id = text.slice(text.indexOf(':') + 1).trim();
+    return id ? { kind: 'independent', id } : null;
+  }
+  return null;
+}
+
+/** Scoreboard pages can request a specific league via ?league=aaa|gridiron|independent:id. */
 function resolveLeagueScope(user, req, requestedLeague) {
   const personal = leagueScopeForUser(user, req);
-  const want = String(requestedLeague || '').trim().toLowerCase();
-  if (want !== 'aaa' && want !== 'gridiron') return personal;
-  if (user && !personal.canSwitchLeagues && personal.scope !== want) {
-    return personal;
-  }
-  if (want === 'aaa') {
-    const affiliate = getAffiliatedLeague('aaa');
-    if (!affiliate) return personal.scope === 'aaa'
-      ? {
-          scope: 'gridiron',
-          conferenceKey: null,
-          homePath: '/home.html',
-          scoreboardPath: '/scoreboard',
-          label: 'GridIron 24',
-          logo: '/assets/gridiron24-league.png?v=8',
-          canSwitchLeagues: personal.canSwitchLeagues,
-          preferredLeague: personal.preferredLeague
-        }
-      : personal;
-    return {
-      scope: 'aaa',
-      conferenceKey: 'aaa',
-      homePath: '/aaa.html',
-      scoreboardPath: '/aaa-scoreboard',
-      label: affiliate?.name || 'AAA League',
-      logo: affiliate?.logo || '/assets/aaa-league.png?v=7',
-      canSwitchLeagues: personal.canSwitchLeagues,
-      preferredLeague: personal.preferredLeague
-    };
-  }
-  return {
-    scope: 'gridiron',
-    conferenceKey: null,
-    homePath: '/home.html',
-    scoreboardPath: '/scoreboard',
-    label: 'GridIron 24',
-    logo: '/assets/gridiron24-league.png?v=8',
-    canSwitchLeagues: personal.canSwitchLeagues,
-    preferredLeague: personal.preferredLeague
-  };
+  const parsed = parseRequestedLeague(requestedLeague);
+  if (!parsed) return personal;
+  if (user && !userMayAccessPreferred(user, parsed)) return personal;
+  if (!user) return personal;
+  return leagueScopeFromPreferred(user, parsed, { canSwitchLeagues: personal.canSwitchLeagues }) || personal;
+}
+
+function shouldServeEspnHq(user, scope, requestedLeague) {
+  const requested = parseRequestedLeague(requestedLeague);
+  if (requested === 'gridiron') return userHasGridironFranchise(user);
+  if (requested === 'aaa') return userHasAaaAccess(user);
+  if (requested && typeof requested === 'object' && requested.kind === 'independent') return false;
+  if (isIndependentHqScope(scope)) return false;
+  if (!userHasGridironFranchise(user) && !userHasAaaAccess(user)) return false;
+  return true;
 }
 
 /** GridIron-only HTML pages — AAA assignees are redirected to the AAA portal. */
@@ -6984,13 +6977,17 @@ const server = http.createServer(async (req, res) => {
           console.warn('[auth] menu leagues failed', err.message || err);
         }
       }
+      const authLeagueParam = requestUrl.searchParams.get('league');
+      const leagueScope = authLeagueParam
+        ? resolveLeagueScope(user, req, authLeagueParam)
+        : leagueScopeForUser(user, req);
       return sendJson(res, 200, {
         authenticated: Boolean(user),
         authConfigured: true,
         user,
         franchise: user ? chipFranchiseForUser(user) : null,
         homePath: homePathForUser(user, req),
-        leagueScope: leagueScopeForUser(user, req),
+        leagueScope,
         leagues: menuLeagues,
         loungeOpen: users.isLoungeOpenToMembers(),
         loungeAccess: users.hasLoungeAccess(user)
@@ -11669,8 +11666,8 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/inbox' && req.method === 'GET') {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      const box = scopedInboxForUser(user, req);
-      const scope = leagueScopeForUser(user, req);
+      const box = scopedInboxForUser(user, req, requestUrl.searchParams.get('league'));
+      const scope = resolveLeagueScope(user, req, requestUrl.searchParams.get('league'));
       return sendJson(res, 200, {
         ok: true,
         messages: box.messages,
@@ -12275,8 +12272,9 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/leagues') {
       const user = getSessionUser(req);
-      const scope = resolveLeagueScope(user, req, requestUrl.searchParams.get('league'));
-      if (isIndependentHqScope(scope) || (user && !userHasGridironFranchise(user) && !userHasAaaAccess(user))) {
+      const leagueParam = requestUrl.searchParams.get('league');
+      const scope = resolveLeagueScope(user, req, leagueParam);
+      if (!shouldServeEspnHq(user, scope, leagueParam)) {
         return sendJson(res, 200, {
           ok: true,
           espn: false,
@@ -12493,8 +12491,9 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/my-team' && req.method === 'GET') {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      const teamScope = resolveLeagueScope(user, req, requestUrl.searchParams.get('league'));
-      if (isIndependentHqScope(teamScope)) {
+      const leagueParam = requestUrl.searchParams.get('league');
+      const teamScope = resolveLeagueScope(user, req, leagueParam);
+      if (!shouldServeEspnHq(user, teamScope, leagueParam)) {
         return sendJson(res, 200, {
           ok: true,
           espn: false,
@@ -12502,9 +12501,6 @@ const server = http.createServer(async (req, res) => {
           claim: null,
           leagueScope: teamScope
         });
-      }
-      if (!userHasGridironFranchise(user) && !userHasAaaAccess(user)) {
-        return sendJson(res, 403, { ok: false, error: 'Not a GridIron 24 or AAA member' });
       }
       let claim = logos.getClaimForUser(user.id);
       if (!claim) {
@@ -12897,8 +12893,9 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/schedule') {
       const user = getSessionUser(req);
-      const scope = resolveLeagueScope(user, req, requestUrl.searchParams.get('league'));
-      if (isIndependentHqScope(scope) || (user && !userHasGridironFranchise(user) && !userHasAaaAccess(user))) {
+      const leagueParam = requestUrl.searchParams.get('league');
+      const scope = resolveLeagueScope(user, req, leagueParam);
+      if (!shouldServeEspnHq(user, scope, leagueParam)) {
         return sendJson(res, 200, { ok: true, espn: false, week: null, conferences: [], leagueScope: scope });
       }
       return await apiSchedule(res, requestUrl.searchParams.get('week'), scope);
@@ -13008,7 +13005,7 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/calendar' && req.method === 'GET') {
       const calUser = getSessionUser(req);
-      const calScope = leagueScopeForUser(calUser, req);
+      const calScope = resolveLeagueScope(calUser, req, requestUrl.searchParams.get('league'));
       if (isIndependentHqScope(calScope)) {
         const il = calScope.leagueId ? leagues.findById(calScope.leagueId) : null;
         return sendJson(res, 200, {

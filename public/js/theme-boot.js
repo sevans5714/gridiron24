@@ -8,11 +8,27 @@
   } catch (e) { /* ignore */ }
   document.documentElement.setAttribute('data-theme', theme);
 
+  function applyThemeChrome(next) {
+    var day = next === 'day';
+    var resolved = day ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', resolved);
+    document.documentElement.style.colorScheme = day ? 'light' : 'dark';
+    try {
+      var scheme = document.querySelector('meta[name="color-scheme"]');
+      if (scheme) scheme.setAttribute('content', day ? 'light' : 'dark');
+      var color = document.querySelector('meta[name="theme-color"]');
+      if (color) color.setAttribute('content', day ? '#e8ecf1' : '#02060f');
+    } catch (e) { /* ignore */ }
+    return resolved;
+  }
+  applyThemeChrome(theme);
+  window.GridIronTheme = { apply: applyThemeChrome };
+
   // Site-wide crest icons — without these, Safari bookmarks use a letter avatar
   // (e.g. "H" from "Home · GridIron 24").
   (function ensureBrandIcons() {
     try {
-      var bust = '149';
+      var bust = '152';
       var head = document.head || document.getElementsByTagName('head')[0];
       if (!head) return;
       function upsert(rel, href, attrs) {
