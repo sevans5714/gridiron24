@@ -4911,7 +4911,7 @@ function emailsMatch(a, b) {
 
 function isIndependentLeagueOwnerUser(user, league) {
   if (!user || !league || league.platform !== 'independent') return false;
-  if (league.ownerUserId && league.ownerUserId === user.id) return true;
+  if (league.ownerUserId && String(league.ownerUserId) === String(user.id)) return true;
   return emailsMatch(league.ownerEmail, user.email);
 }
 
@@ -4922,8 +4922,8 @@ function canViewIndependentLeague(user, league) {
   if (league.status === 'rejected' || league.status === 'archived') return isOwner;
   if (isOwner) return true;
   if (league.status === 'pending_approval') return false;
-  if (user.leagueId && user.leagueId === league.id) return true;
-  if ((league.franchises || []).some((f) => f.managerUserId && f.managerUserId === user.id)) {
+  if (user.leagueId && String(user.leagueId) === String(league.id)) return true;
+  if ((league.franchises || []).some((f) => f.managerUserId && String(f.managerUserId) === String(user.id))) {
     return true;
   }
   return false;
