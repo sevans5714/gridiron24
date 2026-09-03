@@ -2290,7 +2290,7 @@
         </section>
         <section class="il-panel" style="margin-top:1rem;">
           <h2>Waivers &amp; trades</h2>
-          <p class="il-meta">This league’s wire — not ESPN’s. Dropped players sit on waivers, then become free agents. Trades complete when the other manager accepts; you can veto.</p>
+          <p class="il-meta">This league’s wire. Dropped players sit on waivers, then become free agents. Trades complete when the other manager accepts; you can veto.</p>
           <form class="il-form is-wide" id="il-wire-settings-form" style="margin-top:0.85rem;">
             <label>Waiver type
               <select name="waiverType">
@@ -2362,7 +2362,7 @@
       return `${pageHead('Scoring', league)}
         <section class="il-panel">
           <h2>Scoring</h2>
-          <p class="il-meta">Passing TDs default to <strong>6 points</strong>. Pick a preset to fill Pass TD and PPR, then tune any value — including 2-pt splits, FG buckets, and DST points/yards allowed. Season rules lock at kickoff of Week 1.</p>
+          <p class="il-meta">Passing TDs default to <strong>6 points</strong>. Pick a preset to fill Pass TD and PPR, then tune any value — including 2-pt splits, FG buckets, and DST points/yards allowed. Stats and the player pool come from this platform. Season rules lock at kickoff of Week 1.</p>
           ${seasonRulesLockNote()}
           ${scoringNoticeHtml(league)}
           ${scoringFormHtml(league, { disabled: seasonRulesAreLocked() })}

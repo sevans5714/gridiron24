@@ -1316,7 +1316,7 @@ function createLeague({
   if (confInputs.length !== 2) {
     throw Object.assign(new Error('Exactly two conferences are required'), { status: 400 });
   }
-  const normalizedConfs = confInputs.map((c, i) => normalizeConferenceInput(c, i, uploadedAssets, { requireEspn: true }));
+  const normalizedConfs = confInputs.map((c, i) => normalizeConferenceInput(c, i, uploadedAssets, { requireEspn: false }));
   if (normalizedConfs[0].key === normalizedConfs[1].key) {
     normalizedConfs[1].key = `${normalizedConfs[1].key}b`;
   }
@@ -1340,7 +1340,7 @@ function createLeague({
     id: leagueId,
     slug,
     status: activate ? 'active' : 'ready',
-    platform: 'espn',
+    platform: 'independent',
     isSystem: false,
     season: year,
     brand: {

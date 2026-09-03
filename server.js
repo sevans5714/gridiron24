@@ -7500,7 +7500,7 @@ const server = http.createServer(async (req, res) => {
         steps: [
           { id: 'owner', title: 'League owner' },
           { id: 'brand', title: 'Brand' },
-          { id: 'conferences', title: 'Conferences & ESPN' },
+          { id: 'conferences', title: 'Conferences' },
           { id: 'championship', title: 'Championship' },
           { id: 'money', title: 'Structure & payouts' },
           { id: 'calendar', title: 'Calendar' },
@@ -13144,7 +13144,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`API:  http://localhost:${PORT}/api/leagues`);
   console.log(`Active league: ${active?.slug || 'none'} (${active?.brand?.name || '—'})`);
   console.log(`Create a league: http://localhost:${PORT}/create-league`);
-  console.log(`Register ESPN league: http://localhost:${PORT}/register-league`);
+  console.log(`Register a league: http://localhost:${PORT}/register-league`);
   console.log(`Auth: commissioner invite token admits Members Lounge`);
   console.log(`Users: ${users.DATA_DIR}`);
   const ownerLogin = process.env.SITE_OWNER_LOGIN || process.env.COMMISSIONER_LOGIN;

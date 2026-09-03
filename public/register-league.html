@@ -222,7 +222,7 @@
     <div class="reg-top">
       <div class="mark" aria-hidden="true">HQ</div>
       <h1>Register a League</h1>
-      <p>Create your league headquarters. You’ll register as the league owner (commissioner), then provide ESPN IDs, branding, conferences, championship details, and payouts.</p>
+      <p>Create your league headquarters. You’ll register as the league owner (commissioner), then set branding, conferences, championship details, and payouts. Player pool, stats, and rosters run on this platform.</p>
     </div>
 
     <div class="steps" id="stepper" role="tablist" aria-label="Registration steps"></div>
@@ -287,8 +287,8 @@
 
       <!-- Step 2: Conferences -->
       <section class="step" data-step="2" hidden>
-        <h2>Conferences &amp; ESPN</h2>
-        <p class="lead">Two ESPN fantasy leagues power the HQ (one per conference). IDs must be viewable publicly on ESPN.</p>
+        <h2>Conferences</h2>
+        <p class="lead">Name your conferences. Player pool, stats, and rosters are hosted here — you do not connect an outside fantasy league.</p>
         <label class="field-label" for="season">Season year</label>
         <input class="field" id="season" type="number" min="2018" max="2100" style="max-width:8rem;" />
 
@@ -304,16 +304,9 @@
               <input class="field conf-short" type="text" placeholder="EAST" maxlength="16" />
             </div>
           </div>
-          <div class="grid-2">
-            <div>
-              <label class="field-label">ESPN league ID</label>
-              <input class="field conf-espn" type="number" inputmode="numeric" placeholder="123456789" required />
-              <div class="peek" hidden></div>
-            </div>
-            <div>
-              <label class="field-label">Accent color</label>
-              <input class="field conf-color" type="color" value="#ff7a18" />
-            </div>
+          <div>
+            <label class="field-label">Accent color</label>
+            <input class="field conf-color" type="color" value="#ff7a18" style="max-width:8rem;" />
           </div>
           <label class="field-label">Conference logo</label>
           <div class="upload-row" data-asset="conferenceLogo0">
@@ -323,7 +316,6 @@
               <div class="meta">Used on standings, scoreboard, emails</div>
             </div>
           </div>
-          <button type="button" class="btn btn-secondary espn-peek" style="margin-top:0.75rem;">Verify ESPN ID</button>
         </div>
 
         <div class="conf-card" data-conf="1">
@@ -338,16 +330,9 @@
               <input class="field conf-short" type="text" placeholder="WEST" maxlength="16" />
             </div>
           </div>
-          <div class="grid-2">
-            <div>
-              <label class="field-label">ESPN league ID</label>
-              <input class="field conf-espn" type="number" inputmode="numeric" placeholder="987654321" required />
-              <div class="peek" hidden></div>
-            </div>
-            <div>
-              <label class="field-label">Accent color</label>
-              <input class="field conf-color" type="color" value="#e2232a" />
-            </div>
+          <div>
+            <label class="field-label">Accent color</label>
+            <input class="field conf-color" type="color" value="#e2232a" style="max-width:8rem;" />
           </div>
           <label class="field-label">Conference logo</label>
           <div class="upload-row" data-asset="conferenceLogo1">
@@ -357,7 +342,6 @@
               <div class="meta">Used on standings, scoreboard, emails</div>
             </div>
           </div>
-          <button type="button" class="btn btn-secondary espn-peek" style="margin-top:0.75rem;">Verify ESPN ID</button>
         </div>
       </section>
 
@@ -477,7 +461,7 @@
         <div class="review" id="review"></div>
         <label class="check-row">
           <input type="checkbox" id="activateNow" />
-          <span>Activate this league now on this HQ instance (switches ESPN IDs, brand, and championship config for the live site)</span>
+          <span>Activate this league now and sign in as owner.</span>
         </label>
       </section>
 
@@ -488,7 +472,7 @@
     </form>
 
     <p class="legal">
-      Independent fantasy football headquarters. Not affiliated with the NFL, ESPN, or any professional sports league.
+      Independent fantasy football headquarters. Not affiliated with the NFL.
       You are responsible for having rights to any logos you upload.
       Already have an invite? <a href="/register">Create a manager account</a> · <a href="/enter">Sign in</a>
     </p>
@@ -595,35 +579,9 @@
       return {
         name,
         shortName,
-        espnLeagueId: Number(card.querySelector('.conf-espn').value),
         color: card.querySelector('.conf-color').value
       };
     }
-
-    document.querySelectorAll('.espn-peek').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const card = btn.closest('.conf-card');
-        const peek = card.querySelector('.peek');
-        const espnLeagueId = Number(card.querySelector('.conf-espn').value);
-        const season = Number(document.getElementById('season').value);
-        peek.hidden = false;
-        peek.className = 'peek';
-        peek.textContent = 'Checking ESPN…';
-        try {
-          const res = await fetch('/api/league-registration/espn-peek', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ espnLeagueId, season })
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data.ok) throw new Error(data.error || 'Lookup failed');
-          peek.textContent = `Found: ${data.name}${data.size ? ` · ${data.size} teams` : ''}`;
-        } catch (err) {
-          peek.className = 'peek bad';
-          peek.textContent = err.message || 'Could not verify';
-        }
-      });
-    });
 
     function defaultPrizes() {
       return [
@@ -694,8 +652,6 @@
         const a = confData(0);
         const b = confData(1);
         if (!a.name || !b.name) return 'Both conference names are required';
-        if (!a.espnLeagueId || !b.espnLeagueId) return 'Both ESPN league IDs are required';
-        if (a.espnLeagueId === b.espnLeagueId) return 'Conferences need different ESPN league IDs';
       }
       if (n === 3) {
         if (!document.getElementById('bowlName').value.trim()) return 'Championship name is required';
@@ -755,8 +711,8 @@
         <dl>
           <dt>Owner</dt><dd>${esc(p.owner.name)} · ${esc(p.owner.email)} · login ${esc(p.owner.loginName)}</dd>
           <dt>League</dt><dd>${esc(p.brand.name)}${p.brand.tagline ? ` — ${esc(p.brand.tagline)}` : ''} · Season ${esc(String(p.season))}</dd>
-          <dt>Conference A</dt><dd>${esc(p.conferences[0].name)} (${esc(p.conferences[0].shortName)}) · ESPN ${esc(String(p.conferences[0].espnLeagueId))}</dd>
-          <dt>Conference B</dt><dd>${esc(p.conferences[1].name)} (${esc(p.conferences[1].shortName)}) · ESPN ${esc(String(p.conferences[1].espnLeagueId))}</dd>
+          <dt>Conference A</dt><dd>${esc(p.conferences[0].name)} (${esc(p.conferences[0].shortName)})</dd>
+          <dt>Conference B</dt><dd>${esc(p.conferences[1].name)} (${esc(p.conferences[1].shortName)})</dd>
           <dt>Championship</dt><dd>${esc(p.championship.name)} · titles W${esc(String(p.championship.titleWeek))} · final W${esc(String(p.championship.bowlWeek))}</dd>
           <dt>Structure</dt><dd>${esc(String(p.structure.totalTeams))} teams · $${esc(String(p.payouts.buyInPerTeam))} buy-in · ${esc(String(p.payouts.prizes.length))} prize rows</dd>
           <dt>Calendar seeds</dt><dd>${p.calendarDefaults.length ? esc(p.calendarDefaults.map((e) => e.title).join(', ')) : 'None'}</dd>
