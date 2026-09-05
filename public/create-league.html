@@ -8,18 +8,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=154" />
-  <link rel="icon" href="/favicon.ico?v=154" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=154" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=154" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=155" />
+  <link rel="icon" href="/favicon.ico?v=155" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=155" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=155" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=186" />
   <style>
     body.league-reg {
+      --cl-accent: #2563eb;
+      --cl-accent-2: #60a5fa;
+      --cl-on: #f8fafc;
       min-height: 100vh;
       margin: 0;
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(239, 215, 130, 0.12), transparent 55%),
+        radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--cl-accent) 18%, transparent), transparent 55%),
         #070707;
       color: var(--text);
     }
@@ -28,9 +31,9 @@
     .reg-top .mark {
       display: inline-flex; align-items: center; justify-content: center;
       width: 3.25rem; height: 3.25rem; margin-bottom: 0.85rem;
-      border: 1px solid rgba(239, 215, 130, 0.35); background: var(--panel-2);
+      border: 1px solid color-mix(in srgb, var(--cl-accent) 40%, transparent); background: var(--panel-2);
       font-family: var(--page-title), Oswald, sans-serif; font-size: 1.05rem; font-weight: 700;
-      letter-spacing: 0.06em; color: #efd782;
+      letter-spacing: 0.06em; color: var(--cl-accent);
     }
     .reg-top h1 {
       margin: 0; font-family: var(--page-title), Oswald, sans-serif;
@@ -38,13 +41,13 @@
     }
     .steps { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center; margin: 1.25rem 0 1.5rem; }
     .steps button {
-      appearance: none; border: 1px solid rgba(255,255,255,0.1); background: var(--panel-2);
+      appearance: none; border: 0; background: transparent;
       color: var(--muted); font-family: var(--display), Bebas Neue, sans-serif;
       font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
-      padding: 0.4rem 0.65rem; cursor: pointer;
+      padding: 0.35rem 0.7rem; cursor: pointer; border-radius: 999px;
     }
-    .steps button.on { border-color: rgba(239, 215, 130, 0.45); color: var(--text); background: rgba(239, 215, 130, 0.12); }
-    .steps button.done { color: #efd782; }
+    .steps button.on { color: var(--cl-on); background: var(--cl-accent); }
+    .steps button.done { color: var(--cl-accent); }
     .panel { border: 1px solid rgba(255,255,255,0.1); background: var(--panel); padding: 1.25rem 1.35rem 1.4rem; }
     .panel h2 { margin: 0 0 0.85rem; font-family: var(--page-title), Oswald, sans-serif; font-size: 1.35rem; font-weight: 700; text-transform: uppercase; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem; }
@@ -58,12 +61,47 @@
     .conf-card { margin-top: 1rem; padding: 1rem; border: 1px solid var(--line); background: var(--panel); }
     .conf-card h3 {
       margin: 0 0 0.75rem; font-family: var(--display), Bebas Neue, sans-serif;
-      font-size: 1rem; letter-spacing: 0.08em; text-transform: uppercase; color: #efd782;
+      font-size: 1rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cl-accent);
     }
     .upload-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.55rem; }
     .upload-row img { width: 3rem; height: 3rem; object-fit: contain; border: 1px solid rgba(255,255,255,0.1); background: #111; }
     .meta { margin-top: 0.25rem; font-size: 0.75rem; color: var(--muted); }
-    .nav-row { display: flex; justify-content: space-between; gap: 0.75rem; margin-top: 1.25rem; }
+    .nav-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      padding-top: 1.05rem;
+      border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    }
+    .nav-row #back {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      min-height: 2.55rem;
+      padding: 0 0.85rem;
+      font-family: var(--display), Bebas Neue, sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .nav-row #back:hover { color: var(--text); }
+    .nav-row #next {
+      margin-left: auto;
+      min-width: 9.5rem;
+      border-color: var(--cl-accent);
+      background: var(--cl-accent);
+      color: var(--cl-on);
+      box-shadow: none;
+    }
+    .nav-row #next:hover:not(:disabled) {
+      background: var(--cl-accent-2);
+      border-color: var(--cl-accent-2);
+      color: var(--cl-on);
+      box-shadow: none;
+    }
     .review { font-size: 0.92rem; line-height: 1.5; }
     .review dt { margin-top: 0.65rem; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
     .review dd { margin: 0.15rem 0 0; }
@@ -113,32 +151,44 @@
     .status-note { margin: 0 0 1rem; min-height: 1.2rem; color: transparent; }
     .status-note.show { color: #ff8e8e; }
     .status-note.ok.show { color: #8fd49a; }
-    .choice-grid { display: grid; gap: 0.45rem; margin-top: 0.35rem; }
+    .choice-grid {
+      display: inline-flex;
+      gap: 0;
+      padding: 3px;
+      margin-top: 0.35rem;
+      border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+      background: color-mix(in srgb, var(--panel-2) 88%, #000);
+      border-radius: 999px;
+    }
     .choice-grid label {
-      display: grid; gap: 0.15rem; padding: 0.75rem 0.85rem;
-      border: 1px solid var(--line); background: var(--panel-2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 2.15rem; padding: 0 1.05rem;
+      border: 0; background: transparent; cursor: pointer;
+      border-radius: 999px; color: var(--muted);
     }
     .choice-grid label strong {
-      font-family: var(--page-title), Oswald, sans-serif; font-size: 0.95rem;
+      font-family: var(--page-title), Oswald, sans-serif; font-size: 0.82rem;
       font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
     }
     .choice-grid input { position: absolute; opacity: 0; pointer-events: none; }
     .choice-grid label:has(input:checked) {
-      border-color: rgba(239, 215, 130, 0.55); background: rgba(239, 215, 130, 0.14);
+      background: var(--cl-accent); color: var(--cl-on);
     }
-    .choice-grid label:has(input:checked) strong { color: #efd782; }
+    .choice-grid label:has(input:checked) strong { color: inherit; }
     .team-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem; margin-top: 0.35rem;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin-top: 0.35rem;
     }
     @media (max-width: 480px) { .team-grid { grid-template-columns: repeat(2, 1fr); } }
     .team-grid label {
-      display: flex; align-items: center; justify-content: center; min-height: 2.6rem;
-      border: 1px solid var(--line); background: var(--panel-2); cursor: pointer;
-      font-family: var(--display), Bebas Neue, sans-serif; font-size: 1.05rem; letter-spacing: 0.06em;
+      display: flex; align-items: center; justify-content: center; min-height: 2.35rem;
+      border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+      background: transparent; cursor: pointer; border-radius: 999px;
+      font-family: var(--display), Bebas Neue, sans-serif; font-size: 1.02rem; letter-spacing: 0.06em;
+      color: var(--muted);
     }
     .team-grid input { position: absolute; opacity: 0; pointer-events: none; }
     .team-grid label:has(input:checked) {
-      border-color: rgba(239, 215, 130, 0.55); background: rgba(239, 215, 130, 0.14); color: #efd782;
+      border-color: transparent; background: var(--cl-accent); color: var(--cl-on);
     }
     .req-panel h2 {
       margin: 1.5rem 0 0.35rem; font-family: var(--page-title), Oswald, sans-serif;
@@ -146,7 +196,48 @@
     }
     .req-panel h2:first-child { margin-top: 0; }
     .req-actions { margin-top: 1.25rem; display: grid; gap: 0.65rem; }
-    .waiting-box { border: 1px solid rgba(239,215,130,0.35); background: rgba(239,215,130,0.08); padding: 1rem 1.1rem; }
+    .waiting-box { border: 1px solid rgba(59,130,246,0.35); background: rgba(59,130,246,0.08); padding: 1rem 1.1rem; }
+    .q {
+      margin: 1.15rem 0 0.4rem;
+      font-family: var(--page-title), Oswald, sans-serif;
+      font-size: 1.05rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
+    }
+    .q:first-child { margin-top: 0; }
+    .step[hidden] { display: none !important; }
+    .q-card { display: none; }
+    .q-card.is-q-on { display: block; }
+    .q-progress {
+      margin-right: auto;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .yn {
+      display: inline-flex;
+      gap: 0;
+      padding: 3px;
+      margin: 0 0 0.55rem;
+      border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+      background: color-mix(in srgb, var(--panel-2) 88%, #000);
+      border-radius: 999px;
+    }
+    .yn label {
+      display: flex; align-items: center; justify-content: center;
+      min-width: 4.4rem; min-height: 2.05rem; padding: 0 1.05rem;
+      border: 0; background: transparent; cursor: pointer; border-radius: 999px;
+      font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+    }
+    .yn input { position: absolute; opacity: 0; pointer-events: none; }
+    .yn label:has(input:checked) {
+      background: var(--cl-accent); color: var(--cl-on);
+    }
+    .is-off {
+      opacity: 0.38;
+      filter: grayscale(0.35);
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="league-reg">
@@ -183,7 +274,7 @@
         </div>
         <p class="field-label" id="req-signed-in" hidden style="margin:0 0 1rem;text-transform:none;letter-spacing:0;font-size:0.95rem;color:var(--text);"></p>
 
-        <h2 id="req-type-heading">2. League type</h2>
+        <h2 id="req-type-heading">2. How many conferences?</h2>
         <div class="choice-grid" role="radiogroup" aria-label="League type">
           <label>
             <input type="radio" name="reqLeagueType" value="one-conference" checked required />
@@ -195,7 +286,7 @@
           </label>
         </div>
 
-        <h2 id="req-teams-heading">3. Number of teams</h2>
+        <h2 id="req-teams-heading">3. How many teams?</h2>
         <div class="team-grid" role="radiogroup" aria-label="Number of teams">
           <label><input type="radio" name="reqTeamCount" value="8" required /> 8</label>
           <label><input type="radio" name="reqTeamCount" value="10" /> 10</label>
@@ -207,9 +298,8 @@
           <label><input type="radio" name="reqTeamCount" value="24" /> 24</label>
         </div>
 
-        <h2 id="req-name-heading">4. League name</h2>
-        <label class="field-label" for="reqBrandName">League name</label>
-        <input class="field" id="reqBrandName" type="text" required maxlength="80" placeholder="e.g. Metro Fantasy" autocomplete="organization" />
+        <h2 id="req-name-heading">4. What is your league name?</h2>
+        <input class="field" id="reqBrandName" type="text" required maxlength="80" autocomplete="organization" />
 
         <div class="req-actions">
           <button type="submit" class="btn" id="request-submit">Submit for approval</button>
@@ -222,36 +312,43 @@
 <form class="panel" id="form" novalidate>
       <section class="step" data-step="0">
         <h2>Brand</h2>
-        <label class="field-label" for="brandName">League name</label>
-        <input class="field" id="brandName" type="text" required placeholder="e.g. Metro Fantasy League" />
-        <label class="field-label" for="brandTagline">Tagline</label>
-        <input class="field" id="brandTagline" type="text" value="" placeholder="e.g. 12 teams · One champion" />
-        <label class="field-label" for="brandSlug">Homepage URL slug (optional)</label>
-        <input class="field" id="brandSlug" type="text" placeholder="metro-ffl" />
-        <label class="field-label">Primary logo</label>
-        <div class="upload-row" data-asset="brandLogo">
-          <img alt="" hidden />
-          <div>
-            <input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
-            <div class="meta">PNG, JPG, WEBP, or SVG · under 3MB</div>
-          </div>
+        <p class="q">What is your league name?</p>
+        <input class="field" id="brandName" type="text" required />
+        <p class="q">Do you want a tagline?</p>
+        <div class="yn" role="radiogroup" aria-label="Tagline">
+          <label><input type="radio" name="optTagline" value="1" /> Yes</label>
+          <label><input type="radio" name="optTagline" value="0" checked /> No</label>
         </div>
-        <label class="field-label">Login crest (optional)</label>
-        <div class="upload-row" data-asset="brandCrest">
+        <div class="opt-body is-off" data-opt="optTagline">
+          <input class="field" id="brandTagline" type="text" value="" />
+        </div>
+        <p class="q">Do you want a league logo?</p>
+        <div class="yn" role="radiogroup" aria-label="League logo">
+          <label><input type="radio" name="optLogo" value="1" /> Yes</label>
+          <label><input type="radio" name="optLogo" value="0" checked /> No</label>
+        </div>
+        <div class="opt-body is-off upload-row" data-opt="optLogo" data-asset="brandLogo">
           <img alt="" hidden />
-          <div>
-            <input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
-            <div class="meta">Defaults to primary logo if skipped</div>
-          </div>
+          <div><input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div>
         </div>
       </section>
 
       <section class="step" data-step="1" hidden>
         <h2>Conferences</h2>
-        <label class="field-label" for="season">Season year</label>
+        <p class="q">What season is this?</p>
         <input class="field" id="season" type="number" min="2018" max="2100" style="max-width:8rem;" />
-        <label class="field-label" for="conferenceCount">How many conferences?</label>
-        <select class="field" id="conferenceCount" style="max-width:14rem;">
+        <p class="q">How many conferences?</p>
+        <div class="choice-grid" role="radiogroup" aria-label="How many conferences">
+          <label>
+            <input type="radio" name="conferenceCountChoice" value="1" />
+            <strong>One conference</strong>
+          </label>
+          <label>
+            <input type="radio" name="conferenceCountChoice" value="2" checked />
+            <strong>Two conferences</strong>
+          </label>
+        </div>
+        <select class="field" id="conferenceCount" hidden>
           <option value="1">1 conference</option>
           <option value="2" selected>2 conferences</option>
         </select>
@@ -261,15 +358,15 @@
           <div class="grid-2">
             <div>
               <label class="field-label">Name</label>
-              <input class="field conf-name" type="text" placeholder="e.g. East / Detail / AFC" required />
+              <input class="field conf-name" type="text" required />
             </div>
             <div>
               <label class="field-label">Short name</label>
-              <input class="field conf-short" type="text" placeholder="EAST" maxlength="16" />
+              <input class="field conf-short" type="text" maxlength="16" />
             </div>
           </div>
           <label class="field-label">Accent color</label>
-          <input class="field conf-color" type="color" value="#ff7a18" style="max-width:6rem;" />
+          <input class="field conf-color" type="color" value="#2563eb" style="max-width:6rem;" />
           <label class="field-label">Conference logo</label>
           <div class="upload-row" data-asset="conferenceLogo0">
             <img alt="" hidden />
@@ -277,20 +374,20 @@
           </div>
         </div>
 
-        <div class="conf-card" data-conf="1" id="conf-card-1">
+        <div class="conf-card opt-body" data-conf="1" id="conf-card-1">
           <h3>Conference 2</h3>
           <div class="grid-2">
             <div>
               <label class="field-label">Name</label>
-              <input class="field conf-name" type="text" placeholder="e.g. West / Overtime / NFC" />
+              <input class="field conf-name" type="text" />
             </div>
             <div>
               <label class="field-label">Short name</label>
-              <input class="field conf-short" type="text" placeholder="WEST" maxlength="16" />
+              <input class="field conf-short" type="text" maxlength="16" />
             </div>
           </div>
           <label class="field-label">Accent color</label>
-          <input class="field conf-color" type="color" value="#e2232a" style="max-width:6rem;" />
+          <input class="field conf-color" type="color" value="#e11d48" style="max-width:6rem;" />
           <label class="field-label">Conference logo</label>
           <div class="upload-row" data-asset="conferenceLogo1">
             <img alt="" hidden />
@@ -301,56 +398,45 @@
 
       <section class="step" data-step="2" hidden>
         <h2>Structure &amp; roster</h2>
-        <div class="grid-2">
-          <div>
-            <label class="field-label" for="teamsPerConf" id="teamsLabel">Total teams</label>
-            <select class="field" id="teamsPerConf">
-              <option value="8">8</option>
-              <option value="10">10</option>
-              <option value="12" selected>12</option>
-              <option value="14">14</option>
-              <option value="16">16</option>
-              <option value="18">18</option>
-              <option value="20">20</option>
-              <option value="24">24</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label" for="playoffTeams" id="playoffLabel">Playoff teams per conference</label>
-            <input class="field" id="playoffTeams" type="number" min="0" max="16" value="6" placeholder="e.g. 4 or 6" />
-          </div>
+        <p class="q">How many teams?</p>
+        <select class="field" id="teamsPerConf" style="max-width:14rem;">
+          <option value="8">8</option>
+          <option value="10">10</option>
+          <option value="12" selected>12</option>
+          <option value="14">14</option>
+          <option value="16">16</option>
+          <option value="18">18</option>
+          <option value="20">20</option>
+          <option value="24">24</option>
+        </select>
+        <p class="q" id="playoffLabel">How many teams make the playoffs?</p>
+        <input class="field" id="playoffTeams" type="number" min="0" max="16" value="6" style="max-width:8rem;" />
+        <div class="opt-body" id="draft-scope-wrap">
+          <p class="q">One draft, or a draft for each conference?</p>
+          <select class="field" id="draftScope">
+            <option value="league">One league-wide snake</option>
+            <option value="conference">Separate draft per conference</option>
+          </select>
         </div>
-        <div class="grid-2">
-          <div>
-            <label class="field-label" for="draftScope">Draft</label>
-            <select class="field" id="draftScope">
-              <option value="league">One league-wide snake</option>
-              <option value="conference">Separate draft per conference</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label" for="waiverType">Waivers</label>
-            <select class="field" id="waiverType">
-              <option value="FAAB">FAAB</option>
-              <option value="rolling">Rolling waivers</option>
-              <option value="reverse-standings">Reverse standings</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label" for="faabBudget">FAAB budget</label>
-            <input class="field" id="faabBudget" type="number" min="0" max="1000" value="100" />
-          </div>
+        <p class="q">How do waivers work?</p>
+        <select class="field" id="waiverType">
+          <option value="FAAB">FAAB (budget bids)</option>
+          <option value="rolling">Rolling waivers</option>
+          <option value="reverse-standings">Reverse standings</option>
+        </select>
+        <div class="opt-body" id="faab-wrap">
+          <p class="q">What is the FAAB budget?</p>
+          <input class="field" id="faabBudget" type="number" min="0" max="1000" value="100" style="max-width:8rem;" />
         </div>
-        <label class="field-label" for="scoringPreset">Scoring starting point</label>
-        <p class="help" style="margin:0 0 0.45rem;">Player pool, stats, and rosters run on this platform. Tune scoring here; you can refine it after setup.</p>
+        <p class="q">What scoring do you want to start with?</p>
         <select class="field" id="scoringPreset" style="max-width:18rem;">
           <option value="ppr-6" selected>Full PPR (6-pt pass TD)</option>
           <option value="gridiron24-vanilla">Full PPR (4-pt pass TD)</option>
           <option value="half-ppr">Half PPR (6-pt pass TD)</option>
           <option value="standard">Standard (no PPR, 6-pt pass TD)</option>
-          <option value="custom">Custom — tune on Scoring after setup</option>
+          <option value="custom">Custom</option>
         </select>
-        <label class="field-label">Roster slots (owner-defined)</label>
+        <p class="q">How is the roster built?</p>
         <div class="slot-grid" id="slot-grid">
           <div class="slot-field" data-pos="QB"><label class="field-label" for="slotQB">QB</label><input class="field" id="slotQB" type="number" min="0" max="8" value="1" /></div>
           <div class="slot-field" data-pos="RB"><label class="field-label" for="slotRB">RB</label><input class="field" id="slotRB" type="number" min="0" max="12" value="2" /></div>
@@ -362,26 +448,26 @@
           <div class="slot-field" data-pos="K"><label class="field-label" for="slotK">K</label><input class="field" id="slotK" type="number" min="0" max="4" value="1" /></div>
           <div class="slot-field" data-pos="BN"><label class="field-label" for="slotBN">BN</label><input class="field" id="slotBN" type="number" min="0" max="30" value="7" /></div>
           <div class="slot-field" data-pos="IR"><label class="field-label" for="slotIR">IR</label><input class="field" id="slotIR" type="number" min="0" max="10" value="1" /></div>
-          <div class="slot-field" data-pos="TAXI"><label class="field-label" for="slotTAXI">Taxi</label><input class="field" id="slotTAXI" type="number" min="0" max="10" value="0" /></div>
+          <div class="slot-field opt-body" data-pos="TAXI" id="taxi-slot-wrap"><label class="field-label" for="slotTAXI">Taxi</label><input class="field" id="slotTAXI" type="number" min="0" max="10" value="0" /></div>
         </div>
-        <div class="grid-2" style="margin-top:0.85rem;">
-          <div>
-            <label class="field-label" for="leagueFormat">League type</label>
-            <select class="field" id="leagueFormat">
-              <option value="redraft">Redraft</option>
-              <option value="dynasty">Dynasty (keep entire roster)</option>
-            </select>
+        <p class="q">Is this a redraft or dynasty league?</p>
+        <select class="field" id="leagueFormat">
+          <option value="redraft">Redraft</option>
+          <option value="dynasty">Dynasty</option>
+        </select>
+        <div class="opt-body" id="keepers-wrap">
+          <p class="q">Do you want keepers?</p>
+          <div class="yn" role="radiogroup" aria-label="Keepers">
+            <label><input type="radio" name="keepersEnabledYn" value="1" /> Yes</label>
+            <label><input type="radio" name="keepersEnabledYn" value="0" checked /> No</label>
           </div>
-          <div>
-            <label class="field-label" for="keepersEnabled">Keepers</label>
-            <select class="field" id="keepersEnabled">
-              <option value="0" selected>Off</option>
-              <option value="1">On</option>
-            </select>
-          </div>
+          <select class="field" id="keepersEnabled" hidden>
+            <option value="0" selected>No</option>
+            <option value="1">Yes</option>
+          </select>
         </div>
-        <div id="keeper-fields" hidden style="margin-top:0.85rem;">
-          <p class="help">Optional. Off means a full redraft next year. On lets each team keep players with the cost rule you pick.</p>
+        <div id="keeper-fields" class="opt-body is-off">
+          <p class="q">How many keepers, and what is the cost?</p>
           <div class="grid-2">
             <div>
               <label class="field-label" for="keeperCount">Keepers per team</label>
@@ -405,61 +491,68 @@
 
       <section class="step" data-step="3" hidden>
         <h2>Playoffs &amp; championship</h2>
-        <p class="help" style="margin:0 0 0.75rem;">Full playoff tree for this league. Defaults are 13 regular-season weeks, 6 playoff teams, Weeks 14–17, reseed on.</p>
-        <div class="grid-2">
-          <div>
-            <label class="field-label" for="regularSeasonEndWeek">Regular season ends (week)</label>
-            <input class="field" id="regularSeasonEndWeek" type="number" min="1" max="18" value="13" />
-          </div>
-          <div>
-            <label class="field-label" for="playoffWeeks">Playoff weeks</label>
-            <input class="field" id="playoffWeeks" type="text" value="14, 15, 16" placeholder="14, 15, 16" />
-          </div>
+        <p class="q">When does the regular season end?</p>
+        <input class="field" id="regularSeasonEndWeek" type="number" min="1" max="18" value="13" style="max-width:8rem;" />
+        <p class="q">Which weeks are playoffs?</p>
+        <input class="field" id="playoffWeeks" type="text" value="14, 15, 16" />
+        <div class="opt-body" id="playoff-format-wrap">
+          <p class="q">How do you want the playoff bracket?</p>
+          <select class="field" id="playoffFormat">
+            <option value="conference-brackets">Conference brackets → title game</option>
+            <option value="league-bracket">One league-wide bracket</option>
+          </select>
+        </div>
+        <p class="q">How should seeding work?</p>
+        <select class="field" id="playoffSeedingRule">
+          <option value="record" selected>Record, then points</option>
+          <option value="points">Total points, then record</option>
+        </select>
+        <p class="q">Do you want to reseed after each round?</p>
+        <div class="yn" role="radiogroup" aria-label="Reseed">
+          <label><input type="radio" name="optReseed" value="1" checked /> Yes</label>
+          <label><input type="radio" name="optReseed" value="0" /> No</label>
+        </div>
+        <input type="checkbox" id="playoffReseed" checked hidden />
+        <p class="q">Do you want a third-place game?</p>
+        <div class="yn" role="radiogroup" aria-label="Third-place game">
+          <label><input type="radio" name="optThird" value="1" /> Yes</label>
+          <label><input type="radio" name="optThird" value="0" checked /> No</label>
+        </div>
+        <input type="checkbox" id="thirdPlaceEnabled" hidden />
+        <p class="q">Do you want a championship name?</p>
+        <div class="yn" role="radiogroup" aria-label="Championship name">
+          <label><input type="radio" name="optBowlName" value="1" /> Yes</label>
+          <label><input type="radio" name="optBowlName" value="0" checked /> No</label>
+        </div>
+        <div class="opt-body is-off" data-opt="optBowlName">
+          <input class="field" id="bowlName" type="text" />
         </div>
         <div class="grid-2">
-          <div>
-            <label class="field-label" for="playoffFormat">Playoff format</label>
-            <select class="field" id="playoffFormat">
-              <option value="conference-brackets">Conference brackets → title game</option>
-              <option value="league-bracket">One league-wide bracket</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label" for="playoffSeedingRule">Seeding</label>
-            <select class="field" id="playoffSeedingRule">
-              <option value="record" selected>Record, then points</option>
-              <option value="points">Total points, then record</option>
-            </select>
-          </div>
-        </div>
-        <label class="field-label" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.75rem;text-transform:none;letter-spacing:0;font-weight:600;">
-          <input type="checkbox" id="playoffReseed" checked />
-          Reseed after each round
-        </label>
-        <label class="field-label" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.45rem;text-transform:none;letter-spacing:0;font-weight:600;">
-          <input type="checkbox" id="thirdPlaceEnabled" />
-          Third-place game (semifinal losers)
-        </label>
-        <label class="field-label" for="bowlName">Championship name</label>
-        <input class="field" id="bowlName" type="text" placeholder="e.g. Metro Cup" />
-        <div class="grid-2">
-          <div>
-            <label class="field-label" for="titleWeek">Conference title week</label>
+          <div class="opt-body" id="title-week-wrap">
+            <p class="q">Conference title week?</p>
             <input class="field" id="titleWeek" type="number" min="1" max="18" value="16" />
           </div>
           <div>
-            <label class="field-label" for="bowlWeek">Championship week</label>
+            <p class="q">Championship week?</p>
             <input class="field" id="bowlWeek" type="number" min="1" max="18" value="17" />
           </div>
         </div>
-        <label class="field-label" class="field-check" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.75rem;text-transform:none;letter-spacing:0;font-weight:600;">
-          <input type="checkbox" id="survivalEnabled" />
-          Optional last-place / consolation game
-        </label>
-        <label class="field-label" for="survivalName">Consolation name</label>
-        <input class="field" id="survivalName" type="text" placeholder="Optional" />
-        <label class="field-label">Championship logo</label>
-        <div class="upload-row" data-asset="championshipLogo">
+        <p class="q">Do you want a last-place / consolation game?</p>
+        <div class="yn" role="radiogroup" aria-label="Consolation game">
+          <label><input type="radio" name="optSurvival" value="1" /> Yes</label>
+          <label><input type="radio" name="optSurvival" value="0" checked /> No</label>
+        </div>
+        <input type="checkbox" id="survivalEnabled" hidden />
+        <div class="opt-body is-off" id="survival-fields">
+          <p class="q">What is the consolation name?</p>
+          <input class="field" id="survivalName" type="text" />
+        </div>
+        <p class="q">Do you want a championship logo?</p>
+        <div class="yn" role="radiogroup" aria-label="Championship logo">
+          <label><input type="radio" name="optChampLogo" value="1" /> Yes</label>
+          <label><input type="radio" name="optChampLogo" value="0" checked /> No</label>
+        </div>
+        <div class="opt-body is-off upload-row" data-opt="optChampLogo" data-asset="championshipLogo">
           <img alt="" hidden />
           <div><input class="field-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" /></div>
         </div>
@@ -467,21 +560,27 @@
 
       <section class="step" data-step="4" hidden>
         <h2>Payouts</h2>
-        <div class="grid-2">
-          <div>
-            <label class="field-label" for="buyIn">Buy-in per team ($)</label>
-            <input class="field" id="buyIn" type="number" min="0" step="1" value="100" />
-          </div>
-          <div>
-            <label class="field-label" for="seasonLabel">Season label</label>
-            <input class="field" id="seasonLabel" type="text" />
-          </div>
+        <p class="q">What is the buy-in per team?</p>
+        <input class="field" id="buyIn" type="number" min="0" step="1" value="100" style="max-width:8rem;" />
+        <p class="q">Season label?</p>
+        <input class="field" id="seasonLabel" type="text" />
+        <p class="q">Do you want payout notes?</p>
+        <div class="yn" role="radiogroup" aria-label="Payout notes">
+          <label><input type="radio" name="optNotes" value="1" /> Yes</label>
+          <label><input type="radio" name="optNotes" value="0" checked /> No</label>
         </div>
-        <label class="field-label" for="payoutNotes">Payout notes</label>
-        <textarea class="field-area" id="payoutNotes" placeholder="How the prize pool is split…"></textarea>
-        <label class="field-label">Prize rows</label>
-        <div id="prizes"></div>
-        <button type="button" class="btn btn-secondary" id="add-prize" style="margin-top:0.5rem;">Add prize</button>
+        <div class="opt-body is-off" data-opt="optNotes">
+          <textarea class="field-area" id="payoutNotes"></textarea>
+        </div>
+        <p class="q">Do you want prize rows?</p>
+        <div class="yn" role="radiogroup" aria-label="Prize rows">
+          <label><input type="radio" name="optPrizes" value="1" /> Yes</label>
+          <label><input type="radio" name="optPrizes" value="0" checked /> No</label>
+        </div>
+        <div class="opt-body is-off" data-opt="optPrizes">
+          <div id="prizes"></div>
+          <button type="button" class="btn btn-secondary" id="add-prize" style="margin-top:0.5rem;">Add prize</button>
+        </div>
       </section>
 
       <section class="step" data-step="5" hidden>
@@ -490,7 +589,8 @@
       </section>
 
       <div class="nav-row">
-        <button type="button" class="btn btn-secondary" id="back" hidden>Back</button>
+        <button type="button" class="btn" id="back" hidden>Back</button>
+        <span class="q-progress" id="q-progress"></span>
         <button type="button" class="btn" id="next">Continue</button>
       </div>
     </form>
@@ -507,6 +607,7 @@
     const ALLOWED_TEAMS = new Set([8, 10, 12, 14, 16, 18, 20, 24]);
     const STEPS = ['Brand', 'Conferences', 'Rules', 'Playoffs', 'Payouts', 'Review'];
     let step = 0;
+    let qIndex = 0;
     let draftId = null;
     let setupLeague = null;
     const assets = {};
@@ -578,9 +679,9 @@
         });
         note.hidden = false;
         note.textContent = `Signed in as ${user.name || user.loginName}. Submit your league for approval.`;
-        document.getElementById('req-type-heading').textContent = '1. League type';
-        document.getElementById('req-teams-heading').textContent = '2. Number of teams';
-        document.getElementById('req-name-heading').textContent = '3. League name';
+        document.getElementById('req-type-heading').textContent = '1. How many conferences?';
+        document.getElementById('req-teams-heading').textContent = '2. How many teams?';
+        document.getElementById('req-name-heading').textContent = '3. What is your league name?';
       } else {
         block.hidden = false;
         fields.forEach((id) => {
@@ -590,9 +691,9 @@
         });
         note.hidden = true;
         note.textContent = '';
-        document.getElementById('req-type-heading').textContent = '2. League type';
-        document.getElementById('req-teams-heading').textContent = '3. Number of teams';
-        document.getElementById('req-name-heading').textContent = '4. League name';
+        document.getElementById('req-type-heading').textContent = '2. How many conferences?';
+        document.getElementById('req-teams-heading').textContent = '3. How many teams?';
+        document.getElementById('req-name-heading').textContent = '4. What is your league name?';
       }
     }
 
@@ -655,17 +756,92 @@
       ).join('');
     }
 
-    function showStep(n) {
-      step = n;
-      form.querySelectorAll('.step').forEach((el) => {
-        el.hidden = Number(el.dataset.step) !== step;
+    function wrapCreateQuestions() {
+      if (form.dataset.qWrapped) return;
+      form.dataset.qWrapped = '1';
+      form.querySelectorAll('.step').forEach((stepEl) => {
+        stepEl.querySelectorAll('.conf-card').forEach((el) => el.classList.add('q-card'));
+        stepEl.querySelectorAll('.opt-body').forEach((el) => {
+          if (el.querySelector('.q')) el.classList.add('q-card');
+        });
+        wrapQSequence(stepEl);
       });
-      backBtn.hidden = step === 0;
-      nextBtn.textContent = step === STEPS.length - 1 ? 'Save & open HQ' : 'Continue';
+    }
+
+    function wrapQSequence(parent) {
+      const wrapOne = (nodes) => {
+        if (!nodes.length) return;
+        if (nodes.length === 1 && nodes[0].classList.contains('q-card')) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'q-card';
+        nodes[0].parentNode.insertBefore(wrap, nodes[0]);
+        nodes.forEach((n) => wrap.appendChild(n));
+      };
+      let bundle = [];
+      const flush = () => {
+        wrapOne(bundle);
+        bundle = [];
+      };
+      [...parent.children].forEach((el) => {
+        if (el.classList.contains('q-card') || el.matches('h2')) {
+          flush();
+          return;
+        }
+        if (el.matches('p.q') || el.classList.contains('q')) {
+          flush();
+          bundle.push(el);
+          return;
+        }
+        bundle.push(el);
+      });
+      flush();
+    }
+
+    function eligibleCreateCards() {
+      return [...form.querySelectorAll('.q-card')].filter((el) => {
+        if (el.classList.contains('is-off')) return false;
+        if (el.closest('.opt-body.is-off') && el.closest('.opt-body') !== el) return false;
+        if (el.id === 'conf-card-1' && Number(document.getElementById('conferenceCount')?.value) === 1) return false;
+        if (el.closest('#conf-card-1') && Number(document.getElementById('conferenceCount')?.value) === 1) return false;
+        if (el.id === 'faab-wrap' && (document.getElementById('waiverType')?.value || 'FAAB') !== 'FAAB') return false;
+        if (el.id === 'draft-scope-wrap' && Number(document.getElementById('conferenceCount')?.value) === 1) return false;
+        if (el.id === 'playoff-format-wrap' && Number(document.getElementById('conferenceCount')?.value) === 1) return false;
+        if (el.id === 'keepers-wrap' && document.getElementById('leagueFormat')?.value === 'dynasty') return false;
+        if (el.id === 'keeper-fields' && !ynOn('keepersEnabledYn')) return false;
+        return true;
+      });
+    }
+
+    function showQuestion(n) {
+      wrapCreateQuestions();
+      const cards = eligibleCreateCards();
+      if (!cards.length) return;
+      qIndex = Math.max(0, Math.min(cards.length - 1, n));
+      const current = cards[qIndex];
+      const stepEl = current.closest('.step');
+      step = Number(stepEl?.dataset.step || 0);
+      form.querySelectorAll('.step').forEach((el) => {
+        el.hidden = el !== stepEl;
+      });
+      form.querySelectorAll('.q-card').forEach((el) => {
+        el.classList.toggle('is-q-on', el === current);
+      });
+      backBtn.hidden = qIndex === 0;
+      nextBtn.textContent = qIndex >= cards.length - 1 ? 'Save & open HQ' : 'Continue';
+      const prog = document.getElementById('q-progress');
+      if (prog) prog.textContent = `${qIndex + 1} of ${cards.length}`;
       renderStepper();
       showErr('');
       if (step === STEPS.length - 1) fillReview();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showStep(n) {
+      wrapCreateQuestions();
+      const pane = form.querySelector(`.step[data-step="${n}"]`);
+      const cards = eligibleCreateCards();
+      const idx = cards.findIndex((c) => pane && pane.contains(c));
+      showQuestion(idx < 0 ? 0 : idx);
     }
 
     function prizeRows() {
@@ -681,7 +857,7 @@
       row.className = 'prize-row';
       row.innerHTML = `
         <input class="field prize-place" type="number" min="1" value="${seed.place || prizesEl.children.length + 1}" aria-label="Place" />
-        <input class="field prize-label" type="text" value="${(seed.label || '').replace(/"/g, '&quot;')}" placeholder="Label" />
+        <input class="field prize-label" type="text" value="${(seed.label || '').replace(/"/g, '&quot;')}" />
         <input class="field prize-amount" type="number" min="0" value="${seed.amount ?? 0}" aria-label="Amount" />`;
       prizesEl.appendChild(row);
     }
@@ -751,29 +927,93 @@
       };
     }
 
+    function ynOn(name) {
+      return document.querySelector(`input[name="${name}"]:checked`)?.value === '1';
+    }
+
+    function setYn(name, on) {
+      const el = document.querySelector(`input[name="${name}"][value="${on ? '1' : '0'}"]`);
+      if (el) el.checked = true;
+    }
+
+    function setOff(el, off) {
+      if (!el) return;
+      el.classList.toggle('is-off', off);
+      el.querySelectorAll('input, select, textarea, button').forEach((i) => {
+        if (i.closest('.yn')) return;
+        if (i.type === 'hidden') return;
+        i.disabled = off;
+      });
+    }
+
     function conferenceCount() {
+      const radio = document.querySelector('input[name="conferenceCountChoice"]:checked');
+      if (radio) return Number(radio.value) === 1 ? 1 : 2;
       return Number(document.getElementById('conferenceCount')?.value) === 1 ? 1 : 2;
     }
 
-    function syncConferenceUi() {
+    function syncSetupReveal() {
       const n = conferenceCount();
-      const card1 = document.getElementById('conf-card-1');
-      if (card1) card1.hidden = n === 1;
-      const teamsLabel = document.getElementById('teamsLabel');
+      const sel = document.getElementById('conferenceCount');
+      if (sel) sel.value = String(n);
+      document.querySelectorAll('.opt-body[data-opt]').forEach((body) => {
+        setOff(body, !ynOn(body.dataset.opt));
+      });
+      setOff(document.getElementById('conf-card-1'), n === 1);
       const playoffLabel = document.getElementById('playoffLabel');
-      if (teamsLabel) teamsLabel.textContent = 'Total teams';
-      if (playoffLabel) playoffLabel.textContent = n === 1 ? 'Playoff teams' : 'Playoff teams per conference';
+      if (playoffLabel) playoffLabel.textContent = n === 1
+        ? 'How many teams make the playoffs?'
+        : 'How many playoff teams per conference?';
+      setOff(document.getElementById('draft-scope-wrap'), n === 1);
       const draftScope = document.getElementById('draftScope');
       if (draftScope && n === 1) draftScope.value = 'league';
+      setOff(document.getElementById('playoff-format-wrap'), n === 1);
       const playoffFormat = document.getElementById('playoffFormat');
-      if (playoffFormat) {
-        playoffFormat.disabled = n === 1;
-        if (n === 1) playoffFormat.value = 'league-bracket';
+      if (playoffFormat && n === 1) playoffFormat.value = 'league-bracket';
+      const leagueBracket = n === 1 || playoffFormat?.value === 'league-bracket';
+      setOff(document.getElementById('title-week-wrap'), leagueBracket);
+      const waiver = document.getElementById('waiverType')?.value || 'FAAB';
+      setOff(document.getElementById('faab-wrap'), waiver !== 'FAAB');
+      const dynasty = document.getElementById('leagueFormat')?.value === 'dynasty';
+      setOff(document.getElementById('keepers-wrap'), dynasty);
+      setOff(document.getElementById('taxi-slot-wrap'), !dynasty);
+      if (!dynasty) {
+        const taxi = document.getElementById('slotTAXI');
+        if (taxi && document.getElementById('taxi-slot-wrap')?.classList.contains('is-off')) taxi.value = '0';
       }
+      const keepersOn = !dynasty && ynOn('keepersEnabledYn');
+      const keepersSel = document.getElementById('keepersEnabled');
+      if (keepersSel) keepersSel.value = keepersOn ? '1' : '0';
+      setOff(document.getElementById('keeper-fields'), !keepersOn);
+      const reseed = document.getElementById('playoffReseed');
+      if (reseed) reseed.checked = ynOn('optReseed');
+      const third = document.getElementById('thirdPlaceEnabled');
+      if (third) third.checked = ynOn('optThird');
+      const survival = document.getElementById('survivalEnabled');
+      if (survival) survival.checked = ynOn('optSurvival');
+      setOff(document.getElementById('survival-fields'), !ynOn('optSurvival'));
     }
 
-    document.getElementById('conferenceCount')?.addEventListener('change', syncConferenceUi);
-    syncConferenceUi();
+    document.querySelectorAll('#mode-setup input[type="radio"]').forEach((el) => {
+      el.addEventListener('change', () => {
+        syncSetupReveal();
+        showQuestion(qIndex);
+      });
+    });
+    document.getElementById('waiverType')?.addEventListener('change', () => {
+      syncSetupReveal();
+      showQuestion(qIndex);
+    });
+    document.getElementById('playoffFormat')?.addEventListener('change', () => {
+      syncSetupReveal();
+      showQuestion(qIndex);
+    });
+    document.getElementById('leagueFormat')?.addEventListener('change', () => {
+      syncSetupReveal();
+      showQuestion(qIndex);
+    });
+    wrapCreateQuestions();
+    syncSetupReveal();
 
     function slotNum(id) {
       const el = document.getElementById(id);
@@ -802,12 +1042,11 @@
         season: Number(document.getElementById('season').value),
         brand: {
           name: document.getElementById('brandName').value.trim(),
-          tagline: document.getElementById('brandTagline').value.trim(),
-          slug: document.getElementById('brandSlug').value.trim()
+          tagline: ynOn('optTagline') ? document.getElementById('brandTagline').value.trim() : ''
         },
         conferences: confs,
         championship: {
-          name: document.getElementById('bowlName').value.trim(),
+          name: ynOn('optBowlName') ? document.getElementById('bowlName').value.trim() : '',
           titleWeek: titleWeekRaw === '' ? null : Number(titleWeekRaw),
           bowlWeek: bowlWeekRaw === '' ? null : Number(bowlWeekRaw),
           format: confN === 1 || formatChoice === 'league-bracket' ? 'single-bracket' : 'super-bowl'
@@ -864,11 +1103,12 @@
             ? String(document.getElementById('survivalName')?.value || '').trim()
             : ''
         },
+        aaaEnabled: false,
         payouts: {
           seasonLabel: document.getElementById('seasonLabel').value.trim(),
           buyInPerTeam: Number(document.getElementById('buyIn').value) || 0,
-          notes: document.getElementById('payoutNotes').value.trim(),
-          prizes: prizeRows()
+          notes: ynOn('optNotes') ? document.getElementById('payoutNotes').value.trim() : '',
+          prizes: ynOn('optPrizes') ? prizeRows() : []
         }
       };
     }
@@ -928,10 +1168,13 @@
       setupLeague = league;
       document.getElementById('brandName').value = league.brand?.name || '';
       document.getElementById('brandTagline').value = league.brand?.tagline || '';
-      document.getElementById('brandSlug').value = league.slug || '';
+      setYn('optTagline', Boolean(league.brand?.tagline));
+      setYn('optLogo', Boolean(league.brand?.logo));
       document.getElementById('season').value = league.season || new Date().getFullYear();
       const confN = (league.leagueType === 'two-conferences' || (league.conferences || []).length === 2) ? 2 : 1;
       document.getElementById('conferenceCount').value = String(confN);
+      const confRadio = document.querySelector(`input[name="conferenceCountChoice"][value="${confN}"]`);
+      if (confRadio) confRadio.checked = true;
       const confs = league.conferences || [];
       confs.slice(0, 2).forEach((c, i) => {
         const card = document.querySelector(`.conf-card[data-conf="${i}"]`);
@@ -960,16 +1203,23 @@
       if (league.settings?.leagueFormat === 'dynasty') {
         document.getElementById('leagueFormat').value = 'dynasty';
         document.getElementById('keepersEnabled').value = '0';
+        setYn('keepersEnabledYn', false);
       } else {
         document.getElementById('leagueFormat').value = 'redraft';
-        document.getElementById('keepersEnabled').value = league.settings?.keepersEnabled || league.settings?.leagueFormat === 'keeper' ? '1' : '0';
+        const keepOn = Boolean(league.settings?.keepersEnabled || league.settings?.leagueFormat === 'keeper');
+        document.getElementById('keepersEnabled').value = keepOn ? '1' : '0';
+        setYn('keepersEnabledYn', keepOn);
       }
       if (league.settings?.keeperCost) document.getElementById('keeperCost').value = league.settings.keeperCost;
       if (league.settings?.keeperCount != null) document.getElementById('keeperCount').value = league.settings.keeperCount;
       if (league.settings?.keeperMaxSeasons != null) document.getElementById('keeperMaxSeasons').value = league.settings.keeperMaxSeasons;
-      syncKeeperFields();
-      if (league.championship?.name) document.getElementById('bowlName').value = league.championship.name;
-      else document.getElementById('bowlName').value = '';
+      if (league.championship?.name) {
+        document.getElementById('bowlName').value = league.championship.name;
+        setYn('optBowlName', true);
+      } else {
+        document.getElementById('bowlName').value = '';
+        setYn('optBowlName', false);
+      }
       if (league.championship?.titleWeek) document.getElementById('titleWeek').value = league.championship.titleWeek;
       else if (document.getElementById('titleWeek') && !document.getElementById('titleWeek').value) document.getElementById('titleWeek').value = '16';
       if (league.championship?.bowlWeek) document.getElementById('bowlWeek').value = league.championship.bowlWeek;
@@ -988,47 +1238,47 @@
       }
       if (document.getElementById('playoffReseed')) {
         document.getElementById('playoffReseed').checked = league.structure?.playoffReseed !== false;
+        setYn('optReseed', league.structure?.playoffReseed !== false);
       }
       if (document.getElementById('thirdPlaceEnabled')) {
         document.getElementById('thirdPlaceEnabled').checked = Boolean(league.structure?.thirdPlaceEnabled);
+        setYn('optThird', Boolean(league.structure?.thirdPlaceEnabled));
       }
       document.getElementById('survivalEnabled').checked = Boolean(league.survival?.enabled);
+      setYn('optSurvival', Boolean(league.survival?.enabled));
       if (document.getElementById('survivalName')) {
         document.getElementById('survivalName').value = league.survival?.enabled ? (league.survival?.name || '') : '';
       }
+      setYn('optChampLogo', Boolean(league.championship?.logo));
       if (league.payouts?.buyInPerTeam != null) document.getElementById('buyIn').value = league.payouts.buyInPerTeam;
       if (league.payouts?.seasonLabel) document.getElementById('seasonLabel').value = league.payouts.seasonLabel;
-      if (league.payouts?.notes) document.getElementById('payoutNotes').value = league.payouts.notes;
-      syncConferenceUi();
+      if (league.payouts?.notes) {
+        document.getElementById('payoutNotes').value = league.payouts.notes;
+        setYn('optNotes', true);
+      }
+      setYn('optPrizes', Array.isArray(league.payouts?.prizes) && league.payouts.prizes.length > 0);
+      syncSetupReveal();
     }
-
-    function syncKeeperFields() {
-      const dynasty = document.getElementById('leagueFormat')?.value === 'dynasty';
-      const on = !dynasty && document.getElementById('keepersEnabled')?.value === '1';
-      const fields = document.getElementById('keeper-fields');
-      const toggle = document.getElementById('keepersEnabled');
-      if (toggle) toggle.disabled = dynasty;
-      if (fields) fields.hidden = !on;
-    }
-
-    document.getElementById('leagueFormat')?.addEventListener('change', syncKeeperFields);
-    document.getElementById('keepersEnabled')?.addEventListener('change', syncKeeperFields);
-    syncKeeperFields();
 
     stepper.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-go]');
       if (!btn) return;
-      const go = Number(btn.dataset.go);
-      if (go < step) showStep(go);
+      showStep(Number(btn.dataset.go));
     });
 
-    backBtn.addEventListener('click', () => showStep(Math.max(0, step - 1)));
+    backBtn.addEventListener('click', () => showQuestion(qIndex - 1));
 
     nextBtn.addEventListener('click', async () => {
-      const bad = validateStep(step);
-      if (bad) { showErr(bad); return; }
-      if (step < STEPS.length - 1) {
-        showStep(step + 1);
+      const cards = eligibleCreateCards();
+      const card = cards[qIndex];
+      const stepEl = card?.closest('.step');
+      const lastInStep = stepEl && cards.filter((c) => stepEl.contains(c)).pop() === card;
+      if (lastInStep) {
+        const bad = validateStep(Number(stepEl.dataset.step));
+        if (bad) { showErr(bad); return; }
+      }
+      if (qIndex < cards.length - 1) {
+        showQuestion(qIndex + 1);
         return;
       }
       showErr('');

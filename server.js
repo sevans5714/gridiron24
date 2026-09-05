@@ -2967,6 +2967,8 @@ function normalizeSettings(raw, conference) {
     .sort((a, b) => a.id - b.id);
 
   const status = raw.status || {};
+  const draft = raw.settings?.draftSettings || {};
+  const draftDetail = raw.draftDetail || {};
   const matchupPeriodCount = schedule.matchupPeriodCount ?? null;
   const finalScoringPeriod = status.finalScoringPeriod ?? null;
   const firstPlayoffWeek = matchupPeriodCount != null ? Number(matchupPeriodCount) + 1 : null;
@@ -2993,7 +2995,22 @@ function normalizeSettings(raw, conference) {
     finalScoringPeriod,
     firstPlayoffWeek,
     playoffWeekCount,
-    currentMatchupPeriod: status.currentMatchupPeriod ?? null
+    currentMatchupPeriod: status.currentMatchupPeriod ?? null,
+    draftDate: (() => {
+      const n = Number(draft.date || draftDetail.date || 0);
+      if (!Number.isFinite(n) || n <= 0) return null;
+      return n < 1e12 ? n * 1000 : n;
+    })(),
+    draftType: draft.type || null,
+    draftSecondsPerPick: Number.isFinite(Number(draft.timePerSelection))
+      ? Number(draft.timePerSelection)
+      : null,
+    draftAuctionBudget: Number.isFinite(Number(draft.auctionBudget))
+      ? Number(draft.auctionBudget)
+      : null,
+    draftStatus: draftDetail.drafted
+      ? 'complete'
+      : (draftDetail.inProgress ? 'live' : 'scheduled')
   };
 }
 
@@ -3464,7 +3481,7 @@ async function loadConferenceSettings() {
   return Promise.all(
     config.conferences.map(async (conference) => {
       try {
-        const raw = await fetchEspnRaw(conference, ['mSettings', 'mStatus'], 'settings');
+        const raw = await fetchEspnRaw(conference, ['mSettings', 'mStatus', 'mDraftDetail'], 'settings');
         return { ok: true, ...normalizeSettings(raw, conference) };
       } catch (error) {
         return {

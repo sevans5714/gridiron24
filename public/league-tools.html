@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=154" />
-  <link rel="icon" href="/favicon.ico?v=154" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=154" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=154" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=155" />
+  <link rel="icon" href="/favicon.ico?v=155" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=155" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=155" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=185" />
   <style>
@@ -1366,8 +1366,9 @@
         <div class="comm-nav-group" id="nav-espn">
           <p class="comm-nav-label">ESPN</p>
           <a href="#espn-leagues">League IDs</a>
-          <a href="#rules-sync">Rules</a>
+          <a href="#rules-sync">Scoring</a>
           <a href="#playoff-sync" id="jump-playoffs">Playoffs</a>
+          <a href="#draft-sync" id="jump-draft">Draft dates</a>
           <a href="#roster-violations">Roster patrol</a>
         </div>
         <div class="comm-nav-group" id="nav-season" hidden>
@@ -1665,7 +1666,7 @@
         <section class="comm-group" id="group-espn">
           <header>
             <h2 id="group-espn-title">ESPN</h2>
-            <p id="group-espn-blurb">Connect this year’s GridIron 24 leagues, then check that Detail and Overtime both match the Rule Book. Independent leagues set the full rules in their own HQ.</p>
+            <p id="group-espn-blurb">This year’s Detail and Overtime: league IDs, scoring, playoff tree, and draft dates. Independent leagues set rules in their own HQ.</p>
           </header>
           <div class="comm-group-body">
             <section class="comm-section" id="espn-leagues">
@@ -1684,9 +1685,9 @@
 
             <section class="comm-section" id="rules-sync">
               <div class="section-head">
-                <h3>Rules</h3>
+                <h3>Scoring &amp; lineup</h3>
               </div>
-              <p class="help">GridIron 24: Detail and Overtime must both match this Rule Book (scoring, lineup, and playoffs). Until Week 1 kickoff, opening the Rule Book or Check Rules Sync copies live Detail settings into the book, then both conferences are checked against it. Independent leagues set the full rules in their own HQ. Checks run Mondays and Thursdays.</p>
+              <p class="help">Live ESPN scoring and roster slots for Detail and Overtime, checked against the Rule Book. Until Week 1 kickoff, Check Rules Sync copies live Detail into the book, then both conferences are compared. Playoff tree and draft dates are the sections below.</p>
               <div class="sync-tools">
                 <span class="hint">Live pull from Detail and Overtime</span>
                 <button type="button" class="btn" id="check-sync">Check Rules Sync</button>
@@ -1706,8 +1707,16 @@
               <div class="section-head">
                 <h3>Playoffs</h3>
               </div>
-              <p class="help">Both Detail and Overtime must match the Rule Book playoff settings copied from live Detail ESPN (until Week 1 lock).</p>
+              <p class="help">Playoff team count, reseeding, and weeks on this year’s Detail and Overtime ESPN leagues. Open each ESPN playoff bracket to confirm the tree, then Check Rules Sync.</p>
               <div id="playoff-content"><div class="msg">Loading playoff settings…</div></div>
+            </section>
+
+            <section class="comm-section" id="draft-sync">
+              <div class="section-head">
+                <h3>Draft dates</h3>
+              </div>
+              <p class="help">Live ESPN draft night for this year’s Detail and Overtime leagues. Change the date in each ESPN league office, then Check Rules Sync.</p>
+              <div id="draft-content"><div class="msg">Loading draft settings…</div></div>
             </section>
 
             <section class="comm-section" id="roster-violations">
@@ -2191,7 +2200,129 @@
         </div>`;
     }
 
-    function playoffTable(rows) {
+    function espnOfficeUrl(kind, leagueId, fallback) {
+      const id = Number(leagueId);
+      const base = Number.isFinite(id) && id > 0
+        ? `https://fantasy.espn.com/football/league`
+        : '';
+      if (base) {
+        if (kind === 'playoff') return `${base}/playoffbracket?leagueId=${id}`;
+        if (kind === 'draft') return `${base}/draftrecap?leagueId=${id}`;
+        return `${base}/settings?leagueId=${id}`;
+      }
+      return fallback || '#';
+    }
+
+    function fmtEspnDraftDate(ms) {
+      const n = Number(ms);
+      if (!Number.isFinite(n) || n <= 0) return 'Not set on ESPN';
+      const d = new Date(n);
+      if (!Number.isFinite(d.getTime())) return 'Not set on ESPN';
+      return d.toLocaleString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+
+    function draftTypeLabel(raw) {
+      const k = String(raw || '').toUpperCase();
+      if (k === 'SNAKE') return 'Snake';
+      if (k === 'AUCTION') return 'Auction';
+      if (k === 'LINEAR') return 'Linear';
+      if (k === 'OFFLINE') return 'Offline';
+      return raw || '—';
+    }
+
+    function draftStatusLabel(raw) {
+      if (raw === 'complete') return 'Complete';
+      if (raw === 'live') return 'In progress';
+      if (raw === 'scheduled') return 'Scheduled';
+      return raw || '—';
+    }
+
+    function renderDraftSync(detail, overtime) {
+      const el = document.getElementById('draft-content');
+      if (!el) return;
+      if (!detail?.ok && !overtime?.ok) {
+        el.innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load draft settings from ESPN.</div>`;
+        return;
+      }
+      const rows = [
+        {
+          label: 'Draft date & time',
+          hint: 'Set in each ESPN league under League settings → Draft',
+          detail: fmtEspnDraftDate(detail?.draftDate),
+          overtime: fmtEspnDraftDate(overtime?.draftDate),
+          matched: Number(detail?.draftDate || 0) === Number(overtime?.draftDate || 0)
+            && Number(detail?.draftDate || 0) > 0
+        },
+        {
+          label: 'Draft type',
+          hint: 'Snake, auction, or linear',
+          detail: draftTypeLabel(detail?.draftType),
+          overtime: draftTypeLabel(overtime?.draftType),
+          matched: String(detail?.draftType || '') === String(overtime?.draftType || '')
+        },
+        {
+          label: 'Seconds per pick',
+          hint: 'Clock on ESPN',
+          detail: detail?.draftSecondsPerPick != null ? `${detail.draftSecondsPerPick}s` : '—',
+          overtime: overtime?.draftSecondsPerPick != null ? `${overtime.draftSecondsPerPick}s` : '—',
+          matched: Number(detail?.draftSecondsPerPick) === Number(overtime?.draftSecondsPerPick)
+        },
+        {
+          label: 'Draft status',
+          hint: 'From ESPN this season',
+          detail: draftStatusLabel(detail?.draftStatus),
+          overtime: draftStatusLabel(overtime?.draftStatus),
+          matched: String(detail?.draftStatus || '') === String(overtime?.draftStatus || '')
+        }
+      ];
+      if (String(detail?.draftType || '').toUpperCase() === 'AUCTION'
+        || String(overtime?.draftType || '').toUpperCase() === 'AUCTION') {
+        rows.push({
+          label: 'Auction budget',
+          hint: 'Only for auction drafts',
+          detail: detail?.draftAuctionBudget != null ? `$${detail.draftAuctionBudget}` : '—',
+          overtime: overtime?.draftAuctionBudget != null ? `$${overtime.draftAuctionBudget}` : '—',
+          matched: Number(detail?.draftAuctionBudget) === Number(overtime?.draftAuctionBudget)
+        });
+      }
+      const datesOk = Number(detail?.draftDate || 0) > 0 && Number(overtime?.draftDate || 0) > 0;
+      const sameNight = datesOk && Number(detail.draftDate) === Number(overtime.draftDate);
+      const badgeCls = datesOk ? (sameNight ? 'ok' : 'warn') : 'warn';
+      const badgeLabel = !datesOk
+        ? 'Draft date missing'
+        : sameNight
+          ? 'Both nights set'
+          : 'Different draft nights';
+      const badgeSub = !datesOk
+        ? 'Open each ESPN league and set this year’s draft date, then Check Rules Sync.'
+        : sameNight
+          ? 'Detail and Overtime are on the same ESPN draft date.'
+          : 'Detail and Overtime can draft on different nights — confirm each date is what you want this season.';
+      el.innerHTML = `
+        <div class="playoff-badge ${badgeCls}"><span class="dot" aria-hidden="true"></span>${esc(badgeLabel)}</div>
+        <p class="help" style="margin-top:0;">${esc(badgeSub)}</p>
+        ${playoffTable(rows.map((r) => ({
+          ...r,
+          target: r.matched ? 'Match' : 'Check ESPN',
+          meetsTarget: r.matched
+        })), { targetHead: 'Together' })}
+        <div class="links" style="margin-top:1rem;">
+          <a href="${espnOfficeUrl('settings', detail?.leagueId, ESPN.detail)}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
+          <a href="${espnOfficeUrl('settings', overtime?.leagueId, ESPN.overtime)}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
+          <a href="${espnOfficeUrl('draft', detail?.leagueId, ESPN.detail)}" target="_blank" rel="noopener">Detail draft recap →</a>
+          <a href="${espnOfficeUrl('draft', overtime?.leagueId, ESPN.overtime)}" target="_blank" rel="noopener">Overtime draft recap →</a>
+        </div>`;
+    }
+
+    function playoffTable(rows, opts = {}) {
+      const targetHead = opts.targetHead || 'GridIron target';
       if (!rows.length) return '<div class="msg">Playoff settings unavailable.</div>';
       return `
         <table class="diff-table playoff-table">
@@ -2200,7 +2331,7 @@
               <th>Setting</th>
               <th class="num">Detail</th>
               <th class="num">Overtime</th>
-              <th class="num">GridIron target</th>
+              <th class="num">${esc(targetHead)}</th>
             </tr>
           </thead>
           <tbody>
@@ -2268,9 +2399,10 @@
           ${checklist.map((c) => `<li>${esc(c)}</li>`).join('')}
         </ul>
         <div class="links" style="margin-top:1rem;">
-          <a href="${ESPN.detail}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
-          <a href="${ESPN.overtime}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
-          <a href="${ESPN.aaa}" target="_blank" rel="noopener">AAA League Settings →</a>
+          <a href="${espnOfficeUrl('playoff', detail?.leagueId, ESPN.detail)}" target="_blank" rel="noopener">Detail playoff bracket →</a>
+          <a href="${espnOfficeUrl('playoff', overtime?.leagueId, ESPN.overtime)}" target="_blank" rel="noopener">Overtime playoff bracket →</a>
+          <a href="${espnOfficeUrl('settings', detail?.leagueId, ESPN.detail)}" target="_blank" rel="noopener">Detail ESPN Settings →</a>
+          <a href="${espnOfficeUrl('settings', overtime?.leagueId, ESPN.overtime)}" target="_blank" rel="noopener">Overtime ESPN Settings →</a>
         </div>`;
     }
 
@@ -2302,6 +2434,8 @@
       if (!detail?.ok && !overtime?.ok && !official?.ok) {
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load either conference from ESPN.</div>`;
         document.getElementById('playoff-content').innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load playoff settings.</div>`;
+        const draftEl = document.getElementById('draft-content');
+        if (draftEl) draftEl.innerHTML = `<div class="msg"><strong>Unavailable</strong>Could not load draft settings from ESPN.</div>`;
         renderAaaSync(data, official || detail);
         return;
       }
@@ -2353,6 +2487,7 @@
         </div>`;
 
       renderPlayoffSync(cmp, detail, overtime, official);
+      renderDraftSync(detail, overtime);
       renderAaaSync(data, official);
     }
 
@@ -3436,6 +3571,10 @@
         window.GridIronNav?.setSync(note, allOk);
       } catch (err) {
         document.getElementById('content').innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        const playoffEl = document.getElementById('playoff-content');
+        if (playoffEl) playoffEl.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
+        const draftEl = document.getElementById('draft-content');
+        if (draftEl) draftEl.innerHTML = `<div class="msg"><strong>Error</strong>${esc(err.message)}</div>`;
         window.GridIronNav?.setSync('Connection error', false);
       } finally {
         if (btn) {
@@ -5175,6 +5314,7 @@
         'rules-sync': 'espn',
         'aaa-rules-sync': 'espn',
         'playoff-sync': 'espn',
+        'draft-sync': 'espn',
         'roster-violations': 'espn',
         'group-espn': 'espn',
         'calendar-admin': 'season',
@@ -5218,13 +5358,13 @@
         ? [
             { href: '#players', title: 'Players', kicker: 'Conference', blurb: 'Your managers — invite, assign franchises, reset logins.', tone: 'blue' },
             { href: '#messages', title: 'Broadcast', kicker: 'League', blurb: 'News, polls, ticker, and email owners.', tone: 'gold' },
-            { href: '#espn', title: 'ESPN', kicker: 'Sync', blurb: 'Your conference league ID, rules, and roster patrol.', tone: 'detail' },
+            { href: '#espn', title: 'ESPN', kicker: 'Sync', blurb: 'Your conference league ID, scoring, playoffs, draft date, roster patrol.', tone: 'detail' },
             { href: '/profile.html', title: 'User Dashboard', kicker: 'You', blurb: 'Your account, franchise, and avatar.', tone: 'good' }
           ]
         : [
             { href: '#players', title: 'Players', kicker: 'League', blurb: 'Approve accounts, send invites, manage members.', tone: 'blue', badge: pending },
             { href: '#messages', title: 'Messages', kicker: 'League', blurb: 'News, polls, ticker, owner email, wrap-up.', tone: 'gold' },
-            { href: '#espn', title: 'ESPN', kicker: 'Sync', blurb: 'League IDs, rules, playoffs, roster patrol.', tone: 'detail' },
+            { href: '#espn', title: 'ESPN', kicker: 'Sync', blurb: 'League IDs, scoring, playoff tree, draft dates, roster patrol.', tone: 'detail' },
             { href: '#season', title: 'Season', kicker: 'Ops', blurb: 'Calendar and Record Book archive.', tone: 'overtime' },
             { href: '/profile.html', title: 'User Dashboard', kicker: 'You', blurb: 'Your account, franchise, and avatar.', tone: 'good' }
           ]));
@@ -5449,8 +5589,8 @@
       const espnBlurb = document.getElementById('group-espn-blurb');
       if (espnBlurb) {
         espnBlurb.textContent = admin
-          ? 'Your conference league ID, rules check, and roster patrol.'
-          : 'Connect this year’s GridIron 24 leagues, then check that Detail and Overtime both match the Rule Book. Independent leagues set the full rules in their own HQ.';
+          ? 'Your conference league ID, scoring check, playoff tree, draft date, and roster patrol.'
+          : 'This year’s Detail and Overtime: league IDs, scoring, playoff tree, and draft dates. Independent leagues set rules in their own HQ.';
       }
       const playoffs = document.getElementById('playoff-sync');
       const jumpPlayoffs = document.getElementById('jump-playoffs');

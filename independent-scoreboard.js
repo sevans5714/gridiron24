@@ -125,7 +125,8 @@ function scoreFranchise(franchise, box) {
   );
   return {
     franchiseId: franchise.id,
-    name: franchise.name,
+    name: franchise.managerUserId ? franchise.name : 'Open',
+    vacant: !franchise.managerUserId,
     logo: franchise.logo || franchise.crest || null,
     conferenceKey: franchise.conferenceKey || null,
     managerName: franchise.managerName || null,

@@ -210,21 +210,37 @@ function defaultIndependentAaaAffiliate(league = {}) {
 
 function independentAaaOn(league) {
   if (!league || league.platform !== 'independent') return false;
-  return league.aaaEnabled !== false;
+  return league.aaaEnabled === true;
+}
+
+function seedIndependentSurvival(league) {
+  if (!league || league.platform !== 'independent') return false;
+  const next = defaultIndependentSurvival(league.survival || { enabled: false });
+  const prev = league.survival || {};
+  if (
+    Boolean(prev.enabled) === Boolean(next.enabled)
+    && String(prev.name || '') === String(next.name || '')
+    && (prev.week ?? null) === (next.week ?? null)
+  ) {
+    return false;
+  }
+  league.survival = next;
+  return true;
 }
 
 function seedIndependentAaa(league) {
   if (!league || league.platform !== 'independent') return false;
   let dirty = false;
   if (league.aaaEnabled == null) {
-    league.aaaEnabled = true;
+    league.aaaEnabled = false;
     dirty = true;
   }
-  if (league.aaaEnabled === false) {
+  if (league.aaaEnabled !== true) {
     if (Array.isArray(league.affiliatedLeagues) && league.affiliatedLeagues.length) {
       league.affiliatedLeagues = [];
       dirty = true;
     }
+    league.aaaEnabled = false;
     return dirty;
   }
   if (!Array.isArray(league.affiliatedLeagues) || !league.affiliatedLeagues.length) {
@@ -235,14 +251,27 @@ function seedIndependentAaa(league) {
 }
 
 function defaultIndependentSurvival(seed = {}) {
+  const name = String(seed?.name || '').trim();
+  if (/mayor'?s?\s*cup/i.test(name)) {
+    return defaultSurvival({ enabled: false, name: '', week: null });
+  }
   if (seed && Object.prototype.hasOwnProperty.call(seed, 'enabled')) {
     return defaultSurvival(seed);
   }
   return defaultSurvival({
-    enabled: true,
-    name: String(seed?.name || 'MAYORS CUP').trim() || 'MAYORS CUP',
-    week: Number.isFinite(Number(seed?.week)) ? Number(seed.week) : 17
+    enabled: false,
+    name,
+    week: Number.isFinite(Number(seed?.week)) ? Number(seed.week) : null
   });
+}
+
+function independentSurvivalPublic(survival) {
+  const on = survival?.enabled === true;
+  const name = String(survival?.name || '').trim();
+  if (/mayor'?s?\s*cup/i.test(name)) {
+    return defaultSurvival({ enabled: false, name: '', week: null });
+  }
+  return defaultSurvival(on ? survival : { enabled: false });
 }
 
 function independentChampionshipPublic(league) {
@@ -258,7 +287,7 @@ function independentChampionshipPublic(league) {
 function publicLeague(league) {
   if (!league) return null;
   const independent = league.platform === 'independent';
-  const aaaOn = independent && league.aaaEnabled !== false;
+  const aaaOn = independent && league.aaaEnabled === true;
   const independentAffiliates = aaaOn
     ? defaultAffiliatedLeagues(
       Array.isArray(league.affiliatedLeagues) && league.affiliatedLeagues.length
@@ -281,7 +310,12 @@ function publicLeague(league) {
       ? (league.status === 'approved' || league.setupComplete === true)
       : league.setupComplete !== false,
     brand: league.brand,
-    conferences: league.conferences,
+    conferences: independent
+      ? (league.conferences || []).map((c, i) => ({
+        ...c,
+        color: independentConferenceColor(i, c?.color)
+      }))
+      : league.conferences,
     championship: league.platform === 'independent'
       ? independentChampionshipPublic(league)
       : league.championship,
@@ -289,7 +323,7 @@ function publicLeague(league) {
       ? normalizeIndependentStructure(league.structure || {}, league)
       : league.structure,
     survival: league.platform === 'independent'
-      ? defaultSurvival(league.survival?.enabled === true ? league.survival : { enabled: false })
+      ? independentSurvivalPublic(league.survival)
       : (league.survival || defaultSurvival()),
     affiliatedLeagues: independent
       ? independentAffiliates
@@ -318,7 +352,14 @@ function publicLeague(league) {
     draft: league.platform === 'independent'
       ? defaultIndependentDraft(league.draft || {})
       : null,
-    franchises: Array.isArray(league.franchises) ? league.franchises : [],
+    franchises: (Array.isArray(league.franchises) ? league.franchises : []).map((f) => {
+      const vacant = !f.managerUserId;
+      return {
+        ...f,
+        vacant,
+        displayName: vacant ? 'Open' : (String(f.name || '').trim() || 'Open')
+      };
+    }),
     ownerUserId: league.ownerUserId || null,
     ownerName: league.ownerName || null,
     ownerEmail: league.ownerEmail || null,
@@ -525,7 +566,8 @@ function normalizePrize(row, index) {
   };
 }
 
-function normalizeConferenceInput(raw, index, uploadedLogos = {}, { requireEspn = true } = {}) {
+function normalizeConferenceInput(raw, index, uploadedLogos = {}, options = {}) {
+  const { requireEspn = true } = options;
   const name = String(raw?.name || '').trim();
   if (!name) throw Object.assign(new Error(`Conference ${index + 1} name is required`), { status: 400 });
   const shortName = String(raw?.shortName || name).trim().toUpperCase().slice(0, 16);
@@ -542,7 +584,14 @@ function normalizeConferenceInput(raw, index, uploadedLogos = {}, { requireEspn 
     const id = Number(raw.espnLeagueId);
     espnLeagueId = Number.isFinite(id) && id > 0 ? id : null;
   }
-  const color = String(raw?.color || (index === 0 ? '#ff7a18' : '#e2232a')).trim();
+  const independent = options.independent === true || requireEspn === false;
+  const color = independent
+    ? independentConferenceColor(index, raw?.color)
+    : (() => {
+      const fallback = index === 0 ? '#ff7a18' : '#e2232a';
+      const hex = String(raw?.color || fallback).trim();
+      return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex) ? hex : fallback;
+    })();
   const logoKey = `conferenceLogo${index}`;
   return {
     key,
@@ -550,9 +599,34 @@ function normalizeConferenceInput(raw, index, uploadedLogos = {}, { requireEspn 
     shortName,
     espnLeagueId,
     logo: uploadedLogos[logoKey] || raw?.logo || null,
-    color: /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color) ? color : index === 0 ? '#ff7a18' : '#e2232a',
+    color,
     isRulesPrimary: index === 0 || Boolean(raw?.isRulesPrimary)
   };
+}
+
+const INDEPENDENT_CONF_COLORS = ['#2563eb', '#e11d48'];
+const INDEPENDENT_PANIC_GOLD = new Set([
+  '#c9a227', '#efd782', '#e8c45a', '#d4af37', '#f4e3a4',
+  '#ff7a18', '#e86a0c'
+]);
+
+function independentConferenceColor(index, raw) {
+  const fallback = INDEPENDENT_CONF_COLORS[index === 0 ? 0 : 1];
+  const hex = String(raw || '').trim();
+  if (!hex || INDEPENDENT_PANIC_GOLD.has(hex.toLowerCase())) return fallback;
+  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex) ? hex : fallback;
+}
+
+function seedIndependentConferenceColors(league) {
+  if (!league || league.platform !== 'independent' || !Array.isArray(league.conferences)) return false;
+  let dirty = false;
+  league.conferences = league.conferences.map((c, i) => {
+    const next = independentConferenceColor(i, c?.color);
+    if (next === c?.color) return c;
+    dirty = true;
+    return { ...c, color: next };
+  });
+  return dirty;
 }
 
 /** Vanilla GridIron 24–shaped scoring / roster for independent leagues (no ESPN). */
@@ -768,7 +842,7 @@ function independentAaaRulebookArticles(league) {
     || (league?.affiliatedLeagues || [])[0]
     || defaultIndependentAaaAffiliate(league)[0];
   const aaaName = aaa?.name || 'AAA League';
-  const cup = String(league?.survival?.name || 'MAYORS CUP').trim() || 'MAYORS CUP';
+  const cup = String(league?.survival?.name || 'consolation game').trim() || 'consolation game';
   const week = Number(league?.survival?.week)
     || Number(league?.championship?.bowlWeek)
     || 17;
@@ -791,7 +865,7 @@ function independentAaaRulebookArticles(league) {
     {
       id: 'settings-relegation',
       source: 'settings',
-      title: 'VII. Relegation & MAYORS CUP',
+      title: 'VII. Relegation',
       body: [
         twoConf
           ? `Within each conference, franchises are ranked by overall record: wins, then losses, then ties, then points for (PF). The franchise finishing last in each conference is the relegation candidate.`
@@ -918,10 +992,10 @@ function formatIndependentRulebookFromSettings(league) {
           ? `${championship.name}${championship.bowlWeek ? ` (week ${championship.bowlWeek})` : ''}${championship.titleWeek ? ` · conference title week ${championship.titleWeek}` : ''}.`
           : 'Championship name not set yet — the title game uses this league’s name.',
         league?.survival?.enabled
-          ? `${league.survival.name || 'MAYORS CUP'}${league.survival.week ? ` (week ${league.survival.week})` : ''} — last-place / consolation.`
+          ? `${league.survival.name || 'Consolation game'}${league.survival.week ? ` (week ${league.survival.week})` : ''} — last-place game.`
           : null,
         league?.conferenceDraftEnabled
-          ? 'Next-season conference draft: prior-year winner picks a conference first and picks first; runner-up is the other conference admin. MAYORS CUP winner may switch conferences after the draft, replacing that conference’s last pick.'
+          ? 'Next-season conference draft: prior-year winner picks a conference first; runner-up is the other conference admin.'
           : null
       ].filter(Boolean).join('\n')
     },
@@ -1230,14 +1304,14 @@ function vanillaIndependentTemplate() {
         key: 'east',
         name: 'East Conference',
         shortName: 'EAST',
-        color: '#ff7a18',
+        color: '#2563eb',
         espnLeagueId: null
       },
       {
         key: 'west',
         name: 'West Conference',
         shortName: 'WEST',
-        color: '#e2232a',
+        color: '#e11d48',
         espnLeagueId: null
       }
     ],
@@ -1272,8 +1346,8 @@ function vanillaIndependentTemplate() {
     }),
     rulebook: defaultIndependentRulebook(),
     survival: defaultIndependentSurvival(),
-    aaaEnabled: true,
-    affiliatedLeagues: defaultIndependentAaaAffiliate(),
+    aaaEnabled: false,
+    affiliatedLeagues: [],
     payouts: {
       seasonLabel: `${year} Season`,
       buyInPerTeam: 100,
@@ -1557,6 +1631,8 @@ function ensureSystemLeague(seed) {
     }
     for (const row of store.leagues) {
       if (seedIndependentAaa(row)) dirty = true;
+      if (seedIndependentSurvival(row)) dirty = true;
+      if (seedIndependentConferenceColors(row)) dirty = true;
     }
     if (dirty) writeStore(store);
     return publicLeague(system);
@@ -1633,8 +1709,10 @@ function updateLeagueAssets(leagueId, assetMap) {
   const idx = store.leagues.findIndex((l) => l.id === leagueId);
   if (idx === -1) throw Object.assign(new Error('League not found'), { status: 404 });
   const league = store.leagues[idx];
-  if (assetMap.brandLogo) league.brand.logo = assetMap.brandLogo;
-  if (assetMap.brandCrest) league.brand.crest = assetMap.brandCrest;
+  if (assetMap.brandLogo) {
+    league.brand.logo = assetMap.brandLogo;
+    league.brand.crest = assetMap.brandLogo;
+  }
   if (assetMap.championshipLogo) league.championship.logo = assetMap.championshipLogo;
   league.conferences.forEach((c, i) => {
     const k = `conferenceLogo${i}`;
@@ -1677,10 +1755,10 @@ function createIndependentLeague({
   const conferenceCountWanted = Number(structure?.conferenceCount) === 2 ? 2 : 1;
   let confInputs = conferenceCountWanted === 2
     ? [
-        { name: 'East Conference', key: 'east', shortName: 'EAST', color: '#ff7a18' },
-        { name: 'West Conference', key: 'west', shortName: 'WEST', color: '#e2232a' }
+        { name: 'East Conference', key: 'east', shortName: 'EAST', color: '#2563eb' },
+        { name: 'West Conference', key: 'west', shortName: 'WEST', color: '#e11d48' }
       ]
-    : [{ name: 'League', key: 'league', shortName: 'LG', color: '#c9a227' }];
+    : [{ name: 'League', key: 'league', shortName: 'LG', color: '#2563eb' }];
   const normalizedConfs = confInputs.map((c, i) =>
     normalizeConferenceInput(c, i, uploadedAssets, { requireEspn: false })
   );
@@ -1788,8 +1866,8 @@ function createIndependentLeague({
         })
       : [],
     survival: defaultIndependentSurvival(survival),
-    affiliatedLeagues: defaultIndependentAaaAffiliate({ brand: { name: brandName } }),
-    aaaEnabled: true,
+    affiliatedLeagues: [],
+    aaaEnabled: false,
     historySeasons: [],
     ownerUserId: ownerUserId || null,
     ownerName: ownerName ? String(ownerName).trim() : null,
@@ -1960,14 +2038,14 @@ function completeIndependentLeagueSetup(leagueId, body = {}, actor = null, uploa
   if (confInputs.length === 0) {
     confInputs = conferenceCountWanted === 2
       ? [
-          { name: 'East Conference', key: 'east', shortName: 'EAST', color: '#ff7a18' },
-          { name: 'West Conference', key: 'west', shortName: 'WEST', color: '#e2232a' }
+          { name: 'East Conference', key: 'east', shortName: 'EAST', color: '#2563eb' },
+          { name: 'West Conference', key: 'west', shortName: 'WEST', color: '#e11d48' }
         ]
-      : [{ name: 'League', key: 'league', shortName: 'LG', color: '#c9a227' }];
+      : [{ name: 'League', key: 'league', shortName: 'LG', color: '#2563eb' }];
   }
   if (conferenceCountWanted === 1) confInputs = confInputs.slice(0, 1);
   if (conferenceCountWanted === 2 && confInputs.length === 1) {
-    confInputs.push({ name: 'West Conference', key: 'west', shortName: 'WEST', color: '#e2232a' });
+    confInputs.push({ name: 'West Conference', key: 'west', shortName: 'WEST', color: '#e11d48' });
   }
   const normalizedConfs = confInputs.map((c, i) =>
     normalizeConferenceInput(c, i, uploadedAssets, { requireEspn: false })
@@ -2079,7 +2157,7 @@ function completeIndependentLeagueSetup(leagueId, body = {}, actor = null, uploa
       : (body.settings?.draftScope || 'conference')
   });
   league.survival = defaultIndependentSurvival(body.survival);
-  league.aaaEnabled = body.aaaEnabled === false ? false : true;
+  league.aaaEnabled = body.aaaEnabled === true;
   league.affiliatedLeagues = league.aaaEnabled
     ? defaultAffiliatedLeagues(
       Array.isArray(body.affiliatedLeagues) && body.affiliatedLeagues.length
@@ -2418,15 +2496,15 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'aaaEnabled')
     || Object.prototype.hasOwnProperty.call(patch, 'affiliatedLeagues')) {
-    if (patch.aaaEnabled === false) {
-      league.aaaEnabled = false;
-      league.affiliatedLeagues = [];
-    } else {
+    if (patch.aaaEnabled === true) {
       league.aaaEnabled = true;
       const incoming = Array.isArray(patch.affiliatedLeagues) ? patch.affiliatedLeagues : league.affiliatedLeagues;
       league.affiliatedLeagues = defaultAffiliatedLeagues(
         Array.isArray(incoming) && incoming.length ? incoming : defaultIndependentAaaAffiliate(league)
       );
+    } else {
+      league.aaaEnabled = false;
+      league.affiliatedLeagues = [];
     }
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'rulebook')) {

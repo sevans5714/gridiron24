@@ -463,7 +463,7 @@
     state.myTeam = {
       team: {
         id: fid,
-        name: franchise.name || scored.name,
+        name: franchise.displayName || franchise.name || scored.name,
         conferenceKey: franchise.conferenceKey || scored.conferenceKey || conf?.key,
         conferenceName: conf?.name || league.brand?.name,
         wins: standing?.wins || 0,
