@@ -3569,11 +3569,6 @@ html[data-theme="day"] .desk-tile {
 .franchise-title.is-sm,
 .franchise-title.is-md,
 .franchise-title.is-inline,
-.mu-row .franchise-title,
-.mu-name .franchise-title,
-.pg-team .franchise-title,
-.bowl-side .nm > .franchise-title,
-.po-side .franchise-title,
 .mini-table .franchise-title,
 .il-mini .franchise-title {
   font-size: 1.05rem;
@@ -3586,6 +3581,22 @@ html[data-theme="day"] .desk-tile {
   word-break: break-word;
   text-shadow: none;
   overflow: hidden;
+}
+.mu-row .franchise-title,
+.mu-name .franchise-title,
+.pg-team .franchise-title,
+.bowl-side .nm > .franchise-title,
+.po-side .franchise-title {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
 }
 .motw-side .franchise-title,
 .motw-side .franchise-title.is-sm,

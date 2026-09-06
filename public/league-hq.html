@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=155" />
-  <link rel="icon" href="/favicon.ico?v=155" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=155" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=155" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=156" />
+  <link rel="icon" href="/favicon.ico?v=156" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=156" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=156" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=186" />
+  <link rel="stylesheet" href="/css/site.css?v=187" />
   <link rel="stylesheet" href="/css/draft-desk.css?v=13" />
   <link rel="stylesheet" href="/css/conference-draft.css?v=1" />
   <style>
@@ -988,8 +988,8 @@
       align-items: stretch;
     }
     .il-bracket-round {
-      min-width: 12.5rem;
-      flex: 1;
+      min-width: 14.75rem;
+      flex: 1 1 14.75rem;
       display: flex;
       flex-direction: column;
       gap: 0.65rem;
@@ -1010,27 +1010,40 @@
     }
     .il-pgame.is-bye { opacity: 0.72; }
     .il-pgame .pg-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.5rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.45rem;
       align-items: center;
-      padding: 0.18rem 0;
+      padding: 0.22rem 0;
       min-width: 0;
     }
     .il-pgame .pg-row.is-win { color: var(--il-accent); font-weight: 700; }
     .il-pgame .pg-team {
-      display: flex;
-      align-items: baseline;
-      gap: 0.35rem;
+      display: grid;
+      grid-template-columns: 1.55rem minmax(0, 1fr);
+      align-items: center;
+      column-gap: 0.3rem;
       min-width: 0;
-      flex: 1 1 auto;
+    }
+    .il-pgame .pg-team .franchise-title,
+    .il-pgame .pg-team .il-open-slot {
+      min-width: 0;
+      display: block;
       overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .il-pgame .pg-team .franchise-title {
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
     }
     .il-pgame .seed {
       color: var(--muted);
       font-variant-numeric: tabular-nums;
-      margin-right: 0;
-      flex: 0 0 auto;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: right;
     }
     .il-pgame .pts { font-variant-numeric: tabular-nums; flex: 0 0 auto; }
     .il-final-game {
@@ -3844,7 +3857,7 @@
       const win = winnerId && String(winnerId) === String(side.franchiseId);
       const pts = score != null && Number.isFinite(Number(score)) ? Number(score).toFixed(1) : '';
       return `<div class="pg-row${win ? ' is-win' : ''}">
-        <span class="pg-team">${side.seed != null ? `<span class="seed">#${esc(String(side.seed))}</span>` : ''}${franchiseNameHtml(franchiseById(side.franchiseId) || side, { size: 'sm', inline: true })}</span>
+        <span class="pg-team"><span class="seed">${side.seed != null ? `#${esc(String(side.seed))}` : ''}</span>${franchiseNameHtml(franchiseById(side.franchiseId) || side, { size: 'sm', inline: true })}</span>
         <span class="pts">${esc(pts)}</span>
       </div>`;
     }

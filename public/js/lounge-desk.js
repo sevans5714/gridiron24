@@ -29,6 +29,17 @@
   const JOIN_LOBBY_SECONDS = 240; // 4:00 for others to join after positions lock
   const CpuAI = (typeof window !== 'undefined' && window.MockDraftCpu) ? window.MockDraftCpu : null;
 
+  function loungeUrl(path) {
+    let league = window.GridIronNav?.getLeagueQuery?.();
+    if (!league) {
+      try { league = String(localStorage.getItem('gi-pwa-league') || '').trim(); } catch { league = ''; }
+    }
+    if (!league) league = new URLSearchParams(window.location.search).get('league') || 'gridiron';
+    const u = new URL(path, window.location.origin);
+    u.searchParams.set('league', league);
+    return u.pathname + u.search;
+  }
+
   let draftLive = false;
   let pickDeadline = null;
   let pickTimerId = null;
@@ -799,7 +810,7 @@
   async function lockHostPositions() {
     if (!roomId || !roomIsHost) return;
     if (positionsLocked) return;
-    const res = await fetch('/api/mock-draft', {
+    const res = await fetch(loungeUrl('/api/mock-draft'), {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -819,7 +830,7 @@
     const skipBtn = document.getElementById('mock-skip-join');
     if (skipBtn) skipBtn.disabled = true;
     try {
-      const res = await fetch('/api/mock-draft', {
+      const res = await fetch(loungeUrl('/api/mock-draft'), {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -858,7 +869,7 @@
 
   async function moveMySeat(toIndex) {
     if (!roomId) return false;
-    const res = await fetch('/api/mock-draft', {
+    const res = await fetch(loungeUrl('/api/mock-draft'), {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -885,7 +896,7 @@
       paintMockStartBar();
       return;
     }
-    const res = await fetch('/api/mock-draft', {
+    const res = await fetch(loungeUrl('/api/mock-draft'), {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -939,7 +950,7 @@
 
     // Multiplayer lobby (join window, then host starts)
     try {
-      const res = await fetch('/api/mock-draft', {
+      const res = await fetch(loungeUrl('/api/mock-draft'), {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -1189,7 +1200,7 @@
     try {
       let data;
       if (tick) {
-        const res = await fetch('/api/mock-draft', {
+        const res = await fetch(loungeUrl('/api/mock-draft'), {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -1198,7 +1209,7 @@
         data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || 'Tick failed');
       } else {
-        const res = await fetch(`/api/mock-draft?roomId=${encodeURIComponent(roomId)}`, {
+        const res = await fetch(loungeUrl(`/api/mock-draft?roomId=${encodeURIComponent(roomId)}`), {
           credentials: 'same-origin',
           cache: 'no-store'
         });
@@ -1239,7 +1250,7 @@
     const id = roomId || pendingJoinRoomId;
     if (!id) return;
     unlockDraftAudio();
-    const res = await fetch('/api/mock-draft', {
+    const res = await fetch(loungeUrl('/api/mock-draft'), {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -1262,7 +1273,7 @@
 
   async function loadJoinRoom(id) {
     pendingJoinRoomId = id;
-    const res = await fetch(`/api/mock-draft?roomId=${encodeURIComponent(id)}`, {
+    const res = await fetch(loungeUrl(`/api/mock-draft?roomId=${encodeURIComponent(id)}`), {
       credentials: 'same-origin',
       cache: 'no-store'
     });
@@ -4635,7 +4646,7 @@
     draftChatSending = true;
     renderDraftChat();
     try {
-      const res = await fetch('/api/mock-draft', {
+      const res = await fetch(loungeUrl('/api/mock-draft'), {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -4703,7 +4714,7 @@
 
   async function makePickRemote(playerId) {
     if (!roomId) return false;
-    const res = await fetch('/api/mock-draft', {
+    const res = await fetch(loungeUrl('/api/mock-draft'), {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },

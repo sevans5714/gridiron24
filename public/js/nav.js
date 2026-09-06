@@ -1352,6 +1352,13 @@
     syncConferenceLogos,
     franchiseTitleHtml,
     fitFranchiseTitles: fitAllFranchiseTitles,
-    getLeagueScope: () => leagueScope
+    getLeagueScope: () => leagueScope,
+    getLeagueQuery: () => {
+      if ((leagueScope?.scope === 'independent' || leagueScope?.platform === 'independent') && leagueScope.leagueId) {
+        return `independent:${leagueScope.leagueId}`;
+      }
+      if (leagueScope?.scope === 'aaa') return 'aaa';
+      return 'gridiron';
+    }
   };
 })();

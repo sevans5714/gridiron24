@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+const loungeKey = require('./lounge-key');
+
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const CHAT_FILE = path.join(DATA_DIR, 'members-chat.json');
 const MAX_MESSAGES = 400;
@@ -43,13 +45,17 @@ function publicMessage(m) {
     authorLeague: m.authorLeague || null,
     createdAt: m.createdAt,
     kind: m.kind || 'chat',
+    loungeKey: loungeKey.normalizeLoungeKey(m.loungeKey),
     meta: m.meta && typeof m.meta === 'object' ? m.meta : null
   };
 }
 
 /** Chronological (oldest → newest). Optional since ISO / after id for incremental polls. */
-function listMessages({ limit = 120, since = null, after = null } = {}) {
-  let messages = readStore().messages.slice();
+function listMessages({ limit = 120, since = null, after = null, loungeKey: room = 'gridiron' } = {}) {
+  const key = loungeKey.normalizeLoungeKey(room);
+  let messages = readStore().messages
+    .filter((m) => loungeKey.normalizeLoungeKey(m.loungeKey) === key)
+    .slice();
   if (after) {
     const idx = messages.findIndex((m) => m.id === after);
     messages = idx >= 0 ? messages.slice(idx + 1) : messages;
@@ -64,7 +70,7 @@ function listMessages({ limit = 120, since = null, after = null } = {}) {
   return messages.map(publicMessage);
 }
 
-function addMessage({ body, author, kind = 'chat', meta = null, skipRateLimit = false } = {}) {
+function addMessage({ body, author, kind = 'chat', meta = null, skipRateLimit = false, loungeKey: room = 'gridiron' } = {}) {
   const cleanBody = String(body || '').trim();
   if (!cleanBody) throw Object.assign(new Error('Message is required'), { status: 400 });
   if (cleanBody.length > MAX_BODY) {
@@ -88,6 +94,7 @@ function addMessage({ body, author, kind = 'chat', meta = null, skipRateLimit = 
     authorId: author.id,
     authorName: author.name || author.loginName || 'Member',
     authorLeague: author.membershipLeague || null,
+    loungeKey: loungeKey.normalizeLoungeKey(room),
     createdAt: new Date().toISOString(),
     kind: kind === 'bet' || kind === 'mock' ? kind : 'chat',
     meta: meta && typeof meta === 'object' ? meta : null

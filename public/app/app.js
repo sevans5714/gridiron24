@@ -7,6 +7,12 @@
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
+  function teamMarkUrl(url) {
+    const u = String(url || '').trim();
+    if (!u || u.includes('/assets/team-icons/')) return PLACEHOLDER;
+    return u;
+  }
+
   function franchiseTitleHtml(name, opts = {}) {
     if (window.GridIronTitle?.html) return window.GridIronTitle.html(name, opts);
     const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
@@ -370,7 +376,7 @@
       name: side.name || 'TBD',
       score: side.total ?? side.score ?? 0,
       projected: side.projected ?? side.total ?? side.score ?? 0,
-      logo: side.logo || PLACEHOLDER,
+      logo: teamMarkUrl(side.logo),
       lineup: mapIndependentPlayers(side.starters),
       bench: mapIndependentPlayers(side.bench)
     };
@@ -471,7 +477,7 @@
         ties: standing?.ties || 0,
         pointsFor: standing?.pointsFor || scored.total || 0,
         standingRank: rank || null,
-        logo: franchise.logo || scored.logo || league.brand?.logo || null
+        logo: teamMarkUrl(franchise.logo || scored.logo || league.brand?.logo)
       },
       claim: {
         teamId: fid,
@@ -669,6 +675,7 @@
     state.news = null;
     state.independentLeague = null;
     state.independentBoard = null;
+    state.chatMessages = [];
     paintLeagueChrome();
     await Promise.all([
       loadHome().catch(() => {}),
@@ -677,6 +684,11 @@
     if (state.view === 'roster') await loadRoster().catch(() => {});
     if (state.view === 'matchup') await loadMatchup().catch(() => {});
     if (state.view === 'league') await loadLeague().catch(() => {});
+    if (state.view === 'lounge') await loadChat().catch(() => {});
+    if (state.view === 'book') {
+      const mount = document.getElementById('book-mount') || document.querySelector('.book-shell');
+      if (mount) loadCasinoFrame(mount, { force: true });
+    }
   }
 
   function isStandalone() {
@@ -1383,11 +1395,17 @@
     const frame = mount?.querySelector('iframe.book-frame');
     if (!frame) return;
     const base = frame.getAttribute('data-casino-src') || '/app/casino-embed.html?embed=book';
-    if (!force && frame.dataset.loaded === '1' && frame.getAttribute('src') && frame.getAttribute('src') !== 'about:blank') {
+    const league = leagueScopeQuery();
+    const withLeague = league
+      ? `${base}${base.includes('?') ? '&' : '?'}${league}`
+      : base;
+    if (!force && frame.dataset.loaded === '1' && frame.dataset.league === league
+      && frame.getAttribute('src') && frame.getAttribute('src') !== 'about:blank') {
       return;
     }
     frame.dataset.loaded = '1';
-    frame.src = `${base}${base.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    frame.dataset.league = league;
+    frame.src = `${withLeague}${withLeague.includes('?') ? '&' : '?'}t=${Date.now()}`;
   }
 
   function wireBookShell(mount) {
@@ -1943,13 +1961,11 @@
     const data = state.myTeam || {};
     const t = data.team;
     const hasFranchise = Boolean(t || data.claim);
-    const logo = t?.logo || data.logo?.url || PLACEHOLDER;
     const starterRows = resolveStarterRows(data);
     const benchRows = resolveBenchRows(data);
 
     mount.innerHTML = `
       <div class="team-hero">
-        <img src="${esc(logo)}" alt="" />
         <div>
           <h2>${esc(t?.name || data.claim?.teamName || 'Your team')}</h2>
           <div class="meta">
@@ -2030,12 +2046,10 @@
         </span>
         <div class="home-kickoff-board">
           <div class="home-kickoff-side">
-            <img src="${esc(m.away?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
             <span>${esc(m.away?.name || 'Away')}</span>
           </div>
           <div class="home-kickoff-mid${st.inProgress ? ' is-live' : ''}">${esc(mid)}</div>
           <div class="home-kickoff-side is-home">
-            <img src="${esc(m.home?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
             <span>${esc(m.home?.name || 'Home')}</span>
           </div>
         </div>
@@ -2225,13 +2239,11 @@
             : 'VS';
           return `<div class="sched-game">
             <div class="side">
-              <img src="${esc(m.away?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
               <span class="nm">${esc(m.away?.name || 'Away')}</span>
             </div>
             <div class="mid${live ? ' is-live' : ''}">${esc(mid)}</div>
             <div class="side is-home">
               <span class="nm">${esc(m.home?.name || 'Home')}</span>
-              <img src="${esc(m.home?.logo || PLACEHOLDER)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
             </div>
           </div>`;
         }).join('')}
@@ -2492,7 +2504,7 @@
 
   async function loadDues() {
     try {
-      const data = await apiGet('/api/members');
+      const data = await apiGet(withLeagueQuery('/api/members'));
       state.dues = {
         treasurer: data.treasurer || { name: 'Jamie Aceto', venmoUsername: 'James-Aceto', note: 'League dues — GridIron 24 HQ' },
         dues: data.dues || { gridiron: 100, aaa: 50 },
@@ -2552,7 +2564,7 @@
     return {
       id: mine.id,
       name: mine.name || 'Your team',
-      logo: mine.logo || PLACEHOLDER,
+      logo: teamMarkUrl(mine.logo),
       score: null,
       projected: null,
       lineup: emptySlotRows(
@@ -2608,7 +2620,6 @@
           <div class="section-label">Your matchup · Week ${esc(String(box.week || week))} · <span class="game-status ${statusCls}">${status}</span></div>
           <div class="box-scoreboard">
             <div class="box-team ${awayWin ? 'is-winner' : decided ? 'is-loser' : ''}">
-              <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
               <div class="meta">
                 <div class="nm">${esc(away.name)}</div>
               </div>
@@ -2626,7 +2637,6 @@
               <div class="meta">
                 <div class="nm">${esc(home.name)}</div>
               </div>
-              <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
             </div>
           </div>
         </div>`;
@@ -2646,7 +2656,6 @@
         <div class="section-label">Your matchup · Week ${esc(String(week || '—'))} · <span class="game-status">Upcoming</span></div>
         <div class="box-scoreboard">
           <div class="box-team">
-            <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
             <div class="meta">
               <div class="nm">${esc(away.name)}</div>
             </div>
@@ -2664,7 +2673,6 @@
             <div class="meta">
               <div class="nm">${esc(home.name)}</div>
             </div>
-            <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="48" height="48" loading="eager" referrerpolicy="no-referrer" />
           </div>
         </div>
       </div>`;
@@ -2735,13 +2743,11 @@
         <div class="box-lineups">
           <div class="box-lineup-heads">
             <div class="box-lineup-head is-away">
-              <img src="${esc(away.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
               <strong>${esc(away.name || 'Away')}</strong>
             </div>
             <div class="box-lineup-pos-label" aria-hidden="true">Pos</div>
             <div class="box-lineup-head is-home">
               <strong>${esc(home.name || 'Home')}</strong>
-              <img src="${esc(home.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
             </div>
           </div>
           <div class="box-cols" aria-hidden="true">
@@ -2815,11 +2821,9 @@
         const tasks = [];
         tasks.push(loadMyTeam().catch(() => {}));
         tasks.push(loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: Boolean(state.schedule) }).catch(() => {}));
-        if (!state.leagues) {
-          tasks.push(apiGet(withLeagueQuery('/api/leagues')).then((d) => {
-            state.leagues = d;
-          }).catch(() => {}));
-        }
+        tasks.push(apiGet(withLeagueQuery('/api/leagues')).then((d) => {
+          state.leagues = d;
+        }).catch(() => {}));
         await Promise.all(tasks);
         if (isIndependentScope()) {
           await loadIndependentContext().catch(() => {});
@@ -2917,7 +2921,6 @@
       }
       return;
     }
-    if (state.loadingScores && quiet) return;
     state.loadingScores = true;
     const btn = document.getElementById('refresh-scores');
     if (btn) btn.disabled = true;
@@ -3126,7 +3129,6 @@
   function playoffSide(side, { showScore = false } = {}) {
     if (!side) {
       return `<div class="po-side is-empty">
-        <img src="${esc(PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" />
         <span class="seed"></span>
         <span class="nm">TBD</span>
       </div>`;
@@ -3134,7 +3136,6 @@
     const seed = side.seed != null ? `#${side.seed}` : '';
     const pts = showScore && side.score != null ? `<span class="pts">${esc(fmtScore(side.score))}</span>` : '';
     return `<div class="po-side">
-      <img src="${esc(side.logo || PLACEHOLDER)}" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" />
       <span class="seed">${esc(seed)}</span>
       <span class="nm">${franchiseTitleHtml(side.name || 'Team', { size: 'sm', inline: true })}</span>
       ${pts}
@@ -3179,7 +3180,6 @@
         ${(conf.seeds || []).map((s) => `
           <div class="po-seed">
             <span class="n">#${esc(String(s.seed))}</span>
-            <img src="${esc(s.logo || PLACEHOLDER)}" alt="" width="22" height="22" loading="lazy" referrerpolicy="no-referrer" />
             <span class="nm">${esc(s.name)}</span>
           </div>`).join('')}
       </div>
@@ -3250,7 +3250,9 @@
       const after = state.chatMessages.length
         ? state.chatMessages[state.chatMessages.length - 1].id
         : '';
-      const qs = after ? `?after=${encodeURIComponent(after)}` : '';
+      const qs = after
+        ? `?after=${encodeURIComponent(after)}&${leagueScopeQuery()}`
+        : `?${leagueScopeQuery()}`;
       const data = await apiGet(`/api/members-chat${qs}`);
       state.chatViewerId = data.viewerId || state.chatViewerId;
       if (Array.isArray(data.online)) {
@@ -3282,7 +3284,7 @@
     const input = document.getElementById('chat-input');
     if (btn) btn.disabled = true;
     try {
-      const res = await fetch('/api/members-chat', {
+      const res = await fetch(`/api/members-chat?${leagueScopeQuery()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body, mentions: [] })

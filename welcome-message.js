@@ -35,7 +35,7 @@ function bodyFor(name = 'Member', opts = {}) {
       '',
       'WHAT YOU CAN DO',
       '• Open League HQ — standings, roster, and your desk',
-      '• Use the shared Members Lounge — chat, games, and the social desk',
+      '• Use your league’s Members Lounge — chat, mock drafts, and the sportsbook stay in this league',
       '',
       'See you in HQ.',
       '',

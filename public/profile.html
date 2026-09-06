@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=155" />
-  <link rel="icon" href="/favicon.ico?v=155" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=155" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=155" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=156" />
+  <link rel="icon" href="/favicon.ico?v=156" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=156" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=156" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
@@ -833,6 +833,14 @@
       return logo?.type === 'icon' || logo?.type === 'upload';
     }
 
+    function usesEspnLogosOnly(data) {
+      if (data?.customLogos === false) return true;
+      const key = String(data?.claim?.conferenceKey || data?.team?.conferenceKey || '').toLowerCase();
+      if (key === 'detail' || key === 'overtime' || key === 'aaa') return true;
+      const ml = String(data?.user?.membershipLeague || data?.leagueScope?.scope || '').toLowerCase();
+      return ml === 'gridiron' || ml === 'aaa';
+    }
+
     function recordLine(team) {
       if (!team) return '—';
       const t = Number(team.ties || 0);
@@ -997,7 +1005,8 @@
 
     function renderAccount(data) {
       const user = data.user || {};
-      const logoUrl = isChosenLogo(data.logo) ? data.logo.url : '';
+      const espnOnly = usesEspnLogosOnly(data);
+      const logoUrl = espnOnly ? '' : (isChosenLogo(data.logo) ? data.logo.url : '');
       const staff = isStaffRole(user);
       renderUserHome(user);
       const urls = portalUrls();
@@ -1402,7 +1411,13 @@
 
     function renderLogoSection(data) {
       const body = document.getElementById('logo-body');
+      const card = document.getElementById('logo');
       if (!body) return;
+      if (usesEspnLogosOnly(data)) {
+        if (card) card.hidden = true;
+        return;
+      }
+      if (card) card.hidden = false;
 
       const specs = data.specs || { minSize: 256, maxSize: 1024, recommended: 512 };
       selectedIcon = data.logo?.type === 'icon' ? data.logo.value : null;

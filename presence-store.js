@@ -1,12 +1,15 @@
+const loungeKey = require('./lounge-key');
+
 const ONLINE_MS = 90_000;
 const presence = new Map();
 
-function touch(user) {
+function touch(user, { loungeKey: room = 'gridiron' } = {}) {
   if (!user?.id) return null;
   const entry = {
     id: user.id,
     name: user.name || user.loginName || 'Member',
     loginName: user.loginName || null,
+    loungeKey: loungeKey.normalizeLoungeKey(room),
     lastSeen: Date.now()
   };
   presence.set(user.id, entry);
@@ -23,8 +26,9 @@ function publicEntry(entry) {
   };
 }
 
-function listOnline({ excludeUserId = null } = {}) {
+function listOnline({ excludeUserId = null, loungeKey: room = null } = {}) {
   const cutoff = Date.now() - ONLINE_MS;
+  const want = room != null ? loungeKey.normalizeLoungeKey(room) : null;
   const out = [];
   for (const [id, entry] of presence) {
     if (entry.lastSeen < cutoff) {
@@ -32,6 +36,7 @@ function listOnline({ excludeUserId = null } = {}) {
       continue;
     }
     if (excludeUserId && id === excludeUserId) continue;
+    if (want && loungeKey.normalizeLoungeKey(entry.loungeKey) !== want) continue;
     out.push(publicEntry(entry));
   }
   out.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));

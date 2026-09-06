@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=155" />
-  <link rel="icon" href="/favicon.ico?v=155" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=155" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=155" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=156" />
+  <link rel="icon" href="/favicon.ico?v=156" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=156" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=156" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=185" />
   <style>
@@ -342,6 +342,33 @@
       line-height: 1.35;
     }
     body[data-page="league-tools"] .espn-bind-meta.is-error { color: #f0a0b0; }
+    body[data-page="league-tools"] .espn-bind-teams {
+      list-style: none;
+      margin: 0.65rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 0.28rem;
+    }
+    body[data-page="league-tools"] .espn-bind-teams li {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) auto;
+      gap: 0.45rem;
+      align-items: center;
+      color: var(--text);
+      font-size: 0.84rem;
+    }
+    body[data-page="league-tools"] .espn-bind-teams img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.06);
+    }
+    body[data-page="league-tools"] .espn-bind-teams small {
+      color: var(--muted);
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
     body[data-page="league-tools"] .espn-bind-links {
       margin: 0.45rem 0 0;
       font-size: 0.86rem;
@@ -1885,7 +1912,8 @@
       }
       if (lookup?.ok) {
         const size = lookup.size != null ? ` · ${lookup.size} teams` : '';
-        return `On ESPN: ${esc(lookup.name || 'league')}${size}`;
+        const owners = lookup.ownersReady != null ? ` · ${lookup.ownersReady} owners` : '';
+        return `On ESPN: ${esc(lookup.name || 'league')}${size}${owners}`;
       }
       if (espnLookupIsPrivate(row)) {
         return `${esc(lookup?.error || 'ESPN league exists but is private.')} ID ${esc(String(row.espnLeagueId || lookup?.espnLeagueId || ''))} is saved — make the league viewable in ESPN (anyone can view, invite-only to join), then look up again.`;
@@ -1896,6 +1924,17 @@
       }
       if (row.espnLeagueId) return `Saved ID ${esc(String(row.espnLeagueId))} — look up to confirm the ESPN league`;
       return 'Paste this year’s league office URL or league ID';
+    }
+
+    function espnBindTeamsHtml(row) {
+      const teams = row.lookup?.teams || [];
+      if (!teams.length) return '';
+      return `<ul class="espn-bind-teams">${teams.map((t) => `
+        <li>
+          ${t.logo ? `<img src="${esc(t.logo)}" alt="" width="20" height="20" decoding="async" referrerpolicy="no-referrer" />` : '<span></span>'}
+          <span>${esc(t.name || 'Team')}</span>
+          <small>${esc(t.owner && t.owner !== 'Owner pending' ? t.owner : 'Owner pending')}</small>
+        </li>`).join('')}</ul>`;
     }
 
     function espnBindLinksHtml(row) {
@@ -1952,6 +1991,7 @@
             <button type="button" class="btn btn-secondary" data-espn-peek="${esc(row.key)}">Look up</button>
           </div>
           <p class="espn-bind-meta${err ? ' is-error' : ''}" data-espn-meta="${esc(row.key)}">${espnBindMeta(row)}</p>
+          ${espnBindTeamsHtml(row)}
           ${espnBindLinksHtml(row)}
           <details class="espn-bind-names">
             <summary>Name on this site</summary>
@@ -2055,10 +2095,15 @@
             meta.classList.add('is-error');
           } else {
             const size = data.size != null ? ` · ${data.size} teams` : '';
-            meta.textContent = `On ESPN: ${data.name || 'league'}${size}`;
+            const owners = data.ownersReady != null ? ` · ${data.ownersReady} owners` : '';
+            meta.textContent = `On ESPN: ${data.name || 'league'}${size}${owners}`;
             meta.classList.remove('is-error');
           }
         }
+        const teamsHtml = espnBindTeamsHtml({ lookup: data });
+        const existingTeams = card?.querySelector('.espn-bind-teams');
+        if (existingTeams) existingTeams.outerHTML = teamsHtml || '';
+        else if (teamsHtml && meta) meta.insertAdjacentHTML('afterend', teamsHtml);
         if (status) {
           status.textContent = data.previousEspnId ? 'Previous ID' : 'Connected';
           status.className = `espn-bind-status ${data.previousEspnId ? 'is-warn' : 'is-ok'}`;

@@ -7,12 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=155" />
-  <link rel="icon" href="/favicon.ico?v=155" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=155" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=155" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=156" />
+  <link rel="icon" href="/favicon.ico?v=156" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=156" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=156" />
   <script src="/js/theme-boot.js"></script>
-  <link rel="stylesheet" href="/css/site.css?v=182" />
+  <link rel="stylesheet" href="/css/site.css?v=187" />
   <style>
     .tree {
       display: flex;
@@ -314,12 +314,22 @@
     .mu-name {
       min-width: 0;
       overflow: hidden;
-      white-space: normal;
+      white-space: nowrap;
     }
     .mu-name .franchise-title,
     .mu-name .franchise-block {
       width: 100%;
       max-width: 100%;
+      min-width: 0;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mu-name .franchise-title {
+      font-size: 0.92rem;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
     }
 
     .mu-score {
@@ -517,17 +527,26 @@
     }
     .bowl-side .nm {
       font-family: var(--display);
-      font-size: clamp(1rem, 1.8vw, 1.25rem);
+      font-size: clamp(0.95rem, 1.6vw, 1.15rem);
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
-      line-height: 1.15;
+      line-height: 1.1;
       color: var(--text);
       max-width: 100%;
-      word-break: break-word;
-      overflow-wrap: anywhere;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       display: block;
       text-align: center;
+    }
+    .bowl-side .nm .franchise-title {
+      font-size: inherit;
+      letter-spacing: inherit;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .bowl-side.detail .nm { color: var(--detail); }
     .bowl-side.overtime .nm { color: var(--overtime); }

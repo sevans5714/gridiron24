@@ -110,23 +110,6 @@ function assignTeam(userId, conferenceKey, teamId, teamName = '', assignedBy = n
     claimedAt: new Date().toISOString(),
     assignedBy: assignedBy || null
   });
-
-  // If the member already chose an avatar and this franchise has no logo yet, copy it over.
-  const existingLogo = data.logos.find((l) => l.conferenceKey === conf && Number(l.teamId) === id);
-  const avatar = data.avatars.find((a) => a.userId === userId);
-  if (!existingLogo && avatar && (avatar.type === 'icon' || avatar.type === 'upload')) {
-    data.logos.push({
-      conferenceKey: conf,
-      teamId: id,
-      type: avatar.type,
-      value: avatar.value,
-      width: avatar.width || null,
-      height: avatar.height || null,
-      updatedBy: userId,
-      updatedAt: new Date().toISOString()
-    });
-  }
-
   writeStore(data);
   return getClaimForUser(userId);
 }
@@ -189,6 +172,34 @@ function displayLogoUrl(logoOrUrl) {
   return fromEntry || PLACEHOLDER_LOGO;
 }
 
+function usableEspnLogoUrl(url) {
+  const u = String(url || '').trim();
+  if (!u) return '';
+  if (u.includes('/assets/team-icons/')) return '';
+  if (/^https?:\/\//i.test(u)) return u;
+  return '';
+}
+
+/** Pull ESPN’s franchise mark from a raw team object (string or nested). */
+function espnLogoFromTeam(team) {
+  if (!team || typeof team !== 'object') return '';
+  const logo = team.logo;
+  if (typeof logo === 'string') return usableEspnLogoUrl(logo);
+  if (logo && typeof logo === 'object') {
+    return usableEspnLogoUrl(logo.href || logo.url || logo.src);
+  }
+  if (Array.isArray(team.logos) && team.logos[0]) {
+    const first = team.logos[0];
+    return usableEspnLogoUrl(typeof first === 'string' ? first : (first.href || first.url || first.src));
+  }
+  return usableEspnLogoUrl(team.logoUrl || team.logoURL);
+}
+
+/** ESPN franchise mark only — GridIron 24 does not use member-chosen logos. */
+function espnTeamDisplayLogo(_overrideLogo, espnLogoUrl) {
+  return usableEspnLogoUrl(espnLogoUrl) || PLACEHOLDER_LOGO;
+}
+
 function getUserAvatar(userId) {
   if (!userId) return null;
   return readStore().avatars.find((a) => a.userId === userId) || null;
@@ -199,10 +210,14 @@ function publicLogoEntry(entry) {
   return { ...entry, url: logoUrl(entry) };
 }
 
-/** Franchise logo if claimed, otherwise the member's personal avatar. */
+/** Franchise logo if claimed, otherwise the member's personal avatar. ESPN HQ teams have no custom logos. */
 function resolveLogoForUser(userId) {
   const claim = getClaimForUser(userId);
   if (claim) {
+    const espnHq = claim.conferenceKey === 'detail'
+      || claim.conferenceKey === 'overtime'
+      || claim.conferenceKey === 'aaa';
+    if (espnHq) return null;
     const teamLogo = getLogo(claim.conferenceKey, claim.teamId);
     if (teamLogo && (teamLogo.type === 'icon' || teamLogo.type === 'upload')) {
       return publicLogoEntry(teamLogo);
@@ -421,7 +436,7 @@ function getNameOverrideMap() {
 function getOverrideMap() {
   const map = new Map();
   for (const logo of readStore().logos) {
-    if (logo.type !== 'icon' && logo.type !== 'upload') continue;
+    if (logo.type !== 'upload') continue;
     const url = logoUrl(logo);
     if (url) map.set(logoKey(logo.conferenceKey, logo.teamId), url);
   }
@@ -454,6 +469,8 @@ module.exports = {
   resolveLogoForUser,
   logoUrl,
   displayLogoUrl,
+  espnLogoFromTeam,
+  espnTeamDisplayLogo,
   setIconLogo,
   setUploadLogo,
   clearLogo,

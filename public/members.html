@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=155" />
-  <link rel="icon" href="/favicon.ico?v=155" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=155" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=155" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=156" />
+  <link rel="icon" href="/favicon.ico?v=156" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=156" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=156" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
@@ -10527,11 +10527,11 @@
     <span class="site-footer-credit"><span class="site-footer-logo"><img class="site-footer-mark" src="/assets/gridiron24-brand.png?v=3" alt="GridIron 24" width="64" height="64" decoding="async" /></span><span class="site-footer-by"><span class="site-footer-label">Created by</span><span class="site-footer-author">S.EVANS</span></span></span>
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
-  <script src="/js/nav.js?v=187"></script>
+  <script src="/js/nav.js?v=188"></script>
   <script src="/js/cpu-gm-names.js?v=1"></script>
   <script src="/js/mock-draft-cpu.js?v=1"></script>
-  <script src="/js/lounge-desk.js?v=117"></script>
-  <script src="/js/lounge-games.js?v=45"></script>
+  <script src="/js/lounge-desk.js?v=118"></script>
+  <script src="/js/lounge-games.js?v=46"></script>
   <script>
     const esc = (v = '') => String(v)
       .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -10556,6 +10556,17 @@
     let sportsWageredIds = new Set();
     let sportsWageredSlipByEvent = new Map();
     const SPORTS_POLL_MS = 25000;
+
+    function loungeUrl(path) {
+      let league = window.GridIronNav?.getLeagueQuery?.();
+      if (!league) {
+        try { league = String(localStorage.getItem('gi-pwa-league') || '').trim(); } catch { league = ''; }
+      }
+      if (!league) league = new URLSearchParams(window.location.search).get('league') || 'gridiron';
+      const u = new URL(path, window.location.origin);
+      u.searchParams.set('league', league);
+      return u.pathname + u.search;
+    }
     const SPORTS_POLL_LIVE_MS = 15000;
     const SPORTS_FLIP_MS = 3500;
     const SPORTS_SLOT = 12;
@@ -11208,7 +11219,7 @@
 
     async function loadSportsScores() {
       try {
-        const res = await fetch('/api/sports-scores', { cache: 'no-store' });
+        const res = await fetch(loungeUrl('/api/sports-scores'), { cache: 'no-store' });
         if (res.status === 401) return;
         const data = await readJsonResponse(res, 'Scores unavailable');
         if (!res.ok || !data.ok) throw new Error(data.error || 'Scores unavailable');
@@ -11258,7 +11269,7 @@
     }
 
     function formatChatBody(text) {
-      const names = [...pendingMentions.values(), ...onlineUsers.map((u) => u.name), ...(state?.gridiron || []).map((u) => u.name), ...(state?.aaa || []).map((u) => u.name)]
+      const names = [...pendingMentions.values(), ...onlineUsers.map((u) => u.name), ...allMembers().map((u) => u.name)]
         .filter(Boolean)
         .sort((a, b) => String(b).length - String(a).length);
       let html = esc(text);
@@ -11635,7 +11646,7 @@
         ? chatMessages[chatMessages.length - 1].id
         : '';
       const qs = after ? `?after=${encodeURIComponent(after)}` : '';
-      const res = await fetch(`/api/members-chat${qs}`, { cache: 'no-store' });
+      const res = await fetch(loungeUrl(`/api/members-chat${qs}`), { cache: 'no-store' });
       if (res.status === 401) {
         setChatLive(false);
         return;
@@ -11680,7 +11691,7 @@
         .filter(([, name]) => body.toLowerCase().includes(`@${String(name).toLowerCase()}`))
         .map(([id]) => id);
       try {
-        const res = await fetch('/api/members-chat', {
+        const res = await fetch(loungeUrl('/api/members-chat'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ body, mentions })
@@ -11748,11 +11759,16 @@
           <div class="pay-panel"><p class="dues-lead">Treasurer details unavailable.</p></div>`;
         return;
       }
+      const independentLounge = String(state.loungeKey || '').startsWith('independent:');
       const myLeague = me?.membershipLeague;
-      const amount = myLeague === 'aaa'
-        ? state.dues?.aaa
-        : (myLeague === 'gridiron' ? state.dues?.gridiron : null);
-      const leagueLabel = myLeague === 'aaa' ? 'AAA' : (myLeague === 'gridiron' ? 'GridIron 24' : null);
+      const amount = independentLounge
+        ? null
+        : (myLeague === 'aaa'
+          ? state.dues?.aaa
+          : (myLeague === 'gridiron' ? state.dues?.gridiron : null));
+      const leagueLabel = independentLounge
+        ? (state.loungeLabel || 'this league')
+        : (myLeague === 'aaa' ? 'AAA' : (myLeague === 'gridiron' ? 'GridIron 24' : null));
       const paid = Boolean(me?.duesPaid);
       const href = venmoUrl({ amount: amount != null ? amount : state.dues?.gridiron });
       const venmoUser = String(t.venmoUsername || 'James-Aceto').replace(/^@/, '');
@@ -11786,6 +11802,7 @@
         <div class="pay-panel">
           ${statusHtml}
 
+          ${independentLounge ? '' : `
           <div class="dues-rates" aria-label="Buy-in rates">
             <div class="dues-rate${giYours}">
               <span class="label">GridIron 24</span>
@@ -11795,9 +11812,9 @@
               <span class="label">AAA</span>
               <span class="amount">${esc(money(state.dues?.aaa))}</span>
             </div>
-          </div>
+          </div>`}
 
-          ${paid ? '' : `
+          ${paid || independentLounge || !t.venmoUsername ? '' : `
             <a class="venmo-handle" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Pay @${esc(venmoUser)} on Venmo">
               <img src="/assets/venmo.svg" alt="Venmo" width="92" height="17" decoding="async" />
               <span class="handle">@${esc(venmoUser)}</span>
@@ -12058,7 +12075,7 @@
     window.addEventListener('hashchange', () => applyDeskHash(location.hash));
 
     async function load({ quiet = false } = {}) {
-      const res = await fetch('/api/members', { cache: 'no-store' });
+      const res = await fetch(loungeUrl('/api/members'), { cache: 'no-store' });
       const isEmbedBook = document.documentElement.classList.contains('is-embed-book');
       if (res.status === 401) {
         // Never navigate the parent PWA shell — keep the error inside the embed.

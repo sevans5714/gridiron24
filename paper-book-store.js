@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const futuresMarkets = require('./futures-markets');
+const loungeKey = require('./lounge-key');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'paper-book.json');
@@ -70,12 +71,26 @@ function sameUserId(a, b) {
   return Boolean(left) && left === right;
 }
 
-function ensureAccount(store, user) {
-  const id = user.id;
+function ticketLounge(row) {
+  return loungeKey.normalizeLoungeKey(row?.loungeKey);
+}
+
+function accountForTicket(store, ticket) {
+  if (!ticket?.userId) return null;
+  const id = loungeKey.accountStoreId(ticket.userId, ticket.loungeKey);
+  if (store.accounts[id]) return store.accounts[id];
+  if (ticketLounge(ticket) === 'gridiron') return store.accounts[ticket.userId] || null;
+  return null;
+}
+
+function ensureAccount(store, user, roomLounge = 'gridiron') {
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
+  const id = loungeKey.accountStoreId(user.id, lounge);
   const fullName = user.name || user.loginName || 'Member';
   if (!store.accounts[id]) {
     store.accounts[id] = {
-      userId: id,
+      userId: user.id,
+      loungeKey: lounge,
       name: fullName,
       lastName: lastNameOf(fullName),
       bankroll: STARTING_BANKROLL,
@@ -89,6 +104,7 @@ function ensureAccount(store, user) {
   } else {
     store.accounts[id].name = fullName;
     store.accounts[id].lastName = lastNameOf(fullName);
+    store.accounts[id].loungeKey = lounge;
     if (!Number.isFinite(Number(store.accounts[id].bankroll))) {
       store.accounts[id].bankroll = STARTING_BANKROLL;
     }
@@ -100,10 +116,10 @@ function ensureAccount(store, user) {
  * Seed $1,000 when a member is first waved into the lounge.
  * Idempotent — only funds once per account.
  */
-function grantLoungeBankroll(user) {
+function grantLoungeBankroll(user, { loungeKey: roomLounge = 'gridiron' } = {}) {
   if (!user?.id) return null;
   const store = readStore();
-  const account = ensureAccount(store, user);
+  const account = ensureAccount(store, user, roomLounge);
   if (account.loungeFundedAt) {
     return { account, funded: false, bankroll: account.bankroll };
   }
@@ -564,14 +580,15 @@ function applySettlementToAccount(account, slip) {
 }
 
 /** Open stakes still sitting out of available funds. */
-function openStakeTotal(store, userId) {
+function openStakeTotal(store, userId, roomLounge = 'gridiron') {
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
   let total = 0;
   for (const s of store.slips || []) {
-    if (s.userId !== userId || s.status !== 'open') continue;
+    if (s.userId !== userId || ticketLounge(s) !== lounge || s.status !== 'open') continue;
     total += Math.max(0, Number(s.stake) || 0);
   }
   for (const f of store.futures || []) {
-    if (f.userId !== userId || f.status !== 'open') continue;
+    if (f.userId !== userId || ticketLounge(f) !== lounge || f.status !== 'open') continue;
     total += Math.max(0, Number(f.stake) || 0);
   }
   return Math.round(total * 100) / 100;
@@ -583,7 +600,7 @@ function openStakeTotal(store, userId) {
  */
 function reconcileAccountBankroll(store, account) {
   if (!account) return;
-  const open = openStakeTotal(store, account.userId);
+  const open = openStakeTotal(store, account.userId, account.loungeKey);
   const units = Number(account.unitsWon) || 0;
   const next = Math.round((STARTING_BANKROLL + units - open) * 100) / 100;
   account.bankroll = Math.max(0, next);
@@ -593,12 +610,12 @@ function applyPendingSettlements(store) {
   let n = 0;
   for (const slip of store.slips || []) {
     if (slip.status === 'open' || slip._applied) continue;
-    const account = store.accounts[slip.userId];
+    const account = accountForTicket(store, slip);
     if (applySettlementToAccount(account, slip)) n += 1;
   }
   for (const pick of store.futures || []) {
     if (pick.status === 'open' || pick._applied) continue;
-    const account = store.accounts[pick.userId];
+    const account = accountForTicket(store, pick);
     if (applySettlementToAccount(account, pick)) n += 1;
   }
   return n;
@@ -630,16 +647,23 @@ function standingsRow(a) {
   };
 }
 
-function buildStandings(store) {
+function buildStandings(store, roomLounge = 'gridiron') {
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
+  const inRoom = (row) => ticketLounge(row) === lounge;
   const activeIds = new Set();
   for (const a of Object.values(store.accounts)) {
+    if (loungeKey.normalizeLoungeKey(a.loungeKey) !== lounge) continue;
     if ((a.wins || 0) + (a.losses || 0) + (a.pushes || 0) > 0) activeIds.add(a.userId);
   }
-  for (const s of store.slips || []) activeIds.add(s.userId);
-  for (const f of store.futures || []) activeIds.add(f.userId);
+  for (const s of store.slips || []) {
+    if (inRoom(s)) activeIds.add(s.userId);
+  }
+  for (const f of store.futures || []) {
+    if (inRoom(f)) activeIds.add(f.userId);
+  }
 
   return Object.values(store.accounts)
-    .filter((a) => activeIds.has(a.userId))
+    .filter((a) => loungeKey.normalizeLoungeKey(a.loungeKey) === lounge && activeIds.has(a.userId))
     .map(standingsRow)
     .sort((a, b) => {
       if (b.wins !== a.wins) return b.wins - a.wins;
@@ -688,7 +712,7 @@ function settleFutures(store) {
       pick.profit = stake ? -stake : 0;
       pick.payout = 0;
     }
-    const account = store.accounts[pick.userId];
+    const account = accountForTicket(store, pick);
     if (account) applySettlementToAccount(account, pick);
     settled += 1;
   }
@@ -750,7 +774,7 @@ function settleOpenSlips(boards) {
     const before = slip.status;
     settleSlip(slip, index);
     if (slip.status !== 'open' && slip.status !== before) {
-      const account = store.accounts[slip.userId];
+      const account = accountForTicket(store, slip);
       if (account) applySettlementToAccount(account, slip);
       settled += 1;
     }
@@ -830,14 +854,15 @@ function publicSettledTicket(row) {
 
 const UNSEEN_SETTLED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
-function collectUnseenSettled(store, userId) {
+function collectUnseenSettled(store, userId, roomLounge = 'gridiron') {
   const uid = String(userId || '').trim();
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
   if (!uid) return { slips: [], futures: [] };
   const now = Date.now();
   const slips = [];
   const futures = [];
   const consider = (row, bucket) => {
-    if (!row || !sameUserId(row.userId, uid) || row.status === 'open' || row._notified) return;
+    if (!row || !sameUserId(row.userId, uid) || ticketLounge(row) !== lounge || row.status === 'open' || row._notified) return;
     const at = Date.parse(row.settledAt || '') || 0;
     if (!at) return;
     if (now - at > UNSEEN_SETTLED_LOOKBACK_MS) {
@@ -879,32 +904,34 @@ function ackSettlements(user, ids = []) {
   return { ok: true, acked: n };
 }
 
-function getBook(user, boards = []) {
+function getBook(user, boards = [], { loungeKey: roomLounge = 'gridiron' } = {}) {
   const uid = String(user?.id || '').trim();
   if (!uid) {
     throw Object.assign(new Error('Sign in required'), { status: 401 });
   }
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
   if (boards?.length) settleOpenSlips(boards);
   const store = readStore();
   settleFutures(store);
   applyPendingSettlements(store);
-  const account = ensureAccount(store, user);
+  const account = ensureAccount(store, user, lounge);
   for (const a of Object.values(store.accounts || {})) {
     reconcileAccountBankroll(store, a);
   }
-  const unseenSettled = collectUnseenSettled(store, uid);
+  const unseenSettled = collectUnseenSettled(store, uid, lounge);
   writeStore(store);
 
   const mine = store.slips
-    .filter((s) => sameUserId(s.userId, uid))
+    .filter((s) => sameUserId(s.userId, uid) && ticketLounge(s) === lounge)
     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
   const myFutures = (store.futures || [])
-    .filter((f) => sameUserId(f.userId, uid))
+    .filter((f) => sameUserId(f.userId, uid) && ticketLounge(f) === lounge)
     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
-  const standings = buildStandings(store);
-  const draft = publicDraft(store.drafts?.[user.id]);
+  const standings = buildStandings(store, lounge);
+  const draftId = loungeKey.accountStoreId(uid, lounge);
+  const draft = publicDraft(store.drafts?.[draftId] || (lounge === 'gridiron' ? store.drafts?.[uid] : null));
 
   return {
     ok: true,
@@ -974,10 +1001,12 @@ function sanitizeDraftLeg(leg) {
 }
 
 /** Shared open slip across web + PWA — not locked until placeBet. */
-function saveDraft(user, body = {}) {
+function saveDraft(user, body = {}, { loungeKey: roomLounge = 'gridiron' } = {}) {
   if (!user?.id) {
     throw Object.assign(new Error('Sign in required'), { status: 401 });
   }
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
+  const draftId = loungeKey.accountStoreId(user.id, lounge);
   const store = readStore();
   if (!store.drafts || typeof store.drafts !== 'object') store.drafts = {};
   const legs = (Array.isArray(body.legs) ? body.legs : [])
@@ -989,17 +1018,17 @@ function saveDraft(user, body = {}) {
     ? Math.min(MAX_STAKE, Math.max(MIN_STAKE, Math.round(stakeRaw * 100) / 100))
     : 25;
   const updatedAt = String(body.updatedAt || new Date().toISOString());
-  const prev = store.drafts[user.id];
+  const prev = store.drafts[draftId] || (lounge === 'gridiron' ? store.drafts[user.id] : null);
   if (prev?.updatedAt && updatedAt < String(prev.updatedAt)) {
-    // Stale write — keep newer draft, still return book snapshot.
     return {
-      ...getBook(user, []),
+      ...getBook(user, [], { loungeKey: lounge }),
       draft: publicDraft(prev),
       stale: true
     };
   }
-  store.drafts[user.id] = {
+  store.drafts[draftId] = {
     userId: user.id,
+    loungeKey: lounge,
     legs,
     stake,
     privateBet: Boolean(body.private ?? body.privateBet),
@@ -1008,14 +1037,14 @@ function saveDraft(user, body = {}) {
   writeStore(store);
   return {
     ok: true,
-    draft: publicDraft(store.drafts[user.id])
+    draft: publicDraft(store.drafts[draftId])
   };
 }
 
-function clearDraft(store, userId, updatedAt = null) {
+function clearDraft(store, draftId, updatedAt = null) {
   if (!store.drafts || typeof store.drafts !== 'object') store.drafts = {};
-  store.drafts[userId] = {
-    userId,
+  store.drafts[draftId] = {
+    userId: draftId.includes('::') ? draftId.split('::').pop() : draftId,
     legs: [],
     stake: 25,
     privateBet: false,
@@ -1023,10 +1052,12 @@ function clearDraft(store, userId, updatedAt = null) {
   };
 }
 
-function placeFuture(user, body = {}, futuresBoard = null) {
+function placeFuture(user, body = {}, futuresBoard = null, { loungeKey: roomLounge = 'gridiron' } = {}) {
   if (!user?.id) {
     throw Object.assign(new Error('Sign in required'), { status: 401 });
   }
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
+  const draftId = loungeKey.accountStoreId(user.id, lounge);
   const marketId = String(body.marketId || '').trim();
   const outcomeId = String(body.outcomeId || '').trim();
   if (!marketId || !outcomeId) {
@@ -1046,23 +1077,23 @@ function placeFuture(user, body = {}, futuresBoard = null) {
 
   const store = readStore();
   settleFutures(store);
-  const account = ensureAccount(store, user);
+  const account = ensureAccount(store, user, lounge);
   if (!Array.isArray(store.futures)) store.futures = [];
 
-  const openCount = store.futures.filter((f) => f.userId === user.id && f.status === 'open').length;
+  const openCount = store.futures.filter((f) => f.userId === user.id && ticketLounge(f) === lounge && f.status === 'open').length;
   if (openCount >= MAX_OPEN_FUTURES) {
     throw Object.assign(new Error('Too many open futures — wait for some to grade'), { status: 400 });
   }
 
   // Refund stake from a prior open pick on this market before replacing it.
   const prior = store.futures.find(
-    (f) => f.userId === user.id && f.marketId === hit.market.id && f.status === 'open'
+    (f) => f.userId === user.id && ticketLounge(f) === lounge && f.marketId === hit.market.id && f.status === 'open'
   );
   if (prior && Number(prior.stake) > 0 && !prior._applied) {
     account.bankroll = Math.round((account.bankroll + Number(prior.stake)) * 100) / 100;
   }
   store.futures = store.futures.filter(
-    (f) => !(f.userId === user.id && f.marketId === hit.market.id && f.status === 'open')
+    (f) => !(f.userId === user.id && ticketLounge(f) === lounge && f.marketId === hit.market.id && f.status === 'open')
   );
 
   if (account.bankroll < stake) {
@@ -1091,6 +1122,7 @@ function placeFuture(user, body = {}, futuresBoard = null) {
     payout: null,
     profit: null,
     private: Boolean(body.private),
+    loungeKey: lounge,
     status: 'open',
     result: null,
     champion: null,
@@ -1099,10 +1131,10 @@ function placeFuture(user, body = {}, futuresBoard = null) {
     _applied: false
   };
   store.futures.unshift(pick);
-  clearDraft(store, user.id);
+  clearDraft(store, draftId);
   writeStore(store);
 
-  const book = getBook(user, []);
+  const book = getBook(user, [], { loungeKey: lounge });
   return {
     ...book,
     placedFuture: {
@@ -1121,10 +1153,12 @@ function placeFuture(user, body = {}, futuresBoard = null) {
   };
 }
 
-function placeBet(user, body = {}, boards = []) {
+function placeBet(user, body = {}, boards = [], { loungeKey: roomLounge = 'gridiron' } = {}) {
   if (!user?.id) {
     throw Object.assign(new Error('Sign in required'), { status: 401 });
   }
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
+  const draftId = loungeKey.accountStoreId(user.id, lounge);
   if (boards?.length) settleOpenSlips(boards);
 
   const stake = Number(body.stake);
@@ -1169,8 +1203,8 @@ function placeBet(user, body = {}, boards = []) {
   const profit = profitFromAmerican(stake, odds);
 
   const store = readStore();
-  const account = ensureAccount(store, user);
-  const openCount = store.slips.filter((s) => s.userId === user.id && s.status === 'open').length;
+  const account = ensureAccount(store, user, lounge);
+  const openCount = store.slips.filter((s) => s.userId === user.id && ticketLounge(s) === lounge && s.status === 'open').length;
   if (openCount >= MAX_OPEN_SLIPS) {
     throw Object.assign(new Error('Too many open slips — let some grade first'), { status: 400 });
   }
@@ -1190,6 +1224,7 @@ function placeBet(user, body = {}, boards = []) {
     toWin: profit,
     legs,
     private: isPrivate,
+    loungeKey: lounge,
     status: 'open',
     payout: null,
     profit: null,
@@ -1198,9 +1233,9 @@ function placeBet(user, body = {}, boards = []) {
     _applied: false
   };
   store.slips.unshift(slip);
-  clearDraft(store, user.id);
+  clearDraft(store, draftId);
   writeStore(store);
-  const book = getBook(user, boards);
+  const book = getBook(user, boards, { loungeKey: lounge });
   return {
     ...book,
     placedSlip: {
@@ -1367,8 +1402,20 @@ function purgeUser(userId) {
   const id = String(userId || '');
   if (!id) return false;
   const store = readStore();
-  delete store.accounts[id];
-  if (store.drafts && typeof store.drafts === 'object') delete store.drafts[id];
+  for (const key of Object.keys(store.accounts || {})) {
+    const row = store.accounts[key];
+    if (key === id || key.endsWith(`::${id}`) || String(row?.userId) === id) {
+      delete store.accounts[key];
+    }
+  }
+  if (store.drafts && typeof store.drafts === 'object') {
+    for (const key of Object.keys(store.drafts)) {
+      const row = store.drafts[key];
+      if (key === id || key.endsWith(`::${id}`) || String(row?.userId) === id) {
+        delete store.drafts[key];
+      }
+    }
+  }
   store.slips = (store.slips || []).filter((s) => String(s.userId) !== id);
   store.futures = (store.futures || []).filter((f) => String(f.userId) !== id);
   writeStore(store);

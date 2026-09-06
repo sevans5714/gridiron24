@@ -1914,7 +1914,7 @@ html[data-theme="day"] .s-row .num.col-pf {
 
 .team-hero {
   display: grid;
-  grid-template-columns: 4.25rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
   align-items: center;
   margin: 0 0 1rem;
@@ -4167,7 +4167,7 @@ html[data-theme="day"] .s-row .num.col-pf {
 }
 .po-side {
   display: grid;
-  grid-template-columns: 1.5rem 1.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.35rem;
   min-height: 1.5rem;
@@ -4355,16 +4355,13 @@ body.has-install-sheet { overflow: hidden; }
 .franchise-title.is-md,
 .franchise-title.is-inline,
 .po-side .franchise-title {
-  font-size: 1.05rem;
-  letter-spacing: 0.03em;
-  line-height: 1.15;
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  word-break: break-word;
-  text-shadow: none;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+  display: block;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 .franchise-title.is-lg { font-size: 1.7rem; }
 .franchise-title.is-xl { font-size: clamp(1.9rem, 4.2vw, 2.75rem); }

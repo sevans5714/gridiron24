@@ -24,6 +24,17 @@
     return n > 0 ? `+${n}` : String(n);
   }
 
+  function loungeUrl(path) {
+    let league = window.GridIronNav?.getLeagueQuery?.();
+    if (!league) {
+      try { league = String(localStorage.getItem('gi-pwa-league') || '').trim(); } catch { league = ''; }
+    }
+    if (!league) league = new URLSearchParams(window.location.search).get('league') || 'gridiron';
+    const u = new URL(path, window.location.origin);
+    u.searchParams.set('league', league);
+    return u.pathname + u.search;
+  }
+
   function fmtKick(iso) {
     if (!iso) return '';
     try {
@@ -272,7 +283,7 @@
   function ackSettledTickets(ids) {
     const list = (ids || []).map((id) => String(id || '')).filter(Boolean);
     if (!list.length) return;
-    fetch('/api/paper-book', {
+    fetch(loungeUrl('/api/paper-book'), {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -964,7 +975,7 @@
     book.draftSaving = true;
     try {
       const body = payload || draftPayload();
-      const res = await fetch('/api/paper-book', {
+      const res = await fetch(loungeUrl('/api/paper-book'), {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -1941,7 +1952,7 @@
     if (!root) return;
     try {
       captureSlipForm();
-      const res = await fetch('/api/paper-book', { credentials: 'same-origin', cache: 'no-store' });
+      const res = await fetch(loungeUrl('/api/paper-book'), { credentials: 'same-origin', cache: 'no-store' });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load sportsbook');
       book.data = data;
@@ -1958,7 +1969,7 @@
   }
 
   async function postFuture(payload, isPrivate, stake) {
-    const res = await fetch('/api/paper-book', {
+    const res = await fetch(loungeUrl('/api/paper-book'), {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -1995,7 +2006,7 @@
       }
 
       if (gameLegs.length) {
-        const res = await fetch('/api/paper-book', {
+        const res = await fetch(loungeUrl('/api/paper-book'), {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },

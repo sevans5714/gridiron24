@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const MockDraftCpu = require('./public/js/mock-draft-cpu');
 const logos = require('./logos-store');
 const CPU_GM_NAMES = require('./public/js/cpu-gm-names');
+const loungeKey = require('./lounge-key');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const FILE = path.join(DATA_DIR, 'mock-draft-rooms.json');
@@ -370,7 +371,7 @@ function advanceRoom(room, pool) {
   return changed;
 }
 
-function createRoom({ user, teamCount, rounds, pickSeconds, scoring, seatIndex, teamNames, hostTeamName }) {
+function createRoom({ user, teamCount, rounds, pickSeconds, scoring, seatIndex, teamNames, hostTeamName, loungeKey: roomLounge = 'gridiron' }) {
   if (!user?.id) throw err(401, 'Sign in required');
   const count = clampTeamCount(teamCount);
   const seat = Number(seatIndex);
@@ -380,8 +381,10 @@ function createRoom({ user, teamCount, rounds, pickSeconds, scoring, seatIndex, 
   const store = readStore();
   pruneRooms(store);
   // End other live rooms hosted by this user
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
   for (const r of store.rooms) {
-    if (r.hostId === user.id && (r.status === 'live' || r.status === 'lobby')) {
+    if (r.hostId === user.id && (r.status === 'live' || r.status === 'lobby')
+      && loungeKey.normalizeLoungeKey(r.loungeKey) === lounge) {
       r.status = 'done';
       r.updatedAt = new Date().toISOString();
     }
@@ -399,6 +402,7 @@ function createRoom({ user, teamCount, rounds, pickSeconds, scoring, seatIndex, 
     id: crypto.randomUUID(),
     hostId: user.id,
     hostName: user.name || user.loginName || 'Host',
+    loungeKey: lounge,
     status: 'lobby',
     teamCount: count,
     rounds: clampRounds(rounds),
@@ -616,11 +620,20 @@ function humanPick({ roomId, user, playerId, pool }) {
   return saveRoom(room);
 }
 
-function listActiveRooms() {
+function listActiveRooms(roomLounge = 'gridiron') {
   const store = readStore();
   pruneRooms(store);
   writeStore(store);
-  return store.rooms.filter((r) => r.status === 'live' || r.status === 'lobby');
+  const lounge = loungeKey.normalizeLoungeKey(roomLounge);
+  return store.rooms.filter((r) =>
+    (r.status === 'live' || r.status === 'lobby')
+    && loungeKey.normalizeLoungeKey(r.loungeKey) === lounge
+  );
+}
+
+function roomInLounge(room, roomLounge) {
+  if (!room) return false;
+  return loungeKey.normalizeLoungeKey(room.loungeKey) === loungeKey.normalizeLoungeKey(roomLounge);
 }
 
 function addChatMessage({ roomId, user, body }) {
@@ -666,6 +679,7 @@ module.exports = {
   advanceRoom,
   publicRoom,
   listActiveRooms,
+  roomInLounge,
   addChatMessage,
   currentSlot,
   clampPickSeconds,

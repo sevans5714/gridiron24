@@ -53,6 +53,7 @@ const presence = require('./presence-store');
 const ruleProposals = require('./rule-proposals-store');
 const featureRequests = require('./feature-requests-store');
 const leagues = require('./leagues-store');
+const loungeKey = require('./lounge-key');
 const { compareScoringSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
 const sportsScoreboard = require('./sports-scoreboard');
@@ -350,29 +351,66 @@ function fantasyTeamNameForUser(user) {
   return owner || null;
 }
 
+function lastPersonToken(value) {
+  const parts = personKey(value).split(' ').filter(Boolean);
+  return parts[parts.length - 1] || '';
+}
+
+function espnFranchiseMatchScore(userKeys, lastNames, team) {
+  const ownerKeys = [team?.owner, team?.espnName, team?.name]
+    .map((v) => personKey(v))
+    .filter((k) => k && k !== 'owner pending' && k !== 'owner');
+  let best = 0;
+  for (const ok of ownerKeys) {
+    for (const uk of userKeys) {
+      if (uk === ok) best = Math.max(best, 4);
+      else if (uk.endsWith(` ${ok}`) || ok.endsWith(` ${uk}`)) best = Math.max(best, 3);
+    }
+    const ownerLast = lastPersonToken(ok);
+    for (const last of lastNames) {
+      if (ownerLast && last && ownerLast === last && last.length >= 3) best = Math.max(best, 2);
+    }
+  }
+  return best;
+}
+
 async function maybeLinkEspnFranchise(user) {
   if (!user?.id || user.loungeOnly) return null;
-  if (logos.getClaimForUser(user.id)) return logos.getClaimForUser(user.id);
-  const needle = personKey(user.name);
-  const login = personKey(user.loginName);
-  if (!needle && !login) return null;
+  const claimed = logos.getClaimForUser(user.id);
+  if (claimed) return claimed;
+  const userKeys = new Set(
+    [user.name, user.loginName]
+      .map((v) => personKey(v))
+      .filter((k) => k && k.length >= 2)
+  );
+  const lastNames = new Set(
+    [...userKeys].map(lastPersonToken).filter((k) => k.length >= 3)
+  );
+  if (!userKeys.size) return null;
+  const membership = users.hqMembershipOf(user);
+  const hqConf = users.hqConferenceOf(user);
   const hits = [];
   for (const conf of listAdminLeagues()) {
     if (!(Number(conf.espnLeagueId) > 0)) continue;
+    if (membership === 'aaa' && conf.key !== 'aaa') continue;
+    if (membership === 'gridiron' && conf.key === 'aaa') continue;
+    if (hqConf && (conf.key === 'detail' || conf.key === 'overtime') && conf.key !== hqConf) continue;
     try {
       const league = await fetchEspnLeague(conf);
       for (const t of league.teams || []) {
-        const owner = personKey(t.owner);
-        if (!owner) continue;
-        if (owner !== needle && owner !== login) continue;
+        const score = espnFranchiseMatchScore(userKeys, lastNames, t);
+        if (score < 2) continue;
         const taken = logos.getClaimForTeam(conf.key, t.id);
         if (taken && taken.userId !== user.id) continue;
-        hits.push({ conf, team: t });
+        hits.push({ conf, team: t, score });
       }
     } catch { /* ignore */ }
   }
-  if (hits.length !== 1) return null;
-  const hit = hits[0];
+  if (!hits.length) return null;
+  hits.sort((a, b) => b.score - a.score);
+  const top = hits.filter((h) => h.score === hits[0].score);
+  if (top.length !== 1) return null;
+  const hit = top[0];
   const existing = logos.getClaimForTeam(hit.conf.key, hit.team.id);
   if (existing) return existing.userId === user.id ? existing : null;
   try {
@@ -1213,7 +1251,86 @@ function ownerName(member) {
   const first = (member.firstName || '').trim();
   const last = (member.lastName || '').trim();
   const full = `${first} ${last}`.trim();
-  return full || member.displayName || 'Owner';
+  return full || member.displayName || member.nickname || 'Owner';
+}
+
+function espnMemberId(value) {
+  if (value == null) return null;
+  if (typeof value === 'object') {
+    return espnMemberId(value.id ?? value.uid ?? value.userId ?? value.memberId);
+  }
+  const s = String(value).trim();
+  return s || null;
+}
+
+function espnMemberLookupKeys(id) {
+  const raw = espnMemberId(id);
+  if (!raw) return [];
+  const bare = raw.replace(/[{}]/g, '');
+  return [...new Set([
+    raw,
+    String(raw),
+    bare,
+    bare.toLowerCase(),
+    `{${bare}}`,
+    `{${bare.toLowerCase()}}`
+  ])];
+}
+
+function buildEspnMembersById(raw) {
+  const map = new Map();
+  const add = (member) => {
+    if (!member || typeof member !== 'object') return;
+    const keys = espnMemberLookupKeys(member);
+    if (!keys.length) return;
+    for (const key of keys) map.set(key, member);
+  };
+  for (const list of [raw?.members, raw?.communication?.members]) {
+    if (Array.isArray(list)) {
+      for (const member of list) add(member);
+    }
+  }
+  for (const team of raw?.teams || []) {
+    for (const owner of team.owners || []) {
+      if (owner && typeof owner === 'object') add(owner);
+    }
+  }
+  return map;
+}
+
+function espnMemberFromMap(membersById, id) {
+  if (!membersById) return null;
+  for (const key of espnMemberLookupKeys(id)) {
+    const found = membersById.get(key);
+    if (found) return found;
+  }
+  return null;
+}
+
+function ownerFromEspnDefaultName(team) {
+  const chunks = [
+    team?.name,
+    `${team?.location || ''} ${team?.nickname || ''}`.trim(),
+    team?.nickname,
+    team?.location
+  ];
+  for (const raw of chunks) {
+    const match = String(raw || '').trim().match(/^team\s+(.+)$/i);
+    const rest = match?.[1]?.trim();
+    if (rest && !/^team$/i.test(rest)) return rest;
+  }
+  return null;
+}
+
+function espnOwnerLabel(team, membersById) {
+  const ids = [team?.primaryOwner, ...(Array.isArray(team?.owners) ? team.owners : [])]
+    .map(espnMemberId)
+    .filter((id) => id != null);
+  for (const id of ids) {
+    const named = ownerName(espnMemberFromMap(membersById, id));
+    if (named && named !== 'Owner pending' && named !== 'Owner') return named;
+  }
+  return ownerFromEspnDefaultName(team) || 'Owner pending';
 }
 
 function espnDisplayNameLooksDefault(name) {
@@ -1248,8 +1365,7 @@ function gridironOwnerForEspnTeam(conferenceKey, teamId) {
 }
 
 function resolveEspnTeamIdentity(conferenceKey, team, membersById) {
-  const ownerId = team?.primaryOwner || (team?.owners || [])[0];
-  const espnOwner = ownerName(membersById?.get(ownerId));
+  const espnOwner = espnOwnerLabel(team, membersById);
   const claimOwner = conferenceKey ? gridironOwnerForEspnTeam(conferenceKey, team?.id) : null;
   const owner = claimOwner || (espnOwner !== 'Owner pending' ? espnOwner : null) || espnOwner;
   const espnName = (team?.name || `${team?.location || ''} ${team?.nickname || ''}`).trim()
@@ -1263,6 +1379,22 @@ function resolveEspnTeamIdentity(conferenceKey, team, membersById) {
     ? team.abbrev
     : (ownerAbbrev(name, team?.abbrev || '') || team?.abbrev || '');
   return { espnName, name, owner, abbreviation };
+}
+
+function gi24UsesEspnLogosOnly(user, claim) {
+  const key = String(claim?.conferenceKey || '').toLowerCase();
+  if (key === 'detail' || key === 'overtime' || key === 'aaa') return true;
+  const hq = users.hqMembershipOf(user);
+  return hq === 'gridiron' || hq === 'aaa';
+}
+
+function espnTeamMark(conferenceKey, team) {
+  const espnUrl = logos.espnLogoFromTeam(team);
+  return {
+    logo: logos.espnTeamDisplayLogo(null, espnUrl),
+    logoSource: espnUrl ? 'espn' : 'placeholder',
+    espnLogo: espnUrl || null
+  };
 }
 
 function teamHighPoints(raw, teamId) {
@@ -1297,8 +1429,7 @@ function conferenceAdminName(conferenceKey) {
 }
 
 function normalizeLeague(raw, conference) {
-  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
-  const logoOverrides = logos.getOverrideMap();
+  const membersById = buildEspnMembersById(raw);
   const teams = (raw.teams || []).map((team) => {
     const record = team.record?.overall || team.record || {};
 
@@ -1310,17 +1441,16 @@ function normalizeLeague(raw, conference) {
     const streakType = normalizeStreakType(record.streakType || team.streakType);
     const streakLength = Number(record.streakLength || team.streakLength || 0);
     const identity = resolveEspnTeamIdentity(conference.key, team, membersById);
-    const key = logos.logoKey(conference.key, team.id);
-    const overrideLogo = logoOverrides.get(key);
+    const mark = espnTeamMark(conference.key, team);
 
     return {
       id: team.id,
       name: identity.name,
       espnName: identity.espnName,
       abbreviation: identity.abbreviation,
-      logo: logos.displayLogoUrl(overrideLogo),
-      logoSource: overrideLogo ? 'gridiron' : 'placeholder',
-      espnLogo: team.logo || null,
+      logo: mark.logo,
+      logoSource: mark.logoSource,
+      espnLogo: mark.espnLogo,
       owner: identity.owner,
       wins,
       losses,
@@ -1365,15 +1495,17 @@ function normalizeLeague(raw, conference) {
 
 async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}, seasonOverride = null) {
   const season = Number(seasonOverride) || Number(config.season);
+  const viewList = Array.isArray(views) ? views.slice() : [];
+  if (viewList.includes('mTeam') && !viewList.includes('mNav')) viewList.push('mNav');
   const queryKey = Object.keys(query || {})
     .sort()
     .map((k) => `${k}=${query[k]}`)
     .join('&');
-  const cacheKey = `${season}:${conference.espnLeagueId}:${cacheSuffix || views.join(',')}${queryKey ? `:${queryKey}` : ''}`;
+  const cacheKey = `${season}:${conference.espnLeagueId}:${cacheSuffix || viewList.join(',')}${queryKey ? `:${queryKey}` : ''}`;
 
   const pathBase = `apis/v3/games/ffl/seasons/${season}/segments/0/leagues/${conference.espnLeagueId}`;
   const params = new URLSearchParams();
-  for (const view of views) params.append('view', view);
+  for (const view of viewList) params.append('view', view);
   for (const [key, value] of Object.entries(query || {})) {
     if (value != null && value !== '') params.set(key, String(value));
   }
@@ -1514,7 +1646,10 @@ async function loadDraftBoard(conferenceKey, seasonOverride = null) {
     throw err;
   }
   const season = Number(seasonOverride) || Number(config.season);
-  const historyEntry = historySeasonEntries().find((e) => e.season === season);
+  const liveSeason = Number(config.season);
+  const historyEntry = Number(season) !== liveSeason
+    ? historySeasonEntries().find((e) => e.season === season)
+    : null;
   let espnLeagueId = conference.espnLeagueId;
   if (historyEntry) {
     if (conference.key === 'detail' && historyEntry.detailEspnLeagueId) {
@@ -1536,19 +1671,33 @@ async function loadDraftBoard(conferenceKey, seasonOverride = null) {
     {},
     season
   );
-  const draftDetail = raw.draftDetail || {};
+  const draftDetailRaw = raw.draftDetail || {};
+  let draftDetail = draftDetailRaw;
+  if (!Array.isArray(draftDetail.picks) || !draftDetail.picks.length) {
+    try {
+      const draftOnly = await fetchEspnRaw(
+        conferenceForFetch,
+        ['mDraftDetail'],
+        'draft-only',
+        {},
+        season
+      );
+      if (Array.isArray(draftOnly?.draftDetail?.picks) && draftOnly.draftDetail.picks.length) {
+        draftDetail = draftOnly.draftDetail;
+      }
+    } catch { /* keep combined payload */ }
+  }
   const settings = raw.settings?.draftSettings || {};
-  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
+  const membersById = buildEspnMembersById(raw);
   const teamsById = new Map();
   for (const team of raw.teams || []) {
-    const key = logos.logoKey(conference.key, team.id);
-    const overrideLogo = logos.getOverrideMap().get(key);
     const identity = resolveEspnTeamIdentity(conference.key, team, membersById);
+    const mark = espnTeamMark(conference.key, team);
     teamsById.set(Number(team.id), {
       id: Number(team.id),
       name: identity.name,
       abbreviation: identity.abbreviation,
-      logo: logos.displayLogoUrl(overrideLogo),
+      logo: mark.logo,
       owner: identity.owner
     });
   }
@@ -1564,8 +1713,17 @@ async function loadDraftBoard(conferenceKey, seasonOverride = null) {
 
   const picks = rawPicks.map((pick) => {
     const playerId = Number(pick.playerId);
-    const player = playersById.get(playerId);
-    const names = splitPlayerName(player?.fullName, player?.firstName, player?.lastName);
+    const pool = pick.playerPoolEntry?.player || pick.player || {};
+    const player = playersById.get(playerId) || (pool.fullName || pool.lastName || pool.id
+      ? {
+        fullName: playerName(pool),
+        firstName: pool.firstName || '',
+        lastName: pool.lastName || '',
+        position: POSITION_LABELS[pool.defaultPositionId] || '',
+        proTeam: PRO_TEAM_ABBREV[pool.proTeamId] || 'FA'
+      }
+      : null);
+    const names = splitPlayerName(player?.fullName, player?.firstName || pool.firstName, player?.lastName || pool.lastName);
     const filled = Number.isFinite(playerId) && playerId > 0;
     return {
       id: pick.id,
@@ -2010,9 +2168,8 @@ function playerName(player) {
 }
 
 function normalizeRosterTeam(team, conference, membersById, lineupSlotCounts = null) {
-  const key = logos.logoKey(conference.key, team.id);
-  const overrideLogo = logos.getOverrideMap().get(key);
   const identity = resolveEspnTeamIdentity(conference.key, team, membersById);
+  const mark = espnTeamMark(conference.key, team);
   const entries = (team.roster?.entries || []).map((entry) => {
     const pool = entry.playerPoolEntry || {};
     const player = pool.player || {};
@@ -2051,7 +2208,7 @@ function normalizeRosterTeam(team, conference, membersById, lineupSlotCounts = n
     name: identity.name,
     espnName: identity.espnName,
     abbreviation: identity.abbreviation,
-    logo: logos.displayLogoUrl(overrideLogo),
+    logo: mark.logo,
     owner: identity.owner,
     wins: record.wins || 0,
     losses: record.losses || 0,
@@ -2095,7 +2252,9 @@ function applyWeekStatsToRoster(roster, statsMap) {
     return {
       ...p,
       weekPoints: hit?.points ?? null,
-      weekProjected: hit?.projected ?? null
+      weekProjected: hit?.projected ?? null,
+      points: hit?.points ?? p.points ?? null,
+      projected: hit?.projected ?? p.projected ?? null
     };
   });
 }
@@ -2332,20 +2491,22 @@ function buildMatchupBox(raw, conference, week, focusTeamId, lineupSlotCounts = 
 async function loadTeamDetail(conferenceKey, teamId) {
   const conference = resolveEspnLeague(conferenceKey);
   if (!conference) throw Object.assign(new Error('Unknown conference'), { status: 404 });
-  const raw = await fetchEspnRaw(conference, ['mTeam', 'mRoster', 'mStatus'], `roster:${teamId}`);
-  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
-  const team = (raw.teams || []).find((t) => Number(t.id) === Number(teamId));
+  const statusRaw = await fetchEspnRaw(conference, ['mTeam', 'mStatus'], `roster-status:${teamId}`);
+  const espnWeek = Number(statusRaw.status?.currentMatchupPeriod || 1);
+  const display = await matchupDisplayWeek.resolveDisplayMatchupWeek(espnWeek);
+  const currentWeek = Number(display.week || espnWeek);
+  const raw = await fetchEspnRaw(
+    conference,
+    ['mTeam', 'mRoster', 'mStatus'],
+    `roster:${teamId}:${currentWeek}`,
+    { scoringPeriodId: currentWeek }
+  );
+  const membersById = buildEspnMembersById(raw);
+  const team = (raw.teams || []).find((t) => Number(t.id) === Number(teamId))
+    || (statusRaw.teams || []).find((t) => Number(t.id) === Number(teamId));
   if (!team) throw Object.assign(new Error('Team not found'), { status: 404 });
   const detail = normalizeRosterTeam(team, conference, membersById, lineupSlotCountsFromRaw(raw));
 
-  const baseSchedule = await fetchEspnRaw(
-    conference,
-    ['mTeam', 'mMatchup', 'mStatus'],
-    'matchup-base'
-  );
-  const espnWeek = Number(baseSchedule.status?.currentMatchupPeriod || 1);
-  const display = await matchupDisplayWeek.resolveDisplayMatchupWeek(espnWeek);
-  const currentWeek = Number(display.week || espnWeek);
   const scheduleRaw = await fetchEspnRaw(
     conference,
     ['mTeam', 'mMatchup', 'mScoreboard', 'mStatus'],
@@ -2429,7 +2590,7 @@ async function loadConferenceRosters(conferenceKey) {
   const conference = resolveEspnLeague(conferenceKey);
   if (!conference) throw Object.assign(new Error('Unknown conference'), { status: 404 });
   const raw = await fetchEspnRaw(conference, ['mTeam', 'mRoster', 'mMatchup', 'mScoreboard', 'mStatus'], `rosters:${conference.key}`);
-  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
+  const membersById = buildEspnMembersById(raw);
   const currentWeek = Number(raw.status?.currentMatchupPeriod || 1);
   const schedule = normalizeSchedule(raw, conference, currentWeek);
   const counts = lineupSlotCountsFromRaw(raw);
@@ -3015,18 +3176,16 @@ function normalizeSettings(raw, conference) {
 }
 
 function teamMapFromRaw(raw, conferenceKey) {
-  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
-  const logoOverrides = logos.getOverrideMap();
+  const membersById = buildEspnMembersById(raw);
   const map = new Map();
   for (const team of raw.teams || []) {
-    const key = conferenceKey ? logos.logoKey(conferenceKey, team.id) : null;
-    const overrideLogo = key ? logoOverrides.get(key) : null;
     const identity = resolveEspnTeamIdentity(conferenceKey, team, membersById);
+    const mark = espnTeamMark(conferenceKey, team);
     map.set(team.id, {
       id: team.id,
       name: identity.name,
-      logo: logos.displayLogoUrl(overrideLogo),
-      logoSource: overrideLogo ? 'gridiron' : 'placeholder',
+      logo: mark.logo,
+      logoSource: mark.logoSource,
       owner: identity.owner,
       abbreviation: identity.abbreviation,
       record: team.record?.overall || {}
@@ -3086,13 +3245,11 @@ const BENCH_OR_IR_SLOTS = new Set([20, 21]);
 
 function collectInjuredStarterFindings(raw, conference) {
   const findings = [];
-  const logoOverrides = logos.getOverrideMap();
-  const membersById = new Map((raw.members || []).map((m) => [m.id, m]));
+  const membersById = buildEspnMembersById(raw);
   for (const team of raw.teams || []) {
-    const key = logos.logoKey(conference.key, team.id);
     const identity = resolveEspnTeamIdentity(conference.key, team, membersById);
     const teamName = identity.name;
-    const teamLogo = logos.displayLogoUrl(logoOverrides.get(key));
+    const teamLogo = espnTeamMark(conference.key, team).logo;
     for (const entry of team.roster?.entries || []) {
       const slotId = Number(entry.lineupSlotId);
       if (BENCH_OR_IR_SLOTS.has(slotId)) continue;
@@ -3632,6 +3789,17 @@ async function peekEspnLeagueById(espnLeagueId, seasonOverride = null) {
     season
   );
   const teams = Array.isArray(raw.teams) ? raw.teams : [];
+  const membersById = buildEspnMembersById(raw);
+  const roster = teams.map((team) => {
+    const identity = resolveEspnTeamIdentity(null, team, membersById);
+    return {
+      id: team.id,
+      name: identity.name,
+      owner: identity.owner,
+      logo: espnTeamMark(null, team).logo
+    };
+  }).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
+  const ownersReady = roster.filter((t) => t.owner && t.owner !== 'Owner pending').length;
   return {
     ok: true,
     espnLeagueId: id,
@@ -3641,7 +3809,9 @@ async function peekEspnLeagueById(espnLeagueId, seasonOverride = null) {
     isViewable: raw.status?.isViewable ?? raw.settings?.isPublic ?? null,
     settingsUrl: espnSettingsUrl(id, season),
     leagueUrl: espnLeagueOfficeUrl(id, season),
-    previousEspnId: seedEspnLeagueIds().has(id)
+    previousEspnId: seedEspnLeagueIds().has(id),
+    ownersReady,
+    teams: roster
   };
 }
 
@@ -3921,8 +4091,8 @@ async function apiOfficialScoring(res) {
 
 async function scheduleForConference(conference, weekParam, cacheTag = 'matchup') {
   try {
-    const raw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], cacheTag);
-    const espnWeek = Number(raw.status?.currentMatchupPeriod || 1);
+    const statusRaw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], cacheTag);
+    const espnWeek = Number(statusRaw.status?.currentMatchupPeriod || 1);
     let week = Number(weekParam || 0);
     let held = false;
     if (!(week > 0)) {
@@ -3930,6 +4100,16 @@ async function scheduleForConference(conference, weekParam, cacheTag = 'matchup'
       week = Number(display.week || espnWeek);
       held = Boolean(display.held);
     }
+    let raw = statusRaw;
+    try {
+      const boxed = await fetchEspnRaw(
+        conference,
+        ['mTeam', 'mMatchup', 'mScoreboard', 'mStatus'],
+        `${cacheTag}:box:${week}`,
+        { scoringPeriodId: week }
+      );
+      if (Array.isArray(boxed?.schedule) && boxed.schedule.length) raw = boxed;
+    } catch { /* keep status snapshot */ }
     return {
       ok: true,
       ...normalizeSchedule(raw, conference, week),
@@ -5966,6 +6146,7 @@ function buildOwnProfile(user, req) {
     ok: true,
     user: users.publicUser(user),
     logo,
+    customLogos: !gi24UsesEspnLogosOnly(user, claim),
     leagueScope: scope,
     memberships,
     gi24Claim: Boolean(claim),
@@ -6003,6 +6184,37 @@ function resolveLeagueScope(user, req, requestedLeague) {
   if (user && !userMayAccessPreferred(user, parsed)) return personal;
   if (!user) return personal;
   return leagueScopeFromPreferred(user, parsed, { canSwitchLeagues: personal.canSwitchLeagues }) || personal;
+}
+
+function loungeKeyForRequest(user, req, requestedLeague) {
+  const parsed = parseRequestedLeague(requestedLeague);
+  const scope = parsed
+    ? resolveLeagueScope(user, req, parsed)
+    : leagueScopeForUser(user, req);
+  return loungeKey.fromScope(scope);
+}
+
+function listIndependentLoungeRoster(league) {
+  if (!league || league.platform !== 'independent') return [];
+  const byId = new Map();
+  const add = (userId, extra = {}) => {
+    const raw = users.findById(userId);
+    if (!raw || raw.approved === false) return;
+    const pub = users.publicUser(raw);
+    const prev = byId.get(pub.id) || pub;
+    byId.set(pub.id, { ...prev, ...extra });
+  };
+  if (league.ownerUserId) {
+    add(league.ownerUserId, { conferenceLabel: 'Owner' });
+  }
+  for (const f of league.franchises || []) {
+    if (!f.managerUserId) continue;
+    add(f.managerUserId, {
+      teamName: f.displayName || f.name || null,
+      conferenceLabel: f.conferenceName || league.brand?.name || 'League'
+    });
+  }
+  return [...byId.values()];
 }
 
 function shouldServeEspnHq(user, scope, requestedLeague) {
@@ -9023,7 +9235,9 @@ const server = http.createServer(async (req, res) => {
       try {
         const leagues = requestUrl.searchParams.get('leagues');
         // Default lounge pull includes fantasy boards; explicit ?leagues=nfl (etc.) skips them.
-        const extraBoards = leagues ? [] : await loadFantasySportsBoards();
+        const extraBoards = leagues || loungeKey.isIndependent(loungeKeyForRequest(getSessionUser(req), req, requestUrl.searchParams.get('league')))
+          ? []
+          : await loadFantasySportsBoards();
         // One week of day-based slates so preseason can show without
         // next month's openers.
         const payload = await sportsScoreboard.getSportsScores({
@@ -9244,7 +9458,8 @@ const server = http.createServer(async (req, res) => {
       try {
         const openLegs = paperBook.listOpenUngradedLegs();
         const boards = await sportsScoreboard.getSettlementBoards({ openLegs });
-        const book = paperBook.getBook(users.publicUser(viewer), boards);
+        const room = loungeKeyForRequest(viewer, req, requestUrl.searchParams.get('league'));
+        const book = paperBook.getBook(users.publicUser(viewer), boards, { loungeKey: room });
         const futuresBoard = await futuresMarkets.getFuturesBoard().catch(() => ({
           ok: false,
           markets: [],
@@ -9319,6 +9534,8 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const publicAuthor = users.publicUser(user);
+        const room = loungeKeyForRequest(user, req, body.league || requestUrl.searchParams.get('league'));
+        const bookOpts = { loungeKey: room };
         const action = String(body.action || 'bet').toLowerCase();
         if (action === 'ack-settled' || action === 'ack-settlements') {
           const result = paperBook.ackSettlements(publicAuthor, body.ids);
@@ -9328,14 +9545,14 @@ const server = http.createServer(async (req, res) => {
         const boards = await sportsScoreboard.getSettlementBoards({ openLegs });
 
         if (action === 'draft' || action === 'slip') {
-          const book = paperBook.saveDraft(publicAuthor, body);
+          const book = paperBook.saveDraft(publicAuthor, body, bookOpts);
           return sendJson(res, 200, book);
         }
 
         if (action === 'future') {
           paperBook.settleOpenSlips(boards);
           const futuresBoard = await futuresMarkets.getFuturesBoard();
-          const book = paperBook.placeFuture(publicAuthor, body, futuresBoard);
+          const book = paperBook.placeFuture(publicAuthor, body, futuresBoard, bookOpts);
           if (book.placedFuture) {
             try {
               const chatPayload = paperBook.formatSlipChat(book.placedFuture);
@@ -9345,6 +9562,7 @@ const server = http.createServer(async (req, res) => {
                   author: publicAuthor,
                   kind: 'bet',
                   meta: chatPayload.meta,
+                  loungeKey: room,
                   skipRateLimit: true
                 });
               }
@@ -9358,7 +9576,7 @@ const server = http.createServer(async (req, res) => {
 
         if (action === 'bet') {
           // placeBet deducts stake from Funds immediately, then settleOpenSlips grades any finals.
-          const book = paperBook.placeBet(publicAuthor, body, boards);
+          const book = paperBook.placeBet(publicAuthor, body, boards, bookOpts);
           if (book.placedSlip) {
             try {
               const chatPayload = paperBook.formatSlipChat(book.placedSlip);
@@ -9368,6 +9586,7 @@ const server = http.createServer(async (req, res) => {
                   author: publicAuthor,
                   kind: 'bet',
                   meta: chatPayload.meta,
+                  loungeKey: room,
                   skipRateLimit: true
                 });
               }
@@ -9389,11 +9608,14 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/mock-draft' && req.method === 'GET') {
       const user = requireLoungeMember(req, res);
       if (!user) return;
+      const lounge = loungeKeyForRequest(user, req, requestUrl.searchParams.get('league'));
       const roomId = String(requestUrl.searchParams.get('roomId') || '').trim();
       try {
         if (roomId) {
           let room = mockDraftRooms.getRoom(roomId);
-          if (!room) return sendJson(res, 404, { ok: false, error: 'Mock draft not found' });
+          if (!room || !mockDraftRooms.roomInLounge(room, lounge)) {
+            return sendJson(res, 404, { ok: false, error: 'Mock draft not found' });
+          }
           const roomPool = (await nflverseDraft.loadDraftPool(draftPoolOpts(room))).players || [];
           if (mockDraftRooms.advanceRoom(room, roomPool)) {
             room = mockDraftRooms.saveRoom(room);
@@ -9405,7 +9627,7 @@ const server = http.createServer(async (req, res) => {
           });
         }
         const rooms = [];
-        for (const r of mockDraftRooms.listActiveRooms()) {
+        for (const r of mockDraftRooms.listActiveRooms(lounge)) {
           const roomPool = (await nflverseDraft.loadDraftPool(draftPoolOpts(r))).players || [];
           mockDraftRooms.advanceRoom(r, roomPool);
           mockDraftRooms.saveRoom(r);
@@ -9428,7 +9650,14 @@ const server = http.createServer(async (req, res) => {
       }
       const action = String(body.action || '').trim().toLowerCase();
       const publicAuthor = users.publicUser(user);
+      const lounge = loungeKeyForRequest(user, req, body.league || requestUrl.searchParams.get('league'));
       try {
+        if (body.roomId) {
+          const existingRoom = mockDraftRooms.getRoom(body.roomId);
+          if (!existingRoom || !mockDraftRooms.roomInLounge(existingRoom, lounge)) {
+            return sendJson(res, 404, { ok: false, error: 'Mock draft not found' });
+          }
+        }
         async function poolFor(roomLike) {
           const payload = await nflverseDraft.loadDraftPool(draftPoolOpts(roomLike || {
             scoring: body.scoring,
@@ -9446,7 +9675,8 @@ const server = http.createServer(async (req, res) => {
             pickSeconds: body.pickSeconds,
             seatIndex: body.seatIndex,
             teamNames: body.teamNames,
-            hostTeamName: fantasyTeamNameForUser(user) || body.hostTeamName || null
+            hostTeamName: fantasyTeamNameForUser(user) || body.hostTeamName || null,
+            loungeKey: lounge
           });
           const pub = mockDraftRooms.publicRoom(room, user.id);
           let chatItem = null;
@@ -9470,7 +9700,8 @@ const server = http.createServer(async (req, res) => {
                 link: `/members.html#mock-draft?room=${encodeURIComponent(room.id)}`,
                 linkLabel: 'Join Mock Draft'
               },
-              skipRateLimit: true
+              skipRateLimit: true,
+              loungeKey: lounge
             });
           } catch { /* best-effort */ }
           return sendJson(res, 201, { ok: true, room: pub, chatItem });
@@ -9502,7 +9733,8 @@ const server = http.createServer(async (req, res) => {
                 link: `/members.html#mock-draft?room=${encodeURIComponent(room.id)}`,
                 linkLabel: 'Open Mock Draft'
               },
-              skipRateLimit: true
+              skipRateLimit: true,
+              loungeKey: lounge
             });
           } catch { /* best-effort */ }
           return sendJson(res, 200, { ok: true, room: pub, chatItem });
@@ -9677,11 +9909,12 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/presence' && req.method === 'POST') {
       const user = getSessionUser(req);
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      presence.touch(users.publicUser(user));
+      const room = loungeKeyForRequest(user, req, requestUrl.searchParams.get('league'));
+      presence.touch(users.publicUser(user), { loungeKey: room });
       syncPendingInboxDigests(user);
       return sendJson(res, 200, {
         ok: true,
-        online: presence.listOnline(),
+        online: presence.listOnline({ loungeKey: room }),
         unread: scopedInboxForUser(user, req).unread,
         generatedAt: new Date().toISOString()
       });
@@ -9690,10 +9923,11 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/presence' && req.method === 'GET') {
       const viewer = getSessionUser(req);
       if (!viewer) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
-      presence.touch(users.publicUser(viewer));
+      const room = loungeKeyForRequest(viewer, req, requestUrl.searchParams.get('league'));
+      presence.touch(users.publicUser(viewer), { loungeKey: room });
       return sendJson(res, 200, {
         ok: true,
-        online: presence.listOnline(),
+        online: presence.listOnline({ loungeKey: room }),
         viewerId: viewer.id,
         generatedAt: new Date().toISOString()
       });
@@ -9702,14 +9936,15 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/members-chat' && req.method === 'GET') {
       const viewer = requireLoungeMember(req, res);
       if (!viewer) return;
-      presence.touch(users.publicUser(viewer));
+      const room = loungeKeyForRequest(viewer, req, requestUrl.searchParams.get('league'));
+      presence.touch(users.publicUser(viewer), { loungeKey: room });
       const since = requestUrl.searchParams.get('since');
       const after = requestUrl.searchParams.get('after');
       const limit = Number(requestUrl.searchParams.get('limit') || 120);
       return sendJson(res, 200, {
         ok: true,
-        messages: membersChat.listMessages({ limit, since, after }),
-        online: presence.listOnline(),
+        messages: membersChat.listMessages({ limit, since, after, loungeKey: room }),
+        online: presence.listOnline({ loungeKey: room }),
         viewerId: viewer.id,
         generatedAt: new Date().toISOString()
       });
@@ -9726,7 +9961,8 @@ const server = http.createServer(async (req, res) => {
       }
       try {
         const publicAuthor = users.publicUser(user);
-        presence.touch(publicAuthor);
+        const room = loungeKeyForRequest(user, req, body.league || requestUrl.searchParams.get('league'));
+        presence.touch(publicAuthor, { loungeKey: room });
         const postType = String(body.type || body.kind || 'chat').toLowerCase();
         let item;
         if (postType === 'mock_start' || postType === 'mock') {
@@ -9763,15 +9999,19 @@ const server = http.createServer(async (req, res) => {
                 : '/members.html#mock-draft',
               linkLabel: roomId ? 'Join Mock Draft' : 'Open Mock Draft'
             },
-            skipRateLimit: true
+            skipRateLimit: true,
+            loungeKey: room
           });
         } else {
           item = membersChat.addMessage({
             body: body.body,
-            author: publicAuthor
+            author: publicAuthor,
+            loungeKey: room
           });
         }
-        const directory = users.listLeagueMembers().members;
+        const directory = loungeKey.isIndependent(room)
+          ? listIndependentLoungeRoster(leagues.findById(loungeKey.independentLeagueId(room)))
+          : users.listLeagueMembers().members;
         const mentioned = postType === 'mock_start' || postType === 'mock'
           ? []
           : membersChat.resolveMentionedUsers(item.body, {
@@ -9806,7 +10046,7 @@ const server = http.createServer(async (req, res) => {
           ok: true,
           item,
           mentioned: mentioned.map((u) => ({ id: u.id, name: u.name })),
-          online: presence.listOnline()
+          online: presence.listOnline({ loungeKey: room })
         });
       } catch (err) {
         return sendJson(res, err.status || 400, {
@@ -9856,15 +10096,34 @@ const server = http.createServer(async (req, res) => {
       const viewer = requireLoungeMember(req, res);
       if (!viewer) return;
       try {
-        const roster = users.listLeagueMembers();
+        const room = loungeKeyForRequest(viewer, req, requestUrl.searchParams.get('league'));
+        const independentLeague = loungeKey.isIndependent(room)
+          ? leagues.findById(loungeKey.independentLeagueId(room))
+          : null;
+        const roster = independentLeague
+          ? {
+            members: listIndependentLoungeRoster(independentLeague),
+            gridiron: [],
+            aaa: [],
+            unassigned: [],
+            caps: { ...users.LEAGUE_MEMBERSHIP_CAPS }
+          }
+          : users.listLeagueMembers();
         const giBuyIn = Number(config.payouts?.buyInPerTeam || 100);
         const aaaBuyIn = Number(getAffiliatedLeague('aaa')?.payouts?.buyInPerTeam || 50);
-        const treasurer = {
-          name: config.treasurer?.name || 'Jamie Aceto',
-          email: config.treasurer?.email || 'jaceto53@gmail.com',
-          venmoUsername: config.treasurer?.venmoUsername || 'James-Aceto',
-          note: config.treasurer?.note || 'League dues — GridIron 24 HQ'
-        };
+        const treasurer = independentLeague
+          ? {
+            name: independentLeague.ownerName || independentLeague.brand?.name || 'League owner',
+            email: independentLeague.ownerEmail || '',
+            venmoUsername: '',
+            note: `${independentLeague.brand?.name || 'League'} dues`
+          }
+          : {
+            name: config.treasurer?.name || 'Jamie Aceto',
+            email: config.treasurer?.email || 'jaceto53@gmail.com',
+            venmoUsername: config.treasurer?.venmoUsername || 'James-Aceto',
+            note: config.treasurer?.note || 'League dues — GridIron 24 HQ'
+          };
         const canManage = users.isCommissioner(viewer) || users.isSiteOwner(viewer);
         const claimByUser = new Map(logos.listClaims().map((c) => [c.userId, c]));
         const confMeta = new Map(
@@ -9876,6 +10135,18 @@ const server = http.createServer(async (req, res) => {
         );
         const decorateMember = (m) => {
           if (!m) return m;
+          if (independentLeague) {
+            const avatar = logos.resolveLogoForUser(m.id);
+            const avatarUrl = (avatar?.type === 'icon' || avatar?.type === 'upload') ? avatar.url : null;
+            return {
+              ...m,
+              conferenceKey: m.conferenceKey || null,
+              conferenceLogo: independentLeague.brand?.logo || independentLeague.brand?.crest || null,
+              conferenceLabel: m.conferenceLabel || independentLeague.brand?.name || 'League',
+              teamName: m.teamName || null,
+              avatarUrl
+            };
+          }
           const claim = claimByUser.get(m.id);
           const membership = String(m.membershipLeague || '').toLowerCase();
           let conferenceKey = null;
@@ -9929,7 +10200,9 @@ const server = http.createServer(async (req, res) => {
           gridiron: decorateList(roster.gridiron),
           aaa: decorateList(roster.aaa),
           members: decorateList(roster.members || []),
-          unassigned: canManage ? decorateList(roster.unassigned) : [],
+          unassigned: independentLeague ? [] : (canManage ? decorateList(roster.unassigned) : []),
+          loungeKey: room,
+          loungeLabel: independentLeague?.brand?.name || (room === 'gridiron' ? 'GridIron 24' : 'Members Lounge'),
           generatedAt: new Date().toISOString()
         });
       } catch (err) {
@@ -12510,6 +12783,9 @@ const server = http.createServer(async (req, res) => {
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
       const leagueParam = requestUrl.searchParams.get('league');
       const teamScope = resolveLeagueScope(user, req, leagueParam);
+      if (!isIndependentHqScope(teamScope)) {
+        try { await maybeLinkEspnFranchise(user); } catch { /* keep unlinked */ }
+      }
       if (!shouldServeEspnHq(user, teamScope, leagueParam)) {
         return sendJson(res, 200, {
           ok: true,
@@ -12519,12 +12795,8 @@ const server = http.createServer(async (req, res) => {
           leagueScope: teamScope
         });
       }
-      let claim = logos.getClaimForUser(user.id);
-      if (!claim) {
-        try { claim = await maybeLinkEspnFranchise(user); } catch { /* keep unlinked */ }
-      }
+      const claim = logos.getClaimForUser(user.id);
       const chip = chipFranchiseForUser(user);
-      const logo = logos.resolveLogoForUser(user.id);
       const keeperWindow = keepers.getKeeperWindow(calendar.listEvents(), config.season);
       let team = chip
         ? {
@@ -12532,7 +12804,7 @@ const server = http.createServer(async (req, res) => {
           name: chip.name || null,
           conferenceKey: chip.conferenceKey,
           conferenceName: chip.conferenceName,
-          logo: logo?.url || null
+          logo: null
         }
         : null;
       let roster = [];
@@ -12637,7 +12909,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         ok: true,
         claim: claim || chip?.claim || null,
-        logo,
+        logo: team?.logo ? { url: team.logo, type: 'espn' } : null,
         team,
         roster,
         lineup,
@@ -12653,7 +12925,8 @@ const server = http.createServer(async (req, res) => {
         homePath: homePathForUser(user, req),
         leagueScope: leagueScopeForUser(user, req),
         user: users.publicUser(user),
-        specs: logos.LOGO_SPECS
+        specs: logos.LOGO_SPECS,
+        customLogos: !gi24UsesEspnLogosOnly(user, claim)
       });
     }
 
@@ -12737,8 +13010,11 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/my-team/logo/icon' && req.method === 'POST') {
       try {
         const user = getSessionUser(req);
-        const body = await readJsonBody(req);
         const claim = logos.getClaimForUser(user.id);
+        if (gi24UsesEspnLogosOnly(user, claim)) {
+          return sendJson(res, 400, { ok: false, error: 'GridIron 24 uses ESPN team logos only' });
+        }
+        const body = await readJsonBody(req);
         const iconPath = path.join(PUBLIC_DIR, 'assets', 'team-icons', `${path.basename(String(body.iconId || ''))}.svg`);
         if (!fs.existsSync(iconPath)) {
           return sendJson(res, 400, { ok: false, error: 'Unknown icon' });
@@ -12758,8 +13034,11 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/my-team/logo/upload' && req.method === 'POST') {
       try {
         const user = getSessionUser(req);
-        const body = await readJsonBody(req, { maxBytes: 3_500_000 });
         const claim = logos.getClaimForUser(user.id);
+        if (gi24UsesEspnLogosOnly(user, claim)) {
+          return sendJson(res, 400, { ok: false, error: 'GridIron 24 uses ESPN team logos only' });
+        }
+        const body = await readJsonBody(req, { maxBytes: 3_500_000 });
         const dataUrl = String(body.dataUrl || '');
         const match = dataUrl.match(/^data:(image\/(?:png|jpeg|webp));base64,([a-zA-Z0-9+/=\s]+)$/);
         if (!match) {
@@ -12782,6 +13061,9 @@ const server = http.createServer(async (req, res) => {
       try {
         const user = getSessionUser(req);
         const claim = logos.getClaimForUser(user.id);
+        if (gi24UsesEspnLogosOnly(user, claim)) {
+          return sendJson(res, 400, { ok: false, error: 'GridIron 24 uses ESPN team logos only' });
+        }
         logos.clearLogo(user.id, claim?.conferenceKey, claim?.teamId);
         return sendJson(res, 200, { ok: true });
       } catch (err) {
