@@ -451,6 +451,9 @@ function startOfficialDraft(leagueId, { force = false } = {}) {
         }
   }
   const settings = leagues.defaultIndependentSettings(league.settings || {});
+  if (settings.draftHost === 'offline') {
+    throw err(400, 'This league uses an offline draft. Assign players on the Draft page, then lock the draft.');
+  }
   if (!force) {
     if (!settings.draftAt) throw err(400, 'Set a draft date/time in league settings first');
     const at = Date.parse(settings.draftAt);
@@ -541,7 +544,7 @@ function tickLeague(leagueId, pool, viewerId = null) {
   pool = keepers.filterDraftPool(league, pool);
   let draft = leagues.defaultIndependentDraft(league.draft || {});
 
-  if (draft.status === 'scheduled' || !draft.status) {
+  if ((draft.status === 'scheduled' || !draft.status) && settings.draftHost !== 'offline') {
     if (settings.draftAt && Date.parse(settings.draftAt) <= Date.now() && managersReady(league)) {
       try {
         startOfficialDraft(leagueId);

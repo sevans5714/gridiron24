@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=156" />
-  <link rel="icon" href="/favicon.ico?v=156" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=156" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=156" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=157" />
+  <link rel="icon" href="/favicon.ico?v=157" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=157" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=157" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
@@ -54,10 +54,14 @@
     .week-note { color: var(--muted); margin-left: auto; font-size: 0.9rem; }
     .rosters-layout {
       display: grid;
-      grid-template-columns: minmax(13rem, 16rem) 1fr;
-      gap: 1.5rem;
+      grid-template-columns: minmax(12rem, 15rem) minmax(0, 32rem);
+      gap: 1.35rem;
       align-items: start;
+      justify-content: start;
+      max-width: 52rem;
     }
+    .detail-panel { min-width: 0; max-width: 32rem; }
+    .slot-roster { list-style: none; margin: 0; padding: 0; max-width: 32rem; }
     .team-list {
       border: 1px solid var(--line);
       background: var(--panel);
@@ -86,7 +90,6 @@
       box-shadow: inset 3px 0 0 #8eb6ff;
     }
     .team-btn .rec { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.85rem; }
-    .detail-panel { min-width: 0; }
     .team-hero {
       margin-bottom: 1rem;
     }
@@ -113,7 +116,7 @@
       font-size: 0.72rem;
       margin-bottom: 0.25rem;
     }
-    .slot-roster { list-style: none; margin: 0; padding: 0; }
+    .slot-roster { list-style: none; margin: 0; padding: 0; max-width: 32rem; }
     .slot-roster-divider {
       margin: 1rem 0 0.45rem;
       padding-top: 0.65rem;
@@ -127,10 +130,10 @@
     }
     .slot-roster-row {
       display: grid;
-      grid-template-columns: 2.75rem minmax(0, 1fr) auto auto;
-      gap: 0.65rem 0.85rem;
+      grid-template-columns: 2.45rem minmax(0, 1fr) 4.35rem 4.6rem;
+      gap: 0.4rem 0.55rem;
       align-items: center;
-      padding: 0.65rem 0;
+      padding: 0.55rem 0;
       border-bottom: 1px solid var(--line);
     }
     .slot-roster-row:last-child { border-bottom: 0; }
@@ -169,12 +172,37 @@
       text-align: right;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
+      display: grid;
+      justify-items: end;
+      gap: 0.12rem;
+      min-width: 4.25rem;
     }
-    .slot-roster-row .nums small {
+    .slot-roster-row .nums .live {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.22rem;
+      font-weight: 700;
+      font-size: 1.02rem;
+      line-height: 1;
+    }
+    .slot-roster-row .nums .live .arrow {
+      font-size: 0.72rem;
+      line-height: 1;
+      font-weight: 800;
+    }
+    .slot-roster-row .nums.is-over .live { color: #3dff8a; }
+    .slot-roster-row .nums.is-under .live { color: #ff7a7a; }
+    .slot-roster-row .nums.is-even .live { color: var(--text); }
+    .slot-roster-row .nums.is-pending .live { color: var(--muted); }
+    .slot-roster-row .nums small,
+    .slot-roster-row .nums .proj {
       display: block;
       color: var(--muted);
       font-size: 0.78rem;
+      font-weight: 500;
     }
+    html[data-theme="day"] .slot-roster-row .nums.is-over .live { color: #15803d; }
+    html[data-theme="day"] .slot-roster-row .nums.is-under .live { color: #b91c1c; }
     .slot-roster-row.is-empty .nm { color: var(--muted); font-weight: 500; }
     .slot-roster-row.row-bad { background: rgba(196, 90, 48, 0.08); }
     .pro { color: var(--muted); font-size: 0.85rem; }
@@ -188,6 +216,17 @@
     }
     .inj.bad { color: #e8a078; }
     .inj.ok { color: var(--muted); }
+    .inj.is-quiet { opacity: 0.35; }
+    .inj {
+      font-family: var(--display);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      text-align: right;
+      line-height: 1.15;
+      max-width: 4.6rem;
+    }
     .empty { color: var(--muted); padding: 0.5rem 0; }
     .open-link { color: #8eb6ff; text-decoration: none; font-weight: 600; }
     .open-link:hover { text-decoration: underline; }
@@ -244,18 +283,36 @@
     }
     function rosterRowHtml(p, week) {
       const empty = p.empty || !p.name;
-      const status = empty ? '—' : (p.injuryStatus || '—');
+      const statusRaw = empty ? '' : String(p.injuryStatus || '').toUpperCase();
+      const status = !statusRaw || statusRaw === 'ACTIVE' ? '' : statusRaw;
       const isStarter = starterSlots(p.slot);
       const bad = !empty && injClass(p.injuryStatus) === 'bad' && isStarter;
       const onBye = !empty && week && Number(p.byeWeek) === Number(week);
       const pos = slotPosLabel(p.slot);
+      const live = Number(p.weekPoints);
+      const proj = Number(p.weekProjected);
+      let nums = '<span class="nums is-pending">—</span>';
+      if (!empty) {
+        let tone = 'is-pending';
+        let arrow = '';
+        if (Number.isFinite(live) && Number.isFinite(proj)) {
+          const delta = live - proj;
+          if (Math.abs(delta) < 0.05) { tone = 'is-even'; arrow = '<span class="arrow" aria-hidden="true">→</span>'; }
+          else if (delta > 0) { tone = 'is-over'; arrow = '<span class="arrow" aria-hidden="true">▲</span>'; }
+          else { tone = 'is-under'; arrow = '<span class="arrow" aria-hidden="true">▼</span>'; }
+        }
+        nums = `<span class="nums ${tone}">
+          <span class="live">${arrow}${esc(Number.isFinite(live) ? live.toFixed(1) : '—')}</span>
+          ${Number.isFinite(proj) ? `<span class="proj">proj ${esc(proj.toFixed(1))}</span>` : ''}
+        </span>`;
+      }
       return `<li class="slot-roster-row ${[empty ? 'is-empty' : '', bad ? 'row-bad' : ''].filter(Boolean).join(' ')}">
         <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
         <span class="nm">${empty ? '—' : esc(p.name)}
           ${empty ? '' : `<span class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}${onBye ? ` · Bye ${esc(String(p.byeWeek))}` : ''}</span>`}
         </span>
-        <span class="nums">${empty ? '—' : fmt(p.weekPoints)}<small>${empty ? '' : `proj ${fmt(p.weekProjected)}`}</small></span>
-        <span class="inj ${bad ? 'bad' : 'ok'}">${esc(status)}</span>
+        ${nums}
+        <span class="inj ${bad ? 'bad' : 'ok'}${status ? '' : ' is-quiet'}">${esc(status || '·')}</span>
       </li>`;
     }
 

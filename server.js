@@ -370,6 +370,12 @@ function espnFranchiseMatchScore(userKeys, lastNames, team) {
     for (const last of lastNames) {
       if (ownerLast && last && ownerLast === last && last.length >= 3) best = Math.max(best, 2);
     }
+    if (ownerLast && ownerLast.length >= 4) {
+      for (const uk of userKeys) {
+        const compact = uk.replace(/[^a-z]/g, '');
+        if (compact.includes(ownerLast)) best = Math.max(best, 2);
+      }
+    }
   }
   return best;
 }
@@ -389,26 +395,48 @@ async function maybeLinkEspnFranchise(user) {
   if (!userKeys.size) return null;
   const membership = users.hqMembershipOf(user);
   const hqConf = users.hqConferenceOf(user);
-  const hits = [];
-  for (const conf of listAdminLeagues()) {
-    if (!(Number(conf.espnLeagueId) > 0)) continue;
-    if (membership === 'aaa' && conf.key !== 'aaa') continue;
-    if (membership === 'gridiron' && conf.key === 'aaa') continue;
-    if (hqConf && (conf.key === 'detail' || conf.key === 'overtime') && conf.key !== hqConf) continue;
-    try {
-      const league = await fetchEspnLeague(conf);
-      for (const t of league.teams || []) {
-        const score = espnFranchiseMatchScore(userKeys, lastNames, t);
-        if (score < 2) continue;
-        const taken = logos.getClaimForTeam(conf.key, t.id);
-        if (taken && taken.userId !== user.id) continue;
-        hits.push({ conf, team: t, score });
-      }
-    } catch { /* ignore */ }
+
+  async function collectHits(confOk) {
+    const hits = [];
+    for (const conf of listAdminLeagues()) {
+      if (!(Number(conf.espnLeagueId) > 0)) continue;
+      if (!confOk(conf)) continue;
+      try {
+        const league = await fetchEspnLeague(conf);
+        for (const t of league.teams || []) {
+          const score = espnFranchiseMatchScore(userKeys, lastNames, t);
+          if (score < 2) continue;
+          const taken = logos.getClaimForTeam(conf.key, t.id);
+          if (taken && taken.userId !== user.id) continue;
+          hits.push({ conf, team: t, score });
+        }
+      } catch { /* ignore */ }
+    }
+    return hits;
+  }
+
+  const gi24 = (conf) => conf.key === 'detail' || conf.key === 'overtime';
+  let hits = [];
+  if (membership === 'aaa') {
+    hits = await collectHits((conf) => conf.key === 'aaa');
+  } else {
+    if (hqConf) hits = await collectHits((conf) => conf.key === hqConf);
+    if (!hits.length) hits = await collectHits((conf) => gi24(conf) && conf.key !== 'aaa');
   }
   if (!hits.length) return null;
-  hits.sort((a, b) => b.score - a.score);
-  const top = hits.filter((h) => h.score === hits[0].score);
+  hits.sort((a, b) => b.score - a.score || String(a.conf.key).localeCompare(String(b.conf.key)));
+  const topScore = hits[0].score;
+  let top = hits.filter((h) => h.score === topScore);
+  if (top.length > 1 && hqConf) {
+    const inHq = top.filter((h) => h.conf.key === hqConf);
+    if (inHq.length === 1) top = inHq;
+  }
+  if (top.length > 1) {
+    const confs = new Set(top.map((h) => h.conf.key));
+    if (confs.size === top.length) {
+      top = [top.find((h) => h.conf.key === (hqConf || 'detail')) || top[0]];
+    }
+  }
   if (top.length !== 1) return null;
   const hit = top[0];
   const existing = logos.getClaimForTeam(hit.conf.key, hit.team.id);
@@ -2449,12 +2477,17 @@ function normalizeMatchupBoxSide(side, teams, week, lineupSlotCounts, rosterTeam
     lineup = applyPointsToLineup(lineup, statsMap);
     bench = applyPointsToLineup(bench, statsMap);
   }
+  const starterLine = lineup.filter((p) => {
+    if (!p || p.empty || p.isStarter === false) return false;
+    const slot = String(p.slot || '');
+    return slot !== 'Bench' && slot !== 'IR' && slot !== 'BN';
+  });
   return {
     id: team.id,
     name: team.name,
     logo: team.logo || logos.PLACEHOLDER_LOGO,
-    score: Number(side.totalPoints ?? 0),
-    projected: Number(side.totalProjectedPointsLive ?? side.totalProjectedPoints ?? 0),
+    score: resolveMatchupSideScore(side, week, starterLine),
+    projected: resolveMatchupSideProjected(side, starterLine),
     lineup,
     bench
   };
@@ -3218,13 +3251,13 @@ function normalizeSchedule(raw, conference, week) {
         playoffTierType: m.playoffTierType || null,
         home: {
           ...home,
-          score: Number(m.home?.totalPoints ?? 0),
-          projected: Number(m.home?.totalProjectedPointsLive ?? m.home?.totalProjectedPoints ?? 0)
+          score: resolveMatchupSideScore(m.home, week),
+          projected: resolveMatchupSideProjected(m.home)
         },
         away: {
           ...away,
-          score: Number(m.away?.totalPoints ?? 0),
-          projected: Number(m.away?.totalProjectedPointsLive ?? m.away?.totalProjectedPoints ?? 0)
+          score: resolveMatchupSideScore(m.away, week),
+          projected: resolveMatchupSideProjected(m.away)
         }
       };
     });
@@ -3486,6 +3519,64 @@ function matchupSideEntries(side) {
     || [];
 }
 
+/** Sum starter fantasy points from a matchup side's roster entries. */
+function sumStarterPointsFromSide(side, week) {
+  const entries = matchupSideEntries(side);
+  if (!entries.length) return null;
+  let sum = 0;
+  let counted = 0;
+  for (const entry of entries) {
+    const slotId = Number(entry.lineupSlotId);
+    if (BENCH_OR_IR_SLOTS.has(slotId)) continue;
+    counted += 1;
+    sum += Number(playerWeekPoints(entry, week)) || 0;
+  }
+  if (!counted) return null;
+  return Math.round(sum * 100) / 100;
+}
+
+/** Prefer live starter sum when ESPN team total is missing/stale at 0. */
+function resolveMatchupSideScore(side, week, lineupPlayers = null) {
+  const espn = Number(side?.totalPoints);
+  let fromLineup = null;
+  if (Array.isArray(lineupPlayers) && lineupPlayers.length) {
+    fromLineup = Math.round(
+      lineupPlayers.reduce((sum, p) => {
+        if (!p || p.empty || p.isStarter === false) return sum;
+        const slot = String(p.slot || '');
+        if (slot === 'Bench' || slot === 'IR' || slot === 'BN') return sum;
+        return sum + (Number(p.points) || 0);
+      }, 0) * 100
+    ) / 100;
+  } else {
+    fromLineup = sumStarterPointsFromSide(side, week);
+  }
+  const espnOk = Number.isFinite(espn) && espn > 0;
+  const lineupOk = fromLineup != null && fromLineup > 0;
+  // During live games ESPN team totals can lag player applied totals (or vice versa).
+  if (espnOk && lineupOk) return Math.max(espn, fromLineup);
+  if (lineupOk) return fromLineup;
+  if (espnOk) return espn;
+  if (fromLineup != null) return fromLineup;
+  return Number.isFinite(espn) ? espn : 0;
+}
+
+function resolveMatchupSideProjected(side, lineupPlayers = null) {
+  const espn = Number(side?.totalProjectedPointsLive ?? side?.totalProjectedPoints);
+  if (Array.isArray(lineupPlayers) && lineupPlayers.length) {
+    const fromLineup = Math.round(
+      lineupPlayers.reduce((sum, p) => {
+        if (!p || p.empty || p.isStarter === false) return sum;
+        const slot = String(p.slot || '');
+        if (slot === 'Bench' || slot === 'IR' || slot === 'BN') return sum;
+        return sum + (Number(p.projected) || 0);
+      }, 0) * 100
+    ) / 100;
+    if (fromLineup > 0) return fromLineup;
+  }
+  return Number.isFinite(espn) ? espn : 0;
+}
+
 function extractConferenceLeaders(raw, conference, week) {
   const teams = teamMapFromRaw(raw, conference.key);
   const players = [];
@@ -3500,8 +3591,8 @@ function extractConferenceLeaders(raw, conference, week) {
         name: `Team ${side.teamId}`,
         logo: logos.PLACEHOLDER_LOGO
       };
-      const score = Number(side.totalPoints ?? 0);
-      const projected = Number(side.totalProjectedPointsLive ?? side.totalProjectedPoints ?? 0);
+      const score = resolveMatchupSideScore(side, week);
+      const projected = resolveMatchupSideProjected(side);
       teamScores.push({
         kind: 'team',
         conferenceKey: conference.key,
@@ -7197,6 +7288,9 @@ const server = http.createServer(async (req, res) => {
       if (user) {
         deliverWelcomeInboxIfNeeded(user);
         syncPendingInboxDigests(user, { force: true });
+        if (userHasGridironFranchise(user) || userHasAaaAccess(user)) {
+          try { await maybeLinkEspnFranchise(user); } catch { /* keep unlinked */ }
+        }
       }
       let menuLeagues = [];
       if (user) {
@@ -8140,7 +8234,7 @@ const server = http.createServer(async (req, res) => {
       } catch { /* NFL schedule lookup is optional for HQ */ }
       const persistedLock = rulesSyncStore.getSeasonRulesLock(league.season || config.season);
       const seasonLock = (persistedLock?.locked ? persistedLock : nflLock);
-      const isLeagueOwner = isIndependentLeagueOwnerUser(user, league);
+      const isLeagueOwner = isIndependentLeagueOwnerUser(user, league) || users.isSiteOwner(user);
       const extras = {
         canSwitchLeagues: userCanSwitchLeagues(user),
         preferredLeague: `independent:${league.id}`,
@@ -8157,6 +8251,7 @@ const server = http.createServer(async (req, res) => {
           id: user.id,
           isOwner: isLeagueOwner,
           canManage: isLeagueOwner,
+          isSiteOwner: users.isSiteOwner(user),
           isMember: true
         },
         pages: {
@@ -8327,7 +8422,7 @@ const server = http.createServer(async (req, res) => {
       if (!league || league.platform !== 'independent') {
         return sendJson(res, 404, { ok: false, error: 'League not found' });
       }
-      const isOwner = leagues.canManageIndependentLeague(user, league);
+      const isOwner = leagues.canManageIndependentLeague(user, league) || users.isSiteOwner(user);
       let body = {};
       try {
         body = await readJsonBody(req, { maxBytes: 3_500_000 });
@@ -8477,6 +8572,33 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
+      if (parts.length === 4 && parts[2] === 'franchises' && parts[3] === 'add') {
+        if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can add teams' });
+        try {
+          const actor = { ...users.publicUser(user), siteOwner: users.isSiteOwner(user) };
+          const updated = leagues.addIndependentFranchise(leagueId, {
+            name: body.name,
+            abbrev: body.abbrev,
+            conferenceKey: body.conferenceKey,
+            managerName: body.managerName
+          }, actor);
+          return sendJson(res, 200, { ok: true, league: updated });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not add team' });
+        }
+      }
+
+      if (parts.length === 4 && parts[2] === 'franchises' && parts[3] === 'remove') {
+        if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can remove teams' });
+        try {
+          const actor = { ...users.publicUser(user), siteOwner: users.isSiteOwner(user) };
+          const updated = leagues.removeIndependentFranchise(leagueId, body.franchiseId, actor);
+          return sendJson(res, 200, { ok: true, league: updated });
+        } catch (err) {
+          return sendJson(res, err.status || 400, { ok: false, error: err.message || 'Could not remove team' });
+        }
+      }
+
       if (parts.length === 4 && parts[2] === 'franchises' && parts[3] === 'assign') {
         if (!isOwner) return sendJson(res, 403, { ok: false, error: 'Only the league owner can assign franchises' });
         const franchiseId = String(body.franchiseId || '').trim();
@@ -8594,6 +8716,40 @@ const server = http.createServer(async (req, res) => {
               action: body.tradeAction || body.response,
               actor
             });
+            return sendJson(res, 200, result);
+          }
+          if (action === 'owner-add') {
+            if (!isOwner) {
+              return sendJson(res, 403, { ok: false, error: 'Only the league owner can assign draft rosters' });
+            }
+            const poolPayload = await nflverseDraft.loadDraftPool(draftPoolOpts(league));
+            const poolPlayer = (poolPayload.players || []).find((p) =>
+              String(p.id) === String(body.playerId) || String(p.playerId) === String(body.playerId)
+            );
+            if (!poolPlayer) return sendJson(res, 404, { ok: false, error: 'Player not found in the pool' });
+            const result = independentWire.ownerAssignPlayer(leagueId, {
+              franchiseId: body.franchiseId,
+              player: poolPlayer,
+              actor
+            });
+            return sendJson(res, 200, result);
+          }
+          if (action === 'owner-remove') {
+            if (!isOwner) {
+              return sendJson(res, 403, { ok: false, error: 'Only the league owner can assign draft rosters' });
+            }
+            const result = independentWire.ownerRemovePlayer(leagueId, {
+              franchiseId: body.franchiseId,
+              playerId: body.playerId,
+              actor
+            });
+            return sendJson(res, 200, result);
+          }
+          if (action === 'owner-complete-draft') {
+            if (!isOwner) {
+              return sendJson(res, 403, { ok: false, error: 'Only the league owner can lock the draft' });
+            }
+            const result = independentWire.ownerCompleteOfflineDraft(leagueId, { actor });
             return sendJson(res, 200, result);
           }
           return sendJson(res, 400, { ok: false, error: 'Unknown wire action' });
@@ -12783,10 +12939,20 @@ const server = http.createServer(async (req, res) => {
       if (!user) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
       const leagueParam = requestUrl.searchParams.get('league');
       const teamScope = resolveLeagueScope(user, req, leagueParam);
-      if (!isIndependentHqScope(teamScope)) {
+      const requested = parseRequestedLeague(leagueParam);
+      const wantEspnLink = requested === 'gridiron'
+        || requested === 'aaa'
+        || !isIndependentHqScope(teamScope)
+        || userHasGridironFranchise(user)
+        || userHasAaaAccess(user);
+      if (wantEspnLink) {
         try { await maybeLinkEspnFranchise(user); } catch { /* keep unlinked */ }
       }
-      if (!shouldServeEspnHq(user, teamScope, leagueParam)) {
+      const espnClaim = (() => {
+        try { return logos.getClaimForUser(user.id); } catch { return null; }
+      })();
+      const serveEspn = shouldServeEspnHq(user, teamScope, leagueParam) || Boolean(espnClaim);
+      if (!serveEspn) {
         return sendJson(res, 200, {
           ok: true,
           espn: false,

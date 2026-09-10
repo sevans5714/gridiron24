@@ -353,11 +353,13 @@ function publicLeague(league) {
       ? defaultIndependentDraft(league.draft || {})
       : null,
     franchises: (Array.isArray(league.franchises) ? league.franchises : []).map((f) => {
-      const vacant = !f.managerUserId;
+      const name = String(f.name || '').trim();
+      const held = Boolean(f.ownerCreated || String(f.managerName || '').trim() || f.managerUserId);
+      const vacant = !f.managerUserId && !held;
       return {
         ...f,
         vacant,
-        displayName: vacant ? 'Open' : (String(f.name || '').trim() || 'Open')
+        displayName: vacant ? 'Open' : (name || String(f.managerName || '').trim() || 'Open')
       };
     }),
     ownerUserId: league.ownerUserId || null,
@@ -795,6 +797,7 @@ function defaultIndependentSettings(seed = {}) {
     rosterSlots,
     scoring,
     draftType: String(seed.draftType || 'snake').trim() || 'snake',
+    draftHost: String(seed.draftHost || '').trim().toLowerCase() === 'offline' ? 'offline' : 'live',
     draftScope: scope,
     draftAt,
     draftRounds: Number.isFinite(roundsOverride) && roundsOverride >= 1 && roundsOverride <= 30
@@ -1221,7 +1224,7 @@ function normalizeIndependentConferences(patchList, league) {
 }
 
 function defaultIndependentDraft(seed = {}) {
-  const status = ['scheduled', 'live', 'complete', 'cancelled'].includes(String(seed.status || ''))
+  const status = ['scheduled', 'live', 'offline', 'complete', 'cancelled'].includes(String(seed.status || ''))
     ? String(seed.status)
     : 'scheduled';
   return {
@@ -2395,9 +2398,9 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
     throw Object.assign(new Error('This league is archived. Restore it in Site Tools first.'), { status: 403 });
   }
   const draftStatus = String(league.draft?.status || 'scheduled');
-  if (draftStatus === 'live' || draftStatus === 'complete') {
+  if (draftStatus === 'live' || draftStatus === 'offline' || draftStatus === 'complete') {
     // Allow notes/scoring after draft, but lock draft schedule once live/complete.
-    const lockedKeys = ['draftAt', 'draftScope', 'draftRounds', 'draftSecondsPerPick', 'draftFillEmptySeats', 'draftOrder', 'draftType'];
+    const lockedKeys = ['draftAt', 'draftScope', 'draftRounds', 'draftSecondsPerPick', 'draftFillEmptySeats', 'draftOrder', 'draftType', 'draftHost'];
     for (const key of lockedKeys) {
       if (Object.prototype.hasOwnProperty.call(patch, key)) {
         throw Object.assign(new Error('Draft settings are locked after the draft starts'), { status: 400 });
@@ -2469,17 +2472,21 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
         league.conferences,
         league.structure.teamsPerConference
       );
-      league.franchises = nextFranchises.map((f) => {
+      const merged = nextFranchises.map((f) => {
         const match = prev.find((p) => p.id === f.id)
           || prev.find((p) => p.conferenceKey === f.conferenceKey && p.slot === f.slot);
         if (!match) return f;
         return {
           ...f,
+          name: match.ownerCreated ? match.name : f.name,
+          ownerCreated: Boolean(match.ownerCreated),
           managerUserId: match.managerUserId || null,
           managerName: match.managerName || null,
           roster: Array.isArray(match.roster) ? match.roster : []
         };
       });
+      const extras = prev.filter((p) => p.ownerCreated && !merged.some((m) => m.id === p.id));
+      league.franchises = [...merged, ...extras];
     }
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'championship')) {
@@ -2531,6 +2538,7 @@ function updateIndependentSettings(leagueId, patch = {}, actor = null) {
 
 function canManageIndependentLeague(user, league) {
   if (!user?.id || !league) return false;
+  if (user.siteOwner) return true;
   return Boolean(league.ownerUserId && league.ownerUserId === user.id);
 }
 
@@ -2617,6 +2625,93 @@ function assignFranchiseManager(leagueId, franchiseId, manager) {
     managerUserId: managerId,
     managerName: managerId ? (manager?.name || manager?.loginName || null) : null
   };
+  league.updatedAt = new Date().toISOString();
+  writeStore(store);
+  return publicLeague(league);
+}
+
+function syncStructureTeamCounts(league) {
+  const franchises = Array.isArray(league.franchises) ? league.franchises : [];
+  const confs = Array.isArray(league.conferences) ? league.conferences : [];
+  const one = Number(league.structure?.conferenceCount) === 1 || confs.length < 2;
+  const n = franchises.length;
+  if (!league.structure || typeof league.structure !== 'object') league.structure = {};
+  if (one) {
+    league.structure.conferenceCount = 1;
+    league.structure.totalTeams = n;
+    league.structure.teamsPerConference = n;
+    return;
+  }
+  league.structure.conferenceCount = 2;
+  league.structure.totalTeams = n;
+  const per = confs.slice(0, 2).map((c) =>
+    franchises.filter((f) => String(f.conferenceKey) === String(c.key)).length
+  );
+  league.structure.teamsPerConference = Math.max(2, ...per, Math.ceil(n / 2) || 2);
+}
+
+function addIndependentFranchise(leagueId, patch = {}, actor = null) {
+  const { store, league } = requireIndependentLeague(leagueId);
+  if (actor && !canManageIndependentLeague(actor, league)) {
+    throw Object.assign(new Error('Only the league owner can add teams'), { status: 403 });
+  }
+  if (league.status !== 'approved') {
+    throw Object.assign(new Error('League must be approved before adding teams'), { status: 403 });
+  }
+  const existing = Array.isArray(league.franchises) ? league.franchises : [];
+  if (existing.length >= 32) {
+    throw Object.assign(new Error('This league already has 32 teams'), { status: 400 });
+  }
+  const name = normalizeFranchiseName(patch.name);
+  const confs = Array.isArray(league.conferences) && league.conferences.length
+    ? league.conferences
+    : [{ key: 'league', name: 'League', shortName: 'TEAM' }];
+  let conferenceKey = String(patch.conferenceKey || '').trim();
+  if (!conferenceKey || !confs.some((c) => String(c.key) === conferenceKey)) {
+    conferenceKey = String(confs[0].key);
+  }
+  const slot = existing.filter((f) => String(f.conferenceKey) === conferenceKey).length + 1;
+  const abbrev = String(patch.abbrev || '').trim().toUpperCase().slice(0, 4) || null;
+  const managerName = String(patch.managerName || '').replace(/\s+/g, ' ').trim().slice(0, 80) || null;
+  const franchise = {
+    id: crypto.randomUUID(),
+    conferenceKey,
+    name,
+    abbrev,
+    slot,
+    managerUserId: null,
+    managerName,
+    roster: [],
+    ownerCreated: true
+  };
+  league.franchises = [...existing, franchise];
+  syncStructureTeamCounts(league);
+  const builtSchedule = buildIndependentScheduleWeeks(league);
+  if (scheduleNeedsRebuild(league, builtSchedule)) league.schedule = builtSchedule;
+  league.updatedAt = new Date().toISOString();
+  writeStore(store);
+  return publicLeague(league);
+}
+
+function removeIndependentFranchise(leagueId, franchiseId, actor = null) {
+  const { store, league } = requireIndependentLeague(leagueId);
+  if (actor && !canManageIndependentLeague(actor, league)) {
+    throw Object.assign(new Error('Only the league owner can remove teams'), { status: 403 });
+  }
+  const fid = String(franchiseId || '');
+  const existing = Array.isArray(league.franchises) ? league.franchises : [];
+  const row = existing.find((f) => String(f.id) === fid);
+  if (!row) throw Object.assign(new Error('Franchise not found'), { status: 404 });
+  if (row.managerUserId) {
+    throw Object.assign(new Error('Unassign the manager before removing this team'), { status: 400 });
+  }
+  if (existing.length <= 2) {
+    throw Object.assign(new Error('A league needs at least two teams'), { status: 400 });
+  }
+  league.franchises = existing.filter((f) => String(f.id) !== fid);
+  syncStructureTeamCounts(league);
+  const builtSchedule = buildIndependentScheduleWeeks(league);
+  league.schedule = builtSchedule;
   league.updatedAt = new Date().toISOString();
   writeStore(store);
   return publicLeague(league);
@@ -2910,6 +3005,8 @@ module.exports = {
   setIndependentDraftState,
   applyIndependentDraftRosters,
   assignFranchiseManager,
+  addIndependentFranchise,
+  removeIndependentFranchise,
   renameIndependentFranchise,
   setIndependentLineup,
   ensureIndependentSchedule,

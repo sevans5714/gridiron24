@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=156" />
-  <link rel="icon" href="/favicon.ico?v=156" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=156" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=156" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=157" />
+  <link rel="icon" href="/favicon.ico?v=157" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=157" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=157" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=187" />
   <link rel="stylesheet" href="/css/draft-desk.css?v=13" />
@@ -1096,8 +1096,8 @@
     }
     .il-slot-roster-row {
       display: grid;
-      grid-template-columns: 3.1rem 1fr auto;
-      gap: 0.55rem;
+      grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+      gap: 0.4rem 0.55rem;
       align-items: center;
       padding: 0.45rem 0;
       border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
@@ -1708,6 +1708,38 @@
       padding: 0.3rem 0;
       border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
     }
+    .il-offline-desk {
+      display: grid;
+      gap: 1.1rem;
+    }
+    @media (min-width: 960px) {
+      .il-offline-desk {
+        grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.9fr);
+        align-items: start;
+      }
+    }
+    .il-offline-teams {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .il-offline-team {
+      border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+      border-radius: 0.7rem;
+      padding: 0.7rem 0.8rem;
+      background: color-mix(in srgb, var(--panel) 88%, transparent);
+    }
+    .il-offline-team.is-on {
+      border-color: var(--il-accent, var(--blue));
+    }
+    .il-offline-team h3 {
+      margin: 0 0 0.35rem;
+      font-size: 0.95rem;
+    }
+    .il-offline-team .il-meta { margin: 0 0 0.45rem; }
+    .il-offline-team button.is-tiny {
+      font-size: 0.72rem;
+      padding: 0.15rem 0.45rem;
+    }
     .il-roster-list {
       display: grid;
       gap: 0.35rem;
@@ -1767,8 +1799,12 @@
 
     function franchiseIsOpen(f) {
       if (!f) return true;
-      if (f.vacant === true) return true;
-      return !f.managerUserId;
+      if (f.managerUserId) return false;
+      if (f.ownerCreated || String(f.managerName || '').trim()) return false;
+      if (f.vacant === false) return false;
+      const n = String(f.displayName || f.name || '').trim();
+      if (n && n !== 'Open') return false;
+      return true;
     }
 
     function franchiseLabel(f, fallback = 'Open') {
@@ -2270,7 +2306,7 @@
       const st = league.structure || {};
       const ch = league.championship || {};
       const pendingLock = league.status === 'pending_approval' || league.status === 'rejected';
-      const locked = pendingLock || ['live', 'complete'].includes(String(league.draft?.status || ''));
+      const locked = pendingLock || ['live', 'offline', 'complete'].includes(String(league.draft?.status || ''));
       if (!viewer?.canManage) {
         return `${pageHead('Settings', league)}
           <section class="il-panel"><h2>League settings</h2>
@@ -2336,6 +2372,14 @@
         <section class="il-panel il-setup-pane" data-il-setup="1" hidden>
           <h2>Official draft</h2>
           <form class="il-form" id="il-settings-form" style="margin-top:0.85rem;">
+            <p class="il-q">How will you draft?</p>
+            <label>Draft host
+              <select name="draftHost" ${locked ? 'disabled' : ''}>
+                <option value="live" ${s.draftHost !== 'offline' ? 'selected' : ''}>Live snake on this site</option>
+                <option value="offline" ${s.draftHost === 'offline' ? 'selected' : ''}>Offline draft — owner assigns players</option>
+              </select>
+            </label>
+            <p class="il-meta">Offline: after you draft in person, open Draft and add each pick to a franchise. Lock the draft when every team is entered.</p>
             <p class="il-q">When is the official draft?</p>
             <label>Draft date &amp; time
               <input type="datetime-local" name="draftAt" value="${esc(toLocalInputValue(s.draftAt))}" ${locked ? 'disabled' : ''} />
@@ -2709,6 +2753,25 @@
             <h2>Members &amp; franchises</h2>
             <p class="il-meta">Assign managers to seats. Rename franchises anytime.</p>
             <div id="il-member-list" style="margin-top:0.75rem;"><p class="il-meta">Loading members…</p></div>
+            <h3 style="margin:1.25rem 0 0.5rem;">Add a team</h3>
+            <p class="il-meta">Add a franchise even if the manager has no account yet. Name the team now; they can claim the seat later.</p>
+            <form class="il-form" id="il-add-team-form" style="margin-top:0.65rem;">
+              <label>Team name
+                <input type="text" name="name" maxlength="32" required placeholder="Team name" />
+              </label>
+              ${confs.length > 1 ? `<label>Conference
+                <select name="conferenceKey">
+                  ${confs.map((c) => `<option value="${esc(c.key)}">${esc(c.name || c.shortName || c.key)}</option>`).join('')}
+                </select>
+              </label>` : ''}
+              <label>Manager name (optional — no login required)
+                <input type="text" name="managerName" maxlength="80" placeholder="Who runs this team" />
+              </label>
+              <div class="il-actions">
+                <button type="submit" class="il-btn">Add team</button>
+                <span class="il-status" id="il-add-team-status" role="status"></span>
+              </div>
+            </form>
             <h3 style="margin:1.25rem 0 0.5rem;">Franchise seats</h3>
             <ul class="il-team-list" id="il-franchise-manage">
               ${(league.franchises || []).map((f) => {
@@ -2731,9 +2794,15 @@
                       <option value="">Open seat</option>
                     </select>
                   </label>
+                  ${!f.managerUserId ? `<button type="button" class="il-btn is-ghost" data-remove-team="${esc(f.id)}">Remove team</button>` : ''}
                 </li>`;
               }).join('') || '<li class="il-empty">No franchises</li>'}
             </ul>
+          </section>
+          <section class="il-panel">
+            <h2>Offline draft</h2>
+            <p class="il-meta">Drafted in person? Set Settings → Official draft to <strong>Offline draft</strong>, then open Draft and assign players to each franchise.</p>
+            <p style="margin-top:0.75rem;"><a class="il-btn" href="${esc((hqState.pages && hqState.pages.draft) || '#')}">Open draft desk</a></p>
           </section>
         </div>`;
     }
@@ -4442,9 +4511,182 @@
         </section>`;
     }
 
+    function offlineDraftHtml(league, viewer, wire) {
+      const w = wire || {};
+      const fa = Array.isArray(w.freeAgents) ? w.freeAgents : [];
+      const teams = Array.isArray(w.franchises) ? w.franchises : (league.franchises || []);
+      const selected = String(hqState.offlineFid || teams[0]?.id || '');
+      const selectedTeam = teams.find((f) => String(f.id) === selected) || teams[0] || null;
+      const status = String(league.draft?.status || 'scheduled');
+      const complete = status === 'complete';
+      const cap = teams.reduce((n, f) => n + (Array.isArray(f.roster) ? f.roster.length : 0), 0);
+      return `${pageHead('Draft', league, complete
+        ? 'Draft is locked. You can still correct rosters as owner.'
+        : 'Enter picks from your offline draft. Select a team, then add players.')}
+        <section class="il-panel">
+          <p class="il-meta">${esc(String(cap))} players assigned · ${esc(status === 'offline' ? 'Entering results' : status)}</p>
+          ${complete ? '' : `<div class="il-actions" style="margin-top:0.65rem;">
+            <button type="button" class="il-btn" id="il-offline-lock">Lock draft &amp; open wire</button>
+          </div>`}
+          <p class="il-status" id="il-offline-status" role="status"></p>
+        </section>
+        <div class="il-offline-desk">
+          <section class="il-panel">
+            <h2>Available players</h2>
+            <div class="il-week-bar">
+              <label class="il-meta" style="text-transform:none;letter-spacing:0;font-weight:500;">Assign to
+                <select id="il-offline-team">
+                  ${teams.map((f) => `<option value="${esc(f.id)}" ${String(f.id) === selected ? 'selected' : ''}>${esc(franchiseLabel(f, f.name || 'Team'))}${f.managerName ? ` · ${esc(f.managerName)}` : ''}</option>`).join('')}
+                </select>
+              </label>
+              <input type="search" id="il-offline-q" placeholder="Search players" value="${esc(w.faQuery || '')}" style="max-width:16rem;" />
+              <select id="il-offline-pos">
+                ${['ALL', 'QB', 'RB', 'WR', 'TE', 'DST', 'K'].map((p) => `<option value="${p}" ${String(w.faPos || 'ALL') === p ? 'selected' : ''}>${p}</option>`).join('')}
+              </select>
+              <button type="button" class="il-btn" id="il-offline-search">Search</button>
+            </div>
+            ${!selectedTeam ? '<p class="il-empty">Add franchises in Manage first.</p>' : `
+            <table class="il-wire-table">
+              <thead><tr><th>Player</th><th>Pos</th><th>NFL</th><th class="num">Rank</th><th></th></tr></thead>
+              <tbody>
+                ${fa.map((p) => `
+                  <tr>
+                    <td>${esc(p.name)}</td>
+                    <td>${esc(p.position)}</td>
+                    <td>${esc(p.nflTeam)}</td>
+                    <td class="num">${p.overallRank != null ? esc(String(p.overallRank)) : '—'}</td>
+                    <td><button type="button" class="il-btn" data-offline-add="${esc(p.playerId)}">Add</button></td>
+                  </tr>`).join('') || '<tr><td colspan="5" class="il-empty">No players match.</td></tr>'}
+              </tbody>
+            </table>`}
+          </section>
+          <section class="il-panel">
+            <h2>Rosters</h2>
+            <div class="il-offline-teams">
+              ${teams.map((f) => {
+                const on = String(f.id) === String(selectedTeam?.id);
+                const roster = Array.isArray(f.roster) ? f.roster : [];
+                return `<article class="il-offline-team${on ? ' is-on' : ''}">
+                  <h3>${esc(franchiseLabel(f, f.name || 'Team'))}</h3>
+                  <p class="il-meta">${roster.length} player${roster.length === 1 ? '' : 's'}${f.managerName ? ` · ${esc(f.managerName)}` : ''}</p>
+                  <ul class="il-roster-list">
+                    ${roster.map((p) => `
+                      <li>
+                        <span>${esc(p.name || p.playerName)} <span class="il-meta">${esc(p.position || '')} ${esc(p.nflTeam || '')}</span></span>
+                        <button type="button" class="il-btn is-ghost is-tiny" data-offline-remove="${esc(p.playerId || p.id)}" data-franchise="${esc(f.id)}">Remove</button>
+                      </li>`).join('') || '<li class="il-empty">Empty</li>'}
+                  </ul>
+                </article>`;
+              }).join('') || '<p class="il-empty">No franchises yet.</p>'}
+            </div>
+          </section>
+        </div>`;
+    }
+
+    function paintOfflineDraftDesk() {
+      const root = document.getElementById('il-root');
+      if (!root || !hqState.league) return;
+      root.innerHTML = offlineDraftHtml(hqState.league, hqState.viewer, hqState.wire);
+      wireOfflineDraftUi();
+    }
+
+    function wireOfflineDraftUi() {
+      const setStatus = (msg, ok) => {
+        const el = document.getElementById('il-offline-status');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.className = `il-status${ok ? ' is-ok' : (msg ? ' is-err' : '')}`;
+      };
+      const refresh = async (extra = {}) => {
+        await loadWire({
+          q: extra.q != null ? extra.q : (document.getElementById('il-offline-q')?.value || ''),
+          pos: extra.pos != null ? extra.pos : (document.getElementById('il-offline-pos')?.value || 'ALL')
+        });
+        paintOfflineDraftDesk();
+      };
+      document.getElementById('il-offline-team')?.addEventListener('change', (e) => {
+        hqState.offlineFid = e.target.value;
+        paintOfflineDraftDesk();
+      });
+      document.getElementById('il-offline-search')?.addEventListener('click', async () => {
+        try {
+          setStatus('Searching…', true);
+          await refresh();
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+      document.getElementById('il-offline-q')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('il-offline-search')?.click();
+      });
+      document.querySelectorAll('[data-offline-add]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const fid = document.getElementById('il-offline-team')?.value || hqState.offlineFid;
+          if (!fid) return;
+          try {
+            setStatus('Adding…', true);
+            await postWire({
+              action: 'owner-add',
+              franchiseId: fid,
+              playerId: btn.getAttribute('data-offline-add')
+            });
+            hqState.offlineFid = fid;
+            await refresh();
+            setStatus('Added.', true);
+          } catch (err) {
+            setStatus(err.message);
+          }
+        });
+      });
+      document.querySelectorAll('[data-offline-remove]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            setStatus('Removing…', true);
+            await postWire({
+              action: 'owner-remove',
+              franchiseId: btn.getAttribute('data-franchise'),
+              playerId: btn.getAttribute('data-offline-remove')
+            });
+            await refresh();
+            setStatus('Removed.', true);
+          } catch (err) {
+            setStatus(err.message);
+          }
+        });
+      });
+      document.getElementById('il-offline-lock')?.addEventListener('click', async () => {
+        if (!window.confirm('Lock this draft? Lineups fill from assigned players and the waiver wire opens.')) return;
+        try {
+          setStatus('Locking…', true);
+          await postWire({ action: 'owner-complete-draft' });
+          await refresh();
+          setStatus('Draft locked. Wire is open.', true);
+        } catch (err) {
+          setStatus(err.message);
+        }
+      });
+    }
+
     async function loadDraftBoard() {
       const league = hqState.league;
       if (!league?.id) return;
+      const host = String(league.settings?.draftHost || 'live');
+      const owner = Boolean(hqState.viewer?.canManage || hqState.viewer?.isOwner || hqState.viewer?.isSiteOwner);
+      const offline = host === 'offline' || String(league.draft?.status || '') === 'offline';
+      if (offline && owner) {
+        window.OfficialDraftUi?.unmount();
+        const root = document.getElementById('il-root');
+        try {
+          await loadWire({ q: hqState.wire?.faQuery || '', pos: hqState.wire?.faPos || 'ALL' });
+        } catch (err) {
+          hqState.wireError = err.message;
+        }
+        if (root) {
+          root.innerHTML = offlineDraftHtml(hqState.league, hqState.viewer, hqState.wire);
+          wireOfflineDraftUi();
+        }
+        return;
+      }
       const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/draft`, { cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load draft');
@@ -4860,6 +5102,7 @@
         }
         try {
           await patchSettings({
+            draftHost: fd.get('draftHost') || 'live',
             draftAt,
             draftScope: Number(document.getElementById('il-conference-count')?.value) === 1
               ? 'league'
@@ -5258,6 +5501,58 @@
             status.className = 'il-status is-err';
           }
         }
+      });
+
+      document.getElementById('il-add-team-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('il-add-team-status');
+        const fd = new FormData(e.target);
+        try {
+          if (status) {
+            status.textContent = 'Adding…';
+            status.className = 'il-status';
+          }
+          const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/franchises/add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: fd.get('name'),
+              conferenceKey: fd.get('conferenceKey') || '',
+              managerName: fd.get('managerName') || ''
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not add team');
+          hqState.league = data.league;
+          document.getElementById('il-root').innerHTML = manageHtml(data.league, hqState.viewer);
+          wireManageUi();
+        } catch (err) {
+          if (status) {
+            status.textContent = err.message;
+            status.className = 'il-status is-err';
+          }
+        }
+      });
+
+      document.querySelectorAll('[data-remove-team]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const label = btn.closest('li')?.querySelector('strong')?.textContent?.trim() || 'this team';
+          if (!window.confirm(`Remove ${label} from the league?`)) return;
+          try {
+            const res = await fetch(`/api/independent-leagues/${encodeURIComponent(league.id)}/franchises/remove`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ franchiseId: btn.getAttribute('data-remove-team') })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Could not remove team');
+            hqState.league = data.league;
+            document.getElementById('il-root').innerHTML = manageHtml(data.league, hqState.viewer);
+            wireManageUi();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
       });
 
       document.querySelectorAll('[data-assign]').forEach((sel) => {

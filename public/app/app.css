@@ -2843,6 +2843,20 @@ html[data-theme="day"] .s-row .num.col-pf {
   color: var(--muted);
 }
 
+.box-player .pts-live .arrow {
+  font-size: 0.62rem;
+  margin-right: 0.12rem;
+  font-weight: 800;
+}
+
+.box-player .pts.is-over .pts-live { color: #3dff8a; }
+.box-player .pts.is-under .pts-live { color: #ff7a7a; }
+.box-player .pts.is-even .pts-live { color: var(--text); }
+.box-player .pts.is-pending .pts-live { color: var(--muted); }
+
+html[data-theme="day"] .box-player .pts.is-over .pts-live { color: #15803d; }
+html[data-theme="day"] .box-player .pts.is-under .pts-live { color: #b91c1c; }
+
 .box-player.is-inj .nm {
   color: var(--bad, #ff6b6b);
 }
@@ -2971,11 +2985,11 @@ html[data-theme="day"] .s-row .num.col-pf {
 }
 .slot-roster-row {
   display: grid;
-  grid-template-columns: 2.75rem minmax(0, 1fr) 3.25rem;
-  gap: 0.55rem;
+  grid-template-columns: 2.45rem minmax(0, 1fr) 3.5rem;
+  gap: 0.4rem 0.55rem;
   align-items: center;
   min-height: 2.35rem;
-  padding: 0.55rem 0;
+  padding: 0.5rem 0;
   border: 0;
   border-bottom: 1px solid var(--line);
   background: transparent;

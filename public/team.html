@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=156" />
-  <link rel="icon" href="/favicon.ico?v=156" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=156" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=156" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=157" />
+  <link rel="icon" href="/favicon.ico?v=157" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=157" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=157" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
     .team-hero { margin-bottom: 1.5rem; }
     .team-hero h1 { margin: 0; }
     .team-hero .meta { margin-top: 0.35rem; color: var(--muted); }
-    .layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem; }
+    .layout { display: grid; grid-template-columns: minmax(0, 32rem) minmax(16rem, 20rem); gap: 1.35rem 1.5rem; align-items: start; justify-content: start; max-width: 54rem; }
     .section-head h2 { margin: 0 0 0.75rem; font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 1.1rem; }
     :root {
       --mock-qb: #ff6b6b;
@@ -29,7 +29,7 @@
       --mock-flex: #2dd4bf;
       --mock-bn: #64748b;
     }
-    .slot-roster { list-style: none; margin: 0; padding: 0; }
+    .slot-roster { list-style: none; margin: 0; padding: 0; max-width: 32rem; }
     .slot-roster-divider {
       margin: 1rem 0 0.45rem;
       padding-top: 0.65rem;
@@ -43,10 +43,10 @@
     }
     .slot-roster-row {
       display: grid;
-      grid-template-columns: 2.75rem minmax(0, 1fr) auto;
-      gap: 0.65rem 0.85rem;
+      grid-template-columns: 2.45rem minmax(0, 1fr) auto;
+      gap: 0.4rem 0.55rem;
       align-items: center;
-      padding: 0.65rem 0;
+      padding: 0.55rem 0;
       border-bottom: 1px solid var(--line);
     }
     .slot-roster-row:last-child { border-bottom: 0; }

@@ -73,6 +73,7 @@ function actorUser(actor = {}) {
 
 function isLeagueOwner(league, actor = {}) {
   const user = actorUser(actor);
+  if (user.siteOwner) return true;
   return leagues.canManageIndependentLeague(user, league);
 }
 
@@ -644,6 +645,136 @@ function publicPayload(league, actor = {}, extra = {}) {
   };
 }
 
+function requireRosterOwner(league, actor) {
+  if (isLeagueOwner(league, actor)) return;
+  throw err(403, 'Only the league owner can assign players from an offline draft');
+}
+
+function assertNotLiveSnake(league) {
+  const status = String(league.draft?.status || 'scheduled');
+  if (status === 'live' && Array.isArray(league.draft?.roomIds) && league.draft.roomIds.length) {
+    throw err(409, 'A live draft is in progress. Enter picks on the live board.');
+  }
+}
+
+function ownerAssignPlayer(leagueId, { franchiseId, player, actor }) {
+  const keepers = require('./independent-keepers');
+  return leagues.withIndependentLeague(leagueId, (league) => {
+    requireRosterOwner(league, actor);
+    assertNotLiveSnake(league);
+    const { franchise, idx } = findFranchise(league, franchiseId);
+    const snap = snapshotPlayer(player, 'BN');
+    if (!snap.playerId) throw err(400, 'Pick a player');
+    if (ownedPlayerIds(league).has(snap.playerId)) {
+      throw err(409, 'That player is already on a roster');
+    }
+    addToRoster(franchise, snap, rosterCap(league));
+    const picks = Array.isArray(league.draft?.picks) ? league.draft.picks.slice() : [];
+    const overall = picks.length + 1;
+    const teamCount = Math.max(1, (league.franchises || []).length);
+    const round = Math.floor((overall - 1) / teamCount) + 1;
+    const pickInRound = ((overall - 1) % teamCount) + 1;
+    const stamped = keepers.stampDraftPlayer(snap, {
+      round,
+      overall,
+      pick: pickInRound
+    }, league.season);
+    franchise.roster = (franchise.roster || []).map((p) => (
+      playerKey(p) === snap.playerId ? { ...p, ...stamped, slot: p.slot || 'BN' } : p
+    ));
+    league.franchises[idx] = franchise;
+    picks.push({
+      overall,
+      round,
+      pick: pickInRound,
+      franchiseId: franchise.id,
+      teamName: franchise.name,
+      playerId: snap.playerId,
+      playerName: snap.name,
+      position: snap.position,
+      nflTeam: snap.nflTeam,
+      espnId: snap.espnId,
+      gsisId: snap.gsisId,
+      headshot: snap.headshot,
+      cpu: false,
+      timeout: false,
+      offline: true,
+      pickedAt: new Date().toISOString()
+    });
+    const prev = leagues.defaultIndependentDraft(league.draft || {});
+    league.draft = leagues.defaultIndependentDraft({
+      ...prev,
+      status: prev.status === 'complete' ? 'complete' : 'offline',
+      picks,
+      startedAt: prev.startedAt || new Date().toISOString()
+    });
+    leagues.pushIndependentTransaction(league, {
+      type: 'draft',
+      franchiseId: franchise.id,
+      franchiseName: franchise.name,
+      actorName: actor.name || actor.loginName || 'Owner',
+      summary: `Drafted ${snap.name} to ${franchise.name}`
+    });
+    return publicPayload(league, actor, { added: snap, franchiseId: franchise.id });
+  });
+}
+
+function ownerRemovePlayer(leagueId, { franchiseId, playerId, actor }) {
+  return leagues.withIndependentLeague(leagueId, (league) => {
+    requireRosterOwner(league, actor);
+    assertNotLiveSnake(league);
+    const { franchise, idx } = findFranchise(league, franchiseId);
+    const removed = takeFromRoster(franchise, playerId);
+    if (!removed) throw err(400, 'That player is not on this roster');
+    league.franchises[idx] = franchise;
+    const prev = leagues.defaultIndependentDraft(league.draft || {});
+    const pid = playerKey(removed);
+    league.draft = leagues.defaultIndependentDraft({
+      ...prev,
+      picks: (prev.picks || []).filter((p) => !(
+        String(p.playerId) === pid && String(p.franchiseId) === String(franchise.id)
+      ))
+    });
+    leagues.pushIndependentTransaction(league, {
+      type: 'draft',
+      franchiseId: franchise.id,
+      franchiseName: franchise.name,
+      actorName: actor.name || actor.loginName || 'Owner',
+      summary: `Removed ${removed.name} from ${franchise.name}`
+    });
+    return publicPayload(league, actor, { removed, franchiseId: franchise.id });
+  });
+}
+
+function ownerCompleteOfflineDraft(leagueId, { actor }) {
+  const independentScoring = require('./independent-scoring');
+  return leagues.withIndependentLeague(leagueId, (league) => {
+    requireRosterOwner(league, actor);
+    assertNotLiveSnake(league);
+    const assigned = (league.franchises || []).reduce((n, f) => n + (Array.isArray(f.roster) ? f.roster.length : 0), 0);
+    if (!assigned) throw err(400, 'Assign at least one player before locking the draft');
+    const slots = settingsOf(league).rosterSlots || {};
+    league.franchises = (league.franchises || []).map((f) => ({
+      ...f,
+      roster: independentScoring.assignDefaultSlots(f.roster || [], slots)
+    }));
+    const prev = leagues.defaultIndependentDraft(league.draft || {});
+    league.draft = leagues.defaultIndependentDraft({
+      ...prev,
+      status: 'complete',
+      completedAt: new Date().toISOString(),
+      picks: prev.picks || []
+    });
+    ensureWire(league);
+    leagues.pushIndependentTransaction(league, {
+      type: 'draft',
+      actorName: actor.name || actor.loginName || 'Owner',
+      summary: 'Locked offline draft — wire is open'
+    });
+    return publicPayload(league, actor, { complete: true });
+  });
+}
+
 function getWire(leagueId, actor, pool, query = {}) {
   const league = leagues.findById(leagueId);
   if (!league || league.platform !== 'independent') throw err(404, 'League not found');
@@ -671,6 +802,9 @@ module.exports = {
   processDueLeagues,
   proposeTrade,
   respondTrade,
+  ownerAssignPlayer,
+  ownerRemovePlayer,
+  ownerCompleteOfflineDraft,
   snapshotPlayer,
   ensureWire
 };

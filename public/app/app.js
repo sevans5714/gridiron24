@@ -342,7 +342,10 @@
     const list = Array.isArray(state.menuLeagues) ? state.menuLeagues : [];
     if (!list.length) return;
     const hasGi = list.some((row) => row.kind === 'gridiron');
-    const want = readRememberedPwaLeague() || (hasGi ? 'gridiron' : preferredLeaguePayload(list[0]));
+    const remembered = readRememberedPwaLeague();
+    const want = hasGi
+      ? 'gridiron'
+      : (remembered || preferredLeaguePayload(list[0]));
     if (!want) return;
     const row = menuRowForPreferred(want);
     if (!row) return;
@@ -2713,17 +2716,34 @@
     function playerCell(p, side) {
       const empty = p?.empty || !p?.name;
       const bad = !empty && injClass(p.injuryStatus) === 'bad';
-      const pts = empty ? '—' : fmtPts(p.points != null ? p.points : p.weekPoints);
+      const liveRaw = p?.points != null ? p.points : p?.weekPoints;
       const projRaw = p?.projected != null ? p.projected : p?.weekProjected;
+      const pts = empty ? '—' : fmtPts(liveRaw);
       const proj = empty || projRaw == null ? null : fmtPts(projRaw);
+      let tone = 'is-pending';
+      let arrow = '';
+      if (!empty && liveRaw != null && projRaw != null
+          && Number.isFinite(Number(liveRaw)) && Number.isFinite(Number(projRaw))) {
+        const delta = Number(liveRaw) - Number(projRaw);
+        if (Math.abs(delta) < 0.05) {
+          tone = 'is-even';
+          arrow = '<span class="arrow" aria-hidden="true">→</span>';
+        } else if (delta > 0) {
+          tone = 'is-over';
+          arrow = '<span class="arrow" aria-hidden="true">▲</span>';
+        } else {
+          tone = 'is-under';
+          arrow = '<span class="arrow" aria-hidden="true">▼</span>';
+        }
+      }
       const name = empty
         ? `<span class="slot-open">${esc(p?.slot || 'Open')}</span>`
         : `${esc(p.name)}${p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}`;
       return `<div class="box-player ${side}${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''}">
         <span class="nm">${name}</span>
-        <span class="pts">
-          <span class="pts-live">${pts}</span>
-          ${proj != null ? `<span class="pts-proj">${proj}</span>` : ''}
+        <span class="pts ${tone}">
+          <span class="pts-live">${arrow}${pts}</span>
+          ${proj != null ? `<span class="pts-proj">proj ${proj}</span>` : ''}
         </span>
       </div>`;
     }
@@ -2790,11 +2810,11 @@
   async function refreshHomeLive() {
     try {
       if (isIndependentScope()) {
-        await loadIndependentContext();
+        await loadMyTeam().catch(() => {});
       } else {
         await Promise.all([
           loadScoreboard(state.currentMatchupPeriod || state.week || undefined, { quiet: true }),
-          apiGet(withLeagueQuery('/api/my-team')).then((d) => { state.myTeam = d; updateTeamChip(); }).catch(() => {}),
+          loadMyTeam().catch(() => {}),
           apiGet(withLeagueQuery('/api/leagues')).then((d) => { state.leagues = d; }).catch(() => {})
         ]);
       }
@@ -2816,7 +2836,7 @@
     const mount = document.getElementById('home-mount');
     try {
       if (isIndependentScope()) {
-        await loadIndependentContext();
+        await loadMyTeam().catch(() => {});
       } else {
         const tasks = [];
         tasks.push(loadMyTeam().catch(() => {}));
@@ -2841,7 +2861,7 @@
     const mount = document.getElementById('matchup-mount');
     try {
       if (isIndependentScope()) {
-        await loadIndependentContext();
+        await loadMyTeam().catch(() => {});
       } else {
         await loadMyTeam().catch(() => {});
         const displayWeek = state.myTeam?.displayMatchupPeriod
@@ -2860,8 +2880,7 @@
   }
 
   async function loadRoster() {
-    if (isIndependentScope()) await loadIndependentContext();
-    else await loadMyTeam();
+    await loadMyTeam();
     renderMyTeam();
   }
 
@@ -2959,14 +2978,20 @@
   }
 
   async function loadMyTeam() {
+    const hasGi24 = (state.menuLeagues || []).some((row) => row.kind === 'gridiron')
+      || String(state.authUser?.membershipLeague || '').toLowerCase() === 'gridiron'
+      || Boolean(state.authUser?.siteOwner);
     if (isIndependentScope()) {
       await loadIndependentContext();
-      if (state.view === 'roster') renderMyTeam();
-      return;
+      if (state.myTeam?.team || state.myTeam?.claim || !hasGi24) {
+        updateTeamChip();
+        if (state.view === 'roster') renderMyTeam();
+        return;
+      }
     }
     const mount = document.getElementById('roster-mount');
     try {
-      state.myTeam = await apiGet(withLeagueQuery('/api/my-team'));
+      state.myTeam = await apiGet('/api/my-team?league=gridiron');
       updateTeamChip();
       if (state.view === 'roster') {
         renderMyTeam();
