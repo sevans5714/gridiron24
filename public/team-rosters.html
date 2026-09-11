@@ -7,12 +7,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=157" />
-  <link rel="icon" href="/favicon.ico?v=157" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=157" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=157" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=158" />
+  <link rel="icon" href="/favicon.ico?v=158" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=158" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=158" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
+  <link rel="stylesheet" href="/css/player-game.css?v=1" />
   <style>
     :root {
       --mock-qb: #ff6b6b;
@@ -257,6 +258,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=183"></script>
+  <script src="/js/player-game-ui.js?v=1"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     function record(t) {
@@ -287,7 +289,6 @@
       const status = !statusRaw || statusRaw === 'ACTIVE' ? '' : statusRaw;
       const isStarter = starterSlots(p.slot);
       const bad = !empty && injClass(p.injuryStatus) === 'bad' && isStarter;
-      const onBye = !empty && week && Number(p.byeWeek) === Number(week);
       const pos = slotPosLabel(p.slot);
       const live = Number(p.weekPoints);
       const proj = Number(p.weekProjected);
@@ -306,11 +307,10 @@
           ${Number.isFinite(proj) ? `<span class="proj">proj ${esc(proj.toFixed(1))}</span>` : ''}
         </span>`;
       }
-      return `<li class="slot-roster-row ${[empty ? 'is-empty' : '', bad ? 'row-bad' : ''].filter(Boolean).join(' ')}">
+      const gameTone = window.GridIronPlayerGame?.rowToneClass(p) || '';
+      return `<li class="slot-roster-row ${[empty ? 'is-empty' : '', bad ? 'row-bad' : '', gameTone].filter(Boolean).join(' ')}">
         <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
-        <span class="nm">${empty ? '—' : esc(p.name)}
-          ${empty ? '' : `<span class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}${onBye ? ` · Bye ${esc(String(p.byeWeek))}` : ''}</span>`}
-        </span>
+        ${window.GridIronPlayerGame.nameBlockHtml(p)}
         ${nums}
         <span class="inj ${bad ? 'bad' : 'ok'}${status ? '' : ' is-quiet'}">${esc(status || '·')}</span>
       </li>`;
@@ -410,22 +410,19 @@
       });
     }
 
-    async function loadConference(key) {
+    async function loadConference(key, { quiet = false } = {}) {
       const boards = document.getElementById('boards');
-      boards.innerHTML = `<div class="msg">Loading ${esc(key)} rosters…</div>`;
+      if (!quiet) boards.innerHTML = `<div class="msg">Loading ${esc(key)} rosters…</div>`;
       renderControls();
       try {
-        let data = payloadCache.get(key);
-        if (!data) {
-          const res = await fetch(`/api/rosters?conference=${encodeURIComponent(key)}`, { cache: 'no-store' });
-          data = await res.json();
-          if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load rosters');
-          payloadCache.set(key, data);
-        }
+        const res = await fetch(`/api/rosters?conference=${encodeURIComponent(key)}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load rosters');
+        payloadCache.set(key, data);
         renderRoster(data);
-        window.GridIronNav?.setSync(`Updated · ${new Date(data.generatedAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+        window.GridIronNav?.setSync(`Live · ${new Date(data.generatedAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
-        boards.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
+        if (!quiet) boards.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
       }
     }
 
@@ -443,22 +440,30 @@
           activeConf = 'aaa';
           renderControls();
           await loadConference('aaa');
-          return;
+        } else {
+          const res = await fetch('/api/leagues', { cache: 'no-store' });
+          const data = await res.json();
+          const detail = (data.conferences || []).find((c) => c.key === 'detail');
+          const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
+          conferences = [detail, overtime].filter(Boolean).map((c) => ({
+            key: c.key,
+            name: c.name,
+            shortName: c.shortName || c.name
+          }));
+          if (!conferences.length) throw new Error('No conferences available');
+          activeConf = conferences[0].key;
+          renderControls();
+          await loadConference(activeConf);
         }
-
-        const res = await fetch('/api/leagues', { cache: 'no-store' });
-        const data = await res.json();
-        const detail = (data.conferences || []).find((c) => c.key === 'detail');
-        const overtime = (data.conferences || []).find((c) => c.key === 'overtime');
-        conferences = [detail, overtime].filter(Boolean).map((c) => ({
-          key: c.key,
-          name: c.name,
-          shortName: c.shortName || c.name
-        }));
-        if (!conferences.length) throw new Error('No conferences available');
-        activeConf = conferences[0].key;
-        renderControls();
-        await loadConference(activeConf);
+        setInterval(() => {
+          if (document.visibilityState !== 'visible' || !activeConf) return;
+          loadConference(activeConf, { quiet: true });
+        }, 15_000);
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && activeConf) {
+            loadConference(activeConf, { quiet: true });
+          }
+        });
       } catch (err) {
         document.getElementById('boards').innerHTML = `<div class="msg">${esc(err.message)}</div>`;
       }

@@ -260,16 +260,22 @@ async function loadLiveWeekOverlay(season, week) {
     status: {
       bucket: g.status?.bucket || 'upcoming',
       detail: g.status?.shortDetail || g.status?.detail || g.status?.description || '',
+      shortDetail: g.status?.shortDetail || g.status?.detail || '',
       clock: g.status?.clock || null,
       period: g.status?.period || 0
     },
+    situation: g.situation || null,
     home: {
+      id: g.home?.id || null,
       abbr: String(g.home?.abbreviation || '').toUpperCase(),
+      abbreviation: String(g.home?.abbreviation || '').toUpperCase(),
       score: g.home?.score ?? null,
       logo: g.home?.logo || null
     },
     away: {
+      id: g.away?.id || null,
       abbr: String(g.away?.abbreviation || '').toUpperCase(),
+      abbreviation: String(g.away?.abbreviation || '').toUpperCase(),
       score: g.away?.score ?? null,
       logo: g.away?.logo || null
     }

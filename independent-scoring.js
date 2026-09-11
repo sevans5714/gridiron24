@@ -232,6 +232,8 @@ function buildLineup(roster = [], scoredById = new Map(), rosterSlots = {}) {
       live: Boolean(scored.live),
       gameStatus: scored.gameStatus || null,
       gameClock: scored.gameClock || null,
+      nflGame: scored.nflGame || null,
+      teamLogo: scored.teamLogo || p.teamLogo || null,
       breakdown: scored.breakdown || null
     };
   });

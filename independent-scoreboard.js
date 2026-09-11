@@ -6,6 +6,7 @@ const weekStats = require('./independent-week-stats');
 const liveStats = require('./independent-live-stats');
 const leagues = require('./leagues-store');
 const independentPlayoffs = require('./independent-playoffs');
+const playerNflGame = require('./player-nfl-game');
 
 function num(v, fallback = 0) {
   const n = Number(v);
@@ -50,35 +51,65 @@ function scoreRosterPlayer(player, box) {
     ? dstTeamKey(player)
     : String(player?.nflTeam || player?.team || '').trim().toUpperCase();
   const game = teamAbbr && box.gamesByTeam?.get
-    ? box.gamesByTeam.get(teamAbbr)
+    ? (box.gamesByTeam.get(teamAbbr)
+      || box.gamesByTeam.get(playerNflGame.teamKey(teamAbbr) || ''))
     : null;
-  const gameStatus = game?.status || null;
-  const gameClock = gameStatus?.detail || gameStatus?.clock || null;
+  const nflGame = playerNflGame.contextForTeam(teamAbbr, box.gamesByTeam);
+  const gameStatus = game?.status || nflGame?.bucket
+    ? (game?.status || {
+      bucket: nflGame.bucket,
+      detail: nflGame.shortDetail,
+      clock: nflGame.clock
+    })
+    : null;
+  const gameClock = gameStatus?.detail || gameStatus?.shortDetail || gameStatus?.clock || nflGame?.shortDetail || null;
   if (isDst(player)) {
     const team = dstTeamKey(player);
     const teamRow = team ? box.teams.get(team) : null;
     if (!teamRow) {
-      return { points: 0, breakdown: null, playerId: id || team, gameStatus, gameClock };
+      return {
+        points: 0,
+        breakdown: null,
+        playerId: id || team,
+        gameStatus,
+        gameClock,
+        nflGame,
+        teamLogo: nflGame?.teamLogo || null
+      };
     }
     const scored = scoring.scoreDstStats(teamRow, box.scoring);
     return {
       ...scored,
       playerId: id || team,
       team,
-      live: Boolean(teamRow.live) || gameStatus?.bucket === 'live',
+      live: Boolean(teamRow.live) || gameStatus?.bucket === 'live' || nflGame?.live,
       gameStatus,
-      gameClock
+      gameClock,
+      nflGame,
+      teamLogo: nflGame?.teamLogo || null
     };
   }
   const row = lookupPlayerRow(player, box);
-  if (!row) return { points: 0, breakdown: null, playerId: id, gameStatus, gameClock };
+  if (!row) {
+    return {
+      points: 0,
+      breakdown: null,
+      playerId: id,
+      gameStatus,
+      gameClock,
+      nflGame,
+      teamLogo: nflGame?.teamLogo || null
+    };
+  }
   const scored = scoring.scorePlayerStats(row, box.scoring);
   return {
     ...scored,
     playerId: id,
-    live: Boolean(row.live) || gameStatus?.bucket === 'live',
+    live: Boolean(row.live) || gameStatus?.bucket === 'live' || nflGame?.live,
     gameStatus,
-    gameClock
+    gameClock,
+    nflGame,
+    teamLogo: nflGame?.teamLogo || null
   };
 }
 

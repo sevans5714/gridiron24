@@ -7,12 +7,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=157" />
-  <link rel="icon" href="/favicon.ico?v=157" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=157" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=157" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=158" />
+  <link rel="icon" href="/favicon.ico?v=158" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=158" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=158" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=187" />
+  <link rel="stylesheet" href="/css/player-game.css?v=1" />
   <link rel="stylesheet" href="/css/draft-desk.css?v=13" />
   <link rel="stylesheet" href="/css/conference-draft.css?v=1" />
   <style>
@@ -926,6 +927,13 @@
     .il-nfl-game.is-live { border-color: color-mix(in srgb, #4dff9a 50%, var(--line)); }
     .il-nfl-game .st { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; }
     .il-nfl-game.is-live .st { color: #4dff9a; }
+    .il-nfl-matchup {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+      flex-wrap: wrap;
+    }
+    .il-nfl-matchup .atvs { opacity: 0.7; font-size: 0.72rem; }
     .il-leaders { list-style: none; margin: 0; padding: 0; }
     .il-leaders li {
       display: grid;
@@ -1775,6 +1783,7 @@
   </footer>
 
   <script src="/js/nav.js?v=189"></script>
+  <script src="/js/player-game-ui.js?v=1"></script>
   <script src="/js/official-draft-ui.js?v=16"></script>
   <script src="/js/conference-draft-ui.js?v=1"></script>
   <script>
@@ -3049,12 +3058,12 @@
           ${filled.map((p) => {
             const pid = String(p.playerId || p.id || '');
             const isKeeper = pid && kept.has(pid);
+            const tone = window.GridIronPlayerGame?.rowToneClass(p) || (p.live ? 'is-live' : '');
+            const keeperHtml = isKeeper ? '<span class="il-keeper-tag">Keeper</span>' : '';
             return `
-            <li class="il-slot-roster-row ${p.empty ? 'is-empty' : 'is-selected'}${p.live ? ' is-live' : ''}${isKeeper ? ' is-keeper' : ''}">
+            <li class="il-slot-roster-row ${p.empty ? 'is-empty' : 'is-selected'} ${tone}${isKeeper ? ' is-keeper' : ''}">
               <span class="slot" data-pos="${esc(posBadge(p.slot || p.position))}">${esc(posBadge(p.slot || p.position))}</span>
-              <span class="nm">${esc(p.empty ? '—' : (p.name || p.playerName || 'Player'))}${isKeeper ? '<span class="il-keeper-tag">Keeper</span>' : ''}
-                <span class="pro">${p.empty ? 'Open slot' : `${esc(p.nflTeam || p.team || p.position || '')}${p.gameClock ? ` · ${esc(p.gameClock)}` : ''}`}</span>
-              </span>
+              ${window.GridIronPlayerGame.nameBlockHtml(p, { keeperHtml, emptyLabel: '—' })}
               <span class="nums">${p.weekPoints != null ? Number(p.weekPoints).toFixed(1) : '—'}</span>
             </li>`;
           }).join('')}
@@ -3062,12 +3071,12 @@
             const pid = String(p.playerId || p.id || '');
             const isKeeper = pid && kept.has(pid);
             const pos = p.slot === 'IR' || p.slot === 'TAXI' ? p.slot : 'BN';
+            const tone = window.GridIronPlayerGame?.rowToneClass(p) || (p.live ? 'is-live' : '');
+            const keeperHtml = isKeeper ? '<span class="il-keeper-tag">Keeper</span>' : '';
             return `
-            <li class="il-slot-roster-row${p.live ? ' is-live' : ''}${isKeeper ? ' is-keeper' : ''}">
+            <li class="il-slot-roster-row ${tone}${isKeeper ? ' is-keeper' : ''}">
               <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
-              <span class="nm">${esc(p.name || p.playerName || 'Player')}${isKeeper ? '<span class="il-keeper-tag">Keeper</span>' : ''}
-                <span class="pro">${esc(p.nflTeam || p.team || p.position || '')}${p.injuryStatus ? ` · ${esc(p.injuryStatus)}` : ''}${p.gameClock ? ` · ${esc(p.gameClock)}` : ''}</span>
-              </span>
+              ${window.GridIronPlayerGame.nameBlockHtml(p, { keeperHtml })}
               <span class="nums">${p.weekPoints != null ? Number(p.weekPoints).toFixed(1) : '—'}</span>
             </li>`;
           })}
@@ -3256,11 +3265,10 @@
       if (p.empty || !p.playerId) {
         return `<div class="il-mu-player is-empty"><span class="slot">${esc(p.slot || '')}</span><span class="nm">—</span><span class="pts">—</span></div>`;
       }
-      return `<div class="il-mu-player${p.live ? ' is-live' : ''}">
+      const tone = window.GridIronPlayerGame?.rowToneClass(p) || (p.live ? 'is-live' : '');
+      return `<div class="il-mu-player ${tone}">
         <span class="slot" data-pos="${esc(posBadge(p.slot || p.position))}">${esc(posBadge(p.slot || p.position))}</span>
-        <span class="nm">${esc(p.name || p.playerName || 'Player')}
-          <span class="pro">${esc(p.nflTeam || p.team || '')}${p.gameClock ? ` · ${esc(p.gameClock)}` : ''}</span>
-        </span>
+        ${window.GridIronPlayerGame.nameBlockHtml(p)}
         <span class="pts">${Number(p.weekPoints || 0).toFixed(1)}</span>
       </div>`;
     }
@@ -3268,11 +3276,23 @@
     function nflSlateHtml(games) {
       if (!Array.isArray(games) || !games.length) return '';
       return `<div class="il-nfl-slate" aria-label="NFL games">
-        ${games.map((g) => `
+        ${games.map((g) => {
+          const awayLogo = g.away?.logo || window.GridIronPlayerGame?.nflLogoUrl(g.away?.abbr);
+          const homeLogo = g.home?.logo || window.GridIronPlayerGame?.nflLogoUrl(g.home?.abbr);
+          return `
           <div class="il-nfl-game is-${esc(g.status?.bucket || 'upcoming')}">
-            <span>${esc(g.away?.abbr || '')} ${g.away?.score != null ? esc(String(g.away.score)) : ''} @ ${esc(g.home?.abbr || '')} ${g.home?.score != null ? esc(String(g.home.score)) : ''}</span>
+            <span class="il-nfl-matchup">
+              ${awayLogo ? `<img class="nfl-logo sm" src="${esc(awayLogo)}" alt="" />` : ''}
+              <span>${esc(g.away?.abbr || '')}</span>
+              ${g.away?.score != null ? `<strong>${esc(String(g.away.score))}</strong>` : ''}
+              <span class="atvs">@</span>
+              ${homeLogo ? `<img class="nfl-logo sm" src="${esc(homeLogo)}" alt="" />` : ''}
+              <span>${esc(g.home?.abbr || '')}</span>
+              ${g.home?.score != null ? `<strong>${esc(String(g.home.score))}</strong>` : ''}
+            </span>
             <span class="st">${esc(g.status?.detail || g.status?.bucket || '')}</span>
-          </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>`;
     }
 

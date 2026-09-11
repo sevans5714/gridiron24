@@ -48,6 +48,29 @@ function pickCompetitor(competitors, side) {
   };
 }
 
+function normalizeSituation(competition, home, away) {
+  const sit = competition?.situation;
+  if (!sit || typeof sit !== 'object') return null;
+  const possessionRaw = sit.possession != null ? String(sit.possession) : null;
+  let possession = null;
+  if (possessionRaw) {
+    if (home?.id != null && possessionRaw === String(home.id)) possession = home.abbreviation || null;
+    else if (away?.id != null && possessionRaw === String(away.id)) possession = away.abbreviation || null;
+    else if (/^[A-Z]{2,3}$/i.test(possessionRaw)) possession = possessionRaw.toUpperCase();
+  }
+  const isRedZone = Boolean(sit.isRedZone || sit.isRedzone || sit.redZone);
+  return {
+    isRedZone,
+    possession: possession || null,
+    possessionId: possessionRaw,
+    yardLine: sit.yardLine == null ? null : Number(sit.yardLine),
+    down: sit.down == null ? null : Number(sit.down),
+    distance: sit.distance == null ? null : Number(sit.distance),
+    downDistanceText: sit.downDistanceText || null,
+    lastPlay: sit.lastPlay?.text || sit.lastPlay?.shortText || null
+  };
+}
+
 function normalizeEvent(event) {
   const competition = event?.competitions?.[0] || {};
   const status = competition.status || {};
@@ -59,6 +82,8 @@ function normalizeEvent(event) {
     .flatMap((b) => b.names || [])
     .filter(Boolean);
   const odds = competition.odds?.[0] || null;
+  const away = pickCompetitor(competition.competitors, 'away');
+  const home = pickCompetitor(competition.competitors, 'home');
 
   return {
     id: event.id,
@@ -77,6 +102,7 @@ function normalizeEvent(event) {
       clock: status.displayClock || null,
       period: status.period || 0
     },
+    situation: normalizeSituation(competition, home, away),
     venue: competition.venue?.fullName || null,
     broadcasts,
     odds: odds
@@ -85,8 +111,8 @@ function normalizeEvent(event) {
           overUnder: odds.overUnder == null ? null : Number(odds.overUnder)
         }
       : null,
-    away: pickCompetitor(competition.competitors, 'away'),
-    home: pickCompetitor(competition.competitors, 'home')
+    away,
+    home
   };
 }
 

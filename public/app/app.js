@@ -808,7 +808,7 @@
       };
       subtitle.textContent = labels[name] || 'HQ';
     }
-    if (name === 'home' || name === 'matchup') startPolling();
+    if (name === 'home' || name === 'matchup' || name === 'roster' || name === 'scoreboard') startPolling();
     else stopPolling();
     stopChatPoll();
     clearTimeout(state.sportsFlipTimer);
@@ -2593,14 +2593,16 @@
 
   function slotRosterListHtml(players, { showPts = true } = {}) {
     const list = (players && players.length) ? players : emptySlotRows();
+    const PG = window.GridIronPlayerGame;
     return `<ul class="slot-roster" role="list">
       ${list.map((p) => {
         const empty = p.empty || !p.name;
         const bad = !empty && injClass(p.injuryStatus) === 'bad';
         const pos = slotPosLabel(p.slot);
-        return `<li class="slot-roster-row${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''}">
+        const tone = PG?.rowToneClass(p) || '';
+        return `<li class="slot-roster-row${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''} ${tone}">
           <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
-          <span class="nm">${empty ? `<span class="slot-open">${esc(p.slot || 'Open')}</span>` : esc(p.name)}${!empty && p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}</span>
+          ${PG ? PG.nameBlockHtml(p, { openSlot: true }) : `<span class="nm">${empty ? `<span class="slot-open">${esc(p.slot || 'Open')}</span>` : esc(p.name)}${!empty && p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}</span>`}
           ${showPts ? `<span class="pts">${empty ? '—' : fmtPts(p.points != null ? p.points : p.weekPoints)}</span>` : ''}
         </li>`;
       }).join('')}
@@ -2736,11 +2738,15 @@
           arrow = '<span class="arrow" aria-hidden="true">▼</span>';
         }
       }
-      const name = empty
-        ? `<span class="slot-open">${esc(p?.slot || 'Open')}</span>`
-        : `${esc(p.name)}${p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}`;
-      return `<div class="box-player ${side}${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''}">
-        <span class="nm">${name}</span>
+      const PG = window.GridIronPlayerGame;
+      const gameTone = PG?.rowToneClass(p) || '';
+      const nameHtml = PG
+        ? PG.nameBlockHtml(p, { openSlot: true })
+        : `<span class="nm">${empty
+          ? `<span class="slot-open">${esc(p?.slot || 'Open')}</span>`
+          : `${esc(p.name)}${p.proTeam ? ` <em>${esc(p.proTeam)}</em>` : ''}`}</span>`;
+      return `<div class="box-player ${side}${empty ? ' is-empty' : ''}${bad ? ' is-inj' : ''} ${gameTone}">
+        ${nameHtml}
         <span class="pts ${tone}">
           <span class="pts-live">${arrow}${pts}</span>
           ${proj != null ? `<span class="pts-proj">proj ${proj}</span>` : ''}
@@ -2827,9 +2833,28 @@
       } else if (state.view === 'roster') {
         renderMyTeam();
       }
+      scanRedzoneAlerts();
     } catch {
       /* keep last good frame */
     }
+  }
+
+  function scanRedzoneAlerts() {
+    const PG = window.GridIronPlayerGame;
+    if (!PG?.notifyRedzone) return;
+    const players = [];
+    const t = state.myTeam?.team;
+    if (t?.lineup) players.push(...t.lineup);
+    const box = state.myTeam?.matchupBox;
+    if (box?.home?.lineup) players.push(...box.home.lineup);
+    if (box?.away?.lineup) players.push(...box.away.lineup);
+    const ind = state.independentBoard;
+    if (ind?.franchises) {
+      for (const f of ind.franchises) {
+        if (Array.isArray(f.starters)) players.push(...f.starters);
+      }
+    }
+    PG.notifyRedzone(players, { startersOnly: true });
   }
 
   async function loadHome() {
@@ -3350,6 +3375,8 @@
       if (document.visibilityState !== 'visible') return;
       if (state.view === 'home' || state.view === 'matchup' || state.view === 'roster') {
         refreshHomeLive();
+      } else if (state.view === 'scoreboard') {
+        loadScoreboard(state.week || state.currentMatchupPeriod || undefined, { quiet: true }).catch(() => {});
       }
     }, REFRESH_MS);
   }
@@ -3764,6 +3791,7 @@
     if (!('serviceWorker' in navigator)) return;
     navigator.serviceWorker.register('/sw.js', { scope: '/app/' }).then((reg) => {
       try { reg.update(); } catch { /* ignore */ }
+      try { window.GridIronPlayerGame?.ensureNotificationPermission?.(); } catch { /* ignore */ }
     }).catch(() => {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     });

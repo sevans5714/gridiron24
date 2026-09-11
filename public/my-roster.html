@@ -7,12 +7,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=157" />
-  <link rel="icon" href="/favicon.ico?v=157" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=157" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=157" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=158" />
+  <link rel="icon" href="/favicon.ico?v=158" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=158" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=158" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
+  <link rel="stylesheet" href="/css/player-game.css?v=1" />
   <style>
     .roster-hero {
       display: flex;
@@ -327,6 +328,7 @@
     <span class="site-footer-build" id="site-build">Build …</span>
   </footer>
   <script src="/js/nav.js?v=183"></script>
+  <script src="/js/player-game-ui.js?v=1"></script>
   <script>
     const esc = (v = '') => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
     function record(t) {
@@ -501,14 +503,13 @@
                     const status = !statusRaw || statusRaw === 'ACTIVE' ? '' : statusRaw;
                     const isKeeper = !empty && keeperId != null && Number(p.id) === keeperId;
                     const bad = !empty && injClass(p.injuryStatus) === 'bad' && starterSlots(p.slot);
-                    const onBye = !empty && week && Number(p.byeWeek) === Number(week);
                     const pos = slotPosLabel(p.slot);
-                    const rowClass = [empty ? 'is-empty' : '', bad ? 'row-bad' : '', isKeeper ? 'row-keeper' : ''].filter(Boolean).join(' ');
+                    const tone = window.GridIronPlayerGame?.rowToneClass(p) || '';
+                    const rowClass = [empty ? 'is-empty' : '', bad ? 'row-bad' : '', isKeeper ? 'row-keeper' : '', tone].filter(Boolean).join(' ');
+                    const keeperHtml = isKeeper ? '<span class="keeper-tag">Keeper</span>' : '';
                     return `<li class="slot-roster-row ${rowClass}">
                       <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
-                      <span class="nm">${empty ? '—' : esc(p.name)}${isKeeper ? '<span class="keeper-tag">Keeper</span>' : ''}
-                        ${empty ? '' : `<span class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}${onBye ? ` · Bye ${esc(String(p.byeWeek))}` : ''}</span>`}
-                      </span>
+                      ${window.GridIronPlayerGame.nameBlockHtml(p, { keeperHtml })}
                       ${empty ? '<span class="nums is-pending">—</span>' : ptsVsProjHtml(p.weekPoints, p.weekProjected)}
                       <span class="inj ${bad ? 'bad' : 'ok'}${status ? '' : ' is-quiet'}">${esc(status || '·')}</span>
                     </li>`;
@@ -518,14 +519,13 @@
                     const statusRaw = empty ? '' : String(p.injuryStatus || '').toUpperCase();
                     const status = !statusRaw || statusRaw === 'ACTIVE' ? '' : statusRaw;
                     const isKeeper = !empty && keeperId != null && Number(p.id) === keeperId;
-                    const onBye = !empty && week && Number(p.byeWeek) === Number(week);
                     const pos = slotPosLabel(p.slot);
-                    const rowClass = [empty ? 'is-empty' : '', isKeeper ? 'row-keeper' : ''].filter(Boolean).join(' ');
+                    const tone = window.GridIronPlayerGame?.rowToneClass(p) || '';
+                    const rowClass = [empty ? 'is-empty' : '', isKeeper ? 'row-keeper' : '', tone].filter(Boolean).join(' ');
+                    const keeperHtml = isKeeper ? '<span class="keeper-tag">Keeper</span>' : '';
                     return `<li class="slot-roster-row ${rowClass}">
                       <span class="slot" data-pos="${esc(pos)}">${esc(pos)}</span>
-                      <span class="nm">${empty ? '—' : esc(p.name)}${isKeeper ? '<span class="keeper-tag">Keeper</span>' : ''}
-                        ${empty ? '' : `<span class="pro">${esc(p.proTeam || '—')} · ${esc(p.position || '—')}${onBye ? ` · Bye ${esc(String(p.byeWeek))}` : ''}</span>`}
-                      </span>
+                      ${window.GridIronPlayerGame.nameBlockHtml(p, { keeperHtml })}
                       ${empty ? '<span class="nums is-pending">—</span>' : ptsVsProjHtml(p.weekPoints, p.weekProjected)}
                       <span class="inj ok${status ? '' : ' is-quiet'}">${esc(status || '·')}</span>
                     </li>`;
@@ -552,6 +552,12 @@
           </div>`;
 
         window.GridIronNav?.setSync(`Live · ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+        window.GridIronPlayerGame?.notifyRedzone([
+          ...(data.team?.lineup || []),
+          ...(data.matchupBox?.home?.lineup || []),
+          ...(data.matchupBox?.away?.lineup || [])
+        ], { startersOnly: true });
+        window.GridIronPlayerGame?.ensureNotificationPermission?.();
       } catch (err) {
         if (!quiet) main.innerHTML = `<div class="msg">${esc(err.message)}</div>`;
       }

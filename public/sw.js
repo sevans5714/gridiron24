@@ -1,16 +1,18 @@
 /* GridIron 24 PWA — app shell cache */
-const CACHE = 'gi24-app-v157';
+const CACHE = 'gi24-app-v158';
 const SHELL = [
   '/app/',
   '/app/index.html',
-  '/app/app.css?v=157',
-  '/app/app.js?v=157',
-  '/manifest.webmanifest?v=157',
-  '/assets/pwa/icon-192.png?v=157',
-  '/assets/pwa/icon-512.png?v=157',
-  '/assets/pwa/icon-maskable-512.png?v=157',
-  '/assets/pwa/icon-192-transparent.png?v=157',
-  '/assets/pwa/apple-touch-icon.png?v=157',
+  '/app/app.css?v=158',
+  '/app/app.js?v=158',
+  '/css/player-game.css?v=1',
+  '/js/player-game-ui.js?v=1',
+  '/manifest.webmanifest?v=158',
+  '/assets/pwa/icon-192.png?v=158',
+  '/assets/pwa/icon-512.png?v=158',
+  '/assets/pwa/icon-maskable-512.png?v=158',
+  '/assets/pwa/icon-192-transparent.png?v=158',
+  '/assets/pwa/apple-touch-icon.png?v=158',
   '/assets/team-logo-placeholder.svg',
   '/assets/gridiron24-brand.png?v=3',
   '/assets/aaa-league.png?v=7',
@@ -62,7 +64,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  if (url.pathname === '/app' || url.pathname.startsWith('/app/') || url.pathname === '/manifest.webmanifest') {
+  if (url.pathname === '/app' || url.pathname.startsWith('/app/') || url.pathname === '/manifest.webmanifest'
+      || url.pathname === '/css/player-game.css' || url.pathname === '/js/player-game-ui.js') {
     event.respondWith(
       fetch(req)
         .then((res) => {
@@ -83,4 +86,21 @@ self.addEventListener('fetch', (event) => {
         )
     );
   }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification?.data?.url || '/app/#matchup';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if ('focus' in client) {
+          client.navigate?.(target);
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(target);
+      return undefined;
+    })
+  );
 });

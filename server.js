@@ -56,6 +56,7 @@ const leagues = require('./leagues-store');
 const loungeKey = require('./lounge-key');
 const { compareScoringSettings } = require('./rules-diff');
 const nflverseLive = require('./nflverse-live');
+const playerNflGame = require('./player-nfl-game');
 const sportsScoreboard = require('./sports-scoreboard');
 const nflverseDraft = require('./nflverse-draft');
 const survivorPool = require('./survivor-pool-store');
@@ -2521,6 +2522,24 @@ function buildMatchupBox(raw, conference, week, focusTeamId, lineupSlotCounts = 
   };
 }
 
+async function loadNflGamesByTeamForWeek(week) {
+  try {
+    const live = await nflverseLive.getLiveScoring({
+      week: Number(week) || undefined,
+      seasontype: '2',
+      season: config.season
+    });
+    return playerNflGame.buildGamesByTeam(live.games || []);
+  } catch {
+    try {
+      const live = await nflverseLive.getLiveScoring({});
+      return playerNflGame.buildGamesByTeam(live.games || []);
+    } catch {
+      return new Map();
+    }
+  }
+}
+
 async function loadTeamDetail(conferenceKey, teamId) {
   const conference = resolveEspnLeague(conferenceKey);
   if (!conference) throw Object.assign(new Error('Unknown conference'), { status: 404 });
@@ -2538,7 +2557,7 @@ async function loadTeamDetail(conferenceKey, teamId) {
   const team = (raw.teams || []).find((t) => Number(t.id) === Number(teamId))
     || (statusRaw.teams || []).find((t) => Number(t.id) === Number(teamId));
   if (!team) throw Object.assign(new Error('Team not found'), { status: 404 });
-  const detail = normalizeRosterTeam(team, conference, membersById, lineupSlotCountsFromRaw(raw));
+  let detail = normalizeRosterTeam(team, conference, membersById, lineupSlotCountsFromRaw(raw));
 
   const scheduleRaw = await fetchEspnRaw(
     conference,
@@ -2551,7 +2570,7 @@ async function loadTeamDetail(conferenceKey, teamId) {
   detail.lineup = applyWeekStatsToRoster(detail.lineup, weekStats);
   detail.bench = applyWeekStatsToRoster(detail.bench, weekStats);
   detail.roster = [...detail.lineup, ...detail.bench];
-  const matchupBox = buildMatchupBox(
+  let matchupBox = buildMatchupBox(
     scheduleRaw,
     conference,
     currentWeek,
@@ -2559,6 +2578,9 @@ async function loadTeamDetail(conferenceKey, teamId) {
     lineupSlotCountsFromRaw(raw),
     raw
   );
+  const gamesByTeam = await loadNflGamesByTeamForWeek(currentWeek);
+  detail = playerNflGame.enrichTeamDetail(detail, gamesByTeam, currentWeek);
+  matchupBox = playerNflGame.enrichMatchupBox(matchupBox, gamesByTeam, currentWeek);
 
   let currentMatchup = null;
   for (const m of schedule.matchups || []) {
@@ -2627,13 +2649,15 @@ async function loadConferenceRosters(conferenceKey) {
   const currentWeek = Number(raw.status?.currentMatchupPeriod || 1);
   const schedule = normalizeSchedule(raw, conference, currentWeek);
   const counts = lineupSlotCountsFromRaw(raw);
+  const gamesByTeam = await loadNflGamesByTeamForWeek(currentWeek);
   const teams = (raw.teams || [])
     .map((t) => {
-      const detail = normalizeRosterTeam(t, conference, membersById, counts);
+      let detail = normalizeRosterTeam(t, conference, membersById, counts);
       const weekStats = collectPlayerWeekStats(raw, detail.id, currentWeek);
       detail.lineup = applyWeekStatsToRoster(detail.lineup, weekStats);
       detail.bench = applyWeekStatsToRoster(detail.bench, weekStats);
       detail.roster = [...detail.lineup, ...detail.bench];
+      detail = playerNflGame.enrichTeamDetail(detail, gamesByTeam, currentWeek);
       let currentMatchup = null;
       for (const m of schedule.matchups || []) {
         if (Number(m.home?.id) === Number(detail.id) || Number(m.away?.id) === Number(detail.id)) {
