@@ -1487,7 +1487,7 @@
         <div class="records-conf-head">
           <div class="title">
             ${c.logo ? `<img src="${esc(c.logo)}" alt="" width="22" height="22" loading="lazy" />` : ''}
-            <span>${esc(c.shortName || c.name || c.key)}</span>
+            <span>${esc(c.name || c.shortName || c.key)}</span>
           </div>
           <div class="sub">${list.length} teams${c.admin ? ` · ${esc(c.admin)}` : ''}</div>
         </div>
@@ -1500,7 +1500,12 @@
   }
 
   function pickDefaultHistorySeason() {
-    return null;
+    if (!historySeasonsCatalog.length) return null;
+    const current = historySeasonsCatalog.find((s) => s.current)
+      || historySeasonsCatalog.find((s) => Number(s.season) === Number(window.GI_SEASON))
+      || historySeasonsCatalog[0];
+    const season = Number(current?.season);
+    return Number.isFinite(season) ? season : null;
   }
 
   function renderHistorySeasonChips() {
@@ -1514,7 +1519,7 @@
       const season = Number(s.season);
       const active = selectedHistorySeason != null && season === Number(selectedHistorySeason);
       const label = s.yearNumber
-        ? `Y${s.yearNumber} · ${season}`
+        ? `Year ${s.yearNumber} · ${season}${s.current ? ' · now' : ''}`
         : (s.label || String(season));
       return `<button type="button" class="records-season-chip${active ? ' is-active' : ''}" data-history-season="${season}" aria-pressed="${active ? 'true' : 'false'}">${esc(label)}</button>`;
     }).join('');
@@ -1524,7 +1529,7 @@
     const body = document.getElementById('records-archive-body');
     if (!body) return;
     if (!historySeasonsCatalog.length) {
-      body.innerHTML = `<div class="records-empty">No archived seasons yet. Commissioners can add them in League Tools → Season Archive.</div>`;
+      body.innerHTML = `<div class="records-empty">No seasons in the archive yet.</div>`;
       return;
     }
     body.innerHTML = `<div class="records-empty">Select a season above to view that year’s standings.</div>`;
@@ -5750,9 +5755,14 @@
       try {
         const history = await loadHistorySeason();
         historySeasonsCatalog = history.seasons || historySeasonsCatalog || [];
-        selectedHistorySeason = null;
-        renderHistorySeasonChips();
-        renderHistoryIdle();
+        const defaultSeason = pickDefaultHistorySeason();
+        if (defaultSeason != null) {
+          await showHistorySeason(defaultSeason);
+        } else {
+          selectedHistorySeason = null;
+          renderHistorySeasonChips();
+          renderHistoryIdle();
+        }
       } catch (histErr) {
         const archiveBody = document.getElementById('records-archive-body');
         if (archiveBody) {
@@ -5792,11 +5802,16 @@
     } catch (err) {
       renderRecordBook({ records: [], error: err.message || 'Could not load record book' });
       loadHistorySeason()
-        .then((history) => {
+        .then(async (history) => {
           historySeasonsCatalog = history.seasons || historySeasonsCatalog || [];
-          selectedHistorySeason = null;
-          renderHistorySeasonChips();
-          renderHistoryIdle();
+          const defaultSeason = pickDefaultHistorySeason();
+          if (defaultSeason != null) {
+            await showHistorySeason(defaultSeason);
+          } else {
+            selectedHistorySeason = null;
+            renderHistorySeasonChips();
+            renderHistoryIdle();
+          }
         })
         .catch((histErr) => {
           const archiveBody = document.getElementById('records-archive-body');

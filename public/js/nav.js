@@ -238,18 +238,34 @@
     return Boolean(n) && n !== '—' && n !== '-' && n !== 'unassigned' && n !== 'owner pending' && n !== 'pending';
   }
 
+  /** Full franchise name only — never ESPN 2–4 letter codes. */
+  function franchiseLabel(teamOrName, fallback = 'TBD') {
+    if (typeof teamOrName === 'string' || typeof teamOrName === 'number') {
+      const text = String(teamOrName || '').replace(/\s+/g, ' ').trim();
+      return text || fallback;
+    }
+    const t = teamOrName || {};
+    const name = String(t.name || '').replace(/\s+/g, ' ').trim();
+    if (name) return name;
+    const espn = String(t.espnName || '').replace(/\s+/g, ' ').trim();
+    if (espn) return espn;
+    const owner = String(t.owner || '').replace(/\s+/g, ' ').trim();
+    if (ownerLineOk(owner)) return owner;
+    return fallback;
+  }
+
   function franchiseTitleHtml(name, opts = {}) {
     const size = String(opts.size || 'md').replace(/[^a-z]/g, '') || 'md';
     const extra = opts.className ? ` ${String(opts.className)}` : '';
     const inline = Boolean(opts.inline);
-    const text = String(name || '').replace(/\s+/g, ' ').trim() || 'TBD';
+    const text = franchiseLabel(name, 'TBD');
     const owner = String(opts.owner || '').trim();
     const title = `<span class="franchise-title is-${size}${inline ? ' is-inline' : ''} is-solo${extra}">${esc(text)}</span>`;
     if (!ownerLineOk(owner)) return title;
     return `<span class="franchise-block">${title}<span class="franchise-owner">${esc(owner)}</span></span>`;
   }
 
-  window.GridIronTitle = { html: franchiseTitleHtml, fit: fitAllFranchiseTitles };
+  window.GridIronTitle = { html: franchiseTitleHtml, label: franchiseLabel, fit: fitAllFranchiseTitles };
 
   function fitFranchiseTitle(title) {
     if (!title || !title.style) return;
@@ -1351,6 +1367,7 @@
     conferenceLogoForTheme,
     syncConferenceLogos,
     franchiseTitleHtml,
+    franchiseLabel,
     fitFranchiseTitles: fitAllFranchiseTitles,
     getLeagueScope: () => leagueScope,
     getLeagueQuery: () => {

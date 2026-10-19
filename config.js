@@ -46,9 +46,11 @@ module.exports = {
     venmoUsername: 'James-Aceto',
     note: 'League dues — GridIron 24 HQ'
   },
-  // Prior seasons for Teams → History / Draft Results.
-  // Prefer League Tools → Season Archive (saved live). Example seed:
-  // { season: 2025, yearNumber: 3, espnLeagueId: 1856396051, label: 'Year 3 (2025)' }
+  // Prior seasons for Members Lounge → Record Book and Draft Results (?season=).
+  // Current season is always Year N from live ESPN IDs — do not list it here.
+  // After each season, archive that year’s Detail/Overtime ESPN league IDs in
+  // League Tools → Season Archive (saved on the system league). Example:
+  // { season: 2026, yearNumber: 1, detailEspnLeagueId: 1444967743, overtimeEspnLeagueId: 952732392, label: 'Year 1 (2026)' }
   historySeasons: [],
   calendarDefaults: [
     { title: 'Draft Day', type: 'draft', date: '2026-08-24', notes: 'Both conferences draft — confirm time with your commissioner. Single-player keeper rule begins after the 2026 season (Rule Book §3.03–§3.05).' },

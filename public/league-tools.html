@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=158" />
-  <link rel="icon" href="/favicon.ico?v=158" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=158" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=158" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=160" />
+  <link rel="icon" href="/favicon.ico?v=160" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=160" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=160" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=185" />
   <style>
@@ -1801,22 +1801,36 @@
 
             <section class="admin-block" id="history-admin" hidden>
               <div class="section-head"><h3>Season Archive</h3></div>
-              <p class="help">Pipe-delimited ESPN seasons for the Members Lounge Record Book.</p>
-              <details class="help-more">
-                <summary>How to format archive lines</summary>
-                <p class="help">
-                  Use ESPN settings URLs (<code>leagueId</code> + <code>seasonId</code>).
-                  Pre-split years can share one league ID.
-                  Private seasons need <code>ESPN_SWID</code> / <code>ESPN_S2</code> on the server.
-                </p>
-              </details>
+              <p class="help">
+                Powers Members Lounge → Record Book and Draft Results season history.
+                The <strong>current season</strong> is always live from today’s ESPN league IDs.
+                Add <strong>prior years</strong> here when you create new ESPN leagues next season.
+              </p>
               <div class="status-note" id="history-msg" role="status"></div>
               <p class="help" id="history-auth-note" hidden></p>
-              <textarea class="field field-area" id="history-lines" style="min-height:9rem;" placeholder="yearNumber|season|espnLeagueId|optional label&#10;1|2023|1856396051|Year 1&#10;2|2024|1856396051|Year 2&#10;3|2025|1856396051|Year 3"></textarea>
+              <div id="history-current-card" class="list-gap" style="margin:0.75rem 0;"></div>
+              <div class="section-head" style="margin-top:1rem;"><h4 style="margin:0;font-size:1rem;">Prior seasons</h4></div>
+              <p class="help">
+                One line per finished year:
+                <code>yearNumber|season|detailEspnId/overtimeEspnId|label</code>.
+                Shared single-league years can use one ID (no slash).
+              </p>
+              <details class="help-more">
+                <summary>How to find ESPN league IDs</summary>
+                <p class="help">
+                  Open ESPN League Settings for that season — copy <code>leagueId</code> from the URL.
+                  Private past seasons need <code>ESPN_SWID</code> / <code>ESPN_S2</code> on the server, or public viewability on ESPN.
+                </p>
+              </details>
+              <textarea class="field field-area" id="history-lines" style="min-height:9rem;" placeholder="1|2026|1444967743/952732392|Year 1 (2026)"></textarea>
               <div class="toolbar" style="margin-top:0.75rem;">
-                <button type="button" class="btn btn-secondary" id="history-fill-example">Fill Years 1–3 example</button>
+                <button type="button" class="btn btn-secondary" id="history-fill-current">Fill Year 1 from current IDs</button>
                 <button type="button" class="btn btn-send" id="history-save">Save archive</button>
               </div>
+              <p class="help" style="margin-top:0.65rem;">
+                Tip: when you roll to 2027, click <strong>Fill Year 1 from current IDs</strong>, save, then update League Tools → ESPN League IDs to the new season’s leagues.
+                Do not list the live season year here while it is still current — it is already shown above.
+              </p>
             </section>
           </div>
         </section>
@@ -4848,11 +4862,37 @@
         });
     }
 
+    let historyAdminCatalog = [];
+    let historyAdminConfigured = [];
+
+    function renderHistoryCurrentCard(seasons) {
+      const mount = document.getElementById('history-current-card');
+      if (!mount) return;
+      const current = (seasons || []).find((s) => s.current) || (seasons || [])[0];
+      if (!current) {
+        mount.innerHTML = `<div class="msg">Current season unavailable.</div>`;
+        return;
+      }
+      const detail = current.detailEspnLeagueId || '—';
+      const overtime = current.overtimeEspnLeagueId || '—';
+      mount.innerHTML = `
+        <div class="msg" style="border:1px solid var(--line);padding:0.85rem 1rem;">
+          <strong>${esc(current.label || `Season ${current.season}`)}</strong>
+          ${current.inaugural ? ' · inaugural' : ''}<br>
+          Detail ESPN ID: <code>${esc(String(detail))}</code><br>
+          Overtime ESPN ID: <code>${esc(String(overtime))}</code><br>
+          <span class="help" style="margin:0.35rem 0 0;">Live — managers already see this year in the Record Book. Prior years go in the box below.</span>
+        </div>`;
+    }
+
     async function loadHistoryAdmin() {
       const res = await fetch('/api/history-seasons', { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load archive');
-      document.getElementById('history-lines').value = historyLinesFromConfigured(data.configured || []);
+      historyAdminCatalog = data.seasons || [];
+      historyAdminConfigured = data.configured || [];
+      document.getElementById('history-lines').value = historyLinesFromConfigured(historyAdminConfigured);
+      renderHistoryCurrentCard(historyAdminCatalog);
       const authNote = document.getElementById('history-auth-note');
       if (authNote) {
         authNote.hidden = false;
@@ -4866,26 +4906,58 @@
       revealSeasonTools();
       document.getElementById('history-admin').hidden = false;
       document.getElementById('jump-history').hidden = false;
-      document.getElementById('history-fill-example').addEventListener('click', () => {
-        document.getElementById('history-lines').value = [
-          '1|2023|1856396051|Year 1 (2023)',
-          '2|2024|1856396051|Year 2 (2024)',
-          '3|2025|1856396051|Year 3 (2025)'
-        ].join('\n');
-        showHistoryMsg('Example Years 1–3 filled using leagueId 1856396051. Confirm IDs from each year’s ESPN settings URL, then Save.', true);
+      document.getElementById('history-fill-current').addEventListener('click', () => {
+        const current = historyAdminCatalog.find((s) => s.current) || historyAdminCatalog[0];
+        if (!current?.detailEspnLeagueId && !current?.overtimeEspnLeagueId) {
+          showHistoryMsg('Could not read current ESPN league IDs. Set them under ESPN League IDs first.', false);
+          return;
+        }
+        const year = Number(current.yearNumber) || 1;
+        const season = Number(current.season);
+        const detail = current.detailEspnLeagueId || '';
+        const overtime = current.overtimeEspnLeagueId || detail;
+        const idPart = detail && overtime && Number(detail) !== Number(overtime)
+          ? `${detail}/${overtime}`
+          : String(detail || overtime);
+        const line = `${year}|${season}|${idPart}|Year ${year} (${season})`;
+        const existing = String(document.getElementById('history-lines').value || '').trim();
+        // Warn: saving the live year as "prior" is ignored while it is still current.
+        document.getElementById('history-lines').value = existing
+          ? `${line}\n${existing}`
+          : line;
+        showHistoryMsg(
+          `Filled Year ${year} (${season}) from live ESPN IDs. Save only after that season ends and you have moved the live league IDs to the next year — otherwise this line is skipped while ${season} is still current.`,
+          true
+        );
       });
       document.getElementById('history-save').addEventListener('click', async () => {
         try {
           const seasons = parseHistoryLines(document.getElementById('history-lines').value);
+          const currentSeason = Number(
+            (historyAdminCatalog.find((s) => s.current) || historyAdminCatalog[0])?.season
+          );
+          const priorOnly = seasons.filter((s) => Number(s.season) !== currentSeason);
+          if (priorOnly.length !== seasons.length) {
+            showHistoryMsg(
+              `Removed the live ${currentSeason} line from prior seasons (it is already the current year). Saving ${priorOnly.length} prior season(s)…`,
+              true
+            );
+          }
           const res = await fetch('/api/history-seasons', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ seasons })
+            body: JSON.stringify({ seasons: priorOnly })
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save archive');
-          document.getElementById('history-lines').value = historyLinesFromConfigured(data.configured || []);
-          showHistoryMsg(`Saved ${((data.configured || []).length)} prior season(s). Managers can open Members Lounge → Record Book.`, true);
+          historyAdminCatalog = data.seasons || historyAdminCatalog;
+          historyAdminConfigured = data.configured || [];
+          document.getElementById('history-lines').value = historyLinesFromConfigured(historyAdminConfigured);
+          renderHistoryCurrentCard(historyAdminCatalog);
+          showHistoryMsg(
+            `Saved ${historyAdminConfigured.length} prior season(s). Managers can open Members Lounge → Record Book.`,
+            true
+          );
         } catch (err) {
           showHistoryMsg(err.message, false);
         }

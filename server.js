@@ -59,6 +59,7 @@ const nflverseLive = require('./nflverse-live');
 const playerNflGame = require('./player-nfl-game');
 const sportsScoreboard = require('./sports-scoreboard');
 const nflverseDraft = require('./nflverse-draft');
+const nflTeams = require('./nfl-teams');
 const survivorPool = require('./survivor-pool-store');
 const paperBook = require('./paper-book-store');
 const deathPool = require('./death-pool-store');
@@ -1402,12 +1403,13 @@ function resolveEspnTeamIdentity(conferenceKey, team, membersById) {
   const key = conferenceKey && team?.id != null ? logos.logoKey(conferenceKey, team.id) : null;
   const overrideName = key ? logos.getNameOverrideMap().get(key) : null;
   const custom = espnTeamNameIsCustom(team);
+  // Always prefer a full franchise name for display — never ESPN 2–4 letter codes.
   const name = overrideName
     || (custom ? espnName : (owner && owner !== 'Owner pending' ? owner : espnName));
-  const abbreviation = (custom && team?.abbrev)
-    ? team.abbrev
-    : (ownerAbbrev(name, team?.abbrev || '') || team?.abbrev || '');
-  return { espnName, name, owner, abbreviation };
+  const espnAbbrev = String(team?.abbrev || '').trim();
+  // Keep ESPN abbrev only as a secondary key for matching; UIs should show `name`.
+  const abbreviation = name || espnAbbrev || ownerAbbrev(owner, '') || '';
+  return { espnName, name, owner, abbreviation, espnAbbrev };
 }
 
 function gi24UsesEspnLogosOnly(user, claim) {
@@ -1574,6 +1576,35 @@ const PRO_TEAM_ABBREV = {
   25: 'SF', 26: 'SEA', 27: 'TB', 28: 'WSH', 29: 'CAR', 30: 'JAX', 33: 'BAL', 34: 'HOU'
 };
 
+function proTeamFullName(proTeamIdOrAbbrev) {
+  if (typeof proTeamIdOrAbbrev === 'number' || (/^\d+$/).test(String(proTeamIdOrAbbrev || ''))) {
+    const abbrev = PRO_TEAM_ABBREV[Number(proTeamIdOrAbbrev)] || '';
+    return nflTeams.teamName(abbrev) || abbrev || 'FA';
+  }
+  const abbrev = String(proTeamIdOrAbbrev || '').trim();
+  return nflTeams.teamName(abbrev) || abbrev || 'FA';
+}
+
+/** ESPN Fantasy encodes D/ST as negative ids: -(16000 + proTeamId). */
+function defenseUnitFromEspnPlayerId(playerId) {
+  const id = Number(playerId);
+  if (!Number.isFinite(id) || id >= 0) return null;
+  const proTeamId = -id - 16000;
+  const abbrev = PRO_TEAM_ABBREV[proTeamId];
+  if (!abbrev) return null;
+  const full = proTeamFullName(proTeamId);
+  return {
+    id,
+    fullName: full,
+    firstName: '',
+    lastName: full,
+    position: 'D/ST',
+    proTeamId,
+    proTeam: abbrev,
+    proTeamName: full
+  };
+}
+
 /** 2026 NFL bye weeks by ESPN proTeamId (NFL.com schedule release). */
 const NFL_BYE_WEEK_BY_PRO_TEAM = {
   1: 11, // ATL
@@ -1647,7 +1678,8 @@ async function fetchEspnPlayersByIds(playerIds, season) {
           lastName: player.lastName || player.fullName || 'Unknown',
           position: POSITION_LABELS[player.defaultPositionId] || '—',
           proTeamId: player.proTeamId || 0,
-          proTeam: PRO_TEAM_ABBREV[player.proTeamId] || 'FA'
+          proTeam: PRO_TEAM_ABBREV[player.proTeamId] || 'FA',
+          proTeamName: proTeamFullName(player.proTeamId)
         });
       }
     } catch {
@@ -1743,17 +1775,29 @@ async function loadDraftBoard(conferenceKey, seasonOverride = null) {
   const picks = rawPicks.map((pick) => {
     const playerId = Number(pick.playerId);
     const pool = pick.playerPoolEntry?.player || pick.player || {};
-    const player = playersById.get(playerId) || (pool.fullName || pool.lastName || pool.id
-      ? {
-        fullName: playerName(pool),
-        firstName: pool.firstName || '',
-        lastName: pool.lastName || '',
-        position: POSITION_LABELS[pool.defaultPositionId] || '',
-        proTeam: PRO_TEAM_ABBREV[pool.proTeamId] || 'FA'
-      }
-      : null);
-    const names = splitPlayerName(player?.fullName, player?.firstName || pool.firstName, player?.lastName || pool.lastName);
-    const filled = Number.isFinite(playerId) && playerId > 0;
+    const defense = defenseUnitFromEspnPlayerId(playerId);
+    const player = playersById.get(playerId)
+      || defense
+      || (pool.fullName || pool.lastName || pool.id
+        ? {
+          fullName: playerName(pool),
+          firstName: pool.firstName || '',
+          lastName: pool.lastName || '',
+          position: POSITION_LABELS[pool.defaultPositionId] || '',
+          proTeam: PRO_TEAM_ABBREV[pool.proTeamId] || 'FA',
+          proTeamId: pool.proTeamId || 0,
+          proTeamName: proTeamFullName(pool.proTeamId)
+        }
+        : null);
+    const names = defense
+      ? { firstName: '', lastName: defense.fullName }
+      : splitPlayerName(player?.fullName, player?.firstName || pool.firstName, player?.lastName || pool.lastName);
+    // ESPN D/ST ids are negative (e.g. -16007). Treat any non-zero id as a filled slot.
+    const filled = (Number.isFinite(playerId) && playerId > 0) || Boolean(defense);
+    const proTeam = filled ? (player?.proTeam || defense?.proTeam || 'FA') : '';
+    const proTeamName = filled
+      ? (player?.proTeamName || defense?.proTeamName || proTeamFullName(player?.proTeamId || proTeam) || proTeam)
+      : '';
     return {
       id: pick.id,
       overall: Number(pick.overallPickNumber) || null,
@@ -1764,8 +1808,9 @@ async function loadDraftBoard(conferenceKey, seasonOverride = null) {
       firstName: filled ? names.firstName : '',
       lastName: filled ? names.lastName : '',
       fullName: filled ? (player?.fullName || names.lastName) : '',
-      position: filled ? (player?.position || '—') : '',
-      proTeam: filled ? (player?.proTeam || 'FA') : '',
+      position: filled ? (player?.position || defense?.position || '—') : '',
+      proTeam,
+      proTeamName,
       keeper: Boolean(pick.keeper),
       filled
     };
@@ -1843,25 +1888,31 @@ function historySeasonEntries() {
     : (Array.isArray(config.historySeasons) ? config.historySeasons : []);
   const current = Number(config.season);
   const maxPriorYear = configured.reduce((max, row) => Math.max(max, Number(row.yearNumber) || 0), 0);
-  const currentYearNumber = maxPriorYear > 0 ? maxPriorYear + 1 : (configured.length ? configured.length + 1 : null);
+  const inaugural = configured.length === 0;
+  // Inaugural season is Year 1 even before any prior years are archived.
+  const currentYearNumber = maxPriorYear > 0
+    ? maxPriorYear + 1
+    : (configured.length ? configured.length + 1 : 1);
+  const detailId = config.conferences.find((c) => c.key === 'detail')?.espnLeagueId || null;
+  const overtimeId = config.conferences.find((c) => c.key === 'overtime')?.espnLeagueId || null;
   const entries = [
     {
       season: current,
       yearNumber: currentYearNumber,
-      label: currentYearNumber
-        ? `Year ${currentYearNumber} (${current}) · current`
-        : `${current} (current)`,
-      inaugural: configured.length === 0,
-      detailEspnLeagueId: config.conferences.find((c) => c.key === 'detail')?.espnLeagueId || null,
-      overtimeEspnLeagueId: config.conferences.find((c) => c.key === 'overtime')?.espnLeagueId || null,
-      notes: configured.length
-        ? null
-        : 'Add prior seasons in League Tools → Season Archive so managers can view standings and draft boards.'
+      label: `Year ${currentYearNumber} (${current}) · current`,
+      current: true,
+      inaugural,
+      detailEspnLeagueId: detailId,
+      overtimeEspnLeagueId: overtimeId,
+      notes: inaugural
+        ? 'Inaugural GridIron 24 season. When you roll to the next year, archive this season’s ESPN league IDs in League Tools → Season Archive.'
+        : null
     },
     ...configured.map((row) => ({
       season: Number(row.season),
       yearNumber: row.yearNumber || null,
-      label: row.label || String(row.season),
+      label: row.label || (row.yearNumber ? `Year ${row.yearNumber} (${row.season})` : String(row.season)),
+      current: false,
       inaugural: false,
       detailEspnLeagueId: row.detailEspnLeagueId || null,
       overtimeEspnLeagueId: row.overtimeEspnLeagueId || null,
@@ -12944,7 +12995,11 @@ const server = http.createServer(async (req, res) => {
         if (!leagueId) {
           return sendJson(res, 400, { ok: false, error: 'No active league' });
         }
-        const updated = leagues.setHistorySeasons(leagueId, body.seasons || []);
+        const currentSeason = Number(config.season);
+        const incoming = Array.isArray(body.seasons) ? body.seasons : [];
+        // Never store the live season as a "prior" row — it is always synthesized.
+        const priorOnly = incoming.filter((row) => Number(row?.season) !== currentSeason);
+        const updated = leagues.setHistorySeasons(leagueId, priorOnly);
         return sendJson(res, 200, {
           ok: true,
           seasons: historySeasonEntries(),

@@ -1,84 +1,85 @@
-# GridIron 24 — Proof of Concept
+# GridIron 24
 
-This is the first working GridIron 24 dashboard. It uses a tiny local Node.js server to read the two ESPN Fantasy Football leagues and sends only cleaned league/team data to the browser.
+League headquarters for **GridIron 24** — 24 franchises, two conferences (Detail + Overtime), one champion. Live at [www.gridiron24.com](https://www.gridiron24.com).
 
-## Configured ESPN leagues
+A Node.js app that syncs ESPN Fantasy Football for both conferences, then serves HQ pages, a Members Lounge, and a PWA. Independent (non-ESPN) leagues can also run on the same stack.
 
-- Detail Conference: `1444967743`
-- Overtime Conference: `952732392`
-- Season: `2026`
+## Season
+
+- **Current season:** 2026 (inaugural / Year 1)
+- **Detail Conference** ESPN league: `1444967743`
+- **Overtime Conference** ESPN league: `952732392`
+- **AAA feeder:** off for 2026 (`aaaEnabled: false` in `config.js`)
+
+Live ESPN IDs are stored on the system league (League Tools → ESPN League IDs) and win over the bootstrap values in `config.js`.
 
 ## Requirements
 
-Node.js 18 or newer.
-
-Check whether Node is installed:
+- Node.js 18+ (20 on Render)
+- Persistent disk in production (`DATA_DIR`) for accounts, archives, uploads
 
 ```bash
 node --version
-```
-
-## Run it
-
-Open Terminal, go into this folder, then run:
-
-```bash
 npm start
 ```
 
-Open:
+Open [http://localhost:3000](http://localhost:3000). Health: `/api/health`.
 
-```text
-http://localhost:3000
-```
+## What members get
 
-The API test is available at:
+- Dual-conference scoreboard, standings, schedules, rosters, transactions
+- Draft Results board (full franchise names, D/ST slots, Print / Save PDF)
+- Playoff brackets, rule book, calendar, power rankings
+- Members Lounge (chat, record book / season archive, lounge games)
+- Auth, invites, inbox (staff/owner send only), PWA install
 
-```text
-http://localhost:3000/api/leagues
-```
+## Auth & roles
 
-## What it does now
+Members register, then sign in with their own login + password.
 
-- Connects server-side to both ESPN league IDs.
-- Requests team/settings/status data.
-- Normalizes team names, owners, logos, records and points.
-- Displays Overtime and Detail conferences side-by-side.
-- Refreshes once per minute.
-- Shows a useful error if ESPN denies one of the league requests.
-- Keeps the ESPN-specific logic isolated in `server.js`.
+| Role | Access |
+|---|---|
+| User | HQ pages for their league |
+| Conference / League Admin | League Tools for their scope |
+| Commissioner | Full admin, roles, season archive |
+| Site owner | Site Tools, drafts show uploads, etc. |
 
-## Auth
+Bootstrap accounts (recreated on deploy if missing):
 
-Members create personal accounts, then sign in with their own login name and password.
+- Commissioner — `COMMISSIONER_LOGIN` (default `sevans`)
+- AAA admin — `AAA_ADMIN_LOGIN` (default `sevans-aaa`)
 
-Access levels:
-- **User** — default member access to HQ pages
-- **Conference / League Admin** — Detail, Overtime, or AAA admin; can open League Tools for their scope
-- **Commissioner** — overall GridIron 24 admin; can assign roles under League Tools → Members
+Setup:
 
-Owner bootstrap accounts (recreated on deploy if missing):
-- **GridIron 24 commissioner** — `COMMISSIONER_LOGIN` (default `sevans`)
-- **AAA league admin** — `AAA_ADMIN_LOGIN` (default `sevans-aaa`)
+1. Copy `.env.example` → `.env` (`LEAGUE_NAME` / `LEAGUE_PASSWORD` unlock registration).
+2. Set commissioner / AAA passwords, `SESSION_SECRET`, and on Render: `APP_BASE_URL`, `RESEND_API_KEY`, `MAIL_FROM`, `DATA_DIR=/var/data`.
+3. Register at `/register`, sign in at `/enter`. Password reset: `/forgot`.
 
-1. Copy `.env.example` to `.env` and set `LEAGUE_NAME` and `LEAGUE_PASSWORD` (used only to unlock account creation).
-2. Set `COMMISSIONER_LOGIN` / `COMMISSIONER_PASSWORD` and optionally `AAA_ADMIN_LOGIN` / `AAA_ADMIN_PASSWORD`.
-3. On Render, add the same vars (and optionally `SESSION_SECRET`, `APP_BASE_URL`, `RESEND_API_KEY`, `MAIL_FROM`).
-4. Create member accounts at `/register`, then sign in at `/enter`.
-5. Password reset: `/forgot` emails a link when Resend is configured; otherwise the reset URL is logged (and shown in local/dev responses).
+## Season Archive
 
-Accounts are stored under `data/` (or `DATA_DIR`). On Render’s free plan the filesystem is ephemeral unless you attach a persistent disk.
+**Current year** is always live from today’s ESPN league IDs (Record Book + Draft Results → Season).
 
-## Important ESPN setting
+When you roll to a new season:
 
-If a league shows `ESPN connection failed`, make that ESPN League Manager league publicly viewable and refresh the page. Do not put ESPN passwords or cookies into this project.
+1. League Tools → **Season Archive** → **Fill Year N from current IDs** → Save (stores the finished year as prior history).
+2. Update League Tools → **ESPN League IDs** to the new season’s Detail / Overtime leagues.
+3. Managers pick prior years in Members Lounge → Record Book, or Draft Results → Season.
 
-## Next build
+Do not list the live season year in the prior-seasons box while it is still current.
 
-1. Weekly scoreboard from both conferences.
-2. Team pages + rosters.
-3. Six-team playoff picture.
-4. Week 14–16 conference brackets.
-5. Week 17 cross-conference Gridiron Bowl.
-6. Historical champions and records.
-7. Deploy to `gridiron24.com` (domain purchased).
+## Deploy (Render)
+
+See `render.yaml`: Node web service, Starter plan, persistent disk at `/var/data`, health check `/api/health`. Cron jobs run in-process — do not add Render cron services.
+
+## ESPN
+
+If a conference shows a connection error, make that ESPN league **publicly viewable** (or set `ESPN_SWID` / `ESPN_S2` for private leagues). Do not put ESPN passwords in this repo.
+
+## Local layout
+
+| Path | Role |
+|---|---|
+| `server.js` | HTTP API + ESPN sync |
+| `config.js` / `league-runtime.js` | Season + live league config |
+| `public/` | HQ pages, PWA (`public/app/`) |
+| `data/` | Local JSON store (use `DATA_DIR` in prod) |

@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=158" />
-  <link rel="icon" href="/favicon.ico?v=158" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=158" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=158" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=160" />
+  <link rel="icon" href="/favicon.ico?v=160" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=160" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=160" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
@@ -87,48 +87,60 @@
       position: sticky;
       top: 0;
       z-index: 4;
-      min-width: 7.6rem;
-      max-width: 8.4rem;
-      padding: 0.5rem 0.4rem 0.55rem;
+      min-width: 10.5rem;
+      max-width: 12rem;
+      padding: 0.55rem 0.45rem 0.5rem;
       text-align: center;
-      border-bottom: 3px solid #111;
+      border-bottom: 3px solid #1e4fcc;
       box-shadow: inset 1px 0 0 rgba(0,0,0,0.18), inset -1px 0 0 rgba(0,0,0,0.18);
       font-family: var(--display);
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      line-height: 1.15;
-      color: #111;
+      line-height: 1.1;
+      color: #1e4fcc;
+      background: #eef3ff;
     }
     .draft-team-head.is-alt {
-      background: #f3f1ea;
+      background: #e4ecff;
+    }
+    .draft-team-head .team-name {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: #1e4fcc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     [data-theme="night"] .draft-team-head {
-      border-bottom-color: rgba(255,255,255,0.4);
-      color: var(--text);
+      border-bottom-color: #6ea0ff;
+      color: #8eb6ff;
+      background: #152238;
       box-shadow: inset 1px 0 0 rgba(255,255,255,0.08), inset -1px 0 0 rgba(0,0,0,0.45);
     }
     [data-theme="night"] .draft-team-head.is-alt {
-      background: #222;
+      background: #1a2940;
+    }
+    [data-theme="night"] .draft-team-head .team-name {
+      color: #8eb6ff;
     }
     [data-theme="night"] .draft-cell.is-alt:not([class*="pos-"]) {
       background: #1c1c1c;
     }
     .draft-team-head .owner {
       display: block;
-      margin-top: 0.15rem;
+      margin-top: 0.18rem;
       font-family: var(--body);
-      font-size: 0.65rem;
+      font-size: 0.62rem;
       font-weight: 500;
       letter-spacing: 0;
       text-transform: none;
-      color: #555;
+      color: #4a5f8a;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    [data-theme="night"] .draft-team-head .owner { color: var(--muted); }
+    [data-theme="night"] .draft-team-head .owner { color: #9aafd0; }
     .draft-round {
       position: sticky;
       left: 0;
@@ -143,12 +155,12 @@
       min-width: 2.4rem;
     }
     .draft-cell {
-      min-height: 3.55rem;
-      min-width: 7.6rem;
-      max-width: 8.4rem;
+      min-height: 3.7rem;
+      min-width: 10.5rem;
+      max-width: 12rem;
       padding: 0.28rem 0.32rem 0.35rem;
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto 1fr auto;
       gap: 0.1rem;
       color: #111;
       box-shadow: inset 1px 0 0 rgba(0,0,0,0.12), inset -1px 0 0 rgba(0,0,0,0.12);
@@ -169,33 +181,35 @@
       background: #1a1a1a;
     }
     .draft-cell .top {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 0.2rem;
+      display: flex;
+      justify-content: space-between;
       align-items: baseline;
+      gap: 0.25rem;
       font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.02em;
       text-transform: uppercase;
       opacity: 0.92;
     }
-    .draft-cell .first {
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-weight: 600;
-    }
-    .draft-cell .last {
+    .draft-cell .player {
       font-family: var(--display);
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 700;
       letter-spacing: 0.02em;
       text-transform: uppercase;
-      line-height: 1.05;
+      line-height: 1.1;
       text-align: center;
       align-self: center;
-      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .draft-cell .nfl {
+      text-align: center;
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.15;
+      opacity: 0.9;
+      overflow-wrap: anywhere;
     }
     .draft-cell.pos-QB { background: #e85d5d; }
     .draft-cell.pos-RB { background: #5fbf6a; }
@@ -228,6 +242,176 @@
     .swatch.TE { background: #f0b24a; }
     .swatch.K { background: #c9a0e8; }
     .swatch.DST { background: #8a9aa8; }
+    .draft-toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+    }
+    .draft-print-btn {
+      font-family: var(--display);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 0.45rem 0.9rem;
+      border: 1px solid var(--blue);
+      background: rgba(47, 109, 255, 0.12);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .draft-print-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .print-only { display: none; }
+
+    @page {
+      size: letter landscape;
+      margin: 0.28in;
+    }
+
+    @media print {
+      *,
+      *::before,
+      *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      html, body {
+        background: #fff !important;
+        color: #111 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+      }
+
+      .topbar,
+      .site-footer,
+      .draft-tabs,
+      .draft-print-btn,
+      .legend,
+      .page-hero .eyebrow,
+      .no-print {
+        display: none !important;
+      }
+
+      .print-only { display: block !important; }
+
+      .page-hero {
+        margin: 0 0 0.2rem !important;
+        padding: 0 !important;
+      }
+      .page-hero h1 {
+        font-size: 14pt !important;
+        margin: 0 !important;
+        color: #111 !important;
+      }
+      .print-sub {
+        margin: 0 0 0.25rem;
+        font-size: 8pt;
+        color: #333;
+      }
+
+      .page-main.shell,
+      .page-hero.shell {
+        max-width: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .draft-toolbar {
+        margin: 0 0 0.2rem !important;
+      }
+      .draft-meta {
+        font-size: 8pt !important;
+        color: #333 !important;
+      }
+
+      .draft-scroll {
+        overflow: hidden !important;
+        max-height: none !important;
+        border: none !important;
+        background: #fff !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      .draft-board {
+        width: max-content !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        padding: 0 !important;
+        background: #222 !important;
+        row-gap: 0.5px !important;
+        column-gap: 0.5px !important;
+        transform-origin: top left;
+      }
+
+      .draft-corner,
+      .draft-round {
+        position: static !important;
+        min-width: 0.85rem !important;
+        width: 0.85rem !important;
+        font-size: 6pt !important;
+        background: #fff !important;
+        color: #111 !important;
+      }
+
+      .draft-team-head {
+        position: static !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        width: auto !important;
+        padding: 2px 2px 3px !important;
+        border-bottom: 1.5px solid #1e4fcc !important;
+        background: #eef3ff !important;
+        box-shadow: none !important;
+      }
+      .draft-team-head.is-alt { background: #e4ecff !important; }
+      .draft-team-head .team-name {
+        font-size: 5.5pt !important;
+        color: #1e4fcc !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+      .draft-team-head .owner { display: none !important; }
+
+      .draft-cell {
+        min-width: 0 !important;
+        max-width: none !important;
+        min-height: 0 !important;
+        height: auto !important;
+        padding: 1px 2px 2px !important;
+        gap: 0 !important;
+        box-shadow: none !important;
+        color: #111 !important;
+      }
+      .draft-cell .top {
+        font-size: 4.5pt !important;
+        opacity: 1 !important;
+      }
+      .draft-cell .player {
+        font-size: 5.5pt !important;
+        line-height: 1.05 !important;
+        overflow: hidden !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      .draft-cell .nfl { display: none !important; }
+      .draft-cell.empty { background: #ecece8 !important; }
+      .draft-cell.pos-QB { background: #e85d5d !important; }
+      .draft-cell.pos-RB { background: #5fbf6a !important; }
+      .draft-cell.pos-WR { background: #5aa8e8 !important; }
+      .draft-cell.pos-TE { background: #f0b24a !important; }
+      .draft-cell.pos-K { background: #c9a0e8 !important; }
+      .draft-cell.pos-DST { background: #8a9aa8 !important; }
+    }
   </style>
 </head>
 <body data-page="draft">
@@ -240,11 +424,19 @@
   <section class="page-hero shell">
     <p class="eyebrow">League · Draft</p>
     <h1>Draft Results</h1>
+    <p class="print-only print-sub" id="print-sub"></p>
   </section>
   <main class="page-main shell">
     <div class="draft-toolbar">
       <div class="draft-tabs" id="conf-tabs" role="tablist" aria-label="Conference"></div>
-      <p class="draft-meta" id="draft-meta">Loading…</p>
+      <div class="draft-toolbar-actions">
+        <label class="draft-meta" for="draft-season" style="display:inline-flex;align-items:center;gap:0.4rem;">
+          <span class="no-print">Season</span>
+          <select id="draft-season" class="field" style="min-width:9rem;padding:0.35rem 0.5rem;" aria-label="Season"></select>
+        </label>
+        <p class="draft-meta" id="draft-meta">Loading…</p>
+        <button type="button" class="draft-print-btn" id="draft-print" disabled title="Opens the print dialog — choose Save as PDF">Print / Save PDF</button>
+      </div>
     </div>
     <div id="draft-mount"><div class="msg">Loading draft board…</div></div>
     <div class="legend" id="legend" hidden>
@@ -273,6 +465,121 @@
     let CONFS = GI_CONFS.slice();
     let activeConf = new URLSearchParams(location.search).get('conference') || 'detail';
     let activeSeason = new URLSearchParams(location.search).get('season') || '';
+    let boardReady = false;
+    let lastPrintLabel = '';
+    let seasonCatalog = [];
+
+    function setPrintEnabled(on) {
+      boardReady = Boolean(on);
+      const btn = document.getElementById('draft-print');
+      if (btn) btn.disabled = !boardReady;
+    }
+
+    function clearPrintFit() {
+      const board = document.querySelector('.draft-board');
+      const scroll = document.querySelector('.draft-scroll');
+      if (board) {
+        board.style.transform = '';
+        board.style.transformOrigin = '';
+      }
+      if (scroll) {
+        scroll.style.height = '';
+        scroll.style.width = '';
+        scroll.style.overflow = '';
+      }
+      document.body.classList.remove('is-printing');
+    }
+
+    function printDraftBoard() {
+      if (!boardReady) return;
+      const board = document.querySelector('.draft-board');
+      const scroll = document.querySelector('.draft-scroll');
+      if (!board || !scroll) {
+        window.print();
+        return;
+      }
+
+      clearPrintFit();
+      document.body.classList.add('is-printing');
+
+      const printSub = document.getElementById('print-sub');
+      if (printSub) printSub.textContent = lastPrintLabel || '';
+
+      // Landscape letter printable area at 96dpi (matches @page margins).
+      const pageW = 10.4 * 96;
+      const pageH = 7.05 * 96;
+
+      let printCleanupTimer = null;
+      const finish = () => {
+        if (printCleanupTimer) {
+          clearTimeout(printCleanupTimer);
+          printCleanupTimer = null;
+        }
+        clearPrintFit();
+      };
+      window.addEventListener('afterprint', finish, { once: true });
+      // Safari sometimes skips afterprint
+      printCleanupTimer = setTimeout(finish, 60_000);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const bw = board.scrollWidth || board.offsetWidth;
+          const bh = board.scrollHeight || board.offsetHeight;
+          const scale = Math.min(1, pageW / Math.max(bw, 1), pageH / Math.max(bh, 1));
+          board.style.transformOrigin = 'top left';
+          board.style.transform = `scale(${scale})`;
+          scroll.style.overflow = 'hidden';
+          scroll.style.width = `${Math.ceil(bw * scale)}px`;
+          scroll.style.height = `${Math.ceil(bh * scale)}px`;
+          window.print();
+        });
+      });
+    }
+
+    document.getElementById('draft-print')?.addEventListener('click', printDraftBoard);
+
+    function renderSeasonSelect() {
+      const sel = document.getElementById('draft-season');
+      if (!sel) return;
+      const list = seasonCatalog.length
+        ? seasonCatalog
+        : [{ season: activeSeason || '', label: activeSeason || 'Current', current: true }];
+      sel.innerHTML = list.map((s) => {
+        const season = String(s.season || '');
+        const label = s.yearNumber
+          ? `Year ${s.yearNumber} · ${season}${s.current ? ' · now' : ''}`
+          : (s.label || season);
+        return `<option value="${esc(season)}">${esc(label)}</option>`;
+      }).join('');
+      if (activeSeason) sel.value = String(activeSeason);
+      else if (list[0]?.season) sel.value = String(list[0].season);
+    }
+
+    document.getElementById('draft-season')?.addEventListener('change', () => {
+      activeSeason = document.getElementById('draft-season').value || '';
+      const url = new URL(location.href);
+      if (activeSeason) url.searchParams.set('season', activeSeason);
+      else url.searchParams.delete('season');
+      history.replaceState({}, '', url);
+      loadDraft();
+    });
+
+    async function loadSeasonCatalog() {
+      try {
+        const res = await fetch('/api/history', { cache: 'no-store', credentials: 'same-origin' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && Array.isArray(data.seasons) && data.seasons.length) {
+          seasonCatalog = data.seasons;
+          if (!activeSeason) {
+            const current = seasonCatalog.find((s) => s.current) || seasonCatalog[0];
+            activeSeason = String(current?.season || '');
+          }
+        }
+      } catch {
+        /* keep empty catalog */
+      }
+      renderSeasonSelect();
+    }
 
     function posClass(pos) {
       if (pos === 'D/ST' || pos === 'DST') return 'pos-DST';
@@ -311,13 +618,20 @@
         return `<div class="draft-cell empty${alt}" title="Undrafted slot"></div>`;
       }
       const pos = pick.position === 'D/ST' ? 'D/ST' : pick.position;
-      return `<div class="draft-cell ${posClass(pos)}${alt}" title="${esc(pick.fullName)} · Rd ${esc(String(pick.round))} · Overall ${esc(String(pick.overall || ''))}">
+      const player = pick.fullName
+        || [pick.firstName, pick.lastName].filter(Boolean).join(' ')
+        || 'Unknown';
+      const nflRaw = String(pick.proTeamName || '').trim();
+      const nfl = (pos === 'D/ST' || !nflRaw || nflRaw.toLowerCase() === String(player).toLowerCase())
+        ? ''
+        : nflRaw;
+      return `<div class="draft-cell ${posClass(pos)}${alt}" title="${esc(player)} · Rd ${esc(String(pick.round))} · Overall ${esc(String(pick.overall || ''))}">
         <div class="top">
           <span>${esc(pos)}</span>
-          <span class="first">${esc(pick.firstName)}</span>
-          <span>${esc(pick.proTeam)}</span>
+          <span>${esc(String(pick.overall || ''))}</span>
         </div>
-        <div class="last">${esc(pick.lastName)}</div>
+        <div class="player">${esc(player)}</div>
+        ${nfl ? `<div class="nfl">${esc(nfl)}</div>` : ''}
       </div>`;
     }
 
@@ -325,10 +639,13 @@
       const mount = document.getElementById('draft-mount');
       const meta = document.getElementById('draft-meta');
       const legend = document.getElementById('legend');
+      clearPrintFit();
       if (!data.ok) {
         mount.innerHTML = `<div class="msg">${esc(data.error || 'Draft unavailable')}</div>`;
         meta.textContent = '';
         legend.hidden = true;
+        setPrintEnabled(false);
+        lastPrintLabel = '';
         return;
       }
 
@@ -337,22 +654,33 @@
         mount.innerHTML = `<div class="msg">Draft board unlocks once the ${esc(String(data.season))} draft starts or completes on ESPN.</div>`;
         meta.textContent = `${data.conference?.name || ''} · ${d.type || 'SNAKE'} · not started`;
         legend.hidden = true;
+        setPrintEnabled(false);
+        lastPrintLabel = '';
         return;
       }
 
       const cols = data.columns || [];
       const rows = data.board || [];
-      const colCount = cols.length + 1;
-      meta.textContent = [
+      const metaBits = [
         data.conference?.name || '',
         d.type || 'SNAKE',
         d.inProgress ? 'in progress' : (d.drafted ? 'complete' : 'partial'),
         `${d.filledCount || 0}/${d.totalSlots || 0} picks`
+      ].filter(Boolean);
+      meta.textContent = metaBits.join(' · ');
+      lastPrintLabel = [
+        'GridIron 24',
+        data.season ? String(data.season) : '',
+        ...metaBits
       ].filter(Boolean).join(' · ');
 
       const head = [
         `<div class="draft-corner"></div>`,
-        ...cols.map((t, i) => `<div class="draft-team-head${i % 2 ? ' is-alt' : ''}" title="${esc(t.name)}">${esc(t.abbreviation || t.name)}${t.owner ? `<span class="owner">${esc(t.owner)}</span>` : ''}</div>`)
+        ...cols.map((t, i) => {
+          const teamName = String(t.name || '').trim() || String(t.abbreviation || '').trim() || 'Team';
+          const tip = t.owner ? `${teamName} · ${t.owner}` : teamName;
+          return `<div class="draft-team-head${i % 2 ? ' is-alt' : ''}" title="${esc(tip)}"><span class="team-name">${esc(teamName)}</span>${t.owner ? `<span class="owner">${esc(t.owner)}</span>` : ''}</div>`;
+        })
       ].join('');
 
       const body = rows.map((row) => {
@@ -360,12 +688,15 @@
         return `<div class="draft-round">${esc(String(row.round))}</div>${cells}`;
       }).join('');
 
-      mount.innerHTML = `<div class="draft-scroll"><div class="draft-board" style="grid-template-columns: 2.4rem repeat(${cols.length}, minmax(7.6rem, 8.4rem));">${head}${body}</div></div>`;
+      mount.innerHTML = `<div class="draft-scroll"><div class="draft-board" style="--cols:${cols.length};grid-template-columns: 2.4rem repeat(${cols.length}, minmax(10.5rem, 12rem));">${head}${body}</div></div>`;
       legend.hidden = false;
+      setPrintEnabled(true);
+      renderSeasonSelect();
     }
 
     async function loadDraft() {
       const mount = document.getElementById('draft-mount');
+      setPrintEnabled(false);
       mount.innerHTML = `<div class="msg">Loading draft board…</div>`;
       try {
         const qs = new URLSearchParams({ conference: activeConf });
@@ -399,6 +730,7 @@
         }
       }
       renderTabs();
+      await loadSeasonCatalog();
       await loadDraft();
     }
 

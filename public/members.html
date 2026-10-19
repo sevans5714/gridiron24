@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=158" />
-  <link rel="icon" href="/favicon.ico?v=158" sizes="any" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=158" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=158" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=160" />
+  <link rel="icon" href="/favicon.ico?v=160" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/pwa/icon-192.png?v=160" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=160" />
   <script src="/js/theme-boot.js"></script>
   <link rel="stylesheet" href="/css/site.css?v=182" />
   <style>
@@ -10888,7 +10888,10 @@
           : (fantasy ? '' : `<span class="sgame-logo-fallback" aria-hidden="true"></span>`);
         const record = fantasy && t.record ? String(t.record) : '';
         const nameCell = fantasy
-          ? `${window.GridIronTitle.html(t.name || t.abbreviation || t.shortName || 'TBD', { size: 'sm', inline: true })}${
+          ? `${window.GridIronTitle.html(
+              window.GridIronTitle.label?.(t) || t.name || t.espnName || 'TBD',
+              { size: 'sm', inline: true }
+            )}${
               record ? `<span class="sgame-rec" title="Season record">${esc(record)}</span>` : ''
             }`
           : (record

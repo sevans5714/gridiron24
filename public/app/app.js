@@ -1038,7 +1038,10 @@
         pts = `<span class="pts is-blank">—</span>`;
       }
       const name = fantasy
-        ? franchiseTitleHtml(t.name || t.abbreviation || t.shortName || 'TBD', { size: 'sm', inline: true })
+        ? franchiseTitleHtml(
+          (window.GridIronTitle?.label?.(t) || t.name || t.espnName || 'TBD'),
+          { size: 'sm', inline: true }
+        )
         : `<span class="namecell"><span class="abbr">${esc(t.abbreviation || t.shortName || '?')}</span></span>`;
       return `<div class="wire-side${win ? ' is-winner' : ''}${fantasy ? ' is-title' : ''}">${logo}${name}${pts}</div>`;
     };
@@ -2292,7 +2295,7 @@
         ${list.map((p) => {
           const player = p.fullName || [p.firstName, p.lastName].filter(Boolean).join(' ') || 'Player';
           const franchise = teamById.get(Number(p.teamId));
-          const team = franchise?.name || franchise?.abbreviation || '';
+          const team = window.GridIronTitle?.label?.(franchise) || franchise?.name || '';
           return `<article class="draft-row">
             <div class="pick">R${esc(String(p.round || '—'))} · #${esc(String(p.overall || p.roundPick || '—'))}</div>
             <div class="body">
