@@ -112,8 +112,25 @@ function draftPoolOpts(roomOrSettings = {}, extra = {}) {
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const CACHE_MS = 30_000;
+const CACHE_MS_LIVE = 12_000;
 const ESPN_NEWS_CACHE_MS = 5 * 60_000;
 let espnNewsCache = { at: 0, items: [], source: null };
+let nflLiveHint = { at: 0, live: false };
+
+/** Shorter Fantasy ESPN TTL while any NFL game is live (scoreboard freshness). */
+async function espnFantasyTtlMs() {
+  const now = Date.now();
+  if (now - nflLiveHint.at < 15_000) {
+    return nflLiveHint.live ? CACHE_MS_LIVE : CACHE_MS;
+  }
+  try {
+    const live = await nflverseLive.getLiveScoring({});
+    nflLiveHint = { at: now, live: Number(live?.counts?.live || 0) > 0 };
+  } catch {
+    nflLiveHint = { at: now, live: false };
+  }
+  return nflLiveHint.live ? CACHE_MS_LIVE : CACHE_MS;
+}
 
 function espnAuthHeaders() {
   const headers = {
@@ -1524,7 +1541,7 @@ function normalizeLeague(raw, conference) {
   };
 }
 
-async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}, seasonOverride = null) {
+async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}, seasonOverride = null, options = {}) {
   const season = Number(seasonOverride) || Number(config.season);
   const viewList = Array.isArray(views) ? views.slice() : [];
   if (viewList.includes('mTeam') && !viewList.includes('mNav')) viewList.push('mNav');
@@ -1542,12 +1559,13 @@ async function fetchEspnRaw(conference, views, cacheSuffix = '', query = {}, sea
   }
   const qs = params.toString();
   const pathAndQuery = qs ? `${pathBase}?${qs}` : pathBase;
+  const ttlMs = Number(options?.ttlMs) > 0 ? Number(options.ttlMs) : CACHE_MS;
 
   try {
     const hit = await espnResilient.fetchJsonResilient({
       urls: espnResilient.fantasyLeagueUrls(pathAndQuery),
       cacheKey: `fantasy:${cacheKey}`,
-      ttlMs: CACHE_MS,
+      ttlMs,
       headers: espnAuthHeaders(),
       timeoutMs: 10_000,
       lane: 'fantasy'
@@ -3019,8 +3037,20 @@ async function buildPlayoffsPayload() {
     };
   });
 
+  const currentMatchupPeriod = (standings.conferences || [])
+    .map((c) => Number(c.currentMatchupPeriod))
+    .find((n) => Number.isFinite(n) && n > 0) || null;
+  const playoffStartWeek = Number(config.structure?.playoffWeeks?.[0] || 14);
+  const projected = !(Number.isFinite(currentMatchupPeriod) && currentMatchupPeriod >= playoffStartWeek);
+
   return {
     season: config.season,
+    currentMatchupPeriod,
+    playoffStartWeek,
+    projected,
+    projectedNote: projected
+      ? `Projected seeding — locks when conference playoffs begin (Week ${playoffStartWeek})`
+      : null,
     generatedAt: new Date().toISOString(),
     conferences,
     bowl,
@@ -4257,7 +4287,15 @@ async function apiOfficialScoring(res) {
 
 async function scheduleForConference(conference, weekParam, cacheTag = 'matchup') {
   try {
-    const statusRaw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], cacheTag);
+    const ttlMs = await espnFantasyTtlMs();
+    const statusRaw = await fetchEspnRaw(
+      conference,
+      ['mTeam', 'mMatchup', 'mStatus'],
+      cacheTag,
+      {},
+      null,
+      { ttlMs }
+    );
     const espnWeek = Number(statusRaw.status?.currentMatchupPeriod || 1);
     let week = Number(weekParam || 0);
     let held = false;
@@ -4272,7 +4310,9 @@ async function scheduleForConference(conference, weekParam, cacheTag = 'matchup'
         conference,
         ['mTeam', 'mMatchup', 'mScoreboard', 'mStatus'],
         `${cacheTag}:box:${week}`,
-        { scoringPeriodId: week }
+        { scoringPeriodId: week },
+        null,
+        { ttlMs }
       );
       if (Array.isArray(boxed?.schedule) && boxed.schedule.length) raw = boxed;
     } catch { /* keep status snapshot */ }

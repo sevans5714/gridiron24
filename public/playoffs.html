@@ -679,6 +679,21 @@
       .bowl-side .nm { grid-area: name; text-align: left; }
       .bowl-side .pts { grid-area: pts; justify-self: end; }
     }
+
+    .po-projected {
+      margin: 0.65rem 0 0;
+      max-width: 40rem;
+      padding: 0.55rem 0.8rem;
+      border: 1px solid rgba(239, 215, 130, 0.45);
+      background: rgba(239, 215, 130, 0.12);
+      color: var(--text);
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+    .po-projected.is-locked {
+      border-color: rgba(47, 109, 255, 0.4);
+      background: rgba(47, 109, 255, 0.1);
+    }
   </style>
 </head>
 <body data-page="playoffs">
@@ -691,6 +706,7 @@
 
   <section class="page-hero shell reveal">
     <h1>Playoff Bracket</h1>
+    <p class="po-projected" id="po-projected" hidden></p>
   </section>
 
   <main class="page-main shell">
@@ -975,6 +991,20 @@
           ${bowlBlock()}`;
         applyBowl(data.bowl);
         applySurvival(data.survival);
+        const banner = document.getElementById('po-projected');
+        if (banner) {
+          const start = Number(data.playoffStartWeek) || 14;
+          if (data.projected) {
+            banner.hidden = false;
+            banner.classList.remove('is-locked');
+            banner.textContent = data.projectedNote
+              || `Projected seeding — locks when conference playoffs begin (Week ${start})`;
+          } else {
+            banner.hidden = false;
+            banner.classList.add('is-locked');
+            banner.textContent = `Playoffs underway · seeding locked (Week ${start}+)`;
+          }
+        }
         const t = new Date(data.generatedAt);
         window.GridIronNav?.setSync(`Bracket sync · ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {

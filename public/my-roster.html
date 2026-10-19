@@ -419,7 +419,7 @@
         const week = data.currentMatchupPeriod;
         const matchup = data.currentMatchup;
         const keeperId = data.keeper ? Number(data.keeper.playerId) : null;
-        const confName = data.conference?.shortName || data.conference?.name || t.conferenceName || '';
+        const confName = data.conference?.name || data.conference?.shortName || t.conferenceName || '';
         const logo = data.logo?.url || t.logo || '/assets/team-logo-placeholder.svg';
 
         document.title = `${t.name || 'My Roster'} · GridIron 24`;
@@ -488,9 +488,9 @@
           </div>
           <div class="stat-strip">
             <div class="stat-cell"><span class="lbl">Record</span><span class="val">${esc(record(t))}</span></div>
+            <div class="stat-cell"><span class="lbl">Seed</span><span class="val">${t.playoffSeed ? `#${esc(String(t.playoffSeed))}` : '—'}</span></div>
             <div class="stat-cell"><span class="lbl">Wk ${esc(String(week || '—'))} pts</span><span class="val">${fmt(starterPts)}</span></div>
             <div class="stat-cell"><span class="lbl">Projected</span><span class="val">${fmt(starterProj)}</span></div>
-            <div class="stat-cell"><span class="lbl">On bye</span><span class="val">${esc(String(byeCount))}</span></div>
           </div>
           <div class="layout">
             <section>

@@ -171,7 +171,27 @@
     }
 
     .row.body:hover { background: var(--row-hover); }
+    .row.in .rank { color: #8eb6ff; }
     .row.out { opacity: 0.72; }
+    .row.bubble {
+      box-shadow: inset 3px 0 0 rgba(239, 215, 130, 0.85);
+    }
+
+    .rank-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      line-height: 1.05;
+    }
+    .seed-chip {
+      font-family: var(--display);
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #efd782;
+      opacity: 0.95;
+    }
 
     .cut-line {
       display: grid;
@@ -431,19 +451,24 @@
       const lastRank = teams.length;
       teams.forEach((team, index) => {
         const rank = index + 1;
+        const seed = Number(team.playoffSeed) || 0;
         if (rank === 7) {
-          rows.push(`<div class="cut-line">Playoff cut · places 7–12 out · tiebreaker: points for</div>`);
+          rows.push(`<div class="cut-line">Playoff cut · top 6 in · places 7–12 out · tiebreaker: points for</div>`);
         }
         if (lastRank > 1 && rank === lastRank) {
           rows.push(`<div class="cut-line relegation">MAYORS CUP</div>`);
         }
         const zoneClass = [
-          rank > 6 ? 'out' : '',
+          rank <= 6 ? 'in' : 'out',
+          rank === 6 || rank === 7 ? 'bubble' : '',
           rank === lastRank ? 'relegation-zone' : ''
         ].filter(Boolean).join(' ');
+        const rankHtml = seed > 0
+          ? `<div class="rank-stack"><span>${rank}</span><span class="seed-chip" title="Projected ESPN playoff seed">Seed ${seed}</span></div>`
+          : String(rank);
         rows.push(`
           <div class="row body ${zoneClass}">
-            <div class="rank">${rank}</div>
+            <div class="rank">${rankHtml}</div>
             <a class="team" href="/team.html?conference=${escapeHtml(conf.key)}&teamId=${escapeHtml(team.id)}" style="color:inherit;text-decoration:none;">
               ${window.GridIronTitle.html(team.name, { size: 'sm', inline: true })}
             </a>

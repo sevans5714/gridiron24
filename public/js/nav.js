@@ -267,6 +267,46 @@
 
   window.GridIronTitle = { html: franchiseTitleHtml, label: franchiseLabel, fit: fitAllFranchiseTitles };
 
+  function findTradeDeadlineEvent(events) {
+    const list = Array.isArray(events) ? events : [];
+    const byType = list.find((e) => {
+      const type = String(e?.type || '').toLowerCase();
+      const title = String(e?.title || '').toLowerCase();
+      return type === 'deadline' && title.includes('trade');
+    });
+    if (byType) return byType;
+    return list.find((e) => String(e?.title || '').toLowerCase().includes('trade deadline')) || null;
+  }
+
+  /** { text, passed, date } from calendar events — uses league calendar, not a hard-coded date. */
+  function tradeDeadlineStatus(events, now = new Date()) {
+    const hit = findTradeDeadlineEvent(events);
+    const raw = String(hit?.date || '').trim();
+    if (!raw) return null;
+    const day = new Date(`${raw.slice(0, 10)}T23:59:59`);
+    if (Number.isNaN(day.getTime())) return null;
+    const label = hit.title || 'Trade Deadline';
+    const pretty = day.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const end = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    const days = Math.round((end - start) / 86400000);
+    if (days < 0) {
+      return { text: `${label} passed · ${pretty}`, passed: true, date: raw, days };
+    }
+    if (days === 0) {
+      return { text: `${label} is today · ${pretty}`, passed: false, date: raw, days };
+    }
+    if (days === 1) {
+      return { text: `${label} tomorrow · ${pretty}`, passed: false, date: raw, days };
+    }
+    return { text: `${label} in ${days} days · ${pretty}`, passed: false, date: raw, days };
+  }
+
+  window.GridIronCalendar = {
+    findTradeDeadlineEvent,
+    tradeDeadlineStatus
+  };
+
   function fitFranchiseTitle(title) {
     if (!title || !title.style) return;
     title.style.fontSize = '';

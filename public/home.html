@@ -129,6 +129,18 @@
     html[data-theme="day"] .hq-hero img {
       filter: drop-shadow(0 12px 24px rgba(20, 24, 31, 0.2));
     }
+    .hq-deadline {
+      margin: 0.35rem auto 0.15rem;
+      max-width: 36rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .hq-deadline a { color: #8eb6ff; text-decoration: none; }
+    .hq-deadline.is-soon { color: var(--text); }
+    .hq-deadline.is-passed { opacity: 0.75; }
+
     .hq-hero .tag {
       margin: 1.25rem 0 0;
       font-family: var(--display);
@@ -983,6 +995,7 @@
       <span class="t">24 Teams</span><span class="sep">·</span><span class="d">Two Conferences</span><span class="sep">·</span><span class="c">One Champion</span>
     </p>
   </section>
+  <p class="hq-deadline shell" id="hq-deadline" hidden></p>
 
   <main class="hq-main shell">
     <div class="hq-board">
@@ -1511,6 +1524,25 @@
       }
       currentUser = auth.user || null;
       wireComposers();
+      async function paintDeadlineNote() {
+        const el = document.getElementById('hq-deadline');
+        if (!el) return;
+        try {
+          const res = await fetch('/api/calendar', { cache: 'no-store' });
+          const data = await res.json().catch(() => ({}));
+          const status = window.GridIronCalendar?.tradeDeadlineStatus?.(data.events || []);
+          if (!status) {
+            el.hidden = true;
+            return;
+          }
+          el.hidden = false;
+          el.classList.toggle('is-passed', Boolean(status.passed));
+          el.classList.toggle('is-soon', !status.passed && status.days <= 14);
+          el.innerHTML = `${esc(status.text)} · <a href="/transactions.html">Transactions</a>`;
+        } catch {
+          el.hidden = true;
+        }
+      }
       const refreshLive = async () => {
         if (document.visibilityState !== 'visible') return;
         await Promise.all([
@@ -1519,6 +1551,7 @@
         ]);
       };
       await Promise.all([
+        paintDeadlineNote().catch(() => {}),
         loadStandings(),
         loadMatchupOfWeek(),
         loadNews().catch((err) => {

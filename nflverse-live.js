@@ -128,7 +128,18 @@ function buildQuery({ week, seasontype, dates, season } = {}) {
   return qs ? `${SCOREBOARD_PATH}?${qs}` : SCOREBOARD_PATH;
 }
 
-function payloadFromEspnRaw(raw) {
+function situationMeta(games) {
+  const liveGames = (games || []).filter((g) => g?.status?.bucket === 'live');
+  const withSit = liveGames.filter((g) => g.situation);
+  const scoresOnly = liveGames.length > 0 && withSit.length === 0;
+  return {
+    liveCount: liveGames.length,
+    situationCount: withSit.length,
+    scoresOnly
+  };
+}
+
+function payloadFromEspnRaw(raw, feedSource = 'espn-site') {
   const season = raw.season || {};
   const week = raw.week || {};
   const games = (raw.events || []).map(normalizeEvent);
@@ -136,10 +147,13 @@ function payloadFromEspnRaw(raw) {
   for (const g of games) {
     counts[g.status.bucket] = (counts[g.status.bucket] || 0) + 1;
   }
+  const sit = situationMeta(games);
   return {
     ok: true,
     source: 'nfl',
     provider: 'NFL',
+    feedSource,
+    scoresOnly: sit.scoresOnly,
     fetchedAt: new Date().toISOString(),
     cacheMs: CACHE_MS,
     season: {
@@ -166,10 +180,14 @@ function payloadFromFallback(fb) {
   }
   const season = fb.season || {};
   const week = fb.week || {};
+  const sit = situationMeta(games);
   return {
     ok: true,
     source: 'nfl',
     provider: 'NFL',
+    feedSource: 'alt',
+    // Alt feeds usually omit drive/situation — treat live boards as scores-only.
+    scoresOnly: sit.liveCount > 0 ? true : sit.scoresOnly,
     fetchedAt: new Date().toISOString(),
     cacheMs: CACHE_MS,
     season: {
@@ -223,7 +241,7 @@ async function getLiveScoring(query = {}) {
   try {
     const raw = await fetchEspnSiteScoreboard(query);
     if (raw && (Array.isArray(raw.events) || raw.season || raw.week)) {
-      return payloadFromEspnRaw(raw);
+      return payloadFromEspnRaw(raw, 'espn-site');
     }
   } catch (err) {
     errors.push(`site:${err.message || err}`);
@@ -232,7 +250,7 @@ async function getLiveScoring(query = {}) {
   try {
     const raw = await fetchEspnCdnScoreboard(query);
     if (raw && (Array.isArray(raw.events) || raw.season || raw.week)) {
-      return payloadFromEspnRaw(raw);
+      return payloadFromEspnRaw(raw, 'espn-cdn');
     }
   } catch (err) {
     errors.push(`cdn:${err.message || err}`);
