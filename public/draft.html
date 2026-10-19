@@ -44,10 +44,6 @@
       border-color: var(--blue);
       background: rgba(47, 109, 255, 0.12);
     }
-    .draft-meta {
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
     .draft-scroll {
       overflow: auto;
       border: 1px solid var(--line);
@@ -264,12 +260,112 @@
       opacity: 0.45;
       cursor: not-allowed;
     }
-    .print-only { display: none; }
-
     @page {
       size: letter landscape;
-      margin: 0.28in;
+      margin: 0.25in;
     }
+
+    /* Screen preview of print layout while fitting to one page */
+    body.is-printing .topbar,
+    body.is-printing .site-footer,
+    body.is-printing .draft-toolbar,
+    body.is-printing .legend {
+      display: none !important;
+    }
+    body.is-printing .page-hero,
+    body.is-printing .page-main.shell,
+    body.is-printing .page-hero.shell {
+      max-width: none !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    body.is-printing .page-hero h1 {
+      font-size: 1.05rem !important;
+      margin: 0 0 0.2rem !important;
+    }
+    body.is-printing .draft-scroll {
+      overflow: hidden !important;
+      max-height: none !important;
+      border: none !important;
+      background: #fff !important;
+    }
+    body.is-printing .draft-board {
+      width: max-content !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      padding: 0 !important;
+      background: #222 !important;
+      row-gap: 1px !important;
+      column-gap: 1px !important;
+      transform-origin: top left;
+      --print-round-w: 1.35rem;
+      --print-col-w: 5.2rem;
+      --print-head-h: 1.7rem;
+      --print-cell-h: 2.35rem;
+      --print-name: 0.72rem;
+      --print-meta: 0.55rem;
+    }
+    body.is-printing .draft-corner,
+    body.is-printing .draft-round {
+      position: static !important;
+      min-width: var(--print-round-w) !important;
+      width: var(--print-round-w) !important;
+      max-width: var(--print-round-w) !important;
+      font-size: calc(var(--print-meta) + 0.12rem) !important;
+      background: #fff !important;
+      color: #111 !important;
+    }
+    body.is-printing .draft-team-head {
+      position: static !important;
+      min-width: var(--print-col-w) !important;
+      max-width: var(--print-col-w) !important;
+      width: var(--print-col-w) !important;
+      height: var(--print-head-h) !important;
+      min-height: var(--print-head-h) !important;
+      max-height: var(--print-head-h) !important;
+      box-sizing: border-box !important;
+      padding: 0.12rem 0.18rem !important;
+      border-bottom: 2px solid #1e4fcc !important;
+      background: #eef3ff !important;
+      box-shadow: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    body.is-printing .draft-team-head.is-alt { background: #e4ecff !important; }
+    body.is-printing .draft-team-head .team-name {
+      font-size: calc(var(--print-name) - 0.08rem) !important;
+      color: #1e4fcc !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+    body.is-printing .draft-team-head .owner { display: none !important; }
+    body.is-printing .draft-cell {
+      min-width: var(--print-col-w) !important;
+      max-width: var(--print-col-w) !important;
+      width: var(--print-col-w) !important;
+      height: var(--print-cell-h) !important;
+      min-height: var(--print-cell-h) !important;
+      max-height: var(--print-cell-h) !important;
+      box-sizing: border-box !important;
+      padding: 0.1rem 0.16rem !important;
+      gap: 0.02rem !important;
+      box-shadow: none !important;
+      color: #111 !important;
+      overflow: hidden !important;
+    }
+    body.is-printing .draft-cell .top { font-size: var(--print-meta) !important; opacity: 1 !important; }
+    body.is-printing .draft-cell .player {
+      font-size: var(--print-name) !important;
+      line-height: 1.05 !important;
+      overflow: hidden !important;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    body.is-printing .draft-cell .nfl { display: none !important; }
 
     @media print {
       *,
@@ -290,29 +386,19 @@
 
       .topbar,
       .site-footer,
-      .draft-tabs,
-      .draft-print-btn,
-      .legend,
-      .page-hero .eyebrow,
-      .no-print {
+      .draft-toolbar,
+      .legend {
         display: none !important;
       }
 
-      .print-only { display: block !important; }
-
       .page-hero {
-        margin: 0 0 0.2rem !important;
+        margin: 0 0 0.12rem !important;
         padding: 0 !important;
       }
       .page-hero h1 {
-        font-size: 14pt !important;
+        font-size: 11pt !important;
         margin: 0 !important;
         color: #111 !important;
-      }
-      .print-sub {
-        margin: 0 0 0.25rem;
-        font-size: 8pt;
-        color: #333;
       }
 
       .page-main.shell,
@@ -321,14 +407,6 @@
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
-      }
-
-      .draft-toolbar {
-        margin: 0 0 0.2rem !important;
-      }
-      .draft-meta {
-        font-size: 8pt !important;
-        color: #333 !important;
       }
 
       .draft-scroll {
@@ -341,68 +419,18 @@
       }
 
       .draft-board {
-        width: max-content !important;
-        min-width: 0 !important;
-        max-width: none !important;
-        padding: 0 !important;
         background: #222 !important;
-        row-gap: 0.5px !important;
-        column-gap: 0.5px !important;
         transform-origin: top left;
       }
 
       .draft-corner,
-      .draft-round {
-        position: static !important;
-        min-width: 0.85rem !important;
-        width: 0.85rem !important;
-        font-size: 6pt !important;
-        background: #fff !important;
-        color: #111 !important;
-      }
-
-      .draft-team-head {
-        position: static !important;
-        min-width: 0 !important;
-        max-width: none !important;
-        width: auto !important;
-        padding: 2px 2px 3px !important;
-        border-bottom: 1.5px solid #1e4fcc !important;
-        background: #eef3ff !important;
-        box-shadow: none !important;
-      }
-      .draft-team-head.is-alt { background: #e4ecff !important; }
-      .draft-team-head .team-name {
-        font-size: 5.5pt !important;
-        color: #1e4fcc !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-      }
-      .draft-team-head .owner { display: none !important; }
-
+      .draft-round,
+      .draft-team-head,
       .draft-cell {
-        min-width: 0 !important;
-        max-width: none !important;
-        min-height: 0 !important;
-        height: auto !important;
-        padding: 1px 2px 2px !important;
-        gap: 0 !important;
+        position: static !important;
         box-shadow: none !important;
-        color: #111 !important;
       }
-      .draft-cell .top {
-        font-size: 4.5pt !important;
-        opacity: 1 !important;
-      }
-      .draft-cell .player {
-        font-size: 5.5pt !important;
-        line-height: 1.05 !important;
-        overflow: hidden !important;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-      }
+      .draft-team-head .owner,
       .draft-cell .nfl { display: none !important; }
       .draft-cell.empty { background: #ecece8 !important; }
       .draft-cell.pos-QB { background: #e85d5d !important; }
@@ -422,19 +450,13 @@
     </div>
   </header>
   <section class="page-hero shell">
-    <p class="eyebrow">League · Draft</p>
-    <h1>Draft Results</h1>
-    <p class="print-only print-sub" id="print-sub"></p>
+    <h1 id="draft-title">2026 GridIron 24 Draft Results</h1>
   </section>
   <main class="page-main shell">
     <div class="draft-toolbar">
       <div class="draft-tabs" id="conf-tabs" role="tablist" aria-label="Conference"></div>
       <div class="draft-toolbar-actions">
-        <label class="draft-meta" for="draft-season" style="display:inline-flex;align-items:center;gap:0.4rem;">
-          <span class="no-print">Season</span>
-          <select id="draft-season" class="field" style="min-width:9rem;padding:0.35rem 0.5rem;" aria-label="Season"></select>
-        </label>
-        <p class="draft-meta" id="draft-meta">Loading…</p>
+        <select id="draft-season" class="field" style="min-width:7rem;padding:0.35rem 0.5rem;" aria-label="Season"></select>
         <button type="button" class="draft-print-btn" id="draft-print" disabled title="Opens the print dialog — choose Save as PDF">Print / Save PDF</button>
       </div>
     </div>
@@ -466,13 +488,27 @@
     let activeConf = new URLSearchParams(location.search).get('conference') || 'detail';
     let activeSeason = new URLSearchParams(location.search).get('season') || '';
     let boardReady = false;
-    let lastPrintLabel = '';
     let seasonCatalog = [];
+    let leagueName = 'GridIron 24';
 
     function setPrintEnabled(on) {
       boardReady = Boolean(on);
       const btn = document.getElementById('draft-print');
       if (btn) btn.disabled = !boardReady;
+    }
+
+    function draftHeading({ season, league, conference } = {}) {
+      const year = String(season || activeSeason || '').trim();
+      const brand = String(league || leagueName || 'GridIron 24').trim();
+      const conf = String(conference || '').trim();
+      return [year, brand, conf, 'Draft Results'].filter(Boolean).join(' ');
+    }
+
+    function setDraftHeading(parts = {}) {
+      const title = draftHeading(parts);
+      const h1 = document.getElementById('draft-title');
+      if (h1) h1.textContent = title;
+      document.title = `${title} · GridIron 24`;
     }
 
     function clearPrintFit() {
@@ -481,6 +517,11 @@
       if (board) {
         board.style.transform = '';
         board.style.transformOrigin = '';
+        board.style.width = '';
+        ['--print-round-w', '--print-col-w', '--print-head-h', '--print-cell-h', '--print-name', '--print-meta']
+          .forEach((k) => board.style.removeProperty(k));
+        const cols = Number(board.style.getPropertyValue('--cols')) || 12;
+        board.style.gridTemplateColumns = `2.4rem repeat(${cols}, minmax(10.5rem, 12rem))`;
       }
       if (scroll) {
         scroll.style.height = '';
@@ -502,12 +543,10 @@
       clearPrintFit();
       document.body.classList.add('is-printing');
 
-      const printSub = document.getElementById('print-sub');
-      if (printSub) printSub.textContent = lastPrintLabel || '';
-
-      // Landscape letter printable area at 96dpi (matches @page margins).
-      const pageW = 10.4 * 96;
-      const pageH = 7.05 * 96;
+      const cols = Number(board.style.getPropertyValue('--cols'))
+        || board.querySelectorAll('.draft-team-head').length
+        || 12;
+      const rounds = board.querySelectorAll('.draft-round').length || 16;
 
       let printCleanupTimer = null;
       const finish = () => {
@@ -518,19 +557,39 @@
         clearPrintFit();
       };
       window.addEventListener('afterprint', finish, { once: true });
-      // Safari sometimes skips afterprint
       printCleanupTimer = setTimeout(finish, 60_000);
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          const bw = board.scrollWidth || board.offsetWidth;
-          const bh = board.scrollHeight || board.offsetHeight;
-          const scale = Math.min(1, pageW / Math.max(bw, 1), pageH / Math.max(bh, 1));
-          board.style.transformOrigin = 'top left';
-          board.style.transform = `scale(${scale})`;
+          // Landscape letter printable area (@page margin 0.25in).
+          // Size columns + rows to fill — no transform (print engines often ignore scale).
+          const pageW = 10.5 * 96;
+          const pageH = 7.5 * 96;
+          const hero = document.querySelector('.page-hero');
+          const chromeH = (hero?.offsetHeight || 0) + 6;
+          const availW = pageW;
+          const availH = Math.max(280, pageH - chromeH);
+          const gap = 1;
+          const roundW = Math.max(18, Math.round(availW * 0.022));
+          const headH = Math.max(22, Math.round(availH * 0.055));
+          const colW = Math.max(36, Math.floor((availW - roundW - gap * cols) / cols));
+          const cellH = Math.max(18, Math.floor((availH - headH - gap * rounds) / rounds));
+          const namePx = Math.max(8, Math.min(14, Math.floor(Math.min(colW * 0.42, cellH * 0.4))));
+          const metaPx = Math.max(6, Math.floor(namePx * 0.72));
+
+          board.style.setProperty('--print-round-w', `${roundW}px`);
+          board.style.setProperty('--print-col-w', `${colW}px`);
+          board.style.setProperty('--print-head-h', `${headH}px`);
+          board.style.setProperty('--print-cell-h', `${cellH}px`);
+          board.style.setProperty('--print-name', `${namePx}px`);
+          board.style.setProperty('--print-meta', `${metaPx}px`);
+          board.style.gridTemplateColumns = `${roundW}px repeat(${cols}, ${colW}px)`;
+          board.style.transform = '';
+          board.style.width = `${roundW + colW * cols + gap * cols}px`;
+
           scroll.style.overflow = 'hidden';
-          scroll.style.width = `${Math.ceil(bw * scale)}px`;
-          scroll.style.height = `${Math.ceil(bh * scale)}px`;
+          scroll.style.width = `${availW}px`;
+          scroll.style.height = `${availH}px`;
           window.print();
         });
       });
@@ -546,9 +605,7 @@
         : [{ season: activeSeason || '', label: activeSeason || 'Current', current: true }];
       sel.innerHTML = list.map((s) => {
         const season = String(s.season || '');
-        const label = s.yearNumber
-          ? `Year ${s.yearNumber} · ${season}${s.current ? ' · now' : ''}`
-          : (s.label || season);
+        const label = s.current ? `${season} · now` : season;
         return `<option value="${esc(season)}">${esc(label)}</option>`;
       }).join('');
       if (activeSeason) sel.value = String(activeSeason);
@@ -637,42 +694,32 @@
 
     function renderBoard(data) {
       const mount = document.getElementById('draft-mount');
-      const meta = document.getElementById('draft-meta');
       const legend = document.getElementById('legend');
       clearPrintFit();
+      if (data.brand?.name) leagueName = String(data.brand.name).trim() || leagueName;
       if (!data.ok) {
         mount.innerHTML = `<div class="msg">${esc(data.error || 'Draft unavailable')}</div>`;
-        meta.textContent = '';
+        setDraftHeading({ season: data.season || activeSeason, conference: data.conference?.name });
         legend.hidden = true;
         setPrintEnabled(false);
-        lastPrintLabel = '';
         return;
       }
 
       const d = data.draft || {};
+      setDraftHeading({
+        season: data.season || activeSeason,
+        league: data.brand?.name || leagueName,
+        conference: data.conference?.name
+      });
       if (!d.visible) {
         mount.innerHTML = `<div class="msg">Draft board unlocks once the ${esc(String(data.season))} draft starts or completes on ESPN.</div>`;
-        meta.textContent = `${data.conference?.name || ''} · ${d.type || 'SNAKE'} · not started`;
         legend.hidden = true;
         setPrintEnabled(false);
-        lastPrintLabel = '';
         return;
       }
 
       const cols = data.columns || [];
       const rows = data.board || [];
-      const metaBits = [
-        data.conference?.name || '',
-        d.type || 'SNAKE',
-        d.inProgress ? 'in progress' : (d.drafted ? 'complete' : 'partial'),
-        `${d.filledCount || 0}/${d.totalSlots || 0} picks`
-      ].filter(Boolean);
-      meta.textContent = metaBits.join(' · ');
-      lastPrintLabel = [
-        'GridIron 24',
-        data.season ? String(data.season) : '',
-        ...metaBits
-      ].filter(Boolean).join(' · ');
 
       const head = [
         `<div class="draft-corner"></div>`,

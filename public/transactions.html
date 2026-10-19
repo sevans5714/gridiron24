@@ -27,22 +27,6 @@
     .tx .when { color: var(--muted); font-size: 0.85rem; margin-top: 0.15rem; }
     .tx .body { margin-top: 0.35rem; color: var(--text); line-height: 1.4; }
     .empty { color: var(--muted); padding: 0.5rem 0; }
-    .tx-deadline {
-      margin: 0.55rem 0 0;
-      max-width: 36rem;
-      padding: 0.55rem 0.75rem;
-      border: 1px solid rgba(47, 109, 255, 0.35);
-      background: rgba(47, 109, 255, 0.1);
-      color: var(--text);
-      font-size: 0.92rem;
-      line-height: 1.4;
-    }
-    .tx-deadline.is-passed {
-      border-color: rgba(142, 154, 168, 0.45);
-      background: rgba(142, 154, 168, 0.12);
-      color: var(--muted);
-    }
-    .tx-deadline a { color: #8eb6ff; text-decoration: none; }
     @media (max-width: 800px) { .tx-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -56,7 +40,6 @@
   <section class="page-hero shell">
     <p class="eyebrow">League activity</p>
     <h1>Transactions</h1>
-    <p class="tx-deadline" id="tx-deadline" hidden></p>
   </section>
   <main class="page-main shell">
     <div class="tx-grid" id="boards"><div class="msg">Loading transactions…</div></div>
@@ -89,27 +72,7 @@
         ${rows || '<div class="empty">No transactions yet. Activity shows here after the draft and waiver wire open.</div>'}
       </section>`;
     }
-    async function paintDeadlineBanner() {
-      const el = document.getElementById('tx-deadline');
-      if (!el) return;
-      try {
-        const res = await fetch('/api/calendar', { cache: 'no-store' });
-        const data = await res.json().catch(() => ({}));
-        const status = window.GridIronCalendar?.tradeDeadlineStatus?.(data.events || []);
-        if (!status) {
-          el.hidden = true;
-          return;
-        }
-        el.hidden = false;
-        el.classList.toggle('is-passed', Boolean(status.passed));
-        el.innerHTML = `${esc(status.text)} · <a href="/calendar.html">Calendar</a>`;
-      } catch {
-        el.hidden = true;
-      }
-    }
-
     (async () => {
-      paintDeadlineBanner();
       try {
         const res = await fetch('/api/transactions', { cache: 'no-store' });
         const data = await res.json();

@@ -1876,6 +1876,9 @@ async function loadDraftBoard(conferenceKey, seasonOverride = null) {
   return {
     ok: true,
     season,
+    brand: {
+      name: config.brand?.name || 'GridIron 24'
+    },
     conference: {
       key: conference.key,
       name: conference.name,
@@ -3332,8 +3335,10 @@ function teamMapFromRaw(raw, conferenceKey) {
   return map;
 }
 
-function normalizeSchedule(raw, conference, week) {
+function normalizeSchedule(raw, conference, week, opts = {}) {
   const teams = teamMapFromRaw(raw, conference.key);
+  const gamesByTeam = opts.gamesByTeam || null;
+  const rosterById = new Map((raw.teams || []).map((t) => [Number(t.id), t]));
   const matchups = (raw.schedule || [])
     .filter((m) => Number(m.matchupPeriodId) === Number(week))
     .map((m) => {
@@ -3349,6 +3354,14 @@ function normalizeSchedule(raw, conference, week) {
         logo: logos.PLACEHOLDER_LOGO,
         logoSource: 'placeholder'
       };
+      const homeId = Number(m.home?.teamId);
+      const awayId = Number(m.away?.teamId);
+      const homeLeft = gamesByTeam
+        ? countStartersLeftToPlay(m.home, rosterById.get(homeId), gamesByTeam, week)
+        : null;
+      const awayLeft = gamesByTeam
+        ? countStartersLeftToPlay(m.away, rosterById.get(awayId), gamesByTeam, week)
+        : null;
       return {
         id: m.id,
         matchupPeriodId: m.matchupPeriodId,
@@ -3357,12 +3370,14 @@ function normalizeSchedule(raw, conference, week) {
         home: {
           ...home,
           score: resolveMatchupSideScore(m.home, week),
-          projected: resolveMatchupSideProjected(m.home)
+          projected: resolveMatchupSideProjected(m.home),
+          leftToPlay: homeLeft
         },
         away: {
           ...away,
           score: resolveMatchupSideScore(m.away, week),
-          projected: resolveMatchupSideProjected(m.away)
+          projected: resolveMatchupSideProjected(m.away),
+          leftToPlay: awayLeft
         }
       };
     });
@@ -3622,6 +3637,41 @@ function matchupSideEntries(side) {
     || side?.rosterForMatchupPeriod?.entries
     || side?.rosterForMatchupPeriodDelayed?.entries
     || [];
+}
+
+/** Starter entries from matchup scoring roster, else team mRoster. */
+function starterEntriesForLeftToPlay(side, rawTeam) {
+  const fromMatchup = matchupSideEntries(side);
+  const pool = fromMatchup.length
+    ? fromMatchup
+    : (rawTeam?.roster?.entries || []);
+  return pool.filter((entry) => !BENCH_OR_IR_SLOTS.has(Number(entry.lineupSlotId)));
+}
+
+/**
+ * Starters whose NFL game has not started yet (excludes live, final, bye).
+ * Returns null when lineup data is unavailable.
+ */
+function countStartersLeftToPlay(side, rawTeam, gamesByTeam, week) {
+  const starters = starterEntriesForLeftToPlay(side, rawTeam);
+  if (!starters.length) return null;
+  let left = 0;
+  for (const entry of starters) {
+    const player = entry.playerPoolEntry?.player || entry.player || {};
+    const defense = defenseUnitFromEspnPlayerId(Number(entry.playerId || player.id || 0));
+    const proTeamId = Number(player.proTeamId || defense?.proTeamId || 0) || null;
+    const abbr = defense?.proTeam || PRO_TEAM_ABBREV[proTeamId] || '';
+    const enriched = playerNflGame.enrichPlayer({
+      name: defense?.fullName || player.fullName || '',
+      position: defense?.position || POSITION_LABELS[player.defaultPositionId] || '',
+      proTeam: abbr,
+      byeWeek: byeWeekForProTeam(proTeamId)
+    }, gamesByTeam, week);
+    const g = enriched.nflGame || {};
+    if (g.final || g.live || g.bucket === 'bye') continue;
+    left += 1;
+  }
+  return left;
 }
 
 /** Sum starter fantasy points from a matchup side's roster entries. */
@@ -4285,12 +4335,12 @@ async function apiOfficialScoring(res) {
   });
 }
 
-async function scheduleForConference(conference, weekParam, cacheTag = 'matchup') {
+async function scheduleForConference(conference, weekParam, cacheTag = 'matchup', opts = {}) {
   try {
     const ttlMs = await espnFantasyTtlMs();
     const statusRaw = await fetchEspnRaw(
       conference,
-      ['mTeam', 'mMatchup', 'mStatus'],
+      ['mTeam', 'mRoster', 'mMatchup', 'mStatus'],
       cacheTag,
       {},
       null,
@@ -4308,7 +4358,7 @@ async function scheduleForConference(conference, weekParam, cacheTag = 'matchup'
     try {
       const boxed = await fetchEspnRaw(
         conference,
-        ['mTeam', 'mMatchup', 'mScoreboard', 'mStatus'],
+        ['mTeam', 'mRoster', 'mMatchup', 'mScoreboard', 'mStatus'],
         `${cacheTag}:box:${week}`,
         { scoringPeriodId: week },
         null,
@@ -4316,9 +4366,10 @@ async function scheduleForConference(conference, weekParam, cacheTag = 'matchup'
       );
       if (Array.isArray(boxed?.schedule) && boxed.schedule.length) raw = boxed;
     } catch { /* keep status snapshot */ }
+    const gamesByTeam = opts.gamesByTeam || await loadNflGamesByTeamForWeek(week);
     return {
       ok: true,
-      ...normalizeSchedule(raw, conference, week),
+      ...normalizeSchedule(raw, conference, week, { gamesByTeam }),
       espnMatchupPeriod: espnWeek,
       matchupWeekHeld: held
     };
@@ -4399,6 +4450,8 @@ async function loadFantasySportsBoards() {
 
 async function apiSchedule(res, weekParam, leagueScope = null) {
   let results;
+  const weekHint = Number(weekParam || 0) > 0 ? Number(weekParam) : null;
+  const gamesByTeam = await loadNflGamesByTeamForWeek(weekHint || undefined);
   if (leagueScope?.scope === 'aaa') {
     const affiliate = getAffiliatedLeague(leagueScope.conferenceKey || 'aaa');
     const espnId = Number(affiliate?.espnLeagueId);
@@ -4425,10 +4478,10 @@ async function apiSchedule(res, weekParam, leagueScope = null) {
       espnLeagueId: espnId,
       logo: affiliate.logo || '/assets/aaa-league.png?v=7'
     };
-    results = [await scheduleForConference(conference, weekParam, 'aaa-matchup')];
+    results = [await scheduleForConference(conference, weekParam, 'aaa-matchup', { gamesByTeam })];
   } else {
     results = await Promise.all(
-      config.conferences.map((conference) => scheduleForConference(conference, weekParam))
+      config.conferences.map((conference) => scheduleForConference(conference, weekParam, 'matchup', { gamesByTeam }))
     );
   }
 
@@ -4849,15 +4902,22 @@ async function loadSchedulePayload(weekParam) {
       displayWeek = 1;
     }
   }
+  const gamesByTeam = await loadNflGamesByTeamForWeek(displayWeek);
   const results = await Promise.all(
     config.conferences.map(async (conference) => {
       try {
-        const raw = await fetchEspnRaw(conference, ['mTeam', 'mMatchup', 'mStatus'], 'matchup');
-        const week = Number(displayWeek || raw.status?.currentMatchupPeriod || 1);
+        const week = Number(displayWeek || 1);
+        const raw = await fetchEspnRaw(
+          conference,
+          ['mTeam', 'mRoster', 'mMatchup', 'mScoreboard', 'mStatus'],
+          'matchup',
+          { scoringPeriodId: week }
+        );
+        const resolvedWeek = Number(week || raw.status?.currentMatchupPeriod || 1);
         return {
           ok: true,
-          ...normalizeSchedule(raw, conference, week),
-          espnMatchupPeriod: Number(raw.status?.currentMatchupPeriod || week),
+          ...normalizeSchedule(raw, conference, resolvedWeek, { gamesByTeam }),
+          espnMatchupPeriod: Number(raw.status?.currentMatchupPeriod || resolvedWeek),
           matchupWeekHeld: held
         };
       } catch (error) {

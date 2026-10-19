@@ -129,18 +129,6 @@
     html[data-theme="day"] .hq-hero img {
       filter: drop-shadow(0 12px 24px rgba(20, 24, 31, 0.2));
     }
-    .hq-deadline {
-      margin: 0.35rem auto 0.15rem;
-      max-width: 36rem;
-      text-align: center;
-      font-size: 0.9rem;
-      color: var(--muted);
-      line-height: 1.4;
-    }
-    .hq-deadline a { color: #8eb6ff; text-decoration: none; }
-    .hq-deadline.is-soon { color: var(--text); }
-    .hq-deadline.is-passed { opacity: 0.75; }
-
     .hq-hero .tag {
       margin: 1.25rem 0 0;
       font-family: var(--display);
@@ -549,7 +537,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.2rem;
       text-align: center;
       min-width: 0;
     }
@@ -562,17 +550,27 @@
       filter: none;
       box-shadow: var(--logo-lift);
     }
-    .motw-side .nm {
-      font-size: 1.55rem;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1.25;
-      max-width: 100%;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      word-break: break-word;
+    .motw-side .franchise-block {
+      align-items: center;
+      gap: 0.1rem;
+    }
+    .motw-side .franchise-title {
+      text-align: center;
+    }
+    .motw-side .franchise-owner {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: center;
+    }
+    .motw-side .left-to-play {
+      margin-top: 0.15rem;
+      font-family: var(--display);
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
     }
     .motw-mid {
       text-align: center;
@@ -592,10 +590,16 @@
       font-variant-numeric: tabular-nums;
     }
     .motw-mid .proj {
-      margin-top: 0.2rem;
-      font-size: 0.72rem;
-      color: var(--muted);
-      letter-spacing: 0.04em;
+      margin-top: 0.4rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #8eb6ff;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+    }
+    html[data-theme="day"] .motw-mid .proj {
+      color: #1e4fcc;
     }
 
     .hotnot-row {
@@ -995,7 +999,6 @@
       <span class="t">24 Teams</span><span class="sep">·</span><span class="d">Two Conferences</span><span class="sep">·</span><span class="c">One Champion</span>
     </p>
   </section>
-  <p class="hq-deadline shell" id="hq-deadline" hidden></p>
 
   <main class="hq-main shell">
     <div class="hq-board">
@@ -1175,24 +1178,124 @@
         </div>`;
     }
 
-    function pickMatchupOfWeek(matchups) {
+    /** America/New_York clock parts for MOTW phase flips. */
+    function etClock(now = new Date()) {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      }).formatToParts(now);
+      const get = (type) => parts.find((p) => p.type === type)?.value;
+      const hour = Number(get('hour'));
+      const minute = Number(get('minute'));
+      return {
+        weekday: get('weekday'),
+        hour,
+        minute,
+        mins: hour * 60 + minute
+      };
+    }
+
+    /**
+     * One MOTW mode at a time (ET, in-season):
+     * featured → Sun 4:30 closest → Sun 8:15 most remaining → Mon 6:00 most remaining → Tue 6:00 featured
+     */
+    function motwPhase(now = new Date()) {
+      const c = etClock(now);
+      if (c.weekday === 'Sun') {
+        if (c.mins >= 20 * 60 + 15) return 'mostRemaining';
+        if (c.mins >= 16 * 60 + 30) return 'closest';
+        return 'featured';
+      }
+      if (c.weekday === 'Mon') return 'mostRemaining';
+      if (c.weekday === 'Tue' && c.mins < 6 * 60) return 'mostRemaining';
+      return 'featured';
+    }
+
+    function matchupDecided(m) {
+      const w = String(m?.winner || 'UNDECIDED').toUpperCase();
+      return w === 'HOME' || w === 'AWAY';
+    }
+
+    function matchupMargin(m) {
+      const hs = Number(m?.home?.score || 0);
+      const as = Number(m?.away?.score || 0);
+      if (hs + as > 0 || matchupDecided(m)) return Math.abs(hs - as);
+      return Math.abs(Number(m?.home?.projected || 0) - Number(m?.away?.projected || 0));
+    }
+
+    function playersRemaining(m) {
+      const h = Number(m?.home?.leftToPlay);
+      const a = Number(m?.away?.leftToPlay);
+      return (Number.isFinite(h) ? h : 0) + (Number.isFinite(a) ? a : 0);
+    }
+
+    function pickClosestMatchup(matchups) {
+      const list = (matchups || []).slice();
+      if (!list.length) return null;
+      return list.sort((a, b) => {
+        const aDone = matchupDecided(a);
+        const bDone = matchupDecided(b);
+        if (aDone !== bDone) return aDone ? 1 : -1;
+        const margin = matchupMargin(a) - matchupMargin(b);
+        if (margin !== 0) return margin;
+        const aLive = Number(a.home?.score || 0) + Number(a.away?.score || 0);
+        const bLive = Number(b.home?.score || 0) + Number(b.away?.score || 0);
+        return bLive - aLive;
+      })[0];
+    }
+
+    function pickMostRemainingMatchup(matchups) {
+      const list = (matchups || []).slice();
+      if (!list.length) return null;
+      return list.sort((a, b) => {
+        const aDone = matchupDecided(a);
+        const bDone = matchupDecided(b);
+        if (aDone !== bDone) return aDone ? 1 : -1;
+        const rem = playersRemaining(b) - playersRemaining(a);
+        if (rem !== 0) return rem;
+        return matchupMargin(a) - matchupMargin(b);
+      })[0];
+    }
+
+    function pickFeaturedMatchup(matchups) {
       const list = matchups || [];
       if (!list.length) return null;
       return list.slice().sort((a, b) => {
-        const aLive = Number(a.home.score || 0) + Number(a.away.score || 0);
-        const bLive = Number(b.home.score || 0) + Number(b.away.score || 0);
+        const aLive = Number(a.home?.score || 0) + Number(a.away?.score || 0);
+        const bLive = Number(b.home?.score || 0) + Number(b.away?.score || 0);
         if (bLive !== aLive) return bLive - aLive;
-        const aProj = Number(a.home.projected || 0) + Number(a.away.projected || 0);
-        const bProj = Number(b.home.projected || 0) + Number(b.away.projected || 0);
+        const aProj = Number(a.home?.projected || 0) + Number(a.away?.projected || 0);
+        const bProj = Number(b.home?.projected || 0) + Number(b.away?.projected || 0);
         return bProj - aProj;
       })[0];
+    }
+
+    function pickMatchupOfWeek(matchups, week) {
+      const list = matchups || [];
+      if (!list.length) return null;
+      const inSeason = Number(week) >= 1 && Number(week) <= 17;
+      if (!inSeason) return pickFeaturedMatchup(list);
+      const phase = motwPhase();
+      if (phase === 'closest') return pickClosestMatchup(list);
+      if (phase === 'mostRemaining') return pickMostRemainingMatchup(list);
+      return pickFeaturedMatchup(list);
+    }
+
+    function leftToPlayHtml(side) {
+      const n = side?.leftToPlay;
+      if (n == null || !Number.isFinite(Number(n))) return '';
+      const count = Math.max(0, Number(n));
+      return `<div class="left-to-play">${count}</div>`;
     }
 
     function motwCard(conf) {
       if (!conf?.ok) {
         return `<div class="motw-block">${motwHead(conf)}<div class="empty">Unavailable</div></div>`;
       }
-      const m = pickMatchupOfWeek(conf.matchups);
+      const m = pickMatchupOfWeek(conf.matchups, conf.week);
       if (!m) {
         return `<div class="motw-block">${motwHead(conf)}<div class="empty">No matchups this week</div></div>`;
       }
@@ -1201,15 +1304,17 @@
           ${motwHead(conf)}
           <div class="motw">
             <div class="motw-side">
-              ${window.GridIronTitle.html(m.away.name, { size: 'sm', inline: true })}
+              ${window.GridIronTitle.html(m.away.name, { size: 'sm', inline: true, owner: m.away.owner || '' })}
+              ${leftToPlayHtml(m.away)}
             </div>
             <div class="motw-mid">
               <div class="vs">VS</div>
               <div class="score">${Number(m.away.score || 0).toFixed(1)} – ${Number(m.home.score || 0).toFixed(1)}</div>
-              <div class="proj">Proj ${Number(m.away.projected || 0).toFixed(1)}–${Number(m.home.projected || 0).toFixed(1)}</div>
+              <div class="proj">${Number(m.away.projected || 0).toFixed(1)}–${Number(m.home.projected || 0).toFixed(1)}</div>
             </div>
             <div class="motw-side">
-              ${window.GridIronTitle.html(m.home.name, { size: 'sm', inline: true })}
+              ${window.GridIronTitle.html(m.home.name, { size: 'sm', inline: true, owner: m.home.owner || '' })}
+              ${leftToPlayHtml(m.home)}
             </div>
           </div>
         </div>`;
@@ -1524,25 +1629,6 @@
       }
       currentUser = auth.user || null;
       wireComposers();
-      async function paintDeadlineNote() {
-        const el = document.getElementById('hq-deadline');
-        if (!el) return;
-        try {
-          const res = await fetch('/api/calendar', { cache: 'no-store' });
-          const data = await res.json().catch(() => ({}));
-          const status = window.GridIronCalendar?.tradeDeadlineStatus?.(data.events || []);
-          if (!status) {
-            el.hidden = true;
-            return;
-          }
-          el.hidden = false;
-          el.classList.toggle('is-passed', Boolean(status.passed));
-          el.classList.toggle('is-soon', !status.passed && status.days <= 14);
-          el.innerHTML = `${esc(status.text)} · <a href="/transactions.html">Transactions</a>`;
-        } catch {
-          el.hidden = true;
-        }
-      }
       const refreshLive = async () => {
         if (document.visibilityState !== 'visible') return;
         await Promise.all([
@@ -1551,7 +1637,6 @@
         ]);
       };
       await Promise.all([
-        paintDeadlineNote().catch(() => {}),
         loadStandings(),
         loadMatchupOfWeek(),
         loadNews().catch((err) => {
